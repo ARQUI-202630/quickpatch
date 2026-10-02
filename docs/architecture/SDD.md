@@ -783,24 +783,28 @@ Esta vista mantiene la decisión tecnológica vigente:
 
 ## 6.1 Estructura del repositorio
 
-QUICKPATCH utiliza un repositorio único organizado por áreas de responsabilidad.
+QUICKPATCH utiliza un repositorio por componente: cada microservicio, el panel web, la aplicación móvil, los contratos y la infraestructura tienen su propio repositorio en la organización `ARQUI-202630`. Un repositorio principal (`quickpatch`) los reúne como submódulos de Git y contiene la documentación y las pruebas del sistema completo (ADR-013).
 
-Las carpetas principales relacionadas con el desarrollo son:
+La estructura del repositorio principal es la siguiente; las carpetas marcadas con `→` son submódulos:
 
 ```text
 apps/
-├── web/
-├── mobile/
+├── web/                 → quickpatch-web
+├── mobile/              → quickpatch-mobile
 └── backend/
     └── services/
-        ├── identity/
-        ├── actors/
-        ├── catalog/
-        ├── service-request/
-        ├── matching/
-        ├── ranking/
-        ├── payments/
-        └── communication/
+        ├── identity/        → quickpatch-identity
+        ├── actors/          → quickpatch-actors
+        ├── catalog/         → quickpatch-catalog
+        ├── service-request/ → quickpatch-service-request
+        ├── matching/        → quickpatch-matching
+        ├── ranking/         → quickpatch-ranking
+        ├── payments/        → quickpatch-payments
+        └── communication/   → quickpatch-communication
+
+contracts/               → quickpatch-contracts
+├── openapi/
+└── events/
 
 tests/
 ├── integration/
@@ -809,26 +813,25 @@ tests/
 ├── performance/
 └── security/
 
-infrastructure/
+infrastructure/          → quickpatch-infrastructure
 
 docs/
 ├── requirements/
 ├── architecture/
 ├── design/
 ├── infrastructure/
-├── governance/
-└── contracts/
-    ├── openapi/
-    └── events/
+└── governance/
 ```
 
-`apps/` concentra el código productivo; `tests/` contiene las pruebas transversales; `infrastructure/` contiene los artefactos asociados al despliegue; y `docs/contracts/` mantiene las fronteras versionadas utilizadas por las aplicaciones y microservicios.
+Cada repositorio de servicio contiene su código, sus pruebas unitarias y de integración, su `Dockerfile`, su pipeline de CI y `contracts/` como submódulo fijado en una versión de `quickpatch-contracts`.
+
+`apps/` concentra el código productivo; `tests/` contiene las pruebas transversales; `infrastructure/` contiene los artefactos asociados al despliegue; y `contracts/` mantiene las fronteras versionadas utilizadas por las aplicaciones y microservicios.
 
 ![Estructura del repositorio QUICKPATCH](diagrams/sdd/07_vista_desarrollo_repositorio.svg)
 
-**Figura 7. Estructura del repositorio y organización del monorepo QUICKPATCH.**
+**Figura 7. Estructura del repositorio principal de QUICKPATCH.**
 
-La Figura 7 representa la estructura vigente del repositorio. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
+La Figura 7 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
 
 ---
 
@@ -947,10 +950,10 @@ La comunicación entre aplicaciones y microservicios se realiza mediante contrat
 
 ### REST / OpenAPI
 
-Los contratos REST se mantienen en:
+Los contratos REST se mantienen en el repositorio `quickpatch-contracts`, en:
 
 ```text
-docs/contracts/openapi/
+contracts/openapi/
 ```
 
 Estos contratos constituyen la frontera entre Angular, Flutter y los servicios backend.
@@ -959,11 +962,13 @@ Los clientes no deben depender de clases internas del backend ni asumir campos q
 
 ### Eventos Kafka
 
-Los contratos de eventos se mantienen en:
+Los contratos de eventos se mantienen en el mismo repositorio, en:
 
 ```text
-docs/contracts/events/
+contracts/events/
 ```
+
+Cada servicio incluye `quickpatch-contracts` como submódulo fijado en una versión (tag SemVer); cambiar de versión es un commit explícito en el servicio.
 
 Los eventos permiten integrar servicios de forma asíncrona sin compartir implementaciones internas.
 
