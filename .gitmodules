@@ -1,0 +1,48 @@
+[submodule "apps/web"]
+	path = apps/web
+	url = https://github.com/ARQUI-202630/quickpatch-web.git
+	branch = develop
+[submodule "apps/mobile"]
+	path = apps/mobile
+	url = https://github.com/ARQUI-202630/quickpatch-mobile.git
+	branch = develop
+[submodule "apps/backend/services/identity"]
+	path = apps/backend/services/identity
+	url = https://github.com/ARQUI-202630/quickpatch-identity.git
+	branch = develop
+[submodule "apps/backend/services/actors"]
+	path = apps/backend/services/actors
+	url = https://github.com/ARQUI-202630/quickpatch-actors.git
+	branch = develop
+[submodule "apps/backend/services/catalog"]
+	path = apps/backend/services/catalog
+	url = https://github.com/ARQUI-202630/quickpatch-catalog.git
+	branch = develop
+[submodule "apps/backend/services/service-request"]
+	path = apps/backend/services/service-request
+	url = https://github.com/ARQUI-202630/quickpatch-service-request.git
+	branch = develop
+[submodule "apps/backend/services/matching"]
+	path = apps/backend/services/matching
+	url = https://github.com/ARQUI-202630/quickpatch-matching.git
+	branch = develop
+[submodule "apps/backend/services/ranking"]
+	path = apps/backend/services/ranking
+	url = https://github.com/ARQUI-202630/quickpatch-ranking.git
+	branch = develop
+[submodule "apps/backend/services/payments"]
+	path = apps/backend/services/payments
+	url = https://github.com/ARQUI-202630/quickpatch-payments.git
+	branch = develop
+[submodule "apps/backend/services/communication"]
+	path = apps/backend/services/communication
+	url = https://github.com/ARQUI-202630/quickpatch-communication.git
+	branch = develop
+[submodule "contracts"]
+	path = contracts
+	url = https://github.com/ARQUI-202630/quickpatch-contracts.git
+	branch = develop
+[submodule "infrastructure"]
+	path = infrastructure
+	url = https://github.com/ARQUI-202630/quickpatch-infrastructure.git
+	branch = develop

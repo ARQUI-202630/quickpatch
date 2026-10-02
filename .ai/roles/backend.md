@@ -22,8 +22,12 @@ No cambiar el stack asignado sin nueva ADR.
 
 ## Contratos
 
-- REST: `docs/contracts/openapi/`
-- Eventos: `docs/contracts/events/`
+Viven en el repo `quickpatch-contracts`, incluido como submódulo en `contracts/` de cada servicio, fijado en una versión (tag SemVer).
+
+- REST: `contracts/openapi/`
+- Eventos: `contracts/events/`
+
+Cambiar de versión de contratos es un commit explícito en el servicio, no una actualización automática.
 
 ## Persistencia
 

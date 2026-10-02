@@ -73,13 +73,13 @@ No modificar por defecto reglas de negocio, endpoints, entidades o comportamient
 ## 6. Contratos compartidos
 
 ### API REST
-`docs/contracts/openapi/`
+`contracts/openapi/` (repo `quickpatch-contracts`)
 
 Frontend no debe inventar endpoints.
 Backend no debe cambiar contratos silenciosamente.
 
 ### Eventos Kafka
-`docs/contracts/events/`
+`contracts/events/` (repo `quickpatch-contracts`)
 
 Todo cambio debe identificar productor, consumidores, campos, compatibilidad e impacto.
 

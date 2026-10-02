@@ -59,9 +59,11 @@ REST se utiliza cuando el consumidor necesita una respuesta síncrona inmediata.
 
 Kafka se utiliza para hechos de dominio y procesos desacoplados/asíncronos. La adopción de EDA no implica reemplazar toda interacción síncrona por eventos.
 
-Los contratos REST se versionan en `docs/contracts/openapi/`.
+Los contratos REST se versionan en `contracts/openapi/` del repo `quickpatch-contracts`.
 
-Los contratos de eventos se versionan en `docs/contracts/events/`.
+Los contratos de eventos se versionan en `contracts/events/` del repo `quickpatch-contracts`.
+
+> Actualización: desde el ADR-013 los contratos viven en su propio repositorio (`quickpatch-contracts`), en lugar de `docs/contracts/`. La decisión de este ADR no cambia.
 
 La interoperabilidad entre .NET y Java depende de contratos, no de compartir código de dominio.
 

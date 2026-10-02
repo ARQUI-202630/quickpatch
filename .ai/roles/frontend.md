@@ -14,8 +14,7 @@
 
 ## Fuente de verdad
 
-REST/OpenAPI:
-`docs/contracts/openapi/`
+REST/OpenAPI: `contracts/openapi/`, del repo `quickpatch-contracts`.
 
 No inventar endpoints, campos, respuestas o estados backend.
 
