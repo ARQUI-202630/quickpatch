@@ -22,8 +22,10 @@ Matching usa Java + Spring Boot.
 
 ## Contratos
 
-- REST: `../../docs/contracts/openapi/`
-- Kafka: `../../docs/contracts/events/`
+Repo `quickpatch-contracts`, como submódulo `contracts/` dentro de cada servicio:
+
+- REST: `contracts/openapi/`
+- Kafka: `contracts/events/`
 
 No inventes endpoints, eventos o tablas. No escribas directamente en datos de otro servicio.
 
