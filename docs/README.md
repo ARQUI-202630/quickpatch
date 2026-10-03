@@ -14,6 +14,7 @@ Este archivo es el punto de entrada a la documentación formal del proyecto.
 | `design/DD.md` | Documento de Diseño vigente temporal: datos y contratos. |
 | `Documento de Infraestructura.md` | Topología, ambientes, despliegue, observabilidad y operación. |
 | `Documento Politicas y Herramientas.md` | GitFlow, colaboración, herramientas, calidad y uso de IA. |
+| `testing/TD.md` | Documento de Pruebas (TD V1): Estrategia de pruebas automatizadas, compuertas de calidad, RTM y catálogo de pruebas. |
 
 ## Documento histórico
 

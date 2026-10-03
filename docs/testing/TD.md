@@ -1,0 +1,617 @@
+# Documento de Pruebas (TD V1) — QUICKPATCH
+## Sistema Multi-tenant de Servicios Técnicos para el Hogar y las Empresas
+
+| | |
+|---|---|
+| **Tipo de documento** | Documento de Diseño y Definición de Pruebas (Test Document - TD) |
+| **Versión** | 1.0 (Entrega Sprint 3 / Semana 10) |
+| **Curso** | Arquitectura de Software |
+| **Proyecto Jira** | SCRUM — Arquitectura de Software |
+| **Rol Responsable** | Líder de Aseguramiento de Calidad (QA Lead) |
+| **Estándares Aplicados** | ISO/IEC/IEEE 29119 (Software Testing), ISO/IEC 25010:2023 (Calidad de Software), PCI-DSS v4.0 (K2) |
+| **Alcance** | Estrategia de pruebas automatizadas sobre 13 repositorios y validación en 7 Máquinas Virtuales |
+
+---
+
+## Índice
+
+1. [Introducción y Propósito (Test Plan)](#1-introducción-y-propósito)
+2. [Estrategia de Pruebas y Topología Multirepo (Test Strategy - ADR-013)](#2-estrategia-de-pruebas-y-topología-de-repositorios-adr-013)
+3. [El Ciclo de Calidad: Desarrollo → Pruebas → Ambiente](#3-el-ciclo-de-calidad-desarrollo--pruebas--ambiente)
+4. [Justificación Técnica de Herramientas frente a Alternativas](#4-justificación-técnica-de-herramientas-frente-a-alternativas)
+5. [Operación en las 7 Máquinas Virtuales (Red 10.43.x.x)](#5-operación-en-las-7-máquinas-virtuales-red-1043xx)
+6. [Mecanismo de Bloqueo Local Pre-Push](#6-mecanismo-de-bloqueo-local-pre-push)
+7. [Matriz de Trazabilidad RTM y Catálogo de Pruebas (Test Scenarios, RTM & Test Cases)](#7-matriz-de-trazabilidad-rtm-y-catálogo-de-pruebas-180-casos)
+8. [Gestión de Datos de Prueba (Test Data)](#8-gestión-de-datos-de-prueba-test-data)
+9. [Gestión y Reporte de Defectos (Bug Report)](#9-gestión-y-reporte-de-defectos-bug-report)
+10. [Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3)](#10-informe-de-ejecución-de-pruebas-test-execution-report---sprint-3)
+11. [Control de Versiones del Documento](#11-control-de-versiones-del-documento)
+
+---
+
+## 1. Introducción y Propósito
+
+### 1.1 Propósito
+El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (V4) y los escenarios de calidad del SAD (V3).
+
+### 1.2 Objetivos de Calidad
+1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
+2. **Proteger los Atributos de Calidad Críticos (SAD):**
+   - **Aislamiento Multi-tenant (AC6-E2):** Cero fuga de información entre empresas clientes y usuarios mediante Row-Level Security (RLS).
+   - **Cumplimiento PCI-DSS (K2, AC6-E1):** Cero almacenamiento de números de tarjeta (PAN) o códigos de seguridad (CVV) en bases de datos o logs.
+   - **Capacidad de Matching bajo Carga (AC2-E4, AC2-E5):** Soporte de 150 solicitudes concurrentes en la VM3 (k3s) con consumo de memoria $\le 6.5\text{ GiB}$ y 0 desalojos por `OOMKilled`.
+   - **Resiliencia e Idempotencia (AC5-E4, AC5-E5):** Cero pérdida de eventos ante caída de Kafka (vía Transactional Outbox) y cero efectos duplicados.
+   - **Seguridad en el Ciclo del Servicio (AC9-E1, D7):** Bloqueo estricto de transiciones de estado inválidas y exigencia de evidencia fotográfica obligatoria en MinIO antes de completar cualquier trabajo.
+
+---
+
+## 2. Estrategia de Pruebas y Topología de Repositorios (ADR-013)
+
+De acuerdo con la decisión arquitectónica **ADR-013**, el proyecto se distribuye en 13 repositorios independientes vinculados mediante Git Submodules. La estrategia de pruebas se desacopla para maximizar la velocidad y la independencia de cada equipo:
+
+```
+# Repositorios individuales de microservicios (quickpatch-identity, matching, payments, etc.)
+quickpatch-<servicio>/
+└── tests/
+    ├── unit/                   Pruebas unitarias de lógica y reglas de dominio (xUnit / JUnit 5)
+    └── integration/            Pruebas de integración con bases de datos y Kafka efímeros (Testcontainers)
+
+# Repositorio central de contratos (quickpatch-contracts)
+quickpatch-contracts/
+├── openapi/                    Contratos REST (validación de sintaxis con Spectral CLI)
+└── events/                     Esquemas JSON Schema de eventos Kafka (validación con AJV)
+
+# Repositorio principal (quickpatch) — Territorio de QA
+quickpatch/
+└── tests/
+    ├── e2e/                    Flujo crítico de negocio y Web Admin (Playwright + Newman)
+    ├── performance/            Pruebas de carga y estrés en hardware real (k6: 150 VU)
+    ├── security/               Escaneo dinámico (OWASP ZAP) y escáner de cumplimiento PCI-DSS
+    └── fixtures/               Datos semilla compartidos (coordenadas de Bogotá y tenants de prueba)
+```
+
+| Repositorio | Stack | Nivel de Prueba que Aloja | Herramienta |
+|---|---|---|---|
+| `quickpatch` (Principal) | Orquestación / Markdown | Pruebas de Sistema Completo: E2E, Carga y Seguridad DAST | Playwright, k6, OWASP ZAP, Newman |
+| `quickpatch-contracts` | OpenAPI / JSON Schema | Linting de contratos REST y esquemas de eventos | Spectral CLI, AJV Validator |
+| `quickpatch-web` | Angular 17 / TypeScript | Pruebas unitarias de componentes y servicios web | Jasmine, Karma |
+| `quickpatch-mobile` | Flutter 3 / Dart | Pruebas unitarias de lógica y widgets móviles | Flutter Test, Patrol |
+| `quickpatch-infrastructure`| Ansible / k3s | Verificación de sintaxis de playbooks y manifiestos k3s | Ansible Lint, Kubeval |
+| `quickpatch-identity` | ASP.NET Core 8 / C# | Unitarias y de integración RLS multi-tenant | xUnit, Moq, Testcontainers (Npgsql) |
+| `quickpatch-actors` | ASP.NET Core 8 / C# | Unitarias de perfiles de técnicos y proveedores | xUnit, Testcontainers |
+| `quickpatch-catalog` | ASP.NET Core 8 / C# | Unitarias de taxonomía y categorías de servicio | xUnit, Testcontainers |
+| `quickpatch-service-request`| ASP.NET Core 8 / C# | Unitarias de máquina de estados, cotizaciones y fotos | xUnit, Testcontainers |
+| `quickpatch-matching` | Java 17 / Spring Boot 3 | Unitarias de asignación y geoespaciales con PostGIS | JUnit 5, Mockito, Testcontainers (PostGIS) |
+| `quickpatch-ranking` | ASP.NET Core 8 / C# | Unitarias de promedios de calificación e idempotencia | xUnit, Testcontainers (Kafka) |
+| `quickpatch-payments` | ASP.NET Core 8 / C# | Unitarias de tokenización PCI-DSS y auditoría | xUnit, Testcontainers, WireMock |
+| `quickpatch-communication`| ASP.NET Core 8 / C# | Unitarias de consumo de Kafka y notificaciones | xUnit, Testcontainers (Kafka) |
+
+---
+
+## 3. El Ciclo de Calidad: Desarrollo → Pruebas → Ambiente
+
+El flujo de promoción asegura que ningún código defectuoso llegue a las máquinas de producción mediante **4 compuertas automatizadas secuenciales**:
+
+```
+[Desarrollador en Local] 
+       │ 
+       ▼ (git push)
+[Compuerta 0: Pre-Push Hook Local] ──(Falla)──> [Push Abortado en la Laptop]
+       │ (Pasa)
+       ▼ 
+[Compuerta 1: CI del Microservicio (GitHub Actions)]
+       │ • Compilación y linter
+       │ • Unitarias + Testcontainers (Postgres/Kafka efímeros en Docker)
+       │ • Cobertura >= 80%
+       ▼ 
+[Compuerta 2: Staging Efímero de Sistema (Repo Principal)]
+       │ • docker-compose.staging.yml (8 microservicios levantados)
+       │ • Playwright E2E (Flujo crítico de 10 pasos)
+       │ • OWASP ZAP (DAST) + Escáner Regex PCI-DSS (0 PAN / 0 CVV)
+       ▼ 
+[Compuerta 3: Post-Despliegue en Producción (7 VMs del Lab)]
+       │ • Rolling Update en VM3 (k3s) mediante Runner en VM1
+       │ • Prueba de estrés con k6 (150 VU concurrentes - Tenant de Prueba)
+       │ • Monitoreo en VM7 (Prometheus): RAM <= 6.5 GiB, latencia < 3s
+       ├───(Pasa)───> [Purga de datos de prueba y Tráfico Habilitado]
+       └───(Falla)──> [kubectl rollout undo automático en 5 segundos]
+```
+
+---
+
+## 4. Justificación Técnica de Herramientas frente a Alternativas
+
+| Categoría | Herramienta Elegida | Herramienta Alternativa | Justificación Técnica de la Elección |
+|---|---|---|---|
+| **Automatización Web** | **Playwright** | Selenium WebDriver | Playwright cuenta con **auto-waiting inteligente** (espera automáticamente a que los elementos del DOM de Angular estén interactuables sin necesidad de `Thread.sleep`), descarga navegadores herméticos sin necesidad de binarios `chromedriver` manuales, consume mínimos recursos en modo headless dentro de Docker y graba trazas visuales interactivas y videos ante cada fallo. |
+| **Integración con BD y Eventos** | **Testcontainers + Pact** | Postman / Newman Solo | Postman solo evalúa respuestas HTTP en la superficie; **no puede validar si PostgreSQL aplicó el aislamiento de `tenant_id` por Row-Level Security (RLS)** ni puede interactuar nativamente con tópicos de Apache Kafka. Testcontainers aprovisiona instancias reales de PostgreSQL con PostGIS y brokers de Kafka en Docker en tiempo de ejecución. *(Postman se conserva como ejecutor complementario de colecciones de API).* |
+| **Pruebas de Carga y Rendimiento** | **k6** | Apache JMeter | JMeter está basado en Java y consume 1 a 2 GB de memoria RAM en la máquina generadora de carga. **k6 está escrito en Go y consume menos de 100 MB de RAM para 150 usuarios virtuales**, permitiendo ejecutar el test desde el runner de la VM1 sin saturar la máquina. Sus escenarios se programan en JavaScript estándar con aserciones declarativas (`thresholds`). |
+| **Seguridad Dinámica (DAST)** | **OWASP ZAP** | Herramientas comerciales | Cumple con la restricción **K5 ($0 de presupuesto)** siendo el estándar open source de la industria para auditoría de vulnerabilidades web (inyección SQL, XSS, tokens JWT alterados y cabeceras inseguras). |
+
+---
+
+## 5. Operación en las 7 Máquinas Virtuales (Red 10.43.x.x)
+
+Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.x.x`). Las pruebas interactúan con cada nodo respetando su asignación de recursos y roles:
+
+| VM | IP | Software Principal | Rol en la Ejecución de Pruebas |
+|---|---|---|---|
+| **VM1** | `10.43.100.168` | Nginx + API Gateway + Self-hosted Runner | Punto de entrada HTTPS con certificado autofirmado (`quickpatch.internal`). Aloja el runner de GitHub Actions que dispara las pruebas de carga de k6 hacia la VM3 y ejecuta el comando de rollback si fallan los umbrales. |
+| **VM2** | `10.43.98.15` | Angular 17 servido por Nginx (puerto 3000) | Recibe las pruebas de interfaz de usuario de **Playwright** que validan la operación del Administrador (aprobación de técnicos, dashboard operativo, gestión de tenants). |
+| **VM3** | `10.43.98.205` | k3s (nodo único) con 8 microservicios | **Sujeto de la prueba de estrés.** Comparte 4 vCPU y 11 GiB de RAM. Matching opera con QoS *Guaranteed* (1 vCPU / 1 GiB) para garantizar atención prioritaria. El límite seguro de consumo conjunto es $\le 6.5\text{ GiB}$. |
+| **VM4** | `10.43.98.209` | PostgreSQL 16 + PostGIS (puerto 5432) | Ejecuta las consultas espaciales (`ST_DWithin`) y valida las políticas RLS. Durante la prueba de carga de k6, solo recibe transacciones del tenant `tenant_qa_loadtest`. |
+| **VM5** | `10.43.98.29` | Redis 7 (puerto 6379) | Valida el almacenamiento en cache de cotizaciones temporales y coordinación de tareas programadas (RN-Q6). |
+| **VM6** | `10.43.99.12` | Apache Kafka (puerto 9092) | Valida la publicación confiable vía Outbox, la tolerancia a desconexión del broker y el consumo idempotente de eventos por `eventId`. |
+| **VM7** | `10.43.99.8` | MinIO + Prometheus + Loki + Grafana | **Árbitro de observabilidad.** MinIO almacena las fotos obligatorias de evidencia. Prometheus evalúa en tiempo real que VM3 no supere los 6.5 GiB de RAM. Grafana expone el Dashboard de Calidad del proyecto. |
+
+---
+
+## 6. Mecanismo de Bloqueo Local Pre-Push
+
+Para evitar que se suba código con pruebas rotas al repositorio, cada repositorio cuenta con el gancho `.git/hooks/pre-push` configurado:
+
+```bash
+#!/bin/bash
+echo "🔍 [QA GATE] Ejecutando pruebas locales antes de hacer push..."
+
+# Ejecución condicional según el stack del componente
+if [ -f "*.csproj" ] || [ -f "src/*/*.csproj" ]; then
+    dotnet test --no-build --verbosity quiet --filter Category=Unit
+    RESULT=$?
+elif [ -f "build.gradle" ] || [ -f "pom.xml" ]; then
+    ./gradlew test -x integrationTest --quiet
+    RESULT=$?
+elif [ -f "angular.json" ]; then
+    npm run test:ci --silent
+    RESULT=$?
+elif [ -f "pubspec.yaml" ]; then
+    flutter test
+    RESULT=$?
+else
+    npm test --if-present --silent
+    RESULT=$?
+fi
+
+if [ $RESULT -ne 0 ]; then
+    echo "❌ [PUSH ABORTADO] Las pruebas automáticas fallaron en tu máquina local."
+    echo "❌ Corrige los errores antes de publicar código en la rama remota."
+    exit 1
+fi
+
+echo "✅ [QA GATE] Pruebas aprobadas. Procediendo con el push."
+exit 0
+```
+
+---
+
+## 7. Matriz de Trazabilidad RTM y Catálogo de Pruebas (180+ Casos)
+
+A continuación se presenta el catálogo formal de casos de prueba automatizados, cubriendo el 100% de los requisitos del SRS (RF-01 a RF-28, RF-34 a RF-36) y los 26 escenarios de calidad del SAD (AC1 a AC9):
+
+### 7.1 Módulo: Gestión de Identidad y Multi-tenancy (`quickpatch-identity`)
+* **Requisitos:** RF-01, RF-02, RF-03, RF-04, RF-05, RF-06 | RNF-03, RNF-04, RNF-09, RNF-10 | SAD: AC6-E1, AC6-E2, AC6-E3, AC6-E4, AC6-E8
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **IDN-001** | RF-01 | Unitaria | Validación de formato de email en registro. | Email con formato inválido retorna HTTP 400 Bad Request. |
+| **IDN-002** | RF-01 | Unitaria | Validación de complejidad de contraseña (mínimo 8 caracteres). | Password menor a 8 caracteres retorna HTTP 400. |
+| **IDN-003** | RF-01 | Integración | Rechazo de email duplicado en el mismo tenant. | Inserción duplicada viola índice único `(tenant_id, email)`; HTTP 409 Conflict. |
+| **IDN-004** | RF-02 | Integración | Registro de técnico nuevo en estado pendiente. | Fila en `technician_profiles` creada con `verification_status = 'pendiente'`. |
+| **IDN-005** | RF-03 | Unitaria | Generación de JWT firmado tras login exitoso. | HTTP 200 OK; token contiene claims `sub`, `tenant_id` y `role`. |
+| **IDN-006** | RF-03 | Unitaria | Incremento de contador tras contraseña errónea. | HTTP 401 Unauthorized; `failed_login_attempts` incrementado en 1. |
+| **IDN-007** | RF-03, AC6-E8 | Integración | Bloqueo temporal de cuenta tras 5 intentos fallidos. | Quinto fallo retorna HTTP 423 Locked; `locked_until` fijado a 15 minutos en BD. |
+| **IDN-008** | RF-03, AC6-E8 | Integración | Rechazo de autenticación durante período de bloqueo. | Login correcto con `locked_until > now()` retorna HTTP 423 Locked. |
+| **IDN-009** | RF-04, AC6-E2 | Integración | **Aislamiento Multi-tenant RLS en Lectura de Usuarios.** | Consulta con JWT de Tenant B sobre tabla de Tenant A retorna 0 filas. Fuga = 0. |
+| **IDN-010** | RF-04, AC6-E2 | Integración | Rechazo de inserción con `tenant_id` ajeno al token. | Intento de escritura en tenant ajeno bloqueado por RLS; HTTP 403 Forbidden. |
+| **IDN-011** | RF-05, AC6-E3 | Unitaria | Validación RBAC: Cliente accediendo a endpoint de Admin. | Petición a `/v1/admin/tenants` con rol `cliente` retorna HTTP 403. |
+| **IDN-012** | RF-05, AC6-E3 | Unitaria | Validación RBAC: Técnico creando solicitudes de servicio. | Petición a `POST /v1/service-requests` con rol `tecnico` retorna HTTP 403. |
+| **IDN-013** | RF-06 | Integración | Registro de empresa corporativa crea tenant propio. | HTTP 201 Created; registro en tabla `tenants` con estado `activo`. |
+| **IDN-014** | RF-06 | Integración | Validación de unicidad de NIT corporativo. | Registro de segundo tenant con mismo NIT viola `UNIQUE (nit)`; HTTP 409. |
+| **IDN-015** | RNF-03 | Integración | Cifrado unidireccional de contraseñas con hash seguro. | Inspección de columna `password_hash` coincide con patrón BCrypt/Argon2. |
+| **IDN-016** | RNF-04 | Integración | Registro de log estructurado ante intento 403. | Intento no autorizado emite log JSON con nivel `WARNING` y `correlationId`. |
+| **IDN-017** | AC6-E4 | Unitaria | Rechazo de token JWT con firma criptográfica alterada. | Token manipulado rechazado en API Gateway con HTTP 401 Unauthorized. |
+| **IDN-018** | AC6-E4 | Unitaria | Rechazo de token JWT expirado. | Token con claim `exp` en el pasado retorna HTTP 401 Unauthorized. |
+| **IDN-019** | RN-T1 | Integración | Rechazo de login en tenant en estado inactivo. | Usuario de tenant inactivo recibe HTTP 403; mensaje `"tenant is disabled"`. |
+| **IDN-020** | RN-A1 | Integración | Inmutabilidad de registros en `audit_logs`. | Intentos de `UPDATE` o `DELETE` sobre `audit_logs` con rol de app son rechazados por BD. |
+
+---
+
+### 7.2 Módulo: Catálogo de Servicios (`quickpatch-catalog`)
+* **Requisitos:** SRS Sección 4.1 | DD Sección 5.4
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **CAT-001** | SRS 4.1 | Unitaria | Creación de categoría técnica con datos válidos. | HTTP 201 Created; UUID asignado y `active = true`. |
+| **CAT-002** | SRS 4.1 | Unitaria | Rechazo de categoría con nombre vacío. | HTTP 400 Bad Request; validación de campo obligatorio. |
+| **CAT-003** | SRS 4.1 | Integración | Consulta pública retorna solo categorías activas. | `GET /v1/catalog/categories` retorna 100% registros con `active == true`. |
+| **CAT-004** | RF-04 | Integración | Aislamiento multi-tenant en categorías personalizadas. | Categorías exclusivas de Tenant A invisibles para consultas de Tenant B. |
+| **CAT-005** | SRS 4.1 | Unitaria | Desactivación lógica de categoría de servicio. | `DELETE /v1/catalog/categories/{id}` establece `active = false` (sin borrado físico). |
+| **CAT-006** | SRS 4.1 | Integración | Categoría inactiva excluida de selección de servicios. | Categoría desactivada no figura en listado para nuevas solicitudes. |
+| **CAT-007** | SDD 3.2 | Integración | Consulta de categoría por UUID existente. | `GET /v1/catalog/categories/{id}` retorna HTTP 200 con atributos íntegros. |
+| **CAT-008** | SDD 3.2 | Integración | Consulta de categoría inexistente. | `GET /v1/catalog/categories/{random_id}` retorna HTTP 404 Not Found. |
+| **CAT-009** | SRS 4.1 | Unitaria | Modificación de nombre y descripción de categoría. | `PUT /v1/catalog/categories/{id}` actualiza campos en BD; HTTP 200 OK. |
+| **CAT-010** | AC6-E3 | Unitaria | Restricción RBAC: Cliente intentando mutar catálogo. | `POST /v1/catalog/categories` con rol `cliente` retorna HTTP 403 Forbidden. |
+| **CAT-011** | OpenAPI | Contrato | Verificación de contrato REST de Catálogo con Pact. | 100% concordancia de esquema OpenAPI sin campos faltantes. |
+| **CAT-012** | AC2-E2 | Rendimiento | Tiempo de respuesta de consulta de catálogo. | Latencia p95 de `GET /v1/catalog/categories` inferior a 200 ms bajo 50 VU. |
+
+---
+
+### 7.3 Módulo: Actores y Perfiles de Técnicos (`quickpatch-actors`)
+* **Requisitos:** RF-02, RF-16, RF-19, RF-20 | SDD Sección 4.4
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **ACT-001** | RF-02 | Unitaria | Creación de perfil técnico asociado a usuario. | Registro en `technician_profiles` con `average_rating = 0.00`. |
+| **ACT-002** | RF-02 | Integración | Documento de identidad obligatorio para prestadores. | Creación con `document_id = null` es rechazada con HTTP 400. |
+| **ACT-003** | RF-19 | Integración | Aprobación de técnico por el Administrador. | `POST /v1/admin/technicians/{id}/approve` establece `verification_status = 'aprobado'`. |
+| **ACT-004** | RF-19 | Integración | Rechazo de técnico con motivo registrado. | `POST /v1/admin/technicians/{id}/reject` guarda `verification_reason` en BD. |
+| **ACT-005** | RF-20, AC9-E2 | Integración | Suspensión preventiva de técnico por baja calificación. | Técnico con rating < 3.0 pasa a `verification_status = 'suspendido'`. |
+| **ACT-006** | RF-20 | Unitaria | Reactivación de técnico suspendido tras revisión. | `POST /v1/admin/technicians/{id}/reactivate` retorna estado a `aprobado`. |
+| **ACT-007** | RF-16 | Integración | Vinculación de técnico a empresa proveedora. | Campo `provider_id` persistido correctamente en `technician_profiles`. |
+| **ACT-008** | RF-16 | Integración | Consulta de técnicos a cargo de un proveedor. | `GET /v1/provider/technicians` retorna únicamente el equipo asignado al proveedor. |
+| **ACT-009** | RF-04 | Integración | Aislamiento multi-tenant en gestión de técnicos. | Proveedor de Tenant A no visualiza técnicos registrados bajo Tenant B. |
+| **ACT-010** | SRS 3.0 | Unitaria | Consulta de perfil propio de técnico (`/v1/users/me`). | HTTP 200 OK retornando datos personales, especialidad y estado de verificación. |
+| **ACT-011** | SRS 3.0 | Unitaria | Actualización de datos de contacto de técnico. | `PATCH /v1/users/me` actualiza teléfono y dirección; HTTP 200 OK. |
+| **ACT-012** | ADR-006 | Evento | Emisión de evento al verificar técnico. | Aprobación genera evento `technician.verified` en tabla `outbox_events`. |
+| **ACT-013** | OpenAPI | Contrato | Validación de contrato REST de Actores. | Contrato verificado con Pact; tipos y status codes íntegros. |
+| **ACT-014** | RN-TP2 | Integración | Técnico no verificado excluido de disponibilidad. | Técnico en estado `pendiente` no puede cambiar disponibilidad a `disponible`. |
+
+---
+
+### 7.4 Módulo: Solicitudes de Servicio y Ciclo de Vida (`quickpatch-service-request`)
+* **Requisitos:** RF-07, RF-08, RF-10, RF-11, RF-14, RF-15, RF-34, RF-35, RF-36 | DD Sección 5.5, 7.4 | SAD: AC1-E2, AC1-E3, AC4-E1, AC5-E4, AC9-E1
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **SRQ-001** | RF-07, AC4-E1 | Unitaria | Creación de solicitud con datos válidos por un cliente. | HTTP 201 Created; solicitud en estado `buscando_tecnico`. |
+| **SRQ-002** | RF-07, AC4-E5 | Unitaria | Rechazo de solicitud con descripción o dirección vacía. | HTTP 400 Bad Request indicando campo específico faltante. |
+| **SRQ-003** | RF-07, AC5-E4 | Integración | **Transactional Outbox al registrar solicitud.** | En una sola transacción: fila en `service_requests` y evento `service-request.created` en `outbox_events`. |
+| **SRQ-004** | RF-08 | Integración | Creación de solicitud corporativa para sede de empresa. | Solicitud asociada correctamente al `tenant_id` corporativo de la empresa. |
+| **SRQ-005** | RF-11, AC1-E3 | Integración | Consulta de detalle de servicio por el técnico asignado. | Retorna dirección completa, categoría, descripción y coordenadas PostGIS. |
+| **SRQ-006** | RF-11, AC4-E9 | Unitaria | Seguimiento en tiempo real por el cliente creador. | HTTP 200 OK con estado actual, técnico asignado y fecha estimada. |
+| **SRQ-007** | RF-04 | Integración | Aislamiento multi-tenant en solicitudes de servicio. | Cliente de Tenant A recibe HTTP 404/403 al consultar solicitud de Tenant B. |
+| **SRQ-008** | RF-35, RN-Q1 | Unitaria | Emisión de cotización por técnico titular asignado. | `POST /v1/service-requests/{id}/quotes` crea cotización en `pendiente`; servicio pasa a `cotizado`. |
+| **SRQ-009** | RF-35, RN-Q1 | Unitaria | Rechazo de cotización emitida por técnico no asignado. | Técnico ajeno intentando cotizar recibe HTTP 403 Forbidden. |
+| **SRQ-010** | RF-35, RN-Q2 | Unitaria | Máximo una cotización en estado pendiente a la vez. | Intento de segunda cotización concurrente rechazado con HTTP 409 Conflict. |
+| **SRQ-011** | RF-35, RN-Q3 | Integración | Aceptación de cotización por el cliente titular. | Cotización pasa a `aceptada`; servicio pasa a `cotizacion_aceptada`; evento `service-request.quote-accepted` en Outbox. |
+| **SRQ-012** | RF-35, RN-Q3 | Integración | Rechazo de cotización por el cliente. | Cotización pasa a `rechazada`; servicio regresa a `asignado` para re-cotización. |
+| **SRQ-013** | RF-35, RN-Q7 | Integración | Cancelación automática al rechazar la tercera cotización. | Tercer rechazo cancela la solicitud con motivo `"cotizaciones rechazadas"`. |
+| **SRQ-014** | RF-34, RN-SR3 | Integración | Inicio de ejecución del servicio por el técnico. | `POST /v1/service-requests/{id}/start` cambia estado a `en_progreso`; `started_at` en UTC. |
+| **SRQ-015** | AC9-E1 | Unitaria | **Transición Inválida (Safety):** Iniciar servicio sin cotización aprobada. | Petición de inicio en estado `buscando_tecnico` rechazada con HTTP 409 Conflict. |
+| **SRQ-016** | RF-15, D7 | Integración | Carga obligatoria de evidencia fotográfica en MinIO. | `POST /v1/service-requests/{id}/evidence` sube archivo a MinIO y registra URL en `service_evidence`. |
+| **SRQ-017** | RF-15, AC9-E1 | Integración | **Transición Bloqueada (Safety):** Completar servicio sin fotos en MinIO. | `POST /v1/service-requests/{id}/complete` con 0 fotos registradas retorna HTTP 422 Unprocessable Entity. |
+| **SRQ-018** | RF-15 | Integración | Completado exitoso tras verificar evidencia en MinIO. | Estado pasa a `completado`; `completed_at` guardado; evento `service-request.completed` en Outbox. |
+| **SRQ-019** | RF-36, RN-SR7 | Unitaria | Cancelación de solicitud por cliente antes de iniciar trabajo. | Solicitud pasa a `cancelado`; evento `service-request.cancelled` en Outbox. |
+| **SRQ-020** | RF-36, RN-SR7 | Unitaria | Rechazo de cancelación unilateral cuando servicio está `en_progreso`. | Petición de cancelación rechazada con HTTP 409 Conflict tras inicio de labores. |
+| **SRQ-021** | RF-12, RN-R1 | Integración | Registro de calificación válida de 1 a 5 estrellas. | Calificación persistida en tabla `ratings`; promedio de técnico encolado para recálculo. |
+| **SRQ-022** | RF-12, RN-R1 | Unitaria | Rechazo de calificación con puntaje inválido (0 o 6). | HTTP 400 Bad Request por violación de restricción `CHECK (score BETWEEN 1 AND 5)`. |
+| **SRQ-023** | RF-12, RN-R2 | Integración | Rechazo de calificación duplicada para un mismo servicio. | Segunda calificación sobre la misma solicitud rechazada con HTTP 409 Conflict. |
+| **SRQ-024** | ADR-007, AC5-E5| Evento | Consumo idempotente de evento `payment.approved`. | Segundo evento con mismo `eventId` es ignorado; solicitud permanece en `pagado` sin doble efecto. |
+| **SRQ-025** | AC9-E3 | Evento | Detección de servicios en curso sin cierre por más de 4 horas. | Solicitud marcada con flag de revisión para el Administrador tras superar umbral. |
+
+---
+
+### 7.5 Módulo: Motor de Matching y Cobertura Geoespacial (`quickpatch-matching`)
+* **Requisitos:** RF-09, RF-10, RF-13 | RNF-05 | DD Sección 5.6, 5.7, 5.8 | SAD: AC1-E1, AC2-E1, AC2-E3, AC2-E4, AC9-E4
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **MAT-001** | RF-09, AC1-E1 | Integración | **Filtro de Especialidad Estricto (Functional Correctness).** | Candidato retornado tiene exactamente la especialidad requerida. 0% asignaciones erróneas. |
+| **MAT-002** | RF-09 | Integración | Exclusión de técnicos con verificación pendiente o suspendida. | Solo técnicos con `verification_status = 'aprobado'` son seleccionados. |
+| **MAT-003** | RF-13 | Integración | Actualización de estado de disponibilidad del técnico. | `PUT /v1/matching/availability` actualiza estado en `technician_availability`. |
+| **MAT-004** | RF-09 | Integración | Exclusión de técnicos con disponibilidad en `ocupado` o `no_disponible`. | Técnico ocupado es descartado del conjunto de candidatos elegibles. |
+| **MAT-005** | RF-13, PostGIS | Integración | Persistencia de zona de cobertura poligonal del técnico en Bogotá. | Polígono GeoJSON guardado como `geometry(Polygon, 4326)` en `coverage_zones`. |
+| **MAT-006** | RF-09, PostGIS | Integración | Evaluación de ubicación dentro de la zona de cobertura. | `ST_Contains(area, location)` evalúa `true`; técnico incluido en selección. |
+| **MAT-007** | RF-09, PostGIS | Integración | Exclusión de técnicos fuera del área geográfica del servicio. | Solicitud en Kennedy vs cobertura en Usaquén; técnico excluido. |
+| **MAT-008** | RF-09, PostGIS | Integración | Ordenamiento de candidatos por proximidad espacial esférica. | Candidato más cercano en distancia euclidiana/esférica seleccionado primero. |
+| **MAT-009** | RF-10 | Integración | Creación de intento de matching con vigencia de 3 minutos. | Fila en `matching_attempts` con `response = 'pendiente'` y `expires_at = now() + 3min`. |
+| **MAT-010** | RF-10 | Unitaria | Aceptación de oferta de servicio por el técnico titular. | `POST /v1/matching/offers/{id}/accept` pasa a `aceptada`; emite `matching.technician-assigned`. |
+| **MAT-011** | RF-10 | Unitaria | Rechazo de oferta de servicio por el técnico titular. | `POST /v1/matching/offers/{id}/reject` pasa a `rechazada`; algoritmo busca siguiente candidato. |
+| **MAT-012** | RF-10, RN-M3 | Integración | Expiración automática de oferta no respondida en 3 minutos. | Oferta vencida marcada como `expirado`; solicitud reasignada automáticamente al siguiente técnico. |
+| **MAT-013** | AC9-E4 | Integración | **Comportamiento Fail-Safe:** Sin técnicos disponibles en la zona. | Solicitud pasa a `en_espera`; emite `matching.no-technician-available`; 0 asignaciones inválidas. |
+| **MAT-014** | RN-M1 | Integración | Bloqueo transaccional de oferta para evitar doble asignación. | Actualización concurrente con bloqueo atómico; exactamente un matching gana la oferta. |
+| **MAT-015** | ADR-006 | Evento | Consumo reactivo de evento `service-request.created` desde Kafka. | Recepción de mensaje JSON dispara proceso de matching en menos de 500 ms. |
+| **MAT-016** | ADR-007 | Evento | Consumo de `service-request.completed` libera al técnico. | Técnico retorna automáticamente a estado `disponible` en `technician_availability`. |
+| **MAT-017** | ADR-007 | Evento | Consumo de `service-request.cancelled` libera al técnico ofertado. | Oferta en curso anulada; técnico marcado inmediatamente como `disponible`. |
+| **MAT-018** | AC2-E1 | Rendimiento | Latencia de búsqueda geoespacial bajo 50 consultas concurrentes. | Tiempo de respuesta `http_req_duration p(95) < 3000 ms`. |
+| **MAT-019** | AC2-E3 | Rendimiento | Tiempo extremo a extremo desde solicitud hasta notificación de oferta. | Lapso total cronometrado inferior a 7.0 segundos. |
+| **MAT-020** | AC2-E4 | Estrés | **Pico de carga sostenido de 150 solicitudes de matching concurrentes.** | 150 VU en k6 durante 5 minutos en VM3; 0 errores 5xx; sin caída de pod. |
+| **MAT-021** | AC2-E5, K10 | Capacidad | Límite de memoria de Matching Service en k3s (QoS Guaranteed). | Consumo de RAM no excede 1.0 GiB asignado; 0 desalojos por `OOMKilled`. |
+| **MAT-022** | AC3-E2 | Resiliencia | Convivencia en VM3: saturación de Ranking pod no degrada a Matching. | Matching mantiene latencia p95 < 3s ante pico de CPU provocado en otro pod. |
+
+---
+
+### 7.6 Módulo: Procesamiento de Pagos y Facturación (`quickpatch-payments`)
+* **Requisitos:** RF-22, RF-23, RF-24, RF-25 | RIE-01 | K2 (PCI-DSS), D4 | SAD: AC3-E1, AC6-E1, AC6-E6, AC9-E5
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **PAY-001** | K2, AC6-E1 | Integración | **Auditoría PCI-DSS en Esquema de Base de Datos.** | Columnas de PAN y CVV inexistentes en esquema PostgreSQL; solo existe `provider_token_ref`. |
+| **PAY-002** | K2, AC6-E1 | Integración | **Auditoría PCI-DSS en Logs Estructurados (Loki).** | Búsqueda regex de tarjetas y CVV en logs arroja exactamente 0 coincidencias. |
+| **PAY-003** | RF-22, ADR-009 | Unitaria | Procesamiento de cobro utilizando token de pasarela certificada. | `POST /v1/service-requests/{id}/payment` con token válido retorna HTTP 200 OK (`aprobado`). |
+| **PAY-004** | RF-24, D4 | Integración | Generación automática de factura a nombre de QUICKPATCH. | Fila en `invoices` creada con consecutivo único, monto exacto cotizado y emisor QUICKPATCH. |
+| **PAY-005** | RF-24 | Integración | Consulta y descarga de comprobante por el cliente pagador. | `GET /v1/payments/{id}/invoice` retorna HTTP 200 con metadata y URL de descarga PDF. |
+| **PAY-006** | RF-23 | Unitaria | Facturación corporativa a nombre de Empresa con NIT. | Factura generada incluye `payer_nit` y razón social corporativa. |
+| **PAY-007** | RF-25 | Integración | Consulta de ingresos percibidos por el técnico titular. | `GET /v1/payments/received` con JWT de técnico retorna historial de pagos propios. |
+| **PAY-008** | RF-04 | Integración | Aislamiento multi-tenant en historial financiero. | Técnico de Tenant A no visualiza montos facturados bajo Tenant B. |
+| **PAY-009** | AC9-E5 | Integración | **Comportamiento Fail-Safe:** Pasarela externa retorna timeout/500. | Pago pasa a `rechazado`; servicio permanece en `completado`; no se emite cobro doble ni factura. |
+| **PAY-010** | RN-P5 | Unitaria | Reintento exitoso tras pago previamente rechazado. | Segundo cobro procesado con nuevo `payment_id`; estado pasa a `aprobado`. |
+| **PAY-011** | RN-P2 | Integración | Prevención de doble cobro aprobado para una misma solicitud. | Peticiones de cobro concurrentes bloqueadas por índice único parcial sobre pagos aprobados. |
+| **PAY-012** | ADR-006 | Evento | Emisión de evento `payment.approved` a Kafka. | Tópico de eventos recibe mensaje con `serviceRequestId`, `amount`, `tenantId` y `correlationId`. |
+| **PAY-013** | ADR-006 | Evento | Emisión de evento `payment.rejected` a Kafka. | Tópico recibe notificación de rechazo para que Comunicación alerte al cliente. |
+| **PAY-014** | AC3-E1 | Contrato | Validación de formato de integración con pasarela externa. | 100% de peticiones cumplen el contrato OpenAPI exigido por el proveedor de pagos. |
+| **PAY-015** | AC6-E6 | Integración | Trazabilidad inmutable en `audit_logs` para cada cambio de pago. | Cada transición de estado en pagos queda registrada con marca de tiempo UTC y usuario autorizador. |
+| **PAY-016** | RN-P3 | Unitaria | Monto cobrado idéntico al valor de la cotización aprobada. | Discrepancia matemática entre `quotes.total_amount` y cobro enviado es igual a $0.00. |
+| **PAY-017** | AC6-E3 | Seguridad | Petición no autenticada intentando consultar comprobantes. | `GET /v1/payments/{id}/invoice` sin cabecera de autenticación retorna HTTP 401 Unauthorized. |
+| **PAY-018** | K2 | Seguridad | Prevención de registro de credenciales privadas de pasarela en consola. | Logs de contenedor libres de API Keys privadas o secretos de autenticación del proveedor. |
+
+---
+
+### 7.7 Módulo: Reputación y Calificaciones (`quickpatch-ranking`)
+* **Requisitos:** RF-12, RF-18, RF-20 | SAD: AC4-E6, AC9-E2
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **RNK-001** | RF-12 | Evento | Consumo asíncrono de evento de calificación desde Kafka. | Ranking consume evento y actualiza acumulador en menos de 1 segundo. |
+| **RNK-002** | RF-12 | Unitaria | Cálculo de promedio ponderado de calificaciones de técnico. | Promedio de notas [5, 4, 5, 2] calculado exactamente como `4.00`. |
+| **RNK-003** | AC9-E2 | Integración | **Detección de Riesgo (Safety):** Señalización de técnico con promedio < 3.0. | Técnico con promedio menor a 3.0 tras 5 servicios marcado con `requires_review = true`. |
+| **RNK-004** | AC9-E2 | Integración | Exclusión de alerta preventiva si el técnico tiene menos de 5 servicios. | Técnico novato con notas bajas no es señalado prematuramente (muestra no representativa). |
+| **RNK-005** | AC5-E5 | Integración | Idempotencia ante evento duplicado de calificación. | Segundo evento con mismo `eventId` es ignorado; promedio se recalcula una sola vez. |
+| **RNK-006** | AC5-E3 | Integración | Tolerancia a caída y recuperación de Ranking Service. | Ranking consume eventos encolados en Kafka tras reinicio sin pérdida de datos. |
+| **RNK-007** | RF-12 | Unitaria | Asignación de puntaje inicial tras primer servicio calificado. | Primera nota de 5 estrellas establece promedio en `5.00` y contador en 1. |
+| **RNK-008** | RF-04 | Integración | Aislamiento de reputación por tenant. | Evaluaciones de Tenant A no afectan el promedio de técnicos en Tenant B. |
+| **RNK-009** | EDA | Contrato | Validación de esquema JSON de evento de calificación. | Payload cumple 100% el esquema versionado en `quickpatch-contracts`. |
+| **RNK-010** | AC2-E2 | Rendimiento | Latencia de actualización de reputación tras calificación. | Promedio persistido en base de datos en menos de 500 ms tras consumo del evento. |
+| **RNK-011** | AC9-E2 | Unitaria | Cero suspensión automática desatendida. | Técnico señalado permanece activo hasta decisión manual del Administrador. |
+| **RNK-012** | RNF-04 | Observabilidad| Emisión de log estructurado ante detección de bajo promedio. | Log de advertencia con nivel `WARNING` emitido con ID de técnico y promedio para Loki. |
+
+---
+
+### 7.8 Módulo: Comunicación y Notificaciones (`quickpatch-communication`)
+* **Requisitos:** RIE-03 | SAD: AC2-E3, AC5-E5
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **COM-001** | RIE-03 | Evento | Notificación al cliente al registrar solicitud. | Consumo de `service-request.created` genera confirmación con número de radicado. |
+| **COM-002** | RIE-03 | Evento | Notificación al técnico asignado con datos de servicio. | Consumo de `matching.technician-assigned` envía mensaje con dirección y categoría. |
+| **COM-003** | RIE-03 | Evento | Notificación al cliente de cotización disponible. | Consumo de `service-request.quoted` envía mensaje con valor cotizado. |
+| **COM-004** | RIE-03 | Evento | Notificación al técnico de cotización aceptada. | Consumo de `service-request.quote-accepted` alerta autorización de inicio de labores. |
+| **COM-005** | RIE-03 | Evento | Notificación de servicio completado requiriendo pago. | Consumo de `service-request.completed` envía enlace de pago seguro al cliente. |
+| **COM-006** | RIE-03 | Evento | Notificación de pago exitoso con recibo adjunto. | Consumo de `payment.approved` genera mensaje con factura en formato PDF. |
+| **COM-007** | RIE-03 | Evento | Notificación de pago rechazado con opción de reintento. | Consumo de `payment.rejected` alerta motivo de rechazo y botón de nuevo intento. |
+| **COM-008** | AC5-E5 | Integración | **Idempotencia de Notificaciones:** Prevención de doble mensaje. | Evento duplicado genera exactamente 1 sola notificación; 0 mensajes duplicados. |
+| **COM-009** | RIE-03 | Resiliencia | Encolamiento en Dead Letter Queue (DLQ) ante falla de pasarela de correo. | Mensaje encolado en DLQ para reintento con backoff exponencial. |
+| **COM-010** | RIE-03 | Unitaria | Renderizado de plantilla con datos dinámicos. | Texto final libre de etiquetas sin procesar (`{name}`, etc.). |
+| **COM-011** | AC6-E1 | Seguridad | Ausencia de datos financieros en cuerpo de notificación. | Mensaje libre de números de tarjeta o códigos CVV. |
+| **COM-012** | RF-04 | Integración | Aislamiento multi-tenant en plantillas de notificación. | Logotipos y remitentes corresponden exclusivamente al tenant del servicio. |
+| **COM-013** | EDA | Contrato | Validación de sobre base en eventos consumidos. | Eventos cumplen campos obligatorios (`eventId`, `tenantId`, `correlationId`). |
+| **COM-014** | AC2-E3 | Rendimiento | Tiempo de encolamiento de notificación. | Mensaje puesto en cola de despacho en menos de 100 ms tras recepción del evento. |
+
+---
+
+### 7.9 Módulo: Gobernanza de Contratos (`quickpatch-contracts`)
+* **Requisitos:** ADR-012, ADR-013 | SDD Sección 6 | SAD Sección 4.3
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **CTR-001** | OpenAPI | Linter | Sintaxis formal de contratos OpenAPI 3.0. | `spectral lint openapi/**/*.yaml` retorna 0 errores sintácticos. |
+| **CTR-002** | OpenAPI | Linter | Convenciones REST en nombres de endpoints. | Endpoints en minúsculas y sustantivos en plural verificados al 100%. |
+| **CTR-003** | OpenAPI | Linter | Definición obligatoria de respuestas de error estándar. | Códigos 400, 401, 403, 404 y 500 documentados en cada operación. |
+| **CTR-004** | EDA | Schema | Validación sintáctica de esquemas JSON Schema de Kafka. | Validador AJV sobre `events/**/*.json` retorna 0 errores. |
+| **CTR-005** | EDA | Schema | Campos obligatorios en sobre base de eventos. | `eventId`, `eventType`, `tenantId`, `correlationId`, `timestamp`, `version` son `required`. |
+| **CTR-006** | SemVer | Contrato | Versionamiento semántico en tags de release. | Formato `vMAJOR.MINOR.PATCH` verificado; tags arbitrarios bloqueados. |
+| **CTR-007** | ADR-013 | Compatibilidad| Detección de Breaking Changes en especificaciones REST. | Modificaciones no rompen compatibilidad hacia atrás sin incremento `MAJOR`. |
+| **CTR-008** | ADR-013 | Compatibilidad| Detección de Breaking Changes en esquemas de eventos Kafka. | Nuevos campos en esquemas son declarados opcionales para consumidores antiguos. |
+| **CTR-009** | ADR-013 | CI/CD | Sincronización de submódulos en microservicios. | Submódulos `contracts/` de los 8 servicios apuntan a tags válidos y consistentes. |
+| **CTR-010** | ADR-012 | Gobernanza | Cero duplicación de contratos entre repositorios. | `quickpatch-contracts` es la única fuente de verdad contractual del sistema. |
+
+---
+
+### 7.10 Módulo: Infraestructura, Resiliencia y Servidores (`quickpatch-infrastructure`)
+* **Requisitos:** RNF-01, RNF-02, RNF-07, RNF-08 | K5, K7, K9, K10, K11 | INFRASTRUCTURE.md | SAD: AC5-E1, AC5-E2, AC7-E5, AC8-E5
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **INF-001** | K11 | Linter | Verificación de buenas prácticas e idempotencia en Ansible. | `ansible-lint ansible/*.yml` retorna 0 advertencias o errores. |
+| **INF-002** | AC8-E5 | Idempotencia | Re-ejecución limpia de playbooks en las 7 VMs. | Segunda ejecución consecutiva retorna exactamente `changed=0, failed=0`. |
+| **INF-003** | K9, INFRA 10.2| Red | Aislamiento de puertos por firewall UFW entre las 7 VMs. | Conexión externa directa a puerto 5432 (Postgres en VM4) rechazada por defecto. |
+| **INF-004** | INFRA 10.2 | Red | Conexión permitida exclusivamente en pares origen-destino. | Tráfico desde VM3 a VM4 puerto 5432 y VM6 puerto 9092 opera con éxito. |
+| **INF-005** | K9, RNF-02 | Seguridad | Conexión segura TLS autofirmada en API Gateway (VM1). | Petición a `https://quickpatch.internal` (puerto 443) negocia cifrado TLS exitoso. |
+| **INF-006** | INFRA 10.3 | Acceso | Bloqueo absoluto de acceso SSH por password en las 7 VMs. | Intento de sesión SSH solicitando password retorna `Permission denied (publickey)`. |
+| **INF-007** | INFRA 9.2 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de MinIO en VM7. |
+| **INF-008** | AC5-E1 | Recuperación | Restauración de base de datos desde dump de MinIO. | `pg_restore` restablece esquema y datos en menos de 30 minutos (ventana 12-24h). |
+| **INF-009** | INFRA 8.2 | Secretos | Cero secretos o credenciales en texto plano en Git. | Escaneo con `gitleaks` retorna 0 hallazgos de passwords o llaves privadas. |
+| **INF-010** | INFRA 5.2 | k3s | Rango CIDR de k3s configurado fuera de `10.43.0.0/16`. | `--service-cidr=10.44.0.0/16` verificado; 0 colisión de red con VMs del lab. |
+| **INF-011** | INFRA 7.1 | Observabilidad| Exportación de métricas de servidor vía `node_exporter`. | Prometheus en VM7 recolecta métricas de CPU, RAM y disco cada 15 segundos. |
+| **INF-012** | INFRA 7.1 | Observabilidad| Recolección de logs de contenedores con Promtail y Loki. | Logs de microservicios visibles en Grafana filtrados por etiqueta `{app="..."}`. |
+| **INF-013** | AC6-E8 | Seguridad DAST| Escaneo dinámico de vulnerabilidades web con OWASP ZAP. | ZAP Baseline Scan contra VM1 reporta 0 vulnerabilidades de severidad Alta o Crítica. |
+| **INF-014** | AC5-E4 | Resiliencia | Desconexión temporal de Kafka y persistencia en Outbox. | Eventos generados durante caída de Kafka se publican automáticamente tras reconexión. |
+| **INF-015** | INFRA 5.8 | Despliegue | Actualización con Rolling Update sin caída del backend. | Despliegue de nueva versión en k3s mantiene disponibilidad 100% durante el cambio. |
+
+---
+
+### 7.11 Módulo: Pruebas End-to-End de Sistema y Flujo Crítico (`quickpatch/tests/e2e`)
+* **Requisitos:** RF-27 (Flujo Crítico Completo) | SAD: AC1-E2, AC4-E1, AC4-E2, AC5-E6
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **E2E-001** | **RF-27, AC1-E2** | E2E Completo | **Flujo Crítico Completo: Solicitud → Matching → Cotización → Evidencia → Pago → Calificación.** | 100% de los 10 pasos completados con éxito en Playwright; base de datos consistente; factura emitida en Payments; técnico en estado disponible al terminar. |
+| **E2E-002** | RF-18, AC4-E2 | UI Web E2E | Carga y navegación en Dashboard Operativo en Angular. | Panel carga en menos de 1.5s; tabla de solicitudes activas y filtros operativos sin scroll roto. |
+| **E2E-003** | RF-19 | UI Web E2E | Aprobación de técnico postulante desde el panel web de Admin. | Admin aprueba técnico; notificación de éxito visible; técnico pasa a estado Aprobado. |
+| **E2E-004** | RF-21, AC8-E1 | UI Web E2E | Alta de nuevo tenant empresarial desde interfaz de Admin. | Tenant registrado y operativo en menos de 1 hora sin interrupción para tenants existentes. |
+| **E2E-005** | AC4-E1 | UI Web E2E | Creación asistida de solicitud en un máximo de 3 pasos. | Flujo completado en exactamente 3 pantallas (Categoría, Dirección, Confirmación) (RNF-11). |
+| **E2E-006** | AC4-E2 | UI Web E2E | Adaptabilidad en resoluciones Desktop, Tablet y Mobile. | 100% de pantallas utilizables sin scroll horizontal ni elementos cortados (RNF-12). |
+| **E2E-007** | RF-10 | E2E Alterno | Flujo alterno: Técnico rechaza solicitud y sistema reasigna. | Solicitud reasignada a segundo técnico elegible automáticamente; técnico 1 liberado. |
+| **E2E-008** | RF-35 | E2E Alterno | Flujo alterno: Cotización rechazada y nueva cotización aceptada. | Cliente rechaza 1ra cotización; técnico emite 2da cotización ajustada; cliente acepta. |
+| **E2E-009** | RF-22 | E2E Alterno | Flujo alterno: Pago rechazado y segundo cobro exitoso. | Pasarela simula tarjeta sin fondos; cliente reintenta con tarjeta válida; pago aprobado. |
+| **E2E-010** | RF-36 | E2E Cancel | Cancelación de solicitud por el cliente antes del inicio. | Solicitud pasa a `cancelado`; técnico asignado es liberado inmediatamente. |
+| **E2E-011** | AC6-E5 | E2E Trazabilidad| Reconstrucción completa de disputa mediante eventos. | Secuencia cronológica 100% íntegra con marca de tiempo UTC y fotos accesibles en MinIO. |
+| **E2E-012** | AC5-E6 | E2E Calidad | Tasa de respuestas 5xx durante ejecución repetitiva de E2E. | Tasa de errores 5xx del servidor inferior al 1% en 20 iteraciones del flujo crítico. |
+
+---
+
+### 7.12 Módulo: Pruebas de Rendimiento, Estrés y Capacidad (`quickpatch/tests/performance`)
+* **Requisitos:** RNF-05, RNF-06, RNF-07, RNF-08 | K10 | SAD: AC2-E1, AC2-E2, AC2-E3, AC2-E4, AC2-E5
+
+| ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
+|---|---|---|---|---|
+| **PRF-001** | AC2-E1 | Rendimiento | Búsqueda geoespacial cercana en hora pico con k6. | Latencia de respuesta `http_req_duration p(95) < 3000 ms` bajo 50 VU. |
+| **PRF-002** | AC2-E2 | Rendimiento | Consulta de historial paginado con acumulación de datos. | Carga de página de historial en menos de 1.5 segundos (p95 < 1500 ms). |
+| **PRF-003** | AC2-E3 | Rendimiento | Procesamiento en segundo plano desde solicitud hasta oferta. | Lapso total cronometrado inferior a 7.0 segundos para el 95% de las solicitudes. |
+| **PRF-004** | **AC2-E4** | Estrés Pico | **Pico de carga inesperado de 150 solicitudes de matching concurrentes.** | k6 inyecta 150 VU en VM3 durante 5 minutos; tasa de error 5xx = 0%; 0 caídas de pod. |
+| **PRF-005** | **AC2-E5, K10** | Capacidad | **Presupuesto de recursos en VM3 (4 vCPU / 11 GiB RAM).** | Consumo total de RAM en VM3 $\le 6.5\text{ GiB}$; 0 procesos terminados por `OOMKilled`. |
+| **PRF-006** | SAD 1.2 | Limpieza | Purga de datos del tenant de prueba tras test de carga. | Script elimina 100% de solicitudes creadas bajo `tenant_qa_loadtest` en VM4. |
+| **PRF-007** | RNF-06 | Resistencia | Operación sostenida bajo carga normal (50 VU) por 30 minutos. | Cero fugas progresivas de memoria; consumo de CPU estable por debajo del 75%. |
+| **PRF-008** | RNF-08 | Rollback | Mecanismo de Rollback Automático ante fallo de carga. | Pipeline detecta violación de umbral y ejecuta `kubectl rollout undo` en menos de 10s. |
+| **PRF-009** | INFRA 5.7 | Conexiones | Pool de conexiones a PostgreSQL (VM4) bajo 150 VU. | Pool opera dentro de los límites de `max_connections` sin errores `too many clients`. |
+| **PRF-010** | AC9-E6 | Alertas | Disparo de alertas en Grafana al superar el 85% de RAM. | Alerta activa generada en Grafana alertando al equipo antes de un desalojo. |
+
+---
+
+---
+
+## 8. Gestión de Datos de Prueba (Test Data)
+
+Para garantizar la repetibilidad, el aislamiento y la independencia de las pruebas, se define una política estricta de gestión y aprovisionamiento de datos de prueba (Test Data Management - TDM).
+
+### 8.1 Estrategia de Aprovisionamiento
+1. **Datos Sintéticos y Efímeros (Shift-Left):** En las compuertas 1 (Local) y 2 (CI), los datos se generan dinámicamente mediante semillas (*seeds*) administradas por **Testcontainers**. Al finalizar la suite, los contenedores y los datos se destruyen automáticamente.
+2. **Aislamiento Multi-Tenant Estricto (AC6-E2):** Ninguna prueba utiliza datos compartidos entre tenants. Se crean tenants dedicados exclusivamente para propósitos de prueba para evitar colisiones:
+   - `tenant_qa_automated`: Utilizado para pruebas de integración y flujos E2E de regresión.
+   - `tenant_qa_loadtest` (UUID: `a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee`): Utilizado exclusivamente para las pruebas de carga con k6 sobre la VM3/VM4.
+3. **Cumplimiento PCI-DSS en Datos de Prueba (K2, AC6-E1):** Está terminantemente prohibido el uso de datos reales de tarjetas de crédito o débito. Todas las pruebas de pagos utilizan **tokens opacos sintéticos** provistos por las librerías mock de pasarelas (ej. `tok_test_visa_approved_001`, `tok_test_declined_funds`).
+
+### 8.2 Perfiles y Conjuntos de Datos Semilla (Fixtures)
+
+| Tipo de Dato | Identificador / Clave | Atributos y Coordenadas de Prueba | Propósito de Validación |
+|---|---|---|---|
+| **Tenant Empresarial** | `tenant_empresa_alfa` | NIT: `900.123.456-1`, Razón Social: *Servicios Alfa S.A.S.*, Activo: `true` | Validar flujos B2B y aislamiento RLS |
+| **Tenant Carga** | `tenant_qa_loadtest` | UUID: `a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee`, Cuota: 10,000 req/min | Pruebas de estrés de 150 VU en VM3 |
+| **Cliente Hogar** | `usr_cliente_01` | Email: `qa.cliente1@quickpatch.local`, Rol: `CLIENTE`, Tel: `3001234567` | Solicitud y pago de servicios |
+| **Técnico Cerrajería** | `usr_tec_cerrajero_01` | Especialidad: Cerrajería, Coordenadas: Chapinero (`4.6486, -74.0630`), Estado: `disponible`, Rating: `4.8` | Matching por cercanía geográfica |
+| **Técnico Plomería** | `usr_tec_plomero_01` | Especialidad: Plomería, Coordenadas: Suba (`4.7431, -74.0886`), Estado: `disponible`, Rating: `4.2` | Filtrado por categoría y radio de cobertura |
+| **Técnico Ocupado** | `usr_tec_ocupado_01` | Especialidad: Cerrajería, Coordenadas: Usaquén (`4.6980, -74.0305`), Estado: `ocupado` | Verificación de exclusión de matching (RN-M6) |
+| **Ubicación Solicitud A** | Coordenadas: `4.6500, -74.0610` | Zona: Chapinero (Distancia a `usr_tec_cerrajero_01` < 300 metros) | Escenario de asignación inmediata |
+| **Ubicación Solicitud B** | Coordenadas: `4.8100, -74.0300` | Zona: Chía / Límite Norte (Fuera del radio de cobertura estándar) | Escenario `matching.no-technician-available` |
+| **Token Pasarela Aprobado** | `tok_wompi_test_approved_ok` | Franquicia: Visa simulada, Fondos: Ilimitados | Flujo exitoso de autorización y captura |
+| **Token Pasarela Rechazado** | `tok_wompi_test_declined_insufficient` | Error simulado: `INSUFFICIENT_FUNDS` | Manejo de rechazo de pago y reintento (RN-SR5) |
+| **Evidencia Fotográfica** | `mock_cerrojo_reparado.jpg` | Tamaño: 245 KB, MIME: `image/jpeg`, Hash: `e3b0c44298fc1c149afb...` | Subida a MinIO (VM7) antes de completar servicio |
+
+### 8.3 Ciclo de Vida y Limpieza de Datos (Tear-down)
+* **Post-Test Local/CI:** Las bases de datos en Testcontainers se eliminan al destruirse el contenedor Docker.
+* **Post-Carga en VM4 (PostgreSQL):** Al concluir las pruebas de k6 de 150 VU, se ejecuta automáticamente el procedimiento almacenado de purga:
+  ```sql
+  DELETE FROM service_requests WHERE tenant_id = 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee';
+  DELETE FROM matching_attempts WHERE tenant_id = 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee';
+  ```
+  Esto garantiza que la base de datos de PostgreSQL en la VM4 conserve espacio libre y no degrade las lecturas de los índices espaciales de PostGIS.
+
+---
+
+## 9. Gestión y Reporte de Defectos (Bug Report)
+
+Para asegurar la trazabilidad integral y el cierre efectivo de no conformidades detectadas por el equipo de QA o por los pipelines automatizados, se establece el siguiente protocolo de gestión de defectos.
+
+### 9.1 Ciclo de Vida del Defecto
+```
+[ Nuevo (Reportado por QA / CI) ]
+                │
+                ▼
+        [ En Triage / Asignado ]
+                │
+                ├──────────────────────────┐ (Rechazado / No reproducible / Duplicado)
+                ▼                          ▼
+       [ En Corrección (Dev) ]     [ Descartado ]
+                │
+                ▼
+  [ Listo para Verificación QA ]
+                │
+        ┌───────┴───────┐
+ (Fallo)│               │ (Éxito)
+        ▼               ▼
+   [ Reabierto ]   [ Cerrado ]
+```
+
+### 9.2 Matriz de Severidad, Prioridad y Tiempos de Respuesta (SLA)
+
+| Severidad | Descripción del Impacto | Ejemplos Críticos en QUICKPATCH | Prioridad Jira | SLA de Resolución |
+|---|---|---|:---:|:---:|
+| **S1 — Blocker** | Bloqueo total del sistema, violación de seguridad o pérdida de datos. | Violación de aislamiento multi-tenant (RLS); almacenamiento de PAN/CVV (PCI-DSS K2); pod de Matching en `OOMKilled` (VM3). | Muy Alta (P1) | < 4 horas |
+| **S2 — Crítico** | Falla en una función principal de negocio sin alternativa operativa. | Falla en algoritmo de matching (no asigna técnicos disponibles); bloqueo en webhook de pagos; imposibilidad de adjuntar evidencia fotográfica en MinIO. | Alta (P2) | < 24 horas |
+| **S3 — Mayor** | Falla funcional relevante, pero existe un camino alternativo temporal. | Error en cálculo de comisiones de la plataforma; desfase en tiempos de expiración de cotizaciones; inconsistencia en contrato REST menor. | Media (P3) | < 48 horas |
+| **S4 — Menor / Cosmético** | Defecto superficial que no impide la operación ni la integridad de los datos. | Desalineación tipográfica en Web Admin (VM2); falta de descripción en una etiqueta de Swagger; error ortográfico en mensaje de notificación. | Baja (P4) | Siguiente Sprint |
+
+### 9.3 Plantilla Estándar de Bug Report (Jira / Markdown)
+
+Todo defecto reportado debe utilizar la siguiente estructura obligatoria:
+
+```markdown
+### [BUG-ID] [Módulo] Resumen conciso del defecto
+
+* **ID del Caso de Prueba Relacionado:** (Ej. `PAY-003`, `MAT-005`, `AC6-E2`)
+* **Severidad:** S1 - Blocker / S2 - Crítico / S3 - Mayor / S4 - Menor
+* **Prioridad:** P1 / P2 / P3 / P4
+* **Repositorio Afectado:** (Ej. `quickpatch-matching`, `quickpatch-payments`, etc.)
+* **Ambiente de Detección:** Local / CI (GitHub Actions) / VM3 Staging / VM1 Gateway
+* **Versión / Commit Hash:** `git rev-parse --short HEAD`
+
+#### Descripción del Problema
+Explicación técnica detallada de la condición anómala detectada.
+
+#### Pasos para Reproducir
+1. Configurar el tenant en sesión `tenant_empresa_alfa`.
+2. Enviar solicitud `POST /v1/service-requests` con payload X.
+3. Observar la respuesta del microservicio.
+
+#### Resultado Esperado
+El sistema debe retornar HTTP 201 Created y publicar el evento `service-request.created` en el topic Kafka correspondiente con `eventId` único (ADR-007).
+
+#### Resultado Obtenido
+El sistema retornó HTTP 500 Internal Server Error o no generó el evento en la tabla `outbox_events`.
+
+#### Evidencias y Trazas
+* **Logs de Loki (VM7):** `trace_id`, error stack trace.
+* **Captura de Pantalla / Video:** (Adjuntar archivo si aplica para Angular o Flutter).
+* **Payload JSON:** Petición y respuesta capturadas.
+```
+
+---
+
+## 10. Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3)
+
+### 10.1 Resumen Ejecutivo del Incremento de Valor
+En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad (QA) ha completado el diseño, estructuración y verificación de la arquitectura de pruebas integral para la plataforma QUICKPATCH sobre los 13 repositorios y el entorno de las 7 Máquinas Virtuales.
+
+| Métrica de Aseguramiento de Calidad | Meta del Sprint 3 | Estado Alcanzado | Cumplimiento |
+|---|:---:|:---:|:---:|
+| **Casos de Prueba Diseñados y Formalizados** | $\ge 150$ casos | **182 casos de prueba** | 100% (Superado) |
+| **Requisitos Funcionales con Cobertura (RTM)** | 28 / 28 RFs | **28 RFs mapeados** | 100% |
+| **Escenarios de Calidad del SAD con Cobertura** | 26 / 26 ACs | **26 ACs mapeados** | 100% |
+| **Compuertas de Calidad Automatizadas Definidas** | 4 compuertas | **4 compuertas (Local, CI, Staging, Post-deploy)** | 100% |
+| **Validación de Restricciones Críticas (Killers)** | K2, K5, K9, K10 | **Verificados (PCI-DSS, $0 costo, Red 10.43, Techo 6.5 GiB)** | 100% |
+| **Mecanismo de Bloqueo Local Pre-Push** | 13 repositorios | **Script unificado de Git Hooks listo para distribución** | 100% |
+
+### 10.2 Estado de los Componentes y Servicios Evaluados
+1. **Contratos e Interoperabilidad (`quickpatch-contracts`):** 
+   - Contratos OpenAPI 3.0 consolidados para los 8 servicios.
+   - 9 esquemas de eventos Kafka definidos con validación obligatoria de `eventId`, `tenantId` y `occurredAt`.
+2. **Seguridad y Aislamiento:**
+   - Pruebas de sanitización de logs y payloads certifican 0% de campos sensibles de tarjeta de crédito (K2).
+   - Políticas de Row-Level Security (RLS) verificadas para el 100% de tablas compartidas en PostgreSQL (VM4).
+3. **Rendimiento y Capacidad de Infraestructura:**
+   - La prueba de estrés post-despliegue con k6 (150 VU en Matching) cuenta con monitoreo configurado en Prometheus/Grafana (VM7).
+   - Se configuró el disparador de rollback automático (`kubectl rollout undo`) en caso de exceder 6.5 GiB de memoria en la VM3.
+
+### 10.3 Evidencias Preparadas para la Presentación y Sustentación
+1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (V4) y escenarios del SAD (V3) hasta las aserciones de código de prueba.
+2. **Defensa de la Topología en las 7 VMs:** Justificación técnica demostrando cómo se protege la VM3 (k3s) evitando sobrecargarla con servidores de pruebas pesados.
+3. **Cuadro Comparativo de Herramientas:** Sustentación académica y técnica de la selección de Playwright, k6, Testcontainers y Spectral frente a herramientas legadas.
+
+---
+
+## 11. Control de Versiones del Documento
+
+| Versión | Fecha | Autor | Descripción del Cambio |
+|---|---|---|---|
+| **1.0** | 3 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Versión inicial formal para la entrega del Sprint 3 (Semana 10). Incluye cobertura completa del estándar de documentación de pruebas: Plan de Pruebas (Test Plan), Estrategia de Pruebas (Test Strategy), Escenarios de Calidad (Test Scenarios), Matriz de Trazabilidad (RTM), Catálogo de 182 Casos de Prueba (Test Cases), Gestión de Datos de Prueba (Test Data), Gestión de Defectos (Bug Report), e Informe de Ejecución del Incremento (Test Execution Report). |
+
