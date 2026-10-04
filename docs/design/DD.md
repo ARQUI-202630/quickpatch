@@ -196,7 +196,7 @@ flowchart TB
         processed_events["processed_events"]:::entity
     end
 
-    minio[("MinIO · VM7<br/>archivos de evidencia")]:::store
+    garage[("Garage · VM7<br/>archivos de evidencia")]:::store
 
     users -.->|"client_id"| service_requests
     technician_profiles -.->|"technician_id"| service_requests
@@ -212,7 +212,7 @@ flowchart TB
     technician_profiles -.->|"technician_id"| payments
     users -.->|"authorized_by_user_id"| payments
     users -.->|"actor_user_id"| audit_logs
-    service_evidence -.->|"file_url"| minio
+    service_evidence -.->|"file_url"| garage
 
     style IDN fill:#E3ECF8,stroke:#00468C,stroke-width:2px
     style CAT fill:#FDF6DD,stroke:#9A7B00,stroke-width:2px
@@ -694,7 +694,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 **Servicio propietario:** ServiceRequest Service.
 
-**Propósito:** Registra la evidencia fotográfica que el Técnico adjunta obligatoriamente al completar una solicitud de servicio. El archivo en sí se almacena en MinIO (VM7); esta tabla guarda la referencia.
+**Propósito:** Registra la evidencia fotográfica que el Técnico adjunta obligatoriamente al completar una solicitud de servicio. El archivo en sí se almacena en Garage (VM7); esta tabla guarda la referencia.
 
 **Requisitos relacionados:** RF-15; driver D7 del SAD.
 
@@ -704,7 +704,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 |tenant_id|UUID|No|Ref. lógica|Tenant relacionado.|
 |service_request_id|UUID|No|FK local|Solicitud a la que pertenece la evidencia.|
 |technician_id|UUID|No|Ref. lógica|Técnico que adjuntó la evidencia.|
-|file_url|VARCHAR(500)|No|—|Referencia al objeto almacenado en MinIO.|
+|file_url|VARCHAR(500)|No|—|Referencia al objeto almacenado en Garage.|
 |uploaded_at|TIMESTAMPTZ|No|—|Fecha y hora en que se subió la evidencia.|
 
 **Reglas de negocio:** RN-E1 a RN-E3 (sección 7.7).
@@ -1034,7 +1034,7 @@ Derivadas de RF-10 y del driver D1 del SAD.
 
 - **RN-E1:** una solicitud requiere al menos un registro en esta tabla antes de poder pasar al estado `completado`.
 - **RN-E2:** solo el técnico asignado a la solicitud puede subir evidencia para esa solicitud.
-- **RN-E3:** el archivo referenciado se almacena en MinIO (VM7), no en la base de datos.
+- **RN-E3:** el archivo referenciado se almacena en Garage (VM7), no en la base de datos.
 
 ### 7.8 Reglas de `payments`
 
@@ -1089,7 +1089,7 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 |RN-R1|`CHECK (score BETWEEN 1 AND 5)`.|
 |RN-R2|Índice único sobre `ratings.service_request_id`.|
 |RN-E1|Igual que RN-SR3.|
-|RN-E3|`file_url` guarda solo la referencia al objeto en MinIO.|
+|RN-E3|`file_url` guarda solo la referencia al objeto en Garage.|
 |RN-P1|Tokenización en el cliente contra la pasarela (ADR-009).|
 |RN-P2|Índice único parcial sobre `service_request_id` con `status = 'aprobado'`.|
 |RN-P3|ServiceRequest incluye en `data` del evento el total de la cotización aceptada y el técnico asignado.|
@@ -1215,7 +1215,7 @@ sequenceDiagram
     T->>SR: POST /v1/service-requests/{id}/start
     Note over SR: en_progreso
     T->>SR: POST /v1/service-requests/{id}/evidence
-    Note over SR: INSERT service_evidence<br/>(archivo en MinIO, VM7)
+    Note over SR: INSERT service_evidence<br/>(archivo en Garage, VM7)
     T->>SR: POST /v1/service-requests/{id}/complete
     Note over SR: valida al menos una evidencia · completado
     SR-)K: service-request.completed

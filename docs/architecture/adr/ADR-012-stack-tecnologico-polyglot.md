@@ -34,7 +34,7 @@ Se adopta el siguiente stack vigente:
 | Acceso a datos .NET | EF Core + Npgsql |
 | Acceso a datos Matching | Spring Data/JPA + PostgreSQL/PostGIS |
 | Cache | Redis |
-| Evidencias/objetos | MinIO |
+| Evidencias/objetos | Garage |
 | Gateway | Nginx |
 | Orquestación de microservicios | k3s |
 | Aprovisionamiento | Ansible |
@@ -63,7 +63,7 @@ Los contratos REST se versionan en `contracts/openapi/` del repo `quickpatch-con
 
 Los contratos de eventos se versionan en `contracts/events/` del repo `quickpatch-contracts`.
 
-> Actualización: desde el ADR-013 los contratos viven en su propio repositorio (`quickpatch-contracts`), en lugar de `docs/contracts/`. La decisión de este ADR no cambia.
+> Actualización: desde el ADR-013 los contratos viven en su propio repositorio (`quickpatch-contracts`), reemplazando la ubicación anterior dentro del repositorio principal. La decisión de este ADR no cambia.
 
 La interoperabilidad entre .NET y Java depende de contratos, no de compartir código de dominio.
 

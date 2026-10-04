@@ -199,7 +199,7 @@ QA replica la forma de producción en una sola VM: k3s con la misma versión, Po
 
 ### 4.2 Requisitos del ambiente local
 
-El Documento de Pruebas fija .NET 8, Java 17, Node 20 (Angular 17) y Flutter estable, y el pipeline usa esas versiones por defecto (sección 6.1). _Pendiente de confirmar con el equipo: Angular 17 ya no tiene soporte y .NET 8 lo pierde en noviembre de 2026._ Cada toolchain debe quedar fijado en su repositorio con un archivo reproducible (`global.json`, wrapper de Gradle, `.nvmrc`, `.fvmrc` o equivalente).
+El toolchain está fijado por `docs/governance/TOOLCHAIN.md`: .NET SDK 10.0.401, Java 25 LTS + Spring Boot 4.1.1, Node.js 24.21.0 LTS + Angular 22.1.x y Flutter 3.47.5 + Dart 3.13.4. Cada repositorio mantiene además su pin reproducible (`global.json`, `.java-version`/wrapper, `.nvmrc`, `.flutter-version` y lockfiles según corresponda).
 
 ---
 
