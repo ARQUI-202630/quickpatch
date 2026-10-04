@@ -46,7 +46,7 @@ Para cualquier diagrama nuevo o modificado se debe verificar, según corresponda
 
 ## 3.1 Vista Lógica del Sistema
 
-La arquitectura lógica del backend se organiza por dominios y servicios. Los clientes acceden a través del API Gateway; los microservicios contienen capacidades de negocio separadas; Kafka gestiona la integración asíncrona; y PostgreSQL/PostGIS, Redis y MinIO soportan persistencia, cache y evidencias.
+La arquitectura lógica del backend se organiza por dominios y servicios. Los clientes acceden a través del API Gateway; los microservicios contienen capacidades de negocio separadas; Kafka gestiona la integración asíncrona; y PostgreSQL/PostGIS, Redis y Garage soportan persistencia, cache y evidencias.
 
 ### 3.1.1 Vista lógica general por capas
 
@@ -482,7 +482,7 @@ La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máqui
 | **Motor de Base de Datos** | PostgreSQL 15 + PostGIS | VM4 (`10.43.98.209`) | Almacenamiento relacional transaccional y consultas geoespaciales. |
 | **Servicio de Cache y Colas Cortas** | Redis | VM5 (`10.43.98.29`) | Cache en memoria y colas temporales de baja latencia. |
 | **Bus de Eventos (Broker)** | Apache Kafka + Kafka UI | VM6 (`10.43.99.12`) | Mensajería distribuida asíncrona entre microservicios. |
-| **Storage de Evidencias Fotográficas** | MinIO (S3-compatible) | VM7 (`10.43.99.8`) | Repositorio de objetos para evidencias fotográficas de servicios (D7). |
+| **Storage de Evidencias Fotográficas** | Garage (S3-compatible) | VM7 (`10.43.99.8`) | Repositorio de objetos para evidencias fotográficas de servicios (D7). |
 | **Stack de Observabilidad** | Prometheus + Loki + Grafana | VM7 (`10.43.99.8`) | Agregación de métricas de sistema, recolección de logs estructurados y dashboards. |
 
 ---
@@ -572,7 +572,7 @@ sequenceDiagram
 
 Este flujo describe el cierre operativo del servicio y el cobro bajo el estándar PCI-DSS y el modelo Merchant of Record (RF-15, RF-22, RF-24, D4, D7, K2, ADR-009, AC3-E1, AC6-E1, AC9-E1, AC9-E5):
 
-1. **Inicio y Evidencia:** El técnico ejecuta el servicio (`POST /v1/service-requests/{id}/start`, estado `en_progreso`). Antes de completar, sube la foto obligatoria vía `POST /v1/service-requests/{id}/evidence`; el archivo se guarda en MinIO (VM7) y la referencia URL se persiste en `service_evidence` (D7).
+1. **Inicio y Evidencia:** El técnico ejecuta el servicio (`POST /v1/service-requests/{id}/start`, estado `en_progreso`). Antes de completar, sube la foto obligatoria vía `POST /v1/service-requests/{id}/evidence`; el archivo se guarda en Garage (VM7) y la referencia URL se persiste en `service_evidence` (D7).
 2. **Cierre Técnico:** El técnico solicita completar el servicio (`POST /v1/service-requests/{id}/complete`). `ServiceRequest Service` valida como precondición obligatoria que exista al menos una evidencia en `service_evidence` (AC9-E1). Si se cumple, el estado cambia a `completado` y se publica `service-request.completed`.
 3. **Tokenización de Tarjeta (PCI-DSS):** El cliente ingresa los datos de su tarjeta directamente en el formulario o SDK provisto por la pasarela de pagos (PSP - Wompi). Ni el PAN ni el CVV pasan por el backend propio (K2, ADR-009, AC6-E1). El cliente recibe un token temporal (`provider_token_ref`).
 4. **Solicitud de Cobro:** El cliente confirma el pago en la app enviando `POST /v1/service-requests/{id}/payment` con el token.
@@ -588,7 +588,7 @@ sequenceDiagram
     autonumber
     actor T as Técnico
     participant GW as API Gateway
-    participant S3 as MinIO (Almacenamiento)
+    participant S3 as Garage (Almacenamiento)
     participant SR as ServiceRequest Service
     actor C as Cliente
     participant PSP as Wompi (PSP)
@@ -1184,7 +1184,7 @@ flowchart TB
             VM6["Mensajería<br/>Apache Kafka + Kafka UI"]
         end
         subgraph VM7N["VM7 · 10.43.99.8"]
-            VM7["Storage y observabilidad<br/>MinIO · Prometheus · Loki · Grafana"]
+            VM7["Storage y observabilidad<br/>Garage · Prometheus · Loki · Grafana"]
         end
 
         VM1 -->|"3000"| VM2
@@ -1272,7 +1272,7 @@ flowchart TB
         VM4N["VM4<br/>PostgreSQL"]
         VM5N["VM5<br/>Redis"]
         VM6N["VM6<br/>Kafka"]
-        VM7N["VM7<br/>MinIO / Obs"]
+        VM7N["VM7<br/>Garage / Obs"]
     end
 
     CLIENTE -->|"443 HTTPS"| NGINX

@@ -41,7 +41,7 @@ El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de ase
    - **Cumplimiento PCI-DSS (K2, AC6-E1):** Cero almacenamiento de números de tarjeta (PAN) o códigos de seguridad (CVV) en bases de datos o logs.
    - **Capacidad de Matching bajo Carga (AC2-E4, AC2-E5):** Soporte de 150 solicitudes concurrentes en la VM3 (k3s) con consumo de memoria $\le 6.5\text{ GiB}$ y 0 desalojos por `OOMKilled`.
    - **Resiliencia e Idempotencia (AC5-E4, AC5-E5):** Cero pérdida de eventos ante caída de Kafka (vía Transactional Outbox) y cero efectos duplicados.
-   - **Seguridad en el Ciclo del Servicio (AC9-E1, D7):** Bloqueo estricto de transiciones de estado inválidas y exigencia de evidencia fotográfica obligatoria en MinIO antes de completar cualquier trabajo.
+   - **Seguridad en el Ciclo del Servicio (AC9-E1, D7):** Bloqueo estricto de transiciones de estado inválidas y exigencia de evidencia fotográfica obligatoria en Garage antes de completar cualquier trabajo.
 
 ---
 
@@ -74,17 +74,17 @@ quickpatch/
 |---|---|---|---|
 | `quickpatch` (Principal) | Orquestación / Markdown | Pruebas de Sistema Completo: E2E, Carga y Seguridad DAST | Playwright, k6, OWASP ZAP, Newman |
 | `quickpatch-contracts` | OpenAPI / JSON Schema | Linting de contratos REST y esquemas de eventos | Spectral CLI, AJV Validator |
-| `quickpatch-web` | Angular 17 / TypeScript | Pruebas unitarias de componentes y servicios web | Jasmine, Karma |
-| `quickpatch-mobile` | Flutter 3 / Dart | Pruebas unitarias de lógica y widgets móviles | Flutter Test, Patrol |
-| `quickpatch-infrastructure`| Ansible / k3s | Verificación de sintaxis de playbooks y manifiestos k3s | Ansible Lint, Kubeval |
-| `quickpatch-identity` | ASP.NET Core 8 / C# | Unitarias y de integración RLS multi-tenant | xUnit, Moq, Testcontainers (Npgsql) |
-| `quickpatch-actors` | ASP.NET Core 8 / C# | Unitarias de perfiles de técnicos y proveedores | xUnit, Testcontainers |
-| `quickpatch-catalog` | ASP.NET Core 8 / C# | Unitarias de taxonomía y categorías de servicio | xUnit, Testcontainers |
-| `quickpatch-service-request`| ASP.NET Core 8 / C# | Unitarias de máquina de estados, cotizaciones y fotos | xUnit, Testcontainers |
-| `quickpatch-matching` | Java 17 / Spring Boot 3 | Unitarias de asignación y geoespaciales con PostGIS | JUnit 5, Mockito, Testcontainers (PostGIS) |
-| `quickpatch-ranking` | ASP.NET Core 8 / C# | Unitarias de promedios de calificación e idempotencia | xUnit, Testcontainers (Kafka) |
-| `quickpatch-payments` | ASP.NET Core 8 / C# | Unitarias de tokenización PCI-DSS y auditoría | xUnit, Testcontainers, WireMock |
-| `quickpatch-communication`| ASP.NET Core 8 / C# | Unitarias de consumo de Kafka y notificaciones | xUnit, Testcontainers (Kafka) |
+| `quickpatch-web` | Angular 22.1.x / TypeScript 6.0.x | Pruebas unitarias de componentes y servicios web | Vitest |
+| `quickpatch-mobile` | Flutter 3.47.5 / Dart 3.13.4 | Pruebas unitarias de lógica y widgets móviles | Flutter Test, Patrol |
+| `quickpatch-infrastructure`| Ansible / k3s | Verificación de sintaxis de playbooks y manifiestos k3s | Ansible Lint, Kubeconform |
+| `quickpatch-identity` | ASP.NET Core 10 / C# | Unitarias y de integración RLS multi-tenant | xUnit, Moq, Testcontainers (Npgsql) |
+| `quickpatch-actors` | ASP.NET Core 10 / C# | Unitarias de perfiles de técnicos y proveedores | xUnit, Testcontainers |
+| `quickpatch-catalog` | ASP.NET Core 10 / C# | Unitarias de taxonomía y categorías de servicio | xUnit, Testcontainers |
+| `quickpatch-service-request`| ASP.NET Core 10 / C# | Unitarias de máquina de estados, cotizaciones y fotos | xUnit, Testcontainers |
+| `quickpatch-matching` | Java 25 / Spring Boot 4.1.1 | Unitarias de asignación y geoespaciales con PostGIS | JUnit 5, Mockito, Testcontainers (PostGIS) |
+| `quickpatch-ranking` | ASP.NET Core 10 / C# | Unitarias de promedios de calificación e idempotencia | xUnit, Testcontainers (Kafka) |
+| `quickpatch-payments` | ASP.NET Core 10 / C# | Unitarias de tokenización PCI-DSS y auditoría | xUnit, Testcontainers, WireMock |
+| `quickpatch-communication`| ASP.NET Core 10 / C# | Unitarias de consumo de Kafka y notificaciones | xUnit, Testcontainers (Kafka) |
 
 ---
 
@@ -109,12 +109,14 @@ El flujo de promoción asegura que ningún código defectuoso llegue a las máqu
        │ • Playwright E2E + Colecciones Newman (qa.quickpatch.internal)
        │ • OWASP ZAP (DAST) contra Gateway de QA
        │ • Escáner Regex PCI-DSS en logs de QA en Loki (0 PAN / 0 CVV)
-       │ • Prueba de carga con k6 (150 VU en QA sin degradar producción)
+       │ • k6 normal: 50 VU con p95 < 3 s
+       │ • k6 estrés: 150 VU con degradación controlada y sin caída
        ▼ 
 [Compuerta 3: Despliegue en Producción (VM3 k3s)]
        │ • Rolling Update en VM3 mediante Runner en VM1
        │ • Verificación de estado de salud (kubectl rollout status)
-       │ • Monitoreo en VM7 (Prometheus): RAM <= 6.5 GiB, latencia < 3s
+       │ • Smoke + kubectl rollout status
+       │ • El presupuesto de RAM de VM3 se valida mediante medición específica sobre VM3
        ├───(Pasa)───> [Versión Operativa y Tráfico Habilitado]
        └───(Falla)──> [kubectl rollout undo automático inmediato]
 ```
@@ -144,7 +146,7 @@ Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.
 | **VM4** | `10.43.98.209` | PostgreSQL 16 + PostGIS (puerto 5432) | Base de datos de Producción. Ejecuta las consultas espaciales (`ST_DWithin`) y valida las políticas RLS. (QA en VM2 utiliza su propia base de datos aislada en Docker Compose). |
 | **VM5** | `10.43.98.29` | Redis 7 (puerto 6379) | Valida el almacenamiento en cache de cotizaciones temporales y coordinación de tareas programadas (RN-Q6). |
 | **VM6** | `10.43.99.12` | Apache Kafka (puerto 9092) | Valida la publicación confiable vía Outbox, la tolerancia a desconexión del broker y el consumo idempotente de eventos por `eventId`. |
-| **VM7** | `10.43.99.8` | MinIO + Prometheus + Loki + Grafana | **Árbitro de observabilidad.** MinIO almacena las fotos obligatorias de evidencia. Prometheus evalúa en tiempo real que VM3 no supere los 6.5 GiB de RAM. Grafana expone el Dashboard de Calidad del proyecto. |
+| **VM7** | `10.43.99.8` | Garage + Prometheus + Loki + Grafana | **Árbitro de observabilidad.** Garage almacena las fotos obligatorias de evidencia. Prometheus evalúa en tiempo real que VM3 no supere los 6.5 GiB de RAM. Grafana expone el Dashboard de Calidad del proyecto. |
 
 ---
 
@@ -225,7 +227,7 @@ El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organiza
 | **RF-12** | Calificación del servicio (1 a 5) al completar | ServiceRequest / Ranking | `SRQ-021`, `SRQ-022`, `SRQ-023`, `RNK-001`, `RNK-002` |
 | **RF-13** | Configuración de disponibilidad y zona de cobertura del Técnico | Matching / Actors | `MAT-003`, `MAT-005` |
 | **RF-14** | Consulta de detalle de solicitud asignada por el Técnico | ServiceRequest | `SRQ-005` |
-| **RF-15** | Cierre de solicitud con evidencia fotográfica obligatoria en MinIO | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
+| **RF-15** | Cierre de solicitud con evidencia fotográfica obligatoria en Garage | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
 | **RF-16** | Administración de equipo de técnicos por Proveedor | Actors | `ACT-007`, `ACT-008`, `ACT-009` |
 | **RF-17** | Historial de solicitudes atendidas por el Técnico | ServiceRequest | `SRQ-026` |
 | **RF-18** | Dashboard operativo con panel de solicitudes activas para Admin | Web / ServiceRequest | `E2E-002` |
@@ -353,9 +355,9 @@ El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **SRQ-013** | RF-35, RN-Q7 | Integración | Cancelación automática al rechazar la tercera cotización. | Tercer rechazo cancela la solicitud con motivo `"cotizaciones rechazadas"`. |
 | **SRQ-014** | RN-SR3 | Integración | Inicio de ejecución del servicio por el técnico. | `POST /v1/service-requests/{id}/start` cambia estado a `en_progreso`; `started_at` en UTC. |
 | **SRQ-015** | AC9-E1 | Unitaria | **Transición Inválida (Safety):** Iniciar servicio sin cotización aprobada. | Petición de inicio en estado `buscando_tecnico` rechazada con HTTP 409 Conflict. |
-| **SRQ-016** | RF-15, D7 | Integración | Carga obligatoria de evidencia fotográfica en MinIO. | `POST /v1/service-requests/{id}/evidence` sube archivo a MinIO y registra URL en `service_evidence`. |
-| **SRQ-017** | RF-15, AC9-E1 | Integración | **Transición Bloqueada (Safety):** Completar servicio sin fotos en MinIO. | `POST /v1/service-requests/{id}/complete` con 0 fotos registradas retorna HTTP 422 Unprocessable Entity. |
-| **SRQ-018** | RF-15 | Integración | Completado exitoso tras verificar evidencia en MinIO. | Estado pasa a `completado`; `completed_at` guardado; evento `service-request.completed` en Outbox. |
+| **SRQ-016** | RF-15, D7 | Integración | Carga obligatoria de evidencia fotográfica en Garage. | `POST /v1/service-requests/{id}/evidence` sube archivo a Garage y registra URL en `service_evidence`. |
+| **SRQ-017** | RF-15, AC9-E1 | Integración | **Transición Bloqueada (Safety):** Completar servicio sin fotos en Garage. | `POST /v1/service-requests/{id}/complete` con 0 fotos registradas retorna HTTP 422 Unprocessable Entity. |
+| **SRQ-018** | RF-15 | Integración | Completado exitoso tras verificar evidencia en Garage. | Estado pasa a `completado`; `completed_at` guardado; evento `service-request.completed` en Outbox. |
 | **SRQ-019** | RF-36, RN-SR7 | Unitaria | Cancelación de solicitud por cliente antes de iniciar trabajo. | Solicitud pasa a `cancelado`; evento `service-request.cancelled` en Outbox. |
 | **SRQ-020** | RF-36, RN-SR7 | Unitaria | Rechazo de cancelación unilateral cuando servicio está `en_progreso`. | Petición de cancelación rechazada con HTTP 409 Conflict tras inicio de labores. |
 | **SRQ-021** | RF-12, RN-R1 | Integración | Registro de calificación válida de 1 a 5 estrellas. | Calificación persistida en tabla `ratings`; promedio de técnico encolado para recálculo. |
@@ -494,7 +496,7 @@ El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **INF-004** | INFRA 10.2 | Red | Conexión permitida exclusivamente en pares origen-destino. | Tráfico desde VM3 a VM4 puerto 5432 y VM6 puerto 9092 opera con éxito. |
 | **INF-005** | K9, RNF-02 | Seguridad | Conexión segura TLS autofirmada en API Gateway (VM1). | Petición a `https://quickpatch.internal` (puerto 443) negocia cifrado TLS exitoso. |
 | **INF-006** | INFRA 10.3 | Acceso | Bloqueo de acceso SSH directo como root en las 7 VMs. | Intento de conexión SSH como usuario root (`ssh root@10.43.x.x`) es rechazado en las 7 VMs (`PermitRootLogin no`); acceso restringido a usuarios estándar no privilegiados. |
-| **INF-007** | INFRA 9.2 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de MinIO en VM7. |
+| **INF-007** | INFRA 9.2 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de Garage en VM7. |
 | **INF-008** | AC5-E1 | Recuperación | Restauración de base de datos desde dump de backup en VM7. | `pg_restore` restablece esquema y datos de manera íntegra dentro de la ventana de recuperación RTO. |
 | **INF-009** | INFRA 8.2 | Secretos | Cero secretos o credenciales en texto plano en Git. | Escaneo con `gitleaks` retorna 0 hallazgos de passwords o llaves privadas. |
 | **INF-010** | INFRA 5.2 | k3s | Rango CIDR de k3s configurado fuera de `10.43.0.0/16`. | `--service-cidr=10.44.0.0/16` verificado; 0 colisión de red con VMs del lab. |
@@ -522,7 +524,7 @@ El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **E2E-008** | RF-35 | E2E Alterno | Flujo alterno: Cotización rechazada y nueva cotización aceptada. | Cliente rechaza 1ra cotización; técnico emite 2da cotización ajustada; cliente acepta. |
 | **E2E-009** | RF-22 | E2E Alterno | Flujo alterno: Pago rechazado y segundo cobro exitoso. | Pasarela simula tarjeta sin fondos; cliente reintenta con tarjeta válida; pago aprobado. |
 | **E2E-010** | RF-36 | E2E Cancel | Cancelación de solicitud por el cliente antes del inicio. | Solicitud pasa a `cancelado`; técnico asignado es liberado inmediatamente. |
-| **E2E-011** | AC6-E5 | E2E Trazabilidad| Reconstrucción completa de disputa mediante eventos. | Secuencia cronológica 100% íntegra con marca de tiempo UTC y fotos accesibles en MinIO. |
+| **E2E-011** | AC6-E5 | E2E Trazabilidad| Reconstrucción completa de disputa mediante eventos. | Secuencia cronológica 100% íntegra con marca de tiempo UTC y fotos accesibles en Garage. |
 | **E2E-012** | AC5-E6 | E2E Calidad | Tasa de respuestas 5xx durante ejecución repetitiva de E2E. | Tasa de errores 5xx del servidor inferior al 1% en 20 iteraciones del flujo crítico. |
 
 ---
@@ -572,7 +574,7 @@ Para garantizar la repetibilidad, el aislamiento y la independencia de las prueb
 | **Ubicación Solicitud B** | Coordenadas: `4.8100, -74.0300` | Zona: Chía / Límite Norte (Fuera del radio de cobertura estándar) | Escenario `matching.no-technician-available` |
 | **Token Pasarela Aprobado** | `tok_wompi_test_approved_ok` | Franquicia: Visa simulada, Fondos: Ilimitados | Flujo exitoso de autorización y captura |
 | **Token Pasarela Rechazado** | `tok_wompi_test_declined_insufficient` | Error simulado: `INSUFFICIENT_FUNDS` | Manejo de rechazo de pago y reintento (RN-SR5) |
-| **Evidencia Fotográfica** | `mock_cerrojo_reparado.jpg` | Tamaño: 245 KB, MIME: `image/jpeg`, Hash: `e3b0c44298fc1c149afb...` | Subida a MinIO (VM7) antes de completar servicio |
+| **Evidencia Fotográfica** | `mock_cerrojo_reparado.jpg` | Tamaño: 245 KB, MIME: `image/jpeg`, Hash: `e3b0c44298fc1c149afb...` | Subida a Garage (VM7) antes de completar servicio |
 
 ### 8.3 Ciclo de Vida y Limpieza de Datos (Tear-down)
 * **Post-Test Local/CI:** Las bases de datos en Testcontainers se eliminan al destruirse el contenedor Docker.
@@ -617,7 +619,7 @@ Para asegurar la trazabilidad integral y el cierre efectivo de no conformidades 
 | Severidad | Descripción del Impacto | Ejemplos Críticos en QUICKPATCH | Prioridad Jira | SLA de Resolución |
 |---|---|---|:---:|:---:|
 | **S1 — Blocker** | Bloqueo total del sistema, violación de seguridad o pérdida de datos. | Violación de aislamiento multi-tenant (RLS); almacenamiento de PAN/CVV (PCI-DSS K2); pod de Matching en `OOMKilled` (VM3). | Muy Alta (P1) | < 4 horas |
-| **S2 — Crítico** | Falla en una función principal de negocio sin alternativa operativa. | Falla en algoritmo de matching (no asigna técnicos disponibles); bloqueo en webhook de pagos; imposibilidad de adjuntar evidencia fotográfica en MinIO. | Alta (P2) | < 24 horas |
+| **S2 — Crítico** | Falla en una función principal de negocio sin alternativa operativa. | Falla en algoritmo de matching (no asigna técnicos disponibles); bloqueo en webhook de pagos; imposibilidad de adjuntar evidencia fotográfica en Garage. | Alta (P2) | < 24 horas |
 | **S3 — Mayor** | Falla funcional relevante, pero existe un camino alternativo temporal. | Error en cálculo de comisiones de la plataforma; desfase en tiempos de expiración de cotizaciones; inconsistencia en contrato REST menor. | Media (P3) | < 48 horas |
 | **S4 — Menor / Cosmético** | Defecto superficial que no impide la operación ni la integridad de los datos. | Desalineación tipográfica en Web Admin (VM2); falta de descripción en una etiqueta de Swagger; error ortográfico en mensaje de notificación. | Baja (P4) | Siguiente Sprint |
 

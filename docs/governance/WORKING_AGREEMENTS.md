@@ -31,7 +31,7 @@ Bogotá, Colombia — 14 de agosto de 2026
 
 ## Introducción
 
-Este documento define los **estándares y políticas de trabajo del equipo** para el desarrollo de QUICKPATCH (Angular, Flutter, ASP.NET Core, PostgreSQL/PostGIS, Redis, Apache Kafka y MinIO): el flujo de trabajo en Git (GitFlow), las políticas de colaboración, el versionamiento semántico, la gestión del backlog, el estilo de código, el uso responsable de IA, y las herramientas de documentación técnica. Su objetivo es que todo el equipo trabaje bajo las mismas reglas, independientemente de qué módulo o funcionalidad esté desarrollando cada persona.
+Este documento define los **estándares y políticas de trabajo del equipo** para el desarrollo de QUICKPATCH (Angular, Flutter, ASP.NET Core, PostgreSQL/PostGIS, Redis, Apache Kafka y Garage): el flujo de trabajo en Git (GitFlow), las políticas de colaboración, el versionamiento semántico, la gestión del backlog, el estilo de código, el uso responsable de IA, y las herramientas de documentación técnica. Su objetivo es que todo el equipo trabaje bajo las mismas reglas, independientemente de qué módulo o funcionalidad esté desarrollando cada persona.
 
 La propuesta de infraestructura distribuida (despliegue sobre las 7 máquinas virtuales, contenedores, CI/CD, monitoreo y gestión de secretos) se documenta por separado en el anexo _"Propuesta de Infraestructura DevOps"_, ya que responde a decisiones de arquitectura técnica en lugar de a políticas de trabajo del equipo.
 
@@ -59,6 +59,8 @@ El proyecto opera sobre **7 máquinas virtuales**, administradas por el rol de D
 
 - **`main`** — código en producción, siempre estable. Nunca se hace push directo.
 - **`develop`** — rama de integración; aquí se juntan las features antes de pasar a producción.
+
+> **Estrategia multirepo:** GitFlow aplica de forma independiente en cada repositorio. El cambio se revisa y fusiona primero en el repositorio propietario del componente; después `quickpatch` actualiza explícitamente el puntero del submódulo.
 
 ### Ramas de soporte
 
@@ -449,7 +451,7 @@ Todas las herramientas seleccionadas para el proyecto cuentan con un plan gratui
 |Redis|Gratis|Open source|
 |Apache Kafka|Gratis|Open source|
 |Kafka UI|Gratis|Open source; interfaz de inspección de topics y consumidores|
-|MinIO|Gratis|Open source (self-hosted)|
+|Garage|Gratis|Open source (self-hosted)|
 |Prometheus + Grafana|Gratis|Open source; self-hosted, sin límite de usuarios — métricas|
 |`node_exporter`|Gratis|Open source; agente de métricas de sistema operativo en cada una de las 7 VMs|
 |Loki|Gratis|Open source; almacena el historial de logs agregados de las 7 VMs|
@@ -614,7 +616,7 @@ La arquitectura del sistema se documenta con el **C4 Model**. No es una herramie
 |Nivel|Nombre|Qué muestra|Ejemplo en el proyecto|
 |---|---|---|---|
 |C1|Context (Contexto)|El sistema completo como caja negra, y quién interactúa con él|QUICKPATCH en el centro, rodeado de Cliente, Aliado/Técnico, Proveedor, y la pasarela de pago Wompi|
-|C2|Containers (Contenedores)|Las piezas grandes que componen el sistema y cómo se comunican|Angular, Flutter, ASP.NET Core, PostgreSQL+PostGIS, Redis, Kafka, MinIO|
+|C2|Containers (Contenedores)|Las piezas grandes que componen el sistema y cómo se comunican|Angular, Flutter, ASP.NET Core, PostgreSQL+PostGIS, Redis, Kafka, Garage|
 |C3|Components (Componentes)|Los módulos internos de UN contenedor específico|Dentro de ASP.NET Core: Matching, Payments, Ranking, Billing, etc.|
 |C4|Code (Código)|Clases y relaciones a nivel de código|Rara vez se dibuja a mano; se genera desde el IDE si hace falta|
 

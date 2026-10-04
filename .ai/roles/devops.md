@@ -12,7 +12,7 @@
 - VM4: PostgreSQL/PostGIS.
 - VM5: Redis.
 - VM6: Kafka.
-- VM7: MinIO + observabilidad.
+- VM7: Garage + observabilidad.
 - VM1: Nginx/Gateway y componentes operativos definidos por infraestructura.
 
 ## Toolchains

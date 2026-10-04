@@ -1,0 +1,72 @@
+name: PR Quality
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+
+  composition:
+    name: composition
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Validar composición multirepo
+        run: ./tools/validate-composition.sh
+
+  docs:
+    name: docs-consistency
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detectar referencias activas obsoletas
+        shell: bash
+        run: |
+          files=(
+            README.md
+            .ai/PROJECT_CONTEXT.md
+            .ai/ARCHITECTURE_SUMMARY.md
+            .ai/roles/devops.md
+            docs/design/DD.md
+            docs/architecture/SDD.md
+            docs/architecture/adr/ADR-012-stack-tecnologico-polyglot.md
+            docs/governance/WORKING_AGREEMENTS.md
+            docs/testing/TD.md
+          )
+
+          if grep -nE \
+            'Angular 17|ASP\.NET Core 8|Java 17|Kubeval|docs/contracts|MinIO' \
+            "${files[@]}"; then
+
+            echo "::error::Hay referencias activas obsoletas."
+            exit 1
+          fi
+
+  quality-gate:
+    name: quality-gate
+    if: always()
+
+    needs:
+      - composition
+      - docs
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validar compuertas
+        run: |
+          test "${{ needs.composition.result }}" = "success"
+          test "${{ needs.docs.result }}" = "success"

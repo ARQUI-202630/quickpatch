@@ -13,7 +13,7 @@ Plataforma multi-tenant de servicios técnicos para hogares y empresas.
 | Eventos | Apache Kafka |
 | Persistencia | PostgreSQL + PostGIS |
 | Cache | Redis |
-| Evidencias | MinIO |
+| Evidencias | Garage |
 | Gateway | Nginx |
 | Orquestación backend | k3s |
 | Aprovisionamiento | Ansible |
