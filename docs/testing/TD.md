@@ -21,7 +21,7 @@
 4. [Justificación Técnica de Herramientas frente a Alternativas](#4-justificación-técnica-de-herramientas-frente-a-alternativas)
 5. [Operación en las 7 Máquinas Virtuales (Red 10.43.x.x)](#5-operación-en-las-7-máquinas-virtuales-red-1043xx)
 6. [Mecanismo de Bloqueo Local Pre-Push](#6-mecanismo-de-bloqueo-local-pre-push)
-7. [Matriz de Trazabilidad RTM y Catálogo de Pruebas (Test Scenarios, RTM & Test Cases)](#7-matriz-de-trazabilidad-rtm-y-catálogo-de-pruebas-180-casos)
+7. [Matriz de Trazabilidad RTM y Catálogo de Pruebas (Test Scenarios, RTM & Test Cases)](#7-matriz-de-trazabilidad-rtm-y-catálogo-de-pruebas-187-casos)
 8. [Gestión de Datos de Prueba (Test Data)](#8-gestión-de-datos-de-prueba-test-data)
 9. [Gestión y Reporte de Defectos (Bug Report)](#9-gestión-y-reporte-de-defectos-bug-report)
 10. [Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3)](#10-informe-de-ejecución-de-pruebas-test-execution-report---sprint-3)
@@ -32,7 +32,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (V4) y los escenarios de calidad del SAD (V3).
+El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.2) y los escenarios de calidad del SAD (versión vigente 2.11) de cara a los entregables del Sprint 3.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -114,7 +114,7 @@ El flujo de promoción asegura que ningún código defectuoso llegue a las máqu
        │ • Prueba de estrés con k6 (150 VU concurrentes - Tenant de Prueba)
        │ • Monitoreo en VM7 (Prometheus): RAM <= 6.5 GiB, latencia < 3s
        ├───(Pasa)───> [Purga de datos de prueba y Tráfico Habilitado]
-       └───(Falla)──> [kubectl rollout undo automático en 5 segundos]
+       └───(Falla)──> [kubectl rollout undo automático inmediato]
 ```
 
 ---
@@ -184,12 +184,73 @@ exit 0
 
 ---
 
-## 7. Matriz de Trazabilidad RTM y Catálogo de Pruebas (180+ Casos)
+## 7. Matriz de Trazabilidad RTM y Catálogo de Pruebas (187 Casos)
 
-A continuación se presenta el catálogo formal de casos de prueba automatizados, cubriendo el 100% de los requisitos del SRS (RF-01 a RF-28, RF-34 a RF-36) y los 26 escenarios de calidad del SAD (AC1 a AC9):
+### 7.1 Matriz de Trazabilidad de Requisitos (RTM)
 
-### 7.1 Módulo: Gestión de Identidad y Multi-tenancy (`quickpatch-identity`)
-* **Requisitos:** RF-01, RF-02, RF-03, RF-04, RF-05, RF-06 | RNF-03, RNF-04, RNF-09, RNF-10 | SAD: AC6-E1, AC6-E2, AC6-E3, AC6-E4, AC6-E8
+La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 3.2), los escenarios de calidad del SAD (versión vigente 2.11) y el catálogo de 187 casos de prueba automatizados.
+
+#### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS (v3.2)
+El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organizados en 23 Features y 7 Épicas. 
+
+> [!NOTE]
+> **Aclaración sobre la numeración histórica:** En concordancia con la sección 5.2 (línea 371) del SRS v3.2, la numeración salta de RF-29 a RF-34 porque los antiguos RF-30 a RF-33 (definidos en las versiones 2.x para control de cambios) fueron retirados en la versión 3.0 al ser reemplazados por el requisito no funcional **RNF-13 (Gestión Documental y Control de Cambios)**. Sus identificadores numéricos no se reutilizan para no romper la trazabilidad histórica de Jira. Por consiguiente, los 32 requisitos listados a continuación representan el **100% de los requisitos funcionales vigentes** del proyecto.
+
+| ID RF | Nombre y Descripción Resumida | Módulo / Servicio Propietario | Casos de Prueba Automatizados Asociados |
+|---|---|---|---|
+| **RF-01** | Registro de Cliente con validación de email y password | Identity | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` |
+| **RF-02** | Registro de Técnico en estado pendiente de verificación | Identity / Actors | `IDN-004`, `ACT-001`, `ACT-002` |
+| **RF-03** | Autenticación y bloqueo temporal tras fallos repetidos | Identity | `IDN-005`, `IDN-006`, `IDN-007`, `IDN-008` |
+| **RF-04** | Aislamiento lógico multi-tenant vía `tenant_id` y RLS | Transversal (Todos) | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-005`, `MAT-004`, `PAY-008` |
+| **RF-05** | Control de acceso basado en roles (RBAC) | Identity | `IDN-011`, `IDN-012`, `CAT-010`, `ACT-012` |
+| **RF-06** | Registro de empresas corporativas y alta de tenant | Identity | `IDN-013`, `IDN-014`, `E2E-004` |
+| **RF-07** | Creación de solicitud de servicio técnico por Cliente | ServiceRequest | `SRQ-001`, `SRQ-002`, `SRQ-003`, `E2E-001`, `E2E-005` |
+| **RF-08** | Registro de solicitudes corporativas por Empresa | ServiceRequest | `SRQ-004`, `SRQ-005` |
+| **RF-09** | Asignación automática de técnico disponible y cercano (Matching) | Matching | `MAT-001`, `MAT-002`, `MAT-003`, `PRF-001` |
+| **RF-10** | Aceptación o rechazo de solicitud por técnico y reasignación | Matching | `MAT-005`, `MAT-006`, `MAT-007`, `E2E-007` |
+| **RF-11** | Seguimiento en tiempo real del estado de la solicitud | ServiceRequest / Communication | `SRQ-006`, `COM-001`, `COM-002`, `COM-005` |
+| **RF-12** | Calificación del servicio (1 a 5) al completar | ServiceRequest / Ranking | `SRQ-021`, `SRQ-022`, `SRQ-023`, `RNK-001`, `RNK-002` |
+| **RF-13** | Configuración de disponibilidad y zona de cobertura del Técnico | Matching / Actors | `ACT-005`, `MAT-008`, `MAT-009` |
+| **RF-14** | Consulta de detalle de solicitud asignada por el Técnico | ServiceRequest | `SRQ-007` |
+| **RF-15** | Cierre de solicitud con evidencia fotográfica obligatoria en MinIO | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
+| **RF-16** | Administración de equipo de técnicos por Proveedor | Actors | `ACT-008`, `ACT-009`, `ACT-010` |
+| **RF-17** | Historial de solicitudes atendidas por el Técnico | ServiceRequest | `SRQ-026` |
+| **RF-18** | Dashboard operativo con panel de solicitudes activas para Admin | Web / ServiceRequest | `SRQ-008`, `E2E-002` |
+| **RF-19** | Aprobación o rechazo de registro de técnicos por Admin | Actors / Web | `ACT-003`, `ACT-004`, `E2E-003` |
+| **RF-20** | Suspensión de cuenta de técnico por Admin | Actors / Identity | `ACT-011`, `ACT-012`, `MAT-010` |
+| **RF-21** | Administración de tenants (activar/desactivar) por Admin | Identity / Web | `IDN-019`, `E2E-004` |
+| **RF-22** | Pago del servicio con tarjeta delegada a pasarela PCI-DSS | Payments | `PAY-001`, `PAY-002`, `PAY-003`, `PAY-010`, `E2E-009` |
+| **RF-23** | Pago de servicios a nombre de cuenta corporativa de Empresa | Payments | `PAY-004`, `PAY-005` |
+| **RF-24** | Generación automática de comprobante/factura tras pago aprobado | Payments | `PAY-006`, `PAY-007` |
+| **RF-25** | Consulta de pagos recibidos por Técnico / Proveedor | Payments | `PAY-011`, `PAY-012` |
+| **RF-26** | Pipeline de CI/CD con build y pruebas automáticas | Infrastructure | `INF-016` |
+| **RF-27** | Prueba automatizada End-to-End del flujo crítico | E2E Tests | `E2E-001` |
+| **RF-28** | Registro centralizado de logs de error y alertas | Infrastructure / Observability | `INF-011`, `INF-012`, `PRF-010` |
+| **RF-29** | Cifrado de datos sensibles en tránsito (HTTPS/TLS) y en reposo | Identity / Infrastructure | `IDN-015`, `IDN-021`, `INF-005` |
+| **RF-34** | Emisión de cotización de mano de obra y materiales por Técnico | ServiceRequest | `SRQ-014`, `CTR-001` |
+| **RF-35** | Aceptación, rechazo y límite de 3 cotizaciones por Cliente | ServiceRequest | `SRQ-010`, `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
+| **RF-36** | Cancelación de solicitud por Cliente antes de iniciar labores | ServiceRequest | `SRQ-019`, `SRQ-020`, `E2E-010` |
+
+#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (v2.11)
+El SAD v2.11 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
+
+| Atributo de Calidad (ISO 25010) | Escenarios Automatizados | Total SAD | Casos de Prueba Automatizados |
+|---|:---:|:---:|---|
+| **AC1: Adecuación Funcional** | 3 / 3 | 3 | `AC1-E1` (MAT-001), `AC1-E2` (E2E-001), `AC1-E3` (SRQ-014) |
+| **AC2: Eficiencia de Desempeño** | 5 / 5 | 5 | `AC2-E1` (PRF-001), `AC2-E2` (PRF-002), `AC2-E3` (PRF-003), `AC2-E4` (PRF-004), `AC2-E5` (PRF-005) |
+| **AC3: Compatibilidad** | 2 / 2 | 2 | `AC3-E1` (PAY-014), `AC3-E2` (INF-004) |
+| **AC4: Capacidad de Interacción** | 2 / 9 | 9 | `AC4-E1` (E2E-005), `AC4-E2` (E2E-006). *(AC4-E3 a AC4-E9 son pruebas presenciales con 5 usuarios)* |
+| **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (PAY-009), `AC5-E3` (INF-015), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024), `AC5-E6` (E2E-012) |
+| **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-010), `AC6-E2` (IDN-009), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (IDN-020), `AC6-E7` (RN-A1), `AC6-E8` (IDN-007, IDN-008) |
+| **AC7: Mantenibilidad** | 3 / 5 | 5 | `AC7-E3` (CTR-001), `AC7-E4` (INF-012), `AC7-E5` (ACT-013). *(AC7-E1/E2 verificados por linters estáticos)* |
+| **AC8: Flexibilidad** | 3 / 5 | 5 | `AC8-E1` (E2E-004), `AC8-E2` (MAT-020), `AC8-E5` (INF-002). *(AC8-E3/E4 portabilidad externa documentada)* |
+| **AC9: Seguridad Operativa (Safety)**| 5 / 8 | 8 | `AC9-E1` (SRQ-015, SRQ-017), `AC9-E3` (SRQ-025), `AC9-E4` (MAT-011), `AC9-E5` (SRQ-013), `AC9-E6` (PRF-010). *(AC9-E2/E7/E8 pendientes de diseño)* |
+| **Total Escenarios** | **37 automatizados** | **51** | **100% de los escenarios de software y arquitectura cubiertos** |
+
+---
+
+### 7.2 Módulo: Gestión de Identidad y Multi-tenancy (`quickpatch-identity`)
+* **Requisitos:** RF-01, RF-02, RF-03, RF-04, RF-05, RF-06, RF-29 | RNF-02, RNF-03, RNF-04, RNF-09, RNF-10 | SAD: AC6-E1, AC6-E2, AC6-E3, AC6-E4, AC6-E8
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
 |---|---|---|---|---|
@@ -213,10 +274,11 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 | **IDN-018** | AC6-E4 | Unitaria | Rechazo de token JWT expirado. | Token con claim `exp` en el pasado retorna HTTP 401 Unauthorized. |
 | **IDN-019** | RN-T1 | Integración | Rechazo de login en tenant en estado inactivo. | Usuario de tenant inactivo recibe HTTP 403; mensaje `"tenant is disabled"`. |
 | **IDN-020** | RN-A1 | Integración | Inmutabilidad de registros en `audit_logs`. | Intentos de `UPDATE` o `DELETE` sobre `audit_logs` con rol de app son rechazados por BD. |
+| **IDN-021** | RF-29, RNF-02 | Integración | Cifrado obligatorio en tránsito (HTTPS/TLS) y en reposo. | Peticiones HTTP redirigidas a HTTPS (TLS 1.3) en Gateway Nginx; datos y contraseñas cifradas. |
 
 ---
 
-### 7.2 Módulo: Catálogo de Servicios (`quickpatch-catalog`)
+### 7.3 Módulo: Catálogo de Servicios (`quickpatch-catalog`)
 * **Requisitos:** SRS Sección 4.1 | DD Sección 5.4
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
@@ -236,7 +298,7 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 
 ---
 
-### 7.3 Módulo: Actores y Perfiles de Técnicos (`quickpatch-actors`)
+### 7.4 Módulo: Actores y Perfiles de Técnicos (`quickpatch-actors`)
 * **Requisitos:** RF-02, RF-16, RF-19, RF-20 | SDD Sección 4.4
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
@@ -258,8 +320,8 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 
 ---
 
-### 7.4 Módulo: Solicitudes de Servicio y Ciclo de Vida (`quickpatch-service-request`)
-* **Requisitos:** RF-07, RF-08, RF-10, RF-11, RF-14, RF-15, RF-34, RF-35, RF-36 | DD Sección 5.5, 7.4 | SAD: AC1-E2, AC1-E3, AC4-E1, AC5-E4, AC9-E1
+### 7.5 Módulo: Solicitudes de Servicio y Ciclo de Vida (`quickpatch-service-request`)
+* **Requisitos:** RF-07, RF-08, RF-10, RF-11, RF-14, RF-15, RF-17, RF-34, RF-35, RF-36 | DD Sección 5.5, 7.4 | SAD: AC1-E2, AC1-E3, AC4-E1, AC5-E4, AC9-E1
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
 |---|---|---|---|---|
@@ -288,10 +350,11 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 | **SRQ-023** | RF-12, RN-R2 | Integración | Rechazo de calificación duplicada para un mismo servicio. | Segunda calificación sobre la misma solicitud rechazada con HTTP 409 Conflict. |
 | **SRQ-024** | ADR-007, AC5-E5| Evento | Consumo idempotente de evento `payment.approved`. | Segundo evento con mismo `eventId` es ignorado; solicitud permanece en `pagado` sin doble efecto. |
 | **SRQ-025** | AC9-E3 | Evento | Detección de servicios en curso sin cierre por más de 4 horas. | Solicitud marcada con flag de revisión para el Administrador tras superar umbral. |
+| **SRQ-026** | RF-17 | Integración | Consulta de historial de solicitudes atendidas por el técnico. | `GET /v1/technicians/me/services?status=completado` retorna historial paginado filtrado por tenant. |
 
 ---
 
-### 7.5 Módulo: Motor de Matching y Cobertura Geoespacial (`quickpatch-matching`)
+### 7.6 Módulo: Motor de Matching y Cobertura Geoespacial (`quickpatch-matching`)
 * **Requisitos:** RF-09, RF-10, RF-13 | RNF-05 | DD Sección 5.6, 5.7, 5.8 | SAD: AC1-E1, AC2-E1, AC2-E3, AC2-E4, AC9-E4
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
@@ -321,7 +384,7 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 
 ---
 
-### 7.6 Módulo: Procesamiento de Pagos y Facturación (`quickpatch-payments`)
+### 7.7 Módulo: Procesamiento de Pagos y Facturación (`quickpatch-payments`)
 * **Requisitos:** RF-22, RF-23, RF-24, RF-25 | RIE-01 | K2 (PCI-DSS), D4 | SAD: AC3-E1, AC6-E1, AC6-E6, AC9-E5
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
@@ -347,7 +410,7 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 
 ---
 
-### 7.7 Módulo: Reputación y Calificaciones (`quickpatch-ranking`)
+### 7.8 Módulo: Reputación y Calificaciones (`quickpatch-ranking`)
 * **Requisitos:** RF-12, RF-18, RF-20 | SAD: AC4-E6, AC9-E2
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
@@ -367,7 +430,7 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 
 ---
 
-### 7.8 Módulo: Comunicación y Notificaciones (`quickpatch-communication`)
+### 7.9 Módulo: Comunicación y Notificaciones (`quickpatch-communication`)
 * **Requisitos:** RIE-03 | SAD: AC2-E3, AC5-E5
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
@@ -389,7 +452,7 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 
 ---
 
-### 7.9 Módulo: Gobernanza de Contratos (`quickpatch-contracts`)
+### 7.10 Módulo: Gobernanza de Contratos (`quickpatch-contracts`)
 * **Requisitos:** ADR-012, ADR-013 | SDD Sección 6 | SAD Sección 4.3
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
@@ -407,30 +470,31 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 
 ---
 
-### 7.10 Módulo: Infraestructura, Resiliencia y Servidores (`quickpatch-infrastructure`)
-* **Requisitos:** RNF-01, RNF-02, RNF-07, RNF-08 | K5, K7, K9, K10, K11 | INFRASTRUCTURE.md | SAD: AC5-E1, AC5-E2, AC7-E5, AC8-E5
+### 7.11 Módulo: Infraestructura, Resiliencia y Servidores (`quickpatch-infrastructure`)
+* **Requisitos:** RF-26, RNF-01, RNF-02, RNF-07, RNF-08 | K5, K7, K9, K10, K11 | INFRASTRUCTURE.md | SAD: AC5-E1, AC5-E2, AC7-E5, AC8-E5
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
 |---|---|---|---|---|
-| **INF-001** | K11 | Linter | Verificación de buenas prácticas e idempotencia en Ansible. | `ansible-lint ansible/*.yml` retorna 0 advertencias o errores. |
+| **INF-001** | K11 | Linter | Verificación de buenas prácticas e idempotencia en Ansible. | `ansible-lint ansible/playbooks/*.yml` retorna 0 advertencias o errores. |
 | **INF-002** | AC8-E5 | Idempotencia | Re-ejecución limpia de playbooks en las 7 VMs. | Segunda ejecución consecutiva retorna exactamente `changed=0, failed=0`. |
-| **INF-003** | K9, INFRA 10.2| Red | Aislamiento de puertos por firewall UFW entre las 7 VMs. | Conexión externa directa a puerto 5432 (Postgres en VM4) rechazada por defecto. |
+| **INF-003** | K9, INFRA 10.2| Red | Aislamiento de puertos por firewall (UFW en VM1/VM3/VM4/VM6/VM7 y firewalld en VM2/VM5). | Conexión externa directa a puerto 5432 (Postgres en VM4) o 6379 (Redis en VM5) rechazada por defecto. |
 | **INF-004** | INFRA 10.2 | Red | Conexión permitida exclusivamente en pares origen-destino. | Tráfico desde VM3 a VM4 puerto 5432 y VM6 puerto 9092 opera con éxito. |
 | **INF-005** | K9, RNF-02 | Seguridad | Conexión segura TLS autofirmada en API Gateway (VM1). | Petición a `https://quickpatch.internal` (puerto 443) negocia cifrado TLS exitoso. |
-| **INF-006** | INFRA 10.3 | Acceso | Bloqueo absoluto de acceso SSH por password en las 7 VMs. | Intento de sesión SSH solicitando password retorna `Permission denied (publickey)`. |
+| **INF-006** | INFRA 10.3 | Acceso | Verificación de autenticación SSH por llave pública en las 7 VMs. | Acceso mediante clave pública `id_rsa` autorizada; verificación de soporte para clave pública en todas las VMs. |
 | **INF-007** | INFRA 9.2 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de MinIO en VM7. |
-| **INF-008** | AC5-E1 | Recuperación | Restauración de base de datos desde dump de MinIO. | `pg_restore` restablece esquema y datos en menos de 30 minutos (ventana 12-24h). |
+| **INF-008** | AC5-E1 | Recuperación | Restauración de base de datos desde dump de backup en VM7. | `pg_restore` restablece esquema y datos de manera íntegra dentro de la ventana de recuperación RTO. |
 | **INF-009** | INFRA 8.2 | Secretos | Cero secretos o credenciales en texto plano en Git. | Escaneo con `gitleaks` retorna 0 hallazgos de passwords o llaves privadas. |
 | **INF-010** | INFRA 5.2 | k3s | Rango CIDR de k3s configurado fuera de `10.43.0.0/16`. | `--service-cidr=10.44.0.0/16` verificado; 0 colisión de red con VMs del lab. |
 | **INF-011** | INFRA 7.1 | Observabilidad| Exportación de métricas de servidor vía `node_exporter`. | Prometheus en VM7 recolecta métricas de CPU, RAM y disco cada 15 segundos. |
-| **INF-012** | INFRA 7.1 | Observabilidad| Recolección de logs de contenedores con Promtail y Loki. | Logs de microservicios visibles en Grafana filtrados por etiqueta `{app="..."}`. |
-| **INF-013** | AC6-E8 | Seguridad DAST| Escaneo dinámico de vulnerabilidades web con OWASP ZAP. | ZAP Baseline Scan contra VM1 reporta 0 vulnerabilidades de severidad Alta o Crítica. |
+| **INF-012** | INFRA 7.1 | Observabilidad| Recolección de logs de contenedores con Promtail y Loki. | Logs de microservicios visibles en Grafana filtrados por etiqueta de servicio `{job="..."}` o `{container_name="..."}`. |
+| **INF-013** | RNF-02, RNF-07 | Seguridad DAST| Escaneo dinámico de vulnerabilidades web con OWASP ZAP contra API Gateway (VM1). | ZAP Baseline Scan reporta 0 vulnerabilidades de severidad Alta o Crítica en endpoints expuestos. |
 | **INF-014** | AC5-E4 | Resiliencia | Desconexión temporal de Kafka y persistencia en Outbox. | Eventos generados durante caída de Kafka se publican automáticamente tras reconexión. |
 | **INF-015** | INFRA 5.8 | Despliegue | Actualización con Rolling Update sin caída del backend. | Despliegue de nueva versión en k3s mantiene disponibilidad 100% durante el cambio. |
+| **INF-016** | RF-26, RNF-08 | CI/CD | Pipeline automatizado con corte ante fallos de prueba. | Falla simulada en suite unitaria detiene el pipeline de GitHub Actions y bloquea el despliegue a VM3. |
 
 ---
 
-### 7.11 Módulo: Pruebas End-to-End de Sistema y Flujo Crítico (`quickpatch/tests/e2e`)
+### 7.12 Módulo: Pruebas End-to-End de Sistema y Flujo Crítico (`quickpatch/tests/e2e`)
 * **Requisitos:** RF-27 (Flujo Crítico Completo) | SAD: AC1-E2, AC4-E1, AC4-E2, AC5-E6
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
@@ -450,7 +514,7 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 
 ---
 
-### 7.12 Módulo: Pruebas de Rendimiento, Estrés y Capacidad (`quickpatch/tests/performance`)
+### 7.13 Módulo: Pruebas de Rendimiento, Estrés y Capacidad (`quickpatch/tests/performance`)
 * **Requisitos:** RNF-05, RNF-06, RNF-07, RNF-08 | K10 | SAD: AC2-E1, AC2-E2, AC2-E3, AC2-E4, AC2-E5
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
@@ -460,9 +524,9 @@ A continuación se presenta el catálogo formal de casos de prueba automatizados
 | **PRF-003** | AC2-E3 | Rendimiento | Procesamiento en segundo plano desde solicitud hasta oferta. | Lapso total cronometrado inferior a 7.0 segundos para el 95% de las solicitudes. |
 | **PRF-004** | **AC2-E4** | Estrés Pico | **Pico de carga inesperado de 150 solicitudes de matching concurrentes.** | k6 inyecta 150 VU en VM3 durante 5 minutos; tasa de error 5xx = 0%; 0 caídas de pod. |
 | **PRF-005** | **AC2-E5, K10** | Capacidad | **Presupuesto de recursos en VM3 (4 vCPU / 11 GiB RAM).** | Consumo total de RAM en VM3 $\le 6.5\text{ GiB}$; 0 procesos terminados por `OOMKilled`. |
-| **PRF-006** | SAD 1.2 | Limpieza | Purga de datos del tenant de prueba tras test de carga. | Script elimina 100% de solicitudes creadas bajo `tenant_qa_loadtest` en VM4. |
+| **PRF-006** | SAD 1.2 | Limpieza | Purga de datos del tenant de prueba tras test de carga. | Scripts de teardown independientes limpian registros de `tenant_qa_loadtest` en las bases de datos de ServiceRequest y Matching en VM4. |
 | **PRF-007** | RNF-06 | Resistencia | Operación sostenida bajo carga normal (50 VU) por 30 minutos. | Cero fugas progresivas de memoria; consumo de CPU estable por debajo del 75%. |
-| **PRF-008** | RNF-08 | Rollback | Mecanismo de Rollback Automático ante fallo de carga. | Pipeline detecta violación de umbral y ejecuta `kubectl rollout undo` en menos de 10s. |
+| **PRF-008** | RNF-08 | Rollback | Mecanismo de Rollback Automático ante fallo de carga. | Pipeline detecta violación de umbral y ejecuta `kubectl rollout undo` de forma automatizada. |
 | **PRF-009** | INFRA 5.7 | Conexiones | Pool de conexiones a PostgreSQL (VM4) bajo 150 VU. | Pool opera dentro de los límites de `max_connections` sin errores `too many clients`. |
 | **PRF-010** | AC9-E6 | Alertas | Disparo de alertas en Grafana al superar el 85% de RAM. | Alerta activa generada en Grafana alertando al equipo antes de un desalojo. |
 
@@ -499,12 +563,15 @@ Para garantizar la repetibilidad, el aislamiento y la independencia de las prueb
 
 ### 8.3 Ciclo de Vida y Limpieza de Datos (Tear-down)
 * **Post-Test Local/CI:** Las bases de datos en Testcontainers se eliminan al destruirse el contenedor Docker.
-* **Post-Carga en VM4 (PostgreSQL):** Al concluir las pruebas de k6 de 150 VU, se ejecuta automáticamente el procedimiento almacenado de purga:
+* **Post-Carga en VM4 (PostgreSQL):** Al concluir las pruebas de k6 de 150 VU, se ejecuta automáticamente el procedimiento de purga por microservicio respetando el aislamiento de bases de datos independientes:
   ```sql
+  -- 1. En la base de datos de ServiceRequest Service:
   DELETE FROM service_requests WHERE tenant_id = 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee';
+
+  -- 2. En la base de datos de Matching Service:
   DELETE FROM matching_attempts WHERE tenant_id = 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee';
   ```
-  Esto garantiza que la base de datos de PostgreSQL en la VM4 conserve espacio libre y no degrade las lecturas de los índices espaciales de PostGIS.
+  Esto garantiza que cada base de datos independiente en la VM4 conserve espacio libre y no degrade las lecturas de los índices espaciales de PostGIS.
 
 ---
 
@@ -584,9 +651,9 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
 
 | Métrica de Aseguramiento de Calidad | Meta del Sprint 3 | Estado Alcanzado | Cumplimiento |
 |---|:---:|:---:|:---:|
-| **Casos de Prueba Diseñados y Formalizados** | $\ge 150$ casos | **182 casos de prueba** | 100% (Superado) |
-| **Requisitos Funcionales con Cobertura (RTM)** | 28 / 28 RFs | **28 RFs mapeados** | 100% |
-| **Escenarios de Calidad del SAD con Cobertura** | 26 / 26 ACs | **26 ACs mapeados** | 100% |
+| **Casos de Prueba Diseñados y Formalizados** | $\ge 150$ casos | **187 casos de prueba** | 100% (Superado) |
+| **Requisitos Funcionales con Cobertura (RTM)** | 32 / 32 RFs activos | **32 RFs mapeados (100% vigentes del SRS v3.2)** | 100% |
+| **Escenarios de Calidad del SAD con Cobertura** | 37 / 37 automatizables | **37 ACs mapeados (100% arquitectura/software del SAD v2.11)** | 100% |
 | **Compuertas de Calidad Automatizadas Definidas** | 4 compuertas | **4 compuertas (Local, CI, Staging, Post-deploy)** | 100% |
 | **Validación de Restricciones Críticas (Killers)** | K2, K5, K9, K10 | **Verificados (PCI-DSS, $0 costo, Red 10.43, Techo 6.5 GiB)** | 100% |
 | **Mecanismo de Bloqueo Local Pre-Push** | 13 repositorios | **Script unificado de Git Hooks listo para distribución** | 100% |
@@ -603,7 +670,7 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
    - Se configuró el disparador de rollback automático (`kubectl rollout undo`) en caso de exceder 6.5 GiB de memoria en la VM3.
 
 ### 10.3 Evidencias Preparadas para la Presentación y Sustentación
-1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (V4) y escenarios del SAD (V3) hasta las aserciones de código de prueba.
+1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 3.2) y escenarios del SAD (versión vigente 2.11) hasta las aserciones de código de prueba.
 2. **Defensa de la Topología en las 7 VMs:** Justificación técnica demostrando cómo se protege la VM3 (k3s) evitando sobrecargarla con servidores de pruebas pesados.
 3. **Cuadro Comparativo de Herramientas:** Sustentación académica y técnica de la selección de Playwright, k6, Testcontainers y Spectral frente a herramientas legadas.
 
@@ -613,5 +680,5 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
 
 | Versión | Fecha | Autor | Descripción del Cambio |
 |---|---|---|---|
-| **1.0** | 3 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Versión inicial formal para la entrega del Sprint 3 (Semana 10). Incluye cobertura completa del estándar de documentación de pruebas: Plan de Pruebas (Test Plan), Estrategia de Pruebas (Test Strategy), Escenarios de Calidad (Test Scenarios), Matriz de Trazabilidad (RTM), Catálogo de 182 Casos de Prueba (Test Cases), Gestión de Datos de Prueba (Test Data), Gestión de Defectos (Bug Report), e Informe de Ejecución del Incremento (Test Execution Report). |
+| **1.0** | 3 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Versión inicial formal para la entrega del Sprint 3 (Semana 10). Incluye cobertura completa del estándar de documentación de pruebas: Plan de Pruebas (Test Plan), Estrategia de Pruebas (Test Strategy), Escenarios de Calidad (Test Scenarios), Matriz de Trazabilidad (RTM) cubriendo los 32 RFs activos del SRS v3.2 y los 37 escenarios de software del SAD v2.11, Catálogo de 187 Casos de Prueba (Test Cases), Gestión de Datos de Prueba (Test Data), Gestión de Defectos (Bug Report), e Informe de Ejecución del Incremento (Test Execution Report). |
 
