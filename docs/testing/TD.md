@@ -32,7 +32,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.2) y los escenarios de calidad del SAD (versión vigente 2.11) de cara a los entregables del Sprint 3.
+El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.2) y los escenarios de calidad del SAD (versión vigente 2.12) de cara a los entregables del Sprint 3.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -104,16 +104,18 @@ El flujo de promoción asegura que ningún código defectuoso llegue a las máqu
        │ • Unitarias + Testcontainers (Postgres/Kafka efímeros en Docker)
        │ • Cobertura >= 80%
        ▼ 
-[Compuerta 2: Staging Efímero de Sistema (Repo Principal)]
-       │ • docker-compose.staging.yml (8 microservicios levantados)
-       │ • Playwright E2E (Flujo crítico de 10 pasos)
-       │ • OWASP ZAP (DAST) + Escáner Regex PCI-DSS (0 PAN / 0 CVV)
+[Compuerta 2: Pruebas de Sistema en Ambiente de QA (VM2 - ADR-015)]
+       │ • Pipeline de pruebas de sistema ejecutado desde Runner en VM1
+       │ • Playwright E2E + Colecciones Newman (qa.quickpatch.internal)
+       │ • OWASP ZAP (DAST) contra Gateway de QA
+       │ • Escáner Regex PCI-DSS en logs de QA en Loki (0 PAN / 0 CVV)
+       │ • Prueba de carga con k6 (150 VU en QA sin degradar producción)
        ▼ 
-[Compuerta 3: Post-Despliegue en Producción (7 VMs del Lab)]
-       │ • Rolling Update en VM3 (k3s) mediante Runner en VM1
-       │ • Prueba de estrés con k6 (150 VU concurrentes - Tenant de Prueba)
+[Compuerta 3: Despliegue en Producción (VM3 k3s)]
+       │ • Rolling Update en VM3 mediante Runner en VM1
+       │ • Verificación de estado de salud (kubectl rollout status)
        │ • Monitoreo en VM7 (Prometheus): RAM <= 6.5 GiB, latencia < 3s
-       ├───(Pasa)───> [Purga de datos de prueba y Tráfico Habilitado]
+       ├───(Pasa)───> [Versión Operativa y Tráfico Habilitado]
        └───(Falla)──> [kubectl rollout undo automático inmediato]
 ```
 
@@ -136,10 +138,10 @@ Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.
 
 | VM | IP | Software Principal | Rol en la Ejecución de Pruebas |
 |---|---|---|---|
-| **VM1** | `10.43.100.168` | Nginx + API Gateway + Self-hosted Runner | Punto de entrada HTTPS con certificado autofirmado (`quickpatch.internal`). Aloja el runner de GitHub Actions que dispara las pruebas de carga de k6 hacia la VM3 y ejecuta el comando de rollback si fallan los umbrales. |
-| **VM2** | `10.43.98.15` | Angular 17 servido por Nginx (puerto 3000) | Recibe las pruebas de interfaz de usuario de **Playwright** que validan la operación del Administrador (aprobación de técnicos, dashboard operativo, gestión de tenants). |
-| **VM3** | `10.43.98.205` | k3s (nodo único) con 8 microservicios | **Sujeto de la prueba de estrés.** Comparte 4 vCPU y 11 GiB de RAM. Matching opera con QoS *Guaranteed* (1 vCPU / 1 GiB) para garantizar atención prioritaria. El límite seguro de consumo conjunto es $\le 6.5\text{ GiB}$. |
-| **VM4** | `10.43.98.209` | PostgreSQL 16 + PostGIS (puerto 5432) | Ejecuta las consultas espaciales (`ST_DWithin`) y valida las políticas RLS. Durante la prueba de carga de k6, solo recibe transacciones del tenant `tenant_qa_loadtest`. |
+| **VM1** | `10.43.100.168` | Nginx + API Gateway + Panel Angular + Self-hosted Runner | Punto de entrada único HTTPS (puerto 443). Enruta tráfico por Virtual Hosts: producción (`quickpatch.internal`), QA (`qa.quickpatch.internal`) y Grafana (`grafana.quickpatch.internal`). Aloja el runner de GitHub Actions que ejecuta las pruebas de sistema y k6 hacia QA en VM2. |
+| **VM2** | `10.43.98.15` | Ambiente de QA Dedicado (ADR-015): k3s, PostgreSQL+PostGIS, Redis, Kafka (Docker) y Nginx | **Sujeto de las pruebas de sistema y carga.** Aloja el entorno de QA permanente e independiente. Recibe las pruebas de Playwright, Newman, ZAP Baseline y las pruebas de estrés de k6 (150 VU) protegiendo el clúster de producción. |
+| **VM3** | `10.43.98.205` | k3s (nodo único) con 8 microservicios de Producción | **Entorno de Producción.** Comparte 4 vCPU y 11 GiB de RAM. Matching opera con QoS *Guaranteed* (1 vCPU / 1 GiB). Protegido contra sobrecarga de pruebas de estrés al haberse delegado la carga a VM2. Techo operacional $\le 6.5\text{ GiB}$. |
+| **VM4** | `10.43.98.209` | PostgreSQL 16 + PostGIS (puerto 5432) | Base de datos de Producción. Ejecuta las consultas espaciales (`ST_DWithin`) y valida las políticas RLS. (QA en VM2 utiliza su propia base de datos aislada en Docker Compose). |
 | **VM5** | `10.43.98.29` | Redis 7 (puerto 6379) | Valida el almacenamiento en cache de cotizaciones temporales y coordinación de tareas programadas (RN-Q6). |
 | **VM6** | `10.43.99.12` | Apache Kafka (puerto 9092) | Valida la publicación confiable vía Outbox, la tolerancia a desconexión del broker y el consumo idempotente de eventos por `eventId`. |
 | **VM7** | `10.43.99.8` | MinIO + Prometheus + Loki + Grafana | **Árbitro de observabilidad.** MinIO almacena las fotos obligatorias de evidencia. Prometheus evalúa en tiempo real que VM3 no supere los 6.5 GiB de RAM. Grafana expone el Dashboard de Calidad del proyecto. |
@@ -148,38 +150,49 @@ Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.
 
 ## 6. Mecanismo de Bloqueo Local Pre-Push
 
-Para evitar que se suba código con pruebas rotas al repositorio, cada repositorio cuenta con el gancho `.git/hooks/pre-push` configurado:
+Para evitar que se suba código con pruebas rotas al repositorio, se estandarizó la plantilla del gancho `pre-push` (Compuerta 0) en `quickpatch-infrastructure/plantillas/hooks/pre-push`, instalada en los repositorios copiándola a `.githooks/pre-push` y configurando `git config core.hooksPath .githooks`:
 
 ```bash
-#!/bin/bash
-echo "🔍 [QA GATE] Ejecutando pruebas locales antes de hacer push..."
+#!/usr/bin/env bash
+# Compuerta 0 del Documento de Pruebas: corre las pruebas unitarias antes de cada push.
+# Instalación, una vez por clon: copiar este archivo como .githooks/pre-push en el repo y correr
+#   git config core.hooksPath .githooks
+# Es una ayuda local: `git push --no-verify` lo salta, y el CI vuelve a correr todo igual.
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)" || exit 1
 
-# Ejecución condicional según el stack del componente
-if [ -f "*.csproj" ] || [ -f "src/*/*.csproj" ]; then
-    dotnet test --no-build --verbosity quiet --filter Category=Unit
-    RESULT=$?
-elif [ -f "build.gradle" ] || [ -f "pom.xml" ]; then
-    ./gradlew test -x integrationTest --quiet
-    RESULT=$?
-elif [ -f "angular.json" ]; then
-    npm run test:ci --silent
-    RESULT=$?
-elif [ -f "pubspec.yaml" ]; then
-    flutter test
-    RESULT=$?
-else
-    npm test --if-present --silent
-    RESULT=$?
-fi
-
-if [ $RESULT -ne 0 ]; then
-    echo "❌ [PUSH ABORTADO] Las pruebas automáticas fallaron en tu máquina local."
-    echo "❌ Corrige los errores antes de publicar código en la rama remota."
+echo "[QA] Pruebas unitarias antes del push..."
+if compgen -G "*.sln" > /dev/null || compgen -G "*.slnx" > /dev/null; then
+  proyectos=$(find tests/unit -name '*.csproj' 2> /dev/null)
+  if [ -z "$proyectos" ]; then
+    echo "[QA] No hay proyectos de pruebas unitarias en tests/unit/."
     exit 1
+  fi
+  for p in $proyectos; do
+    dotnet test "$p" --verbosity quiet || resultado=1
+  done
+elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then
+  if [ -x gradlew ]; then ./gradlew test --quiet; else gradle test --quiet; fi
+  resultado=$?
+elif [ -f pom.xml ]; then
+  if [ -x mvnw ]; then ./mvnw -q test; else mvn -q test; fi
+  resultado=$?
+elif [ -f angular.json ]; then
+  npm run test:ci --silent
+  resultado=$?
+elif [ -f pubspec.yaml ]; then
+  flutter test
+  resultado=$?
+else
+  echo "[QA] Este repo no tiene proyecto con pruebas: nada que correr."
+  exit 0
 fi
 
-echo "✅ [QA GATE] Pruebas aprobadas. Procediendo con el push."
-exit 0
+if [ "${resultado:-0}" -ne 0 ]; then
+  echo "[QA] Push cancelado: fallaron las pruebas unitarias. Corrígelas antes de subir."
+  exit 1
+fi
+echo "[QA] Pruebas aprobadas."
 ```
 
 ---
@@ -188,7 +201,7 @@ exit 0
 
 ### 7.1 Matriz de Trazabilidad de Requisitos (RTM)
 
-La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 3.2), los escenarios de calidad del SAD (versión vigente 2.11) y el catálogo de 187 casos de prueba automatizados.
+La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 3.2), los escenarios de calidad del SAD (versión vigente 2.12) y el catálogo de 187 casos de prueba automatizados.
 
 #### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS (v3.2)
 El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organizados en 23 Features y 7 Épicas. 
@@ -201,50 +214,50 @@ El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organiza
 | **RF-01** | Registro de Cliente con validación de email y password | Identity | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` |
 | **RF-02** | Registro de Técnico en estado pendiente de verificación | Identity / Actors | `IDN-004`, `ACT-001`, `ACT-002` |
 | **RF-03** | Autenticación y bloqueo temporal tras fallos repetidos | Identity | `IDN-005`, `IDN-006`, `IDN-007`, `IDN-008` |
-| **RF-04** | Aislamiento lógico multi-tenant vía `tenant_id` y RLS | Transversal (Todos) | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-005`, `MAT-004`, `PAY-008` |
-| **RF-05** | Control de acceso basado en roles (RBAC) | Identity | `IDN-011`, `IDN-012`, `CAT-010`, `ACT-012` |
+| **RF-04** | Aislamiento lógico multi-tenant vía `tenant_id` y RLS | Transversal (Todos) | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-007`, `ACT-009`, `PAY-008`, `RNK-008` |
+| **RF-05** | Control de acceso basado en roles (RBAC) | Identity | `IDN-011`, `IDN-012`, `CAT-010` |
 | **RF-06** | Registro de empresas corporativas y alta de tenant | Identity | `IDN-013`, `IDN-014`, `E2E-004` |
 | **RF-07** | Creación de solicitud de servicio técnico por Cliente | ServiceRequest | `SRQ-001`, `SRQ-002`, `SRQ-003`, `E2E-001`, `E2E-005` |
-| **RF-08** | Registro de solicitudes corporativas por Empresa | ServiceRequest | `SRQ-004`, `SRQ-005` |
-| **RF-09** | Asignación automática de técnico disponible y cercano (Matching) | Matching | `MAT-001`, `MAT-002`, `MAT-003`, `PRF-001` |
-| **RF-10** | Aceptación o rechazo de solicitud por técnico y reasignación | Matching | `MAT-005`, `MAT-006`, `MAT-007`, `E2E-007` |
+| **RF-08** | Registro de solicitudes corporativas por Empresa | ServiceRequest | `SRQ-004` |
+| **RF-09** | Asignación automática de técnico disponible y cercano (Matching) | Matching | `MAT-001`, `MAT-002`, `MAT-006`, `MAT-007`, `MAT-008`, `PRF-001` |
+| **RF-10** | Aceptación o rechazo de solicitud por técnico y reasignación | Matching | `MAT-010`, `MAT-011`, `MAT-012`, `E2E-007` |
 | **RF-11** | Seguimiento en tiempo real del estado de la solicitud | ServiceRequest / Communication | `SRQ-006`, `COM-001`, `COM-002`, `COM-005` |
 | **RF-12** | Calificación del servicio (1 a 5) al completar | ServiceRequest / Ranking | `SRQ-021`, `SRQ-022`, `SRQ-023`, `RNK-001`, `RNK-002` |
-| **RF-13** | Configuración de disponibilidad y zona de cobertura del Técnico | Matching / Actors | `ACT-005`, `MAT-008`, `MAT-009` |
-| **RF-14** | Consulta de detalle de solicitud asignada por el Técnico | ServiceRequest | `SRQ-007` |
+| **RF-13** | Configuración de disponibilidad y zona de cobertura del Técnico | Matching / Actors | `MAT-003`, `MAT-005` |
+| **RF-14** | Consulta de detalle de solicitud asignada por el Técnico | ServiceRequest | `SRQ-005` |
 | **RF-15** | Cierre de solicitud con evidencia fotográfica obligatoria en MinIO | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
-| **RF-16** | Administración de equipo de técnicos por Proveedor | Actors | `ACT-008`, `ACT-009`, `ACT-010` |
+| **RF-16** | Administración de equipo de técnicos por Proveedor | Actors | `ACT-007`, `ACT-008`, `ACT-009` |
 | **RF-17** | Historial de solicitudes atendidas por el Técnico | ServiceRequest | `SRQ-026` |
-| **RF-18** | Dashboard operativo con panel de solicitudes activas para Admin | Web / ServiceRequest | `SRQ-008`, `E2E-002` |
+| **RF-18** | Dashboard operativo con panel de solicitudes activas para Admin | Web / ServiceRequest | `E2E-002` |
 | **RF-19** | Aprobación o rechazo de registro de técnicos por Admin | Actors / Web | `ACT-003`, `ACT-004`, `E2E-003` |
-| **RF-20** | Suspensión de cuenta de técnico por Admin | Actors / Identity | `ACT-011`, `ACT-012`, `MAT-010` |
+| **RF-20** | Suspensión de cuenta de técnico por Admin | Actors / Identity | `ACT-005`, `ACT-006` |
 | **RF-21** | Administración de tenants (activar/desactivar) por Admin | Identity / Web | `IDN-019`, `E2E-004` |
-| **RF-22** | Pago del servicio con tarjeta delegada a pasarela PCI-DSS | Payments | `PAY-001`, `PAY-002`, `PAY-003`, `PAY-010`, `E2E-009` |
-| **RF-23** | Pago de servicios a nombre de cuenta corporativa de Empresa | Payments | `PAY-004`, `PAY-005` |
-| **RF-24** | Generación automática de comprobante/factura tras pago aprobado | Payments | `PAY-006`, `PAY-007` |
-| **RF-25** | Consulta de pagos recibidos por Técnico / Proveedor | Payments | `PAY-011`, `PAY-012` |
+| **RF-22** | Pago del servicio con tarjeta delegada a pasarela PCI-DSS | Payments | `PAY-003`, `PAY-010`, `PAY-011`, `E2E-009` |
+| **RF-23** | Pago de servicios a nombre de cuenta corporativa de Empresa | Payments | `PAY-006` |
+| **RF-24** | Generación automática de comprobante/factura tras pago aprobado | Payments | `PAY-004`, `PAY-005` |
+| **RF-25** | Consulta de pagos recibidos por Técnico / Proveedor | Payments | `PAY-007` |
 | **RF-26** | Pipeline de CI/CD con build y pruebas automáticas | Infrastructure | `INF-016` |
 | **RF-27** | Prueba automatizada End-to-End del flujo crítico | E2E Tests | `E2E-001` |
 | **RF-28** | Registro centralizado de logs de error y alertas | Infrastructure / Observability | `INF-011`, `INF-012`, `PRF-010` |
 | **RF-29** | Cifrado de datos sensibles en tránsito (HTTPS/TLS) y en reposo | Identity / Infrastructure | `IDN-015`, `IDN-021`, `INF-005` |
-| **RF-34** | Emisión de cotización de mano de obra y materiales por Técnico | ServiceRequest | `SRQ-014`, `CTR-001` |
-| **RF-35** | Aceptación, rechazo y límite de 3 cotizaciones por Cliente | ServiceRequest | `SRQ-010`, `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
+| **RF-34** | Emisión de cotización de mano de obra y materiales por Técnico | ServiceRequest | `SRQ-008`, `SRQ-009`, `SRQ-010` |
+| **RF-35** | Aceptación, rechazo y límite de 3 cotizaciones por Cliente | ServiceRequest | `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
 | **RF-36** | Cancelación de solicitud por Cliente antes de iniciar labores | ServiceRequest | `SRQ-019`, `SRQ-020`, `E2E-010` |
 
-#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (v2.11)
-El SAD v2.11 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
+#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (v2.12)
+El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
 
 | Atributo de Calidad (ISO 25010) | Escenarios Automatizados | Total SAD | Casos de Prueba Automatizados |
 |---|:---:|:---:|---|
-| **AC1: Adecuación Funcional** | 3 / 3 | 3 | `AC1-E1` (MAT-001), `AC1-E2` (E2E-001), `AC1-E3` (SRQ-014) |
+| **AC1: Adecuación Funcional** | 3 / 3 | 3 | `AC1-E1` (MAT-001), `AC1-E2` (E2E-001), `AC1-E3` (SRQ-005) |
 | **AC2: Eficiencia de Desempeño** | 5 / 5 | 5 | `AC2-E1` (PRF-001), `AC2-E2` (PRF-002), `AC2-E3` (PRF-003), `AC2-E4` (PRF-004), `AC2-E5` (PRF-005) |
-| **AC3: Compatibilidad** | 2 / 2 | 2 | `AC3-E1` (PAY-014), `AC3-E2` (INF-004) |
+| **AC3: Compatibilidad** | 2 / 2 | 2 | `AC3-E1` (PAY-014), `AC3-E2` (MAT-022) |
 | **AC4: Capacidad de Interacción** | 2 / 9 | 9 | `AC4-E1` (E2E-005), `AC4-E2` (E2E-006). *(AC4-E3 a AC4-E9 son pruebas presenciales con 5 usuarios)* |
-| **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (PAY-009), `AC5-E3` (INF-015), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024), `AC5-E6` (E2E-012) |
-| **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-010), `AC6-E2` (IDN-009), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (IDN-020), `AC6-E7` (RN-A1), `AC6-E8` (IDN-007, IDN-008) |
+| **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (INF-015), `AC5-E3` (RNK-006), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024), `AC5-E6` (E2E-012) |
+| **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-001, PAY-002), `AC6-E2` (IDN-009), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (PAY-015), `AC6-E7` (IDN-020), `AC6-E8` (IDN-007, IDN-008) |
 | **AC7: Mantenibilidad** | 3 / 5 | 5 | `AC7-E3` (CTR-001), `AC7-E4` (INF-012), `AC7-E5` (ACT-013). *(AC7-E1/E2 verificados por linters estáticos)* |
 | **AC8: Flexibilidad** | 3 / 5 | 5 | `AC8-E1` (E2E-004), `AC8-E2` (MAT-020), `AC8-E5` (INF-002). *(AC8-E3/E4 portabilidad externa documentada)* |
-| **AC9: Seguridad Operativa (Safety)**| 5 / 8 | 8 | `AC9-E1` (SRQ-015, SRQ-017), `AC9-E3` (SRQ-025), `AC9-E4` (MAT-011), `AC9-E5` (SRQ-013), `AC9-E6` (PRF-010). *(AC9-E2/E7/E8 pendientes de diseño)* |
+| **AC9: Seguridad Operativa (Safety)**| 5 / 8 | 8 | `AC9-E1` (SRQ-015, SRQ-017), `AC9-E3` (SRQ-025), `AC9-E4` (MAT-013), `AC9-E5` (PAY-009), `AC9-E6` (PRF-010). *(AC9-E2/E7/E8 pendientes de diseño)* |
 | **Total Escenarios** | **37 automatizados** | **51** | **100% de los escenarios de software y arquitectura cubiertos** |
 
 ---
@@ -329,16 +342,16 @@ El SAD v2.11 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **SRQ-002** | RF-07, AC4-E5 | Unitaria | Rechazo de solicitud con descripción o dirección vacía. | HTTP 400 Bad Request indicando campo específico faltante. |
 | **SRQ-003** | RF-07, AC5-E4 | Integración | **Transactional Outbox al registrar solicitud.** | En una sola transacción: fila en `service_requests` y evento `service-request.created` en `outbox_events`. |
 | **SRQ-004** | RF-08 | Integración | Creación de solicitud corporativa para sede de empresa. | Solicitud asociada correctamente al `tenant_id` corporativo de la empresa. |
-| **SRQ-005** | RF-11, AC1-E3 | Integración | Consulta de detalle de servicio por el técnico asignado. | Retorna dirección completa, categoría, descripción y coordenadas PostGIS. |
+| **SRQ-005** | RF-14, AC1-E3 | Integración | Consulta de detalle de servicio por el técnico asignado. | Retorna dirección completa, categoría, descripción y coordenadas PostGIS. |
 | **SRQ-006** | RF-11, AC4-E9 | Unitaria | Seguimiento en tiempo real por el cliente creador. | HTTP 200 OK con estado actual, técnico asignado y fecha estimada. |
 | **SRQ-007** | RF-04 | Integración | Aislamiento multi-tenant en solicitudes de servicio. | Cliente de Tenant A recibe HTTP 404/403 al consultar solicitud de Tenant B. |
-| **SRQ-008** | RF-35, RN-Q1 | Unitaria | Emisión de cotización por técnico titular asignado. | `POST /v1/service-requests/{id}/quotes` crea cotización en `pendiente`; servicio pasa a `cotizado`. |
-| **SRQ-009** | RF-35, RN-Q1 | Unitaria | Rechazo de cotización emitida por técnico no asignado. | Técnico ajeno intentando cotizar recibe HTTP 403 Forbidden. |
-| **SRQ-010** | RF-35, RN-Q2 | Unitaria | Máximo una cotización en estado pendiente a la vez. | Intento de segunda cotización concurrente rechazado con HTTP 409 Conflict. |
+| **SRQ-008** | RF-34, RN-Q1 | Unitaria | Emisión de cotización por técnico titular asignado. | `POST /v1/service-requests/{id}/quotes` crea cotización en `pendiente`; servicio pasa a `cotizado`. |
+| **SRQ-009** | RF-34, RN-Q1 | Unitaria | Rechazo de cotización emitida por técnico no asignado. | Técnico ajeno intentando cotizar recibe HTTP 403 Forbidden. |
+| **SRQ-010** | RF-34, RN-Q2 | Unitaria | Máximo una cotización en estado pendiente a la vez. | Intento de segunda cotización concurrente rechazado con HTTP 409 Conflict. |
 | **SRQ-011** | RF-35, RN-Q3 | Integración | Aceptación de cotización por el cliente titular. | Cotización pasa a `aceptada`; servicio pasa a `cotizacion_aceptada`; evento `service-request.quote-accepted` en Outbox. |
 | **SRQ-012** | RF-35, RN-Q3 | Integración | Rechazo de cotización por el cliente. | Cotización pasa a `rechazada`; servicio regresa a `asignado` para re-cotización. |
 | **SRQ-013** | RF-35, RN-Q7 | Integración | Cancelación automática al rechazar la tercera cotización. | Tercer rechazo cancela la solicitud con motivo `"cotizaciones rechazadas"`. |
-| **SRQ-014** | RF-34, RN-SR3 | Integración | Inicio de ejecución del servicio por el técnico. | `POST /v1/service-requests/{id}/start` cambia estado a `en_progreso`; `started_at` en UTC. |
+| **SRQ-014** | RN-SR3 | Integración | Inicio de ejecución del servicio por el técnico. | `POST /v1/service-requests/{id}/start` cambia estado a `en_progreso`; `started_at` en UTC. |
 | **SRQ-015** | AC9-E1 | Unitaria | **Transición Inválida (Safety):** Iniciar servicio sin cotización aprobada. | Petición de inicio en estado `buscando_tecnico` rechazada con HTTP 409 Conflict. |
 | **SRQ-016** | RF-15, D7 | Integración | Carga obligatoria de evidencia fotográfica en MinIO. | `POST /v1/service-requests/{id}/evidence` sube archivo a MinIO y registra URL en `service_evidence`. |
 | **SRQ-017** | RF-15, AC9-E1 | Integración | **Transición Bloqueada (Safety):** Completar servicio sin fotos en MinIO. | `POST /v1/service-requests/{id}/complete` con 0 fotos registradas retorna HTTP 422 Unprocessable Entity. |
@@ -480,7 +493,7 @@ El SAD v2.11 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **INF-003** | K9, INFRA 10.2| Red | Aislamiento de puertos por firewall (UFW en VM1/VM3/VM4/VM6/VM7 y firewalld en VM2/VM5). | Conexión externa directa a puerto 5432 (Postgres en VM4) o 6379 (Redis en VM5) rechazada por defecto. |
 | **INF-004** | INFRA 10.2 | Red | Conexión permitida exclusivamente en pares origen-destino. | Tráfico desde VM3 a VM4 puerto 5432 y VM6 puerto 9092 opera con éxito. |
 | **INF-005** | K9, RNF-02 | Seguridad | Conexión segura TLS autofirmada en API Gateway (VM1). | Petición a `https://quickpatch.internal` (puerto 443) negocia cifrado TLS exitoso. |
-| **INF-006** | INFRA 10.3 | Acceso | Verificación de autenticación SSH por llave pública en las 7 VMs. | Acceso mediante clave pública `id_rsa` autorizada; verificación de soporte para clave pública en todas las VMs. |
+| **INF-006** | INFRA 10.3 | Acceso | Bloqueo de acceso SSH directo como root en las 7 VMs. | Intento de conexión SSH como usuario root (`ssh root@10.43.x.x`) es rechazado en las 7 VMs (`PermitRootLogin no`); acceso restringido a usuarios estándar no privilegiados. |
 | **INF-007** | INFRA 9.2 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de MinIO en VM7. |
 | **INF-008** | AC5-E1 | Recuperación | Restauración de base de datos desde dump de backup en VM7. | `pg_restore` restablece esquema y datos de manera íntegra dentro de la ventana de recuperación RTO. |
 | **INF-009** | INFRA 8.2 | Secretos | Cero secretos o credenciales en texto plano en Git. | Escaneo con `gitleaks` retorna 0 hallazgos de passwords o llaves privadas. |
@@ -647,31 +660,31 @@ El sistema retornó HTTP 500 Internal Server Error o no generó el evento en la 
 ## 10. Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3)
 
 ### 10.1 Resumen Ejecutivo del Incremento de Valor
-En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad (QA) ha completado el diseño, estructuración y verificación de la arquitectura de pruebas integral para la plataforma QUICKPATCH sobre los 13 repositorios y el entorno de las 7 Máquinas Virtuales.
+En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad (QA) ha completado el diseño, estructuración y especificación formal de la arquitectura de pruebas integral para la plataforma QUICKPATCH sobre los 13 repositorios y el entorno de las 7 Máquinas Virtuales.
 
 | Métrica de Aseguramiento de Calidad | Meta del Sprint 3 | Estado Alcanzado | Cumplimiento |
 |---|:---:|:---:|:---:|
 | **Casos de Prueba Diseñados y Formalizados** | $\ge 150$ casos | **187 casos de prueba** | 100% (Superado) |
 | **Requisitos Funcionales con Cobertura (RTM)** | 32 / 32 RFs activos | **32 RFs mapeados (100% vigentes del SRS v3.2)** | 100% |
-| **Escenarios de Calidad del SAD con Cobertura** | 37 / 37 automatizables | **37 ACs mapeados (100% arquitectura/software del SAD v2.11)** | 100% |
-| **Compuertas de Calidad Automatizadas Definidas** | 4 compuertas | **4 compuertas (Local, CI, Staging, Post-deploy)** | 100% |
-| **Validación de Restricciones Críticas (Killers)** | K2, K5, K9, K10 | **Verificados (PCI-DSS, $0 costo, Red 10.43, Techo 6.5 GiB)** | 100% |
-| **Mecanismo de Bloqueo Local Pre-Push** | 13 repositorios | **Script unificado de Git Hooks listo para distribución** | 100% |
+| **Escenarios de Calidad del SAD con Cobertura** | 37 / 37 automatizables | **37 ACs mapeados (100% arquitectura/software del SAD v2.12)** | 100% |
+| **Compuertas de Calidad Automatizadas Definidas** | 4 compuertas | **4 compuertas diseñadas (Local, CI, QA en VM2, Producción)** | 100% |
+| **Validación de Restricciones Críticas (Killers)** | K2, K5, K9, K10 | **Diseñados y especificados en la arquitectura de pruebas** | 100% |
+| **Mecanismo de Bloqueo Local Pre-Push** | 13 repositorios | **Script unificado de Git Hooks diseñado para distribución** | 100% |
 
 ### 10.2 Estado de los Componentes y Servicios Evaluados
 1. **Contratos e Interoperabilidad (`quickpatch-contracts`):** 
-   - Contratos OpenAPI 3.0 consolidados para los 8 servicios.
+   - Contratos OpenAPI 3.0 diseñados y especificados formalmente para los 8 servicios.
    - 9 esquemas de eventos Kafka definidos con validación obligatoria de `eventId`, `tenantId` y `occurredAt`.
 2. **Seguridad y Aislamiento:**
-   - Pruebas de sanitización de logs y payloads certifican 0% de campos sensibles de tarjeta de crédito (K2).
-   - Políticas de Row-Level Security (RLS) verificadas para el 100% de tablas compartidas en PostgreSQL (VM4).
+   - Pruebas de sanitización de logs y payloads planeadas para certificar 0% de campos sensibles de tarjeta de crédito (K2).
+   - Políticas de Row-Level Security (RLS) diseñadas y catalogadas en la matriz para las tablas compartidas en PostgreSQL.
 3. **Rendimiento y Capacidad de Infraestructura:**
-   - La prueba de estrés post-despliegue con k6 (150 VU en Matching) cuenta con monitoreo configurado en Prometheus/Grafana (VM7).
-   - Se configuró el disparador de rollback automático (`kubectl rollout undo`) en caso de exceder 6.5 GiB de memoria en la VM3.
+   - La prueba de estrés con k6 (150 VU en Matching) está planeada y especificada para ejecutarse contra el ambiente de QA (VM2 - ADR-015) con monitoreo en Prometheus/Grafana (VM7).
+   - Estrategia de rollback automático (`kubectl rollout undo`) diseñada formalmente en caso de exceder 6.5 GiB de memoria en k3s.
 
 ### 10.3 Evidencias Preparadas para la Presentación y Sustentación
-1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 3.2) y escenarios del SAD (versión vigente 2.11) hasta las aserciones de código de prueba.
-2. **Defensa de la Topología en las 7 VMs:** Justificación técnica demostrando cómo se protege la VM3 (k3s) evitando sobrecargarla con servidores de pruebas pesados.
+1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 3.2) y escenarios del SAD (versión vigente 2.12) hasta las aserciones de código de prueba.
+2. **Defensa de la Topología en las 7 VMs:** Justificación técnica demostrando cómo se protege producción aislando las pruebas de sistema y estrés en la VM2 (QA según ADR-015).
 3. **Cuadro Comparativo de Herramientas:** Sustentación académica y técnica de la selección de Playwright, k6, Testcontainers y Spectral frente a herramientas legadas.
 
 ---
@@ -680,5 +693,5 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
 
 | Versión | Fecha | Autor | Descripción del Cambio |
 |---|---|---|---|
-| **1.0** | 3 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Versión inicial formal para la entrega del Sprint 3 (Semana 10). Incluye cobertura completa del estándar de documentación de pruebas: Plan de Pruebas (Test Plan), Estrategia de Pruebas (Test Strategy), Escenarios de Calidad (Test Scenarios), Matriz de Trazabilidad (RTM) cubriendo los 32 RFs activos del SRS v3.2 y los 37 escenarios de software del SAD v2.11, Catálogo de 187 Casos de Prueba (Test Cases), Gestión de Datos de Prueba (Test Data), Gestión de Defectos (Bug Report), e Informe de Ejecución del Incremento (Test Execution Report). |
+| **1.0** | 3 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Versión inicial formal para la entrega del Sprint 3 (Semana 10). Incluye cobertura completa del estándar de documentación de pruebas: Plan de Pruebas (Test Plan), Estrategia de Pruebas (Test Strategy), Escenarios de Calidad (Test Scenarios), Matriz de Trazabilidad (RTM) cubriendo los 32 RFs activos del SRS v3.2 y los 37 escenarios de software del SAD v2.12, Catálogo de 187 Casos de Prueba (Test Cases), incorporación del Ambiente de QA en VM2 (ADR-015), Gestión de Datos de Prueba (Test Data), Gestión de Defectos (Bug Report), e Informe de Ejecución del Incremento (Test Execution Report). |
 

@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.12 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.13 — QUICKPATCH
 
 ---
 
@@ -18,7 +18,7 @@ Cada driver es una necesidad que da forma a la arquitectura. La columna "Origen"
 |D4|Comprobante automático a nombre de la plataforma (merchant of record)|RF-22, RF-23, RF-24; SRS, sección 2.2 (función 5)|Payments emite la factura al consumir `payment.approved` y la plataforma es la única emisora frente al cliente. No incluye liquidación a técnicos ni contabilidad (K1)|
 |D5|Multi-tenancy y soporte a múltiples empresas oferentes|RF-04, RF-06, RNF-09, RNF-10; modelo de negocio B2B2E|Aislamiento de datos por tenant desde el diseño inicial|
 |D6|Trazabilidad ante reclamaciones|RF-28; necesidad de resolver disputas entre cliente y técnico|Registro histórico de eventos del ciclo de vida del servicio|
-|D7|Evidencia fotográfica obligatoria para completar un servicio|Decisión confirmada con el equipo (12 sep 2026)|Almacenamiento de objetos en infraestructura propia (MinIO en VM7), tabla `service_evidence` y bloqueo de la transición a `completado` sin al menos una foto|
+|D7|Evidencia fotográfica obligatoria para completar un servicio|Decisión confirmada con el equipo (12 sep 2026)|Almacenamiento de objetos en infraestructura propia (Garage en VM7, ADR-016), tabla `service_evidence` y bloqueo de la transición a `completado` sin al menos una foto|
 
 > Los requisitos de pago con PCI-DSS, que antes eran el driver D4, pasan al killer K2: son una restricción, no una fuerza que impulse el diseño. La numeración anterior saltaba del D5 al D8 sin que existieran D6 ni D7; en esta versión los drivers se numeran de forma consecutiva (equivalencias en la sección 9, versión 2.10).
 
@@ -66,7 +66,7 @@ Cada driver se sigue desde los requisitos que lo originan hasta los escenarios d
 |D4 Comprobante a nombre de la plataforma|RF-22, RF-23, RF-24, RIE-01|AC3-E1, AC9-E5|ADR-009 (tokenización de pagos)|
 |D5 Multi-tenancy|RF-04, RF-06, RF-21, RNF-09, RNF-10|AC6-E2, AC8-E1|ADR-005 (shared-schema con RLS)|
 |D6 Trazabilidad ante reclamaciones|RF-28, RNF-04|AC6-E5, AC6-E6, AC6-E7, AC7-E4|ADR-006 (Kafka), ADR-007 (Outbox)|
-|D7 Evidencia fotográfica|RF-15 (ver nota)|AC6-E5|Sin ADR propio: la decisión de almacenamiento (MinIO en VM7) está en la sección 5.1|
+|D7 Evidencia fotográfica|RF-15 (ver nota)|AC6-E5|ADR-016: almacenamiento de objetos con Garage en VM7 (sección 5.5)|
 
 > **Nota sobre D7:** la exigencia de evidencia fotográfica para completar un servicio fue confirmada por el equipo y está en el DD (`service_evidence`), pero la versión actual del SRS no la incluye en RF-15. Hasta que el SRS se alinee, su origen es la decisión del equipo.
 
@@ -835,7 +835,7 @@ flowchart TB
 
     Services --> DB[("PostgreSQL + PostGIS<br/>por servicio o esquema")]
     Services --> CACHE[("Redis<br/>cache / colas cortas")]
-    Services --> STORAGE[("MinIO<br/>archivos y evidencias")]
+    Services --> STORAGE[("Garage (S3)<br/>archivos y evidencias")]
 ```
 
 ### 4.2 Componentes
@@ -891,15 +891,15 @@ Esta sección describe cómo se distribuye el sistema sobre las 7 VMs propias (K
 
 |VM|IP|Rol|Qué corre|
 |---|---|---|---|
-|VM1|10.43.100.168|Gateway / Entry point|Nginx + API Gateway — enruta tráfico a Angular y a los 8 microservicios en VM3|
-|VM2|10.43.98.15|Frontend Web|Angular (panel administrativo del tenant — sin sitio público, ver FA2)|
+|VM1|10.43.100.168|Gateway / Entry point|Nginx + API Gateway: sirve el panel Angular (archivos estáticos) y enruta a los 8 microservicios en VM3. Única entrada desde la VPN, también hacia QA y Grafana (ADR-015)|
+|VM2|10.43.98.15|Ambiente de QA|QA permanente: k3s, PostgreSQL, Redis, Kafka y Garage propios, aislado de producción (ADR-015)|
 |VM3|10.43.98.205|Backend — microservicios|8 microservicios (Identity, Actors, Catalog, Matching, ServiceRequest, Ranking, Payments, Communication) como Deployments de Kubernetes (k3s)|
 |VM4|10.43.98.209|Base de datos|PostgreSQL + PostGIS (fuente de verdad, incluye datos geoespaciales)|
 |VM5|10.43.98.29|Cache / colas cortas|Redis (cache y coordinación temporal para procesos programados)|
 |VM6|10.43.99.12|Mensajería asíncrona|Apache Kafka + Kafka UI (matching, ranking, notificaciones, pagos)|
-|VM7|10.43.99.8|Storage + Observabilidad|MinIO (evidencias fotográficas obligatorias al completar un servicio, ver RF-15) + Prometheus + Loki + Grafana (métricas y logs, ver Documento de Infraestructura, sección 7)|
+|VM7|10.43.99.8|Storage + Observabilidad|Garage, compatible con S3 (evidencias fotográficas obligatorias al completar un servicio, ver RF-15, y respaldos de PostgreSQL; ADR-016) + Prometheus + Loki + Grafana (métricas y logs, ver Documento de Infraestructura, sección 7)|
 
-> **Nota sobre storage de evidencias (MinIO vs. Cloudflare R2):** confirmado con el equipo que la evidencia fotográfica sí está en el alcance del MVP. El storage se aprovisiona como **MinIO self-hosted en VM7**, consistente con K5. El diagrama de la presentación de Sprint 1 mostraba "MinIO / Cloudflare R2" como si fueran intercambiables; se descarta Cloudflare R2 para esta versión por K5: guardaría datos de usuarios en producción (las evidencias) fuera de las 7 VMs, aunque su capa gratuita no tenga costo. GitHub Container Registry sí se usa porque solo guarda imágenes de contenedor, no datos de usuarios. Si en el futuro se reconsidera, debe evaluarse explícitamente contra K5 antes de adoptarlo.
+> **Nota sobre storage de evidencias (self-hosted vs. Cloudflare R2):** confirmado con el equipo que la evidencia fotográfica sí está en el alcance del MVP. El storage se aprovisiona **self-hosted en VM7**, consistente con K5: primero MinIO y, desde la versión 2.13, Garage (ADR-016), porque MinIO dejó de distribuir su edición comunitaria. El diagrama de la presentación de Sprint 1 mostraba "MinIO / Cloudflare R2" como si fueran intercambiables; se descarta Cloudflare R2 para esta versión por K5: guardaría datos de usuarios en producción (las evidencias) fuera de las 7 VMs, aunque su capa gratuita no tenga costo. GitHub Container Registry sí se usa porque solo guarda imágenes de contenedor, no datos de usuarios. Si en el futuro se reconsidera, debe evaluarse explícitamente contra K5 antes de adoptarlo.
 
 Dado K10 (hardware fijo de 7 VMs), los 8 microservicios no reciben una VM cada uno. Los 8 corren dentro de VM3, orquestados con Kubernetes (k3s, clúster de un solo nodo), lo que permite escalado independiente por servicio, auto-healing y rolling updates sin downtime — ver ADR-011 (sección 5.5) y ADR-003 (sección 6).
 
@@ -918,8 +918,10 @@ Existen dependencias de arranque entre componentes: PostgreSQL y Kafka deben est
 1. VM4 (PostgreSQL/PostGIS) y VM5 (Redis)
 2. VM6 (Kafka) — los microservicios dependen del bus de eventos para operar correctamente
 3. VM3 (los 8 microservicios, vía Kubernetes/k3s)
-4. VM2 (Angular) y VM1 (Nginx Gateway / API Gateway)
-5. VM7 (MinIO + Observabilidad) — independiente, puede iniciar en paralelo
+4. VM1 (Nginx Gateway / API Gateway y panel Angular)
+5. VM7 (Garage + Observabilidad) — independiente, puede iniciar en paralelo
+
+VM2 (QA, ADR-015) es independiente de producción y arranca por separado.
 
 ### 5.4 Automatización, despliegue y CI/CD
 
@@ -934,15 +936,37 @@ El detalle operativo de esta sección (playbooks de Ansible, manifiestos de Kube
 |ID|Decisión|Atributo priorizado|Atributo sacrificado|Justificación|
 |---|---|---|---|---|
 |ADR-011|Kubernetes (k3s, clúster de un solo nodo en VM3) para orquestar los 8 microservicios; Docker Compose para el resto de VMs|AC5 Reliability (rolling updates sin downtime, auto-healing de contenedores)|Costo/simplicidad operativa (curva de aprendizaje y administración de un clúster, aunque sea de un solo nodo)|Kubernetes real (vía k3s) sin salirse del presupuesto de 7 VMs (K5); el equipo asume conscientemente la mayor complejidad operativa pese a K7 (sin operación 24/7), confiando en la capacidad propia para administrarlo|
-|ADR-015 (propuesto)|VM2 como ambiente de QA permanente, con k3s, PostgreSQL, Redis y Kafka propios. El panel Angular pasa a VM1, que es la única entrada desde la VPN y elige el destino por nombre (producción, QA o Grafana)|AC7 Maintainability (Testability: el despliegue y la prueba de carga se ejecutan en QA antes de producción)|AC5 Reliability: si VM1 cae, se pierde a la vez el acceso a producción, QA y Grafana. También suma una VM más que mantener (K11)|K10: no hay una octava VM, y VM2 solo servía archivos estáticos. K9: desde la VPN, el perímetro de la universidad solo deja pasar el 443 de VM1. Detalle, opciones descartadas y riesgos en `docs/architecture/adr/ADR-015-ambiente-qa-en-vm2.md`|
+|ADR-015|VM2 como ambiente de QA permanente, con k3s, PostgreSQL, Redis y Kafka propios. El panel Angular pasa a VM1, que es la única entrada desde la VPN y elige el destino por nombre (producción, QA o Grafana)|AC7 Maintainability (Testability: el despliegue y la prueba de carga se ejecutan en QA antes de producción)|AC5 Reliability: si VM1 cae, se pierde a la vez el acceso a producción, QA y Grafana. También suma una VM más que mantener (K11)|K10: no hay una octava VM, y VM2 solo servía archivos estáticos. K9: desde la VPN, el perímetro de la universidad solo deja pasar el 443 de VM1. Detalle, opciones descartadas y riesgos en `docs/architecture/adr/ADR-015-ambiente-qa-en-vm2.md`|
+|ADR-016|Garage, compatible con S3, como almacenamiento de objetos para evidencias y respaldos de PostgreSQL en VM7 (y una instancia propia en QA), en lugar de MinIO|AC6 Security (un solo puerto expuesto, llaves separadas por uso) y uso de recursos de VM7 (AC2)|Funciones avanzadas de S3 (versionado, bloqueo de objetos) y consola web|D7 y K5: MinIO dejó de distribuir su edición comunitaria; en la prueba de concepto Garage cumplió lo mismo que SeaweedFS con unas 20 veces menos memoria. Detalle en la sección 5.5.1|
 
 > **Nota:** se descartó un clúster de Kubernetes multi-nodo (vía `kubeadm` completo) por requerir VMs adicionales dedicadas al control plane, lo cual viola K10. k3s resuelve esto al ser una distribución de Kubernetes completa pero liviana, capaz de correr en un solo nodo (VM3) sin sacrificar la API estándar de Kubernetes ni los manifiestos de Deployment/Service. El resto de las VMs (base de datos, cache, mensajería, storage) se mantiene en Docker Compose simple, ya que no alojan múltiples servicios independientes que se beneficien de orquestación.
+
+#### 5.5.1 ADR-016: almacenamiento de objetos con Garage
+
+**Contexto.** Las evidencias fotográficas (D7, RF-15) y los respaldos diarios de PostgreSQL se guardan en un almacenamiento de objetos propio en VM7 (K5). La herramienta elegida era MinIO, pero al configurar las VMs (octubre de 2026) se encontró que dejó de distribuir su edición comunitaria: las imágenes de Docker no se actualizan y `dl.min.io` responde 410. Mientras se decidía, el almacenamiento quedó apagado y no había respaldo de la base de datos. El reemplazo debía ofrecer API compatible con S3 (SDK de AWS en .NET y Java) con URLs prefirmadas, correr en un solo nodo en una VM compartida con Prometheus, Loki y Grafana (K10), tener imagen de Docker mantenida y ser libre y sin costo (K5).
+
+**Prueba de concepto** (VM7, 3 de octubre de 2026, mismas pruebas y mismo puerto para los dos candidatos):
+
+|Prueba|SeaweedFS 4.48|Garage v2.4.1|
+|---|---|---|
+|RAM en reposo / después de las pruebas (`docker stats`)|60 / 83 MiB|3 / 4 MiB|
+|Subir y bajar 2 MB con el SDK de AWS, verificando el contenido|Correcto, 0,40 s|Correcto, 0,17 s|
+|URL prefirmada de subida y de bajada|Correcto|Correcto|
+|Acceso sin firma|Rechazado|Rechazado|
+|`pg_dump` de `db_matching` (con PostGIS) desde VM4 y lectura con `pg_restore --list`|Correcto, 2 s|Correcto, 2 s|
+|Puertos que abre hacia la red|4 (S3, master, volume, filer)|1 (S3); RPC y administración solo en localhost|
+
+**Decisión.** Garage v2.4.1 en un solo nodo, en VM7 para producción y una instancia propia en VM2 para QA (ADR-015). En producción, la API S3 (`10.43.99.8:9000`) solo acepta conexiones de VM3 (servicios) y VM4 (respaldo), con dos buckets y una llave por uso: `servicios` solo accede a `evidencias` y `backups` solo a `backups-postgres`, y se comprobó el aislamiento en los dos sentidos. El respaldo diario sube un `pg_dump` de cada base a las 2:00 y conserva 7 días. Las llaves se guardan en Ansible Vault y la configuración completa es código de Ansible.
+
+**Consecuencias.** Vuelve a haber respaldo diario de la base de datos; Garage casi no consume recursos de VM7 y expone un solo puerto. A cambio: licencia AGPL v3 (sin obligaciones mientras no se modifique), no implementa versionado ni bloqueo de objetos (QUICKPATCH no los usa), no trae consola web, y sigue siendo un solo nodo sin réplica, igual que el diseño con MinIO: si VM7 se pierde, se pierden las evidencias (limitación ya aceptada en el Documento de Infraestructura, sección 9.4). Hoy los servicios suben las evidencias; si en el futuro la app móvil las subiera directo con URLs prefirmadas, el gateway de VM1 tendría que publicar la API S3, porque los clientes no llegan a VM7.
+
+**Descartadas.** SeaweedFS cumple los requisitos y tiene licencia Apache 2.0, pero usa unas 20 veces más memoria en una VM compartida y abre cuatro puertos. MinIO compilado desde el código obligaría a mantener una compilación propia sin actualizaciones de seguridad publicadas. Ceph (RADOS Gateway) está pensado para clústeres de varios nodos y es demasiado pesado para VM7. El almacenamiento en la nube (Cloudflare R2, Amazon S3) se descarta por K5.
 
 ---
 
 ## 6. Trade-offs y ADRs
 
-Cada ADR (Architecture Decision Record) documenta una decisión de arquitectura ya tomada. Un trade-off arquitectónico siempre ocurre **entre atributos de calidad**: se prioriza uno a costa de otro. La columna "Justificación" conecta cada decisión con el driver/killer y el escenario prioritario (sección 3.10) que la motivaron. Desde ADR-012, cada ADR tiene además un documento con el detalle en `docs/architecture/adr/`.
+Cada ADR (Architecture Decision Record) documenta una decisión de arquitectura ya tomada. Un trade-off arquitectónico siempre ocurre **entre atributos de calidad**: se prioriza uno a costa de otro. La columna "Justificación" conecta cada decisión con el driver/killer y el escenario prioritario (sección 3.10) que la motivaron. ADR-012, ADR-013 y ADR-015 tienen además un documento con el detalle en `docs/architecture/adr/`; desde ADR-016, el detalle va en una subsección de este documento (por ejemplo, la 5.5.1).
 
 |ID|Decisión|Atributo priorizado|Atributo sacrificado|Justificación|
 |---|---|---|---|---|
@@ -1076,3 +1100,4 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.10|22 sep 2026|Revisión de los drivers tras una revisión adversarial independiente. D1 deja de mencionar la ventana horaria, que el modelo de datos nunca tuvo: la asignación es inmediata (se corrigen AC1-E3 y AC9-E4, que la citaban). El antiguo D4 (PCI-DSS) pasa al killer K2. Se agregan dos drivers que ya daban forma a la arquitectura sin estar declarados: seguimiento en tiempo real y evidencia fotográfica obligatoria. El doble ranking se reduce a la reputación del técnico, porque el ranking de materiales está fuera del MVP, y el merchant of record se acota a emitir el comprobante del pago. Los orígenes citan requisitos o decisiones del equipo en vez de afirmar hechos sin respaldo. Equivalencias de numeración: D1 → D1; D2 (doble ranking) → D3; D3 (merchant of record) → D4; D4 (PCI-DSS) → K2; D5 → D5; D8 → D6; nuevos D2 (tiempo real) y D7 (evidencia fotográfica). Cada driver sustenta ahora al menos un atributo de calidad o un ADR.|
 |2.11|22 sep 2026|Los orígenes de los drivers y de K1 dejan de citar la presentación del Sprint 1 y citan los requisitos y las funciones del SRS. Se agrega la sección 1.4, una matriz que traza cada driver hasta sus requisitos, escenarios de calidad y ADR.|
 |2.12|3 oct 2026|Se agregan a las tablas de ADR las decisiones que solo existían como documento aparte: ADR-012 (stack polyglot) y ADR-013 (estrategia de repositorios) en la sección 6, y ADR-015 (ambiente de QA en VM2 y acceso por VM1, en estado propuesto) en la sección 5.5. Se actualiza la síntesis de la sección 6 con los dos ADR nuevos.|
+|2.13|3 oct 2026|El ADR-015 pasa a aceptado: la tabla de VMs (5.1) muestra VM2 como ambiente de QA y el panel Angular en VM1, y se ajusta el orden de arranque (5.3). Se agrega el ADR-016 (Garage en lugar de MinIO) a la sección 5.5, con su detalle en la nueva sección 5.5.1, y se reemplaza MinIO por Garage en D7, la matriz de drivers, la vista de componentes y la tabla de VMs.|
