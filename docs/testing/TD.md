@@ -32,7 +32,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.2) y los escenarios de calidad del SAD (versión vigente 2.12) de cara a los entregables del Sprint 3.
+El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.2) y los escenarios de calidad del SAD (versión vigente 2.13) de cara a los entregables del Sprint 3.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -41,7 +41,7 @@ El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de ase
    - **Cumplimiento PCI-DSS (K2, AC6-E1):** Cero almacenamiento de números de tarjeta (PAN) o códigos de seguridad (CVV) en bases de datos o logs.
    - **Capacidad de Matching bajo Carga (AC2-E4, AC2-E5):** Soporte de 150 solicitudes concurrentes en la VM3 (k3s) con consumo de memoria $\le 6.5\text{ GiB}$ y 0 desalojos por `OOMKilled`.
    - **Resiliencia e Idempotencia (AC5-E4, AC5-E5):** Cero pérdida de eventos ante caída de Kafka (vía Transactional Outbox) y cero efectos duplicados.
-   - **Seguridad en el Ciclo del Servicio (AC9-E1, D7):** Bloqueo estricto de transiciones de estado inválidas y exigencia de evidencia fotográfica obligatoria en MinIO antes de completar cualquier trabajo.
+   - **Seguridad en el Ciclo del Servicio (AC9-E1, D7):** Bloqueo estricto de transiciones de estado inválidas y exigencia de evidencia fotográfica obligatoria en Garage (ADR-016) antes de completar cualquier trabajo.
 
 ---
 
@@ -144,7 +144,7 @@ Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.
 | **VM4** | `10.43.98.209` | PostgreSQL 16 + PostGIS (puerto 5432) | Base de datos de Producción. Ejecuta las consultas espaciales (`ST_DWithin`) y valida las políticas RLS. (QA en VM2 utiliza su propia base de datos aislada en Docker Compose). |
 | **VM5** | `10.43.98.29` | Redis 7 (puerto 6379) | Valida el almacenamiento en cache de cotizaciones temporales y coordinación de tareas programadas (RN-Q6). |
 | **VM6** | `10.43.99.12` | Apache Kafka (puerto 9092) | Valida la publicación confiable vía Outbox, la tolerancia a desconexión del broker y el consumo idempotente de eventos por `eventId`. |
-| **VM7** | `10.43.99.8` | MinIO + Prometheus + Loki + Grafana | **Árbitro de observabilidad.** MinIO almacena las fotos obligatorias de evidencia. Prometheus evalúa en tiempo real que VM3 no supere los 6.5 GiB de RAM. Grafana expone el Dashboard de Calidad del proyecto. |
+| **VM7** | `10.43.99.8` | Garage + Prometheus + Loki + Grafana | **Árbitro de observabilidad y almacenamiento.** Garage almacena las fotos obligatorias de evidencia y backups de PostgreSQL (ADR-016). Prometheus evalúa en tiempo real que VM3 no supere los 6.5 GiB de RAM. Grafana expone el Dashboard de Calidad del proyecto. |
 
 ---
 
@@ -201,7 +201,7 @@ echo "[QA] Pruebas aprobadas."
 
 ### 7.1 Matriz de Trazabilidad de Requisitos (RTM)
 
-La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 3.2), los escenarios de calidad del SAD (versión vigente 2.12) y el catálogo de 187 casos de prueba automatizados.
+La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 3.2), los escenarios de calidad del SAD (versión vigente 2.13) y el catálogo de 187 casos de prueba automatizados.
 
 #### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS (v3.2)
 El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organizados en 23 Features y 7 Épicas. 
@@ -225,7 +225,7 @@ El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organiza
 | **RF-12** | Calificación del servicio (1 a 5) al completar | ServiceRequest / Ranking | `SRQ-021`, `SRQ-022`, `SRQ-023`, `RNK-001`, `RNK-002` |
 | **RF-13** | Configuración de disponibilidad y zona de cobertura del Técnico | Matching / Actors | `MAT-003`, `MAT-005` |
 | **RF-14** | Consulta de detalle de solicitud asignada por el Técnico | ServiceRequest | `SRQ-005` |
-| **RF-15** | Cierre de solicitud con evidencia fotográfica obligatoria en MinIO | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
+| **RF-15** | Cierre de solicitud con evidencia fotográfica obligatoria en Garage (ADR-016) | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
 | **RF-16** | Administración de equipo de técnicos por Proveedor | Actors | `ACT-007`, `ACT-008`, `ACT-009` |
 | **RF-17** | Historial de solicitudes atendidas por el Técnico | ServiceRequest | `SRQ-026` |
 | **RF-18** | Dashboard operativo con panel de solicitudes activas para Admin | Web / ServiceRequest | `E2E-002` |
@@ -244,8 +244,8 @@ El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organiza
 | **RF-35** | Aceptación, rechazo y límite de 3 cotizaciones por Cliente | ServiceRequest | `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
 | **RF-36** | Cancelación de solicitud por Cliente antes de iniciar labores | ServiceRequest | `SRQ-019`, `SRQ-020`, `E2E-010` |
 
-#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (v2.12)
-El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
+#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (v2.13)
+El SAD v2.13 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
 
 | Atributo de Calidad (ISO 25010) | Escenarios Automatizados | Total SAD | Casos de Prueba Automatizados |
 |---|:---:|:---:|---|
@@ -353,9 +353,9 @@ El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **SRQ-013** | RF-35, RN-Q7 | Integración | Cancelación automática al rechazar la tercera cotización. | Tercer rechazo cancela la solicitud con motivo `"cotizaciones rechazadas"`. |
 | **SRQ-014** | RN-SR3 | Integración | Inicio de ejecución del servicio por el técnico. | `POST /v1/service-requests/{id}/start` cambia estado a `en_progreso`; `started_at` en UTC. |
 | **SRQ-015** | AC9-E1 | Unitaria | **Transición Inválida (Safety):** Iniciar servicio sin cotización aprobada. | Petición de inicio en estado `buscando_tecnico` rechazada con HTTP 409 Conflict. |
-| **SRQ-016** | RF-15, D7 | Integración | Carga obligatoria de evidencia fotográfica en MinIO. | `POST /v1/service-requests/{id}/evidence` sube archivo a MinIO y registra URL en `service_evidence`. |
-| **SRQ-017** | RF-15, AC9-E1 | Integración | **Transición Bloqueada (Safety):** Completar servicio sin fotos en MinIO. | `POST /v1/service-requests/{id}/complete` con 0 fotos registradas retorna HTTP 422 Unprocessable Entity. |
-| **SRQ-018** | RF-15 | Integración | Completado exitoso tras verificar evidencia en MinIO. | Estado pasa a `completado`; `completed_at` guardado; evento `service-request.completed` en Outbox. |
+| **SRQ-016** | RF-15, D7 | Integración | Carga obligatoria de evidencia fotográfica en Garage. | `POST /v1/service-requests/{id}/evidence` sube archivo a Garage y registra URL en `service_evidence`. |
+| **SRQ-017** | RF-15, AC9-E1 | Integración | **Transición Bloqueada (Safety):** Completar servicio sin fotos en Garage. | `POST /v1/service-requests/{id}/complete` con 0 fotos registradas retorna HTTP 422 Unprocessable Entity. |
+| **SRQ-018** | RF-15 | Integración | Completado exitoso tras verificar evidencia en Garage. | Estado pasa a `completado`; `completed_at` guardado; evento `service-request.completed` en Outbox. |
 | **SRQ-019** | RF-36, RN-SR7 | Unitaria | Cancelación de solicitud por cliente antes de iniciar trabajo. | Solicitud pasa a `cancelado`; evento `service-request.cancelled` en Outbox. |
 | **SRQ-020** | RF-36, RN-SR7 | Unitaria | Rechazo de cancelación unilateral cuando servicio está `en_progreso`. | Petición de cancelación rechazada con HTTP 409 Conflict tras inicio de labores. |
 | **SRQ-021** | RF-12, RN-R1 | Integración | Registro de calificación válida de 1 a 5 estrellas. | Calificación persistida en tabla `ratings`; promedio de técnico encolado para recálculo. |
@@ -494,7 +494,7 @@ El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **INF-004** | INFRA 10.2 | Red | Conexión permitida exclusivamente en pares origen-destino. | Tráfico desde VM3 a VM4 puerto 5432 y VM6 puerto 9092 opera con éxito. |
 | **INF-005** | K9, RNF-02 | Seguridad | Conexión segura TLS autofirmada en API Gateway (VM1). | Petición a `https://quickpatch.internal` (puerto 443) negocia cifrado TLS exitoso. |
 | **INF-006** | INFRA 10.3 | Acceso | Bloqueo de acceso SSH directo como root en las 7 VMs. | Intento de conexión SSH como usuario root (`ssh root@10.43.x.x`) es rechazado en las 7 VMs (`PermitRootLogin no`); acceso restringido a usuarios estándar no privilegiados. |
-| **INF-007** | INFRA 9.2 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de MinIO en VM7. |
+| **INF-007** | INFRA 9.2, ADR-016 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de Garage en VM7. |
 | **INF-008** | AC5-E1 | Recuperación | Restauración de base de datos desde dump de backup en VM7. | `pg_restore` restablece esquema y datos de manera íntegra dentro de la ventana de recuperación RTO. |
 | **INF-009** | INFRA 8.2 | Secretos | Cero secretos o credenciales en texto plano en Git. | Escaneo con `gitleaks` retorna 0 hallazgos de passwords o llaves privadas. |
 | **INF-010** | INFRA 5.2 | k3s | Rango CIDR de k3s configurado fuera de `10.43.0.0/16`. | `--service-cidr=10.44.0.0/16` verificado; 0 colisión de red con VMs del lab. |
@@ -522,7 +522,7 @@ El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **E2E-008** | RF-35 | E2E Alterno | Flujo alterno: Cotización rechazada y nueva cotización aceptada. | Cliente rechaza 1ra cotización; técnico emite 2da cotización ajustada; cliente acepta. |
 | **E2E-009** | RF-22 | E2E Alterno | Flujo alterno: Pago rechazado y segundo cobro exitoso. | Pasarela simula tarjeta sin fondos; cliente reintenta con tarjeta válida; pago aprobado. |
 | **E2E-010** | RF-36 | E2E Cancel | Cancelación de solicitud por el cliente antes del inicio. | Solicitud pasa a `cancelado`; técnico asignado es liberado inmediatamente. |
-| **E2E-011** | AC6-E5 | E2E Trazabilidad| Reconstrucción completa de disputa mediante eventos. | Secuencia cronológica 100% íntegra con marca de tiempo UTC y fotos accesibles en MinIO. |
+| **E2E-011** | AC6-E5 | E2E Trazabilidad| Reconstrucción completa de disputa mediante eventos. | Secuencia cronológica 100% íntegra con marca de tiempo UTC y fotos accesibles en Garage. |
 | **E2E-012** | AC5-E6 | E2E Calidad | Tasa de respuestas 5xx durante ejecución repetitiva de E2E. | Tasa de errores 5xx del servidor inferior al 1% en 20 iteraciones del flujo crítico. |
 
 ---
@@ -572,7 +572,7 @@ Para garantizar la repetibilidad, el aislamiento y la independencia de las prueb
 | **Ubicación Solicitud B** | Coordenadas: `4.8100, -74.0300` | Zona: Chía / Límite Norte (Fuera del radio de cobertura estándar) | Escenario `matching.no-technician-available` |
 | **Token Pasarela Aprobado** | `tok_wompi_test_approved_ok` | Franquicia: Visa simulada, Fondos: Ilimitados | Flujo exitoso de autorización y captura |
 | **Token Pasarela Rechazado** | `tok_wompi_test_declined_insufficient` | Error simulado: `INSUFFICIENT_FUNDS` | Manejo de rechazo de pago y reintento (RN-SR5) |
-| **Evidencia Fotográfica** | `mock_cerrojo_reparado.jpg` | Tamaño: 245 KB, MIME: `image/jpeg`, Hash: `e3b0c44298fc1c149afb...` | Subida a MinIO (VM7) antes de completar servicio |
+| **Evidencia Fotográfica** | `mock_cerrojo_reparado.jpg` | Tamaño: 245 KB, MIME: `image/jpeg`, Hash: `e3b0c44298fc1c149afb...` | Subida a Garage (VM7) antes de completar servicio |
 
 ### 8.3 Ciclo de Vida y Limpieza de Datos (Tear-down)
 * **Post-Test Local/CI:** Las bases de datos en Testcontainers se eliminan al destruirse el contenedor Docker.
@@ -617,7 +617,7 @@ Para asegurar la trazabilidad integral y el cierre efectivo de no conformidades 
 | Severidad | Descripción del Impacto | Ejemplos Críticos en QUICKPATCH | Prioridad Jira | SLA de Resolución |
 |---|---|---|:---:|:---:|
 | **S1 — Blocker** | Bloqueo total del sistema, violación de seguridad o pérdida de datos. | Violación de aislamiento multi-tenant (RLS); almacenamiento de PAN/CVV (PCI-DSS K2); pod de Matching en `OOMKilled` (VM3). | Muy Alta (P1) | < 4 horas |
-| **S2 — Crítico** | Falla en una función principal de negocio sin alternativa operativa. | Falla en algoritmo de matching (no asigna técnicos disponibles); bloqueo en webhook de pagos; imposibilidad de adjuntar evidencia fotográfica en MinIO. | Alta (P2) | < 24 horas |
+| **S2 — Crítico** | Falla en una función principal de negocio sin alternativa operativa. | Falla en algoritmo de matching (no asigna técnicos disponibles); bloqueo en webhook de pagos; imposibilidad de adjuntar evidencia fotográfica en Garage. | Alta (P2) | < 24 horas |
 | **S3 — Mayor** | Falla funcional relevante, pero existe un camino alternativo temporal. | Error en cálculo de comisiones de la plataforma; desfase en tiempos de expiración de cotizaciones; inconsistencia en contrato REST menor. | Media (P3) | < 48 horas |
 | **S4 — Menor / Cosmético** | Defecto superficial que no impide la operación ni la integridad de los datos. | Desalineación tipográfica en Web Admin (VM2); falta de descripción en una etiqueta de Swagger; error ortográfico en mensaje de notificación. | Baja (P4) | Siguiente Sprint |
 
@@ -666,7 +666,7 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
 |---|:---:|:---:|:---:|
 | **Casos de Prueba Diseñados y Formalizados** | $\ge 150$ casos | **187 casos de prueba** | 100% (Superado) |
 | **Requisitos Funcionales con Cobertura (RTM)** | 32 / 32 RFs activos | **32 RFs mapeados (100% vigentes del SRS v3.2)** | 100% |
-| **Escenarios de Calidad del SAD con Cobertura** | 37 / 37 automatizables | **37 ACs mapeados (100% arquitectura/software del SAD v2.12)** | 100% |
+| **Escenarios de Calidad del SAD con Cobertura** | 37 / 37 automatizables | **37 ACs mapeados (100% arquitectura/software del SAD v2.13)** | 100% |
 | **Compuertas de Calidad Automatizadas Definidas** | 4 compuertas | **4 compuertas diseñadas (Local, CI, QA en VM2, Producción)** | 100% |
 | **Validación de Restricciones Críticas (Killers)** | K2, K5, K9, K10 | **Diseñados y especificados en la arquitectura de pruebas** | 100% |
 | **Mecanismo de Bloqueo Local Pre-Push** | 13 repositorios | **Script unificado de Git Hooks diseñado para distribución** | 100% |
@@ -683,7 +683,7 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
    - Estrategia de rollback automático (`kubectl rollout undo`) diseñada formalmente en caso de exceder 6.5 GiB de memoria en k3s.
 
 ### 10.3 Evidencias Preparadas para la Presentación y Sustentación
-1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 3.2) y escenarios del SAD (versión vigente 2.12) hasta las aserciones de código de prueba.
+1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 3.2) y escenarios del SAD (versión vigente 2.13) hasta las aserciones de código de prueba.
 2. **Defensa de la Topología en las 7 VMs:** Justificación técnica demostrando cómo se protege producción aislando las pruebas de sistema y estrés en la VM2 (QA según ADR-015).
 3. **Cuadro Comparativo de Herramientas:** Sustentación académica y técnica de la selección de Playwright, k6, Testcontainers y Spectral frente a herramientas legadas.
 
@@ -693,5 +693,5 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
 
 | Versión | Fecha | Autor | Descripción del Cambio |
 |---|---|---|---|
-| **1.0** | 3 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Versión inicial formal para la entrega del Sprint 3 (Semana 10). Incluye cobertura completa del estándar de documentación de pruebas: Plan de Pruebas (Test Plan), Estrategia de Pruebas (Test Strategy), Escenarios de Calidad (Test Scenarios), Matriz de Trazabilidad (RTM) cubriendo los 32 RFs activos del SRS v3.2 y los 37 escenarios de software del SAD v2.12, Catálogo de 187 Casos de Prueba (Test Cases), incorporación del Ambiente de QA en VM2 (ADR-015), Gestión de Datos de Prueba (Test Data), Gestión de Defectos (Bug Report), e Informe de Ejecución del Incremento (Test Execution Report). |
+| **1.0** | 3 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Versión inicial formal para la entrega del Sprint 3 (Semana 10). Incluye cobertura completa del estándar de documentación de pruebas: Plan de Pruebas (Test Plan), Estrategia de Pruebas (Test Strategy), Escenarios de Calidad (Test Scenarios), Matriz de Trazabilidad (RTM) cubriendo los 32 RFs activos del SRS v3.2 y los 37 escenarios de software del SAD v2.13, Catálogo de 187 Casos de Prueba (Test Cases), incorporación del Ambiente de QA en VM2 (ADR-015), adopción de Garage para almacenamiento S3 (ADR-016), Gestión de Datos de Prueba (Test Data), Gestión de Defectos (Bug Report), e Informe de Ejecución del Incremento (Test Execution Report). |
 
