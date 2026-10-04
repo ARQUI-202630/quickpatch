@@ -1,6 +1,6 @@
 # ADR-015 — Ambiente de QA en VM2 y acceso a través del gateway de VM1
 
-- **Estado:** Propuesto (implementado en la infraestructura; falta la aprobación del equipo)
+- **Estado:** Aceptado (3 de octubre de 2026)
 - **Fecha:** 2026-10-03
 - **Decisión:** VM2 deja de servir el panel web y aloja un ambiente de QA permanente. El panel pasa al Nginx de VM1, que además es la única entrada desde la VPN a producción, a QA y a Grafana, y elige el destino según el nombre pedido.
 - **Implementación:** rama `feature/devops/ansible-base` de `quickpatch-infrastructure`
@@ -67,7 +67,7 @@ El Nginx de VM1 escucha en el 443, el único puerto que el firewall perimetral d
 |---|---|
 | VM3 | Es la más cargada y ya es punto único de falla (SAD, sección 5.2). QA competiría por CPU y memoria con los 8 microservicios de producción. |
 | VM4 | El SAD deja la base de datos sola en su VM. Compartirla con QA mezcla datos de prueba y reales en la misma máquina. |
-| VM5 y VM6 | Redis y Kafka se separaron a propósito para aislar sus fallas. VM5, además, aloja hoy un servicio ajeno al proyecto (OpenMetadata) que no se toca. |
+| VM5 y VM6 | Redis y Kafka se separaron a propósito para aislar sus fallas. |
 | VM7 | Ya combina almacenamiento y observabilidad. |
 | **VM2** | Su único trabajo eran archivos estáticos, que el Nginx de VM1 puede servir sin costo apreciable. Es la única VM que se libera sin juntar dos cargas pesadas. |
 
@@ -139,12 +139,12 @@ Se descartó por depender de un tercero, cuando VM1 resuelve el acceso con los p
 ## Pendientes
 
 - Decidir si QA usa el sandbox de la pasarela de pagos o un simulador. Se recomienda el simulador, porque QA tampoco puede recibir webhooks desde fuera del laboratorio (K9).
-- Definir el reemplazo de MinIO, que dejó de distribuirse, tanto en producción como en QA.
+- ~~Definir el reemplazo de MinIO~~: resuelto en el ADR-016 (Garage, en producción y en QA).
 - Medir el consumo de VM2 con los 8 microservicios desplegados.
 - Agregar login al panel de QA o restringir `team_networks` a los rangos de la VPN del equipo, si el laboratorio los asigna fijos.
 - Revisar Kafka UI en VM6:8080. El perímetro sí deja pasar ese puerto y hoy no tiene login.
 - Actualizar los documentos:
-  - SAD, sección 5.1: tabla de VMs.
+  - ~~SAD, sección 5.1: tabla de VMs~~: hecho en el SAD V2.13.
   - SRS: RNF-07 y RNF-08, que hoy describen la prueba de carga contra producción.
   - Documento de Infraestructura:
     - secciones 2 y 3.2: rol de VM2, y VM2 y VM5 con Rocky Linux, no Ubuntu;
