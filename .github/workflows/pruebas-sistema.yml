@@ -1,0 +1,176 @@
+# Pruebas del sistema completo contra el ambiente de QA (VM2).
+# Son las compuertas 2 y 3 del Documento de Pruebas (E2E, seguridad y carga), ejecutadas
+# contra QA en lugar de un staging efímero o de producción (ADR-015).
+#
+# Corre en el runner self-hosted de VM1, el único que llega a la red del laboratorio, cuando
+# se prepara una versión del sistema (release/*) o a mano desde la pestaña Actions.
+# Cada prueba se omite con un aviso si su carpeta todavía no tiene pruebas:
+#   tests/e2e/package.json              → Playwright
+#   tests/e2e/*.postman_collection.json → Newman
+#   tests/security/zap-baseline.conf    → reglas opcionales de ZAP (el escaneo corre siempre)
+#   tests/performance/*.js              → k6
+#
+# SEGURIDAD: solo `push` y `workflow_dispatch`, nunca `pull_request`: el repo es público.
+name: Pruebas de sistema
+
+on:
+  push:
+    branches: ["release/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pruebas-sistema
+  cancel-in-progress: false
+
+env:
+  QA_HOST: qa.quickpatch.internal
+  QA_IP: 10.43.98.15
+  BASE_URL: https://qa.quickpatch.internal
+  LOKI: http://10.43.99.8:3100
+
+jobs:
+  e2e:
+    name: E2E (Playwright y Newman)
+    runs-on: [self-hosted, vm1, red-laboratorio]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Playwright (E2E-001 a E2E-012)
+        run: |
+          if [ ! -f tests/e2e/package.json ]; then
+            echo "::notice::Todavía no hay pruebas de Playwright (tests/e2e/package.json)."
+            exit 0
+          fi
+          docker run --rm --ipc=host --add-host "$QA_HOST:$QA_IP" -e BASE_URL -e CI=true \
+            -v "$PWD/tests/e2e:/e2e" -w /e2e mcr.microsoft.com/playwright:v1.48.2-jammy \
+            bash -c "npm ci && npx playwright test"
+
+      - name: Newman (colecciones de API)
+        run: |
+          shopt -s nullglob
+          colecciones=(tests/e2e/*.postman_collection.json)
+          if [ ${#colecciones[@]} -eq 0 ]; then
+            echo "::notice::Todavía no hay colecciones de Postman en tests/e2e/."
+            exit 0
+          fi
+          for c in "${colecciones[@]}"; do
+            docker run --rm --add-host "$QA_HOST:$QA_IP" -v "$PWD/tests/e2e:/etc/newman" \
+              postman/newman:6-alpine run "$(basename "$c")" --insecure --env-var "baseUrl=$BASE_URL"
+          done
+
+      - name: Guardar reportes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportes-e2e
+          path: |
+            tests/e2e/playwright-report
+            tests/e2e/test-results
+          if-no-files-found: ignore
+
+  seguridad:
+    name: Seguridad (OWASP ZAP y PCI-DSS)
+    runs-on: [self-hosted, vm1, red-laboratorio]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # INF-013: el escaneo base falla con alertas de riesgo alto (FAIL); las advertencias no detienen el pipeline.
+      - name: OWASP ZAP, escaneo base contra QA
+        run: |
+          mkdir -p zap && chmod 777 zap
+          reglas=()
+          if [ -f tests/security/zap-baseline.conf ]; then
+            cp tests/security/zap-baseline.conf zap/
+            reglas=(-c zap-baseline.conf)
+          fi
+          docker run --rm --add-host "$QA_HOST:$QA_IP" -v "$PWD/zap:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t "$BASE_URL" -I -r zap.html "${reglas[@]}"
+
+      # PAY-002 y compuerta 2: ningún número de tarjeta (validado con Luhn) ni CVV en los logs de QA.
+      - name: Escáner PCI-DSS sobre los logs de QA (Loki)
+        run: |
+          python3 - <<'PY'
+          import json, os, re, sys, time, urllib.parse, urllib.request
+
+          fin = int(time.time() * 1e9)
+          inicio = fin - 24 * 3600 * 10**9
+          params = urllib.parse.urlencode({
+              "query": '{vm="vm2"}', "start": inicio, "end": fin, "limit": 5000, "direction": "backward",
+          })
+          with urllib.request.urlopen(f"{os.environ['LOKI']}/loki/api/v1/query_range?{params}", timeout=60) as r:
+              datos = json.load(r)["data"]["result"]
+          lineas = [l for s in datos for _, l in s["values"]]
+
+          def luhn(n):
+              d = [int(c) for c in n][::-1]
+              return (sum(d[0::2]) + sum(sum(divmod(2 * x, 10)) for x in d[1::2])) % 10 == 0
+
+          # Prefijos y longitudes de Visa, Mastercard, Amex y Discover: evita confundir marcas de tiempo con tarjetas.
+          def es_tarjeta(n):
+              return luhn(n) and (
+                  (n[0] == "4" and len(n) in (13, 16, 19))
+                  or (len(n) == 16 and (51 <= int(n[:2]) <= 55 or 2221 <= int(n[:4]) <= 2720))
+                  or (len(n) == 15 and n[:2] in ("34", "37"))
+                  or (len(n) == 16 and (n[:4] == "6011" or n[:2] == "65"))
+              )
+
+          pan = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
+          cvv = re.compile(r"(?i)\b(cvv2?|cvc2?|security[_ ]?code)\b\W{0,3}\d{3,4}\b")
+          hallazgos = 0
+          for l in lineas:
+              for m in pan.finditer(l):
+                  n = re.sub(r"[ -]", "", m.group())
+                  if es_tarjeta(n):
+                      hallazgos += 1
+                      print(f"::error::Posible número de tarjeta en los logs de QA: {n[:6]}…{n[-4:]}")
+              if cvv.search(l):
+                  hallazgos += 1
+                  print("::error::Posible CVV en los logs de QA.")
+          print(f"Líneas revisadas: {len(lineas)}. Hallazgos: {hallazgos}.")
+          sys.exit(1 if hallazgos else 0)
+          PY
+
+      - name: Guardar reporte de ZAP
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-zap
+          path: zap/zap.html
+          if-no-files-found: ignore
+
+  carga:
+    name: Carga (k6)
+    needs: [e2e, seguridad]
+    runs-on: [self-hosted, vm1, red-laboratorio]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # PRF-001 a PRF-007: los umbrales (thresholds) de cada script deciden si la prueba pasa.
+      - name: k6 contra QA
+        run: |
+          shopt -s nullglob
+          scripts=(tests/performance/*.js)
+          if [ ${#scripts[@]} -eq 0 ]; then
+            echo "::notice::Todavía no hay scripts de k6 en tests/performance/."
+            exit 0
+          fi
+          mkdir -p resultados-k6
+          for s in "${scripts[@]}"; do
+            nombre=$(basename "$s" .js)
+            k6 run --insecure-skip-tls-verify -e BASE_URL="$BASE_URL" \
+              --summary-export "resultados-k6/$nombre.json" "$s"
+          done
+
+      - name: Guardar resultados de k6
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-k6
+          path: resultados-k6
+          if-no-files-found: ignore
