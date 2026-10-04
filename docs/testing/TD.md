@@ -150,38 +150,49 @@ Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.
 
 ## 6. Mecanismo de Bloqueo Local Pre-Push
 
-Para evitar que se suba código con pruebas rotas al repositorio, cada repositorio cuenta con el gancho `.git/hooks/pre-push` configurado:
+Para evitar que se suba código con pruebas rotas al repositorio, se estandarizó la plantilla del gancho `pre-push` (Compuerta 0) en `quickpatch-infrastructure/plantillas/hooks/pre-push`, instalada en los repositorios copiándola a `.githooks/pre-push` y configurando `git config core.hooksPath .githooks`:
 
 ```bash
-#!/bin/bash
-echo "🔍 [QA GATE] Ejecutando pruebas locales antes de hacer push..."
+#!/usr/bin/env bash
+# Compuerta 0 del Documento de Pruebas: corre las pruebas unitarias antes de cada push.
+# Instalación, una vez por clon: copiar este archivo como .githooks/pre-push en el repo y correr
+#   git config core.hooksPath .githooks
+# Es una ayuda local: `git push --no-verify` lo salta, y el CI vuelve a correr todo igual.
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)" || exit 1
 
-# Ejecución condicional según el stack del componente
-if [ -f "*.csproj" ] || [ -f "src/*/*.csproj" ]; then
-    dotnet test --no-build --verbosity quiet --filter Category=Unit
-    RESULT=$?
-elif [ -f "build.gradle" ] || [ -f "pom.xml" ]; then
-    ./gradlew test -x integrationTest --quiet
-    RESULT=$?
-elif [ -f "angular.json" ]; then
-    npm run test:ci --silent
-    RESULT=$?
-elif [ -f "pubspec.yaml" ]; then
-    flutter test
-    RESULT=$?
-else
-    npm test --if-present --silent
-    RESULT=$?
-fi
-
-if [ $RESULT -ne 0 ]; then
-    echo "❌ [PUSH ABORTADO] Las pruebas automáticas fallaron en tu máquina local."
-    echo "❌ Corrige los errores antes de publicar código en la rama remota."
+echo "[QA] Pruebas unitarias antes del push..."
+if compgen -G "*.sln" > /dev/null || compgen -G "*.slnx" > /dev/null; then
+  proyectos=$(find tests/unit -name '*.csproj' 2> /dev/null)
+  if [ -z "$proyectos" ]; then
+    echo "[QA] No hay proyectos de pruebas unitarias en tests/unit/."
     exit 1
+  fi
+  for p in $proyectos; do
+    dotnet test "$p" --verbosity quiet || resultado=1
+  done
+elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then
+  if [ -x gradlew ]; then ./gradlew test --quiet; else gradle test --quiet; fi
+  resultado=$?
+elif [ -f pom.xml ]; then
+  if [ -x mvnw ]; then ./mvnw -q test; else mvn -q test; fi
+  resultado=$?
+elif [ -f angular.json ]; then
+  npm run test:ci --silent
+  resultado=$?
+elif [ -f pubspec.yaml ]; then
+  flutter test
+  resultado=$?
+else
+  echo "[QA] Este repo no tiene proyecto con pruebas: nada que correr."
+  exit 0
 fi
 
-echo "✅ [QA GATE] Pruebas aprobadas. Procediendo con el push."
-exit 0
+if [ "${resultado:-0}" -ne 0 ]; then
+  echo "[QA] Push cancelado: fallaron las pruebas unitarias. Corrígelas antes de subir."
+  exit 1
+fi
+echo "[QA] Pruebas aprobadas."
 ```
 
 ---
@@ -203,8 +214,8 @@ El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organiza
 | **RF-01** | Registro de Cliente con validación de email y password | Identity | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` |
 | **RF-02** | Registro de Técnico en estado pendiente de verificación | Identity / Actors | `IDN-004`, `ACT-001`, `ACT-002` |
 | **RF-03** | Autenticación y bloqueo temporal tras fallos repetidos | Identity | `IDN-005`, `IDN-006`, `IDN-007`, `IDN-008` |
-| **RF-04** | Aislamiento lógico multi-tenant vía `tenant_id` y RLS | Transversal (Todos) | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-007`, `MAT-004`, `PAY-008` |
-| **RF-05** | Control de acceso basado en roles (RBAC) | Identity | `IDN-011`, `IDN-012`, `CAT-010`, `ACT-012` |
+| **RF-04** | Aislamiento lógico multi-tenant vía `tenant_id` y RLS | Transversal (Todos) | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-007`, `ACT-009`, `PAY-008`, `RNK-008` |
+| **RF-05** | Control de acceso basado en roles (RBAC) | Identity | `IDN-011`, `IDN-012`, `CAT-010` |
 | **RF-06** | Registro de empresas corporativas y alta de tenant | Identity | `IDN-013`, `IDN-014`, `E2E-004` |
 | **RF-07** | Creación de solicitud de servicio técnico por Cliente | ServiceRequest | `SRQ-001`, `SRQ-002`, `SRQ-003`, `E2E-001`, `E2E-005` |
 | **RF-08** | Registro de solicitudes corporativas por Empresa | ServiceRequest | `SRQ-004` |
@@ -240,7 +251,7 @@ El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 |---|:---:|:---:|---|
 | **AC1: Adecuación Funcional** | 3 / 3 | 3 | `AC1-E1` (MAT-001), `AC1-E2` (E2E-001), `AC1-E3` (SRQ-005) |
 | **AC2: Eficiencia de Desempeño** | 5 / 5 | 5 | `AC2-E1` (PRF-001), `AC2-E2` (PRF-002), `AC2-E3` (PRF-003), `AC2-E4` (PRF-004), `AC2-E5` (PRF-005) |
-| **AC3: Compatibilidad** | 2 / 2 | 2 | `AC3-E1` (PAY-014), `AC3-E2` (INF-004) |
+| **AC3: Compatibilidad** | 2 / 2 | 2 | `AC3-E1` (PAY-014), `AC3-E2` (MAT-022) |
 | **AC4: Capacidad de Interacción** | 2 / 9 | 9 | `AC4-E1` (E2E-005), `AC4-E2` (E2E-006). *(AC4-E3 a AC4-E9 son pruebas presenciales con 5 usuarios)* |
 | **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (INF-015), `AC5-E3` (RNK-006), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024), `AC5-E6` (E2E-012) |
 | **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-001, PAY-002), `AC6-E2` (IDN-009), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (PAY-015), `AC6-E7` (IDN-020), `AC6-E8` (IDN-007, IDN-008) |
@@ -482,7 +493,7 @@ El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **INF-003** | K9, INFRA 10.2| Red | Aislamiento de puertos por firewall (UFW en VM1/VM3/VM4/VM6/VM7 y firewalld en VM2/VM5). | Conexión externa directa a puerto 5432 (Postgres en VM4) o 6379 (Redis en VM5) rechazada por defecto. |
 | **INF-004** | INFRA 10.2 | Red | Conexión permitida exclusivamente en pares origen-destino. | Tráfico desde VM3 a VM4 puerto 5432 y VM6 puerto 9092 opera con éxito. |
 | **INF-005** | K9, RNF-02 | Seguridad | Conexión segura TLS autofirmada en API Gateway (VM1). | Petición a `https://quickpatch.internal` (puerto 443) negocia cifrado TLS exitoso. |
-| **INF-006** | INFRA 10.3 | Acceso | Verificación de autenticación SSH por llave pública en las 7 VMs. | Acceso mediante clave pública `id_rsa` autorizada; verificación de soporte para clave pública en todas las VMs. |
+| **INF-006** | INFRA 10.3 | Acceso | Bloqueo de acceso SSH directo como root en las 7 VMs. | Intento de conexión SSH como usuario root (`ssh root@10.43.x.x`) es rechazado en las 7 VMs (`PermitRootLogin no`); acceso restringido a usuarios estándar no privilegiados. |
 | **INF-007** | INFRA 9.2 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de MinIO en VM7. |
 | **INF-008** | AC5-E1 | Recuperación | Restauración de base de datos desde dump de backup en VM7. | `pg_restore` restablece esquema y datos de manera íntegra dentro de la ventana de recuperación RTO. |
 | **INF-009** | INFRA 8.2 | Secretos | Cero secretos o credenciales en texto plano en Git. | Escaneo con `gitleaks` retorna 0 hallazgos de passwords o llaves privadas. |
