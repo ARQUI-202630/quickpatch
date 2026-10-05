@@ -32,7 +32,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.2) y los escenarios de calidad del SAD (versión vigente 2.12) de cara a los entregables del Sprint 3.
+El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.2) y los escenarios de calidad del SAD (versión vigente 2.13) de cara a los entregables del Sprint 3.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -41,7 +41,7 @@ El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de ase
    - **Cumplimiento PCI-DSS (K2, AC6-E1):** Cero almacenamiento de números de tarjeta (PAN) o códigos de seguridad (CVV) en bases de datos o logs.
    - **Capacidad de Matching bajo Carga (AC2-E4, AC2-E5):** Soporte de 150 solicitudes concurrentes en la VM3 (k3s) con consumo de memoria $\le 6.5\text{ GiB}$ y 0 desalojos por `OOMKilled`.
    - **Resiliencia e Idempotencia (AC5-E4, AC5-E5):** Cero pérdida de eventos ante caída de Kafka (vía Transactional Outbox) y cero efectos duplicados.
-   - **Seguridad en el Ciclo del Servicio (AC9-E1, D7):** Bloqueo estricto de transiciones de estado inválidas y exigencia de evidencia fotográfica obligatoria en Garage antes de completar cualquier trabajo.
+   - **Seguridad en el Ciclo del Servicio (AC9-E1, D7):** Bloqueo estricto de transiciones de estado inválidas y exigencia de evidencia fotográfica obligatoria en Garage (ADR-016) antes de completar cualquier trabajo.
 
 ---
 
@@ -114,7 +114,6 @@ El flujo de promoción asegura que ningún código defectuoso llegue a las máqu
        ▼ 
 [Compuerta 3: Despliegue en Producción (VM3 k3s)]
        │ • Rolling Update en VM3 mediante Runner en VM1
-       │ • Verificación de estado de salud (kubectl rollout status)
        │ • Smoke + kubectl rollout status
        │ • El presupuesto de RAM de VM3 se valida mediante medición específica sobre VM3
        ├───(Pasa)───> [Versión Operativa y Tráfico Habilitado]
@@ -146,7 +145,7 @@ Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.
 | **VM4** | `10.43.98.209` | PostgreSQL 16 + PostGIS (puerto 5432) | Base de datos de Producción. Ejecuta las consultas espaciales (`ST_DWithin`) y valida las políticas RLS. (QA en VM2 utiliza su propia base de datos aislada en Docker Compose). |
 | **VM5** | `10.43.98.29` | Redis 7 (puerto 6379) | Valida el almacenamiento en cache de cotizaciones temporales y coordinación de tareas programadas (RN-Q6). |
 | **VM6** | `10.43.99.12` | Apache Kafka (puerto 9092) | Valida la publicación confiable vía Outbox, la tolerancia a desconexión del broker y el consumo idempotente de eventos por `eventId`. |
-| **VM7** | `10.43.99.8` | Garage + Prometheus + Loki + Grafana | **Árbitro de observabilidad.** Garage almacena las fotos obligatorias de evidencia. Prometheus evalúa en tiempo real que VM3 no supere los 6.5 GiB de RAM. Grafana expone el Dashboard de Calidad del proyecto. |
+| **VM7** | `10.43.99.8` | Garage + Prometheus + Loki + Grafana | **Árbitro de observabilidad y almacenamiento.** Garage almacena las fotos obligatorias de evidencia y backups de PostgreSQL (ADR-016). Prometheus evalúa en tiempo real que VM3 no supere los 6.5 GiB de RAM. Grafana expone el Dashboard de Calidad del proyecto. |
 
 ---
 
@@ -203,7 +202,7 @@ echo "[QA] Pruebas aprobadas."
 
 ### 7.1 Matriz de Trazabilidad de Requisitos (RTM)
 
-La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 3.2), los escenarios de calidad del SAD (versión vigente 2.12) y el catálogo de 187 casos de prueba automatizados.
+La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 3.2), los escenarios de calidad del SAD (versión vigente 2.13) y el catálogo de 187 casos de prueba automatizados.
 
 #### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS (v3.2)
 El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organizados en 23 Features y 7 Épicas. 
@@ -227,7 +226,7 @@ El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organiza
 | **RF-12** | Calificación del servicio (1 a 5) al completar | ServiceRequest / Ranking | `SRQ-021`, `SRQ-022`, `SRQ-023`, `RNK-001`, `RNK-002` |
 | **RF-13** | Configuración de disponibilidad y zona de cobertura del Técnico | Matching / Actors | `MAT-003`, `MAT-005` |
 | **RF-14** | Consulta de detalle de solicitud asignada por el Técnico | ServiceRequest | `SRQ-005` |
-| **RF-15** | Cierre de solicitud con evidencia fotográfica obligatoria en Garage | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
+| **RF-15** | Cierre de solicitud con evidencia fotográfica obligatoria en Garage (ADR-016) | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
 | **RF-16** | Administración de equipo de técnicos por Proveedor | Actors | `ACT-007`, `ACT-008`, `ACT-009` |
 | **RF-17** | Historial de solicitudes atendidas por el Técnico | ServiceRequest | `SRQ-026` |
 | **RF-18** | Dashboard operativo con panel de solicitudes activas para Admin | Web / ServiceRequest | `E2E-002` |
@@ -246,8 +245,8 @@ El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organiza
 | **RF-35** | Aceptación, rechazo y límite de 3 cotizaciones por Cliente | ServiceRequest | `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
 | **RF-36** | Cancelación de solicitud por Cliente antes de iniciar labores | ServiceRequest | `SRQ-019`, `SRQ-020`, `E2E-010` |
 
-#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (v2.12)
-El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
+#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (v2.13)
+El SAD v2.13 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
 
 | Atributo de Calidad (ISO 25010) | Escenarios Automatizados | Total SAD | Casos de Prueba Automatizados |
 |---|:---:|:---:|---|
@@ -261,6 +260,33 @@ El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **AC8: Flexibilidad** | 3 / 5 | 5 | `AC8-E1` (E2E-004), `AC8-E2` (MAT-020), `AC8-E5` (INF-002). *(AC8-E3/E4 portabilidad externa documentada)* |
 | **AC9: Seguridad Operativa (Safety)**| 5 / 8 | 8 | `AC9-E1` (SRQ-015, SRQ-017), `AC9-E3` (SRQ-025), `AC9-E4` (MAT-013), `AC9-E5` (PAY-009), `AC9-E6` (PRF-010). *(AC9-E2/E7/E8 pendientes de diseño)* |
 | **Total Escenarios** | **37 automatizados** | **51** | **100% de los escenarios de software y arquitectura cubiertos** |
+
+#### 7.1.3 Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 3 — Subtarea SCRUM-317)
+En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguiente matriz mapea bidireccionalmente cada **Historia de Usuario (HU)** del backlog del Sprint 3 en Jira (`jorgefortich3.atlassian.net`) con sus Requisitos Funcionales del SRS v3.2, Atributos de Calidad del SAD v2.13, las subtareas específicas de QA y el conjunto de casos de prueba automatizados responsables de validar sus criterios de aceptación:
+
+| Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS / SAD | Nivel de Prueba | Casos de Prueba Asociados | Subtarea QA en Jira | Criterio de Cobertura QA |
+|---|---|---|---|---|---|---|
+| **SCRUM-21** | Registro de Cliente con correo y contraseña | RF-01, RNF-03 | Unitaria, Integración, E2E | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` | `SCRUM-53` (Finalizado) | Email válido, password $\ge 8$ caracteres, rechazo duplicado en tenant y hash seguro. |
+| **SCRUM-22** | Registro de Técnico/Proveedor con datos y documentos | RF-02, RF-16 | Unitaria, Integración | `IDN-004`, `ACT-001`, `ACT-002`, `ACT-007` | Subtarea QA de sprint | Documento obligatorio, perfil creado en estado `pendiente`, vinculación a proveedor. |
+| **SCRUM-23** | Inicio de sesión seguro para todos los roles | RF-03, AC6-E8 | Unitaria, Integración | `IDN-005`, `IDN-006`, `IDN-007`, `IDN-008`, `IDN-017`, `IDN-018` | `SCRUM-59` (Finalizado) | JWT con claims válidos (`sub`, `tenant_id`, `role`), bloqueo tras 5 intentos fallidos (HTTP 423) y rechazo de tokens expirados o alterados. |
+| **SCRUM-24** | Aislamiento lógico de datos por Tenant (Multi-tenant) | RF-04, AC6-E2 | Integración, Seguridad | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-007`, `ACT-009`, `PAY-008`, `RNK-008` | Subtarea QA de sprint | Validación RLS en PostgreSQL: consultas entre tenants retornan 0 filas; rechazo de escrituras cruzadas (HTTP 403). |
+| **SCRUM-25** | Definición de roles y permisos diferenciados | RF-05, AC6-E3 | Unitaria, Seguridad | `IDN-011`, `IDN-012`, `CAT-010` | `SCRUM-65` (En desarrollo) | Validación RBAC estricta: HTTP 403 ante accesos no autorizados y emisión de log estructurado en Loki. |
+| **SCRUM-26** | Registro de cuenta corporativa (Empresa) | RF-06 | Integración, E2E | `IDN-013`, `IDN-014`, `E2E-004` | Subtarea QA de sprint | Alta de tenant corporativo activo, validación de unicidad de NIT (HTTP 409). |
+| **SCRUM-27** | Creación de solicitud de servicio técnico (Cliente) | RF-07, AC4-E1, AC5-E4 | Unitaria, Integración, E2E | `SRQ-001`, `SRQ-002`, `SRQ-003`, `E2E-001`, `E2E-005` | `SCRUM-72` (Backlog) | Formulario Flutter / REST, campos obligatorios, estado inicial `buscando_tecnico` y publicación Outbox `service-request.created`. |
+| **SCRUM-28** | Creación de solicitud de servicio técnico (Empresa) | RF-08 | Integración | `SRQ-004` | Subtarea QA de sprint | Solicitud asociada correctamente al `tenant_id` corporativo de la empresa. |
+| **SCRUM-29** | Asignación automática de técnico (Motor de Matching) | RF-09, RF-10, AC1-E1, AC2-E4 | Integración, Rendimiento | `MAT-001` a `MAT-022`, `PRF-001`, `PRF-004` | Subtarea QA de sprint | Filtro estricto de especialidad, ordenamiento espacial PostGIS, tolerancia a 150 VU en k6 y consumo $\le 1$ GiB en VM3. |
+| **SCRUM-41** | Gestión de tenants/clientes (Admin) | RF-21, RN-T1, AC8-E1 | Integración, UI E2E | `IDN-019`, `E2E-004` | `SCRUM-114` (En desarrollo) | Desactivación de tenant impide autenticación y creación de nuevas solicitudes (`tenant is disabled`). |
+| **SCRUM-42** | Pago del servicio con tarjeta (Cliente, PCI-DSS) | RF-22, K2, AC6-E1 | Unitaria, Integración, Seguridad | `PAY-001`, `PAY-002`, `PAY-003`, `PAY-010`, `PAY-011`, `E2E-009` | Subtarea QA de sprint | Cero PAN/CVV en BD y logs de Loki; cobro con token de pasarela (`tok_wompi_test_*`) y prevención de doble cobro. |
+| **SCRUM-43** | Pago corporativo centralizado (Empresa) | RF-23 | Unitaria, Integración | `PAY-006` | Subtarea QA de sprint | Factura a nombre de empresa corporativa con NIT y razón social. |
+| **SCRUM-44** | Generación de factura/comprobante de pago | RF-24, D4 | Integración | `PAY-004`, `PAY-005` | Subtarea QA de sprint | Emisión automática de comprobante fiscal consecutivo a nombre de QUICKPATCH. |
+| **SCRUM-45** | Registro de pagos recibidos (Técnico/Proveedor) | RF-25 | Integración | `PAY-007`, `PAY-008` | Subtarea QA de sprint | Consulta paginada de ingresos percibidos filtrada por `tenant_id` del técnico. |
+| **SCRUM-46** | Pipeline de integración y despliegue continuo (CI/CD) | RF-26, RNF-08 | CI/CD, Infraestructura | `INF-016` | Subtarea QA de sprint | Compuertas automatizadas en GitHub Actions; bloqueo ante fallos de prueba unitaria. |
+| **SCRUM-47** | Pruebas automatizadas del flujo crítico (Smoke Test E2E) | RF-27, AC1-E2 | E2E Completo | `E2E-001`, `E2E-012` | Subtarea QA de sprint | Recorrido integral de 10 pasos en Playwright sin intervención manual; tasa de error 5xx < 1%. |
+| **SCRUM-48** | Logging centralizado y monitoreo de errores | RF-28, RNF-04, INFRA 7.1 | Observabilidad | `INF-011`, `INF-012`, `PRF-010` | Subtarea QA de sprint | Ingesta de métricas en Prometheus y logs estructurados JSON con correlationId en Promtail/Loki. |
+| **SCRUM-49** | Cifrado de datos sensibles en tránsito y en reposo | RF-29, K9, RNF-02 | Infraestructura, Seguridad | `IDN-015`, `IDN-021`, `INF-005` | Subtarea QA de sprint | Terminación TLS 1.3 en API Gateway Nginx (VM1) y hash unidireccional de contraseñas. |
+| **SCRUM-254** | Documentación Calidad y Pruebas V1 | TD V1, RTM | Documentación | 187 casos formalizados | `SCRUM-266` a `SCRUM-271` (Finalizado) | Documento de diseño de pruebas completo con matriz RTM, TDM, Bug reporting y compuertas. |
+| **SCRUM-306** | Despliegue del incremento funcional en ambiente QA | ADR-015, Compuerta 2 | Infraestructura QA | `INF-003`, `INF-004`, `INF-005` | Subtarea QA de sprint | Puesta en marcha de contenedores de QA en VM2 aislados de producción. |
+| **SCRUM-307** | Informe de pruebas y evidencias del Sprint 3 | Calidad y Reporte | Trazabilidad y Evidencia | Catálogo completo y suites ejecutables | `SCRUM-317`, `SCRUM-315` (Asignadas a Kathe) | Consolidación de casos, precondiciones, pasos, resultados esperados y evidencias reproducibles. |
 
 ---
 
@@ -496,7 +522,7 @@ El SAD v2.12 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **INF-004** | INFRA 10.2 | Red | Conexión permitida exclusivamente en pares origen-destino. | Tráfico desde VM3 a VM4 puerto 5432 y VM6 puerto 9092 opera con éxito. |
 | **INF-005** | K9, RNF-02 | Seguridad | Conexión segura TLS autofirmada en API Gateway (VM1). | Petición a `https://quickpatch.internal` (puerto 443) negocia cifrado TLS exitoso. |
 | **INF-006** | INFRA 10.3 | Acceso | Bloqueo de acceso SSH directo como root en las 7 VMs. | Intento de conexión SSH como usuario root (`ssh root@10.43.x.x`) es rechazado en las 7 VMs (`PermitRootLogin no`); acceso restringido a usuarios estándar no privilegiados. |
-| **INF-007** | INFRA 9.2 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de Garage en VM7. |
+| **INF-007** | INFRA 9.2, ADR-016 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de Garage en VM7. |
 | **INF-008** | AC5-E1 | Recuperación | Restauración de base de datos desde dump de backup en VM7. | `pg_restore` restablece esquema y datos de manera íntegra dentro de la ventana de recuperación RTO. |
 | **INF-009** | INFRA 8.2 | Secretos | Cero secretos o credenciales en texto plano en Git. | Escaneo con `gitleaks` retorna 0 hallazgos de passwords o llaves privadas. |
 | **INF-010** | INFRA 5.2 | k3s | Rango CIDR de k3s configurado fuera de `10.43.0.0/16`. | `--service-cidr=10.44.0.0/16` verificado; 0 colisión de red con VMs del lab. |
@@ -668,7 +694,7 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
 |---|:---:|:---:|:---:|
 | **Casos de Prueba Diseñados y Formalizados** | $\ge 150$ casos | **187 casos de prueba** | 100% (Superado) |
 | **Requisitos Funcionales con Cobertura (RTM)** | 32 / 32 RFs activos | **32 RFs mapeados (100% vigentes del SRS v3.2)** | 100% |
-| **Escenarios de Calidad del SAD con Cobertura** | 37 / 37 automatizables | **37 ACs mapeados (100% arquitectura/software del SAD v2.12)** | 100% |
+| **Escenarios de Calidad del SAD con Cobertura** | 37 / 37 automatizables | **37 ACs mapeados (100% arquitectura/software del SAD v2.13)** | 100% |
 | **Compuertas de Calidad Automatizadas Definidas** | 4 compuertas | **4 compuertas diseñadas (Local, CI, QA en VM2, Producción)** | 100% |
 | **Validación de Restricciones Críticas (Killers)** | K2, K5, K9, K10 | **Diseñados y especificados en la arquitectura de pruebas** | 100% |
 | **Mecanismo de Bloqueo Local Pre-Push** | 13 repositorios | **Script unificado de Git Hooks diseñado para distribución** | 100% |
@@ -685,9 +711,32 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
    - Estrategia de rollback automático (`kubectl rollout undo`) diseñada formalmente en caso de exceder 6.5 GiB de memoria en k3s.
 
 ### 10.3 Evidencias Preparadas para la Presentación y Sustentación
-1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 3.2) y escenarios del SAD (versión vigente 2.12) hasta las aserciones de código de prueba.
+1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 3.2), escenarios del SAD (versión vigente 2.13) e Historias de Usuario de Jira (Sprint 3 — SCRUM-317) hasta las aserciones de código de prueba.
 2. **Defensa de la Topología en las 7 VMs:** Justificación técnica demostrando cómo se protege producción aislando las pruebas de sistema y estrés en la VM2 (QA según ADR-015).
 3. **Cuadro Comparativo de Herramientas:** Sustentación académica y técnica de la selección de Playwright, k6, Testcontainers y Spectral frente a herramientas legadas.
+
+### 10.4 Protocolo de Ejecución y Almacenamiento de Evidencias (Subtareas SCRUM-307 y SCRUM-315)
+Para garantizar la reproducibilidad y el soporte probatorio exigido por el Sprint 3, la suite de pruebas almacena sus artefactos y evidencias de ejecución estructuradas en el directorio `quickpatch/tests/evidence/`:
+
+```
+quickpatch/tests/evidence/
+├── e2e/               Reportes HTML de Playwright y ejecuciones Newman (qa.quickpatch.internal)
+├── performance/       Reportes JSON y resúmenes de k6 (50 VU normal y 150 VU estrés)
+├── security/          Salidas de escaneo Regex PCI-DSS en logs de Loki (0 PAN / 0 CVV) y reportes ZAP Baseline
+└── contract/          Reportes de Spectral CLI sobre OpenAPI y validación AJV de esquemas Kafka
+```
+
+#### 10.4.1 Resumen de Estado de Ejecución del Incremento (Release Sprint 3)
+
+| Nivel de Prueba | Total Casos | Diseñados | Automatizados | Por Ejecutar en QA | Criterio de Aprobación |
+|---|:---:|:---:|:---:|:---:|---|
+| **Unitarias / CI (Compuerta 1)** | 92 | 92 | 92 | 0 | Cobertura $\ge 80\%$, linters sin errores en GitHub Actions |
+| **Integración / Testcontainers (Compuerta 1)** | 48 | 48 | 48 | 0 | 100% pruebas de persistencia y Kafka efímero aprobadas |
+| **Contratos (OpenAPI & Schemas)** | 10 | 10 | 10 | 0 | 0 errores en Spectral CLI y esquemas AJV consistentes |
+| **Pruebas de Sistema / E2E (Compuerta 2 - VM2)** | 12 | 12 | 12 | Release QA | Flujo crítico de 10 pasos exitoso en Playwright |
+| **Carga y Rendimiento (Compuerta 2 - VM2)** | 10 | 10 | 10 | Release QA | 50 VU con p95 < 3s; 150 VU sin caída de pods y RAM $\le 6.5$ GiB |
+| **Seguridad y PCI-DSS (Compuerta 2 - VM2)** | 15 | 15 | 15 | Release QA | 0 coincidencias de PAN/CVV en logs y 0 alertas altas en ZAP |
+| **Total Global** | **187** | **187** | **187** | **Incremento QA** | **100% trazabilidad e integridad técnica garantizada** |
 
 ---
 
@@ -695,5 +744,6 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
 
 | Versión | Fecha | Autor | Descripción del Cambio |
 |---|---|---|---|
-| **1.0** | 3 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Versión inicial formal para la entrega del Sprint 3 (Semana 10). Incluye cobertura completa del estándar de documentación de pruebas: Plan de Pruebas (Test Plan), Estrategia de Pruebas (Test Strategy), Escenarios de Calidad (Test Scenarios), Matriz de Trazabilidad (RTM) cubriendo los 32 RFs activos del SRS v3.2 y los 37 escenarios de software del SAD v2.12, Catálogo de 187 Casos de Prueba (Test Cases), incorporación del Ambiente de QA en VM2 (ADR-015), Gestión de Datos de Prueba (Test Data), Gestión de Defectos (Bug Report), e Informe de Ejecución del Incremento (Test Execution Report). |
+| **1.0** | 3 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Versión inicial formal para la entrega del Sprint 3 (Semana 10). Incluye cobertura completa del estándar de documentación de pruebas: Plan de Pruebas (Test Plan), Estrategia de Pruebas (Test Strategy), Escenarios de Calidad (Test Scenarios), Matriz de Trazabilidad (RTM) cubriendo los 32 RFs activos del SRS v3.2 y los 37 escenarios de software del SAD v2.13, Catálogo de 187 Casos de Prueba (Test Cases), incorporación del Ambiente de QA en VM2 (ADR-015), adopción de Garage para almacenamiento S3 (ADR-016), Gestión de Datos de Prueba (Test Data), Gestión de Defectos (Bug Report), e Informe de Ejecución del Incremento (Test Execution Report). |
+| **1.1** | 4 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Sincronización técnica del stack multirepo V2 (.NET 10, Java 25, Angular 22, Flutter 3.47, Vitest), incorporación formal de la Matriz de Trazabilidad hacia Historias de Usuario de Jira (subtarea SCRUM-317), refinamiento de compuertas k6 y especificación del protocolo de evidencias para el Informe de Pruebas (SCRUM-307 / SCRUM-315). |
 
