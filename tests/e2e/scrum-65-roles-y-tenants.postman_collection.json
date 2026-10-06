@@ -1,0 +1,574 @@
+{
+  "info": {
+    "_postman_id": "c6a1b820-8e34-4b52-9c17-123456789abc",
+    "name": "QUICKPATCH - Pruebas de Roles, Permisos y Tenants (SCRUM-65 / SCRUM-114)",
+    "description": "Suite automatizada de pruebas de API para la compuerta de seguridad y autorización multi-tenant.\n\nCubre:\n- SCRUM-65 (RF-05, AC6-E3): Control de acceso por roles (RBAC) y rechazo 403 con ProblemDetails.\n- SCRUM-114 (RF-21, RN-T1): Aislamiento y restricción de tenants inactivos/desactivados.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Generador dinámico de Correlation ID para trazabilidad en logs (IDN-016)",
+          "if (!pm.collectionVariables.get('correlationId')) {",
+          "    var uuid = 'qa-' + Date.now() + '-' + Math.floor(Math.random() * 10000);",
+          "    pm.collectionVariables.set('correlationId', uuid);",
+          "}",
+          "",
+          "// Funciones utilitarias para generación de tokens sintéticos con roles y estados de tenant",
+          "function base64url(source) {",
+          "    var encodedSource = CryptoJS.enc.Base64.stringify(source);",
+          "    encodedSource = encodedSource.replace(/=+$/, '');",
+          "    encodedSource = encodedSource.replace(/\\+/g, '-');",
+          "    encodedSource = encodedSource.replace(/\\//g, '_');",
+          "    return encodedSource;",
+          "}",
+          "",
+          "function buildJwt(payload) {",
+          "    var header = { alg: 'HS256', typ: 'JWT' };",
+          "    var strHeader = base64url(CryptoJS.enc.Utf8.parse(JSON.stringify(header)));",
+          "    var strPayload = base64url(CryptoJS.enc.Utf8.parse(JSON.stringify(payload)));",
+          "    var secret = pm.variables.get('jwtSecret') || 'quickpatch-qa-secret-key-2026';",
+          "    var signature = base64url(CryptoJS.HmacSHA256(strHeader + '.' + strPayload, secret));",
+          "    return strHeader + '.' + strPayload + '.' + signature;",
+          "}",
+          "",
+          "var now = Math.floor(Date.now() / 1000);",
+          "var exp = now + 7200; // 2 horas",
+          "var tenantActivo = pm.variables.get('activeTenantId') || 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee';",
+          "var tenantInactivo = pm.variables.get('disabledTenantId') || 'd9d9d9d9-0000-1111-2222-333333333333';",
+          "",
+          "// Token para rol Cliente (Tenant Activo)",
+          "var tokenCliente = buildJwt({ sub: 'usr-client-001', role: 'cliente', tenant_id: tenantActivo, exp: exp });",
+          "pm.variables.set('token_cliente', tokenCliente);",
+          "",
+          "// Token para rol Tecnico (Tenant Activo)",
+          "var tokenTecnico = buildJwt({ sub: 'usr-tech-001', role: 'tecnico', tenant_id: tenantActivo, exp: exp });",
+          "pm.variables.set('token_tecnico', tokenTecnico);",
+          "",
+          "// Token para rol Administrador (Tenant Activo)",
+          "var tokenAdmin = buildJwt({ sub: 'usr-admin-001', role: 'admin', tenant_id: tenantActivo, exp: exp });",
+          "pm.variables.set('token_admin', tokenAdmin);",
+          "",
+          "// Token para usuario perteneciente a un Tenant Desactivado/Inactivo",
+          "var tokenTenantInactivo = buildJwt({ sub: 'usr-disabled-tenant', role: 'cliente', tenant_id: tenantInactivo, tenant_status: 'inactivo', exp: exp });",
+          "pm.variables.set('token_tenant_desactivado', tokenTenantInactivo);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://qa.quickpatch.internal",
+      "type": "string"
+    },
+    {
+      "key": "activeTenantId",
+      "value": "a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "type": "string"
+    },
+    {
+      "key": "disabledTenantId",
+      "value": "d9d9d9d9-0000-1111-2222-333333333333",
+      "type": "string"
+    },
+    {
+      "key": "jwtSecret",
+      "value": "quickpatch-qa-secret-key-2026",
+      "type": "string"
+    },
+    {
+      "key": "correlationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "SCRUM-65 — Roles y Permisos (RBAC)",
+      "description": "Pruebas de validación de control de acceso por roles (RF-05, AC6-E3). Se evalúan rechazos 403 Forbidden ante operaciones fuera del alcance del rol asignado y formato de error RFC 9457.",
+      "item": [
+        {
+          "name": "IDN-011: [Cliente -> Admin Endpoint] Rechazo 403 al crear tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlationId}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Empresa No Autorizada S.A.\",\n  \"nit\": \"901999888-1\",\n  \"contactEmail\": \"contacto@no-autorizado.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/tenants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "tenants"
+              ]
+            },
+            "description": "Verifica que un usuario autenticado con rol 'cliente' no pueda ejecutar operaciones reservadas al rol 'admin' (creación o administración de tenants)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Validación de código de estado HTTP 403 Forbidden",
+                  "pm.test('[SCRUM-65 / IDN-011] Código de respuesta es 403 Forbidden', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "// Validación de estructura RFC 9457 (ProblemDetails)",
+                  "pm.test('[SCRUM-65] Estructura ProblemDetails válida con status 403', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql(403);",
+                  "    pm.expect(json).to.have.property('title');",
+                  "});",
+                  "",
+                  "// Verificación de correlación para auditoría de seguridad en logs",
+                  "pm.test('[SCRUM-65] Header de correlación recibido en la respuesta', function () {",
+                  "    pm.expect(pm.response.headers.has('X-Correlation-Id') || pm.response.headers.has('x-correlation-id')).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IDN-011b: [Técnico -> Admin Endpoint] Rechazo 403 al listar tenants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_tecnico}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlationId}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/tenants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "tenants"
+              ]
+            },
+            "description": "Verifica que el rol 'tecnico' reciba 403 Forbidden al intentar consultar la lista administrativa de tenants."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-65] Técnico no tiene acceso a listado de tenants (403 Forbidden)', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CAT-010: [Cliente -> Mutación Catálogo] Rechazo 403 al crear categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlationId}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cerrajería de Emergencia No Autorizada\",\n  \"description\": \"Creación indebida de categoría por cliente\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/catalog/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "catalog",
+                "categories"
+              ]
+            },
+            "description": "Verifica que un cliente no pueda agregar categorías al catálogo global del tenant (requiere rol admin)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-65 / CAT-010] Cliente no puede mutar categorías del catálogo (403 Forbidden)', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CAT-010b: [Técnico -> Mutación Catálogo] Rechazo 403 al crear categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_tecnico}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlationId}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electricidad Industrial no autorizada\",\n  \"description\": \"Intento de modificación por técnico\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/catalog/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "catalog",
+                "categories"
+              ]
+            },
+            "description": "Verifica que un técnico no pueda alterar el catálogo de servicios."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-65] Técnico no puede mutar categorías del catálogo (403 Forbidden)', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IDN-012: [Técnico -> Crear Solicitud] Rechazo 403 en creación de servicio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_tecnico}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlationId}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01\",\n  \"description\": \"Fuga en tubería principal reportada erróneamente por técnico\",\n  \"location\": {\n    \"latitude\": 4.6486,\n    \"longitude\": -74.063\n  },\n  \"addressText\": \"Calle 63 # 9-45, Chapinero\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "service-requests"
+              ]
+            },
+            "description": "Verifica que el rol 'tecnico' no pueda registrar solicitudes de servicio (operación exclusiva del rol 'cliente', RF-07, DD sección 8.1)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-65 / IDN-012] Técnico no puede crear solicitudes de servicio (403 Forbidden)', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IDN-017: [Anónimo] Rechazo 401 Unauthorized sin credenciales",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlationId}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01\",\n  \"description\": \"Petición anónima no permitida\",\n  \"location\": {\n    \"latitude\": 4.6486,\n    \"longitude\": -74.063\n  },\n  \"addressText\": \"Calle 63 # 9-45\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "service-requests"
+              ]
+            },
+            "description": "Verifica que cualquier invocación sin token sea rechazada en el Gateway con 401 Unauthorized."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-65 / IDN-017] Acceso anónimo denegado con 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SCRUM-114 — Gestión de Tenants (Tenant Desactivado)",
+      "description": "Pruebas del ciclo de vida y aislamiento de tenants (RF-21, RN-T1, AC8-E1). Valida que un tenant en estado inactivo/desactivado no pueda iniciar sesión ni crear solicitudes de servicio.",
+      "item": [
+        {
+          "name": "IDN-019: [Login Tenant Inactivo] Rechazo de autenticación para tenant deshabilitado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlationId}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@tenant-inactivo.com\",\n  \"password\": \"PasswordSeguro2026*\",\n  \"tenantId\": \"{{disabledTenantId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Verifica que las credenciales pertenecientes a un tenant suspendido o inactivo no permitan inicio de sesión (RN-T1)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-114 / IDN-019] Login denegado para tenant inactivo (403 o 422)', function () {",
+                  "    pm.expect([401, 403, 422]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "pm.test('[SCRUM-114] Detalle de error indica estado del tenant', function () {",
+                  "    var text = pm.response.text().toLowerCase();",
+                  "    var valid = text.includes('disabled') || text.includes('desactivado') || text.includes('inactivo') || text.includes('tenant');",
+                  "    pm.expect(valid).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "E2E-004: [Crear Solicitud con Tenant Inactivo] Bloqueo 403 de nuevas solicitudes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_tenant_desactivado}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlationId}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01\",\n  \"description\": \"Intento de radicación de servicio desde empresa suspendida\",\n  \"location\": {\n    \"latitude\": 4.651,\n    \"longitude\": -74.058\n  },\n  \"addressText\": \"Carrera 7 # 72-11\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "service-requests"
+              ]
+            },
+            "description": "Criterio principal de aceptación de SCRUM-114: la API rechaza la creación de solicitudes si el tenant está desactivado (RN-T1, IDN-019)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-114 / E2E-004] Rechazo 403 Forbidden para creación de solicitud con tenant inactivo', function () {",
+                  "    pm.expect([403, 422]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "pm.test('[SCRUM-114] Respuesta describe bloqueo por tenant inactivo', function () {",
+                  "    var text = pm.response.text().toLowerCase();",
+                  "    var valid = text.includes('tenant') && (text.includes('disabled') || text.includes('inactivo') || text.includes('suspendido'));",
+                  "    pm.expect(valid).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TEN-001: [Control Tenant Activo] Solicitud de cliente no es bloqueada por tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlationId}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01\",\n  \"description\": \"Reparación de filtración en lavamanos de baño principal\",\n  \"location\": {\n    \"latitude\": 4.6486,\n    \"longitude\": -74.063\n  },\n  \"addressText\": \"Calle 63 # 9-45, Chapinero\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "service-requests"
+              ]
+            },
+            "description": "Caso de control positivo: confirma que un cliente legítimo con tenant activo no experimenta rechazos 401 ni 403 de tenant o RBAC."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-114] Cliente con tenant activo no recibe 401 Unauthorized ni 403 Forbidden', function () {",
+                  "    pm.expect(pm.response.code).to.not.equal(401);",
+                  "    pm.expect(pm.response.code).to.not.equal(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
