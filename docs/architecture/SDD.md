@@ -192,6 +192,51 @@ El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin 
 
 Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (producen o consumen eventos ServiceRequest, Matching, Ranking, Payments y Communication, según la sección 5.5; Identity, Actors y Catalog solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte direcciones en coordenadas (Matching; la cercanía entre cliente y técnico se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication), que entrega las notificaciones push en la app móvil. El seguimiento en tiempo real de la solicitud (RF-11) se resuelve con esas notificaciones y la consulta del estado por REST (secciones 5.3 y 5.11.1), por eso no hay un canal WebSocket. Los proveedores concretos no están definidos.
 
+### 3.1.5 Componentes de las aplicaciones cliente (C4, nivel 3)
+
+El nivel 3 abre los dos contenedores cliente de la Figura 3 y muestra sus componentes para el incremento del Sprint 3: en Angular Web, el inicio de sesión, el control de acceso por rol y la gestión de tenants (SCRUM-25 y SCRUM-41); en Flutter Mobile, el inicio de sesión y la creación de solicitudes (SCRUM-27). La fuente de los dos diagramas está en Structurizr DSL, en `diagrams/sdd/c4/c4-l3-apps-cliente.dsl`.
+
+Los componentes son lógicos: no fijan librerías de estado, navegación ni cliente HTTP, porque esas decisiones no están tomadas. En cada componente se indica la carpeta del repositorio donde vive, según la organización de la sección 6.2. Las flechas rojas punteadas llaman a endpoints que todavía no tienen especificación OpenAPI en `quickpatch-contracts`.
+
+![Componentes de Angular Web](diagrams/sdd/c4/C4-L3-Web.svg)
+
+**Figura 4. Componentes de Angular Web (C4, nivel 3).**
+
+| Componente | Carpeta | Responsabilidad | HU |
+|---|---|---|---|
+| Shell y enrutamiento | `app.routes` | Rutas, layout del panel y redirección a login o a acceso denegado. | SCRUM-25 |
+| Login administrativo | `features/auth` | Formulario de acceso con validaciones y estados de carga y error. | SCRUM-23 |
+| Servicio de autenticación y sesión | `core/auth` | Autentica, conserva el token y expone el usuario y su rol. | SCRUM-23, SCRUM-25 |
+| Guards de rol (RBAC) | `core/auth` | Permiten o niegan cada ruta y opción de menú según el rol: `admin_plataforma` ve la gestión de tenants y `admin_tenant` no (RN-U6). | SCRUM-25 / SCRUM-64 |
+| Interceptor HTTP | `core/http` | Adjunta el JWT y `X-Correlation-Id`, y traduce 401, 403 y 409 en estados de la UI. | SCRUM-25 |
+| Gestión de tenants | `features/tenants` | Listado de tenants y activación o desactivación con confirmación. | SCRUM-41 / SCRUM-113 |
+| Cliente API de tenants | `features/tenants` | Cliente HTTP generado a partir del contrato de administración de tenants. | SCRUM-41 / SCRUM-113 |
+| UI compartida | `shared` | Estados de carga, vacío, error y acceso denegado. | — |
+
+![Componentes de Flutter Mobile](diagrams/sdd/c4/C4-L3-Mobile.svg)
+
+**Figura 5. Componentes de Flutter Mobile (C4, nivel 3).**
+
+| Componente | Carpeta | Responsabilidad | HU |
+|---|---|---|---|
+| Navegación | `core` | Pantallas, rutas protegidas y flujo entre los pasos de la solicitud. | SCRUM-27 |
+| Login | `features/auth/presentation` | Formulario de acceso con validaciones y estados de carga y error. | SCRUM-23 |
+| Sesión | `core/auth` | Autentica, guarda el token en el almacenamiento seguro del dispositivo y expone el usuario y su rol. | SCRUM-23 |
+| Asistente de nueva solicitud | `features/service_requests/presentation` | Pasos de categoría, ubicación, descripción y resumen, y confirmación. | SCRUM-27 / SCRUM-71 |
+| Estado y reglas de la solicitud | `features/service_requests/domain` | Conserva los datos entre pasos y valida antes de enviar: dirección de 5 a 255 caracteres y descripción de 10 a 1000. | SCRUM-27 / SCRUM-71 |
+| Repositorio de catálogo | `features/service_requests/data` | Obtiene las categorías activas del tenant (`GET /v1/catalog/categories`). | SCRUM-27 / SCRUM-71 |
+| Repositorio de solicitudes | `features/service_requests/data` | Crea la solicitud (`POST /v1/service-requests`) y consulta su detalle para la confirmación (`GET /v1/service-requests/{id}`). | SCRUM-27 / SCRUM-71 |
+| Cliente HTTP | `core/http` | Adjunta el JWT y `X-Correlation-Id`, aplica timeouts y traduce las respuestas `problem+json` (400, 401, 403, 404 y 422) en errores de la app. | SCRUM-27 |
+| Ubicación del dispositivo | `core/location` | Pide el permiso de ubicación y obtiene las coordenadas (`latitude`, `longitude`) del GPS del dispositivo, que el contrato exige en `location`. | SCRUM-27 / SCRUM-71 |
+| UI compartida | `core/ui` | Estados de carga, vacío y error. | — |
+
+Reglas comunes a las dos aplicaciones:
+
+- **Tenant:** ninguna app envía `tenant_id` (RN-U3 del DD). En el login y el registro todavía no hay JWT, así que el tenant sale del canal por el que llega la petición (RN-U5); en las peticiones autenticadas sale del token que propaga el API Gateway (DD, sección 10.3).
+- **Errores:** un 401 lleva al login y un 403 a la pantalla de acceso denegado; el resto de errores se muestran en la pantalla que los produjo, sin perder los datos ingresados.
+- **Contratos:** Mobile consume `service-request.v1.yaml` y `catalog.v1.yaml`. El inicio de sesión (`POST /v1/auth/login` y `GET /v1/users/me`, sección 3.4.1) y la administración de tenants todavía no tienen especificación OpenAPI.
+- **Pendiente:** el contrato v1 de creación de solicitudes solo admite el rol `cliente` y responde 403 a los demás, mientras que el SRS (F2.1) incluye a la empresa cliente. Se debe resolver antes de cerrar SCRUM-27.
+
 ---
 
 ## 3.2 Descomposición lógica por microservicio
@@ -339,7 +384,7 @@ El siguiente diagrama representa el flujo lógico principal del proceso de match
 
 ![Diagrama de flujo del Matching Service](sdd_v3_assets/05_matching_flow.png)
 
-*Figura 4. Flujo lógico principal del Matching Service.*
+*Figura 6. Flujo lógico principal del Matching Service.*
 
 ### 3.2.7 Ranking Service
 
@@ -397,7 +442,7 @@ Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean inco
 
 ![Modelo lógico de dominio](diagrams/sdd/03_modelo_logico_dominio.png)
 
-**Figura 5. Modelo lógico de dominio y referencias entre servicios.**
+**Figura 7. Modelo lógico de dominio y referencias entre servicios.**
 
 Las relaciones continuas representan relaciones internas al mismo dominio que pueden implementarse como claves foráneas. Las relaciones punteadas representan referencias lógicas entre servicios independientes.
 
@@ -490,7 +535,7 @@ La interoperabilidad entre stacks se mantiene mediante contratos REST/OpenAPI y 
 
 ![Capas internas de un microservicio](diagrams/sdd/04_capas_microservicio.png)
 
-**Figura 6. Estructura lógica interna de un microservicio.**
+**Figura 8. Estructura lógica interna de un microservicio.**
 
 La estructura interna se divide en cuatro capas lógicas:
 
@@ -663,7 +708,7 @@ sequenceDiagram
     GW->>M: Técnico acepta la solicitud
 ```
 
-**Figura 7. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
+**Figura 9. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
 
 ---
 
@@ -726,7 +771,7 @@ sequenceDiagram
     end
 ```
 
-**Figura 8. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
+**Figura 10. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
 
 ---
 
@@ -834,7 +879,7 @@ sequenceDiagram
     end
 ```
 
-**Figura 9. Tolerancia a fallos con Transactional Outbox ante indisponibilidad del broker.**
+**Figura 11. Tolerancia a fallos con Transactional Outbox ante indisponibilidad del broker.**
 
 ---
 
@@ -928,9 +973,9 @@ Cada repositorio de servicio contiene su código, sus pruebas unitarias y de int
 
 ![Estructura del repositorio QUICKPATCH](diagrams/sdd/07_vista_desarrollo_repositorio.svg)
 
-**Figura 10. Estructura del repositorio principal de QUICKPATCH.**
+**Figura 12. Estructura del repositorio principal de QUICKPATCH.**
 
-La Figura 10 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
+La Figura 12 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
 
 ---
 
@@ -1005,7 +1050,7 @@ Cada servicio mantiene su propio límite funcional y debe poder evolucionar y de
 
 ![Componentes por aplicación](diagrams/sdd/08_componentes_por_aplicacion.svg)
 
-**Figura 11. Organización de componentes por aplicación y tecnología.**
+**Figura 13. Organización de componentes por aplicación y tecnología.**
 
 ---
 
@@ -1108,7 +1153,7 @@ Las principales reglas son:
 
 ![Dependencias entre proyectos y módulos](diagrams/sdd/09_dependencias_modulos.svg)
 
-**Figura 12. Dependencias permitidas entre aplicaciones, contratos y microservicios.**
+**Figura 14. Dependencias permitidas entre aplicaciones, contratos y microservicios.**
 
 Estas reglas mantienen bajo el acoplamiento entre servicios y preservan la independencia tecnológica entre ASP.NET Core y Spring Boot.
 
@@ -1207,7 +1252,7 @@ Las ocho imágenes del backend se publican en el registro definido para el proye
 
 ![Mapa de carpetas y artefactos de build](diagrams/sdd/10_mapa_carpetas_build.svg)
 
-**Figura 13. Relación entre código fuente, procesos de build, pruebas, artefactos y despliegue.**
+**Figura 15. Relación entre código fuente, procesos de build, pruebas, artefactos y despliegue.**
 
 ---
 
@@ -1307,7 +1352,7 @@ flowchart TB
     style VM7N fill:#EBEBEB,stroke:#555555,stroke-width:1.5px
 ```
 
-**Figura 14. Diagrama de despliegue de producción de QUICKPATCH (VM1 y VM3 a VM7).**
+**Figura 16. Diagrama de despliegue de producción de QUICKPATCH (VM1 y VM3 a VM7).**
 
 Las VMs son idénticas en hardware (4 vCPU · 11 GiB RAM · 68 GB disco) y solo difieren en el software que alojan (Documento de Infraestructura, sección 3). VM3 es un clúster k3s de un solo nodo: es el punto único de falla reconocido del sistema (SAD, limitación de la sección 5.2). VM1 aloja además el panel Angular y el runner de despliegue, que no se dibujan para mantener el diagrama solo con el sistema en ejecución. Las 6 VMs de producción envían métricas (`node_exporter`, 9100) y logs (Promtail, 3100) a VM7; esas flechas tampoco se dibujan para no cruzar el diagrama. El firewall aplica `default deny incoming`; ninguna VM acepta conexiones directas del exterior salvo VM1 (443) y el acceso SSH del equipo (Documento de Infraestructura, sección 10.2).
 
@@ -1330,7 +1375,7 @@ flowchart TB
     style P fill:#E6F5E6,stroke:#00468C,stroke-width:1.5px
 ```
 
-**Figura 15. Ambientes de desarrollo, pruebas y producción.**
+**Figura 17. Ambientes de desarrollo, pruebas y producción.**
 
 Dev es el único ambiente efímero: existe solo mientras corre el pipeline en un runner de GitHub Actions. QA ocupa hardware dedicado, la VM2 (ADR-015): replica la forma de producción en una sola VM, con datos y secretos propios, y no puede conectarse a los servicios de producción. Cada versión `release/*` se despliega en QA y allí corren las pruebas de sistema (E2E, OWASP ZAP, escáner PCI-DSS y carga con k6); producción se despliega al fusionar en `main` (Documento de Infraestructura, secciones 4 y 6).
 
@@ -1388,7 +1433,7 @@ flowchart TB
     style RED fill:#f4f6fa,stroke:#00468C,stroke-width:1.5px,stroke-dasharray:4 3
 ```
 
-**Figura 16. Seguridad de red y gestión de secretos.**
+**Figura 18. Seguridad de red y gestión de secretos.**
 
 TLS se termina en VM1 con certificado autofirmado — no hay dominio público (R9), por lo que Let's Encrypt no es viable (Documento de Infraestructura, sección 10.1). Los secretos se gestionan por dos mecanismos: Ansible Vault para la infraestructura de las 7 VMs (el archivo cifrado no se sube a Git, y QA tiene secretos propios, distintos a los de producción) y `Secret` de Kubernetes para los microservicios dentro de VM3 y VM2. El CI/CD no guarda credenciales de Kubernetes: el runner de VM1 usa los kubeconfig que deja Ansible en la propia VM, y la publicación de imágenes usa el token temporal de cada ejecución (Documento de Infraestructura, sección 8).
 
@@ -1471,7 +1516,7 @@ Para cada escenario se documenta: actor, precondiciones, flujo principal, flujos
 | **Servicios participantes** | Matching Service, ServiceRequest Service, Communication Service, Kafka. |
 | **Datos involucrados** | `technician_availability`, `coverage_zones`, `matching_attempts`, `service_requests`. |
 | **Eventos / Endpoints** | Consume `service-request.created` · produce `matching.technician-assigned`. |
-| **Relación con Vista Lógica** | Matching Service (Sección 3.2.6), Figura 4 (flujo lógico del matching). |
+| **Relación con Vista Lógica** | Matching Service (Sección 3.2.6), Figura 6 (flujo lógico del matching). |
 | **Relación con Vista de Procesos** | **Resuelto:** Ver **Sección 5.6** (Consumer Groups asignados) y **Sección 5.7** (Concurrencia y bloqueo temporal `expires_at`). |
 | **Relación con Vista de Desarrollo** | *Pendiente* — módulo Java/Spring Boot del Matching Service. |
 | **Relación con Vista Física** | *Pendiente DevOps* — nodo/contenedor del Matching Service y latencia hacia PostgreSQL+PostGIS. |
