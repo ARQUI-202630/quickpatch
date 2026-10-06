@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.13 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.14 — QUICKPATCH
 
 ---
 
@@ -8,17 +8,18 @@ Esta sección identifica las fuerzas que determinan las decisiones de arquitectu
 
 ### 1.1 Drivers
 
-Cada driver es una necesidad que da forma a la arquitectura. La columna "Origen" indica de dónde sale, con referencia a los requisitos del SRS o a una decisión del equipo; la sección 1.4 traza cada driver hasta los escenarios de calidad y las decisiones de arquitectura que motiva.
+Cada driver es un requisito que da forma a la arquitectura. **Criterio de inclusión:** un requisito es driver solo si obliga a tomar una decisión de arquitectura (un ADR o un elemento de la arquitectura de alto nivel); los requisitos que se resuelven dentro de un servicio sin afectar la estructura del sistema se quedan en el SRS, y las restricciones que descartan alternativas son killers (sección 1.2), no drivers. La columna "Origen" indica el requisito del SRS del que sale; "Atributos" indica los atributos de calidad (sección 2) que tienen al menos un escenario que mide el driver (sección 1.4); "Riesgo" describe qué falla si la arquitectura no lo atiende. La sección 1.4 traza cada driver hasta los escenarios de calidad y las decisiones de arquitectura que motiva.
 
-|ID|Driver|Origen|Implicación arquitectónica|
-|---|---|---|---|
-|D1|Asignar automáticamente al técnico más cercano y disponible|RF-09, RF-10, RNF-05; SRS, sección 2.2 (función 3)|Consultas geoespaciales (PostGIS), estado de disponibilidad por técnico y reasignación automática ante rechazo o falta de respuesta. La asignación es inmediata: no hay agendamiento por horario|
-|D2|Seguimiento del servicio en tiempo real|RF-11, RNF-06; diferenciador frente a la competencia (SRS, sección 6)|Cada cambio de estado se publica como evento y se entrega al cliente a través del API Gateway, sin que el cliente consulte por su cuenta|
-|D3|Reputación del técnico basada en calificaciones|RF-12; SRS, sección 2.2 (función 6)|Ranking Service separado que consume los eventos de evaluación. El ranking de proveedores de materiales queda fuera del MVP|
-|D4|Comprobante automático a nombre de la plataforma (merchant of record)|RF-22, RF-23, RF-24; SRS, sección 2.2 (función 5)|Payments emite la factura al consumir `payment.approved` y la plataforma es la única emisora frente al cliente. No incluye liquidación a técnicos ni contabilidad (K1)|
-|D5|Multi-tenancy y soporte a múltiples empresas oferentes|RF-04, RF-06, RNF-09, RNF-10; modelo de negocio B2B2E|Aislamiento de datos por tenant desde el diseño inicial|
-|D6|Trazabilidad ante reclamaciones|RF-28; necesidad de resolver disputas entre cliente y técnico|Registro histórico de eventos del ciclo de vida del servicio|
-|D7|Evidencia fotográfica obligatoria para completar un servicio|Decisión confirmada con el equipo (12 sep 2026)|Almacenamiento de objetos en infraestructura propia (Garage en VM7, ADR-016), tabla `service_evidence` y bloqueo de la transición a `completado` sin al menos una foto|
+|ID|Driver|Origen (SRS)|Atributos|Riesgo|Implicación arquitectónica|
+|---|---|---|---|---|---|
+|D1|Asignar automáticamente al técnico más cercano y disponible|RF-09, RF-10, RNF-05; SRS, sección 2.2 (función 3)|AC1, AC2, AC9|Si la búsqueda por cercanía o la reasignación son lentas o fallan, la asignación supera los 60 segundos de RNF-05 o la solicitud queda sin técnico|Consultas geoespaciales (PostGIS), estado de disponibilidad por técnico y reasignación automática ante rechazo o falta de respuesta. La asignación es inmediata: no hay agendamiento por horario|
+|D2|Seguimiento del servicio en tiempo real|RF-11, RNF-06; diferenciador frente a la competencia (SRS, sección 6)|AC2, AC4|Si el cliente depende de consultar por su cuenta o se pierden cambios de estado, la interfaz no se actualiza en menos de 1 minuto (RNF-06) y se pierde el diferenciador del producto|Cada cambio de estado se publica como evento y se entrega al cliente a través del API Gateway, sin que el cliente consulte por su cuenta|
+|D3|Reputación del técnico basada en calificaciones|RF-12; SRS, sección 2.2 (función 6)|AC4, AC9|Si el cálculo de reputación se acopla al flujo del servicio, una falla del ranking bloquea el cierre de servicios; una reputación incorrecta expone al cliente a técnicos mal evaluados|Ranking Service separado que consume los eventos de evaluación. El ranking de proveedores de materiales queda fuera del MVP|
+|D4|Comprobante automático a nombre de la plataforma (merchant of record)|RF-22, RF-23, RF-24; SRS, sección 2.2 (función 5)|AC3, AC9|Si la emisión depende de una llamada síncrona o el evento de pago se pierde o se duplica, queda un pago confirmado sin comprobante o con comprobante duplicado|Payments emite el comprobante al consumir el evento `payment.approved`, publicado con Outbox y procesado de forma idempotente, y la plataforma es la única emisora frente al cliente. No incluye liquidación a técnicos ni contabilidad (K1)|
+|D5|Multi-tenancy y soporte a múltiples empresas oferentes|RF-04, RF-06, RNF-09, RNF-10; modelo de negocio B2B2E|AC6, AC8|Si el aislamiento depende solo de que cada consulta recuerde filtrar por tenant, un error de código expone datos de una empresa a otra|Aislamiento de datos por tenant desde el diseño inicial|
+|D6|Trazabilidad ante reclamaciones|RF-28; necesidad de resolver disputas entre cliente y técnico|AC6, AC7|Sin un historial completo del ciclo de vida, no es posible reconstruir quién hizo qué ante una reclamación|Registro histórico de eventos del ciclo de vida del servicio|
+|D7|Evidencia fotográfica obligatoria para completar un servicio|RF-15; SRS, Feature F3.2 (cierre del servicio con evidencia fotográfica obligatoria)|AC6|Si las fotos se guardan en la base de datos o en un servicio externo, se satura PostgreSQL o se viola K5; sin el bloqueo, un servicio se completa y se cobra sin evidencia|Almacenamiento de objetos en infraestructura propia (Garage en VM7, ADR-016), tabla `service_evidence` y bloqueo de la transición a `completado` sin al menos una foto|
+|D8|Ambiente de pruebas separado de producción y bloqueo del despliegue ante fallos|RNF-07, RNF-08; SRS, sección 5.3|AC7, AC9|Sin un ambiente aislado y un bloqueo automático, un cambio defectuoso en el flujo crítico llega a producción; con 7 VMs fijas (K10), el ambiente de pruebas compite por capacidad con producción|Ambiente de QA permanente en VM2 con sus propios k3s, PostgreSQL, Redis, Kafka y Garage (ADR-015), y quality gate que bloquea el despliegue si fallan las pruebas del flujo crítico|
 
 > Los requisitos de pago con PCI-DSS, que antes eran el driver D4, pasan al killer K2: son una restricción, no una fuerza que impulse el diseño. La numeración anterior saltaba del D5 al D8 sin que existieran D6 ni D7; en esta versión los drivers se numeran de forma consecutiva (equivalencias en la sección 9, versión 2.10).
 
@@ -63,12 +64,11 @@ Cada driver se sigue desde los requisitos que lo originan hasta los escenarios d
 |D1 Asignación automática|RF-09, RF-10, RF-13, RNF-05, RIE-02|AC1-E1, AC2-E1, AC2-E3, AC2-E4, AC9-E4|ADR-004 (PostgreSQL + PostGIS), ADR-006 (Kafka)|
 |D2 Seguimiento en tiempo real|RF-11, RNF-06, RIE-03|AC2-E3, AC4-E9|ADR-006 (Kafka), ADR-007 (Outbox)|
 |D3 Reputación del técnico|RF-12, RF-19, RF-20|AC4-E6, AC9-E2|ADR-003 (Ranking Service independiente)|
-|D4 Comprobante a nombre de la plataforma|RF-22, RF-23, RF-24, RIE-01|AC3-E1, AC9-E5|ADR-009 (tokenización de pagos)|
+|D4 Comprobante a nombre de la plataforma|RF-22, RF-23, RF-24, RIE-01|AC3-E1, AC9-E5|ADR-006 (Kafka), ADR-007 (Outbox e idempotencia), ADR-009 (tokenización de pagos)|
 |D5 Multi-tenancy|RF-04, RF-06, RF-21, RNF-09, RNF-10|AC6-E2, AC8-E1|ADR-005 (shared-schema con RLS)|
 |D6 Trazabilidad ante reclamaciones|RF-28, RNF-04|AC6-E5, AC6-E6, AC6-E7, AC7-E4|ADR-006 (Kafka), ADR-007 (Outbox)|
-|D7 Evidencia fotográfica|RF-15 (ver nota)|AC6-E5|ADR-016: almacenamiento de objetos con Garage en VM7 (sección 5.5)|
-
-> **Nota sobre D7:** la exigencia de evidencia fotográfica para completar un servicio fue confirmada por el equipo y está en el DD (`service_evidence`), pero la versión actual del SRS no la incluye en RF-15. Hasta que el SRS se alinee, su origen es la decisión del equipo.
+|D7 Evidencia fotográfica|RF-15|AC6-E5|ADR-016: almacenamiento de objetos con Garage en VM7 (sección 5.5)|
+|D8 Ambiente de pruebas y bloqueo del despliegue|RNF-07, RNF-08|AC7-E6, AC9-E7|ADR-015: ambiente de QA permanente en VM2 (sección 5.5)|
 
 ## 2. Atributos de Calidad
 
@@ -78,15 +78,15 @@ Los 9 ACs mapean 1 a 1 con las **9 características de ISO/IEC 25010:2023**, en 
 
 |ID|Atributo (característica ISO)|Sustentado por|
 |---|---|---|
-|AC1|Functional Suitability|SRS — requisitos funcionales, cumplimiento funcional del sistema|
+|AC1|Functional Suitability|D1; SRS — requisitos funcionales, cumplimiento funcional del sistema|
 |AC2|Performance Efficiency|D1, D2|
 |AC3|Compatibility|D4, ISO/IEC 25010:2023 — RIE-01|
-|AC4|Interaction Capability|ISO/IEC 25010:2023 — RNF-11, RNF-12|
+|AC4|Interaction Capability|D2, D3; ISO/IEC 25010:2023 — RNF-11, RNF-12|
 |AC5|Reliability|K5, K7|
 |AC6|Security|K2, D5, D6, D7|
-|AC7|Maintainability|K3|
+|AC7|Maintainability|K3, D6, D8|
 |AC8|Flexibility|D5, ISO/IEC 25010:2023 — ADR-002, RNF-09, RIE-02|
-|AC9|Safety|D1, D3; decisión del equipo con el Product Owner: riesgo físico y patrimonial por fallos de la plataforma, ver sección 3.9|
+|AC9|Safety|D1, D3, D4, D8; decisión del equipo con el Product Owner: riesgo físico y patrimonial por fallos de la plataforma, ver sección 3.9|
 
 **Fusiones aplicadas:**
 - El AC de Seguridad (antes AC2) absorbe los escenarios de *Accountability* del antiguo AC de Trazabilidad (antes AC6) — ambos son, a nivel de característica ISO, **Security**. El escenario de idempotencia (antes AC6-E3) no es Accountability, así que se reclasificó dentro de **Reliability** (subcaracterística *Fault Tolerance*), no dentro de Security.
@@ -95,7 +95,7 @@ Los 9 ACs mapean 1 a 1 con las **9 características de ISO/IEC 25010:2023**, en 
 
 > **Pendiente, y más relevante de lo que parece:** RIE-03 (servicio de notificaciones) sustentaba al antiguo AC de Compatibilidad junto con RIE-01 y RIE-02, y no tiene un AC propio que lo sustente formalmente. Esto no significa que el sistema de notificaciones esté fuera de todo escenario — AC2-E3 ya mide "menos de 7 segundos desde la creación de la solicitud hasta la notificación" y AC5-E5 usa "doble notificación" como ejemplo de efecto duplicado a evitar — sino que **una dependencia externa (RIE-03) queda dentro de un SLO comprometido (los 7 segundos de AC2-E3) sin que ningún escenario de interoperabilidad la cubra explícitamente**. Communication Service (que incluye Notifications) es uno de los 8 microservicios de dominio con VM propia (sección 5.1, 4.2.2) — no es un módulo transversal. Un escenario nuevo bajo *Co-existence* o *Functional Completeness* cerraría este hueco; *Interoperability* no serviría porque AC3-E1 ya la cubre y no sumaría al conteo de subcaracterísticas.
 
-> AC1 y AC4 no derivan directamente de un driver o killer (sección 1): se sustentan en los requisitos del SRS y en los atributos genéricos de la norma **ISO/IEC 25010:2023**. AC3 y AC8 combinan un driver (D4 y D5) con la norma. AC9 (Safety) se sustenta en D1 y D3 y en la definición que el equipo acordó con el Product Owner de qué significa Safety para QUICKPATCH — ver sección 3.9.
+> **Regla de relación driver–atributo:** un driver sustenta un atributo cuando al menos un escenario de ese atributo mide el driver (matriz de la sección 1.4); la columna "Atributos" de la sección 1.1 y la columna "Sustentado por" de esta tabla aplican la misma regla. AC1 y AC4 se sustentan además en los requisitos del SRS y en los atributos genéricos de la norma **ISO/IEC 25010:2023**, y AC3 y AC8 combinan un driver (D4 y D5) con la norma. AC5 no tiene driver: sus escenarios responden a los killers K5 y K7. AC9 (Safety) se sustenta en D1, D3, D4 y D8 y en la definición que el equipo acordó con el Product Owner de qué significa Safety para QUICKPATCH — ver sección 3.9.
 
 ---
 
@@ -549,6 +549,17 @@ Característica agregada en esta versión (ver sección 2). Cubre si el sistema 
 |Respuesta|Los reutiliza en vez de reimplementarlos|
 |Medida|0 copias de esa lógica entre servicios: una sola implementación por stack (ASP.NET Core y Spring Boot), verificable en revisión de PR|
 
+**Escenario 6 — Validación del incremento en QA antes de producción** · _Tipo: Cambio_ · _(Testability)_
+
+|Parte|Contenido|
+|---|---|
+|Fuente|Pipeline de CI/CD (runner en VM1)|
+|Estímulo|Un incremento que pasó la integración continua debe promoverse a producción|
+|Ambiente|Ambiente de QA permanente en VM2 (ADR-015), aislado de producción, con un tenant de prueba dedicado|
+|Artefacto|Los 8 microservicios desplegados en el k3s de VM2, con PostgreSQL, Redis, Kafka y Garage propios|
+|Respuesta|El incremento se despliega en VM2 y allí se ejecutan las pruebas funcionales, de aceptación y de seguridad (E2E, UAT, OWASP ZAP) y la prueba de carga (k6) (RNF-07); si alguna falla, la promoción a producción se bloquea (RNF-08)|
+|Medida|100% de los despliegues a producción pasan antes por VM2 con todas esas pruebas aprobadas; 0 pruebas de carga o de seguridad se ejecutan contra producción (VM3 y VM4)|
+
 ### 3.8 AC8 — Flexibility
 
 **Escenario 1 — Alta de nuevo tenant** · _Tipo: Cambio_ · _(Adaptability)_
@@ -762,6 +773,7 @@ Un escenario con importancia de negocio **Alta** se considera **prioritario** �
 |AC7-E3 Incorporación de nuevo microservicio|Maintainability|Baja|Media|Baja|
 |AC7-E4 Diagnóstico de un fallo en producción|Maintainability|*Pendiente de votación*|*Pendiente de votación*|—|
 |AC7-E5 Reutilización de la lógica transversal|Maintainability|*Pendiente de votación*|*Pendiente de votación*|—|
+|AC7-E6 Validación del incremento en QA antes de producción|Maintainability|*Pendiente de votación*|*Pendiente de votación*|—|
 |AC8-E1 Alta de nuevo tenant|Flexibility|Media|Media|Media|
 |AC8-E2 Escalado independiente de servicio|Flexibility|Media|Media|Media|
 |AC8-E3 Nuevo canal o tipo de cliente|Flexibility|Alta|Media|**Alta**|
@@ -780,7 +792,7 @@ Un escenario con importancia de negocio **Alta** se considera **prioritario** �
 
 De estos 11, **4 no sustentan ningún ADR todavía** (AC5-E1, AC6-E4, AC6-E5, AC8-E3, ver matriz de la sección 6) — no implica un error, solo que ninguna decisión de arquitectura se ha tomado en torno a ellos. A la inversa, **ADR-003 se apoya también en AC8-E2**, un escenario Media/Media, además de en AC5-E3 y AC5-E4 (Alta/Alta): el trade-off de escalado independiente por servicio que documenta ADR-003 es real aunque ese escenario en particular todavía no haya sido votado como prioritario.
 
-**Total de escenarios en esta versión: 51**, cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. En Safety hay más de un escenario para *Risk Identification*, *Fail Safe* y *Safe Integration*, y quedan pendientes los escenarios de Safety que dependen de decisiones de diseño (sección 3.9). La cobertura es completa en cantidad; la validación de las medidas y la votación ATAM siguen pendientes.
+**Total de escenarios en esta versión: 52** (AC7-E6 se agregó en la versión 2.14), cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. En Safety hay más de un escenario para *Risk Identification*, *Fail Safe* y *Safe Integration*, y quedan pendientes los escenarios de Safety que dependen de decisiones de diseño (sección 3.9). La cobertura es completa en cantidad; la validación de las medidas y la votación ATAM siguen pendientes.
 
 ---
 
@@ -1101,3 +1113,4 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.11|22 sep 2026|Los orígenes de los drivers y de K1 dejan de citar la presentación del Sprint 1 y citan los requisitos y las funciones del SRS. Se agrega la sección 1.4, una matriz que traza cada driver hasta sus requisitos, escenarios de calidad y ADR.|
 |2.12|3 oct 2026|Se agregan a las tablas de ADR las decisiones que solo existían como documento aparte: ADR-012 (stack polyglot) y ADR-013 (estrategia de repositorios) en la sección 6, y ADR-015 (ambiente de QA en VM2 y acceso por VM1, en estado propuesto) en la sección 5.5. Se actualiza la síntesis de la sección 6 con los dos ADR nuevos.|
 |2.13|3 oct 2026|El ADR-015 pasa a aceptado: la tabla de VMs (5.1) muestra VM2 como ambiente de QA y el panel Angular en VM1, y se ajusta el orden de arranque (5.3). Se agrega el ADR-016 (Garage en lugar de MinIO) a la sección 5.5, con su detalle en la nueva sección 5.5.1, y se reemplaza MinIO por Garage en D7, la matriz de drivers, la vista de componentes y la tabla de VMs.|
+|2.14|5 oct 2026|Revisión de los drivers (SCRUM-277, primera entrega del SAD V3). La sección 1.1 explicita el criterio de inclusión (un requisito es driver solo si obliga a una decisión de arquitectura) y agrega a cada driver los atributos de calidad que lo miden y el riesgo si la arquitectura no lo atiende. Se fija una sola regla de relación driver–atributo (un driver sustenta un atributo cuando un escenario de ese atributo lo mide, sección 1.4) y la tabla de la sección 2 se alinea con ella: D1 pasa a sustentar AC1; D2 y D3, AC4; D6, AC7; D4, AC9. D7 pasa a tener como origen RF-15 (SRS 3.2) y se elimina la nota que decía que el SRS no exigía la evidencia fotográfica. D4 se ancla a la emisión del comprobante por evento (`payment.approved` con Outbox e idempotencia) y su trazabilidad agrega ADR-006 y ADR-007. Se agrega D8 (ambiente de pruebas separado y bloqueo del despliegue, RNF-07 y RNF-08), que motiva ADR-015 y sustenta AC7 y AC9, y el escenario AC7-E6 (validación del incremento en QA, VM2, antes de producción), pendiente de votación. Se alinea con el SRS 3.3, que traslada la prueba de carga al ambiente de QA.|
