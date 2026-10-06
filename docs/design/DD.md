@@ -1465,6 +1465,37 @@ Son las únicas operaciones autorizadas a usar `identity_platform`. Cada uso que
 
 ---
 
+### 10.5 Matriz de roles y permisos (RBAC)
+
+Cada endpoint de la sección 8.1 exige un rol. El rol viaja en el claim `role` del token que emite Identity Service y cada servicio lo valida en su propio código, además de la regla de propiedad del recurso (por ejemplo, "solo el cliente dueño"). Un acceso con un rol no permitido responde `403` y queda registrado en un log de nivel WARNING con la ruta, el usuario, el rol y el `correlationId` (RNF-04). Ningún endpoint toma el tenant del cuerpo de la petición (RN-U3).
+
+**Claims del token.** Los datos del contexto autenticado se publican así: `userId` en `sub` (claim estándar de JWT), `tenantId` en `tenant_id` y el rol en `role`. El token se firma con RS256; solo Identity tiene la llave privada.
+
+**Canales.** El panel web es para `admin_tenant` y `admin_plataforma`; la app móvil es para `cliente`, `empresa_contacto`, `tecnico` y `proveedor` (SDD, sección 3.1).
+
+|Endpoint|Roles permitidos|Regla adicional|Fuente|Estado|
+|---|---|---|---|---|
+|`POST /v1/auth/register/client`|Público (canal)|Tenant del canal (RN-U5)|RF-01|Implementado|
+|`POST /v1/auth/register/technician`|Público (canal)|Queda en `pendiente` de verificación|RF-02|Pendiente|
+|`POST /v1/auth/register/company`|Público (canal)|Crea un `empresa_contacto` (DEP-13)|RF-06|Pendiente|
+|`POST /v1/auth/login`|Público (canal)|Bloqueo tras 5 fallos (RN-U4); tenant activo (RN-T1)|RF-03|Implementado|
+|`GET /v1/users/me`|Todos los roles|Solo su propio usuario|RF-03|Implementado|
+|`GET /v1/catalog/categories`|Todos los roles|Solo su tenant|RF-07|Pendiente|
+|`POST /v1/service-requests`|`cliente`; `empresa_contacto` cuando se implemente RF-08|Ubicación en Bogotá y categoría activa (RN-SR9, RN-SR10)|RF-07, RF-08|Implementado para `cliente`|
+|`GET /v1/service-requests/{id}`|`cliente`|Solo el cliente dueño; otro cliente o tenant recibe `404`|RF-11|Implementado|
+|`POST /v1/service-requests/{id}/cancel`|`cliente`, `admin_tenant`|El cliente dueño o el admin de su tenant (RN-SR8)|RF-36|Pendiente|
+|`GET /v1/matching/offers`|`tecnico`|Solo sus ofertas; técnico `aprobado` (RN-TP1)|RF-10|Pendiente|
+|`POST /v1/matching/offers/{attemptId}/accept` y `/reject`|`tecnico`|Solo la oferta dirigida a él|RF-10|Pendiente|
+|`POST /v1/service-requests/{id}/quotes`|`tecnico`|Solo el técnico asignado|RF-34|Pendiente|
+|`POST /v1/service-requests/{id}/quotes/{quoteId}/accept` y `/reject`|`cliente`|Solo el cliente dueño|RF-35|Pendiente|
+|`POST /v1/service-requests/{id}/start`, `/evidence` y `/complete`|`tecnico`|Solo el técnico asignado (RN-SR3, RN-SR6)|RF-14, RF-15|Pendiente|
+|`POST /v1/service-requests/{id}/rating`|`cliente`|Solo el cliente dueño, con el servicio completado|RF-12|Pendiente|
+|`POST /v1/service-requests/{id}/payment`|`cliente`, `empresa_contacto`|Solo el dueño de la solicitud|RF-22, RF-23|Pendiente|
+|`GET /v1/payments/{id}/invoice`|`cliente`, `empresa_contacto`, `admin_tenant`|El dueño del pago o el admin de su tenant|RF-24|Pendiente|
+|`GET /v1/payments/received`|`tecnico`, `proveedor`|Solo sus pagos o los de su equipo|RF-25|Pendiente|
+|Gestión de tenants (contrato por definir)|`admin_plataforma`|Rol `identity_platform` en la base (sección 10.4)|RF-21, RN-U6|Pendiente (SCRUM-112)|
+|Aprobación y suspensión de técnicos (contrato por definir)|`admin_tenant`|Solo técnicos de su tenant|RF-19, RF-20|Pendiente|
+
 ## 11. Consideraciones de evolución del modelo
 
 El presente modelo corresponde exclusivamente al estado actual del proyecto.
@@ -1513,7 +1544,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |2.1|Confirmación de alcance (evidencias)|Se confirma con el equipo que la evidencia fotográfica está en el alcance del MVP; se agrega la tabla `service_evidence`, el endpoint `POST /v1/service-requests/{id}/evidence`, y la regla de negocio que exige al menos una evidencia para completar una solicitud.|
 |2.2|Revisión de arquitectura de datos|Se alinea la propiedad de datos con los 8 microservicios del SAD y el SDD (`service_categories` pasa a Catalog Service y `service_requests.category_id` a referencia lógica). Se alinea el modelo de tenancy con el SAD: el tenant es la empresa oferente (se retira `tenants.type`; `nit` pasa a obligatorio y único) y la diferencia con RF-06 se registra en DEP-13. Se agrega `tenant_id` a `technician_profiles`, `service_categories` y `outbox_events`. El correo y el documento de identidad pasan a ser únicos por tenant (RN-U1 cambia de redacción) y el rol `admin` se divide en `admin_tenant` y `admin_plataforma`. Se modela la etapa de cotización del SAD con la tabla `quotes` y la cancelación con el estado `cancelado`. `payments` agrega `technician_id` para RF-25 y el estado `procesando`. Se agregan el diagrama de dominios de datos y el diagrama entidad-relación consistentes con el diccionario, y el listado completo de referencias lógicas. Las reglas de negocio pasan a una sección propia con la máquina de estados, la correspondencia con el ciclo de vida del SAD y el mecanismo de cumplimiento de cada regla; se ajustan RN-T2, RN-U1 y RN-R3 (esta última a `pagado`, según el SDD y RF-27) y se agregan RN-U5, RN-U6, RN-SR5 a RN-SR8, RN-M1 a RN-M7, RN-P2 a RN-P5, RN-Q1 a RN-Q7 y RN-A1. Se agregan los contratos de ofertas (RF-10), cotización, cancelación y pagos recibidos (RF-25), los consumidores de cada evento y el flujo de extremo a extremo. La sección de multi-tenancy aplica RLS según ADR-005 con roles separados para la aplicación, el publicador de eventos, la plataforma y las migraciones; define el origen del tenant en peticiones, login, registro y consumo de eventos; y deja `audit_logs` sin permisos de modificación para la aplicación (AC6-E7). Se agrega el modelo analítico objetivo, fuera del alcance del MVP. Se agrega `processed_events` para la idempotencia de los consumidores (RN-EV1). La sección 11 registra las decisiones externas de las que depende el modelo (DEP-01 a DEP-14).|
 |2.3|Creación de solicitud (SCRUM-27)|Se agrega `service_request_categories` (réplica de categorías alimentada por `catalog.category-changed`), las reglas RN-SR9 (área de cobertura de Bogotá), RN-SR10 (categoría disponible) y RN-SR11 (longitudes), el endpoint `GET /v1/catalog/categories`, el evento `catalog.category-changed` y el contenido de `data` de `service-request.created`, alineados con los contratos de `quickpatch-contracts`.|
-|2.4|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran.|
+|2.4|Matriz RBAC (SCRUM-25)|Se agrega la sección 10.5 con la matriz de roles y permisos por endpoint, el registro de cada `403` (RNF-04) y la equivalencia entre el contexto autenticado y los claims del token (`userId` → `sub`, `tenantId` → `tenant_id`, `role`).|
+|2.5|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran.|
 
 _Cuadro 3: Evolución del diccionario de datos_
 
