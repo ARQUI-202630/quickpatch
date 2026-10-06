@@ -792,7 +792,7 @@ Un escenario con importancia de negocio **Alta** se considera **prioritario** �
 
 De estos 11, **4 no sustentan ningún ADR todavía** (AC5-E1, AC6-E4, AC6-E5, AC8-E3, ver matriz de la sección 6) — no implica un error, solo que ninguna decisión de arquitectura se ha tomado en torno a ellos. A la inversa, **ADR-003 se apoya también en AC8-E2**, un escenario Media/Media, además de en AC5-E3 y AC5-E4 (Alta/Alta): el trade-off de escalado independiente por servicio que documenta ADR-003 es real aunque ese escenario en particular todavía no haya sido votado como prioritario.
 
-**Total de escenarios en esta versión: 51**, cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. En Safety hay más de un escenario para *Risk Identification*, *Fail Safe* y *Safe Integration*, y quedan pendientes los escenarios de Safety que dependen de decisiones de diseño (sección 3.9). La cobertura es completa en cantidad; la validación de las medidas y la votación ATAM siguen pendientes.
+**Total de escenarios en esta versión: 52** (AC7-E6 se agregó en la versión 2.14), cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. En Safety hay más de un escenario para *Risk Identification*, *Fail Safe* y *Safe Integration*, y quedan pendientes los escenarios de Safety que dependen de decisiones de diseño (sección 3.9). La cobertura es completa en cantidad; la validación de las medidas y la votación ATAM siguen pendientes.
 
 ---
 
