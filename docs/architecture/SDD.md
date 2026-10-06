@@ -298,7 +298,7 @@ Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean inco
 
 ![Modelo lógico de dominio](diagrams/sdd/03_modelo_logico_dominio.png)
 
-**Figura 3. Modelo lógico de dominio y referencias entre servicios.**
+**Figura 4. Modelo lógico de dominio y referencias entre servicios.**
 
 Las relaciones continuas representan relaciones internas al mismo dominio que pueden implementarse como claves foráneas. Las relaciones punteadas representan referencias lógicas entre servicios independientes.
 
@@ -391,7 +391,7 @@ La interoperabilidad entre stacks se mantiene mediante contratos REST/OpenAPI y 
 
 ![Capas internas de un microservicio](diagrams/sdd/04_capas_microservicio.png)
 
-**Figura 4. Estructura lógica interna de un microservicio.**
+**Figura 5. Estructura lógica interna de un microservicio.**
 
 La estructura interna se divide en cuatro capas lógicas:
 
@@ -564,7 +564,7 @@ sequenceDiagram
     GW->>M: Técnico acepta la solicitud
 ```
 
-**Figura 4. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
+**Figura 6. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
 
 ---
 
@@ -627,7 +627,7 @@ sequenceDiagram
     end
 ```
 
-**Figura 5. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
+**Figura 7. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
 
 ---
 
@@ -735,7 +735,7 @@ sequenceDiagram
     end
 ```
 
-**Figura 6. Tolerancia a fallos con Transactional Outbox ante indisponibilidad del broker.**
+**Figura 8. Tolerancia a fallos con Transactional Outbox ante indisponibilidad del broker.**
 
 ---
 
@@ -829,9 +829,9 @@ Cada repositorio de servicio contiene su código, sus pruebas unitarias y de int
 
 ![Estructura del repositorio QUICKPATCH](diagrams/sdd/07_vista_desarrollo_repositorio.svg)
 
-**Figura 7. Estructura del repositorio principal de QUICKPATCH.**
+**Figura 9. Estructura del repositorio principal de QUICKPATCH.**
 
-La Figura 7 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
+La Figura 9 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
 
 ---
 
@@ -906,7 +906,7 @@ Cada servicio mantiene su propio límite funcional y debe poder evolucionar y de
 
 ![Componentes por aplicación](diagrams/sdd/08_componentes_por_aplicacion.svg)
 
-**Figura 8. Organización de componentes por aplicación y tecnología.**
+**Figura 10. Organización de componentes por aplicación y tecnología.**
 
 ---
 
@@ -1009,7 +1009,7 @@ Las principales reglas son:
 
 ![Dependencias entre proyectos y módulos](diagrams/sdd/09_dependencias_modulos.svg)
 
-**Figura 9. Dependencias permitidas entre aplicaciones, contratos y microservicios.**
+**Figura 11. Dependencias permitidas entre aplicaciones, contratos y microservicios.**
 
 Estas reglas mantienen bajo el acoplamiento entre servicios y preservan la independencia tecnológica entre ASP.NET Core y Spring Boot.
 
@@ -1108,7 +1108,7 @@ Las ocho imágenes del backend se publican en el registro definido para el proye
 
 ![Mapa de carpetas y artefactos de build](diagrams/sdd/10_mapa_carpetas_build.svg)
 
-**Figura 10. Relación entre código fuente, procesos de build, pruebas, artefactos y despliegue.**
+**Figura 12. Relación entre código fuente, procesos de build, pruebas, artefactos y despliegue.**
 
 ---
 
@@ -1158,59 +1158,49 @@ Esta sección presenta cómo se despliega físicamente el sistema descrito en la
 
 ## 7.1 Diagrama de despliegue
 
+El diagrama muestra solo producción: VM1 y VM3 a VM7. QA (VM2), el runner de despliegue y las herramientas del laboratorio se documentan en el Documento de Infraestructura (sección 2.1).
+
 ```mermaid
 flowchart TB
-    CLIENTE(["Cliente — web / móvil<br/>(red de campus, sin acceso público — K9)"])
+    CLIENTE(["Cliente — web / móvil<br/>(VPN de la universidad, sin acceso público — K9)"])
+    EQUIPO(["Equipo — administración<br/>VPN · SSH"])
 
     subgraph LAB["Red privada del laboratorio — 10.43.x.x"]
     direction TB
 
         subgraph VM1N["VM1 · 10.43.100.168"]
-            VM1["Gateway<br/>Nginx + API Gateway"]
-        end
-        subgraph VM2N["VM2 · 10.43.98.15"]
-            VM2["Frontend Web<br/>Angular — panel admin"]
+            VM1["Gateway<br/>Nginx :443 · TLS autofirmado<br/>Panel Angular"]
         end
         subgraph VM3N["VM3 · 10.43.98.205"]
-            VM3["Backend — k3s, nodo único<br/>8 microservicios:<br/>Identity · Actors · Catalog<br/>Matching · ServiceRequest<br/>Ranking · Payments · Communication"]
+            VM3["Backend — k3s, nodo único<br/>Traefik :30080<br/>8 microservicios:<br/>Identity · Actors · Catalog<br/>Matching · ServiceRequest<br/>Ranking · Payments · Communication"]
         end
         subgraph VM4N["VM4 · 10.43.98.209"]
-            VM4["Base de datos<br/>PostgreSQL + PostGIS"]
+            VM4[("Base de datos<br/>PostgreSQL + PostGIS<br/>una base por servicio")]
         end
         subgraph VM5N["VM5 · 10.43.98.29"]
-            VM5["Cache<br/>Redis"]
+            VM5[("Cache<br/>Redis")]
         end
         subgraph VM6N["VM6 · 10.43.99.12"]
             VM6["Mensajería<br/>Apache Kafka + Kafka UI"]
         end
         subgraph VM7N["VM7 · 10.43.99.8"]
-            VM7["Storage y observabilidad<br/>Garage · Prometheus · Loki · Grafana"]
+            VM7[("Storage y observabilidad<br/>Garage S3 · Prometheus<br/>Loki · Grafana")]
         end
 
-        VM1 -->|"3000"| VM2
-        VM1 -->|"NodePort 30080/30443<br/>Traefik"| VM3
-        VM1 -->|"6443 · API server<br/>runner self-hosted"| VM3
+        VM1 -->|"NodePort 30080 / 30443<br/>/api/"| VM3
         VM3 -->|"5432"| VM4
         VM3 -->|"6379"| VM5
         VM3 -->|"9092"| VM6
-        VM3 -->|"9000"| VM7
-        VM4 -->|"9000 · backup diario"| VM7
-        VM7 -.->|"9100 · scrape node_exporter"| VM1N
-        VM7 -.->|"9100"| VM2N
-        VM7 -.->|"9100"| VM4N
-        VM7 -.->|"9100"| VM5N
-        VM7 -.->|"9100"| VM6N
+        VM3 -->|"9000 · evidencias"| VM7
+        VM4 -->|"9000 · respaldo diario"| VM7
     end
 
     CLIENTE -->|"443 HTTPS — único punto de entrada"| VM1
-
-    EQUIPO(["Equipo — acceso interno / SSH"])
-    VM6 -.->|"8080 Kafka UI"| EQUIPO
-    VM7 -.->|"3000 Grafana · 9090 Prometheus"| EQUIPO
+    EQUIPO -.->|"8080 Kafka UI"| VM6
+    EQUIPO -.->|"grafana.quickpatch.internal<br/>por VM1"| VM1
 
     style LAB fill:#f4f6fa,stroke:#00468C,stroke-width:1.5px,stroke-dasharray:4 3
     style VM1N fill:#E1EBFA,stroke:#00468C,stroke-width:1.5px
-    style VM2N fill:#E6F5E6,stroke:#00468C,stroke-width:1.5px
     style VM3N fill:#FFF0DC,stroke:#00468C,stroke-width:1.5px
     style VM4N fill:#FAE1E1,stroke:#00468C,stroke-width:1.5px
     style VM5N fill:#FAE1E1,stroke:#00468C,stroke-width:1.5px
@@ -1218,9 +1208,9 @@ flowchart TB
     style VM7N fill:#EBEBEB,stroke:#555555,stroke-width:1.5px
 ```
 
-**Figura 5. Diagrama de despliegue de QUICKPATCH sobre las 7 VMs.**
+**Figura 13. Diagrama de despliegue de producción de QUICKPATCH (VM1 y VM3 a VM7).**
 
-Las 7 VMs son idénticas en hardware (4 vCPU · 11 GiB RAM · 68 GB disco) y solo difieren en el software que alojan (Documento de Infraestructura, sección 3). VM3 es un clúster k3s de un solo nodo: es el punto único de falla reconocido del sistema (SAD, limitación de la sección 5.2). El firewall aplica `default deny incoming`; ninguna VM acepta conexiones directas del exterior salvo VM1 (443) y el acceso SSH del equipo (Documento de Infraestructura, sección 10.2).
+Las VMs son idénticas en hardware (4 vCPU · 11 GiB RAM · 68 GB disco) y solo difieren en el software que alojan (Documento de Infraestructura, sección 3). VM3 es un clúster k3s de un solo nodo: es el punto único de falla reconocido del sistema (SAD, limitación de la sección 5.2). VM1 aloja además el panel Angular y el runner de despliegue, que no se dibujan para mantener el diagrama solo con el sistema en ejecución. Las 6 VMs de producción envían métricas (`node_exporter`, 9100) y logs (Promtail, 3100) a VM7; esas flechas tampoco se dibujan para no cruzar el diagrama. El firewall aplica `default deny incoming`; ninguna VM acepta conexiones directas del exterior salvo VM1 (443) y el acceso SSH del equipo (Documento de Infraestructura, sección 10.2).
 
 ## 7.2 Ambientes Dev / QA / Prod
 
@@ -1228,11 +1218,11 @@ Las 7 VMs son idénticas en hardware (4 vCPU · 11 GiB RAM · 68 GB disco) y sol
 flowchart TB
     L["Local<br/>laptop de cada dev<br/>persistente, no compartido"]
     D["Dev<br/>runner GitHub Actions<br/>Testcontainers — efímero"]
-    Q["QA / Staging<br/>runner GH Actions (funcional, efímero)<br/>+ VM3 real (prueba de carga k6)"]
-    P["Producción<br/>las 7 VMs<br/>persistente, siempre activo"]
+    Q["QA<br/>VM2 — permanente (ADR-015)<br/>k3s, PostgreSQL, Redis, Kafka,<br/>Garage y Nginx propios"]
+    P["Producción<br/>VM1 y VM3 a VM7<br/>persistente, siempre activo"]
 
     L -->|"push a feature/*"| D
-    D -->|"merge a develop / release"| Q
+    D -->|"merge a develop"| Q
     Q -->|"merge a main"| P
 
     style L fill:#EBEBEB,stroke:#555555,stroke-width:1.5px
@@ -1241,16 +1231,16 @@ flowchart TB
     style P fill:#E6F5E6,stroke:#00468C,stroke-width:1.5px
 ```
 
-**Figura 6. Ambientes de desarrollo, pruebas y producción.**
+**Figura 14. Ambientes de desarrollo, pruebas y producción.**
 
-Ningún ambiente además de Producción ocupa hardware dedicado (K10: 7 VMs fijas, sin VM adicional para staging) — Dev y la parte funcional de QA existen solo mientras corre el pipeline. La prueba de carga es la única validación que corre contra hardware real (VM3), en ventana de mantenimiento, después del despliegue (Documento de Infraestructura, sección 4 y 6).
+Dev es el único ambiente efímero: existe solo mientras corre el pipeline en un runner de GitHub Actions. QA ocupa hardware dedicado, la VM2 (ADR-015): replica la forma de producción en una sola VM, con datos y secretos propios, y no puede conectarse a los servicios de producción. Cada versión `release/*` se despliega en QA y allí corren las pruebas de sistema (E2E, OWASP ZAP, escáner PCI-DSS y carga con k6); producción se despliega al fusionar en `main` (Documento de Infraestructura, secciones 4 y 6).
 
 ## 7.3 Seguridad de red y gestión de secretos
 
 ```mermaid
 flowchart TB
     CLIENTE(["Cliente / red de campus<br/>(sin dominio público — K9)"])
-    EQUIPO(["Equipo — acceso SSH<br/>solo llave pública"])
+    EQUIPO(["Equipo — acceso SSH<br/>con contraseña (decisión del equipo)"])
 
     subgraph PERIMETRO["VM1 — Perímetro"]
         direction LR
@@ -1260,14 +1250,13 @@ flowchart TB
 
     subgraph SECRETOS["Gestión de secretos"]
         direction LR
-        VAULT["Ansible Vault<br/>archivos cifrados en el repo"]
-        GHSECRETS["GitHub Actions Secrets<br/>kubeconfig · token ghcr.io"]
-        K8SSECRET["Kubernetes Secret<br/>dentro de VM3"]
+        VAULT["Ansible Vault<br/>vault.yml cifrado, fuera de Git"]
+        K8SSECRET["Kubernetes Secret<br/>dentro de VM3 y VM2"]
     end
 
     subgraph RED["Red privada — 10.43.x.x"]
         direction LR
-        VM2N["VM2<br/>Angular"]
+        VM2N["VM2<br/>QA"]
         VM3N["VM3<br/>k3s"]
         VM4N["VM4<br/>PostgreSQL"]
         VM5N["VM5<br/>Redis"]
@@ -1276,18 +1265,21 @@ flowchart TB
     end
 
     CLIENTE -->|"443 HTTPS"| NGINX
-    NGINX -->|"3000"| VM2N
+    NGINX -->|"443 · qa.quickpatch.internal"| VM2N
     NGINX -->|"NodePort 30080/30443"| VM3N
 
-    VAULT -->|"credenciales al aprovisionar"| VM2N
+    VAULT -->|"credenciales al aprovisionar"| PERIMETRO
+    VAULT --> VM2N
+    VAULT --> VM3N
     VAULT --> VM4N
     VAULT --> VM5N
     VAULT --> VM6N
     VAULT --> VM7N
 
     K8SSECRET --> VM3N
-    GHSECRETS -->|"copiado por Ansible"| RUNNER
-    RUNNER -->|"6443 · kubectl set image"| VM3N
+    K8SSECRET --> VM2N
+    RUNNER -->|"6443 · kubectl"| VM3N
+    RUNNER -->|"6443 · kubectl"| VM2N
 
     EQUIPO -.->|"22"| PERIMETRO
     EQUIPO -.->|"22"| RED
@@ -1297,9 +1289,11 @@ flowchart TB
     style RED fill:#f4f6fa,stroke:#00468C,stroke-width:1.5px,stroke-dasharray:4 3
 ```
 
-**Figura 7. Seguridad de red y gestión de secretos.**
+**Figura 15. Seguridad de red y gestión de secretos.**
 
-TLS se termina en VM1 con certificado autofirmado — no hay dominio público (K9), por lo que Let's Encrypt no es viable (Documento de Infraestructura, sección 10.1). Los secretos se gestionan por dos mecanismos distintos según el tipo de despliegue: Ansible Vault para las VMs con Docker Compose (VM1, VM2, VM4–VM7) y `Secret` de Kubernetes dentro de VM3; el `kubeconfig` y el token de `ghcr.io` viajan como GitHub Actions Secrets hasta el runner self-hosted en VM1 (Documento de Infraestructura, sección 8).
+TLS se termina en VM1 con certificado autofirmado — no hay dominio público (K9), por lo que Let's Encrypt no es viable (Documento de Infraestructura, sección 10.1). Los secretos se gestionan por dos mecanismos: Ansible Vault para la infraestructura de las 7 VMs (el archivo cifrado no se sube a Git, y QA tiene secretos propios, distintos a los de producción) y `Secret` de Kubernetes para los microservicios dentro de VM3 y VM2. El CI/CD no guarda credenciales de Kubernetes: el runner de VM1 usa los kubeconfig que deja Ansible en la propia VM, y la publicación de imágenes usa el token temporal de cada ejecución (Documento de Infraestructura, sección 8).
+
+El acceso por SSH es con contraseña, con la cuenta que entrega el laboratorio. Es una decisión del equipo (3 de octubre de 2026): las VMs solo son alcanzables desde la red de la universidad y su VPN, y solo DevOps las administra. El riesgo aceptado es que la contraseña es la misma en las 7 VMs (Documento de Infraestructura, sección 10.4).
 
 ---
 
