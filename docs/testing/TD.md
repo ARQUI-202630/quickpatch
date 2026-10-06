@@ -566,10 +566,10 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **PRF-003** | AC2-E3 | Rendimiento | Procesamiento en segundo plano desde solicitud hasta oferta. | Lapso total cronometrado inferior a 7.0 segundos para el 95% de las solicitudes. |
 | **PRF-004** | **AC2-E4** | Estrés Pico | **Pico de carga inesperado de 150 solicitudes de matching concurrentes.** | k6 inyecta 150 VU de estrés en QA (VM2 - ADR-015) durante 5 minutos; tasa de error 5xx = 0% o degradación controlada; 0 caídas de pod; Producción (VM3) protegida. |
 | **PRF-005** | **AC2-E5, K10** | Capacidad | **Presupuesto y estabilidad de recursos bajo carga.** | 0 procesos terminados por `OOMKilled`; 0 caída de pods; degradación controlada; registro del consumo de CPU y RAM para establecer el baseline operativo formal. |
-| **PRF-006** | SAD 1.2 | Limpieza | Purga de datos del tenant de prueba tras test de carga. | Scripts de teardown independientes limpian registros de `tenant_qa_loadtest` en las bases de datos de ServiceRequest y Matching en VM4. |
+| **PRF-006** | SAD 1.2 | Limpieza | Purga de datos del tenant de prueba tras test de carga. | Scripts de teardown independientes limpian registros de `tenant_qa_loadtest` en las bases de datos de ServiceRequest y Matching en el ambiente de QA (VM2); la base de datos de producción en VM4 permanece aislada e intacta. |
 | **PRF-007** | RNF-06 | Resistencia | Operación sostenida bajo carga normal (50 VU) por 30 minutos. | Cero fugas progresivas de memoria; consumo de CPU estable por debajo del 75%. |
 | **PRF-008** | RNF-08 | Rollback | Mecanismo de Rollback Automático ante fallo de carga. | Pipeline detecta violación de umbral y ejecuta `kubectl rollout undo` de forma automatizada. |
-| **PRF-009** | INFRA 5.7 | Conexiones | Pool de conexiones a PostgreSQL (VM4) bajo 150 VU. | Pool opera dentro de los límites de `max_connections` sin errores `too many clients`. |
+| **PRF-009** | INFRA 5.7 | Conexiones | Pool de conexiones a PostgreSQL en QA (VM2) bajo 150 VU. | Pool opera dentro de los límites de `max_connections` en QA sin errores `too many clients`, sin afectar a producción en VM4. |
 | **PRF-010** | AC9-E6 | Alertas | Disparo de alertas en Grafana al superar el 85% de RAM. | Alerta activa generada en Grafana alertando al equipo antes de un desalojo. |
 
 ---
@@ -584,7 +584,7 @@ Para garantizar la repetibilidad, el aislamiento y la independencia de las prueb
 1. **Datos Sintéticos y Efímeros (Shift-Left):** En las compuertas 1 (Local) y 2 (CI), los datos se generan dinámicamente mediante semillas (*seeds*) administradas por **Testcontainers**. Al finalizar la suite, los contenedores y los datos se destruyen automáticamente.
 2. **Aislamiento Multi-Tenant Estricto (AC6-E2):** Ninguna prueba utiliza datos compartidos entre tenants. Se crean tenants dedicados exclusivamente para propósitos de prueba para evitar colisiones:
    - `tenant_qa_automated`: Utilizado para pruebas de integración y flujos E2E de regresión.
-   - `tenant_qa_loadtest` (UUID: `a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee`): Utilizado exclusivamente para las pruebas de carga con k6 sobre el ambiente de QA (VM2 / VM4).
+   - `tenant_qa_loadtest` (UUID: `a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee`): Utilizado exclusivamente para las pruebas de carga con k6 sobre el ambiente dedicado de QA en VM2 (PostgreSQL propio de QA).
 3. **Cumplimiento PCI-DSS en Datos de Prueba (K2, AC6-E1):** Está terminantemente prohibido el uso de datos reales de tarjetas de crédito o débito. Todas las pruebas de pagos utilizan **tokens opacos sintéticos** provistos por las librerías mock de pasarelas (ej. `tok_test_visa_approved_001`, `tok_test_declined_funds`).
 
 ### 8.2 Perfiles y Conjuntos de Datos Semilla (Fixtures)
@@ -605,15 +605,15 @@ Para garantizar la repetibilidad, el aislamiento y la independencia de las prueb
 
 ### 8.3 Ciclo de Vida y Limpieza de Datos (Tear-down)
 * **Post-Test Local/CI:** Las bases de datos en Testcontainers se eliminan al destruirse el contenedor Docker.
-* **Post-Carga en QA (VM2 / VM4):** Al concluir las pruebas de k6 de 50/150 VU en el ambiente de QA, se ejecuta automáticamente el procedimiento de purga respetando el aislamiento de bases de datos independientes:
+* **Post-Carga en QA (VM2):** Al concluir las pruebas de k6 de 50/150 VU en el ambiente de QA, se ejecuta automáticamente el procedimiento de purga en el PostgreSQL propio de QA en VM2 respetando el aislamiento de bases de datos independientes:
   ```sql
-  -- 1. En la base de datos de ServiceRequest Service:
+  -- 1. En la base de datos de ServiceRequest Service (QA en VM2):
   DELETE FROM service_requests WHERE tenant_id = 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee';
 
-  -- 2. En la base de datos de Matching Service:
+  -- 2. En la base de datos de Matching Service (QA en VM2):
   DELETE FROM matching_attempts WHERE tenant_id = 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee';
   ```
-  Esto garantiza que cada base de datos independiente en la VM4 conserve espacio libre y no degrade las lecturas de los índices espaciales de PostGIS.
+  Esto garantiza que la base de datos de QA en VM2 conserve espacio libre y no degrade las lecturas de los índices espaciales de PostGIS; la base de datos de producción en VM4 permanece 100% aislada e intacta.
 
 ---
 
@@ -748,4 +748,5 @@ quickpatch/tests/evidence/
 | **1.0** | 3 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Versión inicial formal para la entrega del Sprint 3 (Semana 10). Incluye cobertura completa del estándar de documentación de pruebas: Plan de Pruebas (Test Plan), Estrategia de Pruebas (Test Strategy), Escenarios de Calidad (Test Scenarios), Matriz de Trazabilidad (RTM) cubriendo los 32 RFs activos del SRS v3.2 y los 37 escenarios de software del SAD v2.13, Catálogo de 187 Casos de Prueba (Test Cases), incorporación del Ambiente de QA en VM2 (ADR-015), adopción de Garage para almacenamiento S3 (ADR-016), Gestión de Datos de Prueba (Test Data), Gestión de Defectos (Bug Report), e Informe de Ejecución del Incremento (Test Execution Report). |
 | **1.1** | 4 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Sincronización técnica del stack multirepo V2 (.NET 10, Java 25, Angular 22, Flutter 3.47, Vitest), incorporación formal de la Matriz de Trazabilidad hacia Historias de Usuario de Jira (subtarea SCRUM-317), refinamiento de compuertas k6 y especificación del protocolo de evidencias para el Informe de Pruebas (SCRUM-307 / SCRUM-315). |
 | **1.2** | 5 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Incorporación de observaciones del equipo: (1) Enfoque exclusivo de carga (50 VU) y estrés (150 VU) en QA (VM2 - ADR-015), protegiendo Producción (VM3) de estrés rutinario; (2) Reemplazo de umbral rígido de 6.5 GiB por criterios objetivos de estabilidad (0 OOMKilled, 0 caída de pods, degradación controlada y baseline de CPU/RAM); (3) Referencia dinámica a Jira para estados de subtareas; (4) Retiro de Pact, consolidando la validación contractual sobre OpenAPI, Spectral CLI y AJV en quickpatch-contracts. |
+| **1.3** | 6 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Corrección de aislamiento de base de datos en pruebas de carga (revisión PR #20): eliminación de toda referencia a VM4 en pasos de carga y teardown; la inyección de carga y la purga SQL se direccionan exclusivamente al PostgreSQL propio de QA en VM2, garantizando que la BD de producción en VM4 permanezca 100% aislada. |
 
