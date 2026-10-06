@@ -109,7 +109,7 @@ QUICKPATCH se descompone en 8 microservicios de dominio (SAD, sección 4.2.2), d
 |Actors Service|Ninguna todavía. `Supplier`, `Ally` y `Client` son conceptos evolutivos (SDD, sección 4.4).|
 |Catalog Service|`service_categories`|
 |Matching Service|`technician_availability`, `coverage_zones`, `matching_attempts`|
-|ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence`|
+|ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence` y la réplica de lectura `service_request_categories`|
 |Ranking Service|Ninguna todavía. Consume las calificaciones; su persistencia es evolutiva (SDD, sección 4.4).|
 |Payments Service|`payments`, `invoices`|
 |Communication Service|Ninguna todavía. Consume eventos para notificar; `Notification`, `Conversation` y `Complaint` son evolutivos.|
@@ -878,6 +878,24 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 **Nota:** el consumidor inserta la fila en la misma transacción que aplica el efecto. Si el `event_id` ya existe, la clave primaria rechaza la inserción, la transacción se revierte y el evento se descarta sin efecto.
 
+### 5.17 Tabla `service_request_categories`
+
+**Servicio propietario:** ServiceRequest Service.
+
+**Propósito:** Réplica local de lectura de las categorías de Catalog Service, alimentada por el evento `catalog.category-changed` (event-carried state transfer). Permite validar la categoría al crear una solicitud (RN-SR10) sin llamar a Catalog Service, como exige el principio de comunicación por eventos del SAD (sección 4.3). Catalog Service sigue siendo el dueño de `service_categories`; esta tabla solo la escribe el consumidor del evento.
+
+**Requisitos relacionados:** RF-07, RF-08.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|category_id|UUID|No|PK|`id` de la categoría en Catalog Service (ref. lógica).|
+|tenant_id|UUID|No|—|Tenant dueño de la categoría.|
+|name|VARCHAR(100)|No|—|Nombre de la categoría.|
+|active|BOOLEAN|No|—|Si la categoría está disponible para nuevas solicitudes.|
+|updated_at|TIMESTAMPTZ|No|—|Momento del cambio en Catalog (`data.updatedAt` del evento). Un evento con un `updatedAt` anterior al guardado se descarta.|
+
+**Reglas de negocio:** RN-SR10 (sección 7.4) y RN-EV1 (sección 7.11).
+
 ---
 
 ## 6. Relaciones entre datos
@@ -967,6 +985,9 @@ Matching Service aplica estas reglas con el estado de verificación que mantiene
 - **RN-SR6:** solo se puede pasar a `en_progreso` desde `cotizacion_aceptada`; el servicio no inicia sin una cotización aceptada.
 - **RN-SR7:** la solicitud puede pasar a `cancelado` desde cualquier estado anterior a `en_progreso`, igual que `CANCELLED` en el SAD (sección 7.4). La cancelación registra `cancelled_at` y `cancellation_reason`, anula la cotización pendiente y publica `service-request.cancelled`.
 - **RN-SR8:** pueden cancelar una solicitud el cliente que la creó (`client_id`) y el `admin_tenant` de su tenant. ServiceRequest Service la cancela por sí mismo en los casos de RN-Q6 y RN-Q7.
+- **RN-SR9:** la ubicación de una solicitud debe estar dentro del área de cobertura de Bogotá D.C. (restricción R6 del SAD). El área se define en la configuración del servicio como un rectángulo de coordenadas; el valor inicial cubre el área urbana: latitud de 4.45 a 4.85 y longitud de −74.25 a −73.98. Una ubicación fuera del área se rechaza con `422 ubicacion-fuera-de-cobertura`.
+- **RN-SR10:** la categoría de una solicitud nueva debe existir y estar activa en el tenant del usuario, según la réplica local `service_request_categories`. Si no, se rechaza con `422 categoria-no-disponible`.
+- **RN-SR11:** `description` tiene entre 10 y 1000 caracteres y `address_text` entre 5 y 255. `address_text` complementa la ubicación con los datos que el punto no tiene (torre, apartamento, indicaciones).
 
 **Figura 3: Máquina de estados de `service_requests`**
 
@@ -1079,6 +1100,7 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 |RN-TP1, RN-TP2|Depende de DEP-01.|
 |RN-SR1, RN-SR2|`location` es NOT NULL; `technician_id` admite nulos.|
 |RN-SR3 a RN-SR7, RN-R3|Validación de transiciones en ServiceRequest Service (módulo *State Validation* del SDD). RN-SR3 cuenta las evidencias dentro de la misma transacción que cambia el estado.|
+|RN-SR9, RN-SR10, RN-SR11|Validación en ServiceRequest Service antes de crear la solicitud; RN-SR10 consulta la réplica `service_request_categories`.|
 |RN-SR8, RN-E2, RN-Q1, RN-Q3|Autorización en ServiceRequest Service comparando el usuario del token con `client_id`, `technician_id` o el rol.|
 |RN-M1, RN-M7|Índices únicos parciales sobre `matching_attempts` (sección 5.8). La aceptación ejecuta `UPDATE technician_availability SET status = 'ocupado' WHERE technician_id = $1 AND status = 'disponible'` y la rechaza si no actualiza ninguna fila.|
 |RN-M2|La aceptación actualiza la oferta con la condición `response = 'pendiente' AND expires_at > now()` y el técnico del token.|
@@ -1114,6 +1136,7 @@ El presente documento registra únicamente los contratos que actualmente pueden 
 |POST|`/v1/auth/register/company`|Identity|Registrar empresa.|
 |POST|`/v1/auth/login`|Identity|Autenticar usuario.|
 |GET|`/v1/users/me`|Identity|Consultar perfil actual.|
+|GET|`/v1/catalog/categories`|Catalog|Listar las categorías activas del tenant autenticado.|
 |POST|`/v1/service-requests`|ServiceRequest|Crear solicitud de servicio.|
 |GET|`/v1/service-requests/{id}`|ServiceRequest|Consultar una solicitud.|
 |POST|`/v1/service-requests/{id}/cancel`|ServiceRequest|Cancelar la solicitud antes de iniciar el servicio (RN-SR7, RN-SR8).|
@@ -1144,6 +1167,9 @@ El presente documento registra únicamente los contratos que actualmente pueden 
 |`service-request.completed`|ServiceRequest|Payments, Matching, Communication|Notificar la finalización. `data` incluye el total de la cotización aceptada y el técnico asignado. Payments crea el pago pendiente (RN-P3, RN-P4) y Matching libera al técnico (RN-M6).|
 |`payment.approved`|Payments|ServiceRequest, Communication|Confirmar un pago exitoso; la solicitud pasa a `pagado` y Payments emite la factura.|
 |`payment.rejected`|Payments|ServiceRequest, Communication|Informar el rechazo; la solicitud permanece en `completado` y el cliente puede reintentar (RN-SR5).|
+|`catalog.category-changed`|Catalog|ServiceRequest, Matching|Publicar el estado completo de una categoría tras crearla o modificarla, para que cada consumidor mantenga su réplica local (`service_request_categories` en ServiceRequest).|
+
+Los esquemas versionados de cada evento están en `quickpatch-contracts` (`events/`). `service-request.created` lleva en `data`: `serviceRequestId`, `clientId`, `categoryId`, `description`, `location` (latitud y longitud) y `createdAt`; `address_text` no viaja en el evento por minimización de datos personales (K12 del SAD). Cada evento se publica en un topic con su mismo nombre y con el id del agregado como clave.
 
 #### 8.2.1 Estructura base de evento
 
@@ -1358,6 +1384,7 @@ El aislamiento entre tenants sigue ADR-005 (shared-schema con `tenant_id` + Row 
 |`tenants`|No aplica: es la tabla raíz|Política sobre `id`; el rol `_app` solo puede consultarla.|
 |`users`, `technician_profiles`|NOT NULL, FK física|Política de aislamiento por tenant.|
 |`service_categories`, `service_requests`, `quotes`, `ratings`, `service_evidence`, `technician_availability`, `coverage_zones`, `matching_attempts`, `payments`, `invoices`|NOT NULL, referencia lógica|Política de aislamiento por tenant.|
+|`service_request_categories`|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant; solo la escribe el consumidor de `catalog.category-changed`.|
 |`processed_events`|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant.|
 |`outbox_events`|NOT NULL, con el tenant de la sesión por defecto|Política de inserción por tenant; la lectura para publicar la hace el rol del publicador (sección 10.2).|
 |`audit_logs`|Admite nulos: los eventos de plataforma no pertenecen a un tenant|Política de aislamiento para filas con tenant; las filas sin tenant solo las escribe `identity_platform`. Ningún rol de aplicación puede modificar ni borrar filas (RN-A1).|
@@ -1485,7 +1512,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |2.0|Revisión arquitectónica|Adaptación del modelo a una solución distribuida, definición de propiedad de datos por servicio y contratos mediante Kafka.|
 |2.1|Confirmación de alcance (evidencias)|Se confirma con el equipo que la evidencia fotográfica está en el alcance del MVP; se agrega la tabla `service_evidence`, el endpoint `POST /v1/service-requests/{id}/evidence`, y la regla de negocio que exige al menos una evidencia para completar una solicitud.|
 |2.2|Revisión de arquitectura de datos|Se alinea la propiedad de datos con los 8 microservicios del SAD y el SDD (`service_categories` pasa a Catalog Service y `service_requests.category_id` a referencia lógica). Se alinea el modelo de tenancy con el SAD: el tenant es la empresa oferente (se retira `tenants.type`; `nit` pasa a obligatorio y único) y la diferencia con RF-06 se registra en DEP-13. Se agrega `tenant_id` a `technician_profiles`, `service_categories` y `outbox_events`. El correo y el documento de identidad pasan a ser únicos por tenant (RN-U1 cambia de redacción) y el rol `admin` se divide en `admin_tenant` y `admin_plataforma`. Se modela la etapa de cotización del SAD con la tabla `quotes` y la cancelación con el estado `cancelado`. `payments` agrega `technician_id` para RF-25 y el estado `procesando`. Se agregan el diagrama de dominios de datos y el diagrama entidad-relación consistentes con el diccionario, y el listado completo de referencias lógicas. Las reglas de negocio pasan a una sección propia con la máquina de estados, la correspondencia con el ciclo de vida del SAD y el mecanismo de cumplimiento de cada regla; se ajustan RN-T2, RN-U1 y RN-R3 (esta última a `pagado`, según el SDD y RF-27) y se agregan RN-U5, RN-U6, RN-SR5 a RN-SR8, RN-M1 a RN-M7, RN-P2 a RN-P5, RN-Q1 a RN-Q7 y RN-A1. Se agregan los contratos de ofertas (RF-10), cotización, cancelación y pagos recibidos (RF-25), los consumidores de cada evento y el flujo de extremo a extremo. La sección de multi-tenancy aplica RLS según ADR-005 con roles separados para la aplicación, el publicador de eventos, la plataforma y las migraciones; define el origen del tenant en peticiones, login, registro y consumo de eventos; y deja `audit_logs` sin permisos de modificación para la aplicación (AC6-E7). Se agrega el modelo analítico objetivo, fuera del alcance del MVP. Se agrega `processed_events` para la idempotencia de los consumidores (RN-EV1). La sección 11 registra las decisiones externas de las que depende el modelo (DEP-01 a DEP-14).|
-|2.3|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran.|
+|2.3|Creación de solicitud (SCRUM-27)|Se agrega `service_request_categories` (réplica de categorías alimentada por `catalog.category-changed`), las reglas RN-SR9 (área de cobertura de Bogotá), RN-SR10 (categoría disponible) y RN-SR11 (longitudes), el endpoint `GET /v1/catalog/categories`, el evento `catalog.category-changed` y el contenido de `data` de `service-request.created`, alineados con los contratos de `quickpatch-contracts`.|
+|2.4|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran.|
 
 _Cuadro 3: Evolución del diccionario de datos_
 
