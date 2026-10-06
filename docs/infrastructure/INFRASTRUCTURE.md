@@ -49,7 +49,7 @@ Qué corre en cada VM, cómo se conectan y por dónde entra el tráfico. El inve
 ```mermaid
 flowchart TB
     EQ(["Equipo y usuarios<br/>VPN de la universidad"])
-    PERIM{{"Firewall perimetral de la universidad (K9)<br/>desde la VPN solo pasa el 443 de VM1"}}
+    PERIM{{"Firewall perimetral de la universidad (R9)<br/>desde la VPN solo pasa el 443 de VM1"}}
     GH(["GitHub<br/>Actions y GHCR"])
 
     subgraph LAB["Red del laboratorio 10.43.x.x"]
@@ -102,8 +102,8 @@ flowchart TB
 
 ### 2.2 Principios de la arquitectura de despliegue
 
-- **Sin servicios administrados en la nube (K5, K10):** todo el sistema corre en las 7 VMs propias asignadas por el laboratorio de la Javeriana; no hay bases de datos, colas ni cómputo administrado por un proveedor cloud.
-- **Un rol por VM, salvo VM1, VM3 y VM7:** cada VM aloja un componente principal (base de datos, cache, mensajería, QA). VM1 combina el gateway, el panel Angular y el runner de despliegue (SAD, ADR-015); VM3 concentra los 8 microservicios en k3s (ADR-011), y VM7 combina el almacenamiento de objetos (Garage, ADR-016) y la observabilidad (Prometheus, Loki y Grafana), porque no hay una octava VM (K10).
+- **Sin servicios administrados en la nube (R5, R10):** todo el sistema corre en las 7 VMs propias asignadas por el laboratorio de la Javeriana; no hay bases de datos, colas ni cómputo administrado por un proveedor cloud.
+- **Un rol por VM, salvo VM1, VM3 y VM7:** cada VM aloja un componente principal (base de datos, cache, mensajería, QA). VM1 combina el gateway, el panel Angular y el runner de despliegue (SAD, ADR-015); VM3 concentra los 8 microservicios en k3s (ADR-011), y VM7 combina el almacenamiento de objetos (Garage, ADR-016) y la observabilidad (Prometheus, Loki y Grafana), porque no hay una octava VM (R10).
 - **Kubernetes solo donde corren los microservicios:** VM3 (producción) y VM2 (QA) usan k3s, porque los servicios necesitan rolling updates y auto-healing independientes. El resto de componentes usa Docker Compose por simplicidad operativa (sección 5).
 - **Automatizado, no manual:** el aprovisionamiento de las 7 VMs y el despliegue de cada componente se hacen con Ansible (sección 5), no a mano, dado que una sola persona (DevOps) administra las 7 máquinas (SAD, sección 5.3).
 - **Red cerrada por defecto:** ninguna VM acepta tráfico entrante salvo las rutas explícitas de la sección 10.3; el único punto de entrada desde fuera de la red del laboratorio es VM1.
@@ -111,7 +111,7 @@ flowchart TB
 
 ### 2.3 Balanceo de carga y alta disponibilidad
 
-**Resumen:** el sistema balancea carga **dentro de VM3**, entre réplicas de un mismo servicio, pero **no tiene alta disponibilidad entre máquinas**. Con 7 VMs fijas (K10) y sin operación 24/7 (K7), cada componente corre en una sola VM; lo que se protege es la recuperación rápida dentro de cada máquina y la reconstrucción completa con Ansible.
+**Resumen:** el sistema balancea carga **dentro de VM3**, entre réplicas de un mismo servicio, pero **no tiene alta disponibilidad entre máquinas**. Con 7 VMs fijas (R10) y sin operación 24/7 (R7), cada componente corre en una sola VM; lo que se protege es la recuperación rápida dentro de cada máquina y la reconstrucción completa con Ansible.
 
 #### Dónde hay balanceo de carga
 
@@ -140,9 +140,9 @@ k3s trae `metrics-server`, así que un servicio puede escalar sus réplicas auto
 - **Auto-healing en k3s:** si un pod falla, Kubernetes lo reinicia sin afectar a los demás servicios (AC5-E3).
 - **Rolling updates sin downtime:** un despliegue crea el pod nuevo y solo retira el anterior cuando el nuevo está listo; si no termina, el pipeline revierte (secciones 5.8 y 6.2).
 - **Reinicio automático de contenedores:** los servicios en Docker Compose (PostgreSQL, Redis, Kafka, Garage, observabilidad y Nginx) usan `restart: unless-stopped`, así que vuelven solos después de una caída o de un reinicio de la VM. El runner de VM1 también corre como servicio del sistema.
-- **Recuperación por código:** cualquier VM se reconstruye con sus playbooks de Ansible, en la ventana de 12 a 24 horas aceptada (K7, sección 9.4).
+- **Recuperación por código:** cualquier VM se reconstruye con sus playbooks de Ansible, en la ventana de 12 a 24 horas aceptada (R7, sección 9.4).
 
-**Por qué no hay alta disponibilidad entre máquinas:** exigiría duplicar cada componente en otra VM (dos gateways, un clúster de k3s de varios nodos, réplicas de PostgreSQL y Kafka), y el laboratorio solo asigna 7 VMs, que ya están ocupadas (K10). Sin operación 24/7 (K7), una caída se atiende en horario del equipo, lo que el SAD acepta en el escenario AC5-E1.
+**Por qué no hay alta disponibilidad entre máquinas:** exigiría duplicar cada componente en otra VM (dos gateways, un clúster de k3s de varios nodos, réplicas de PostgreSQL y Kafka), y el laboratorio solo asigna 7 VMs, que ya están ocupadas (R10). Sin operación 24/7 (R7), una caída se atiende en horario del equipo, lo que el SAD acepta en el escenario AC5-E1.
 
 ---
 
@@ -490,7 +490,7 @@ Ningún secreto (contraseñas, llaves de Garage, tokens de la pasarela de pagos,
 
 ### 9.3 Cómo restaurar una base
 
-La restauración es **manual**, por K7 (sin operación 24/7), dentro de la ventana de 12 a 24 horas aceptada para fallas de infraestructura (SAD, escenario AC5-E1). Con un respaldo diario, la pérdida máxima de datos (RPO) es de 24 horas.
+La restauración es **manual**, por R7 (sin operación 24/7), dentro de la ventana de 12 a 24 horas aceptada para fallas de infraestructura (SAD, escenario AC5-E1). Con un respaldo diario, la pérdida máxima de datos (RPO) es de 24 horas.
 
 1. Elegir el día en Garage. Desde VM4, con las credenciales de la llave `backups`:
    ```
@@ -511,19 +511,19 @@ Como toda la configuración es código de Ansible, la recuperación de una VM es
 | Se cae un microservicio | k3s reinicia el pod (AC5-E3) | Automático | Segundos a minutos |
 | Un despliegue sale mal | El pipeline detecta que el rolling update no termina | Automático: `kubectl rollout undo` | Minutos |
 | Datos dañados o borrados en una base | El servicio funciona con datos incorrectos | Restaurar el respaldo de esa base (9.3) | Menos de una hora; se pierden hasta 24 horas de datos |
-| Se pierde una VM completa | El laboratorio la reaprovisiona | `setup-base.yml` y el playbook de su rol. VM4: restaurar el último respaldo. VM7: las evidencias se pierden (9.5). VM1: volver a registrar el runner | 12 a 24 horas (K7, AC5-E1) |
+| Se pierde una VM completa | El laboratorio la reaprovisiona | `setup-base.yml` y el playbook de su rol. VM4: restaurar el último respaldo. VM7: las evidencias se pierden (9.5). VM1: volver a registrar el runner | 12 a 24 horas (R7, AC5-E1) |
 | Se pierden todas las VMs | — | `site.yml`, que aplica todo en orden, y restaurar las bases | 12 a 24 horas |
 
 **Lo que hace falta para reconstruir:**
 
 - El repositorio `quickpatch-infrastructure`.
-- El archivo cifrado `vault.yml` y su contraseña. **Hoy existen en un solo computador, el del responsable de DevOps (K11):** si ese equipo se pierde, se pierden las contraseñas de las bases, de Redis y de Garage. Se pueden regenerar, pero las bases restauradas necesitarían que se les cambien las credenciales. Pendiente: guardar una copia del vault y de su contraseña fuera de ese computador, por ejemplo en el gestor de contraseñas del equipo.
+- El archivo cifrado `vault.yml` y su contraseña. **Hoy existen en un solo computador, el del responsable de DevOps (R11):** si ese equipo se pierde, se pierden las contraseñas de las bases, de Redis y de Garage. Se pueden regenerar, pero las bases restauradas necesitarían que se les cambien las credenciales. Pendiente: guardar una copia del vault y de su contraseña fuera de ese computador, por ejemplo en el gestor de contraseñas del equipo.
 - Las credenciales de las VMs que entrega el laboratorio.
 - Un token nuevo de la organización en GitHub para registrar el runner de VM1.
 
 ### 9.5 Evidencias en Garage: sin respaldo, limitación aceptada
 
-Garage en VM7 es el almacenamiento principal de las evidencias fotográficas y, si algo le pasa a esa VM, el único lugar donde existen: no hay una octava VM para duplicarlas (K10).
+Garage en VM7 es el almacenamiento principal de las evidencias fotográficas y, si algo le pasa a esa VM, el único lugar donde existen: no hay una octava VM para duplicarlas (R10).
 
 **Se documenta como limitación aceptada**, con el mismo tratamiento que el punto único de falla de VM3 (SAD, sección 5.2). Si VM7 falla por completo, se pierden las evidencias de los servicios ya completados, pero no la plataforma: el ciclo de negocio (RF-15, pagos y calificaciones) no depende de que la evidencia siga disponible después de completado el servicio.
 
@@ -542,7 +542,7 @@ En su lugar, se usan **certificados autofirmados** con vigencia de 10 años:
 | VM1 (gateway) | `quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal` y la IP de VM1 | `deploy-gateway.yml`, que lo regenera si a la lista de nombres le falta alguno |
 | VM2 (QA) | `qa.quickpatch.internal` y la IP de VM2 | `deploy-qa.yml` |
 
-Esto cumple RNF-02 (el tráfico va cifrado), aunque el navegador muestre una advertencia la primera vez porque el certificado no viene de una CA reconocida. Es una limitación aceptada (sección 13): no hay CA pública sin dominio público (K9) ni presupuesto para una comercial (K5).
+Esto cumple RNF-02 (el tráfico va cifrado), aunque el navegador muestre una advertencia la primera vez porque el certificado no viene de una CA reconocida. Es una limitación aceptada (sección 13): no hay CA pública sin dominio público (R9) ni presupuesto para una comercial (R5).
 
 El tráfico entre VMs, dentro de la red privada del laboratorio, no usa TLS: nunca sale a Internet, y cifrarlo exigiría gestionar certificados internos sin un beneficio real.
 
@@ -550,7 +550,7 @@ El tráfico entre VMs, dentro de la red privada del laboratorio, no usa TLS: nun
 
 El tráfico pasa por dos filtros antes de llegar a un servicio:
 
-1. **El firewall perimetral de la universidad**, que el equipo no controla (K9). Desde la VPN solo deja pasar algunos puertos: se comprobó que pasan el 443 de VM1, el 8080 de VM6 y el 22 de todas las VMs, y que no pasan el 3000 y el 9090 de VM7 ni el 443 de VM2. Por eso VM1 es la única entrada a producción, QA y Grafana (SAD, ADR-015).
+1. **El firewall perimetral de la universidad**, que el equipo no controla (R9). Desde la VPN solo deja pasar algunos puertos: se comprobó que pasan el 443 de VM1, el 8080 de VM6 y el 22 de todas las VMs, y que no pasan el 3000 y el 9090 de VM7 ni el 443 de VM2. Por eso VM1 es la única entrada a producción, QA y Grafana (SAD, ADR-015).
 2. **El firewall de cada VM**, configurado por `setup-base.yml` con política de denegar todo lo entrante y abrir solo los pares origen-puerto de la sección 10.3:
    - **Ubuntu** (VM1, VM3, VM4, VM6, VM7): `ufw`. Abre el 22 antes de activarse, para no perder la conexión.
    - **Rocky Linux** (VM2, VM5): `firewalld`, con una zona propia `quickpatch` en modo DROP. La interfaz se asigna a esa zona desde NetworkManager, porque si no vuelve a la zona `public` al reiniciar.
@@ -600,8 +600,8 @@ QA no puede llegar a producción: PostgreSQL, Redis, Kafka y Garage de producci�
 
 El acceso es **con contraseña**, con la cuenta que entrega el laboratorio (`estudiante`). Se decidió no exigir llaves públicas (3 de octubre de 2026) porque:
 
-- las VMs solo son alcanzables desde la red de la universidad y su VPN (K9);
-- solo el responsable de DevOps administra las VMs (K11): el resto del equipo no entra por SSH, sino que despliega por el pipeline de CI/CD;
+- las VMs solo son alcanzables desde la red de la universidad y su VPN (R9);
+- solo el responsable de DevOps administra las VMs (R11): el resto del equipo no entra por SSH, sino que despliega por el pipeline de CI/CD;
 - desactivar la contraseña en todas las cuentas podría dejar sin acceso al laboratorio, que administra sus propias cuentas en las VMs.
 
 Lo que sí está configurado:
@@ -618,7 +618,7 @@ Lo que sí está configurado:
 
 ### 11.1 Alcance: sin dominio público
 
-Las 7 VMs del proyecto viven en el rango privado `10.43.x.x` del laboratorio de virtualización de la Javeriana (sección 3), no enrutable desde Internet. No hay NAT, port-forwarding ni un gateway público administrado por el equipo que exponga VM1 hacia afuera de la red del laboratorio — eso está fuera del control del equipo y del alcance de este proyecto académico. Esta es la restricción K9 del SAD (red privada del laboratorio, sin dominio público). En consecuencia, **el proyecto no usa un dominio público real ni un proveedor de DNS público** (Cloudflare, Route 53, GoDaddy, etc.).
+Las 7 VMs del proyecto viven en el rango privado `10.43.x.x` del laboratorio de virtualización de la Javeriana (sección 3), no enrutable desde Internet. No hay NAT, port-forwarding ni un gateway público administrado por el equipo que exponga VM1 hacia afuera de la red del laboratorio — eso está fuera del control del equipo y del alcance de este proyecto académico. Esta es la restricción R9 del SAD (red privada del laboratorio, sin dominio público). En consecuencia, **el proyecto no usa un dominio público real ni un proveedor de DNS público** (Cloudflare, Route 53, GoDaddy, etc.).
 
 ### 11.2 Nombres lógicos y resolución interna
 
@@ -643,7 +643,7 @@ Sin dominio público no es posible obtener un certificado de una CA reconocida (
 
 ### 11.4 Fuera de alcance: dominio real en un despliegue de producción
 
-Si el proyecto pasara de entorno académico a un despliegue real de producción, se necesitaría: (1) un dominio público comprado a un registrador, (2) un proveedor de DNS público, y (3) salir de la red privada del laboratorio hacia infraestructura con IP pública o un túnel administrado — momento en el cual sí sería viable tramitar un certificado real de Let's Encrypt. Esta migración está fuera del alcance de este documento y de las restricciones académicas K3/K5.
+Si el proyecto pasara de entorno académico a un despliegue real de producción, se necesitaría: (1) un dominio público comprado a un registrador, (2) un proveedor de DNS público, y (3) salir de la red privada del laboratorio hacia infraestructura con IP pública o un túnel administrado — momento en el cual sí sería viable tramitar un certificado real de Let's Encrypt. Esta migración está fuera del alcance de este documento y de las restricciones académicas R3/R5.
 
 ---
 
@@ -664,7 +664,7 @@ Si el proyecto pasara de entorno académico a un despliegue real de producción,
 | Registro de imágenes (GitHub Container Registry) | $0 | Incluido con el repositorio de GitHub |
 | Dominio y DNS público | $0 | No aplica — el proyecto no usa dominio público (sección 11) |
 | Certificado TLS | $0 | Autofirmado (sección 10.1) |
-| **Total real** | **$0** | Todo el costo de infraestructura y herramientas queda cubierto por recursos gratuitos o asignados por la universidad, consistente con K5 |
+| **Total real** | **$0** | Todo el costo de infraestructura y herramientas queda cubierto por recursos gratuitos o asignados por la universidad, consistente con R5 |
 
 ### 12.3 Costo estimado si se contratara en la nube (referencia, no aplica al proyecto)
 
@@ -681,7 +681,7 @@ Solo para dimensionar qué costaría este mismo diseño fuera del contexto acad�
 
 ### 12.4 Resumen
 
-El proyecto, dadas sus restricciones académicas (K3, K5), opera con **costo real de $0**: las 7 VMs las asigna la universidad y todo el software usado es open source o de plan gratuito. La comparación de la sección 12.3 es puramente ilustrativa, para dimensionar la diferencia frente a una operación comercial real, y no representa una decisión de presupuesto tomada por el equipo.
+El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo real de $0**: las 7 VMs las asigna la universidad y todo el software usado es open source o de plan gratuito. La comparación de la sección 12.3 es puramente ilustrativa, para dimensionar la diferencia frente a una operación comercial real, y no representa una decisión de presupuesto tomada por el equipo.
 
 ---
 
@@ -691,23 +691,23 @@ El proyecto, dadas sus restricciones académicas (K3, K5), opera con **costo rea
 
 | Limitación | Origen | Detalle en |
 |---|---|---|
-| VM3 es punto único de falla: los 8 microservicios caen juntos si cae la VM | K10 | SAD, sección 5.2; sección 2.3 |
-| Sin alta disponibilidad entre máquinas: cada componente corre en una sola VM | K7, K10 | Sección 2.3 |
-| VM1 es la única entrada desde la VPN a producción, QA y Grafana | K9 | SAD, ADR-015; sección 2.3 |
+| VM3 es punto único de falla: los 8 microservicios caen juntos si cae la VM | R10 | SAD, sección 5.2; sección 2.3 |
+| Sin alta disponibilidad entre máquinas: cada componente corre en una sola VM | R7, R10 | Sección 2.3 |
+| VM1 es la única entrada desde la VPN a producción, QA y Grafana | R9 | SAD, ADR-015; sección 2.3 |
 | Las 7 VMs tienen la misma especificación sin importar el rol, y el software del laboratorio ya usa unos 2,3 GiB de RAM en cada una | Laboratorio de la Javeriana | Sección 3.1 |
-| La prueba de carga en QA es una aproximación: allí todo corre en una sola VM | K10 | SAD, ADR-015; sección 6.2 |
+| La prueba de carga en QA es una aproximación: allí todo corre en una sola VM | R10 | SAD, ADR-015; sección 6.2 |
 | El umbral de 6,5 GiB de RAM en VM3 no alcanza con los límites actuales; se decide al medir los servicios | Medición del 3 de octubre | Sección 5.6 |
 | `kubectl rollout undo` solo revierte la imagen del contenedor, no las migraciones de esquema: exige expand-contract | Diseño de Kubernetes | Secciones 5.8 y 6.2 |
-| Evidencias en Garage sin copia en otra VM | K10 | Sección 9.5 |
-| El vault y su contraseña existen en un solo computador | K11 | Sección 9.4 |
-| Recuperación manual entre 12 y 24 horas ante una falla de infraestructura | K7 | SAD, escenario AC5-E1; sección 9.4 |
+| Evidencias en Garage sin copia en otra VM | R10 | Sección 9.5 |
+| El vault y su contraseña existen en un solo computador | R11 | Sección 9.4 |
+| Recuperación manual entre 12 y 24 horas ante una falla de infraestructura | R7 | SAD, escenario AC5-E1; sección 9.4 |
 | QoS "Guaranteed" del Matching protege contra desalojo, pero le quita capacidad de ráfaga | Trade-off de diseño | Sección 5.6 |
 | Parámetros de `readinessProbe` y `livenessProbe` sin definir | Falta de datos medidos | Sección 5.8 |
-| Certificados TLS autofirmados, sin CA reconocida | K9 | Secciones 10.1 y 11 |
+| Certificados TLS autofirmados, sin CA reconocida | R9 | Secciones 10.1 y 11 |
 | SSH con contraseña, la misma en las 7 VMs | Decisión del equipo | Sección 10.4 |
 | Kafka UI sin login, alcanzable desde la VPN | Pendiente | Sección 10.3 |
 
-Ninguna de estas limitaciones se considera un defecto a corregir dentro del alcance de este documento — son restricciones aceptadas conscientemente, consistentes con los killers K3, K5, K7, K9, K10 y K11 del SAD (sección 1.2).
+Ninguna de estas limitaciones se considera un defecto a corregir dentro del alcance de este documento — son restricciones aceptadas conscientemente, consistentes con las restricciones R3, R5, R7, R9, R10 y R11 del SAD (sección 1.2.2).
 
 ---
 

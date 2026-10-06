@@ -181,7 +181,7 @@ flowchart TB
 
 El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 7.1). Las personas usan dos clientes: Flutter Mobile (clientes y técnicos) y Angular Web (panel administrativo del tenant). Ambos entran por el API Gateway, que enruta por REST a los 8 microservicios.
 
-Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (K10). Los servicios se integran entre sí por eventos en Kafka, usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte direcciones en coordenadas (Matching; la cercanía entre cliente y técnico se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication). Los proveedores concretos no están definidos.
+Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka, usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte direcciones en coordenadas (Matching; la cercanía entre cliente y técnico se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication). Los proveedores concretos no están definidos.
 
 ---
 
@@ -561,7 +561,7 @@ La Vista de Procesos describe los aspectos dinámicos del sistema: la concurrenc
 
 ## 5.1 Procesos y servicios en ejecución
 
-La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máquinas virtuales asignadas (aislamiento físico y de red según K5 y K10):
+La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máquinas virtuales asignadas (aislamiento físico y de red según R5 y R10):
 
 | Proceso / Servicio | Entorno de Ejecución | VM / Host | Rol operativo |
 |---|---|---|---|
@@ -1252,7 +1252,7 @@ El diagrama muestra solo producción: VM1 y VM3 a VM7. QA (VM2), el runner de de
 
 ```mermaid
 flowchart TB
-    CLIENTE(["Cliente — web / móvil<br/>(VPN de la universidad, sin acceso público — K9)"])
+    CLIENTE(["Cliente — web / móvil<br/>(VPN de la universidad, sin acceso público — R9)"])
     EQUIPO(["Equipo — administración<br/>VPN · SSH"])
 
     subgraph LAB["Red privada del laboratorio — 10.43.x.x"]
@@ -1329,7 +1329,7 @@ Dev es el único ambiente efímero: existe solo mientras corre el pipeline en un
 
 ```mermaid
 flowchart TB
-    CLIENTE(["Cliente / red de campus<br/>(sin dominio público — K9)"])
+    CLIENTE(["Cliente / red de campus<br/>(sin dominio público — R9)"])
     EQUIPO(["Equipo — acceso SSH<br/>con contraseña (decisión del equipo)"])
 
     subgraph PERIMETRO["VM1 — Perímetro"]
@@ -1381,7 +1381,7 @@ flowchart TB
 
 **Figura 16. Seguridad de red y gestión de secretos.**
 
-TLS se termina en VM1 con certificado autofirmado — no hay dominio público (K9), por lo que Let's Encrypt no es viable (Documento de Infraestructura, sección 10.1). Los secretos se gestionan por dos mecanismos: Ansible Vault para la infraestructura de las 7 VMs (el archivo cifrado no se sube a Git, y QA tiene secretos propios, distintos a los de producción) y `Secret` de Kubernetes para los microservicios dentro de VM3 y VM2. El CI/CD no guarda credenciales de Kubernetes: el runner de VM1 usa los kubeconfig que deja Ansible en la propia VM, y la publicación de imágenes usa el token temporal de cada ejecución (Documento de Infraestructura, sección 8).
+TLS se termina en VM1 con certificado autofirmado — no hay dominio público (R9), por lo que Let's Encrypt no es viable (Documento de Infraestructura, sección 10.1). Los secretos se gestionan por dos mecanismos: Ansible Vault para la infraestructura de las 7 VMs (el archivo cifrado no se sube a Git, y QA tiene secretos propios, distintos a los de producción) y `Secret` de Kubernetes para los microservicios dentro de VM3 y VM2. El CI/CD no guarda credenciales de Kubernetes: el runner de VM1 usa los kubeconfig que deja Ansible en la propia VM, y la publicación de imágenes usa el token temporal de cada ejecución (Documento de Infraestructura, sección 8).
 
 El acceso por SSH es con contraseña, con la cuenta que entrega el laboratorio. Es una decisión del equipo (3 de octubre de 2026): las VMs solo son alcanzables desde la red de la universidad y su VPN, y solo DevOps las administra. El riesgo aceptado es que la contraseña es la misma en las 7 VMs (Documento de Infraestructura, sección 10.4).
 
