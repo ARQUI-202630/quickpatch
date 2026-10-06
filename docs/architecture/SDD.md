@@ -100,13 +100,15 @@ Los datos de negocio asociados a empresas conservan `tenant_id`. El contexto de 
 flowchart TB
     subgraph ALL[" "]
         direction TB
-        P1(["Cliente y técnico<br/>[Persona]<br/>Pide y presta servicios en campo"])
-        P2(["Administrador del tenant<br/>[Persona]<br/>Gestiona empleados y reportes"])
+        P1(["Cliente y empresa cliente<br/>[Persona]<br/>Piden, siguen y pagan servicios"])
+        P2(["Técnico y proveedor<br/>[Persona]<br/>Prestan servicios; el proveedor<br/>administra su equipo (RF-16)"])
+        P3(["Admin del tenant<br/>[Persona]<br/>Aprueba y suspende técnicos<br/>de su tenant (RF-19, RF-20)"])
+        P4(["Admin de plataforma<br/>[Persona]<br/>Administra los tenants (RF-21)"])
 
         subgraph SIS["QUICKPATCH [Sistema]"]
             direction TB
-            MOB["Flutter Mobile<br/>[Contenedor: Flutter, iOS y Android]<br/>App de clientes y técnicos"]
-            WEB["Angular Web<br/>[Contenedor: Angular]<br/>Panel administrativo del tenant"]
+            MOB["Flutter Mobile<br/>[Contenedor: Flutter, iOS y Android]<br/>App de clientes, empresas cliente,<br/>técnicos y proveedores"]
+            WEB["Angular Web<br/>[Contenedor: Angular]<br/>Panel de administración<br/>del tenant y de la plataforma"]
             GW["API Gateway<br/>[Contenedor: Nginx + gateway]<br/>Enruta, autentica y limita"]
 
             subgraph SVC["Microservicios [Contenedores: pods en k3s]"]
@@ -144,9 +146,11 @@ flowchart TB
     end
 
     P1 -->|"usa"| MOB
-    P2 -->|"usa"| WEB
-    MOB -->|"HTTPS, REST, WebSocket"| GW
-    WEB -->|"HTTPS, REST, WebSocket"| GW
+    P2 -->|"usa"| MOB
+    P3 -->|"usa"| WEB
+    P4 -->|"usa"| WEB
+    MOB -->|"HTTPS, REST"| GW
+    WEB -->|"HTTPS, REST"| GW
     GW -->|"REST"| SVC
 
     S1 --> D1
@@ -158,17 +162,22 @@ flowchart TB
     S7 --> D7
     S8 --> D8
 
-    SVC <-->|"eventos"| KAFKA
+    S4 <-->|"eventos"| KAFKA
+    S5 <-->|"eventos"| KAFKA
+    S6 <-->|"eventos"| KAFKA
+    S7 <-->|"eventos"| KAFKA
+    S8 <-->|"eventos"| KAFKA
     SVC -->|"caché"| REDIS
     S4 -->|"evidencias"| GAR
     S7 -->|"tokeniza y cobra, HTTPS"| PAY
     S5 -->|"geocodifica, HTTPS"| MAPS
     S8 -->|"envía, HTTPS"| NOTI
+    NOTI -.->|"push"| MOB
 
     classDef persona fill:#08427b,stroke:#052e56,color:#ffffff
     classDef contenedor fill:#438dd5,stroke:#2e6295,color:#ffffff
     classDef externo fill:#999999,stroke:#6b6b6b,color:#ffffff
-    class P1,P2 persona
+    class P1,P2,P3,P4 persona
     class MOB,WEB,GW,S1,S2,S3,S4,S5,S6,S7,S8,KAFKA,REDIS,GAR,D1,D2,D3,D4,D5,D6,D7,D8 contenedor
     class PAY,MAPS,NOTI externo
     style ALL fill:#ffffff,stroke:#ffffff
@@ -179,9 +188,9 @@ flowchart TB
 
 **Figura 3. Diagrama C4 de contenedores de QUICKPATCH.**
 
-El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 7.1). Las personas usan dos clientes: Flutter Mobile (clientes y técnicos) y Angular Web (panel administrativo del tenant). Ambos entran por el API Gateway, que enruta por REST a los 8 microservicios.
+El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 7.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): Flutter Mobile es el canal de clientes, empresas cliente, técnicos y proveedores, y Angular Web es el panel de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 3.2.3), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que enruta por REST a los 8 microservicios.
 
-Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka, usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte direcciones en coordenadas (Matching; la cercanía entre cliente y técnico se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication). Los proveedores concretos no están definidos.
+Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (producen o consumen eventos ServiceRequest, Matching, Ranking, Payments y Communication, según la sección 5.5; Identity, Actors y Catalog solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte direcciones en coordenadas (Matching; la cercanía entre cliente y técnico se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication), que entrega las notificaciones push en la app móvil. El seguimiento en tiempo real de la solicitud (RF-11) se resuelve con esas notificaciones y la consulta del estado por REST (secciones 5.3 y 5.11.1), por eso no hay un canal WebSocket. Los proveedores concretos no están definidos.
 
 ---
 
@@ -465,7 +474,7 @@ payment.rejected
 La asignación tecnológica de los canales y microservicios se formaliza en `ADR-012 — Stack tecnológico políglota`:
 
 - panel administrativo: Angular + TypeScript;
-- aplicación móvil para clientes y técnicos: Flutter + Dart;
+- aplicación móvil para clientes, empresas cliente, técnicos y proveedores: Flutter + Dart;
 - Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication: ASP.NET Core / .NET;
 - Matching: Java + Spring Boot;
 - integración síncrona: REST/HTTPS;
@@ -565,8 +574,8 @@ La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máqui
 
 | Proceso / Servicio | Entorno de Ejecución | VM / Host | Rol operativo |
 |---|---|---|---|
-| **App Móvil (Flutter)** | Dispositivos móviles (Android / iOS) | Cliente externo | Interfaz de clientes y técnicos en campo (FA1: requiere conexión activa). |
-| **Panel Web Administrativo (Angular)** | build estático Angular servido por Nginx en Docker Compose | VM2 (`10.43.98.15`) | Interfaz administrativa del tenant y operaciones (FA2). |
+| **App Móvil (Flutter)** | Dispositivos móviles (Android / iOS) | Cliente externo | Interfaz de clientes, empresas cliente, técnicos y proveedores (FA1: requiere conexión activa). |
+| **Panel Web Administrativo (Angular)** | build estático Angular servido por Nginx | VM1 (`10.43.100.168`, ADR-015) | Interfaz de los administradores del tenant y de la plataforma (FA2). |
 | **API Gateway / Reverse Proxy** | Nginx | VM1 (`10.43.100.168`) | Punto único de entrada, enrutamiento, terminación TLS e inspección JWT. |
 | **Microservicios Backend (8)** | Pods independientes en clúster k3s | VM3 (`10.43.98.205`) | Ejecución de la lógica de negocio (Identity, Actors, Catalog, Matching, ServiceRequest, Ranking, Payments, Communication). |
 | **Motor de Base de Datos** | PostgreSQL 15 + PostGIS | VM4 (`10.43.98.209`) | Almacenamiento relacional transaccional y consultas geoespaciales. |
@@ -937,7 +946,7 @@ apps/web/
 
 y utiliza **Angular + TypeScript**.
 
-Su responsabilidad es implementar las funcionalidades administrativas de QUICKPATCH y consumir los contratos REST publicados por el backend.
+Su responsabilidad es implementar las funcionalidades administrativas de QUICKPATCH para el administrador del tenant (`admin_tenant`) y el administrador de plataforma (`admin_plataforma`), y consumir los contratos REST publicados por el backend.
 
 La organización interna objetivo separa:
 
@@ -960,7 +969,7 @@ apps/mobile/
 
 y utiliza **Flutter + Dart**.
 
-Atiende los flujos correspondientes a clientes y técnicos y consume las capacidades del backend mediante REST.
+Atiende los flujos de clientes, empresas cliente, técnicos y proveedores, y consume las capacidades del backend mediante REST.
 
 Su organización de desarrollo contempla:
 
