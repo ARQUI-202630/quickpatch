@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.14 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.15 — QUICKPATCH
 
 ---
 
@@ -76,17 +76,19 @@ Los atributos de calidad expresan, en términos medibles, las propiedades que el
 
 Los 9 ACs mapean 1 a 1 con las **9 características de ISO/IEC 25010:2023**, en su orden canónico. Donde QUICKPATCH tenía dos ACs distintos sustentando en el fondo la misma característica ISO, se fusionaron (ver nota de fusión debajo de la tabla); donde una característica no tenía ningún AC, se agregó.
 
-|ID|Atributo (característica ISO)|Sustentado por|
-|---|---|---|
-|AC1|Functional Suitability|D1; SRS — requisitos funcionales, cumplimiento funcional del sistema|
-|AC2|Performance Efficiency|D1, D2|
-|AC3|Compatibility|D4, ISO/IEC 25010:2023 — RIE-01|
-|AC4|Interaction Capability|D2, D3; ISO/IEC 25010:2023 — RNF-11, RNF-12|
-|AC5|Reliability|K5, K7|
-|AC6|Security|K2, D5, D6, D7|
-|AC7|Maintainability|K3, D6, D8|
-|AC8|Flexibility|D5, ISO/IEC 25010:2023 — ADR-002, RNF-09, RIE-02|
-|AC9|Safety|D1, D3, D4, D8; decisión del equipo con el Product Owner: riesgo físico y patrimonial por fallos de la plataforma, ver sección 3.9|
+|ID|Atributo (característica ISO)|Sustentado por|Prioridad|
+|---|---|---|---|
+|AC1|Functional Suitability|D1; SRS — requisitos funcionales, cumplimiento funcional del sistema|Media|
+|AC2|Performance Efficiency|D1, D2|**Alta**|
+|AC3|Compatibility|D4, ISO/IEC 25010:2023 — RIE-01|Baja|
+|AC4|Interaction Capability|D2, D3; ISO/IEC 25010:2023 — RNF-11, RNF-12|Baja|
+|AC5|Reliability|K5, K7|**Alta**|
+|AC6|Security|K2, D5, D6, D7|**Alta**|
+|AC7|Maintainability|K3, D6, D8|Media|
+|AC8|Flexibility|D5, ISO/IEC 25010:2023 — ADR-002, RNF-09, RIE-02|Media|
+|AC9|Safety|D1, D3, D4, D8; decisión del equipo con el Product Owner: riesgo físico y patrimonial por fallos de la plataforma, ver sección 3.9|**Alta**|
+
+**Prioridad del atributo:** se deriva de la priorización de sus escenarios (sección 3.10): **Alta** si tiene al menos dos escenarios prioritarios y uno de ellos es Alta/Alta; **Media** si tiene al menos uno; **Baja** si no tiene ninguno. Orden resultante: AC5 Reliability (5 prioritarios, 3 Alta/Alta), AC6 Security (4, 1), AC2 Performance Efficiency (2, 1) y AC9 Safety (2, 1); después AC1, AC7 y AC8 (1 cada uno) y, al final, AC3 y AC4 (ninguno). Parte de esta priorización usa la valoración propuesta (†) de la sección 3.10.
 
 **Fusiones aplicadas:**
 - El AC de Seguridad (antes AC2) absorbe los escenarios de *Accountability* del antiguo AC de Trazabilidad (antes AC6) — ambos son, a nivel de característica ISO, **Security**. El escenario de idempotencia (antes AC6-E3) no es Accountability, así que se reclasificó dentro de **Reliability** (subcaracterística *Fault Tolerance*), no dentro de Security.
@@ -98,6 +100,29 @@ Los 9 ACs mapean 1 a 1 con las **9 características de ISO/IEC 25010:2023**, en 
 > **Regla de relación driver–atributo:** un driver sustenta un atributo cuando al menos un escenario de ese atributo mide el driver (matriz de la sección 1.4); la columna "Atributos" de la sección 1.1 y la columna "Sustentado por" de esta tabla aplican la misma regla. AC1 y AC4 se sustentan además en los requisitos del SRS y en los atributos genéricos de la norma **ISO/IEC 25010:2023**, y AC3 y AC8 combinan un driver (D4 y D5) con la norma. AC5 no tiene driver: sus escenarios responden a los killers K5 y K7. AC9 (Safety) se sustenta en D1, D3, D4 y D8 y en la definición que el equipo acordó con el Product Owner de qué significa Safety para QUICKPATCH — ver sección 3.9.
 
 ---
+
+### 2.1 Escenarios arquitectónicamente significativos
+
+Son los escenarios prioritarios de la sección 3.10 (importancia de negocio Alta y dificultad Media o Alta), ordenados por la prioridad de su atributo. Son los que condicionan la arquitectura de la sección 4 y los ADR de las secciones 5.5 y 6; las seis partes de cada uno están en la sección 3. **†** marca una valoración propuesta, pendiente de ratificación (sección 3.10). "Relacionado" indica que el ADR atiende el escenario, pero su justificación todavía no lo cita.
+
+|Escenario|Atributo|Importancia / Dificultad|Driver o killer|Medida|ADR|
+|---|---|---|---|---|---|
+|AC5-E3 Caída de un microservicio|Reliability|Alta / Alta|K7|0% de eventos perdidos; el servicio procesa el backlog al reiniciar|ADR-003|
+|AC5-E4 Kafka no disponible|Reliability|Alta / Alta|K7|0 eventos perdidos; reintento automático sin intervención manual|ADR-003, ADR-006, ADR-007|
+|AC5-E5 Evento duplicado por reintento|Reliability|Alta / Alta|K7|0 efectos duplicados, verificable por `eventId`|ADR-007|
+|AC5-E1 Caída de un componente no crítico|Reliability|Alta / Media|K7|Recuperación manual en 12 a 24 horas|—|
+|AC5-E6 Operación sin fallos del flujo crítico †|Reliability|Alta / Media|—|Menos del 1% de respuestas 5xx y 0 fallos en la prueba E2E programada|—|
+|AC6-E2 Aislamiento multi-tenant|Security|Alta / Alta|D5|0 fugas de datos entre tenants|ADR-005|
+|AC6-E1 Protección de datos de pago|Security|Alta / Media|K2|0 números de tarjeta o CVV en base de datos o logs|ADR-009|
+|AC6-E4 Token comprometido o expirado|Security|Alta / Media|—|100% de los tokens inválidos o expirados rechazados|—|
+|AC6-E5 Reconstrucción de una disputa|Security|Alta / Media|D6, D7|100% de las transiciones de estado registradas, sin pasos faltantes|—|
+|AC2-E1 Búsqueda de técnicos cercanos|Performance Efficiency|Alta / Alta|D1|Menos de 3 segundos para el 95% de las solicitudes|ADR-004, ADR-012|
+|AC2-E3 Procesamiento en segundo plano|Performance Efficiency|Alta / Media|D1, D2|Menos de 7 segundos desde la creación de la solicitud hasta la notificación|ADR-006|
+|AC9-E5 Pasarela de pagos sin respuesta †|Safety|Alta / Alta|D4|0 servicios en `pagado` sin `payment.approved` y 0 cobros duplicados por reintento|ADR-007 (relacionado)|
+|AC9-E1 Transiciones seguras del ciclo de servicio †|Safety|Alta / Media|—|0 transiciones inválidas en `service_requests`|—|
+|AC1-E1 Filtro de especialidad en el matching †|Functional Suitability|Alta / Media|D1|0% de asignaciones a un técnico de otra especialidad|—|
+|AC7-E6 Validación del incremento en QA antes de producción †|Maintainability|Alta / Media|D8|100% de los despliegues pasan antes por VM2; 0 pruebas de carga o de seguridad contra producción|ADR-015 (relacionado)|
+|AC8-E3 Incorporación de un nuevo canal o tipo de cliente|Flexibility|Alta / Media|—|0 cambios en los microservicios de dominio para un nuevo tipo de cliente|—|
 
 ## 3. Escenarios de Calidad
 
@@ -200,10 +225,10 @@ Característica agregada en esta versión (ver sección 2). Cubre si el sistema 
 |---|---|
 |Fuente|Carga de usuarios|
 |Estímulo|Operación sostenida en hora pico, con ~50 solicitudes de matching concurrentes (la carga esperada del Escenario 4)|
-|Ambiente|Operación normal, 8 microservicios en VM3 (4 vCPU, 11 GiB de RAM)|
+|Ambiente|Ambiente de QA en VM2 (ADR-015), con los 8 microservicios desplegados con los mismos `requests` y `limits` de producción|
 |Artefacto|Pods en k3s con los `requests` y `limits` del Documento de Infraestructura, sección 5.6|
 |Respuesta|Cada servicio opera dentro de sus límites declarados y el consumo queda registrado|
-|Medida|0 reinicios por OOMKilled y RAM total de VM3 menor o igual a 6.5 GiB (máximo teórico del presupuesto de recursos), medidos con `kubectl` y Grafana durante la prueba de carga con k6|
+|Medida|0 reinicios por OOMKilled y cada pod dentro de sus `limits` declarados, medidos con `kubectl` y Grafana durante la prueba de carga con k6 en QA; el consumo de CPU y RAM queda registrado como línea base. El total de RAM no se compara con el presupuesto de VM3, porque en QA todos los componentes comparten una sola VM|
 
 > **Nota:** el antiguo escenario "crecimiento del catálogo de técnicos" (Escalabilidad) medía literalmente el mismo umbral que el Escenario 1 (<3s) bajo crecimiento de datos en vez de carga concurrente — se retiró por redundante en vez de mantenerse como escenario aparte.
 
@@ -723,76 +748,76 @@ Siguiendo el método ATAM, cada escenario se prioriza en dos ejes votados por se
 - **Importancia de negocio** (vota el cliente / stakeholders de negocio): qué tanto le duele al éxito del proyecto si este escenario no se cumple.
 - **Dificultad arquitectónica** (vota el equipo de arquitectura): qué tanto esfuerzo, riesgo técnico o incertidumbre implica lograrlo.
 
-Un escenario con importancia de negocio **Alta** se considera **prioritario** — es candidato a sustentar una decisión de arquitectura (ADR) con su trade-off explícito; el resto queda documentado pero no mueve decisiones de fondo. Cuando la dificultad arquitectónica también es Alta (Alta/Alta), el escenario es el más crítico de los prioritarios, porque combina alto impacto de negocio con alto riesgo técnico. Esto no garantiza que todo escenario prioritario termine anclado a un ADR explícito, ni que todo ADR se apoye solo en escenarios Alta/Alta — ver la nota al final de esta sección y la matriz de la sección 6, que documentan el sustento real en vez de forzar una correspondencia perfecta que no existe.
+Un escenario con importancia de negocio **Alta** y dificultad arquitectónica **Media o Alta** se considera **prioritario** (con dificultad Baja queda en prioridad Media, como AC6-E6) — es candidato a sustentar una decisión de arquitectura (ADR) con su trade-off explícito; el resto queda documentado pero no mueve decisiones de fondo. Cuando la dificultad arquitectónica también es Alta (Alta/Alta), el escenario es el más crítico de los prioritarios, porque combina alto impacto de negocio con alto riesgo técnico. Esto no garantiza que todo escenario prioritario termine anclado a un ADR explícito, ni que todo ADR se apoye solo en escenarios Alta/Alta — ver la nota al final de esta sección y la matriz de la sección 6, que documentan el sustento real en vez de forzar una correspondencia perfecta que no existe.
 
-> Los escenarios reubicados conservan la votación que ya tenían (el escenario en sí no cambió, solo su clasificación de característica ISO). Los escenarios nuevos o retirados están marcados abajo; los nuevos quedan pendientes de votación con cliente/stakeholders — no se inventa esa votación aquí.
+> Los escenarios reubicados conservan la votación que ya tenían (el escenario en sí no cambió, solo su clasificación de característica ISO). Los escenarios nuevos o retirados están marcados abajo; los escenarios agregados desde la versión 2.6 no se votaron en una sesión ATAM. En la versión 2.15 el equipo de arquitectura les asignó una **valoración propuesta, marcada con †**, con el mismo criterio de los votados; debe ratificarse con el cliente y los stakeholders, y cualquier cambio de esa ratificación se registra en la sección 9.
 
-> Los 10 escenarios agregados en la versión 2.6 (AC1-E2, AC1-E3, AC2-E5, AC3-E2, AC5-E6, AC6-E7, AC6-E8, AC7-E4, AC7-E5, AC8-E5) son una primera propuesta: sus medidas deben validarse con el equipo y votarse en la sesión ATAM. AC6-E7 y AC7-E5 dependen además de confirmación de Backend.
+> Los 10 escenarios agregados en la versión 2.6 (AC1-E2, AC1-E3, AC2-E5, AC3-E2, AC5-E6, AC6-E7, AC6-E8, AC7-E4, AC7-E5, AC8-E5) son una primera propuesta: sus medidas deben validarse con el equipo y su valoración propuesta (†) ratificarse en la sesión ATAM. AC6-E7 y AC7-E5 dependen además de confirmación de Backend.
 
-> Los 8 escenarios de Safety agregados en la versión 2.7 (AC9-E1 a AC9-E8) también son una primera propuesta: sus medidas (calificación de 3.0, 5 servicios, 4 horas, 85%, 15 minutos) deben validarse con el equipo y votarse en la sesión ATAM. AC9-E6 es una alerta operativa, más cercana a *Reliability* que a *Safety*, y puede reemplazarse cuando se cierre el escenario de alerta sobre la habilitación de técnicos.
+> Los 8 escenarios de Safety agregados en la versión 2.7 (AC9-E1 a AC9-E8) también son una primera propuesta: sus medidas (calificación de 3.0, 5 servicios, 4 horas, 85%, 15 minutos) deben validarse con el equipo y su valoración propuesta (†) ratificarse en la sesión ATAM. AC9-E6 es una alerta operativa, más cercana a *Reliability* que a *Safety*, y puede reemplazarse cuando se cierre el escenario de alerta sobre la habilitación de técnicos.
 
-> Los 7 escenarios de Interaction Capability agregados en la versión 2.8 (AC4-E3 a AC4-E9) también son una primera propuesta: sus umbrales (4 de 5 usuarios, 30 segundos, 10 minutos, 60% de calificaciones, 3 segundos) deben validarse con el equipo y votarse en la sesión ATAM.
+> Los 7 escenarios de Interaction Capability agregados en la versión 2.8 (AC4-E3 a AC4-E9) también son una primera propuesta: sus umbrales (4 de 5 usuarios, 30 segundos, 10 minutos, 60% de calificaciones, 3 segundos) deben validarse con el equipo y su valoración propuesta (†) ratificarse en la sesión ATAM.
 
 |Escenario|Atributo|Importancia de negocio|Dificultad arquitectónica|Prioridad|
 |---|---|---|---|---|
-|AC1-E1 Filtro de especialidad en el matching|Functional Suitability|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC1-E2 Cobertura de requisitos del MVP|Functional Suitability|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC1-E3 Información suficiente para ejecutar el servicio|Functional Suitability|*Pendiente de votación*|*Pendiente de votación*|—|
+|AC1-E1 Filtro de especialidad en el matching|Functional Suitability|Alta†|Media†|**Alta**|
+|AC1-E2 Cobertura de requisitos del MVP|Functional Suitability|Alta†|Baja†|Media|
+|AC1-E3 Información suficiente para ejecutar el servicio|Functional Suitability|Media†|Baja†|Baja|
 |AC2-E1 Búsqueda de técnicos cercanos|Performance Efficiency|Alta|Alta|**Alta**|
 |AC2-E2 Consulta de historial|Performance Efficiency|Media|Baja|Baja|
 |AC2-E3 Procesamiento en segundo plano|Performance Efficiency|Alta|Media|**Alta**|
 |AC2-E4 Pico de carga inesperado|Performance Efficiency|Media|Alta|Media|
-|AC2-E5 Uso de recursos bajo carga normal|Performance Efficiency|*Pendiente de votación*|*Pendiente de votación*|—|
+|AC2-E5 Uso de recursos bajo carga normal|Performance Efficiency|Media†|Alta†|Media|
 |AC3-E1 Integración con pasarela de pagos|Compatibility|Media|Media|Media|
-|AC3-E2 Convivencia de los 8 microservicios en VM3|Compatibility|*Pendiente de votación*|*Pendiente de votación*|—|
+|AC3-E2 Convivencia de los 8 microservicios en VM3|Compatibility|Media†|Alta†|Media|
 |AC4-E1 Creación de solicitud en pocos pasos|Interaction Capability|Media|Baja|Baja|
 |AC4-E2 Uso en distintos dispositivos|Interaction Capability|Media|Baja|Baja|
-|AC4-E3 Reconocer si la aplicación sirve para lo que necesito|Interaction Capability|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC4-E4 Primer uso del técnico sin capacitación|Interaction Capability|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC4-E5 Protección ante errores del usuario|Interaction Capability|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC4-E6 Motivación para calificar el servicio|Interaction Capability|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC4-E7 Uso con distintas capacidades|Interaction Capability|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC4-E8 Uso en dispositivos de gama baja|Interaction Capability|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC4-E9 Seguimiento del servicio que se explica solo|Interaction Capability|*Pendiente de votación*|*Pendiente de votación*|—|
+|AC4-E3 Reconocer si la aplicación sirve para lo que necesito|Interaction Capability|Media†|Baja†|Baja|
+|AC4-E4 Primer uso del técnico sin capacitación|Interaction Capability|Media†|Baja†|Baja|
+|AC4-E5 Protección ante errores del usuario|Interaction Capability|Media†|Media†|Media|
+|AC4-E6 Motivación para calificar el servicio|Interaction Capability|Media†|Baja†|Baja|
+|AC4-E7 Uso con distintas capacidades|Interaction Capability|Baja†|Baja†|Baja|
+|AC4-E8 Uso en dispositivos de gama baja|Interaction Capability|Media†|Media†|Media|
+|AC4-E9 Seguimiento del servicio que se explica solo|Interaction Capability|Alta†|Baja†|Media|
 |AC5-E1 Caída de componente no crítico|Reliability|Alta|Media|**Alta**|
 |AC5-E2 Mantenimiento planeado|Reliability|Media|Baja|Baja|
 |AC5-E3 Caída de un microservicio|Reliability|Alta|Alta|**Alta**|
 |AC5-E4 Kafka no disponible|Reliability|Alta|Alta|**Alta**|
 |AC5-E5 Evento duplicado por reintento|Reliability|Alta|Alta|**Alta**|
-|AC5-E6 Operación sin fallos del flujo crítico|Reliability|*Pendiente de votación*|*Pendiente de votación*|—|
+|AC5-E6 Operación sin fallos del flujo crítico|Reliability|Alta†|Media†|**Alta**|
 |AC6-E1 Protección de datos de pago|Security|Alta|Media|**Alta**|
 |AC6-E2 Aislamiento multi-tenant|Security|Alta|Alta|**Alta**|
 |AC6-E3 Control de acceso por rol|Security|Media|Baja|Baja|
 |AC6-E4 Token comprometido o expirado|Security|Alta|Media|**Alta**|
 |AC6-E5 Reconstrucción de una disputa|Security|Alta|Media|**Alta**|
 |AC6-E6 Registro de cambios en pagos|Security|Alta|Baja|Media|
-|AC6-E7 Acción crítica no repudiable|Security|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC6-E8 Fuerza bruta contra el login|Security|*Pendiente de votación*|*Pendiente de votación*|—|
+|AC6-E7 Acción crítica no repudiable|Security|Media†|Media†|Media|
+|AC6-E8 Fuerza bruta contra el login|Security|Alta†|Baja†|Media|
 |AC7-E1 Pipeline de integración continua|Maintainability|Media|Baja|Baja|
 |AC7-E2 Acoplamiento entre módulos|Maintainability|Media|Media|Media|
 |AC7-E3 Incorporación de nuevo microservicio|Maintainability|Baja|Media|Baja|
-|AC7-E4 Diagnóstico de un fallo en producción|Maintainability|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC7-E5 Reutilización de la lógica transversal|Maintainability|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC7-E6 Validación del incremento en QA antes de producción|Maintainability|*Pendiente de votación*|*Pendiente de votación*|—|
+|AC7-E4 Diagnóstico de un fallo en producción|Maintainability|Media†|Media†|Media|
+|AC7-E5 Reutilización de la lógica transversal|Maintainability|Media†|Media†|Media|
+|AC7-E6 Validación del incremento en QA antes de producción|Maintainability|Alta†|Media†|**Alta**|
 |AC8-E1 Alta de nuevo tenant|Flexibility|Media|Media|Media|
 |AC8-E2 Escalado independiente de servicio|Flexibility|Media|Media|Media|
 |AC8-E3 Nuevo canal o tipo de cliente|Flexibility|Alta|Media|**Alta**|
 |AC8-E4 Cambio de proveedor de geolocalización|Flexibility|Baja|Baja|Baja|
-|AC8-E5 Reconstrucción del entorno desde cero|Flexibility|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC9-E1 Transiciones seguras del ciclo de servicio|Safety|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC9-E2 Técnico con calificaciones bajas|Safety|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC9-E3 Servicio sin cierre|Safety|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC9-E4 Sin candidatos elegibles|Safety|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC9-E5 Pasarela de pagos sin respuesta|Safety|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC9-E6 Alerta de operación en riesgo|Safety|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC9-E7 Integración de un componente nuevo verificada de punta a punta|Safety|*Pendiente de votación*|*Pendiente de votación*|—|
-|AC9-E8 Cambio de proveedor de geolocalización sin alterar la cobertura|Safety|*Pendiente de votación*|*Pendiente de votación*|—|
+|AC8-E5 Reconstrucción del entorno desde cero|Flexibility|Media†|Media†|Media|
+|AC9-E1 Transiciones seguras del ciclo de servicio|Safety|Alta†|Media†|**Alta**|
+|AC9-E2 Técnico con calificaciones bajas|Safety|Media†|Baja†|Baja|
+|AC9-E3 Servicio sin cierre|Safety|Media†|Baja†|Baja|
+|AC9-E4 Sin candidatos elegibles|Safety|Alta†|Baja†|Media|
+|AC9-E5 Pasarela de pagos sin respuesta|Safety|Alta†|Alta†|**Alta**|
+|AC9-E6 Alerta de operación en riesgo|Safety|Media†|Baja†|Baja|
+|AC9-E7 Integración de un componente nuevo verificada de punta a punta|Safety|Media†|Media†|Media|
+|AC9-E8 Cambio de proveedor de geolocalización sin alterar la cobertura|Safety|Baja†|Baja†|Baja|
 
-**Escenarios "oro" (prioridad Alta) tras la reorganización:** AC2-E1, AC2-E3, AC5-E1, AC5-E3, AC5-E4, AC5-E5, AC6-E1, AC6-E2, AC6-E4, AC6-E5, AC8-E3 — 11 escenarios, el mismo número que antes de la reestructuración (la reorganización reclasifica, no cambia cuántos escenarios son prioritarios). De estos, 5 son Alta/Alta (AC2-E1, AC5-E3, AC5-E4, AC5-E5, AC6-E2) y 6 son Alta importancia/Media dificultad (AC2-E3, AC5-E1, AC6-E1, AC6-E4, AC6-E5, AC8-E3) — ambos grupos califican como prioritarios bajo el criterio de esta sección (importancia de negocio Alta).
+**Escenarios prioritarios:** 16. Los 11 votados en sesión — AC2-E1, AC2-E3, AC5-E1, AC5-E3, AC5-E4, AC5-E5, AC6-E1, AC6-E2, AC6-E4, AC6-E5, AC8-E3 — y 5 con valoración propuesta (†) en la versión 2.15: AC1-E1, AC5-E6, AC7-E6, AC9-E1, AC9-E5. De los 16, 6 son Alta/Alta (AC2-E1, AC5-E3, AC5-E4, AC5-E5, AC6-E2, AC9-E5) y 10 son Alta importancia/Media dificultad. La sección 2.1 los presenta antes de la arquitectura, con su driver o killer y el ADR que los atiende.
 
-De estos 11, **4 no sustentan ningún ADR todavía** (AC5-E1, AC6-E4, AC6-E5, AC8-E3, ver matriz de la sección 6) — no implica un error, solo que ninguna decisión de arquitectura se ha tomado en torno a ellos. A la inversa, **ADR-003 se apoya también en AC8-E2**, un escenario Media/Media, además de en AC5-E3 y AC5-E4 (Alta/Alta): el trade-off de escalado independiente por servicio que documenta ADR-003 es real aunque ese escenario en particular todavía no haya sido votado como prioritario.
+De estos 16, **7 no sustentan ningún ADR todavía** (AC1-E1, AC5-E1, AC5-E6, AC6-E4, AC6-E5, AC8-E3, AC9-E1, ver matriz de la sección 6) — no implica un error, solo que ninguna decisión de arquitectura se ha tomado en torno a ellos. AC7-E6 y AC9-E5 los atienden ADR-015 y ADR-007, pero la justificación de esos ADR todavía no los cita (se completa en la revisión de trade-offs). A la inversa, **ADR-003 se apoya también en AC8-E2**, un escenario Media/Media, además de en AC5-E3 y AC5-E4 (Alta/Alta): el trade-off de escalado independiente por servicio que documenta ADR-003 es real aunque ese escenario en particular todavía no haya sido votado como prioritario.
 
-**Total de escenarios en esta versión: 52** (AC7-E6 se agregó en la versión 2.14), cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. En Safety hay más de un escenario para *Risk Identification*, *Fail Safe* y *Safe Integration*, y quedan pendientes los escenarios de Safety que dependen de decisiones de diseño (sección 3.9). La cobertura es completa en cantidad; la validación de las medidas y la votación ATAM siguen pendientes.
+**Total de escenarios en esta versión: 52** (AC7-E6 se agregó en la versión 2.14), cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. En Safety hay más de un escenario para *Risk Identification*, *Fail Safe* y *Safe Integration*, y quedan pendientes los escenarios de Safety que dependen de decisiones de diseño (sección 3.9). La cobertura es completa en cantidad; la validación de las medidas y la ratificación de la valoración propuesta (†) siguen pendientes.
 
 ---
 
@@ -1114,3 +1139,4 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.12|3 oct 2026|Se agregan a las tablas de ADR las decisiones que solo existían como documento aparte: ADR-012 (stack polyglot) y ADR-013 (estrategia de repositorios) en la sección 6, y ADR-015 (ambiente de QA en VM2 y acceso por VM1, en estado propuesto) en la sección 5.5. Se actualiza la síntesis de la sección 6 con los dos ADR nuevos.|
 |2.13|3 oct 2026|El ADR-015 pasa a aceptado: la tabla de VMs (5.1) muestra VM2 como ambiente de QA y el panel Angular en VM1, y se ajusta el orden de arranque (5.3). Se agrega el ADR-016 (Garage en lugar de MinIO) a la sección 5.5, con su detalle en la nueva sección 5.5.1, y se reemplaza MinIO por Garage en D7, la matriz de drivers, la vista de componentes y la tabla de VMs.|
 |2.14|5 oct 2026|Revisión de los drivers (SCRUM-277, primera entrega del SAD V3). La sección 1.1 explicita el criterio de inclusión (un requisito es driver solo si obliga a una decisión de arquitectura) y agrega a cada driver los atributos de calidad que lo miden y el riesgo si la arquitectura no lo atiende. Se fija una sola regla de relación driver–atributo (un driver sustenta un atributo cuando un escenario de ese atributo lo mide, sección 1.4) y la tabla de la sección 2 se alinea con ella: D1 pasa a sustentar AC1; D2 y D3, AC4; D6, AC7; D4, AC9. D7 pasa a tener como origen RF-15 (SRS 3.2) y se elimina la nota que decía que el SRS no exigía la evidencia fotográfica. D4 se ancla a la emisión del comprobante por evento (`payment.approved` con Outbox e idempotencia) y su trazabilidad agrega ADR-006 y ADR-007. Se agrega D8 (ambiente de pruebas separado y bloqueo del despliegue, RNF-07 y RNF-08), que motiva ADR-015 y sustenta AC7 y AC9, y el escenario AC7-E6 (validación del incremento en QA, VM2, antes de producción), pendiente de votación. Se alinea con el SRS 3.3, que traslada la prueba de carga al ambiente de QA.|
+|2.15|5 oct 2026|Atributos de calidad y escenarios (SCRUM-278). La sección 2 agrega la prioridad de cada atributo, derivada de sus escenarios, y la nueva sección 2.1 presenta los 16 escenarios arquitectónicamente significativos antes de la arquitectura, con su driver o killer, su medida y el ADR que los atiende. Los 27 escenarios que no se votaron en sesión ATAM reciben una valoración propuesta del equipo de arquitectura, marcada con † y pendiente de ratificación con el cliente; con ella, AC1-E1, AC5-E6, AC7-E6, AC9-E1 y AC9-E5 pasan a prioritarios. La regla de prioridad se precisa: Alta/Baja queda en Media. AC2-E5 se mide en el ambiente de QA (VM2) con los mismos `requests` y `limits` de producción y deja de compararse con el total de 6.5 GiB de VM3.|
