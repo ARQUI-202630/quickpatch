@@ -1,7 +1,7 @@
 # ADR-011 — k3s para los clústeres QUICKPATCH
 
 - **Estado:** Aceptado; ampliado por ADR-015
-- **Restricción:** K10
+- **Restricción:** R10
 
 ## Decisión original
 Usar k3s en VM3 para los ocho microservicios de producción.
