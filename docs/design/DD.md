@@ -727,7 +727,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 |tenant_id|UUID|No|Ref. lógica|Tenant relacionado.|
 |service_request_id|UUID|No|FK local|Solicitud cotizada.|
 |technician_id|UUID|No|Ref. lógica|Técnico que emite la cotización.|
-|labor_amount|NUMERIC(12,2)|No|—|Valor de la mano de obra, en pesos colombianos (K6).|
+|labor_amount|NUMERIC(12,2)|No|—|Valor de la mano de obra, en pesos colombianos (R6).|
 |materials_amount|NUMERIC(12,2)|No|—|Valor de los materiales; 0 si no se requieren.|
 |total_amount|NUMERIC(12,2)|No|—|Total cotizado. Columna generada: `labor_amount + materials_amount`.|
 |detail|TEXT|Sí|—|Descripción del trabajo y de los materiales incluidos.|
@@ -756,7 +756,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 **Servicio propietario:** Payments Service.
 
-**Propósito:** Registra el resultado de los pagos realizados por Clientes o Empresas y permite al técnico consultar los pagos recibidos por sus servicios (RF-25). Una solicitud puede tener varios pagos porque un pago rechazado permite reintentar (SDD, escenario 6), pero solo uno aprobado. La liquidación al técnico (`PayoutRecord` en la sección 8.1 del SAD) no se modela porque K1 la excluye (DEP-14).
+**Propósito:** Registra el resultado de los pagos realizados por Clientes o Empresas y permite al técnico consultar los pagos recibidos por sus servicios (RF-25). Una solicitud puede tener varios pagos porque un pago rechazado permite reintentar (SDD, escenario 6), pero solo uno aprobado. La liquidación al técnico (`PayoutRecord` en la sección 8.1 del SAD) no se modela porque R1 la excluye (DEP-14).
 
 **Requisitos relacionados:** RF-22, RF-23, RF-25, RNF-01.
 
@@ -1246,7 +1246,7 @@ sequenceDiagram
 
 ### 9.1 Alcance de esta sección
 
-Esta sección describe el modelo analítico objetivo de QUICKPATCH. **No forma parte del alcance implementable del MVP:** ningún RF o RNF del SRS vigente lo exige, K3 limita el tiempo disponible y K10 fija el hardware en 7 VMs sin capacidad asignada para una capa analítica. Se documenta para que las decisiones del modelo operacional no impidan construirla después. Su adopción requerirá un ADR propio que evalúe la capacidad disponible contra K5 y K10.
+Esta sección describe el modelo analítico objetivo de QUICKPATCH. **No forma parte del alcance implementable del MVP:** ningún RF o RNF del SRS vigente lo exige, R3 limita el tiempo disponible y R10 fija el hardware en 7 VMs sin capacidad asignada para una capa analítica. Se documenta para que las decisiones del modelo operacional no impidan construirla después. Su adopción requerirá un ADR propio que evalúe la capacidad disponible contra R5 y R10.
 
 ### 9.2 Enfoque: Data Lakehouse en infraestructura propia
 
@@ -1256,7 +1256,7 @@ Se propone un **Data Lakehouse** por las siguientes razones:
 - Un Data Warehouse puro exigiría un esquema relacional rígido desde el inicio, prematuro dado el carácter evolutivo del modelo (sección 1.2).
 - Un Data Lake puro no ofrece las garantías de calidad y gobierno que requieren los reportes de pagos y facturación.
 
-Por K5, toda la capa debe correr dentro de la infraestructura propia del proyecto; no se admiten bases de datos, almacenamiento ni herramientas de BI administradas en la nube. No se ubica en VM7, que ya aloja las evidencias y el respaldo diario de PostgreSQL (Documento de Infraestructura, sección 9).
+Por R5, toda la capa debe correr dentro de la infraestructura propia del proyecto; no se admiten bases de datos, almacenamiento ni herramientas de BI administradas en la nube. No se ubica en VM7, que ya aloja las evidencias y el respaldo diario de PostgreSQL (Documento de Infraestructura, sección 9).
 
 No se adopta **Data Mesh**: requiere equipos de datos independientes por dominio, y el proyecto tiene un solo equipo Scrum.
 
@@ -1343,7 +1343,7 @@ flowchart LR
 
 ### 9.7 Herramientas
 
-La selección de herramientas se hará en el ADR de adopción de esta capa. Todas deben ser de código abierto y auto-hospedadas, en cumplimiento de K5.
+La selección de herramientas se hará en el ADR de adopción de esta capa. Todas deben ser de código abierto y auto-hospedadas, en cumplimiento de R5.
 
 ---
 
@@ -1425,7 +1425,7 @@ Cómo se comporta:
 
 **Registro.** `POST /v1/auth/register/client`, `/technician` y `/company` usan el tenant del canal e insertan con el rol `_app`. `register/company` registra una empresa cliente (`empresa_contacto`) dentro de ese tenant (DEP-13).
 
-**Consumidores de eventos.** Kafka corre en VM6, dentro de la red privada del laboratorio (K9), y solo los microservicios publican en él. Cada consumidor abre una transacción con el rol `_app`, fija `SET LOCAL app.current_tenant` con el `tenantId` del evento y aplica el efecto bajo RLS. Si el evento se refiere a una fila que no existe en ese tenant, por ejemplo una solicitud de otro tenant, la actualización no afecta ninguna fila: el consumidor descarta el evento y registra el caso en `audit_logs`.
+**Consumidores de eventos.** Kafka corre en VM6, dentro de la red privada del laboratorio (R9), y solo los microservicios publican en él. Cada consumidor abre una transacción con el rol `_app`, fija `SET LOCAL app.current_tenant` con el `tenantId` del evento y aplica el efecto bajo RLS. Si el evento se refiere a una fila que no existe en ese tenant, por ejemplo una solicitud de otro tenant, la actualización no afecta ninguna fila: el consumidor descarta el evento y registra el caso en `audit_logs`.
 
 ### 10.4 Operaciones de plataforma
 
@@ -1454,14 +1454,14 @@ El modelo de esta versión depende de las siguientes decisiones de diseño, que 
 |DEP-04|`technician_profiles.average_rating`|Persistencia de Ranking Service y evento que publica ServiceRequest al registrar una calificación (`SERVICE_EVALUATED` en el SAD).|SAD, D3; SDD, sección 4.4|
 |DEP-05|`users.role`|Correspondencia entre los valores de `role` y los roles del SAD. `admin_plataforma` y `admin_tenant` corresponden a `PLATFORM_ADMIN` y `TENANT_ADMIN`; falta definir cómo se reflejan `EMPLOYEE`, `ALLY`, `SUPPLIER` y `BUSINESS_CLIENT`.|SAD, sección 7.2|
 |DEP-06|Contratos de la sección 8|Incorporación en el SDD de los endpoints de ofertas, cotización y cancelación, de los eventos nuevos y de la propiedad de `service_categories` por Catalog Service.|SDD, secciones 3.2.5 y 3.4|
-|DEP-07|Sección 9|ADR de adopción de la capa analítica, con evaluación de capacidad frente a K5 y K10.|SAD, sección 6|
-|DEP-08|`payments`|Mecanismo de recepción de la respuesta del PSP dentro de la red del laboratorio.|K9; SAD, sección 1.2|
+|DEP-07|Sección 9|ADR de adopción de la capa analítica, con evaluación de capacidad frente a R5 y R10.|SAD, sección 6|
+|DEP-08|`payments`|Mecanismo de recepción de la respuesta del PSP dentro de la red del laboratorio.|R9; SAD, sección 1.2|
 |DEP-09|Sección 10.3|Identificación del canal de registro de cada tenant cuando opere más de uno.|RNF-09|
 |DEP-10|`quotes`, estado `cancelado`, `service_evidence`|Requisitos en el SRS para la cotización, la cancelación y la evidencia fotográfica obligatoria, que el SAD define y el SRS v3.1 no incluye.|SAD, sección 7.4 y D7|
 |DEP-11|RN-R3|Orden entre evaluación y pago. El SRS (RF-12) permite calificar desde `completado` y el SAD (sección 7.4) libera el pago después de la evaluación, mientras que el SDD (escenario 7) y RF-27 ponen el pago antes de la calificación. Este documento sigue al SDD y a RF-27.|RF-12, RF-27; SDD, escenario 7|
 |DEP-12|Sección 10.2|Resuelto mediante ADR-012: Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication usan ASP.NET Core/.NET; Matching usa Java + Spring Boot. Para persistencia se adopta EF Core + Npgsql en .NET y Spring Data/JPA en Matching.|ADR-012; Infraestructura 5.6 y 5.7|
 |DEP-13|`tenants`, `register/company`|RF-06 asocia cada empresa cliente a un tenant propio; el SAD (sección 7.1) define el tenant como la empresa oferente y a las empresas cliente como usuarios de ese tenant. Este documento sigue al SAD, así que RF-06 no queda cubierto tal como está redactado.|RF-06; SAD, sección 7.1|
-|DEP-14|`payments`|El SAD (sección 8.1) lista la entidad `PayoutRecord`, pero K1 excluye la liquidación a técnicos. Este documento no la modela.|K1; SAD, sección 8.1|
+|DEP-14|`payments`|El SAD (sección 8.1) lista la entidad `PayoutRecord`, pero R1 excluye la liquidación a técnicos. Este documento no la modela.|R1; SAD, sección 8.1|
 
 **Modelos que podrían aparecer en versiones futuras:**
 

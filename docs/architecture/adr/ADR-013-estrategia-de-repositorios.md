@@ -71,7 +71,7 @@ Se descartó porque cada servicio necesita los contratos para construirse en su 
 
 ### Publicar los contratos como paquetes (NuGet y Maven)
 
-Se descartó por ahora porque exige mantener dos registros de paquetes, y una sola persona administra la infraestructura (K11).
+Se descartó por ahora porque exige mantener dos registros de paquetes, y una sola persona administra la infraestructura (R11).
 
 ### `git subtree` en lugar de submódulos
 

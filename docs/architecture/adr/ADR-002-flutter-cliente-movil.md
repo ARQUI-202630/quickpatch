@@ -3,7 +3,7 @@
 - **Estado:** Aceptado
 - **Decisión:** Flutter para la aplicación móvil de clientes y técnicos
 - **Atributo principal:** AC7 — Maintainability
-- **Restricción:** K3
+- **Restricción:** R3
 
 ## Contexto
 QUICKPATCH necesita atender clientes y técnicos en Android/iOS sin mantener dos bases de código nativas.

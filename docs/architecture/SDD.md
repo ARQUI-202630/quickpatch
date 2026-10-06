@@ -471,7 +471,7 @@ La Vista de Procesos describe los aspectos dinámicos del sistema: la concurrenc
 
 ## 5.1 Procesos y servicios en ejecución
 
-La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máquinas virtuales asignadas (aislamiento físico y de red según K5 y K10):
+La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máquinas virtuales asignadas (aislamiento físico y de red según R5 y R10):
 
 | Proceso / Servicio | Entorno de Ejecución | VM / Host | Rol operativo |
 |---|---|---|---|
@@ -1160,7 +1160,7 @@ Esta sección presenta cómo se despliega físicamente el sistema descrito en la
 
 ```mermaid
 flowchart TB
-    CLIENTE(["Cliente — web / móvil<br/>(red de campus, sin acceso público — K9)"])
+    CLIENTE(["Cliente — web / móvil<br/>(red de campus, sin acceso público — R9)"])
 
     subgraph LAB["Red privada del laboratorio — 10.43.x.x"]
     direction TB
@@ -1243,13 +1243,13 @@ flowchart TB
 
 **Figura 6. Ambientes de desarrollo, pruebas y producción.**
 
-Ningún ambiente además de Producción ocupa hardware dedicado (K10: 7 VMs fijas, sin VM adicional para staging) — Dev y la parte funcional de QA existen solo mientras corre el pipeline. La prueba de carga es la única validación que corre contra hardware real (VM3), en ventana de mantenimiento, después del despliegue (Documento de Infraestructura, sección 4 y 6).
+Ningún ambiente además de Producción ocupa hardware dedicado (R10: 7 VMs fijas, sin VM adicional para staging) — Dev y la parte funcional de QA existen solo mientras corre el pipeline. La prueba de carga es la única validación que corre contra hardware real (VM3), en ventana de mantenimiento, después del despliegue (Documento de Infraestructura, sección 4 y 6).
 
 ## 7.3 Seguridad de red y gestión de secretos
 
 ```mermaid
 flowchart TB
-    CLIENTE(["Cliente / red de campus<br/>(sin dominio público — K9)"])
+    CLIENTE(["Cliente / red de campus<br/>(sin dominio público — R9)"])
     EQUIPO(["Equipo — acceso SSH<br/>solo llave pública"])
 
     subgraph PERIMETRO["VM1 — Perímetro"]
@@ -1299,7 +1299,7 @@ flowchart TB
 
 **Figura 7. Seguridad de red y gestión de secretos.**
 
-TLS se termina en VM1 con certificado autofirmado — no hay dominio público (K9), por lo que Let's Encrypt no es viable (Documento de Infraestructura, sección 10.1). Los secretos se gestionan por dos mecanismos distintos según el tipo de despliegue: Ansible Vault para las VMs con Docker Compose (VM1, VM2, VM4–VM7) y `Secret` de Kubernetes dentro de VM3; el `kubeconfig` y el token de `ghcr.io` viajan como GitHub Actions Secrets hasta el runner self-hosted en VM1 (Documento de Infraestructura, sección 8).
+TLS se termina en VM1 con certificado autofirmado — no hay dominio público (R9), por lo que Let's Encrypt no es viable (Documento de Infraestructura, sección 10.1). Los secretos se gestionan por dos mecanismos distintos según el tipo de despliegue: Ansible Vault para las VMs con Docker Compose (VM1, VM2, VM4–VM7) y `Secret` de Kubernetes dentro de VM3; el `kubeconfig` y el token de `ghcr.io` viajan como GitHub Actions Secrets hasta el runner self-hosted en VM1 (Documento de Infraestructura, sección 8).
 
 ---
 
