@@ -15,8 +15,9 @@
  * Contratos: quickpatch-contracts/openapi (service-request.v1.yaml, catalog.v1.yaml) y SDD 3.4.1.
  * Las relaciones con la etiqueta "Contrato pendiente" aún no tienen especificación OpenAPI.
  *
- * Multi-tenancy: el Gateway valida el JWT y el tenant sale de sus claims (SDD 5.3, RN-U3).
- * Las apps cliente no envían tenant_id.
+ * Multi-tenancy (DD 10.3): en el login y el registro el tenant sale del canal por el que llega
+ * la petición (RN-U5); en las peticiones autenticadas, del JWT que propaga el API Gateway.
+ * Las apps cliente nunca envían tenant_id (RN-U3).
  */
 workspace "QUICKPATCH — C4-L3 Apps Cliente" "Componentes de Angular Web y Flutter Mobile para el incremento de Sprint 3." {
 
@@ -92,6 +93,11 @@ workspace "QUICKPATCH — C4-L3 Apps Cliente" "Componentes de Angular Web y Flut
                     }
                 }
                 mobApiClient = component "Cliente HTTP" "Adjunta el JWT y X-Correlation-Id, aplica timeouts y traduce respuestas problem+json (400, 401, 403, 404, 422) en errores de la app. No envía tenant_id." "Dart HTTP Client · core/http"
+                mobLocation = component "Ubicación del dispositivo" "Pide el permiso de ubicación y obtiene las coordenadas (latitude, longitude) del GPS del dispositivo." "Dart Service · core/location" {
+                    properties {
+                        "HU" "SCRUM-27 / SCRUM-71"
+                    }
+                }
                 mobUi = component "UI compartida" "Widgets reutilizables de carga, vacío y error." "Flutter Widgets · core/ui"
             }
 
@@ -131,6 +137,7 @@ workspace "QUICKPATCH — C4-L3 Apps Cliente" "Componentes de Angular Web y Flut
         mobLogin -> mobUi "Muestra estados con"
         mobWizard -> mobFormState "Lee y actualiza"
         mobWizard -> mobUi "Muestra estados con"
+        mobFormState -> mobLocation "Obtiene las coordenadas de"
         mobFormState -> mobCatalogRepo "Obtiene categorías de"
         mobFormState -> mobRequestRepo "Envía la solicitud confirmada a"
         mobSession -> mobApiClient "Entrega el token a"
@@ -147,12 +154,12 @@ workspace "QUICKPATCH — C4-L3 Apps Cliente" "Componentes de Angular Web y Flut
     views {
         component web "C4-L3-Web" "C4-L3 · Componentes de Angular Web — Sprint 3" {
             include *
-            autoLayout lr
+            autoLayout tb
         }
 
         component mobile "C4-L3-Mobile" "C4-L3 · Componentes de Flutter Mobile — Sprint 3" {
             include *
-            autoLayout lr
+            autoLayout tb
         }
 
         styles {

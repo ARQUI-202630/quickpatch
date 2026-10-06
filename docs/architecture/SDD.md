@@ -227,11 +227,12 @@ Los componentes son lógicos: no fijan librerías de estado, navegación ni clie
 | Repositorio de catálogo | `features/service_requests/data` | Obtiene las categorías activas del tenant (`GET /v1/catalog/categories`). | SCRUM-27 / SCRUM-71 |
 | Repositorio de solicitudes | `features/service_requests/data` | Crea la solicitud (`POST /v1/service-requests`) y consulta su detalle para la confirmación (`GET /v1/service-requests/{id}`). | SCRUM-27 / SCRUM-71 |
 | Cliente HTTP | `core/http` | Adjunta el JWT y `X-Correlation-Id`, aplica timeouts y traduce las respuestas `problem+json` (400, 401, 403, 404 y 422) en errores de la app. | SCRUM-27 |
+| Ubicación del dispositivo | `core/location` | Pide el permiso de ubicación y obtiene las coordenadas (`latitude`, `longitude`) del GPS del dispositivo, que el contrato exige en `location`. | SCRUM-27 / SCRUM-71 |
 | UI compartida | `core/ui` | Estados de carga, vacío y error. | — |
 
 Reglas comunes a las dos aplicaciones:
 
-- **Tenant:** ninguna app envía `tenant_id`. El API Gateway valida el JWT y el tenant sale de sus claims (sección 5.3, RN-U3 del DD).
+- **Tenant:** ninguna app envía `tenant_id` (RN-U3 del DD). En el login y el registro todavía no hay JWT, así que el tenant sale del canal por el que llega la petición (RN-U5); en las peticiones autenticadas sale del token que propaga el API Gateway (DD, sección 10.3).
 - **Errores:** un 401 lleva al login y un 403 a la pantalla de acceso denegado; el resto de errores se muestran en la pantalla que los produjo, sin perder los datos ingresados.
 - **Contratos:** Mobile consume `service-request.v1.yaml` y `catalog.v1.yaml`. El inicio de sesión (`POST /v1/auth/login` y `GET /v1/users/me`, sección 3.4.1) y la administración de tenants todavía no tienen especificación OpenAPI.
 - **Pendiente:** el contrato v1 de creación de solicitudes solo admite el rol `cliente` y responde 403 a los demás, mientras que el SRS (F2.1) incluye a la empresa cliente. Se debe resolver antes de cerrar SCRUM-27.
