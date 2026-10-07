@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "QUICKPATCH — MVP Sprint 3 (flujo de punta a punta)",
-    "description": "Administrador crea una categoría (Catalog publica catalog.category-changed) → cliente se registra e inicia sesión (Identity) → crea una solicitud (ServiceRequest valida la categoría en su réplica y publica service-request.created, que consume Matching) → consulta el detalle. Incluye casos negativos de autenticación, rol y cobertura. Variables: baseUrl (https://qa.quickpatch.internal), adminEmail y adminPassword (secretos de QA, nunca en el repositorio). Contratos: quickpatch-api-gateway/openapi.",
+    "description": "Administrador crea una categoría (Catalog publica catalog.category-changed) → cliente se registra e inicia sesión (Identity) → crea una solicitud (ServiceRequest valida la categoría en su réplica y publica service-request.created, que consume Matching) → consulta el detalle. Incluye casos negativos de autenticación, rol y cobertura, y la gestión de tenants del administrador de la plataforma (SCRUM-112). Variables: baseUrl (https://qa.quickpatch.internal), adminEmail, adminPassword, platformAdminEmail y platformAdminPassword (secretos de QA, nunca en el repositorio). Contratos: quickpatch-api-gateway/openapi.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -15,6 +15,14 @@
     },
     {
       "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "platformAdminEmail",
+      "value": ""
+    },
+    {
+      "key": "platformAdminPassword",
       "value": ""
     }
   ],
@@ -677,6 +685,407 @@
                   "  pm.response.to.have.status(400);",
                   "  pm.expect(pm.response.json().errors).to.have.property('description');",
                   "});",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Administrador de la plataforma (SCRUM-112)",
+      "item": [
+        {
+          "name": "Login del administrador de la plataforma",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{platformAdminEmail}}\",\n  \"password\": \"{{platformAdminPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol admin_plataforma', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('admin_plataforma');",
+                  "});",
+                  "pm.collectionVariables.set('plataformaToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar tenants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con al menos el tenant del canal', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const t = pm.response.json();",
+                  "  pm.expect(t).to.be.an('array').that.is.not.empty;",
+                  "  t.forEach(x => pm.expect(x.status).to.be.oneOf(['activo', 'inactivo']));",
+                  "});",
+                  "// El tenant del canal es el del administrador de la plataforma en el MVP (DD 10.3).",
+                  "const yo = JSON.parse(require('atob')(pm.collectionVariables.get('plataformaToken').split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+                  "pm.collectionVariables.set('tenantPropio', yo.tenant_id);",
+                  "pm.test('el tenant propio está en la lista', () => pm.expect(pm.response.json().map(x => x.id)).to.include(pm.collectionVariables.get('tenantPropio')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador del tenant no lista tenants → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cliente no cambia el estado de un tenant → 403",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{tenantPropio}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants",
+                "{{tenantPropio}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactivo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar el tenant de la plataforma → 409",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{tenantPropio}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants",
+                "{{tenantPropio}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactivo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 tenant de la plataforma', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Activar el tenant propio es idempotente → 200",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{tenantPropio}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants",
+                "{{tenantPropio}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"activo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 y sigue activo', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('activo');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estado fuera del contrato → 400 por campo",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{tenantPropio}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants",
+                "{{tenantPropio}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"suspendido\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 con error en status', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().errors).to.have.property('status');",
+                  "});",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tenant inexistente → 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{$guid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants",
+                "{{$guid}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"activo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
                   "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
                   "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
