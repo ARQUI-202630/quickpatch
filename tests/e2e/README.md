@@ -50,3 +50,43 @@ En la base: la solicitud quedó en `buscando_tecnico` con su punto, el Outbox pu
 6. Panel web: el administrador de la plataforma entra en `https://qa.quickpatch.internal`, ve los tenants y los activa o desactiva (SCRUM-41).
 7. Rama `release/*` en este repositorio: corre esta colección contra QA.
 8. App móvil: `config/qa.json` con la huella del certificado de VM1 (`quickpatch-mobile`, README).
+
+## Flujo Web Administrativo y Gestión de Tenants (SCRUM-318)
+
+Pruebas de sistema de extremo a extremo que validan el flujo de administración web en Angular, los contratos REST de Identity/Plataforma y el control de acceso RBAC según los mockups de diseño W-01 a W-07 y DD 7.12:
+
+1. **Autenticación administrativa (W-01):** inicio de sesión de `admin_plataforma` y `admin_tenant` verificando claims de JWT y ausencia de selector manual de tenant en la interfaz.
+2. **Manejo de errores de acceso (W-02):** rechazo de credenciales inválidas (401) y detección de cuenta bloqueada tras múltiples intentos fallidos (423 Locked bajo RN-U4).
+3. **Control de acceso por roles RBAC (W-03):** intentos de acceso de `admin_tenant` a la gestión de empresas devuelven 403 Forbidden (`/problems/no-autorizado`), y accesos anónimos devuelven 401 Unauthorized (`/problems/no-autenticado`).
+4. **Consulta y filtros de empresas (W-04):** listado de tenants por `admin_plataforma`, filtros por estado activo/inactivo y presencia de atributos requeridos (nombre, NIT, estado).
+5. **Desactivación de tenant (W-05):** actualización de estado a inactivo (SCRUM-113) y confirmación de que sus usuarios no pueden iniciar sesión (RN-T1 / SCRUM-114).
+6. **Estados de interfaz y concurrencia (W-06):** manejo de skeleton, estados vacíos y rechazo por conflicto de concurrencia optimista (409 Conflict con `/problems/conflicto-concurrencia`).
+7. **Navegación dinámica (W-07):** adaptación del sidebar según el rol (`admin_tenant` no visualiza la opción de tenants).
+
+### Ejecución de Newman
+
+La colección `scrum-318-web-admin.postman_collection.json` se regenera con:
+```bash
+python tests/e2e/generar-scrum318-admin.py
+```
+
+Para correr las pruebas localmente con el servidor mock del gateway:
+```bash
+node tests/e2e/run-web-admin-e2e.js
+```
+
+O contra el ambiente de QA en VM2:
+```bash
+node tests/e2e/run-web-admin-e2e.js --remote
+```
+
+### Ejecución de Playwright
+
+Las pruebas de componentes e interfaz web se definen en `specs/web-admin.spec.ts` y corren con:
+```bash
+npx playwright test specs/web-admin.spec.ts
+```
+
+### Evidencia local
+
+`evidencias/scrum-318-web-admin-2026-10-07.txt`: corrida local con 11 peticiones y 31 aserciones aprobadas sin fallos.

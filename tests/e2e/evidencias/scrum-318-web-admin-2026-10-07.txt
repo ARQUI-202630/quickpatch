@@ -1,0 +1,92 @@
+newman
+
+QUICKPATCH — Web Administrativo y Gestión de Tenants (SCRUM-318)
+
+Folder 1. Autenticación y Perfil Administrativo (W-01)
+Sub-folder 1.1 [W-01] Login de Administrador de Plataforma (admin_plataforma)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 606B, 33ms]
+  Pass  [W-01] Autenticación exitosa (200 OK)
+  Pass  [W-01] Rol corresponde a admin_plataforma
+
+Sub-folder 1.2 [W-01 / W-07] Login de Administrador de Tenant (admin_tenant)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 603B, 4ms]
+  Pass  [W-01] Login exitoso de admin_tenant (200 OK)
+  Pass  [W-07] Rol verificado como admin_tenant
+
+Folder 2. Manejo de Errores en Inicio de Sesión (W-02)
+Sub-folder 2.1 [W-02 / RF-03] Credenciales incorrectas → 401 Unauthorized
+  POST http://localhost:8080/api/v1/auth/login [401 Unauthorized, 500B, 3ms]
+  Pass  [W-02] Rechazo por credenciales inválidas (401)
+  Pass  [W-02] Detalle de error indica credenciales incorrectas
+  Pass  [RFC 9457] Content-Type es application/problem+json
+  Pass  [Auditoría] correlationId presente en la respuesta de error
+
+Sub-folder 2.2 [W-02 / RN-U4] Cuenta bloqueada tras fallos repetidos → 423 Locked
+  POST http://localhost:8080/api/v1/auth/login [423 Locked, 539B, 2ms]
+  Pass  [W-02 / RN-U4] Cuenta bloqueada responde 423 Locked
+  Pass  [W-02] Mensaje orienta bloqueo temporal sin revelar existencia
+  Pass  [RFC 9457] Content-Type es application/problem+json
+  Pass  [Auditoría] correlationId presente en la respuesta de error
+
+Folder 3. Control de Acceso por Roles — RBAC (W-03)
+Sub-folder 3.1 [W-03 / SCRUM-64] admin_tenant intentando listar tenants → 403 Forbidden
+  GET http://localhost:8080/api/v1/admin/tenants [403 Forbidden, 514B, 3ms]
+  Pass  [W-03] Código 403 Forbidden para rol admin_tenant
+  Pass  [W-03] Tipo de problema es no-autorizado
+  Pass  [RFC 9457] Content-Type es application/problem+json
+  Pass  [Auditoría] correlationId presente en la respuesta de error
+
+Sub-folder 3.2 [W-03 / IDN-017] Petición anónima a gestión de tenants → 401 Unauthorized
+  GET http://localhost:8080/api/v1/admin/tenants [401 Unauthorized, 521B, 4ms]
+  Pass  [W-03] Código 401 Unauthorized sin credenciales
+  Pass  [RFC 9457] Content-Type es application/problem+json
+  Pass  [Auditoría] correlationId presente en la respuesta de error
+
+Folder 4. Gestión y Listado de Tenants (W-04 & W-06)
+Sub-folder 4.1 [W-04] Consulta de tenants por admin_plataforma (200 OK)
+  GET http://localhost:8080/api/v1/admin/tenants [200 OK, 694B, 3ms]
+  Pass  [W-04] Listado retornado exitosamente (200 OK)
+  Pass  [W-04] Respuesta es una lista con atributos requeridos
+
+Sub-folder 4.2 [W-04] Filtrado de tenants por estado 'activo'
+  GET http://localhost:8080/api/v1/admin/tenants?status=activo [200 OK, 533B, 3ms]
+  Pass  [W-04] Filtro activo responde 200 OK
+  Pass  [W-04] Todos los tenants filtrados están activos
+
+Folder 5. Cambio de Estado y Ciclo de Vida de Tenants (W-05 & W-06)
+Sub-folder 5.1 [W-05 / SCRUM-113] Desactivar tenant → 200 OK
+  PATCH http://localhost:8080/api/v1/admin/tenants/tenant-bogota-001/status [200 OK, 382B, 3ms]
+  Pass  [W-05] Estado actualizado a inactivo exitosamente (200 OK)
+  Pass  [W-05] Retorna status inactivo verificado
+
+Sub-folder 5.2 [W-06] Intento de actualización con versión obsoleta → 409 Conflict
+  PATCH http://localhost:8080/api/v1/admin/tenants/tenant-bogota-001/status [409 Conflict, 550B, 3ms]
+  Pass  [W-06] Conflicto de concurrencia detectado (409 Conflict)
+  Pass  [W-06] Detalle del problema indica conflicto de versión
+  Pass  [RFC 9457] Content-Type es application/problem+json
+  Pass  [Auditoría] correlationId presente en la respuesta de error
+
+Sub-folder 5.3 [RN-T1 / SCRUM-114] Login rechazado para usuario del tenant desactivado → 403 Forbidden
+  POST http://localhost:8080/api/v1/auth/login [403 Forbidden, 530B, 2ms]
+  Pass  [RN-T1] Login rechazado para tenant desactivado (403 Forbidden)
+  Pass  [RN-T1] Mensaje informa suspensión del tenant
+
+┌─────────────────────────┬─────────────────┬─────────────────┐
+│                         │        executed │          failed │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              iterations │               1 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│                requests │              11 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│            test-scripts │              11 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│      prerequest-scripts │               0 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              assertions │              31 │               0 │
+├─────────────────────────┴─────────────────┴─────────────────┤
+│ total run duration: 939ms                                   │
+├─────────────────────────────────────────────────────────────┤
+│ total data received: 3.47kB (approx)                        │
+├─────────────────────────────────────────────────────────────┤
+│ average response time: 5ms [min: 2ms, max: 33ms, s.d.: 8ms] │
+└─────────────────────────────────────────────────────────────┘
