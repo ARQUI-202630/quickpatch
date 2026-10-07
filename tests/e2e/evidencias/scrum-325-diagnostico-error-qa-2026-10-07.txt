@@ -1,116 +1,104 @@
 ==========================================================================
- PROTOCOLO DE VALIDACIÓN Y DIAGNÓSTICO DE ERRORES EN QA (SCRUM-325)
+ PROTOCOLO DE VALIDACIÓN Y DIAGNÓSTICO DE ERRORES (SCRUM-325)
  Fecha de ejecución: 7 de octubre de 2026
- Entorno objetivo: QA (VM2 k3s microservicios) & Observabilidad Central (VM1 Loki :3100)
- Gateway: https://qa.quickpatch.internal (Local: http://localhost:8080)
- Loki:    http://10.43.100.168:3100       (Local: http://localhost:3100)
+ Modo: Simulación Local Preparatoria (Pre-QA)
+ Nota: Validación de protocolo y contratos en entorno local. La corrida
+       formal contra el cluster de QA queda programada para ejecutarse una
+       vez finalice el despliegue del incremento de Sprint 3 en VM2.
+ Gateway local: http://localhost:8080 (Objetivo QA: https://qa.quickpatch.internal)
+ Observabilidad: Mock local Loki (Objetivo QA: Grafana https://grafana.quickpatch.internal)
 ==========================================================================
 
-[Setup] Servidor de pruebas y observabilidad local iniciado en puerto 8080 y 3100.
+[Setup] Servidor de pruebas y observabilidad local iniciado en puerto 8080.
 
->>> [PASO 1] Provocando Error Controlado 1: Solicitud fuera de Bogotá (422 Unprocessable Entity)
-    - Requisito: RF-07, AC7-E4, SRQ-001, RN-S1
+>>> [PASO 1] Provocando Error Controlado 1: Solicitud fuera de cobertura (422)
+    - Requisito: RF-07, RN-SR9, SAD §3.7 / AC7-E4
     - Endpoint: POST /api/v1/service-requests
-    - X-Correlation-Id inyectado: cid-diag-qa-geo-muyeapd7
+    - X-Correlation-Id inyectado: cid-diag-geo-muykmsz8
     - Coordenadas enviadas: lat: 4.1500, lng: -73.0500 (Villavicencio/Meta, fuera de Bogotá)
     <- Código de respuesta HTTP: 422 Unprocessable Entity
-    <- Header X-Correlation-Id retornado: cid-diag-qa-geo-muyeapd7
+    <- Header X-Correlation-Id retornado: cid-diag-geo-muykmsz8
     <- Content-Type: application/problem+json
-    <- RFC 9457 Problem Type: https://quickpatch.internal/problems/fuera-de-cobertura
-    <- RFC 9457 Título: Ubicación fuera de zona de cobertura
-    <- RFC 9457 Detalle: Las coordenadas proporcionadas (4.15, -73.05) se encuentran fuera del área metropolitana de Bogotá.
+    <- RFC 9457 Problem Type: https://quickpatch.internal/problems/ubicacion-fuera-de-cobertura
+    <- RFC 9457 Título: La ubicación está fuera del área de cobertura
+    <- RFC 9457 Detalle: Las coordenadas proporcionadas (4.15, -73.05) se encuentran fuera del área de cobertura configurada (RN-SR9).
     <- Payload de respuesta:
     {
-      "type": "https://quickpatch.internal/problems/fuera-de-cobertura",
-      "title": "Ubicación fuera de zona de cobertura",
+      "type": "https://quickpatch.internal/problems/ubicacion-fuera-de-cobertura",
+      "title": "La ubicación está fuera del área de cobertura",
       "status": 422,
-      "detail": "Las coordenadas proporcionadas (4.15, -73.05) se encuentran fuera del área metropolitana de Bogotá.",
+      "detail": "Las coordenadas proporcionadas (4.15, -73.05) se encuentran fuera del área de cobertura configurada (RN-SR9).",
       "instance": "/api/v1/service-requests",
-      "correlationId": "cid-diag-qa-geo-muyeapd7",
-      "timestamp": "2026-10-07T17:42:24.258Z",
-      "invalidParams": [
-        {
-          "name": "location",
-          "reason": "Punto geográfico fuera de los límites de Bogotá D.C."
-        }
-      ]
+      "correlationId": "cid-diag-geo-muykmsz8",
+      "timestamp": "2026-10-07T20:39:46.484Z"
     }
 
->>> [PASO 2] Diagnóstico en Logs Centralizados (Loki / VM1):
-    - Fuente de datos: Loki en VM1 (10.43.100.168:3100 / Grafana https://grafana.quickpatch.internal)
-    - Consulta LogQL: {entorno="qa", service="service-request"} |= "cid-diag-qa-geo-muyeapd7"
+>>> [PASO 2] Diagnóstico en Logs Centralizados (Loki):
+    - Fuente de datos: Loki en VM1 (etiquetas Promtail k3s: {job="k3s", vm="vm2"})
+    - Consulta LogQL: {job="k3s", vm="vm2"} |= "cid-diag-geo-muykmsz8"
     [✓ ÉXITO] Entrada de log localizada en Loki:
-      • Timestamp:       2026-10-07T17:42:24.259Z
-      • Nivel:           Warning
-      • Mensaje:         Validación de cobertura fallida para solicitud de servicio: punto ({Latitude}, {Longitude}) fuera de Bogotá
-      • CorrelationId:   cid-diag-qa-geo-muyeapd7
-      • Servicio:        service-request (VM2 k3s)
-      • Código de error: ERR_LOCATION_OUT_OF_BOUNDS
-      • Parámetros:      lat=4.15, lng=-73.05
-      • Diagnóstico:     Punto espacial no intercepta el polígono PostGIS de cobertura metropolitana de Bogotá
-    <- Entrada estructurada completa capturada por Promtail:
+      • Timestamp:     2026-10-07T20:39:46.485Z
+      • Nivel:         Warning
+      • Mensaje:       La ubicación ({Latitude}, {Longitude}) se encuentra fuera del área de cobertura configurada (RN-SR9)
+      • Contexto:      QuickPatch.ServiceRequest.Domain.Services.CoverageValidator
+      • CorrelationId: cid-diag-geo-muykmsz8
+      • Parámetros:    lat=4.15, lng=-73.05
+      • Diagnóstico:   Punto fuera del rectángulo de cobertura geográfica CoverageArea
+    <- Registro estructurado capturado:
     {
-      "@t": "2026-10-07T17:42:24.259Z",
-      "@mt": "Validación de cobertura fallida para solicitud de servicio: punto ({Latitude}, {Longitude}) fuera de Bogotá",
+      "@t": "2026-10-07T20:39:46.485Z",
+      "@mt": "La ubicación ({Latitude}, {Longitude}) se encuentra fuera del área de cobertura configurada (RN-SR9)",
       "@l": "Warning",
-      "CorrelationId": "cid-diag-qa-geo-muyeapd7",
-      "Service": "service-request",
-      "Environment": "qa",
-      "TenantId": "a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee",
-      "UserId": "usr-client-01",
-      "Action": "CreateServiceRequest",
-      "StatusCode": 422,
-      "ErrorCode": "ERR_LOCATION_OUT_OF_BOUNDS",
+      "CorrelationId": "cid-diag-geo-muykmsz8",
+      "SourceContext": "QuickPatch.ServiceRequest.Domain.Services.CoverageValidator",
       "Latitude": 4.15,
       "Longitude": -73.05,
-      "Detail": "Punto espacial no intercepta el polígono PostGIS de cobertura metropolitana de Bogotá"
+      "Detail": "Punto fuera del rectángulo de cobertura geográfica CoverageArea"
     }
 
->>> [PASO 3] Provocando Error Controlado 2: Acceso no autorizado (403 Forbidden - RNF-04)
-    - Requisito: RNF-04, AC6-E3, CAT-010, SCRUM-65
+>>> [PASO 3] Provocando Error Controlado 2: Acceso no autorizado (403 Forbidden - RNF-04, SAD §3.6 / AC6-E3)
+    - Requisito: RNF-04, SAD §3.6 / AC6-E3, CAT-010
     - Endpoint: POST /api/v1/catalog/admin/categories
-    - X-Correlation-Id inyectado: cid-diag-qa-sec-muyeape1
-    - Acción: Usuario rol 'cliente' intentando crear categoría administrativa en Catalog
+    - X-Correlation-Id inyectado: cid-diag-sec-muykmszd
+    - Acción: Usuario con rol 'cliente' intentando crear categoría administrativa en Catalog
     <- Código de respuesta HTTP: 403 Forbidden
-    <- Header X-Correlation-Id retornado: cid-diag-qa-sec-muyeape1
+    <- Header X-Correlation-Id retornado: cid-diag-sec-muykmszd
     <- Content-Type: application/problem+json
     <- RFC 9457 Título: Acceso Denegado
     <- RFC 9457 Detalle: El usuario autenticado con rol 'cliente' no cuenta con permisos administrativos para gestionar categorías.
 
->>> [PASO 4] Diagnóstico en Logs Centralizados (Loki / VM1):
-    - Consulta LogQL: {entorno="qa", service="catalog"} |= "cid-diag-qa-sec-muyeape1"
+>>> [PASO 4] Diagnóstico en Logs Centralizados (Loki):
+    - Consulta LogQL: {job="k3s", vm="vm2"} |= "cid-diag-sec-muykmszd"
     [✓ ÉXITO] Entrada de log de seguridad localizada en Loki:
-      • Timestamp:       2026-10-07T17:42:24.265Z
-      • Regla auditoría: RNF-04 / CAT-010
-      • CorrelationId:   cid-diag-qa-sec-muyeape1
-      • Usuario:         usr-client-01 (Rol: cliente)
-      • Ruta violada:    POST /api/v1/catalog/admin/categories
-      • Servicio:        catalog
-    <- Entrada estructurada completa capturada por Promtail:
+      • Timestamp:       2026-10-07T20:39:46.490Z
+      • Mensaje:         Acceso denegado (403): {Method} {Path} por el usuario {UserId} con rol {Role}.
+      • Contexto:        QuickPatch.Catalog.Security.AuthorizationMiddleware
+      • CorrelationId:   cid-diag-sec-muykmszd
+      • Usuario y Rol:   usr-client-01 (cliente)
+      • Petición:        POST /api/v1/catalog/admin/categories
+    <- Registro estructurado capturado:
     {
-      "@t": "2026-10-07T17:42:24.265Z",
-      "@mt": "Acceso denegado (403): usuario con rol '{Role}' intentó acceder a '{Path}'",
+      "@t": "2026-10-07T20:39:46.490Z",
+      "@mt": "Acceso denegado (403): {Method} {Path} por el usuario {UserId} con rol {Role}.",
       "@l": "Warning",
-      "CorrelationId": "cid-diag-qa-sec-muyeape1",
-      "Service": "catalog",
-      "Environment": "qa",
-      "TenantId": "a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee",
-      "UserId": "usr-client-01",
-      "Role": "cliente",
-      "Path": "/api/v1/catalog/admin/categories",
+      "CorrelationId": "cid-diag-sec-muykmszd",
+      "SourceContext": "QuickPatch.Catalog.Security.AuthorizationMiddleware",
       "Method": "POST",
-      "StatusCode": 403,
-      "ErrorCode": "ERR_FORBIDDEN_ACCESS",
-      "Rule": "RNF-04 / CAT-010"
+      "Path": "/api/v1/catalog/admin/categories",
+      "UserId": "usr-client-01",
+      "Role": "cliente"
     }
 
 ==========================================================================
- CONCLUSIÓN Y EVALUACIÓN DE DIAGNÓSTICO (SAD §4.3 & AC7-E4):
- 1. Trazabilidad de Punta a Punta: CONFIRMADA.
-    El X-Correlation-Id devuelto al cliente en RFC 9457 coincide exactamente con la traza de Loki.
- 2. Independencia de SSH: CONFIRMADA.
-    La causa raíz se diagnosticó exclusivamente mediante Loki en VM1, sin
-    necesidad de acceder a los contenedores o pods de VM2 por terminal.
- 3. Cumplimiento de SLA de Diagnóstico: < 1 segundo (Meta SAD: < 1 hora).
- 4. Cumplimiento PCI-DSS: 0 datos sensibles (PAN/CVV) expuestos en las trazas.
+ EVALUACIÓN DEL PROTOCOLO DE DIAGNÓSTICO (SAD §3.6 y §3.7):
+ 1. Trazabilidad de Punta a Punta: VALIDADA.
+    El X-Correlation-Id viaja desde el cliente hasta la respuesta RFC 9457
+    y permite filtrar unívocamente la traza en Loki.
+ 2. Independencia de SSH: VALIDADA.
+    La consulta se realiza desde la interfaz de observabilidad en Grafana
+    sin requerir acceso interactivo por SSH a los nodos de k3s (VM2).
+ 3. Cumplimiento de Contratos y Reglas de Negocio: VALIDADO.
+    Tipos RFC 9457 alineados a Problems.OutOfCoverage (RN-SR9) y RNF-04.
+ 4. Estado en QA: Programado para ejecución formal una vez finalice el
+    despliegue del incremento de Sprint 3 en VM2.
 ==========================================================================

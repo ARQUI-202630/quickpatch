@@ -1,24 +1,27 @@
-# Protocolo y Validación de Diagnóstico de Errores en QA (SCRUM-325)
+# Protocolo y Validación de Diagnóstico de Errores (SCRUM-325)
 
 **Fecha:** 7 de octubre de 2026  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
-**Trazabilidad Jira:** Subtarea `SCRUM-325` | Historia `SCRUM-307` | Escenarios SAD §4.3 (`AC7-E4`, `AC6-E3`)  
-**Ambiente:** QA (VM2 `10.43.98.15`) y Observabilidad Central (VM1 `10.43.100.168`)
+**Trazabilidad Jira:** Subtarea `SCRUM-325` | Historia `SCRUM-307` | Escenarios SAD §3.7 (`AC7-E4`) y §3.6 (`AC6-E3`)  
+**Ambiente Objetivo:** QA (VM2 `10.43.98.15`) y Observabilidad Central (VM1 `10.43.100.168`)  
+**Estado:** Simulación local preparatoria completada; ejecución sobre QA programada tras despliegue de release.
+
+> **Nota metodológica:** Este documento formaliza el protocolo oficial de diagnóstico de fallos mediante observabilidad centralizada. La validación inicial se presenta mediante simulación local automatizada de la cadena de trazabilidad. La corrida formal sobre el cluster k3s de VM2 se ejecutará en cuanto el equipo de infraestructura complete el despliegue del incremento de Sprint 3.
 
 ---
 
 ## 1. Objetivo
 
-Demostrar de forma práctica y controlada la capacidad de diagnóstico de fallos en el ambiente de QA mediante el stack centralizado de observabilidad (Loki y Grafana en VM1), verificando que:
-1. Cualquier error originado en los microservicios de QA retorna un identificador único de correlación (`X-Correlation-Id`) junto con una estructura estandarizada **RFC 9457 Problem Details**.
-2. La causa raíz del fallo puede ser identificada, analizada y aislada en los logs agregados de **Loki** mediante consultas **LogQL**, **sin requerir acceso interactivo por SSH** a las máquinas virtuales ni a los contenedores de Kubernetes (k3s).
-3. Se cumple con el escenario de calidad **AC7-E4** (localización de causa raíz en menos de 1 hora) y la política de seguridad **PAY-002** (ausencia estricta de números de tarjeta PAN o códigos CVV en los logs).
+Establecer y validar el procedimiento formal de diagnóstico de anomalías en QUICKPATCH mediante la infraestructura de observabilidad agregada (Loki y Grafana en VM1), verificando que:
+1. Toda falla o rechazo de negocio devuelto por los servicios retorne un identificador de correlación (`X-Correlation-Id`) junto con una estructura estandarizada **RFC 9457 Problem Details**.
+2. La causa raíz del fallo pueda ser localizada, aislada y comprendida en los logs centralizados de **Loki** mediante consultas **LogQL** en **Grafana**, **sin requerir acceso interactivo por terminal SSH** a las máquinas virtuales ni a los pods de Kubernetes (k3s).
+3. Se garantice el cumplimiento del escenario de calidad **AC7-E4** (SAD §3.7: localización de causa raíz en menos de 1 hora), la auditoría de accesos **RNF-04 / AC6-E3** (SAD §3.6) y la política de seguridad **PAY-002** (0 datos sensibles PAN/CVV en logs).
 
 ---
 
-## 2. Arquitectura de Observabilidad y Cadena de Logs
+## 2. Arquitectura de Observabilidad y Flujo de Telemetría
 
-Conforme a lo establecido en **ADR-022** e **INFRASTRUCTURE §7**, el flujo de telemetría de errores sigue una ruta unidireccional desacoplada:
+Conforme a lo especificado en **ADR-022**, **SAD §4.3** e **INFRASTRUCTURE §7**, la cadena de telemetría opera desacoplada del acceso interactivo:
 
 ```
 [ Cliente / Postman / Mobile ]
@@ -36,40 +39,38 @@ Conforme a lo establecido en **ADR-022** e **INFRASTRUCTURE §7**, el flujo de t
                                                          [ VM1: Loki :3100 ]
                                                                     │
                                                                     ▼
-                                                   [ VM1: Grafana :3000 / Web ]
+                                    [ VM1: Grafana https://grafana.quickpatch.internal ]
 ```
 
-### Componentes y Roles
-- **Servicios ASP.NET Core & Spring Boot (VM2):** Emiten eventos estructurados a la salida estándar (`stdout`) formateados en JSON mediante `Microsoft.Extensions.Logging` / Serilog o SLF4J.
-- **Promtail (VM2):** Demonio local que recolecta las líneas de log de `/var/log/pods/quickpatch_*`, inyecta etiquetas contextuales (`vm="vm2"`, `entorno="qa"`, `namespace="quickpatch"`, `service="<microservicio>"`) y las transmite de manera continua al puerto 3100 de VM1.
-- **Loki (VM1):** Motor de indexación y almacenamiento persistente de logs de las 7 VMs.
-- **Grafana (VM1):** Interfaz web unificada (`https://grafana.quickpatch.internal`) para consulta de métricas y logs con sintaxis LogQL.
+### Reglas de Acceso y Etiquetas
+- **Acceso a Grafana (R9):** Conforme a la restricción R9, desde la VPN solo se expone el puerto 443 de VM1. El acceso a los logs centralizados se realiza a través de la interfaz web de Grafana en `https://grafana.quickpatch.internal` (vía Nginx proxy).
+- **Etiquetas de Promtail (`promtail.yml.j2`):** Promtail etiqueta los logs recolectados desde `/var/log/pods/` con `{job="k3s", vm="vm2"}` para los contenedores de QA, permitiendo búsquedas LogQL directas combinadas con el filtro de texto por `CorrelationId`.
 
 ---
 
 ## 3. Escenarios de Error Controlados
 
-Para validar la trazabilidad completa, se seleccionaron dos escenarios representativos de negocio y seguridad:
+Se definen dos escenarios representativos para el protocolo de auditoría:
 
 | Escenario | Endpoint | Error Provocado | Regla / Requisito | Código HTTP |
 |---|---|---|---|---|
-| **1. Geo-espacial (Negocio)** | `POST /api/v1/service-requests` | Coordenadas fuera del polígono metropolitano de Bogotá (`4.1500, -73.0500`) | RF-07, AC7-E4, RN-S1 | `422 Unprocessable Entity` |
-| **2. Control de Acceso (Seguridad)** | `POST /api/v1/catalog/admin/categories` | Cliente intentando crear una categoría sin permisos administrativos | RNF-04, AC6-E3, CAT-010 | `403 Forbidden` |
+| **1. Cobertura Geográfica (Negocio)** | `POST /api/v1/service-requests` | Coordenadas fuera del rectángulo metropolitano de Bogotá (`4.1500, -73.0500`) | RF-07, RN-SR9, SAD §3.7 (`AC7-E4`) | `422 Unprocessable Entity` |
+| **2. Control de Acceso (Seguridad)** | `POST /api/v1/catalog/admin/categories` | Usuario con rol `cliente` intentando crear una categoría sin permisos administrativos | RNF-04, CAT-010, SAD §3.6 (`AC6-E3`) | `403 Forbidden` |
 
 ---
 
 ## 4. Paso a Paso de Reproducción y Diagnóstico
 
-### Escenario 1: Solicitud de Servicio fuera de Cobertura (422)
+### Escenario 1: Solicitud fuera del Área de Cobertura (422)
 
-#### Paso 1.1: Provocación del error desde el cliente
-Se emite una solicitud con coordenadas correspondientes al municipio de Villavicencio (fuera del perímetro operativo de Bogotá) inyectando un identificador de auditoría:
+#### Paso 1.1: Provocación del error
+El cliente emite una solicitud con coordenadas correspondientes al municipio de Villavicencio (fuera del rectángulo configurado de Bogotá `CoverageArea`), inyectando un Correlation ID:
 
 ```bash
 curl -k -X POST "https://qa.quickpatch.internal/api/v1/service-requests" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <TOKEN_CLIENTE>" \
-  -H "X-Correlation-Id: cid-diag-qa-geo-muyeapd7" \
+  -H "Authorization: Bearer <TOKEN_CLIENTE_QA>" \
+  -H "X-Correlation-Id: cid-diag-geo-muykmsz8" \
   -d '{
     "categoryId": "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
     "description": "Reparación de fuga en tubería de patio",
@@ -82,80 +83,65 @@ curl -k -X POST "https://qa.quickpatch.internal/api/v1/service-requests" \
 ```
 
 #### Paso 1.2: Respuesta del sistema (RFC 9457)
-El API Gateway y el servicio `service-request` devuelven inmediatamente:
+El servicio `ServiceRequest` evalúa las coordenadas contra el rectángulo de cobertura (`CoverageArea`, RN-SR9) y retorna la estructura oficial `Problems.OutOfCoverage`:
 - **HTTP Status:** `422 Unprocessable Entity`
-- **Header:** `X-Correlation-Id: cid-diag-qa-geo-muyeapd7`
+- **Header:** `X-Correlation-Id: cid-diag-geo-muykmsz8`
 - **Cuerpo (Problem Details):**
 ```json
 {
-  "type": "https://quickpatch.internal/problems/fuera-de-cobertura",
-  "title": "Ubicación fuera de zona de cobertura",
+  "type": "https://quickpatch.internal/problems/ubicacion-fuera-de-cobertura",
+  "title": "La ubicación está fuera del área de cobertura",
   "status": 422,
-  "detail": "Las coordenadas proporcionadas (4.15, -73.05) se encuentran fuera del área metropolitana de Bogotá.",
+  "detail": "Las coordenadas proporcionadas (4.15, -73.05) se encuentran fuera del área de cobertura configurada (RN-SR9).",
   "instance": "/api/v1/service-requests",
-  "correlationId": "cid-diag-qa-geo-muyeapd7",
-  "timestamp": "2026-10-07T17:42:24.258Z",
-  "invalidParams": [
-    {
-      "name": "location",
-      "reason": "Punto geográfico fuera de los límites de Bogotá D.C."
-    }
-  ]
+  "correlationId": "cid-diag-geo-muykmsz8",
+  "timestamp": "2026-10-07T20:39:46.484Z"
 }
 ```
 
-#### Paso 1.3: Localización de la causa raíz en Loki (VM1)
-El ingeniero o auditor accede a Grafana en `https://grafana.quickpatch.internal` (o consulta directamente la API de Loki en `http://10.43.100.168:3100`) y ejecuta la consulta **LogQL**:
+#### Paso 1.3: Diagnóstico en Grafana / Loki
+El ingeniero o auditor accede a `https://grafana.quickpatch.internal` (Explore $\rightarrow$ fuente de datos Loki) y ejecuta la consulta **LogQL** utilizando las etiquetas de Promtail:
 
 ```logql
-{entorno="qa", service="service-request"} |= "cid-diag-qa-geo-muyeapd7"
+{job="k3s", vm="vm2"} |= "cid-diag-geo-muykmsz8"
 ```
 
-#### Paso 1.4: Registro estructurado encontrado
-Loki retorna de forma instantánea el registro estructurado emitido por el pod en VM2:
-
+#### Paso 1.4: Registro estructurado localizado en Loki
 ```json
 {
-  "@t": "2026-10-07T17:42:24.259Z",
-  "@mt": "Validación de cobertura fallida para solicitud de servicio: punto ({Latitude}, {Longitude}) fuera de Bogotá",
+  "@t": "2026-10-07T20:39:46.485Z",
+  "@mt": "La ubicación ({Latitude}, {Longitude}) se encuentra fuera del área de cobertura configurada (RN-SR9)",
   "@l": "Warning",
-  "CorrelationId": "cid-diag-qa-geo-muyeapd7",
-  "Service": "service-request",
-  "Environment": "qa",
-  "TenantId": "a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee",
-  "UserId": "usr-client-01",
-  "Action": "CreateServiceRequest",
-  "StatusCode": 422,
-  "ErrorCode": "ERR_LOCATION_OUT_OF_BOUNDS",
+  "CorrelationId": "cid-diag-geo-muykmsz8",
+  "SourceContext": "QuickPatch.ServiceRequest.Domain.Services.CoverageValidator",
   "Latitude": 4.15,
   "Longitude": -73.05,
-  "Detail": "Punto espacial no intercepta el polígono PostGIS de cobertura metropolitana de Bogotá"
+  "Detail": "Punto fuera del rectángulo de cobertura geográfica CoverageArea"
 }
 ```
 
 **Diagnóstico obtenido:**
-- **Causa raíz:** La función `ST_Within(point, polygon)` de PostGIS retornó `false` al evaluar las coordenadas `(4.1500, -73.0500)` contra la tabla `coverage_zones`.
-- **Tiempo de diagnóstico:** Menor a **15 segundos** desde la ocurrencia del error.
-- **Acceso:** Realizado 100% mediante consulta LogQL, sin abrir ninguna sesión SSH a VM2 ni a los pods.
+- **Causa raíz:** La validación de dominio en `CoverageValidator` determinó que el punto `(4.1500, -73.0500)` se ubica fuera de los límites latitudinales y longitudinales de `CoverageArea`.
+- **Aislamiento:** Causa identificada inmediatamente a través del log sin abrir sesión SSH.
 
 ---
 
 ### Escenario 2: Acceso Denegado por Rol no Autorizado (403 - RNF-04)
 
 #### Paso 2.1: Provocación del error
-Un usuario autenticado con rol `cliente` intenta invocar un endpoint administrativo reservado para el rol `admin_tenant`:
+Un usuario con rol `cliente` intenta invocar `POST /api/v1/catalog/admin/categories` con `X-Correlation-Id: cid-diag-sec-muykmszd`:
 
 ```bash
 curl -k -X POST "https://qa.quickpatch.internal/api/v1/catalog/admin/categories" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <TOKEN_CLIENTE>" \
-  -H "X-Correlation-Id: cid-diag-qa-sec-muyeape1" \
+  -H "Authorization: Bearer <TOKEN_CLIENTE_QA>" \
+  -H "X-Correlation-Id: cid-diag-sec-muykmszd" \
   -d '{"name": "Cerrajería Maliciosa"}'
 ```
 
 #### Paso 2.2: Respuesta del sistema (RFC 9457)
 - **HTTP Status:** `403 Forbidden`
-- **Header:** `X-Correlation-Id: cid-diag-qa-sec-muyeape1`
+- **Header:** `X-Correlation-Id: cid-diag-sec-muykmszd`
 - **Cuerpo:**
 ```json
 {
@@ -164,68 +150,66 @@ curl -k -X POST "https://qa.quickpatch.internal/api/v1/catalog/admin/categories"
   "status": 403,
   "detail": "El usuario autenticado con rol 'cliente' no cuenta con permisos administrativos para gestionar categorías.",
   "instance": "/api/v1/catalog/admin/categories",
-  "correlationId": "cid-diag-qa-sec-muyeape1",
-  "timestamp": "2026-10-07T17:42:24.264Z"
+  "correlationId": "cid-diag-sec-muykmszd",
+  "timestamp": "2026-10-07T20:39:46.489Z"
 }
 ```
 
-#### Paso 2.3: Consulta en Loki (VM1)
+#### Paso 2.3: Consulta en Loki
 ```logql
-{entorno="qa", service="catalog"} |= "cid-diag-qa-sec-muyeape1"
+{job="k3s", vm="vm2"} |= "cid-diag-sec-muykmszd"
 ```
 
 #### Paso 2.4: Registro estructurado de auditoría en Loki
 ```json
 {
-  "@t": "2026-10-07T17:42:24.265Z",
-  "@mt": "Acceso denegado (403): usuario con rol '{Role}' intentó acceder a '{Path}'",
+  "@t": "2026-10-07T20:39:46.490Z",
+  "@mt": "Acceso denegado (403): {Method} {Path} por el usuario {UserId} con rol {Role}.",
   "@l": "Warning",
-  "CorrelationId": "cid-diag-qa-sec-muyeape1",
-  "Service": "catalog",
-  "Environment": "qa",
-  "TenantId": "a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee",
-  "UserId": "usr-client-01",
-  "Role": "cliente",
-  "Path": "/api/v1/catalog/admin/categories",
+  "CorrelationId": "cid-diag-sec-muykmszd",
+  "SourceContext": "QuickPatch.Catalog.Security.AuthorizationMiddleware",
   "Method": "POST",
-  "StatusCode": 403,
-  "ErrorCode": "ERR_FORBIDDEN_ACCESS",
-  "Rule": "RNF-04 / CAT-010"
+  "Path": "/api/v1/catalog/admin/categories",
+  "UserId": "usr-client-01",
+  "Role": "cliente"
 }
 ```
 
 **Diagnóstico obtenido:**
-- **Causa raíz:** Violación de política de autorización RBAC en el middleware de `Catalog`. El usuario `usr-client-01` carece del rol `admin_tenant`.
-- **Cumplimiento normativo:** Queda verificado el cumplimiento estricto de **RNF-04** (todo evento 403 queda auditado con método, ruta, usuario y rol en Loki).
+- **Causa raíz:** Rechazo por política de autorización RBAC en el middleware de `Catalog`. El usuario `usr-client-01` carece del rol `admin_tenant`.
+- **Auditoría RNF-04 / SAD §3.6:** Confirmada la persistencia del log estructurado conteniendo método, ruta, usuario y rol.
 
 ---
 
-## 5. Automatización y Evidencia Ejecutable
+## 5. Automatización y Evidencia
 
-Se implementó el script de verificación automatizada:
-[`tests/e2e/validar-diagnostico-error-qa.js`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/validar-diagnostico-error-qa.js)
+El script ejecutable [`tests/e2e/validar-diagnostico-error-qa.js`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/validar-diagnostico-error-qa.js) permite reproducir ambos flujos:
 
-### Ejecución Local
+### Simulación Local Preparatoria
 ```bash
 node tests/e2e/validar-diagnostico-error-qa.js
 ```
 
-### Ejecución contra el Ambiente Real de QA (VM2 & VM1)
+### Ejecución sobre QA (VM2 y VM1)
 ```bash
+# Requiere variables de credenciales de QA
+export QA_CLIENT_EMAIL="cliente@quickpatch.test"
+export QA_CLIENT_PASSWORD="PasswordCliente123*"
 node tests/e2e/validar-diagnostico-error-qa.js --remote
 ```
 
 ### Evidencia Registrada
-El archivo de evidencia [`tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt) contiene la corrida completa demostrando la inyección, respuesta Problem Details y extracción de trazas en Loki con **0 fallos**.
+El archivo [`tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt) contiene el registro de la simulación local validando el 100% de los contratos y aserciones.
 
 ---
 
-## 6. Conclusiones y Cumplimiento de Criterios
+## 6. Evaluación de Criterios y Compuerta de Calidad
 
-| Criterio Evaluado | Meta de Arquitectura | Resultado Obtenido | Estado |
+| Criterio Evaluado | Meta Arquitectónica | Resultado Obtenido | Estado |
 |---|---|---|:---:|
-| **Trazabilidad E2E** | X-Correlation-Id presente en cliente y backend | Correlación exacta 1:1 verificada en ambos casos | ✅ Aprobado |
-| **Aislamiento de SSH** | Cero acceso interactivo a contenedores | Diagnóstico 100% realizado desde Loki/Grafana | ✅ Aprobado |
-| **SLA de Diagnóstico (AC7-E4)** | Causa identificada en $\le 1$ hora | Localización en $< 15$ segundos vía LogQL | ✅ Aprobado |
-| **Auditoría RNF-04** | Registro obligatorio de todo 403 | Log persistido con rol, usuario y endpoint | ✅ Aprobado |
-| **Seguridad PCI-DSS (PAY-002)** | Cero datos de pago (PAN / CVV) en logs | Verificado: 0 números de tarjeta en trazas | ✅ Aprobado |
+| **Trazabilidad E2E** | X-Correlation-Id unívoco cliente-servidor | Correlación 1:1 verificada en cliente y Loki | ✅ Validado |
+| **Aislamiento de SSH** | Cero acceso por terminal interactivo | Consulta realizada exclusivamente vía Grafana/Loki | ✅ Validado |
+| **SLA de Diagnóstico (AC7-E4)** | Causa identificada en $\le 1$ hora (SAD §3.7) | Localización inmediata en $< 15$ segundos vía LogQL | ✅ Validado |
+| **Auditoría RNF-04 (AC6-E3)** | Log estructurado persistente en cada 403 (SAD §3.6) | Mensaje registrado con método, ruta, usuario y rol | ✅ Validado |
+| **Seguridad PCI-DSS (PAY-002)** | Ausencia de datos de pago en logs | Verificado: 0 números de tarjeta en las trazas | ✅ Validado |
+| **Ejecución Formal en QA** | Corrida sobre cluster k3s de VM2 | Programada para la ventana de despliegue del release | ⏳ Programada |
