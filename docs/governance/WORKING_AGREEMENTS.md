@@ -43,13 +43,13 @@ El proyecto opera sobre **7 máquinas virtuales**, administradas por el rol de D
 
 |VM|Rol|Para qué sirve|
 |---|---|---|
-|VM1|Producción — entrada|Única entrada desde la VPN: API Gateway, panel administrativo (Angular) y runner de CI|
-|VM3|Producción — servicios|Ejecuta los 8 microservicios (k3s)|
-|VM4|Producción — datos|Información del sistema con geolocalización (PostgreSQL + PostGIS), caché (Redis) y eventos (Kafka)|
-|VM2, VM5, VM6|QA|Copia de producción con la misma forma (entrada, servicios y datos), para probar cada versión antes de desplegarla|
-|VM7|Herramientas|Evidencias fotográficas y respaldos (Garage), métricas y logs de los dos ambientes|
+|VM1|Herramientas|Única entrada desde la VPN, CI y pruebas de carga, métricas y logs de los dos ambientes|
+|VM3|Producción — aplicación|Ejecuta los 8 microservicios, el API Gateway y el panel administrativo (k3s)|
+|VM4|Producción — datos|Almacena la información del sistema, incluida la geolocalización (PostgreSQL + PostGIS), y la caché (Redis)|
+|VM6|Producción — mensajería y almacenamiento|Procesa eventos en segundo plano (Kafka) y guarda las evidencias fotográficas y los respaldos (Garage)|
+|VM2, VM5, VM7|QA|Copia de producción con la misma forma, para probar cada versión antes de desplegarla|
 
-El reparto en 1 VM de herramientas, 3 de producción y 3 de QA se aprobó el 6 de octubre de 2026 (SAD, ADR-022) y su migración está en curso.
+La distribución en 3 VMs de producción, 3 de QA y 1 de herramientas se aprobó el 6 de octubre de 2026 (SAD, ADR-022) y su migración está en curso.
 
 ---
 

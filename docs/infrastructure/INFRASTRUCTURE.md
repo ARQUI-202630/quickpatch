@@ -46,7 +46,7 @@ Este documento describe cómo se construye, despliega y opera la infraestructura
 
 Qué corre hoy en cada VM, cómo se conectan y por dónde entra el tráfico. El inventario de hardware está en la sección 3 y las reglas exactas de firewall en la sección 10.
 
-> **Redistribución aprobada (ADR-022), implementación en curso (SCRUM-334).** Este diagrama y las secciones operativas describen la distribución desplegada hoy (ADR-015). El reparto objetivo —1 VM de herramientas, 3 de producción y 3 de QA— y el plan de migración están en la sección 3.3; cada sección operativa se actualiza a medida que DevOps migra cada VM.
+> **Redistribución aprobada (ADR-022), implementación en curso (SCRUM-334).** Este diagrama y las secciones operativas describen la distribución desplegada hoy (ADR-015). La distribución objetivo —3 VMs de producción, 3 de QA y 1 de herramientas— y el plan de migración están en la sección 3.3; cada sección operativa se actualiza a medida que DevOps migra cada VM.
 
 ```mermaid
 flowchart TB
@@ -185,68 +185,67 @@ Uso medido el 3 de octubre de 2026, con toda la infraestructura desplegada y **t
 Además, las 7 VMs corren `node_exporter` y Promtail (unos 40 MiB entre los dos). Sin microservicios, ninguna VM pasa del 32% de la RAM ni del 34% del disco. La medición se repite cuando los servicios estén desplegados en VM3 y en QA.
 
 
-### 3.3 Reparto objetivo (ADR-022)
+### 3.3 Distribución objetivo (ADR-022)
 
-Aprobado el 6 de octubre de 2026: 1 VM de herramientas, 3 de producción y 3 de QA con la misma forma (entrada, servicios y datos). Las IPs y el hardware no cambian.
+Aprobada el 6 de octubre de 2026 por la revisión del profesor: 3 VMs para producción, 3 para QA y 1 para herramientas. Las IPs y el hardware no cambian.
 
 | VM | Ambiente | Rol | Software del proyecto | Cambia respecto de hoy |
 |---|---|---|---|---|
-| VM7 | Herramientas | Observabilidad y almacenamiento | Garage de producción (evidencias y respaldos), Prometheus, Loki y Grafana | No cambia |
-| VM1 | Producción | Entrada | Nginx (gateway y panel Angular), runner de GitHub, kubectl y k6 | No cambia |
-| VM3 | Producción | Servicios | k3s con los 8 microservicios | No cambia |
-| VM4 | Producción | Datos | PostgreSQL + PostGIS, **Redis y Kafka con Kafka UI** | Recibe Redis de VM5 y Kafka de VM6 |
-| VM2 | QA | Entrada | Nginx y panel de QA; reenvía `/api/` al k3s de VM5 | Deja de alojar el QA completo |
-| VM5 | QA | Servicios | k3s de QA con los 8 microservicios | Pasa de Redis de producción a servicios de QA |
-| VM6 | QA | Datos | PostgreSQL + PostGIS, Redis, Kafka y Garage de QA | Pasa de Kafka de producción a datos de QA |
+| VM1 | Herramientas | Entrada y herramientas | Proxy Nginx :443 por nombre (`quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal`); runner de GitHub, kubectl y k6; Prometheus, Loki y Grafana de los dos ambientes | Recibe la observabilidad de VM7. El panel y el gateway pasan al k3s de VM3 |
+| VM3 | Producción | Aplicación | k3s: 8 microservicios, API Gateway (`quickpatch-api-gateway`) y panel Angular | Recibe el gateway y el panel |
+| VM4 | Producción | Datos | PostgreSQL + PostGIS y Redis | Recibe Redis de VM5 |
+| VM6 | Producción | Mensajería y almacenamiento | Kafka y Kafka UI (`quickpatch-kafka`); Garage (evidencias y respaldos) | Recibe Garage de VM7, con sus buckets |
+| VM2 | QA | Aplicación | Igual que VM3 | Deja de alojar el QA completo: conserva el k3s |
+| VM5 | QA | Datos | Igual que VM4 | Pasa de Redis de producción a datos de QA |
+| VM7 | QA | Mensajería y almacenamiento | Igual que VM6 | Pasa de almacenamiento y observabilidad de producción a mensajería y almacenamiento de QA |
 
 **Conexiones permitidas** (las reglas exactas se escriben en `firewall.yml` al migrar, sección 10.3):
 
 | Origen | Destino | Puertos | Para qué |
 |---|---|---|---|
 | VPN de la universidad | VM1 | 443 | Única entrada (R9) |
-| VM1 | VM3 | 30080, 6443 | Gateway hacia los servicios de producción; despliegue con kubectl |
-| VM1 | VM2, VM5 | 443, 6443 | Entrada de QA; despliegue en el k3s de QA |
-| VM1 | VM7 | 3000 | Grafana por nombre |
-| VM2 | VM5 | 30080 | Entrada de QA hacia los servicios de QA |
-| VM3 | VM4 | 5432, 6379, 9092 | Servicios de producción → PostgreSQL, Redis y Kafka |
-| VM3, VM4 | VM7 | 9000 | Evidencias y respaldo diario a Garage de producción |
-| VM5 | VM6 | 5432, 6379, 9092, 9000 | Servicios de QA → datos, Kafka y Garage de QA |
-| Las 7 VMs | VM7 | 3100 | Logs (Promtail → Loki) |
-| VM7 | Las 7 VMs | 9100 | Métricas (Prometheus → `node_exporter`) |
+| VM1 | VM3 y VM2 | 30080, 6443 | Proxy hacia el gateway de cada ambiente; despliegue con kubectl |
+| VM3 | VM4 | 5432, 6379 | Servicios de producción → PostgreSQL y Redis |
+| VM3 | VM6 | 9092, 9000 | Servicios de producción → Kafka y Garage (evidencias) |
+| VM4 | VM6 | 9000 | Respaldo diario de PostgreSQL a Garage |
+| VM2 | VM5, VM7 | 5432, 6379, 9092, 9000 | Lo mismo, dentro de QA |
+| Las 7 VMs | VM1 | 3100 | Logs (Promtail → Loki) |
+| VM1 | Las 7 VMs | 9100 | Métricas (Prometheus → `node_exporter`) |
 
-Ninguna VM de QA acepta conexiones de una VM de producción ni al revés. Kafka UI de producción deja de ser accesible desde la VPN (el perímetro solo deja pasar el 8080 de VM6) y queda por túnel SSH a VM4.
+Ninguna VM de QA acepta conexiones de una VM de producción ni al revés.
 
-**Plan de migración** (DevOps, SCRUM-343 a SCRUM-347): producción primero, porque VM5 y VM6 son hoy producción.
+**Plan de migración** (DevOps, SCRUM-343 a SCRUM-347; el orden evita dejar producción sin observabilidad ni respaldo):
 
-1. VM4: instalar Redis (con los usuarios por servicio de la sección 3.4) y Kafka con su UI; topes de memoria de Kafka y Redis; crear los topics de `quickpatch-kafka/topics/topics.yaml`.
-2. Cambiar las direcciones de Redis y Kafka de los servicios de VM3 a VM4; apagar Redis de VM5 y Kafka de VM6.
-3. QA: k3s en VM5; PostgreSQL, Redis, Kafka y Garage de QA en VM6; Nginx y panel de QA en VM2, que reenvía `/api/` a VM5. QA queda caído mientras se reconstruye.
-4. Firewall por VM según la tabla anterior, kubeconfig de QA del runner y etiqueta `entorno` en Promtail.
-5. Verificación: medir RAM y disco (en especial VM4 con PostgreSQL, Redis y Kafka juntos), repetir la tabla de la sección 3.2 y pruebas de humo en los dos ambientes (SCRUM-347).
+1. VM1: instalar Prometheus, Loki y Grafana y apuntar a ellos las 7 VMs; apagar la observabilidad de VM7.
+2. VM6: instalar Garage y copiar los buckets `evidencias` y `backups-postgres` desde VM7; cambiar el destino del respaldo de VM4.
+3. VM4: instalar Redis con los usuarios por servicio de la sección 3.4; apuntar los servicios de VM3; apagar Redis de VM5.
+4. VM3: desplegar el API Gateway y el panel en el k3s; cambiar el proxy de VM1.
+5. QA: desplegar PostgreSQL y Redis en VM5 y Kafka y Garage en VM7 con los mismos playbooks parametrizados por ambiente; dejar en VM2 solo el k3s.
+6. Firewall por VM según la tabla anterior; medir RAM y disco y repetir la tabla de la sección 3.2 (SCRUM-347).
 
 ### 3.4 Recursos por servicio
 
 Cada servicio tiene sus propios recursos de datos y no puede leer los de otro (ADR-003, ADR-014, ADR-021). Así lo muestra el diagrama de alto nivel (vista lógica): cada servicio con su base PostgreSQL, su caché Redis y su almacenamiento en Garage según corresponda. En la vista física comparten la instancia de cada motor por ambiente, con el aislamiento dentro del motor. Esta tabla es la fuente para Ansible y para los secretos de Kubernetes.
 
-| Servicio | PostgreSQL (prod VM4; QA VM6) | Redis (prod VM4; QA VM6) | Garage (prod VM7; QA VM6) |
+| Servicio | PostgreSQL (prod VM4; QA VM5) | Redis (prod VM4; QA VM5) | Garage (prod VM6; QA VM7) |
 |---|---|---|---|
 | Identity | `db_identity` | Usuario `identity`, claves `identity:*` | — |
-| Actors | `db_actors` | Usuario `actors`, claves `actors:*` | Bucket `actors-archivos` |
-| Catalog | `db_catalog` | Usuario `catalog`, claves `catalog:*` | Bucket `catalog-archivos` |
-| ServiceRequest | `db_service_request` (con PostGIS) | Usuario `service-request`, claves `service-request:*` (en uso: coordinación de tareas programadas, RN-Q6) | Bucket `service-request-evidencias` (en uso: evidencias, D7) |
-| Matching | `db_matching` (con PostGIS) | Usuario `matching`, claves `matching:*` | Bucket `matching-archivos` |
-| Ranking | `db_ranking` | Usuario `ranking`, claves `ranking:*` | Bucket `ranking-archivos` |
-| Payments | `db_payments` | Usuario `payments`, claves `payments:*` | Bucket `payments-archivos` |
-| Communication | `db_communication` | Usuario `communication`, claves `communication:*` | Bucket `communication-archivos` |
+| Actors | `db_actors` | Usuario `actors`, claves `actors:*` | Bucket `actors-archivos` (reservado) |
+| Catalog | `db_catalog` | Usuario `catalog`, claves `catalog:*` | Bucket `catalog-archivos` (reservado) |
+| ServiceRequest | `db_service_request` (con PostGIS) | Usuario `service-request`, claves `service-request:*` (en uso: coordinación de tareas programadas, RN-Q6) | Llave `service-request` solo en `service-request-evidencias` (en uso: evidencias, D7) |
+| Matching | `db_matching` (con PostGIS) | Usuario `matching`, claves `matching:*` | Bucket `matching-archivos` (reservado) |
+| Ranking | `db_ranking` | Usuario `ranking`, claves `ranking:*` | Bucket `ranking-archivos` (reservado) |
+| Payments | `db_payments` | Usuario `payments`, claves `payments:*` | Bucket `payments-archivos` (reservado) |
+| Communication | `db_communication` | Usuario `communication`, claves `communication:*` | Bucket `communication-archivos` (reservado) |
 | Respaldo (VM4) | Lectura de todas las bases (`pg_dump`) | — | Llave `backups` solo en `backups-postgres` |
 
-Hoy solo ServiceRequest usa Redis y Garage. Los demás recursos de la tabla se crean cuando el servicio los necesite, con el nombre y el alcance indicados, para que el aprovisionamiento ya los contemple.
+Ansible ya crea un usuario de Redis por servicio y las llaves de Garage en uso (`quickpatch-infrastructure`, PRs #21 a #23). Los buckets marcados como reservados se crean, con su propia llave, cuando el servicio los necesite.
 
 Reglas:
 
 - **PostgreSQL:** una base por servicio con los roles del DD 10.2 (`<servicio>_app` sin `BYPASSRLS`, `_outbox` y `_migrator`; ADR-019). El servicio se conecta solo a su base.
 - **Redis:** un usuario ACL por servicio, restringido a su prefijo de claves (`~<servicio>:*`) y sin comandos administrativos (`-@dangerous`). Reemplaza la contraseña única compartida de hoy (`requirepass`). Redis 7.4 ya soporta ACL.
-- **Garage:** una llave por servicio, con permiso solo sobre sus buckets, en lugar de la llave `servicios` compartida de hoy. El bucket `evidencias` pasa a llamarse `service-request-evidencias` (en producción Garage sigue en VM7).
+- **Garage:** una llave por servicio, con permiso solo sobre sus buckets, en lugar de la llave `servicios` compartida de hoy. El bucket `evidencias` pasa a llamarse `service-request-evidencias` al migrar a VM6.
 - **PostGIS:** se habilita en `db_matching` y en `db_service_request` (la ubicación de la solicitud es `geometry(Point, 4326)`). Hoy Ansible solo lo habilita en `db_matching` (`postgis_databases`): hay que agregar `service_request`.
 - **Credenciales:** en Ansible Vault, y cada servicio las recibe en su propio `Secret` de Kubernetes (namespace `quickpatch`). QA usa credenciales distintas de producción.
 
@@ -897,4 +896,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 1.3 | 22 sep 2026 | Se alinea con el SAD v2.10: las citas que usaban K5 con el sentido de "sin VMs adicionales" pasan a K10 (hardware fijo de 7 VMs), y el TLS autofirmado y la ausencia de dominio público citan K9 (red privada del laboratorio). Se actualizan los códigos de escenario a la numeración ISO/IEC 25010 del SAD (AC1-E4 → AC2-E4, AC4-E3 → AC8-E2, AC5-E1 → AC7-E1, AC6-E1/E2 → AC6-E5/E6, AC3-E1/E3 → AC5-E1/E3). La ventana de recuperación de 12–24 h cita el escenario AC5-E1 en vez de la sección 5.2 del SAD. Se corrigen referencias internas desactualizadas por la reorganización de la versión 1.1 (presupuesto de recursos en la sección 5.6, benchmarking en la sección 13) y se elimina la referencia a "Vista Física, SDD": la vista física conceptual vive en el SAD y el despliegue operativo en la sección 2 de este documento. |
 | 2.0 | 3 oct 2026 | Pasa de plan a infraestructura implementada. Las secciones 3 a 10 describen lo que está aplicado en las 7 VMs: VM2 como ambiente de QA y VM1 como entrada única por nombre (SAD, ADR-015), Garage en lugar de MinIO (SAD, ADR-016), VM2 y VM5 con Rocky Linux, y Ansible implementado. Nuevas secciones: 2.3 (balanceo de carga y alta disponibilidad) y Anexo A (manual de despliegue). Se reescriben la 2.1 (topología), la 3 (consumo medido de cada VM), la 6 (CI/CD con workflows reutilizables en el multirepo, ADR-013, y pruebas según el Documento de Pruebas), la 9 (respaldo implementado y recuperación ante desastres) y la 10 (dos capas de firewall, reglas por VM y SSH con contraseña). La 5.6 deja registrado que el umbral de 6,5 GiB no alcanza con los límites actuales. |
 | 2.1 | 6 oct 2026 | CI por repositorio (ADR-021, SCRUM-337): la sección 6.1 describe el CI propio de cada uno de los 12 repositorios (incluidos `quickpatch-api-gateway` y `quickpatch-kafka`); el despliegue sigue con los workflows de `quickpatch-infrastructure` hasta SCRUM-338. |
-| 2.2 | 6 oct 2026 | Reparto de VMs (ADR-022, SCRUM-342) y recursos por servicio (SCRUM-339). Nueva sección 3.3 con el reparto objetivo (VM7 herramientas; producción en VM1, VM3 y VM4; QA en VM2, VM5 y VM6), las conexiones permitidas y el plan de migración. Nueva sección 3.4: base de datos, usuario de Redis y llave de Garage por servicio. Las secciones operativas siguen describiendo la distribución actual hasta que DevOps migre cada VM. |
+| 2.2 | 6 oct 2026 | Redistribución de VMs (ADR-022, SCRUM-342) y recursos por servicio (SCRUM-339). Nueva sección 3.3 con la distribución objetivo (VM1 herramientas; producción en VM3, VM4 y VM6; QA en VM2, VM5 y VM7), las conexiones permitidas y el plan de migración. Nueva sección 3.4: base de datos, usuario de Redis y llave de Garage por servicio. Las secciones operativas siguen describiendo la distribución actual hasta que DevOps migre cada VM. |
