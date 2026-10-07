@@ -1,4 +1,4 @@
-# ADR-021 — Reparto de las 7 VMs en tres ambientes: herramientas, QA y producción
+# ADR-022 — Reparto de las 7 VMs en tres ambientes: herramientas, QA y producción
 
 - **Estado:** Aceptado (6 de octubre de 2026)
 - **Fecha:** 2026-10-06

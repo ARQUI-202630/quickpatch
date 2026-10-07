@@ -1169,7 +1169,7 @@ El presente documento registra únicamente los contratos que actualmente pueden 
 |`payment.rejected`|Payments|ServiceRequest, Communication|Informar el rechazo; la solicitud permanece en `completado` y el cliente puede reintentar (RN-SR5).|
 |`catalog.category-changed`|Catalog|ServiceRequest, Matching|Publicar el estado completo de una categoría tras crearla o modificarla, para que cada consumidor mantenga su réplica local (`service_request_categories` en ServiceRequest).|
 
-Los esquemas versionados de cada evento están en `quickpatch-contracts` (`events/`). `service-request.created` lleva en `data`: `serviceRequestId`, `clientId`, `categoryId`, `description`, `location` (latitud y longitud) y `createdAt`; `address_text` no viaja en el evento por minimización de datos personales (K12 del SAD). Cada evento se publica en un topic con su mismo nombre y con el id del agregado como clave.
+Los esquemas versionados de cada evento están en `quickpatch-kafka` (`events/`), con sus topics en `topics/topics.yaml` (ADR-021). `service-request.created` lleva en `data`: `serviceRequestId`, `clientId`, `categoryId`, `description`, `location` (latitud y longitud) y `createdAt`; `address_text` no viaja en el evento por minimización de datos personales (K12 del SAD). Cada evento se publica en un topic con su mismo nombre y con el id del agregado como clave.
 
 #### 8.2.1 Estructura base de evento
 

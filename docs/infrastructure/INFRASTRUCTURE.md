@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 2.0 |
+| **Versión** | 2.1 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -329,23 +329,30 @@ VM4 mantiene PostgreSQL como almacén común de infraestructura con ownership l�
 
 ### 6.1 Estructura del pipeline
 
-El pipeline está en GitHub Actions y sigue el multirepo (SAD, ADR-013): cada uno de los 11 repositorios de componentes tiene su propio pipeline, así que un cambio en un servicio solo dispara el de ese servicio (AC7-E1).
+El pipeline está en GitHub Actions y sigue el multirepo (SAD, ADR-013 y ADR-021): cada uno de los 12 repositorios de componentes tiene su propio pipeline, así que un cambio en un servicio solo dispara el de ese servicio (AC7-E1).
 
-Para no mantener 11 copias, la lógica vive una sola vez en `quickpatch-infrastructure` como **workflows reutilizables**, y cada repositorio tiene un archivo corto (`.github/workflows/ci-cd.yml`) que los llama. Las plantillas de ese archivo están en `plantillas/ci/` y ya están instaladas en los 11 repositorios.
+**El CI vive en cada repositorio** (ADR-021, SCRUM-337): `.github/workflows/ci-cd.yml` contiene el job de CI completo de su stack, sin llamar a workflows de otro repositorio, y `.github/scripts/cobertura.py` mide la cobertura. Así, un cambio en un repositorio no altera el pipeline de los demás. El costo es que una mejora del CI se aplica repositorio por repositorio.
+
+| CI (en cada repositorio) | Qué hace | Repositorios |
+|---|---|---|
+| .NET | Formato, compilación, pruebas de `tests/unit` y `tests/integration` (Testcontainers) y cobertura | 7 servicios ASP.NET Core |
+| Java | Pruebas unitarias e integración (`*IT`, Testcontainers) con Maven y cobertura con JaCoCo | `quickpatch-matching` |
+| Angular | Lint, pruebas, cobertura y build; guarda el build para publicarlo | `quickpatch-web` |
+| Flutter | Formato, análisis, pruebas y cobertura; APK en `release/*` y `main` | `quickpatch-mobile` |
+| Contratos REST | Spectral, compatibilidad con `oasdiff` contra la rama base, `nginx -t` y tags `vX.Y.Z` | `quickpatch-api-gateway` |
+| Eventos | AJV, alineación de topics y esquemas, compatibilidad contra la rama base y tags `vX.Y.Z` | `quickpatch-kafka` |
+| Composición y documentación | Submódulos y contratos en versiones etiquetadas; referencias obsoletas en la documentación | Repositorio principal |
+
+**El despliegue (CD) todavía es compartido:** mientras DevOps lo traslada a cada repositorio (SCRUM-338), estos workflows siguen en `quickpatch-infrastructure`:
 
 | Workflow | Qué hace | Lo usan |
 |---|---|---|
-| `ci-dotnet.yml` | Formato, compilación, pruebas de `tests/unit` y `tests/integration` (Testcontainers) y cobertura | 7 servicios ASP.NET Core |
-| `ci-java.yml` | Compilación, pruebas unitarias y de integración (Gradle o Maven) y cobertura con JaCoCo | Matching |
-| `ci-angular.yml` | Lint, pruebas, cobertura y build; guarda el build para publicarlo | `quickpatch-web` |
-| `ci-flutter.yml` | Formato, análisis, pruebas y cobertura; APK en `release/*` y `main` | `quickpatch-mobile` |
-| `ci-contratos.yml` | Spectral sobre OpenAPI, AJV sobre los esquemas de eventos y tags `vX.Y.Z` | `quickpatch-contracts` |
 | `imagen.yml` | Construye y publica la imagen en GitHub Container Registry | Servicios |
 | `deploy-k3s.yml` | Actualiza la imagen en k3s y espera el rolling update; si falla, lo revierte | Servicios |
-| `deploy-panel.yml` | Publica el build del panel en VM1 (producción) o VM2 (QA) | `quickpatch-web` |
+| `deploy-panel.yml` | Publica el build del panel en producción o QA | `quickpatch-web` |
 | `pruebas-sistema.yml` | E2E, OWASP ZAP, escáner PCI-DSS y k6 contra QA | Repositorio principal |
 
-Las pruebas siguen el Documento de Pruebas: estructura de carpetas, herramientas y **cobertura mínima de 80%**, que hace fallar el pipeline. Si un repositorio todavía no tiene código, cada workflow lo detecta y termina en verde con un aviso. El detalle de convenciones por stack está en `CI-CD.md` de `quickpatch-infrastructure`.
+Las pruebas siguen el Documento de Pruebas: estructura de carpetas, herramientas y **cobertura mínima de 80%**, que hace fallar el pipeline. El detalle de convenciones por stack está en el README de cada repositorio.
 
 ### 6.2 Qué corre en cada rama
 
@@ -821,3 +828,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 1.2 | (sin fecha registrada) | Corrige tres hallazgos bloqueantes de una revisión crítica independiente: (1) el `--service-cidr` por defecto de k3s coincidía con la red del laboratorio (`10.43.0.0/16`) — se fija explícitamente fuera de ese rango en `deploy-k3s.yml` (sección 5.2); (2) se documenta que `kubectl rollout undo` no revierte migraciones de esquema y se exige el patrón expand-contract para toda migración (sección 5.8), y se aclara que la prueba de carga corre contra un tenant de prueba dedicado, no contra datos reales (sección 6.2); (3) se completa la tabla de puertos con las rutas que otras secciones ya requerían pero no estaban habilitadas (scrape de `node_exporter`, envío de logs a Loki, API server de k3s para el despliegue, subida del backup a MinIO — sección 10.2). |
 | 1.3 | 22 sep 2026 | Se alinea con el SAD v2.10: las citas que usaban K5 con el sentido de "sin VMs adicionales" pasan a K10 (hardware fijo de 7 VMs), y el TLS autofirmado y la ausencia de dominio público citan K9 (red privada del laboratorio). Se actualizan los códigos de escenario a la numeración ISO/IEC 25010 del SAD (AC1-E4 → AC2-E4, AC4-E3 → AC8-E2, AC5-E1 → AC7-E1, AC6-E1/E2 → AC6-E5/E6, AC3-E1/E3 → AC5-E1/E3). La ventana de recuperación de 12–24 h cita el escenario AC5-E1 en vez de la sección 5.2 del SAD. Se corrigen referencias internas desactualizadas por la reorganización de la versión 1.1 (presupuesto de recursos en la sección 5.6, benchmarking en la sección 13) y se elimina la referencia a "Vista Física, SDD": la vista física conceptual vive en el SAD y el despliegue operativo en la sección 2 de este documento. |
 | 2.0 | 3 oct 2026 | Pasa de plan a infraestructura implementada. Las secciones 3 a 10 describen lo que está aplicado en las 7 VMs: VM2 como ambiente de QA y VM1 como entrada única por nombre (SAD, ADR-015), Garage en lugar de MinIO (SAD, ADR-016), VM2 y VM5 con Rocky Linux, y Ansible implementado. Nuevas secciones: 2.3 (balanceo de carga y alta disponibilidad) y Anexo A (manual de despliegue). Se reescriben la 2.1 (topología), la 3 (consumo medido de cada VM), la 6 (CI/CD con workflows reutilizables en el multirepo, ADR-013, y pruebas según el Documento de Pruebas), la 9 (respaldo implementado y recuperación ante desastres) y la 10 (dos capas de firewall, reglas por VM y SSH con contraseña). La 5.6 deja registrado que el umbral de 6,5 GiB no alcanza con los límites actuales. |
+| 2.1 | 6 oct 2026 | CI por repositorio (ADR-021, SCRUM-337): la sección 6.1 describe el CI propio de cada uno de los 12 repositorios (incluidos `quickpatch-api-gateway` y `quickpatch-kafka`); el despliegue sigue con los workflows de `quickpatch-infrastructure` hasta SCRUM-338. |

@@ -196,7 +196,7 @@ Cada microservicio tiene su propia base de datos dentro de una única instancia 
 
 El nivel 3 abre los dos contenedores cliente de la Figura 3 y muestra sus componentes para el incremento del Sprint 3: en Angular Web, el inicio de sesión, el control de acceso por rol y la gestión de tenants (SCRUM-25 y SCRUM-41); en Flutter Mobile, el inicio de sesión y la creación de solicitudes (SCRUM-27). La fuente de los dos diagramas está en Structurizr DSL, en `diagrams/sdd/c4/c4-l3-apps-cliente.dsl`.
 
-Los componentes son lógicos: no fijan librerías de estado, navegación ni cliente HTTP, porque esas decisiones no están tomadas. En cada componente se indica la carpeta del repositorio donde vive, según la organización de la sección 6.2. Las flechas rojas punteadas llaman a endpoints que todavía no tienen especificación OpenAPI en `quickpatch-contracts`.
+Los componentes son lógicos: no fijan librerías de estado, navegación ni cliente HTTP, porque esas decisiones no están tomadas. En cada componente se indica la carpeta del repositorio donde vive, según la organización de la sección 6.2. Las flechas rojas punteadas llaman a endpoints que todavía no tienen especificación OpenAPI en `quickpatch-api-gateway`.
 
 ![Componentes de Angular Web](diagrams/sdd/c4/C4-L3-Web.svg)
 
@@ -927,28 +927,31 @@ Esta vista mantiene la decisión tecnológica vigente:
 
 ## 6.1 Estructura del repositorio
 
-QUICKPATCH utiliza un repositorio por componente: cada microservicio, el panel web, la aplicación móvil, los contratos y la infraestructura tienen su propio repositorio en la organización `ARQUI-202630`. Un repositorio principal (`quickpatch`) los reúne como submódulos de Git y contiene la documentación y las pruebas del sistema completo (ADR-013).
+QUICKPATCH tiene 12 repositorios, uno por componente de la solución, en la organización `ARQUI-202630`: la aplicación móvil, el panel web, el API Gateway, los 8 microservicios y Apache Kafka. Un repositorio principal (`quickpatch`) los reúne como submódulos de Git y contiene la documentación, el contexto de agentes, las pruebas del sistema completo y el aprovisionamiento (ADR-013, modificado por ADR-021).
 
 La estructura del repositorio principal es la siguiente; las carpetas marcadas con `→` son submódulos:
 
 ```text
 apps/
-├── web/                 → quickpatch-web
 ├── mobile/              → quickpatch-mobile
-└── backend/
-    └── services/
-        ├── identity/        → quickpatch-identity
-        ├── actors/          → quickpatch-actors
-        ├── catalog/         → quickpatch-catalog
-        ├── service-request/ → quickpatch-service-request
-        ├── matching/        → quickpatch-matching
-        ├── ranking/         → quickpatch-ranking
-        ├── payments/        → quickpatch-payments
-        └── communication/   → quickpatch-communication
-
-contracts/               → quickpatch-contracts
-├── openapi/
-└── events/
+├── web/                 → quickpatch-web
+├── api-gateway/         → quickpatch-api-gateway
+│   ├── nginx/               (enrutamiento /api/<servicio>)
+│   └── openapi/             (contratos REST)
+├── backend/
+│   └── services/
+│       ├── identity/        → quickpatch-identity
+│       ├── actors/          → quickpatch-actors
+│       ├── catalog/         → quickpatch-catalog
+│       ├── service-request/ → quickpatch-service-request
+│       ├── matching/        → quickpatch-matching
+│       ├── ranking/         → quickpatch-ranking
+│       ├── payments/        → quickpatch-payments
+│       └── communication/   → quickpatch-communication
+└── kafka/               → quickpatch-kafka
+    ├── events/              (esquemas de eventos)
+    ├── topics/              (un topic por eventType)
+    └── deploy/              (despliegue de Kafka)
 
 tests/
 ├── integration/
@@ -957,7 +960,7 @@ tests/
 ├── performance/
 └── security/
 
-infrastructure/          → quickpatch-infrastructure
+infrastructure/          → quickpatch-infrastructure (pasa a ser carpeta de este repositorio, SCRUM-338)
 
 docs/
 ├── requirements/
@@ -967,9 +970,9 @@ docs/
 └── governance/
 ```
 
-Cada repositorio de servicio contiene su código, sus pruebas unitarias y de integración, su `Dockerfile`, su pipeline de CI y `contracts/` como submódulo fijado en una versión de `quickpatch-contracts`.
+Cada repositorio de servicio contiene su código, sus pruebas unitarias y de integración, su `Dockerfile`, su pipeline de CI propio y los contratos como submódulos fijados en una versión: `contracts/api-gateway/` (REST) y `contracts/kafka/` (eventos). Web y mobile incluyen solo `contracts/api-gateway/`.
 
-`apps/` concentra el código productivo; `tests/` contiene las pruebas transversales; `infrastructure/` contiene los artefactos asociados al despliegue; y `contracts/` mantiene las fronteras versionadas utilizadas por las aplicaciones y microservicios.
+`apps/` concentra el código productivo; `tests/` contiene las pruebas transversales; `infrastructure/` contiene los artefactos asociados al despliegue; y los repositorios `quickpatch-api-gateway` y `quickpatch-kafka` mantienen las fronteras versionadas utilizadas por las aplicaciones y microservicios.
 
 ![Estructura del repositorio QUICKPATCH](diagrams/sdd/07_vista_desarrollo_repositorio.svg)
 
@@ -1094,10 +1097,10 @@ La comunicación entre aplicaciones y microservicios se realiza mediante contrat
 
 ### REST / OpenAPI
 
-Los contratos REST se mantienen en el repositorio `quickpatch-contracts`, en:
+Los contratos REST se mantienen en el repositorio `quickpatch-api-gateway`, junto al componente que los expone, en:
 
 ```text
-contracts/openapi/
+openapi/          (en los consumidores: contracts/api-gateway/openapi/)
 ```
 
 Estos contratos constituyen la frontera entre Angular, Flutter y los servicios backend.
@@ -1106,13 +1109,14 @@ Los clientes no deben depender de clases internas del backend ni asumir campos q
 
 ### Eventos Kafka
 
-Los contratos de eventos se mantienen en el mismo repositorio, en:
+Los contratos de eventos se mantienen en el repositorio `quickpatch-kafka`, junto con la definición de los topics, en:
 
 ```text
-contracts/events/
+events/           (en los servicios: contracts/kafka/events/)
+topics/topics.yaml
 ```
 
-Cada servicio incluye `quickpatch-contracts` como submódulo fijado en una versión (tag SemVer); cambiar de versión es un commit explícito en el servicio.
+Cada servicio incluye `quickpatch-api-gateway` y `quickpatch-kafka` como submódulos fijados en una versión (tag SemVer); cambiar de versión es un commit explícito en el servicio (ADR-021).
 
 Los eventos permiten integrar servicios de forma asíncrona sin compartir implementaciones internas.
 

@@ -18,7 +18,7 @@ El SAD fija ocho dominios: Identity, Actors, Catalog, ServiceRequest, Matching, 
 - Cada dominio es un **microservicio** con su propia base de datos (ADR-014), su propia imagen y su propio despliegue en k3s (ADR-011), en su propio repositorio (ADR-013).
 - **REST/HTTPS** solo cuando el usuario necesita una respuesta inmediata, siempre a través del API Gateway.
 - **Kafka** (ADR-006) para los hechos de dominio y la coordinación entre servicios: un servicio no llama a otro de forma síncrona para cumplir su función (SAD, sección 4.3). Cuando un servicio necesita datos de otro, mantiene una réplica local alimentada por eventos (ADR-017).
-- Ningún servicio importa código ni lee tablas de otro; solo comparten contratos versionados en `quickpatch-contracts`.
+- Ningún servicio importa código ni lee tablas de otro; solo comparten contratos versionados en `quickpatch-api-gateway` (REST) y `quickpatch-kafka` (eventos), ADR-021.
 
 ## Alternativas descartadas
 

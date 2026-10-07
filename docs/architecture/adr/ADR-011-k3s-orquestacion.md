@@ -8,7 +8,7 @@
 - **Restricciones:** R5 (sin presupuesto), R7 (sin operación 24/7), R10 (7 VMs fijas), R11 (un solo administrador de infraestructura)
 - **Implementación:** `quickpatch-infrastructure` (playbooks de Ansible y manifiestos de k3s)
 
-> **Actualización (ADR-021, 6 de octubre de 2026):** el k3s de QA pasa de VM2 a VM5; producción sigue en VM3. Ambos siguen siendo clústeres de un solo nodo.
+> **Actualización (ADR-022, 6 de octubre de 2026):** el k3s de QA pasa de VM2 a VM5; producción sigue en VM3. Ambos siguen siendo clústeres de un solo nodo.
 
 ## Contexto
 

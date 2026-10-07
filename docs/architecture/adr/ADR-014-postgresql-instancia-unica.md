@@ -7,7 +7,7 @@
 - **Atributo sacrificado:** AC5 Reliability (la instancia es un punto único de falla)
 - **Restricciones:** R5, R10, R11
 
-> **Actualización (ADR-021, 6 de octubre de 2026):** la instancia de QA pasa de VM2 a VM6; producción sigue en VM4.
+> **Actualización (ADR-022, 6 de octubre de 2026):** la instancia de QA pasa de VM2 a VM6; producción sigue en VM4.
 
 ## Contexto
 

@@ -8,7 +8,7 @@
 - **Driver y restricciones:** D7 (evidencia fotográfica), R5, R10
 - **Implementación:** `quickpatch-infrastructure` (Ansible, llaves en Ansible Vault)
 
-> **Actualización (ADR-021, 6 de octubre de 2026):** la instancia de Garage de QA pasa de VM2 a VM6; producción sigue en VM7.
+> **Actualización (ADR-022, 6 de octubre de 2026):** la instancia de Garage de QA pasa de VM2 a VM6; producción sigue en VM7.
 
 ## Contexto
 
