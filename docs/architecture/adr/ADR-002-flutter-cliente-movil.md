@@ -18,7 +18,7 @@ El equipo tiene una sola persona dedicada a mobile y un calendario de unos tres 
 
 Construir **una sola aplicación Flutter** para todos los roles móviles. La app:
 
-- consume únicamente los contratos REST de `quickpatch-contracts`, fijados con el submódulo `contracts/` (ADR-013);
+- consume únicamente los contratos REST de `quickpatch-api-gateway`, fijados con el submódulo `contracts/api-gateway/` (ADR-021);
 - organiza el código por capacidad (`lib/features/<capacidad>/{data,domain,presentation}`) y separa lo transversal en `lib/core/`;
 - muestra solo las opciones permitidas para el rol del token (SCRUM-25).
 

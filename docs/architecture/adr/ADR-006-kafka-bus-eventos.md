@@ -15,7 +15,7 @@ Con microservicios orientados a eventos (ADR-003), los servicios necesitan un me
 ## Decisión
 
 - **Kafka** como bus central, con un topic por tipo de evento (mismo nombre que `eventType`) y el id del agregado como clave del mensaje, para conservar el orden por entidad.
-- Los contratos de eventos viven en `quickpatch-contracts/events/` (JSON Schema draft-07) con un sobre común: `eventId`, `eventType`, `eventVersion`, `occurredAt`, `correlationId`, `tenantId`, `producer` y `data`.
+- Los contratos de eventos viven en `quickpatch-kafka/events/`, junto con la definición de los topics (`topics/topics.yaml`, ADR-021), (JSON Schema draft-07) con un sobre común: `eventId`, `eventType`, `eventVersion`, `occurredAt`, `correlationId`, `tenantId`, `producer` y `data`.
 - Los eventos se publican con Outbox y se consumen de forma idempotente (ADR-007). El productor usa `acks=all` e idempotencia; el consumidor confirma el offset solo después de aplicar el efecto.
 - REST queda para las interacciones en las que el usuario espera una respuesta inmediata.
 

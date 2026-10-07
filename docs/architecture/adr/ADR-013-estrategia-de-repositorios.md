@@ -1,6 +1,6 @@
 # ADR-013 — Estrategia de repositorios: un repositorio por componente, unidos con submódulos
 
-- **Estado:** Aceptado
+- **Estado:** Aceptado; modificado por ADR-021 (12 repositorios: entran `quickpatch-api-gateway` y `quickpatch-kafka`, salen `quickpatch-contracts` y `quickpatch-infrastructure`)
 - **Fecha:** 2026-10-01
 - **Decisión:** Multirepo por componente, con un repositorio principal que referencia a los demás como submódulos de Git
 - **Implementación:** PR #9 de `quickpatch` (organización `ARQUI-202630`)
