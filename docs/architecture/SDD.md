@@ -104,15 +104,11 @@ El panorama ubica a QUICKPATCH entre todo el software con el que se relaciona: l
 
 ![Panorama de software de QUICKPATCH](diagrams/c4/C4-01-Landscape.png)
 
-> **Imagen pendiente:** exportar la vista `C4-01-Landscape` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-01-Landscape.png`.
-
 **Figura 1. Panorama de software de QUICKPATCH (C4 · System Landscape). Vista `C4-01-Landscape`.**
 
 El diagrama de contexto deja solo lo que interactúa con el sistema en operación. Las personas son los roles del SRS (secciones 2.1 y 2.2), con el administrador separado en dos según el DD (`users.role`, RN-U6): el admin del tenant administra solo su tenant y el admin de plataforma administra los tenants. Clientes, empresas cliente, técnicos y proveedores entran por la app móvil Flutter; los dos administradores, por el panel web Angular. El alcance se limita a Bogotá D.C. (SAD, R6).
 
 ![Contexto de QUICKPATCH](diagrams/c4/C4-02-Contexto.png)
-
-> **Imagen pendiente:** exportar la vista `C4-02-Contexto` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-02-Contexto.png`.
 
 **Figura 2. Contexto de QUICKPATCH (C4 · System Context). Vista `C4-02-Contexto`.**
 
@@ -169,9 +165,9 @@ Los datos de negocio asociados a empresas conservan `tenant_id`. El contexto de 
 
 ![Contenedores de QUICKPATCH](diagrams/c4/C4-03-Contenedores.png)
 
-> **Imagen pendiente:** exportar la vista `C4-03-Contenedores` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-03-Contenedores.png`.
-
 **Figura 5. Contenedores de QUICKPATCH (C4 · Container). Vista `C4-03-Contenedores`.**
+
+Para que las capas se lean (personas, apps, gateway, servicios y almacenes), este diagrama no dibuja la entrega de correo y push del proveedor de notificaciones a las personas; esa entrega está en el diagrama de contexto (Figura 2) y en el dinámico de creación de solicitud.
 
 El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 7.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): Flutter Mobile es el canal de clientes, empresas cliente, técnicos y proveedores, y Angular Web es el panel de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 3.2.3), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que enruta por REST a los 8 microservicios.
 
@@ -182,8 +178,6 @@ Cada microservicio tiene su propia base de datos dentro de una única instancia 
 Estos diagramas abren los dos contenedores cliente de la Figura 5. Cada componente indica la carpeta del repositorio donde vive (sección 6.2) y corresponde al código de `develop`; los componentes con borde punteado están planeados.
 
 ![Componentes de Angular Web](diagrams/c4/C4-04-Componentes-Web.png)
-
-> **Imagen pendiente:** exportar la vista `C4-04-Componentes-Web` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-04-Componentes-Web.png`.
 
 **Figura 6. Componentes de Angular Web (C4 · Component). Vista `C4-04-Componentes-Web`.**
 
@@ -200,8 +194,6 @@ Estos diagramas abren los dos contenedores cliente de la Figura 5. Cada componen
 | Aprobación de técnicos *(planeado)* | — | Aprueba y suspende técnicos del tenant (RF-19, RF-20). | — |
 
 ![Componentes de Flutter Mobile](diagrams/c4/C4-04-Componentes-Mobile.png)
-
-> **Imagen pendiente:** exportar la vista `C4-04-Componentes-Mobile` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-04-Componentes-Mobile.png`.
 
 **Figura 7. Componentes de Flutter Mobile (C4 · Component). Vista `C4-04-Componentes-Mobile`.**
 
@@ -269,8 +261,6 @@ El Gateway no contiene reglas propias de matching, solicitudes, pagos, ranking n
 
 ![Componentes de Identity Service](diagrams/c4/C4-04-Componentes-Identity.png)
 
-> **Imagen pendiente:** exportar la vista `C4-04-Componentes-Identity` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-04-Componentes-Identity.png`.
-
 **Figura 8. Componentes de Identity Service (C4 · Component). Vista `C4-04-Componentes-Identity`.**
 
 Las dos APIs separan lo que hace cualquier usuario (registro, login, perfil) de lo que solo hace el admin de plataforma. Los casos de uso del tenant corren en `TenantUnitOfWork` (RLS) y los de plataforma en `PlatformUnitOfWork` (sección 4.5.2). El JWT se firma con RS256 (ADR-018) y las contraseñas usan BCrypt (RNF-03); cada 403 queda en el log (RNF-04).
@@ -299,8 +289,6 @@ La persistencia detallada de estos conceptos se incorpora al DD cuando el Sprint
 
 ![Componentes de Actors Service](diagrams/c4/C4-04-Componentes-Actors.png)
 
-> **Imagen pendiente:** exportar la vista `C4-04-Componentes-Actors` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-04-Componentes-Actors.png`.
-
 **Figura 9. Componentes de Actors Service (C4 · Component; diseño). Vista `C4-04-Componentes-Actors`.**
 
 Todos los componentes están planeados: el servicio es hoy un esqueleto y sus conceptos siguen siendo evolutivos (sección 4.4).
@@ -324,8 +312,6 @@ Todos los componentes están planeados: el servicio es hoy un esqueleto y sus co
 **Componentes (C4).**
 
 ![Componentes de Catalog Service](diagrams/c4/C4-04-Componentes-Catalog.png)
-
-> **Imagen pendiente:** exportar la vista `C4-04-Componentes-Catalog` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-04-Componentes-Catalog.png`.
 
 **Figura 10. Componentes de Catalog Service (C4 · Component). Vista `C4-04-Componentes-Catalog`.**
 
@@ -379,8 +365,6 @@ buscando_tecnico
 
 ![Componentes de ServiceRequest Service](diagrams/c4/C4-04-Componentes-ServiceRequest.png)
 
-> **Imagen pendiente:** exportar la vista `C4-04-Componentes-ServiceRequest` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-04-Componentes-ServiceRequest.png`.
-
 **Figura 11. Componentes de ServiceRequest Service (C4 · Component). Vista `C4-04-Componentes-ServiceRequest`.**
 
 El diagrama reúne las decisiones de diseño que los demás servicios repiten: reglas de negocio validadas contra una réplica local, máquina de estados, aislamiento por tenant con RLS, Transactional Outbox y consumo idempotente de eventos (aporte de SCRUM-299).
@@ -432,8 +416,6 @@ El siguiente diagrama representa el flujo lógico principal del proceso de match
 
 ![Componentes de Matching Service](diagrams/c4/C4-04-Componentes-Matching.png)
 
-> **Imagen pendiente:** exportar la vista `C4-04-Componentes-Matching` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-04-Componentes-Matching.png`.
-
 **Figura 13. Componentes de Matching Service (C4 · Component). Vista `C4-04-Componentes-Matching`.**
 
 Hoy está implementado el consumo idempotente de `service-request.created` (listener, manejador, registro de eventos procesados y transacción por tenant). La búsqueda de candidatos con PostGIS, la asignación y el adaptador de geocodificación están planeados.
@@ -455,8 +437,6 @@ Los modelos persistentes definitivos de ranking permanecen sujetos a evolución 
 **Componentes (C4).**
 
 ![Componentes de Ranking Service](diagrams/c4/C4-04-Componentes-Ranking.png)
-
-> **Imagen pendiente:** exportar la vista `C4-04-Componentes-Ranking` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-04-Componentes-Ranking.png`.
 
 **Figura 14. Componentes de Ranking Service (C4 · Component; diseño). Vista `C4-04-Componentes-Ranking`.**
 
@@ -488,8 +468,6 @@ Todos los componentes están planeados: el servicio es hoy un esqueleto.
 
 ![Componentes de Payments Service](diagrams/c4/C4-04-Componentes-Payments.png)
 
-> **Imagen pendiente:** exportar la vista `C4-04-Componentes-Payments` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-04-Componentes-Payments.png`.
-
 **Figura 15. Componentes de Payments Service (C4 · Component; diseño). Vista `C4-04-Componentes-Payments`.**
 
 Todos los componentes están planeados. El servicio nunca recibe PAN ni CVV: la app tokeniza con la pasarela y el adaptador cobra con la referencia del token (ADR-009, RNF-01).
@@ -511,8 +489,6 @@ Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean inco
 **Componentes (C4).**
 
 ![Componentes de Communication Service](diagrams/c4/C4-04-Componentes-Communication.png)
-
-> **Imagen pendiente:** exportar la vista `C4-04-Componentes-Communication` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-04-Componentes-Communication.png`.
 
 **Figura 16. Componentes de Communication Service (C4 · Component; diseño). Vista `C4-04-Componentes-Communication`.**
 
@@ -698,8 +674,6 @@ El resto del sistema sigue el patrón de cuatro capas de la sección 4.1 sin var
 
 ![Outbox e idempotencia de service-request.created](diagrams/c4/C4-07-Codigo-OutboxIdempotencia.png)
 
-> **Imagen pendiente:** generar `diagrams/c4/C4-07-Codigo-OutboxIdempotencia.png` desde `diagrams/c4/C4-07-Codigo-OutboxIdempotencia.puml`.
-
 **Figura 19. Clases de la publicación y el consumo de `service-request.created` (C4 · Code). Fuente `C4-07-Codigo-OutboxIdempotencia.puml`.**
 
 | Clase | Repositorio | Responsabilidad en el mecanismo |
@@ -718,8 +692,6 @@ Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija d
 ### 4.5.2 Aislamiento entre tenants en Identity
 
 ![Aislamiento entre tenants en Identity](diagrams/c4/C4-07-Codigo-AislamientoTenant.png)
-
-> **Imagen pendiente:** generar `diagrams/c4/C4-07-Codigo-AislamientoTenant.png` desde `diagrams/c4/C4-07-Codigo-AislamientoTenant.puml`.
 
 **Figura 20. Clases del aislamiento por tenant y de la operación de plataforma en Identity (C4 · Code). Fuente `C4-07-Codigo-AislamientoTenant.puml`.**
 
@@ -841,8 +813,6 @@ sequenceDiagram
 
 ![Creación de solicitud y matching (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-CrearSolicitud.png)
 
-> **Imagen pendiente:** exportar la vista `C4-05-Dinamico-CrearSolicitud` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-05-Dinamico-CrearSolicitud.png`.
-
 **Figura 22. Creación de una solicitud y matching (C4 · Dynamic). Vista `C4-05-Dinamico-CrearSolicitud`.**
 
 ## 5.4 Secuencia de pago y facturación
@@ -912,8 +882,6 @@ sequenceDiagram
 **Vista C4.** El flujo de pago a nivel de contenedores. Payments es hoy un esqueleto, así que el diagrama es de diseño.
 
 ![Pago tokenizado y facturación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Pago.png)
-
-> **Imagen pendiente:** exportar la vista `C4-05-Dinamico-Pago` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-05-Dinamico-Pago.png`.
 
 **Figura 24. Pago tokenizado y facturación (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-Pago`.**
 
@@ -1060,15 +1028,11 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 ![Inicio de sesión (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-InicioSesion.png)
 
-> **Imagen pendiente:** exportar la vista `C4-05-Dinamico-InicioSesion` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-05-Dinamico-InicioSesion.png`.
-
 **Figura 26. Inicio de sesión (C4 · Dynamic). Vista `C4-05-Dinamico-InicioSesion`.**
 
 **Réplica de categorías.** Un cambio en Catalog llega a la réplica de ServiceRequest por evento, sin llamada síncrona (ADR-017).
 
 ![Réplica de categorías (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-ReplicaCategorias.png)
-
-> **Imagen pendiente:** exportar la vista `C4-05-Dinamico-ReplicaCategorias` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-05-Dinamico-ReplicaCategorias.png`.
 
 **Figura 27. Alta de una categoría y su réplica en ServiceRequest (C4 · Dynamic). Vista `C4-05-Dinamico-ReplicaCategorias`.**
 
@@ -1076,15 +1040,11 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 ![Calificación y reputación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Calificacion.png)
 
-> **Imagen pendiente:** exportar la vista `C4-05-Dinamico-Calificacion` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-05-Dinamico-Calificacion.png`.
-
 **Figura 28. Calificación del servicio y recálculo de la reputación (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-Calificacion`.**
 
 **Gestión de tenants.** La única operación que omite RLS, acotada a una transacción con el rol `identity_platform` y auditada (RF-21, SCRUM-112).
 
 ![Gestión de tenants (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-GestionTenants.png)
-
-> **Imagen pendiente:** exportar la vista `C4-05-Dinamico-GestionTenants` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-05-Dinamico-GestionTenants.png`.
 
 **Figura 29. Gestión de tenants por el admin de plataforma (C4 · Dynamic). Vista `C4-05-Dinamico-GestionTenants`.**
 
@@ -1518,13 +1478,9 @@ El diagrama muestra la distribución aprobada en ADR-022: VM1 de herramientas y 
 
 ![Despliegue de producción (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-Produccion.png)
 
-> **Imagen pendiente:** exportar la vista `C4-06-Despliegue-Produccion` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-06-Despliegue-Produccion.png`.
-
 **Figura 34. Despliegue de producción: VM1, VM3, VM4 y VM6 (C4 · Deployment, ADR-022). Vista `C4-06-Despliegue-Produccion`.**
 
 ![Despliegue de QA (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-QA.png)
-
-> **Imagen pendiente:** exportar la vista `C4-06-Despliegue-QA` de `diagrams/c4/quickpatch.dsl` a `diagrams/c4/C4-06-Despliegue-QA.png`.
 
 **Figura 35. Despliegue de QA: VM2, VM5 y VM7, con la VM1 compartida (C4 · Deployment, ADR-022). Vista `C4-06-Despliegue-QA`.**
 
@@ -1927,7 +1883,7 @@ Antes de consolidar una versión final del SDD se debe verificar:
 | Vista de Desarrollo | Backend + Frontend / Miguel | Pendiente |
 | Vista Física | DevOps / Sebastian | **Desarrollada - lista para revisión** |
 | Vista de Escenarios (+1) | Angy + equipo | Pendiente |
-| Diagramas C4 (sección 2.2) | Arquitectura | **Modelo completo en `diagrams/c4/quickpatch.dsl`; imágenes pendientes de exportar** |
+| Diagramas C4 (sección 2.2) | Arquitectura | **Desarrollada - 23 diagramas exportados desde `diagrams/c4/`** |
 | Revisión cruzada | Todo el equipo | Pendiente al completar las vistas |
 
 ---

@@ -40,6 +40,7 @@ package "quickpatch-service-request (ASP.NET Core)" {
   class EfOutbox <<Infrastructure>>
   class OutboxPublisher <<BackgroundService>> {
     +PublishPendingAsync(ct) : int
+    lee outbox_events y marca published_at
     FOR UPDATE SKIP LOCKED
     SET LOCAL ROLE (publicador)
   }
@@ -86,7 +87,7 @@ TenantUnitOfWork ..|> ITenantUnitOfWork
 ServiceRequestRepository ..|> IServiceRequestRepository
 EfOutbox ..|> IOutbox
 EfOutbox ..> outbox_events : inserta (misma transacción)
-OutboxPublisher ..> outbox_events : lee y marca
+OutboxPublisher ..> outbox_events
 OutboxPublisher ..> topic : publica
 topic ..> ServiceRequestCreatedListener : entrega
 ServiceRequestCreatedListener --> ServiceRequestCreatedHandler

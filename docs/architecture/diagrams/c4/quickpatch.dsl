@@ -439,7 +439,13 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         container quickpatch "C4-03-Contenedores" "Contenedores de QUICKPATCH: apps cliente, API Gateway, 8 microservicios, Kafka y almacenes de datos." {
             include *
             exclude equipo github observabilidad
-            autoLayout lr
+            # La entrega de correo y push a las personas se ve en el contexto (C4-02) y en el dinámico de
+            # creación de solicitud; aquí desordena las capas.
+            exclude "notificaciones -> cliente" "notificaciones -> mobile"
+            autoLayout tb 200 80
+            properties {
+                "structurizr.groups" false
+            }
         }
 
         component mobile "C4-04-Componentes-Mobile" "Componentes de Flutter Mobile." {
@@ -464,15 +470,15 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
         component serviceRequest "C4-04-Componentes-ServiceRequest" "Componentes de ServiceRequest Service." {
             include *
-            autoLayout lr
+            autoLayout tb 150 80
         }
         component matching "C4-04-Componentes-Matching" "Componentes de Matching Service." {
             include *
-            autoLayout lr
+            autoLayout tb 150 80
         }
         component ranking "C4-04-Componentes-Ranking" "Componentes de Ranking Service (diseño; el servicio es un esqueleto)." {
             include *
-            autoLayout lr
+            autoLayout tb 150 80
         }
         component payments "C4-04-Componentes-Payments" "Componentes de Payments Service (diseño; el servicio es un esqueleto)." {
             include *
@@ -480,7 +486,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
         component communication "C4-04-Componentes-Communication" "Componentes de Communication Service (diseño; el servicio es un esqueleto)." {
             include *
-            autoLayout lr
+            autoLayout tb 150 80
         }
 
         dynamic quickpatch "C4-05-Dinamico-InicioSesion" "Inicio de sesión: el tenant sale del canal y el JWT RS256 lo firma Identity (RN-U5, ADR-018)." {
@@ -499,7 +505,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             catalog -> kafka "El publicador envía catalog.category-changed"
             serviceRequest -> kafka "Consume el evento"
             serviceRequest -> dbServiceRequest "Actualiza service_request_categories y processed_events"
-            autoLayout lr
+            autoLayout lr 200 100
+            properties {
+                "structurizr.groups" false
+            }
         }
 
         dynamic quickpatch "C4-05-Dinamico-CrearSolicitud" "Creación de una solicitud y matching (RF-07, RF-09, ADR-007)." {
@@ -529,7 +538,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             payments -> kafka "Publica payment.approved o payment.rejected"
             serviceRequest -> kafka "Consume el resultado y pasa a pagado"
             communication -> kafka "Consume el resultado y envía el comprobante"
-            autoLayout lr
+            autoLayout rl 200 100
+            properties {
+                "structurizr.groups" false
+            }
         }
 
         dynamic quickpatch "C4-05-Dinamico-Calificacion" "Calificación del servicio y recálculo de la reputación (RF-12, RF-20)." {
@@ -539,7 +551,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             serviceRequest -> kafka "Publica service-request.evaluated"
             ranking -> kafka "Consume la calificación"
             ranking -> dbRanking "Recalcula la reputación del técnico"
-            autoLayout lr
+            autoLayout lr 200 100
+            properties {
+                "structurizr.groups" false
+            }
         }
 
         dynamic quickpatch "C4-05-Dinamico-GestionTenants" "Gestión de tenants por el admin de plataforma (RF-21, SCRUM-112)." {

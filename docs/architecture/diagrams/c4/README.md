@@ -33,9 +33,9 @@ docker run --rm -i plantuml/plantuml -tpng -pipe < C4-07-Codigo-AislamientoTenan
 
 También se pueden pegar en https://www.plantuml.com/plantuml.
 
-## Imágenes esperadas (23)
+## Imágenes (23)
 
-Se dejan en `C:\Users\juand\Documents\8_Semestre\Arquitectura\Diagramas`. En el repositorio quedan como `docs/architecture/diagrams/c4/<clave>.png`, sin el prefijo `structurizr-`.
+En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el prefijo `structurizr-` que pone Structurizr al exportar. Se exportan con metadatos y sin recortar (opciones por defecto del botón de exportar).
 
 | Clave | Tipo C4 | Sección del SDD |
 |---|---|---|
@@ -64,6 +64,9 @@ Se dejan en `C:\Users\juand\Documents\8_Semestre\Arquitectura\Diagramas`. En el 
 | `C4-06-Despliegue-QA` | Deployment | 7.1 |
 
 ## Convenciones
+
+- Cada vista fija su `autoLayout` (dirección y separación) para que el PNG quede apaisado y sin solapamientos; si un cambio del modelo desordena una vista, se ajusta ahí y no en la imagen.
+- Las vistas donde los grupos estorban la distribución los ocultan con la propiedad `structurizr.groups false`.
 
 - Los elementos y relaciones con la etiqueta `Planeado` están diseñados pero no existen en `develop`; se dibujan punteados.
 - Un cambio de arquitectura se hace en el DSL o en el `.puml` y se vuelve a exportar; las imágenes no se editan a mano.
