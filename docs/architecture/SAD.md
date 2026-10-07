@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.24 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.25 — QUICKPATCH
 
 ---
 
@@ -881,7 +881,7 @@ Esta sección presenta la vista general de componentes del sistema y cómo se co
 
 ### 4.1 Diagrama general (C4 de alto nivel)
 
-El diagrama de alto nivel sigue el nivel de contexto de C4: las personas que usan QUICKPATCH, las dos aplicaciones por las que entran, el backend como una sola caja y los sistemas externos de los que depende. Está orientado de izquierda a derecha para proyectarse. El detalle de contenedores (gateway, los 8 microservicios, Kafka y los almacenes de datos) está en el SDD, sección 3.1.4, y el de componentes de las apps cliente, en la 3.1.5.
+El diagrama de alto nivel sigue el nivel de contexto de C4: las personas que usan QUICKPATCH, las dos aplicaciones por las que entran, el backend como una sola caja y los sistemas externos de los que depende. Está orientado de izquierda a derecha para proyectarse. El detalle de contenedores (gateway, los 8 microservicios, Kafka y los almacenes de datos) está en el SDD, sección 5.1, y el de componentes de las apps cliente, en la 6.2.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'lineColor':'#374151','textColor':'#111827','edgeLabelBackground':'#ffffff','fontSize':'18px'}}}%%
@@ -915,7 +915,7 @@ flowchart LR
     MOB -->|"HTTPS"| CORE
     WEB -->|"HTTPS"| CORE
     CORE -->|"tokeniza y cobra"| PAY
-    CORE -->|"convierte direcciones<br/>en coordenadas"| MAPS
+    MOB -->|"convierte la dirección<br/>del cliente en coordenadas"| MAPS
     CORE -->|"envía avisos por correo<br/>y push a las personas"| NOTI
 
     classDef persona fill:#08427b,stroke:#052e56,color:#ffffff
@@ -936,7 +936,7 @@ flowchart LR
 - **Personas y canal.** Los usuarios operativos (cliente, empresa cliente, técnico y proveedor) solo entran por la app móvil; los dos administradores, solo por el panel web (SRS 2.1 y 2.2, RN-U6). El proveedor es el rol que administra un equipo de técnicos (RF-16), no el proveedor de materiales (`SUPPLIER`, sección 7.2).
 - **Frontera del sistema.** Todo el tráfico de las apps entra por el API Gateway, que es la única entrada (ADR-022). Los microservicios no se llaman entre sí para cumplir su función: se integran por eventos en Kafka (sección 4.3).
 - **Sistemas externos.** Son los tres del SRS (RIE-01 a RIE-03). Los proveedores concretos no están definidos.
-- **Decisión abierta: canal de estado en tiempo real.** Este diagrama pone solo HTTPS entre las apps y el backend. La versión anterior de este diagrama mostraba WebSocket hacia el gateway, mientras que el SDD (3.1.4) descarta un canal WebSocket y resuelve RF-11 con notificaciones push y consulta por REST. La implementación todavía no tiene ninguno de los dos (sección 2.2, RNF-06). Mientras el equipo no decida, ninguno de los dos documentos debe darlo por hecho.
+- **Decisión abierta: canal de estado en tiempo real.** Este diagrama pone solo HTTPS entre las apps y el backend. La versión anterior de este diagrama mostraba WebSocket hacia el gateway, mientras que el SDD (5.1) descarta un canal WebSocket y resuelve RF-11 con notificaciones push y consulta por REST. La implementación todavía no tiene ninguno de los dos (sección 2.2, RNF-06). Mientras el equipo no decida, ninguno de los dos documentos debe darlo por hecho.
 
 ### 4.2 Componentes
 
@@ -946,6 +946,8 @@ flowchart LR
 - **Flutter (iOS/Android)**: aplicación para clientes, empresas cliente, técnicos/aliados en campo y proveedores (el rol que administra un equipo de técnicos, RF-16). El proveedor de materiales o repuestos (`SUPPLIER`, sección 7.2) no es un rol del MVP.
 
 Ambos clientes se comunican con el sistema a través de un **API Gateway** único, que enruta cada solicitud al microservicio correspondiente y resuelve autenticación y rate limiting de forma centralizada.
+
+**Prototipos de interfaz.** Las pantallas del incremento del Sprint 3 de los dos clientes están en Figma, en la página "Sprint 3 — Mockups (SCRUM-286)": https://www.figma.com/design/8rVY8a5b6LMpHcDUjBcgIU/QUICKPATCH?node-id=112-2. Separan el panel web de administración de la app móvil de los usuarios operativos, y cada pantalla traza a su historia de usuario, a su contrato en `quickpatch-api-gateway` y al archivo de código que la implementa. Son un artefacto de diseño de interfaz independiente del DD (SCRUM-286, SCRUM-302, SCRUM-332).
 
 #### 4.2.2 Microservicios
 
@@ -1252,3 +1254,4 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.22|6 oct 2026|Redistribución de las 7 VMs (SCRUM-334, SCRUM-341). Se agrega ADR-022, que modifica a ADR-015 por la revisión del profesor: VM1 pasa a ser la VM de herramientas y la única entrada; producción ocupa VM3 (aplicación), VM4 (PostgreSQL y Redis) y VM6 (Kafka y Garage), y QA es una copia en VM2, VM5 y VM7. Se actualizan las secciones 5.1 a 5.3 y 5.5, los escenarios AC2-E5, AC7-E6 y el de disco de AC9, la trazabilidad de D7 y D8, la matriz 6.1 y los riesgos de la 6.2. La implementación está en curso; hasta que termine, la distribución operativa es la de ADR-015. Es el reparto que DevOps implementa en Ansible (`quickpatch-infrastructure`, PRs #20 a #23). La sección 5.2 relaciona los recursos por servicio con el diagrama de alto nivel.|
 |2.23|7 oct 2026|Validación contra los RNF (SCRUM-283). La nueva sección 2.2 sigue los 13 RNF del SRS hasta su escenario, sus decisiones y componentes y la evidencia actual en el código: 4 cubiertos, 8 parciales y 1 sin cobertura (RNF-06). Registra que RNF-02 y RNF-03 no tienen escenario (decisión abierta), las acciones correctivas por rol —la principal: el despliegue a producción no depende hoy de las pruebas de QA (RNF-08)— y un hallazgo de contratos: la app móvil llama a `POST /v1/auth/register/company`, que no está en `identity.v1.yaml`.|
 |2.24|7 oct 2026|Arquitectura de alto nivel en C4 (SCRUM-279). La sección 4.1 reemplaza el diagrama general por uno de contexto C4 horizontal: personas, Flutter Mobile para los usuarios operativos, Angular Web para los administradores, el backend como una caja y los tres sistemas externos del SRS (RIE-01 a RIE-03). Deja como decisión abierta el canal de estado en tiempo real: el diagrama anterior mostraba WebSocket y el SDD lo descarta.|
+|2.25|7 oct 2026|La sección 4.2.1 enlaza los prototipos de interfaz del Sprint 3 en Figma (SCRUM-302, SCRUM-332).|

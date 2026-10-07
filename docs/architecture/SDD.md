@@ -2,16 +2,16 @@
 
 **Proyecto:** QUICKPATCH - Plataforma multi-tenant de servicios técnicos  
 **Documento:** Descripción de Diseño de Software (SDD)  
-**Estado:** Borrador integrable - Vista Lógica y Vista Física desarrolladas  
-**Fecha:** Septiembre de 2026
+**Estado:** Borrador integrable - organizado según el modelo C4 (sección 2.2)  
+**Fecha:** Octubre de 2026
 
 ---
 
 # 1. Introducción
 
-Este documento consolida el diseño de software de QUICKPATCH a partir de la arquitectura, requisitos, modelo de datos y lineamientos de desarrollo vigentes. La organización del SDD se mantiene por vistas complementarias del sistema, integrando una **Vista Lógica** ya desarrollada y dejando preparadas las secciones que deberán ser completadas por los responsables de las demás vistas.
+Este documento consolida el diseño de software de QUICKPATCH a partir de la arquitectura, los requisitos, el modelo de datos y los lineamientos de desarrollo vigentes.
 
-La estructura toma como referencia el enfoque 4+1 para separar la descripción lógica, los procesos en ejecución, la organización del desarrollo, el despliegue físico y los escenarios que conectan las demás vistas.
+El SDD se organiza según el **modelo C4** de Simon Brown: primero los diagramas que acercan el zoom sobre el sistema (contexto, contenedores, componentes y código) y después los diagramas complementarios que C4 define para el comportamiento y la infraestructura (dinámicos y de despliegue), con el panorama de sistemas al inicio. Cada sección lleva el nombre del diagrama C4 que presenta y el texto que lo explica. La organización del código y del desarrollo, que C4 no modela, va al final como complemento.
 
 ---
 
@@ -21,13 +21,13 @@ Los diagramas y descripciones del SDD deben mantenerse alineados con las fuentes
 
 | Artefacto / vista | Fuentes primarias de diseño | Elementos que deben mantenerse sincronizados |
 |---|---|---|
-| **Vista Lógica** | `SAD.md`, `SRS.md`, `DD.md` | Microservicios, módulos, dominios, entidades, relaciones lógicas, responsabilidades, contratos y eventos. |
-| **Vista de Procesos** | `SRS.md`, `DD.md`, `SAD.md`, escenarios de calidad | Flujos síncronos/asíncronos, secuencias, productores/consumidores, concurrencia, reintentos, fallos. |
-| **Vista de Desarrollo** | Repositorio de código, `Documento Politicas y Herramientas.md`, `SAD.md` | Carpetas, paquetes, proyectos, dependencias, convenciones, librerías, pruebas y CI/CD. |
-| **Vista Física** | `SAD.md`, manifiestos de despliegue, archivos de infraestructura y políticas | VMs, contenedores, redes, puertos, servicios, ambientes, observabilidad y seguridad de infraestructura. |
-| **Vista de Escenarios (+1)** | `SRS.md`, flujos de negocio, historias de usuario, escenarios de calidad | Casos representativos que atraviesan y validan las otras cuatro vistas. |
-| **Diagramas de datos** | `DD.md`, contratos vigentes, migraciones/esquemas implementados | Entidades, campos, relaciones físicas, referencias lógicas y propiedad de datos por servicio. |
-| **Diagramas de componentes** | `SAD.md`, `SDD.md`, código implementado | Límites de servicio, interfaces, dependencias permitidas y canales de comunicación. |
+| **System Landscape y System Context (secciones 3 y 4)** | `SRS.md` (tipos de usuario, RIE), `SAD.md` (sección 4.1, killers y restricciones), `DD.md` (roles, RN-U6) | Personas, límite del sistema, sistemas externos y relaciones. |
+| **Container (sección 5)** | `SAD.md`, `DD.md`, contratos de `quickpatch-api-gateway` y `quickpatch-kafka` | Contenedores, tecnologías, bases por servicio, contratos y eventos. |
+| **Component y Code (secciones 6 y 7)** | `SAD.md`, `DD.md`, código de cada repositorio | Componentes, responsabilidades, reglas de negocio, dependencias y clases de las áreas críticas. |
+| **Dynamic (sección 8)** | `SRS.md`, `DD.md`, `SAD.md`, escenarios de calidad | Flujos síncronos y asíncronos, productores y consumidores, concurrencia, reintentos y fallos. |
+| **Deployment (sección 9)** | `SAD.md`, documento de Infraestructura, manifiestos y playbooks | VMs, nodos, contenedores desplegados, redes, puertos y ambientes. |
+| **Organización del código (sección 10)** | Repositorios, Working Agreements, `SAD.md` | Carpetas, proyectos, dependencias, convenciones, pruebas y CI/CD. |
+| **Diagramas de datos** | `DD.md`, contratos vigentes, migraciones implementadas | Entidades, campos, relaciones físicas, referencias lógicas y propiedad de datos por servicio. |
 
 ## 2.1 Regla de actualización
 
@@ -40,31 +40,118 @@ Para cualquier diagrama nuevo o modificado se debe verificar, según corresponda
 - relación con ADRs vigentes;
 - correspondencia con el código, repositorio y despliegue real.
 
+## 2.2 El modelo C4 en este documento
+
+C4 describe el software con un vocabulario fijo: *persona*, *sistema de software*, *contenedor* (algo que se ejecuta o guarda datos: una app, un servicio, una base de datos) y *componente* (una agrupación de código dentro de un contenedor). Sus diagramas son:
+
+- **Diagramas principales**, de mayor a menor alcance: System Context, Container, Component y Code.
+- **Diagramas complementarios**: System Landscape (el panorama de varios sistemas), Dynamic (cómo colaboran los elementos en un flujo) y Deployment (dónde se ejecutan los contenedores).
+
+**Fuente única.** Todos los diagramas C4 salen de un solo modelo en Structurizr DSL, `diagrams/c4/quickpatch.dsl`. Cada diagrama es una vista de ese modelo, así que un elemento se describe una sola vez y aparece igual en todos los niveles. El nivel de código se escribe en PlantUML (`diagrams/c4/*.puml`), porque Structurizr no lo dibuja. Las imágenes se exportan a `diagrams/c4/<clave>.png`, donde la clave es el nombre de la vista en el DSL. Para cambiar un diagrama se edita el DSL o el `.puml` y se vuelve a exportar; la imagen nunca se edita a mano.
+
+**Qué diagramas hay y por qué.** QUICKPATCH es **un solo sistema de software**, así que tiene un diagrama de contexto y uno de contenedores, no uno por microservicio: cada microservicio es un contenedor. Lo que se repite son los diagramas de componentes (uno por contenedor con código propio), los dinámicos (uno por flujo) y los de despliegue (uno por ambiente):
+
+| Diagrama C4 | Cantidad | Criterio | Sección |
+|---|---|---|---|
+| System Landscape | 1 | El entorno de software: QUICKPATCH, sus sistemas externos y los sistemas de soporte del equipo (GitHub y observabilidad). | 3 |
+| System Context | 1 | Un sistema de software, un contexto. | 4 |
+| Container | 1 | Todos los contenedores del sistema en una sola vista. | 5 |
+| Component | 10 | Uno por contenedor con código propio: las 2 apps cliente y los 8 microservicios. El API Gateway, Kafka, PostgreSQL, Redis y Garage son productos configurados, sin componentes propios que diseñar. | 6 |
+| Code | 2 | Solo donde el diagrama de componentes no alcanza: Outbox e idempotencia, y aislamiento entre tenants. | 7 |
+| Dynamic | 6 | Uno por flujo crítico, no por sistema: inicio de sesión, réplica de categorías, creación de solicitud con matching, pago, calificación y gestión de tenants. | 8 |
+| Deployment | 2 | Uno por ambiente: producción y QA (ADR-022). Desarrollo corre en el equipo de cada persona y no tiene topología propia que documentar. | 9 |
+
+Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estructura del repositorio) se conservan donde complementan a un diagrama C4 y se señalan como complementarios.
+
+**Elementos planeados.** Los elementos y relaciones con la etiqueta `Planeado` están diseñados en el SDD o el DD pero todavía no existen en `develop`; se dibujan con borde punteado. Así, un diagrama sirve a la vez de diseño y de estado de avance. Actors, Ranking, Payments y Communication son hoy esqueletos, por eso todos sus componentes son planeados.
+
+**Inventario de vistas.**
+
+| Clave de la vista | Tipo C4 | Figura |
+|---|---|---|
+| `C4-01-Landscape` | System Landscape | 1 |
+| `C4-02-Contexto` | System Context | 2 |
+| `C4-03-Contenedores` | Container | 3 |
+| `C4-04-Componentes-Web` | Component | 8 |
+| `C4-04-Componentes-Mobile` | Component | 9 |
+| `C4-04-Componentes-Identity` | Component | 10 |
+| `C4-04-Componentes-Actors` | Component | 11 |
+| `C4-04-Componentes-Catalog` | Component | 12 |
+| `C4-04-Componentes-ServiceRequest` | Component | 13 |
+| `C4-04-Componentes-Matching` | Component | 15 |
+| `C4-04-Componentes-Ranking` | Component | 16 |
+| `C4-04-Componentes-Payments` | Component | 17 |
+| `C4-04-Componentes-Communication` | Component | 18 |
+| `C4-07-Codigo-OutboxIdempotencia` | Code (PlantUML) | 19 |
+| `C4-07-Codigo-AislamientoTenant` | Code (PlantUML) | 20 |
+| `C4-05-Dinamico-CrearSolicitud` | Dynamic | 22 |
+| `C4-05-Dinamico-Pago` | Dynamic | 24 |
+| `C4-05-Dinamico-InicioSesion` | Dynamic | 25 |
+| `C4-05-Dinamico-ReplicaCategorias` | Dynamic | 26 |
+| `C4-05-Dinamico-Calificacion` | Dynamic | 27 |
+| `C4-05-Dinamico-GestionTenants` | Dynamic | 28 |
+| `C4-06-Despliegue-Produccion` | Deployment | 30 |
+| `C4-06-Despliegue-QA` | Deployment | 31 |
+
 ---
 
-# 3. Arquitectura
+# 3. System Landscape diagram
 
-## 3.1 Vista Lógica del Sistema
+El panorama ubica a QUICKPATCH entre todo el software con el que se relaciona: los tres sistemas externos del SRS (RIE-01 a RIE-03) y los dos sistemas de soporte que usa el equipo, GitHub (repositorios, Actions y Container Registry) y la observabilidad de VM1 (Prometheus, Loki y Grafana).
 
-La arquitectura lógica del backend se organiza por dominios y servicios. Los clientes acceden a través del API Gateway; los microservicios contienen capacidades de negocio separadas; Kafka gestiona la integración asíncrona; y PostgreSQL/PostGIS, Redis y Garage soportan persistencia, cache y evidencias.
+![Panorama de software de QUICKPATCH](diagrams/c4/C4-01-Landscape.png)
 
-### 3.1.1 Vista lógica general por capas
+**Figura 1. Panorama de software de QUICKPATCH (C4 · System Landscape). Vista `C4-01-Landscape`.**
+
+---
+
+# 4. System Context diagram
+
+El diagrama de contexto deja solo lo que interactúa con el sistema en operación. Las personas son los roles del SRS (secciones 2.1 y 2.2), con el administrador separado en dos según el DD (`users.role`, RN-U6): el admin del tenant administra solo su tenant y el admin de plataforma administra los tenants. Clientes, empresas cliente, técnicos y proveedores entran por la app móvil Flutter; los dos administradores, por el panel web Angular. El alcance se limita a Bogotá D.C. (SAD, R6).
+
+![Contexto de QUICKPATCH](diagrams/c4/C4-02-Contexto.png)
+
+**Figura 2. Contexto de QUICKPATCH (C4 · System Context). Vista `C4-02-Contexto`.**
+
+Los sistemas externos son la pasarela de pagos certificada PCI-DSS (SAD, K2), el servicio de geocodificación y el proveedor de notificaciones por correo y push. La geocodificación convierte en coordenadas la dirección que escribe el cliente cuando no comparte la ubicación de su dispositivo (SRS, RIE-02); la app envía siempre las coordenadas de la solicitud y la cercanía entre la solicitud y los técnicos la calcula PostGIS, sin servicio externo. Los proveedores concretos no están definidos. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
+
+> **Contradicción por resolver:** el SAD (R5) indica que la pasarela de pagos es la única dependencia externa de producción, pero el SRS define la geocodificación (RIE-02) y las notificaciones (RIE-03) como servicios con los que el sistema se integra. Si alguno corre dentro de las 7 VMs, deja de ser un sistema externo y sale de estos diagramas; si es externo, R5 debe ajustarse.
+
+---
+
+# 5. Container diagram
+
+La arquitectura se organiza por dominios y servicios. Los clientes acceden a través del API Gateway; los microservicios contienen capacidades de negocio separadas; Kafka gestiona la integración asíncrona; y PostgreSQL/PostGIS, Redis y Garage soportan persistencia, caché y evidencias.
+
+## 5.1 Contenedores del sistema
+
+![Contenedores de QUICKPATCH](diagrams/c4/C4-03-Contenedores.png)
+
+**Figura 3. Contenedores de QUICKPATCH (C4 · Container). Vista `C4-03-Contenedores`.**
+
+Para que las capas se lean (personas, apps, gateway, servicios y almacenes), este diagrama no dibuja la entrega de correo y push del proveedor de notificaciones a las personas; esa entrega está en el diagrama de contexto (Figura 2) y en el dinámico de creación de solicitud.
+
+El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 9.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): Flutter Mobile es el canal de clientes, empresas cliente, técnicos y proveedores, y Angular Web es el panel de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 6.5), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que enruta por REST a los 8 microservicios.
+
+Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Identity y Actors solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación (Flutter Mobile; la cercanía entre la solicitud y los técnicos se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication), que entrega las notificaciones push en la app móvil. El seguimiento en tiempo real de la solicitud (RF-11) se resuelve con esas notificaciones y la consulta del estado por REST (secciones 8.3 y 8.12.1); el canal de estado en tiempo real sigue siendo una decisión abierta (SAD 4.1). Los proveedores concretos no están definidos.
+
+## 5.2 Vista por capas (complementaria)
 
 ![Vista lógica general por capas](diagrams/sdd/01_vista_logica_capas.png)
 
-**Figura 1. Vista lógica general por capas de QUICKPATCH.**
+**Figura 4. Vista lógica general por capas de QUICKPATCH.**
 
 La representación organiza el sistema en capa de cliente, entrada/presentación, servicios de negocio, integración y datos. Los ocho microservicios definidos en la arquitectura de alto nivel aparecen dentro de la capa de negocio y se conectan con los recursos de integración y persistencia correspondientes.
 
-### 3.1.2 Componentes lógicos principales del backend
+## 5.3 Componentes lógicos principales del backend (complementaria)
 
 ![Diagrama de componentes del backend](diagrams/sdd/02_componentes_backend.png)
 
-**Figura 2. Componentes lógicos principales del backend.**
+**Figura 5. Componentes lógicos principales del backend.**
 
 El API Gateway concentra la entrada de solicitudes síncronas. ServiceRequest, Matching, Payments, Ranking y Communication participan en los flujos de eventos por Kafka. Cada servicio conserva su límite funcional y su propiedad de datos.
 
-### 3.1.3 Principios de organización lógica
+## 5.4 Principios de organización
 
 #### Separación por dominio
 
@@ -93,156 +180,166 @@ La comunicación asíncrona implica consistencia eventual entre dominios. Los ev
 
 Los datos de negocio asociados a empresas conservan `tenant_id`. El contexto de tenant se deriva de la identidad autenticada y se aplica en las operaciones de lectura y escritura correspondientes.
 
-### 3.1.4 Contenedores del sistema (C4, nivel 2)
+## 5.5 Modelo lógico de dominio y relaciones (complementario)
 
-```mermaid
-%%{init: {'theme':'base','themeVariables':{'lineColor':'#374151','textColor':'#111827','titleColor':'#111827','edgeLabelBackground':'#ffffff','clusterBkg':'#f4f8fd','clusterBorder':'#2e6295','fontSize':'15px'}}}%%
-flowchart TB
-    subgraph ALL[" "]
-        direction TB
-        P1(["Cliente y empresa cliente<br/>[Persona]<br/>Piden, siguen y pagan servicios"])
-        P2(["Técnico y proveedor<br/>[Persona]<br/>Prestan servicios; el proveedor<br/>administra su equipo (RF-16)"])
-        P3(["Admin del tenant<br/>[Persona]<br/>Aprueba y suspende técnicos<br/>de su tenant (RF-19, RF-20)"])
-        P4(["Admin de plataforma<br/>[Persona]<br/>Administra los tenants (RF-21)"])
+![Modelo lógico de dominio](diagrams/sdd/03_modelo_logico_dominio.png)
 
-        subgraph SIS["QUICKPATCH [Sistema]"]
-            direction TB
-            MOB["Flutter Mobile<br/>[Contenedor: Flutter, iOS y Android]<br/>App de clientes, empresas cliente,<br/>técnicos y proveedores"]
-            WEB["Angular Web<br/>[Contenedor: Angular]<br/>Panel de administración<br/>del tenant y de la plataforma"]
-            GW["API Gateway<br/>[Contenedor: Nginx + gateway]<br/>Enruta, autentica y limita"]
+**Figura 6. Modelo lógico de dominio y referencias entre servicios.**
 
-            subgraph SVC["Microservicios [Contenedores: pods en k3s]"]
-                direction TB
-                S1["Identity<br/>[ASP.NET Core]<br/>Auth, tenants, usuarios"]
-                S2["Actors<br/>[ASP.NET Core]<br/>Proveedores, aliados, clientes"]
-                S3["Catalog<br/>[ASP.NET Core]<br/>Especialidades y servicios"]
-                S4["ServiceRequest<br/>[ASP.NET Core]<br/>Ciclo de vida de la solicitud"]
-                S5["Matching<br/>[Java, Spring Boot]<br/>Asignación geoespacial"]
-                S6["Ranking<br/>[ASP.NET Core]<br/>Reputación del técnico"]
-                S7["Payments<br/>[ASP.NET Core]<br/>Pagos tokenizados y facturación"]
-                S8["Communication<br/>[ASP.NET Core]<br/>Notificaciones"]
-            end
+Las relaciones continuas representan relaciones internas al mismo dominio que pueden implementarse como claves foráneas. Las relaciones punteadas representan referencias lógicas entre servicios independientes.
 
-            KAFKA{{"Apache Kafka<br/>[Contenedor]<br/>Bus de eventos"}}
-            REDIS[("Redis<br/>[Contenedor]<br/>Caché y colas cortas")]
-            GAR[("Garage<br/>[Contenedor: S3]<br/>Evidencias y respaldos")]
+### 5.5.1 Relaciones internas
 
-            subgraph PG["PostgreSQL + PostGIS [Contenedor: una instancia, una base por servicio. ADR-014]"]
-                direction TB
-                D1[("db_identity")]
-                D2[("db_actors")]
-                D3[("db_catalog")]
-                D4[("db_service_request")]
-                D5[("db_matching")]
-                D6[("db_ranking")]
-                D7[("db_payments")]
-                D8[("db_communication")]
-            end
-        end
-
-        PAY["Pasarela de pagos PCI-DSS<br/>[Sistema externo]"]
-        MAPS["Servicio de geocodificación<br/>[Sistema externo]<br/>dirección a coordenadas"]
-        NOTI["Proveedor de notificaciones<br/>[Sistema externo]<br/>correo y push"]
-    end
-
-    P1 -->|"usa"| MOB
-    P2 -->|"usa"| MOB
-    P3 -->|"usa"| WEB
-    P4 -->|"usa"| WEB
-    MOB -->|"HTTPS, REST"| GW
-    WEB -->|"HTTPS, REST"| GW
-    GW -->|"REST"| SVC
-
-    S1 --> D1
-    S2 --> D2
-    S3 --> D3
-    S4 --> D4
-    S5 --> D5
-    S6 --> D6
-    S7 --> D7
-    S8 --> D8
-
-    S3 -->|"eventos"| KAFKA
-    S4 <-->|"eventos"| KAFKA
-    S5 <-->|"eventos"| KAFKA
-    S6 <-->|"eventos"| KAFKA
-    S7 <-->|"eventos"| KAFKA
-    S8 <-->|"eventos"| KAFKA
-    SVC -->|"caché"| REDIS
-    S4 -->|"evidencias"| GAR
-    S7 -->|"tokeniza y cobra, HTTPS"| PAY
-    S5 -->|"geocodifica, HTTPS"| MAPS
-    S8 -->|"envía, HTTPS"| NOTI
-    NOTI -.->|"push"| MOB
-
-    classDef persona fill:#08427b,stroke:#052e56,color:#ffffff
-    classDef contenedor fill:#438dd5,stroke:#2e6295,color:#ffffff
-    classDef externo fill:#999999,stroke:#6b6b6b,color:#ffffff
-    class P1,P2,P3,P4 persona
-    class MOB,WEB,GW,S1,S2,S3,S4,S5,S6,S7,S8,KAFKA,REDIS,GAR,D1,D2,D3,D4,D5,D6,D7,D8 contenedor
-    class PAY,MAPS,NOTI externo
-    style ALL fill:#ffffff,stroke:#ffffff
-    style SIS fill:#ffffff,stroke:#444444,stroke-dasharray:6 4
-    style SVC fill:#f4f8fd,stroke:#2e6295
-    style PG fill:#f4f8fd,stroke:#2e6295
+```text
+service_requests.category_id -> service_categories.id
+ratings.service_request_id   -> service_requests.id
+invoices.payment_id          -> payments.id
 ```
 
-**Figura 3. Diagrama C4 de contenedores de QUICKPATCH.**
+### 5.5.2 Referencias lógicas entre servicios
 
-El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 7.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): Flutter Mobile es el canal de clientes, empresas cliente, técnicos y proveedores, y Angular Web es el panel de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 3.2.3), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que enruta por REST a los 8 microservicios.
+```text
+service_requests.client_id      -> Identity / User
+service_requests.technician_id  -> Identity / Technician
+matching_attempts.request_id    -> ServiceRequest / ServiceRequest
+payments.service_request_id     -> ServiceRequest / ServiceRequest
+```
 
-Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 5.5; Identity y Actors solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte direcciones en coordenadas (Matching; la cercanía entre cliente y técnico se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication), que entrega las notificaciones push en la app móvil. El seguimiento en tiempo real de la solicitud (RF-11) se resuelve con esas notificaciones y la consulta del estado por REST (secciones 5.3 y 5.11.1), por eso no hay un canal WebSocket. Los proveedores concretos no están definidos.
+Un servicio no ejecuta escrituras directas sobre tablas propietarias de otro dominio ni define Foreign Keys físicas entre límites de servicio diferentes.
 
-### 3.1.5 Componentes de las aplicaciones cliente (C4, nivel 3)
+## 5.6 Contratos entre contenedores
 
-El nivel 3 abre los dos contenedores cliente de la Figura 3 y muestra sus componentes para el incremento del Sprint 3: en Angular Web, el inicio de sesión, el control de acceso por rol y la gestión de tenants (SCRUM-25 y SCRUM-41); en Flutter Mobile, el inicio de sesión y la creación de solicitudes (SCRUM-27). La fuente de los dos diagramas está en Structurizr DSL, en `diagrams/sdd/c4/c4-l3-apps-cliente.dsl`.
+### 5.6.1 REST
 
-Los componentes son lógicos: no fijan librerías de estado, navegación ni cliente HTTP, porque esas decisiones no están tomadas. En cada componente se indica la carpeta del repositorio donde vive, según la organización de la sección 6.2. Las flechas rojas punteadas llaman a endpoints que todavía no tienen especificación OpenAPI en `quickpatch-api-gateway`.
+```text
+POST /v1/auth/register/client
+POST /v1/auth/register/technician
+POST /v1/auth/register/company
+POST /v1/auth/login
+GET  /v1/users/me
 
-![Componentes de Angular Web](diagrams/sdd/c4/C4-L3-Web.svg)
+POST /v1/service-requests
+GET  /v1/service-requests/{id}
+POST /v1/service-requests/{id}/start
+POST /v1/service-requests/{id}/complete
+POST /v1/service-requests/{id}/rating
+POST /v1/service-requests/{id}/payment
+GET  /v1/payments/{id}/invoice
+```
 
-**Figura 4. Componentes de Angular Web (C4, nivel 3).**
+### 5.6.2 Eventos de dominio
+
+```text
+service-request.created
+matching.technician-assigned
+matching.no-technician-available
+service-request.completed
+payment.approved
+payment.rejected
+```
+
+**Sobre común del evento:**
+
+```json
+{
+  "eventId": "uuid",
+  "eventVersion": 1,
+  "correlationId": "uuid",
+  "tenantId": "uuid",
+  "producer": "service-name",
+  "occurredAt": "timestamp",
+  "data": {}
+}
+```
+
+## 5.7 Decisión tecnológica vigente
+
+La asignación tecnológica de los canales y microservicios se formaliza en `ADR-012 — Stack tecnológico políglota`:
+
+- panel administrativo: Angular + TypeScript;
+- aplicación móvil para clientes, empresas cliente, técnicos y proveedores: Flutter + Dart;
+- Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication: ASP.NET Core / .NET;
+- Matching: Java + Spring Boot;
+- integración síncrona: REST/HTTPS;
+- integración asíncrona: Apache Kafka.
+
+La interoperabilidad entre stacks se mantiene mediante contratos REST/OpenAPI y contratos versionados de eventos Kafka. Ningún consumidor depende de clases internas de otro servicio.
+
+---
+
+# 6. Component diagrams
+
+Un diagrama de componentes por contenedor con código propio. Primero la estructura común de los microservicios y las dos apps cliente; después cada microservicio, con su descomposición y su diagrama.
+
+## 6.1 Estructura común de un microservicio
+
+![Capas internas de un microservicio](diagrams/sdd/04_capas_microservicio.png)
+
+**Figura 7. Estructura lógica interna de un microservicio.**
+
+La estructura interna se divide en cuatro capas lógicas:
+
+| Capa | Contenido |
+|---|---|
+| **API / Interface** | Controllers, endpoints, validación de entrada y contratos expuestos. |
+| **Application** | Casos de uso, comandos, queries y coordinación del flujo de aplicación. |
+| **Domain** | Entidades, value objects y reglas de negocio. |
+| **Infrastructure** | Repositorios, Kafka, PostgreSQL, Redis, PSP y adaptadores externos. |
+
+**Dirección conceptual de dependencias:**
+
+```text
+API -> Application -> Domain
+Infrastructure -> Application / Domain mediante interfaces
+```
+
+El detalle definitivo de proyectos, carpetas y paquetes debe quedar sincronizado con la sección 10.
+
+## 6.2 Aplicaciones cliente
+
+Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componente indica la carpeta del repositorio donde vive (sección 10.2) y corresponde al código de `develop`; los componentes con borde punteado están planeados.
+
+![Componentes de Angular Web](diagrams/c4/C4-04-Componentes-Web.png)
+
+**Figura 8. Componentes de Angular Web (C4 · Component). Vista `C4-04-Componentes-Web`.**
 
 | Componente | Carpeta | Responsabilidad | HU |
 |---|---|---|---|
-| Shell y enrutamiento | `app.routes` | Rutas, layout del panel y redirección a login o a acceso denegado. | SCRUM-25 |
-| Login administrativo | `features/auth` | Formulario de acceso con validaciones y estados de carga y error. | SCRUM-23 |
-| Servicio de autenticación y sesión | `core/auth` | Autentica, conserva el token y expone el usuario y su rol. | SCRUM-23, SCRUM-25 |
-| Guards de rol (RBAC) | `core/auth` | Permiten o niegan cada ruta y opción de menú según el rol: `admin_plataforma` ve la gestión de tenants y `admin_tenant` no (RN-U6). | SCRUM-25 / SCRUM-64 |
-| Interceptor HTTP | `core/http` | Adjunta el JWT y `X-Correlation-Id`, y traduce 401, 403 y 409 en estados de la UI. | SCRUM-25 |
-| Gestión de tenants | `features/tenants` | Listado de tenants y activación o desactivación con confirmación. | SCRUM-41 / SCRUM-113 |
-| Cliente API de tenants | `features/tenants` | Cliente HTTP generado a partir del contrato de administración de tenants. | SCRUM-41 / SCRUM-113 |
-| UI compartida | `shared` | Estados de carga, vacío, error y acceso denegado. | — |
+| Shell y rutas | `app.routes.ts`, `app.ts` | Rutas, layout del panel y redirección a login o a acceso denegado. | SCRUM-25 |
+| Sesión | `core/sesion.ts` | Conserva el token y expone usuario y rol como signals. | SCRUM-23, SCRUM-25 |
+| Interceptor HTTP | `core/http.ts` | Adjunta el JWT y `X-Correlation-Id`; traduce 401 y 403 en estados de la UI. | SCRUM-25 |
+| Guards de rol | `core/guards.ts` | Permiten cada ruta según el rol: `admin_plataforma` ve la gestión de tenants y `admin_tenant` no (RN-U6). | SCRUM-25 / SCRUM-64 |
+| Inicio de sesión | `features/autenticacion` | Formulario de acceso con validaciones y errores. | SCRUM-23 |
+| Inicio | `features/inicio` | Menú según el rol del administrador. | SCRUM-25 |
+| Gestión de tenants | `features/tenants/tenants.ts` | Lista los tenants y los activa o desactiva con confirmación. | SCRUM-41 / SCRUM-112 |
+| Cliente API de tenants | `features/tenants/tenants-api.ts` | `GET` y `PATCH /v1/platform/tenants`. | SCRUM-41 / SCRUM-112 |
+| Aprobación de técnicos *(planeado)* | — | Aprueba y suspende técnicos del tenant (RF-19, RF-20). | — |
 
-![Componentes de Flutter Mobile](diagrams/sdd/c4/C4-L3-Mobile.svg)
+![Componentes de Flutter Mobile](diagrams/c4/C4-04-Componentes-Mobile.png)
 
-**Figura 5. Componentes de Flutter Mobile (C4, nivel 3).**
+**Figura 9. Componentes de Flutter Mobile (C4 · Component). Vista `C4-04-Componentes-Mobile`.**
 
 | Componente | Carpeta | Responsabilidad | HU |
 |---|---|---|---|
-| Navegación | `core` | Pantallas, rutas protegidas y flujo entre los pasos de la solicitud. | SCRUM-27 |
-| Login | `features/auth/presentation` | Formulario de acceso con validaciones y estados de carga y error. | SCRUM-23 |
-| Sesión | `core/auth` | Autentica, guarda el token en el almacenamiento seguro del dispositivo y expone el usuario y su rol. | SCRUM-23 |
-| Asistente de nueva solicitud | `features/service_requests/presentation` | Pasos de categoría, ubicación, descripción y resumen, y confirmación. | SCRUM-27 / SCRUM-71 |
-| Estado y reglas de la solicitud | `features/service_requests/domain` | Conserva los datos entre pasos y valida antes de enviar: dirección de 5 a 255 caracteres y descripción de 10 a 1000. | SCRUM-27 / SCRUM-71 |
-| Repositorio de catálogo | `features/service_requests/data` | Obtiene las categorías activas del tenant (`GET /v1/catalog/categories`). | SCRUM-27 / SCRUM-71 |
-| Repositorio de solicitudes | `features/service_requests/data` | Crea la solicitud (`POST /v1/service-requests`) y consulta su detalle para la confirmación (`GET /v1/service-requests/{id}`). | SCRUM-27 / SCRUM-71 |
-| Cliente HTTP | `core/http` | Adjunta el JWT y `X-Correlation-Id`, aplica timeouts y traduce las respuestas `problem+json` (400, 401, 403, 404 y 422) en errores de la app. | SCRUM-27 |
-| Ubicación del dispositivo | `core/location` | Pide el permiso de ubicación y obtiene las coordenadas (`latitude`, `longitude`) del GPS del dispositivo, que el contrato exige en `location`. | SCRUM-27 / SCRUM-71 |
-| UI compartida | `core/ui` | Estados de carga, vacío y error. | — |
+| Navegación | `app/router` | Rutas protegidas por sesión y por rol. | SCRUM-27 |
+| Configuración del ambiente | `core/config` | URL base, `Host` del gateway y huella SHA-256 del certificado de QA. | SCRUM-27 |
+| Cliente HTTP | `core/network` | Adjunta el JWT y `X-Correlation-Id`, fija el certificado y traduce `problem+json` en errores de la app. | SCRUM-27 |
+| Sesión | `core/session` | Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol. | SCRUM-23 |
+| Autenticación | `features/autenticacion` | Login y registro de cliente, técnico y empresa. | SCRUM-23 |
+| Inicio por rol | `features/inicio` | Opciones habilitadas según el rol. | SCRUM-27 |
+| Solicitudes | `features/solicitudes` | Nueva solicitud en un solo formulario (RNF-11) y detalle con su estado. | SCRUM-27 / SCRUM-71 |
+| Ubicación del dispositivo | `features/solicitudes/data` | Permiso y lectura del GPS, con respaldo en `LocationManager` y límite de 15 s. | SCRUM-27 / SCRUM-71 |
+| Geocodificación de la dirección *(planeado)* | — | Convierte la dirección escrita en coordenadas cuando el cliente no comparte la ubicación (RIE-02). | — |
+| Estado en tiempo real *(planeado)* | `core/realtime` | Cambios de estado de la solicitud (RF-11, RNF-06); canal por decidir (SAD 4.1). | — |
 
 Reglas comunes a las dos aplicaciones:
 
 - **Tenant:** ninguna app envía `tenant_id` (RN-U3 del DD). En el login y el registro todavía no hay JWT, así que el tenant sale del canal por el que llega la petición (RN-U5); en las peticiones autenticadas sale del token que propaga el API Gateway (DD, sección 10.3).
 - **Errores:** un 401 lleva al login y un 403 a la pantalla de acceso denegado; el resto de errores se muestran en la pantalla que los produjo, sin perder los datos ingresados.
-- **Contratos:** Mobile consume `service-request.v1.yaml` y `catalog.v1.yaml`. El inicio de sesión (`POST /v1/auth/login` y `GET /v1/users/me`, sección 3.4.1) y la administración de tenants todavía no tienen especificación OpenAPI.
+- **Contratos:** Mobile consume `identity.v1.yaml`, `catalog.v1.yaml` y `service-request.v1.yaml`; Web consume `identity.v1.yaml` (inicio de sesión y `/v1/platform/tenants`). Mobile llama además a `POST /v1/auth/register/company`, que todavía no está en `identity.v1.yaml` (SAD 2.2).
 - **Pendiente:** el contrato v1 de creación de solicitudes solo admite el rol `cliente` y responde 403 a los demás, mientras que el SRS (F2.1) incluye a la empresa cliente. Se debe resolver antes de cerrar SCRUM-27.
 
----
-
-## 3.2 Descomposición lógica por microservicio
-
-### 3.2.1 API Gateway
+## 6.3 API Gateway
 
 **Responsabilidades:**
 
@@ -254,7 +351,9 @@ Reglas comunes a las dos aplicaciones:
 
 El Gateway no contiene reglas propias de matching, solicitudes, pagos, ranking ni facturación.
 
-### 3.2.2 Identity Service
+**C4:** el API Gateway es un contenedor sin diagrama de componentes: es Nginx configurado (rutas `/api/<servicio>`), sin código propio que descomponer. Sus rutas aparecen como relaciones en los diagramas de componentes de cada servicio.
+
+## 6.4 Identity Service
 
 **Tecnología asignada:** ASP.NET Core / .NET.
 
@@ -277,7 +376,15 @@ El Gateway no contiene reglas propias de matching, solicitudes, pagos, ranking n
 
 **Datos documentados:** `tenants`, `users`, `technician_profiles`.
 
-### 3.2.3 Actors Service
+**Componentes (C4).**
+
+![Componentes de Identity Service](diagrams/c4/C4-04-Componentes-Identity.png)
+
+**Figura 10. Componentes de Identity Service (C4 · Component). Vista `C4-04-Componentes-Identity`.**
+
+Las dos APIs separan lo que hace cualquier usuario (registro, login, perfil) de lo que solo hace el admin de plataforma. Los casos de uso del tenant corren en `TenantUnitOfWork` (RLS) y los de plataforma en `PlatformUnitOfWork` (sección 7.2). El JWT se firma con RS256 (ADR-018) y las contraseñas usan BCrypt (RNF-03); cada 403 queda en el log (RNF-04).
+
+## 6.5 Actors Service
 
 **Tecnología asignada:** ASP.NET Core / .NET.
 
@@ -297,7 +404,15 @@ El Gateway no contiene reglas propias de matching, solicitudes, pagos, ranking n
 
 La persistencia detallada de estos conceptos se incorpora al DD cuando el Sprint correspondiente defina sus atributos y reglas.
 
-### 3.2.4 Catalog Service
+**Componentes (C4).**
+
+![Componentes de Actors Service](diagrams/c4/C4-04-Componentes-Actors.png)
+
+**Figura 11. Componentes de Actors Service (C4 · Component; diseño). Vista `C4-04-Componentes-Actors`.**
+
+Todos los componentes están planeados: el servicio es hoy un esqueleto y sus conceptos siguen siendo evolutivos (sección 6.14).
+
+## 6.6 Catalog Service
 
 **Tecnología asignada:** ASP.NET Core / .NET.
 
@@ -313,7 +428,15 @@ La persistencia detallada de estos conceptos se incorpora al DD cuando el Sprint
 |---|---|---|
 | `ServiceCategory` | `service_categories` | Categoría o tipo de servicio solicitado. |
 
-### 3.2.5 ServiceRequest Service
+**Componentes (C4).**
+
+![Componentes de Catalog Service](diagrams/c4/C4-04-Componentes-Catalog.png)
+
+**Figura 12. Componentes de Catalog Service (C4 · Component). Vista `C4-04-Componentes-Catalog`.**
+
+Cada cambio de categoría se guarda junto con el evento `catalog.category-changed` en `outbox_events`, y un publicador en segundo plano lo envía a Kafka; así ServiceRequest y Matching mantienen su réplica local (ADR-017) sin llamar a Catalog.
+
+## 6.7 ServiceRequest Service
 
 **Tecnología asignada:** ASP.NET Core / .NET.
 
@@ -329,7 +452,7 @@ La persistencia detallada de estos conceptos se incorpora al DD cuando el Sprint
 | Concepto | Tipo | Responsabilidad |
 |---|---|---|
 | `ServiceRequest` | Entidad / agregado central | Representa la solicitud y controla sus transiciones válidas. |
-| `ServiceCategory` | Entidad relacionada | Clasifica el servicio requerido. |
+| `CategoryReplica` | Réplica local | Copia de la categoría de Catalog, alimentada por `catalog.category-changed` (ADR-017). |
 | `Rating` | Entidad | Registra la evaluación posterior al servicio. |
 | `ServiceRequestStatus` | Value Object / Enum conceptual | Estado válido de la solicitud. |
 
@@ -344,7 +467,7 @@ buscando_tecnico
     -> pagado
 ```
 
-**Datos documentados:** `service_categories`, `service_requests`, `ratings`.
+**Datos documentados:** `service_requests`, `service_request_categories` (réplica), `outbox_events`, `processed_events` y `ratings` (planeado). `service_categories` es de Catalog Service (DD 5.17).
 
 **Referencias lógicas externas:** `client_id`, `technician_id`, `tenant_id`.
 
@@ -357,7 +480,28 @@ buscando_tecnico
 - consume `payment.approved`;
 - consume `payment.rejected` cuando corresponda al flujo.
 
-### 3.2.6 Matching Service
+**Componentes (C4).**
+
+![Componentes de ServiceRequest Service](diagrams/c4/C4-04-Componentes-ServiceRequest.png)
+
+**Figura 13. Componentes de ServiceRequest Service (C4 · Component). Vista `C4-04-Componentes-ServiceRequest`.**
+
+El diagrama reúne las decisiones de diseño que los demás servicios repiten: reglas de negocio validadas contra una réplica local, máquina de estados, aislamiento por tenant con RLS, Transactional Outbox y consumo idempotente de eventos (aporte de SCRUM-299).
+
+| Componente | Responsabilidad | Regla/contrato |
+|---|---|---|
+| Contexto autenticado | Toma usuario (`sub`), tenant (`tenant_id`) y rol de los claims del JWT. Nunca lee el tenant del cuerpo. | RN-U3; DD 10.3 |
+| API REST de solicitudes | Creación y consulta; solo el rol `cliente` crea (403); responde `problem+json` con `X-Correlation-Id`. | `service-request.v1.yaml` |
+| Casos de uso de la solicitud | Al crear, coordina validación, agregado, persistencia y outbox en una transacción local. | RF-07; ADR-007 |
+| Reglas de creación | Ubicación en el área de Bogotá (422), categoría activa (422) y longitudes. | RN-SR1, RN-SR9 a RN-SR11 |
+| Agregado ServiceRequest | Crea en `buscando_tecnico` y solo admite transiciones válidas. | RN-SR2 a RN-SR7; DD 7.4 |
+| Repositorio de solicitudes | `service_requests` en una transacción con `app.current_tenant`; una solicitud de otro tenant o cliente responde 404. | DD 5.5 y 10.2 |
+| Registro en outbox y publicador | Guarda `service-request.created` con la solicitud y lo publica en segundo plano. | ADR-007; sección 8.10.1 |
+| Consumidor de `catalog.category-changed` y réplica | Aplica cada evento una vez por `eventId` y mantiene `service_request_categories`. | RN-EV1; ADR-017 |
+| Consumidor de matching y pagos *(planeado)* | Aplica `matching.*` y `payment.*` al estado de la solicitud. | Sección 8.6 |
+| Evidencias y calificación *(planeado)* | Fotos en Garage (RF-15) y calificación; publica `service-request.completed` y `.evaluated`. | RF-12, RF-15 |
+
+## 6.8 Matching Service
 
 **Tecnología asignada:** Java + Spring Boot.
 
@@ -383,11 +527,19 @@ buscando_tecnico
 
 El siguiente diagrama representa el flujo lógico principal del proceso de matching.
 
-![Diagrama de flujo del Matching Service](sdd_v3_assets/05_matching_flow.png)
+![Diagrama de flujo del Matching Service](diagrams/sdd/05_matching_flow.png)
 
-*Figura 6. Flujo lógico principal del Matching Service.*
+*Figura 14. Flujo lógico principal del Matching Service.*
 
-### 3.2.7 Ranking Service
+**Componentes (C4).**
+
+![Componentes de Matching Service](diagrams/c4/C4-04-Componentes-Matching.png)
+
+**Figura 15. Componentes de Matching Service (C4 · Component). Vista `C4-04-Componentes-Matching`.**
+
+Hoy está implementado el consumo idempotente de `service-request.created` (listener, manejador, registro de eventos procesados y transacción por tenant). La búsqueda de candidatos con PostGIS y la asignación están planeadas. Matching no usa la geocodificación: recibe la solicitud con coordenadas.
+
+## 6.9 Ranking Service
 
 **Tecnología asignada:** ASP.NET Core / .NET.
 
@@ -401,7 +553,15 @@ El siguiente diagrama representa el flujo lógico principal del proceso de match
 
 Los modelos persistentes definitivos de ranking permanecen sujetos a evolución del DD.
 
-### 3.2.8 Payments Service
+**Componentes (C4).**
+
+![Componentes de Ranking Service](diagrams/c4/C4-04-Componentes-Ranking.png)
+
+**Figura 16. Componentes de Ranking Service (C4 · Component; diseño). Vista `C4-04-Componentes-Ranking`.**
+
+Todos los componentes están planeados: el servicio es hoy un esqueleto.
+
+## 6.10 Payments Service
 
 **Tecnología asignada:** ASP.NET Core / .NET.
 
@@ -423,7 +583,15 @@ Los modelos persistentes definitivos de ranking permanecen sujetos a evolución 
 
 **Eventos:** `payment.approved`, `payment.rejected`.
 
-### 3.2.9 Communication Service
+**Componentes (C4).**
+
+![Componentes de Payments Service](diagrams/c4/C4-04-Componentes-Payments.png)
+
+**Figura 17. Componentes de Payments Service (C4 · Component; diseño). Vista `C4-04-Componentes-Payments`.**
+
+Todos los componentes están planeados. El servicio nunca recibe PAN ni CVV: la app tokeniza con la pasarela y el adaptador cobra con la referencia del token (ADR-009, RNF-01).
+
+## 6.11 Communication Service
 
 **Tecnología asignada:** ASP.NET Core / .NET.
 
@@ -437,126 +605,15 @@ Los modelos persistentes definitivos de ranking permanecen sujetos a evolución 
 
 Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean incorporadas por un Sprint y requisito explícito.
 
----
+**Componentes (C4).**
 
-## 3.3 Modelo lógico de dominio y relaciones
+![Componentes de Communication Service](diagrams/c4/C4-04-Componentes-Communication.png)
 
-![Modelo lógico de dominio](diagrams/sdd/03_modelo_logico_dominio.png)
+**Figura 18. Componentes de Communication Service (C4 · Component; diseño). Vista `C4-04-Componentes-Communication`.**
 
-**Figura 7. Modelo lógico de dominio y referencias entre servicios.**
+Todos los componentes están planeados: consumidores de los eventos del ciclo de servicio, plantillas de notificación y el adaptador del proveedor externo (RIE-03).
 
-Las relaciones continuas representan relaciones internas al mismo dominio que pueden implementarse como claves foráneas. Las relaciones punteadas representan referencias lógicas entre servicios independientes.
-
-### 3.3.1 Relaciones internas
-
-```text
-service_requests.category_id -> service_categories.id
-ratings.service_request_id   -> service_requests.id
-invoices.payment_id          -> payments.id
-```
-
-### 3.3.2 Referencias lógicas entre servicios
-
-```text
-service_requests.client_id      -> Identity / User
-service_requests.technician_id  -> Identity / Technician
-matching_attempts.request_id    -> ServiceRequest / ServiceRequest
-payments.service_request_id     -> ServiceRequest / ServiceRequest
-```
-
-Un servicio no ejecuta escrituras directas sobre tablas propietarias de otro dominio ni define Foreign Keys físicas entre límites de servicio diferentes.
-
----
-
-## 3.4 Contratos lógicos principales
-
-### 3.4.1 REST
-
-```text
-POST /v1/auth/register/client
-POST /v1/auth/register/technician
-POST /v1/auth/register/company
-POST /v1/auth/login
-GET  /v1/users/me
-
-POST /v1/service-requests
-GET  /v1/service-requests/{id}
-POST /v1/service-requests/{id}/start
-POST /v1/service-requests/{id}/complete
-POST /v1/service-requests/{id}/rating
-POST /v1/service-requests/{id}/payment
-GET  /v1/payments/{id}/invoice
-```
-
-### 3.4.2 Eventos de dominio
-
-```text
-service-request.created
-matching.technician-assigned
-matching.no-technician-available
-service-request.completed
-payment.approved
-payment.rejected
-```
-
-**Sobre común del evento:**
-
-```json
-{
-  "eventId": "uuid",
-  "eventVersion": 1,
-  "correlationId": "uuid",
-  "tenantId": "uuid",
-  "producer": "service-name",
-  "occurredAt": "timestamp",
-  "data": {}
-}
-```
-
----
-
-## 3.5 Decisión tecnológica vigente
-
-La asignación tecnológica de los canales y microservicios se formaliza en `ADR-012 — Stack tecnológico políglota`:
-
-- panel administrativo: Angular + TypeScript;
-- aplicación móvil para clientes, empresas cliente, técnicos y proveedores: Flutter + Dart;
-- Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication: ASP.NET Core / .NET;
-- Matching: Java + Spring Boot;
-- integración síncrona: REST/HTTPS;
-- integración asíncrona: Apache Kafka.
-
-La interoperabilidad entre stacks se mantiene mediante contratos REST/OpenAPI y contratos versionados de eventos Kafka. Ningún consumidor depende de clases internas de otro servicio.
-
----
-
-# 4. Diseño Detallado
-
-## 4.1 Estructura interna de los microservicios backend
-
-![Capas internas de un microservicio](diagrams/sdd/04_capas_microservicio.png)
-
-**Figura 8. Estructura lógica interna de un microservicio.**
-
-La estructura interna se divide en cuatro capas lógicas:
-
-| Capa | Contenido |
-|---|---|
-| **API / Interface** | Controllers, endpoints, validación de entrada y contratos expuestos. |
-| **Application** | Casos de uso, comandos, queries y coordinación del flujo de aplicación. |
-| **Domain** | Entidades, value objects y reglas de negocio. |
-| **Infrastructure** | Repositorios, Kafka, PostgreSQL, Redis, PSP y adaptadores externos. |
-
-**Dirección conceptual de dependencias:**
-
-```text
-API -> Application -> Domain
-Infrastructure -> Application / Domain mediante interfaces
-```
-
-El detalle definitivo de proyectos, carpetas y paquetes debe quedar sincronizado con la Vista de Desarrollo.
-
-## 4.2 Reglas transversales del backend
+## 6.12 Reglas transversales del backend
 
 ### Multi-tenancy
 
@@ -582,7 +639,7 @@ Las operaciones que modifican estado de negocio y publican eventos registran loc
 
 Los cambios relevantes del ciclo de servicio y pago conservan información suficiente para reconstrucción y auditoría.
 
-## 4.3 Trazabilidad con atributos de calidad
+## 6.13 Trazabilidad con atributos de calidad
 
 | Decisión de diseño | Atributos relacionados | Reflejo en el diseño |
 |---|---|---|
@@ -593,7 +650,7 @@ Los cambios relevantes del ciclo de servicio y pago conservan información sufic
 | Outbox + idempotencia | Disponibilidad, trazabilidad | Publicación confiable y tolerancia a duplicados. |
 | Tokenización de pagos | Seguridad | Backend sin almacenamiento de PAN/CVV. |
 
-## 4.4 Elementos de diseño todavía evolutivos
+## 6.14 Elementos de diseño todavía evolutivos
 
 Permanecen sujetos a definición de Sprints posteriores:
 
@@ -604,90 +661,22 @@ Permanecen sujetos a definición de Sprints posteriores:
 5. nuevos eventos o endpoints introducidos por historias de usuario futuras;
 6. value objects y clases auxiliares surgidos de la implementación.
 
-## 4.5 Código de las áreas críticas (C4, nivel 4)
+---
 
-El nivel 4 de C4 se usa solo en dos áreas, donde el diagrama de componentes no basta para entender o revisar el código:
+# 7. Code diagrams
+
+El diagrama de código de C4 se usa solo en dos áreas, donde el diagrama de componentes no basta para entender o revisar el código:
 
 1. **Publicación y consumo confiable de eventos**: se reparte entre dos servicios y dos tecnologías, y depende de que varias clases compartan una misma transacción.
 2. **Aislamiento entre tenants en la base de datos**: un error aquí filtra datos de un tenant a otro, y la única operación que lo omite debe quedar acotada.
 
-El resto del sistema sigue el patrón de cuatro capas de la sección 4.1 sin variaciones que justifiquen un diagrama de clases. Los diagramas se trazaron sobre el código de `develop` del 7 de octubre de 2026 y nombran clases reales; los métodos y las dependencias que no intervienen en el mecanismo se omiten.
+El resto del sistema sigue el patrón de cuatro capas de la sección 6.1 sin variaciones que justifiquen un diagrama de clases. Los diagramas se trazaron sobre el código de `develop` del 7 de octubre de 2026 y nombran clases reales; los métodos y las dependencias que no intervienen en el mecanismo se omiten. Están en PlantUML (`diagrams/c4/C4-07-*.puml`) porque Structurizr no dibuja el nivel de código.
 
-### 4.5.1 Outbox e idempotencia de `service-request.created`
+## 7.1 Outbox e idempotencia de `service-request.created`
 
-```mermaid
-classDiagram
-    direction LR
-    namespace ServiceRequest_NET {
-        class CreateServiceRequestHandler {
-            +HandleAsync(command, ct) CreateServiceRequestResult
-        }
-        class ITenantUnitOfWork {
-            <<interface>>
-            +ExecuteAsync(tenantId, work, ct) T
-        }
-        class IOutbox {
-            <<interface>>
-            +Enqueue(OutboxMessage)
-        }
-        class IServiceRequestRepository {
-            <<interface>>
-            +Add(ServiceRequest)
-        }
-        class TenantUnitOfWork
-        class EfOutbox
-        class OutboxPublisher {
-            <<BackgroundService>>
-            +PublishPendingAsync(ct) int
-        }
-        class outbox_events {
-            <<tabla PostgreSQL>>
-            published_at
-            attempts
-        }
-    }
-    namespace Matching_Java {
-        class ServiceRequestCreatedListener {
-            <<KafkaListener>>
-            +onMessage(ConsumerRecord)
-        }
-        class ServiceRequestCreatedHandler {
-            +handle(EventEnvelope) Outcome
-        }
-        class TenantTransaction {
-            <<interface>>
-            +execute(tenantId, work) T
-        }
-        class ProcessedEventStore {
-            <<interface>>
-            +register(eventId, tenantId, eventType) boolean
-        }
-        class MatchingStarter {
-            <<interface>>
-            +start(EventEnvelope)
-        }
-        class JdbcTenantTransaction
-        class JdbcProcessedEventStore
-        class PendingMatchingStarter
-    }
-    CreateServiceRequestHandler --> ITenantUnitOfWork
-    CreateServiceRequestHandler --> IServiceRequestRepository
-    CreateServiceRequestHandler --> IOutbox
-    TenantUnitOfWork ..|> ITenantUnitOfWork
-    EfOutbox ..|> IOutbox
-    EfOutbox ..> outbox_events : inserta
-    OutboxPublisher ..> outbox_events : lee y marca
-    OutboxPublisher ..> ServiceRequestCreatedListener : Kafka service-request.created
-    ServiceRequestCreatedListener --> ServiceRequestCreatedHandler
-    ServiceRequestCreatedHandler --> TenantTransaction
-    ServiceRequestCreatedHandler --> ProcessedEventStore
-    ServiceRequestCreatedHandler --> MatchingStarter
-    JdbcTenantTransaction ..|> TenantTransaction
-    JdbcProcessedEventStore ..|> ProcessedEventStore
-    PendingMatchingStarter ..|> MatchingStarter
-```
+![Outbox e idempotencia de service-request.created](diagrams/c4/C4-07-Codigo-OutboxIdempotencia.png)
 
-**Figura 9. Clases de la publicación y el consumo de `service-request.created` (C4, nivel 4).**
+**Figura 19. Clases de la publicación y el consumo de `service-request.created` (C4 · Code). Fuente `C4-07-Codigo-OutboxIdempotencia.puml`.**
 
 | Clase | Repositorio | Responsabilidad en el mecanismo |
 |---|---|---|
@@ -700,67 +689,24 @@ classDiagram
 | `JdbcProcessedEventStore` | `quickpatch-matching` | `INSERT ... ON CONFLICT (event_id) DO NOTHING` en `processed_events`: la base de datos garantiza la deduplicación aun con dos consumidores concurrentes (RN-EV1). |
 | `PendingMatchingStarter` | `quickpatch-matching` | Punto de extensión donde entra el algoritmo de matching (RF-09); hoy solo registra el inicio. |
 
-Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija de 2 segundos y sin límite de intentos (`KafkaConfig`). La DLQ de la sección 5.8 todavía no está implementada.
+Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija de 2 segundos y sin límite de intentos (`KafkaConfig`). La DLQ de la sección 8.9 todavía no está implementada.
 
-### 4.5.2 Aislamiento entre tenants en Identity
+## 7.2 Aislamiento entre tenants en Identity
 
-```mermaid
-classDiagram
-    direction LR
-    class ITenantUnitOfWork {
-        <<interface>>
-        +ExecuteAsync(tenantId, work, ct) T
-    }
-    class IPlatformUnitOfWork {
-        <<interface>>
-        +ExecuteAsync(work, ct) T
-    }
-    class TenantUnitOfWork {
-        set_config app.current_tenant
-    }
-    class PlatformUnitOfWork {
-        SET LOCAL ROLE identity_platform
-    }
-    class IPlatformTenantRepository {
-        <<interface>>
-        +ListAsync(ct) Tenant[]
-        +FindForUpdateAsync(tenantId, ct) Tenant
-    }
-    class IAuditLog {
-        <<interface>>
-        +Add(AuditEntry)
-    }
-    class ListTenantsHandler
-    class UpdateTenantStatusHandler
-    class LoginHandler
-    class RegisterClientHandler
-    TenantUnitOfWork ..|> ITenantUnitOfWork
-    PlatformUnitOfWork ..|> IPlatformUnitOfWork
-    LoginHandler --> ITenantUnitOfWork
-    RegisterClientHandler --> ITenantUnitOfWork
-    ListTenantsHandler --> IPlatformUnitOfWork
-    ListTenantsHandler --> IPlatformTenantRepository
-    UpdateTenantStatusHandler --> IPlatformUnitOfWork
-    UpdateTenantStatusHandler --> IPlatformTenantRepository
-    UpdateTenantStatusHandler --> IAuditLog
-```
+![Aislamiento entre tenants en Identity](diagrams/c4/C4-07-Codigo-AislamientoTenant.png)
 
-**Figura 10. Clases del aislamiento por tenant y de la operación de plataforma en Identity (C4, nivel 4).**
+**Figura 20. Clases del aislamiento por tenant y de la operación de plataforma en Identity (C4 · Code). Fuente `C4-07-Codigo-AislamientoTenant.puml`.**
 
 - **Operación normal.** Todo caso de uso de un tenant corre dentro de `TenantUnitOfWork`, que fija `app.current_tenant` en la transacción; las políticas RLS de PostgreSQL filtran cada consulta con ese valor (ADR-005, DD 10.2). El tenant sale del canal o del JWT, nunca del cuerpo de la petición. Catalog, ServiceRequest y Matching repiten el mismo patrón con sus propias clases (`ITenantUnitOfWork` en .NET, `JdbcTenantTransaction` en Java).
 - **Operación de plataforma.** Solo `ListTenantsHandler` y `UpdateTenantStatusHandler` usan `PlatformUnitOfWork`, que adopta el rol `identity_platform` (`BYPASSRLS`) con `SET LOCAL ROLE`: el rol vuelve al de la aplicación al cerrar la transacción. La aplicación puede adoptarlo pero no hereda sus permisos (`INHERIT FALSE`, `db/roles.sql`, ADR-019). Los endpoints exigen `admin_plataforma`, y cada cambio de estado deja un `AuditEntry` en la misma transacción.
 
 ---
 
-# 5. Vista de Procesos
+# 8. Dynamic diagrams
 
-**Corresponde a:** Backend Developers + QA.
+Los diagramas dinámicos de C4 muestran cómo colaboran los contenedores en un flujo, con cada paso numerado. Esta sección los acompaña con lo que el comportamiento en ejecución exige precisar: procesos, flujos síncronos y asíncronos, productores y consumidores de Kafka, concurrencia, reintentos, idempotencia y manejo de fallos. Es la base técnica de las pruebas de integración, resiliencia y rendimiento.
 
-La Vista de Procesos describe los aspectos dinámicos del sistema: la concurrencia, distribución, flujos de control, comunicación entre procesos y mecanismos de tolerancia a fallos. Esta vista es la base técnica para el diseño de pruebas de integración, resiliencia y rendimiento por parte del equipo de QA.
-
----
-
-## 5.1 Procesos y servicios en ejecución
+## 8.1 Procesos y servicios en ejecución
 
 La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máquinas virtuales asignadas (aislamiento físico y de red según R5 y R10): 3 de producción, 3 de QA con la misma forma y 1 de herramientas (ADR-022). La tabla muestra producción; QA repite la misma distribución en VM2, VM5 y VM7.
 
@@ -777,13 +723,11 @@ La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máqui
 | **Storage de Evidencias Fotográficas** | Garage (S3-compatible) | VM6 (`10.43.99.12`) | Repositorio de objetos para evidencias fotográficas (D7) y respaldos de PostgreSQL. |
 | **Stack de Observabilidad** | Prometheus + Loki + Grafana | VM1 (`10.43.100.168`, herramientas) | Métricas, logs estructurados y dashboards de los dos ambientes. |
 
----
-
-## 5.2 Flujos síncronos y asíncronos
+## 8.2 Flujos síncronos y asíncronos
 
 El sistema aplica una estricta separación de patrones de comunicación (ADR-003, ADR-006):
 
-### 5.2.1 Flujos síncronos (REST over HTTPS)
+### 8.2.1 Flujos síncronos (REST over HTTPS)
 Se limitan exclusivamente a las interacciones cliente-servidor a través del API Gateway donde el usuario requiere confirmación o respuesta inmediata:
 - Autenticación e inicio de sesión (`POST /v1/auth/login`, renovación de tokens).
 - Creación de solicitud (`POST /v1/service-requests` — devuelve confirmación con `id` en < 1.5s).
@@ -792,7 +736,7 @@ Se limitan exclusivamente a las interacciones cliente-servidor a través del API
 - Carga de evidencia fotográfica (`POST /v1/service-requests/{id}/evidence`).
 - Checkout y confirmación de pago con token del PSP (`POST /v1/service-requests/{id}/payment`).
 
-### 5.2.2 Flujos asíncronos (Event-Driven over Kafka)
+### 8.2.2 Flujos asíncronos (Event-Driven over Kafka)
 Toda coordinación, cálculo derivado y propagación de estado entre microservicios se realiza de forma asíncrona mediante tópicos de Apache Kafka (ADR-006):
 - Búsqueda y evaluación de técnicos elegibles por el Matching Service tras la creación de una solicitud.
 - Despacho de notificaciones push y alertas al cliente y técnico por el Communication Service.
@@ -800,9 +744,7 @@ Toda coordinación, cálculo derivado y propagación de estado entre microservic
 - Emisión de facturas/comprobantes por el Payments Service.
 - Recálculo de reputación promedio de técnicos por el Ranking Service tras una calificación.
 
----
-
-## 5.3 Secuencia de creación de solicitud y matching
+## 8.3 Secuencia de creación de solicitud y matching
 
 Este flujo describe el ciclo desde la creación de la necesidad por parte del cliente hasta la asignación confirmada del técnico (RF-07, RF-09, RF-10, D1, AC1-E1, AC2-E3):
 
@@ -856,11 +798,17 @@ sequenceDiagram
     GW->>M: Técnico acepta la solicitud
 ```
 
-**Figura 11. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
+**Figura 21. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
 
 ---
 
-## 5.4 Secuencia de pago y facturación
+**Vista C4.** El diagrama dinámico muestra el mismo flujo a nivel de contenedores, numerado; la secuencia anterior da el detalle de cada mensaje.
+
+![Creación de solicitud y matching (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-CrearSolicitud.png)
+
+**Figura 22. Creación de una solicitud y matching (C4 · Dynamic). Vista `C4-05-Dinamico-CrearSolicitud`.**
+
+## 8.4 Secuencia de pago y facturación
 
 Este flujo describe el cierre operativo del servicio y el cobro bajo el estándar PCI-DSS y el modelo Merchant of Record (RF-15, RF-22, RF-24, D4, D7, K2, ADR-009, AC3-E1, AC6-E1, AC9-E1, AC9-E5):
 
@@ -919,11 +867,45 @@ sequenceDiagram
     end
 ```
 
-**Figura 12. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
+**Figura 23. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
 
 ---
 
-## 5.5 Productores y consumidores Kafka
+**Vista C4.** El flujo de pago a nivel de contenedores. Payments es hoy un esqueleto, así que el diagrama es de diseño.
+
+![Pago tokenizado y facturación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Pago.png)
+
+**Figura 24. Pago tokenizado y facturación (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-Pago`.**
+
+## 8.5 Otros flujos críticos
+
+Cada diagrama dinámico numera la colaboración entre contenedores para un flujo. Se documentan los flujos que cruzan más de un contenedor o que fijan una regla de seguridad; los de creación de solicitud y pago están en las secciones 8.3 y 8.4.
+
+**Inicio de sesión.** El tenant sale del canal (`X-Channel-Id`, RN-U5) y el JWT lo firma Identity con RS256 (ADR-018).
+
+![Inicio de sesión (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-InicioSesion.png)
+
+**Figura 25. Inicio de sesión (C4 · Dynamic). Vista `C4-05-Dinamico-InicioSesion`.**
+
+**Réplica de categorías.** Un cambio en Catalog llega a la réplica de ServiceRequest por evento, sin llamada síncrona (ADR-017).
+
+![Réplica de categorías (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-ReplicaCategorias.png)
+
+**Figura 26. Alta de una categoría y su réplica en ServiceRequest (C4 · Dynamic). Vista `C4-05-Dinamico-ReplicaCategorias`.**
+
+**Calificación y reputación.** La calificación del cliente recalcula la reputación del técnico de forma asíncrona (RF-12; diseño).
+
+![Calificación y reputación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Calificacion.png)
+
+**Figura 27. Calificación del servicio y recálculo de la reputación (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-Calificacion`.**
+
+**Gestión de tenants.** La única operación que omite RLS, acotada a una transacción con el rol `identity_platform` y auditada (RF-21, SCRUM-112).
+
+![Gestión de tenants (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-GestionTenants.png)
+
+**Figura 28. Gestión de tenants por el admin de plataforma (C4 · Dynamic). Vista `C4-05-Dinamico-GestionTenants`.**
+
+## 8.6 Productores y consumidores Kafka
 
 La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 7.2) es la siguiente:
 
@@ -938,9 +920,7 @@ La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 
 | `payment.rejected` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Informar rechazo de cobro y habilitar reintento de pago. |
 | `service-request.evaluated` | `ServiceRequest Service` | `Ranking Service` | Disparar el recálculo asíncrono de la reputación promedio del técnico. |
 
----
-
-## 5.6 Consumer Groups
+## 8.7 Consumer Groups
 
 Para garantizar escalabilidad horizontal y procesamiento desacoplado en Kafka (ADR-003, AC5-E3):
 
@@ -953,9 +933,7 @@ Para garantizar escalabilidad horizontal y procesamiento desacoplado en Kafka (A
 2. **Aislamiento de offsets:** Cada consumer group almacena su progreso de lectura de forma independiente en Kafka. Si un servicio se detiene por mantenimiento o falla (ej. `ranking-service`, escenario AC5-E3), los eventos continúan encolándose en el tópico sin bloquear a los otros grupos; al reiniciar el pod, retoma el procesamiento desde el último offset confirmado sin pérdida de datos.
 3. **Estrategia de particionado:** Los mensajes utilizan como clave (*message key*) el `aggregate_id` (o `service_request_id`). Esto asegura que todos los eventos relacionados con una misma solicitud lleguen a la misma partición y sean consumidos en estricto orden cronológico.
 
----
-
-## 5.7 Concurrencia del matching
+## 8.8 Concurrencia del matching
 
 El motor de matching debe gestionar la asignación concurrente para evitar que múltiples solicitudes en la misma zona reserven o asignen simultáneamente al mismo técnico (condición de carrera):
 
@@ -963,9 +941,7 @@ El motor de matching debe gestionar la asignación concurrente para evitar que m
 2. **Expiración y liberación:** Si el técnico no responde dentro de la ventana de expiración, el intento se marca como expirado, la disponibilidad se libera nuevamente y el motor evalúa al siguiente técnico más cercano.
 3. **Pico de carga y degradación controlada (AC2-E4):** El motor soporta hasta 150 solicitudes de matching concurrentes (3x la carga pico esperada). Ante saturación, los eventos permanecen en el buffer de Kafka y se procesan por turnos sin emitir errores HTTP 5xx ni tumbar el servicio.
 
----
-
-## 5.8 Reintentos, backoff y Dead Letter Queue (DLQ)
+## 8.9 Reintentos, backoff y Dead Letter Queue (DLQ)
 
 La estrategia de tolerancia a fallos en el consumo de eventos distingue entre errores transitorios y permanentes:
 
@@ -975,13 +951,11 @@ La estrategia de tolerancia a fallos en el consumo de eventos distingue entre er
    - Si un evento no puede deserializarse o falla tras agotar los 3 reintentos, el consumidor desvía el mensaje al tópico de Dead Letter Queue correspondiente (ej. `service-request.created.DLQ`).
    - El consumidor registra un log estructurado de nivel `ERROR` en Loki con el `eventId`, `correlationId` y causa del error (AC7-E4), avanzando el offset para no bloquear el flujo de las demás solicitudes.
 
----
-
-## 5.9 Idempotencia y Transactional Outbox
+## 8.10 Idempotencia y Transactional Outbox
 
 Dado que la comunicación por Kafka garantiza entrega *at-least-once* (al menos una vez), el sistema implementa defensas para asegurar consistencia e idempotencia (ADR-007, AC5-E4, AC5-E5):
 
-### 5.9.1 Publicación confiable: Transactional Outbox
+### 8.10.1 Publicación confiable: Transactional Outbox
 Para evitar el problema de la escritura dual (guardar en base de datos pero fallar al publicar en Kafka):
 1. La escritura del cambio de estado y el registro del evento en la tabla `outbox_events` ocurren dentro de la **misma transacción local ACID** en PostgreSQL:
    ```sql
@@ -993,7 +967,7 @@ Para evitar el problema de la escritura dual (guardar en base de datos pero fall
 2. Un proceso en segundo plano (*Outbox Worker*) consulta registros con `published_at IS NULL`, los publica en Kafka y marca `published_at = NOW()`.
 3. Si Kafka no está disponible, la operación de negocio no se cae; el worker reintenta periódicamente hasta que Kafka se restablece (0 eventos perdidos, AC5-E4).
 
-### 5.9.2 Consumo idempotente (Deduplicación)
+### 8.10.2 Consumo idempotente (Deduplicación)
 Para evitar efectos secundarios duplicados (ej. doble cobro o doble notificación, escenario AC5-E5):
 1. Cada evento transporta un identificador único global `eventId`.
 2. El consumidor registra los `eventId` procesados en almacenamiento local o verifica si el estado actual de la entidad ya superó la transición del evento.
@@ -1028,11 +1002,9 @@ sequenceDiagram
     end
 ```
 
-**Figura 13. Tolerancia a fallos con Transactional Outbox ante indisponibilidad del broker.**
+**Figura 29. Tolerancia a fallos con Transactional Outbox ante indisponibilidad del broker.**
 
----
-
-## 5.10 Manejo de fallos de consumidores y Kafka
+## 8.11 Manejo de fallos de consumidores y Kafka
 
 El sistema define protocolos de contingencia ante fallos en los componentes de ejecución (AC5-E1, AC5-E3, AC5-E4):
 
@@ -1042,506 +1014,304 @@ El sistema define protocolos de contingencia ante fallos en los componentes de e
 | **Caída de un Pod en k3s (VM3)** | Los demás 7 microservicios continúan operando normalmente. Los eventos dirigidos al servicio caído se acumulan en Kafka. | Kubernetes detecta la falla mediante `livenessProbe` y reinicia el pod automáticamente. El pod reanuda la lectura desde su último offset confirmado (AC5-E3). |
 | **Fallo en Base de Datos (VM4)** | Los pods detectan pérdida de conexión en su `readinessProbe` y se marcan como no disponibles. | El API Gateway devuelve error controlado `503 Service Unavailable` sin corromper transacciones a medias. |
 
----
-
-## 5.11 Escenarios de carga y puntos de sincronización
+## 8.12 Escenarios de carga y puntos de sincronización
 
 Esta sección establece los umbrales de sincronización y rendimiento operativo que deben verificarse en las pruebas de carga y QA:
 
-### 5.11.1 Puntos de sincronización críticos
+### 8.12.1 Puntos de sincronización críticos
 - **Latencia REST (Ingesta):** Respuesta de creación de solicitud (`POST /v1/service-requests`) en menos de 1.5 segundos.
 - **Ventana de Matching Asíncrono:** Desde la creación de la solicitud hasta la notificación al técnico candidato en **menos de 7 segundos** en operación normal (AC2-E3).
 - **Reflejo de Estado en Cliente:** Notificación y actualización de estado en la app móvil en **menos de 60 segundos** (RNF-06).
 - **Procesamiento de Pago:** Confirmación del cobro y emisión de comprobante en menos de 3 segundos con la pasarela externa (AC3-E1).
 
-### 5.11.2 Presupuesto y dimensionamiento bajo carga
+### 8.12.2 Presupuesto y dimensionamiento bajo carga
 - **Carga Pico Soportada:** Hasta 150 solicitudes de matching concurrentes (AC2-E4) sin caídas del servicio.
 - **Consumo de Recursos en VM3:** Consumo máximo de memoria de los 8 microservicios acotado a ≤ 6.5 GiB de RAM sobre los 11 GiB disponibles, con **0 reinicios por OOMKilled** bajo operación sostenida de 50 solicitudes concurrentes (AC2-E5, ver presupuesto en Documento de Infraestructura, sección 5.6).
 
----
-# 6. Vista de Desarrollo
+## 8.13 Escenarios de validación
 
-La Vista de Desarrollo describe la organización estática del software de QUICKPATCH desde la perspectiva de implementación. Su propósito es definir cómo se distribuyen las aplicaciones, microservicios, proyectos, capas, contratos, dependencias y pruebas dentro del repositorio.
+Los escenarios recorren el sistema de punta a punta y sirven para validar que los diagramas C4 son consistentes entre sí: cada escenario debe poder seguirse en los diagramas de contenedores, componentes, dinámicos y de despliegue.
 
-Esta vista mantiene la decisión tecnológica vigente:
+### 8.13.1 Diagrama de casos de uso
 
-- panel administrativo: Angular + TypeScript;
-- aplicación móvil: Flutter + Dart;
-- Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication: ASP.NET Core / .NET;
-- Matching: Java + Spring Boot;
-- integración síncrona: REST/HTTPS;
-- integración asíncrona: Apache Kafka.
+```mermaid
+flowchart LR
+    Cliente((Cliente))
+    Empresa((Empresa))
+    Tecnico((Técnico / Ally))
+    Admin((Admin))
+    PSP[PSP externo]
 
----
+    subgraph CODEBRIDGE [CODEBRIDGE]
+        UC1[Registrarse / Iniciar sesión]
+        UC2[Crear solicitud de servicio]
+        UC3[Ver seguimiento en tiempo real]
+        UC4[Pagar servicio]
+        UC5[Calificar servicio]
+        UC6[Configurar disponibilidad]
+        UC7[Aceptar / iniciar / completar servicio]
+        UC8[Aprobar técnicos y administrar tenants]
+    end
 
-## 6.1 Estructura del repositorio
-
-QUICKPATCH tiene 12 repositorios, uno por componente de la solución, en la organización `ARQUI-202630`: la aplicación móvil, el panel web, el API Gateway, los 8 microservicios y Apache Kafka. Un repositorio principal (`quickpatch`) los reúne como submódulos de Git y contiene la documentación, el contexto de agentes, las pruebas del sistema completo y el aprovisionamiento (ADR-013, modificado por ADR-021).
-
-La estructura del repositorio principal es la siguiente; las carpetas marcadas con `→` son submódulos:
-
-```text
-apps/
-├── mobile/              → quickpatch-mobile
-├── web/                 → quickpatch-web
-├── api-gateway/         → quickpatch-api-gateway
-│   ├── nginx/               (enrutamiento /api/<servicio>)
-│   └── openapi/             (contratos REST)
-├── backend/
-│   └── services/
-│       ├── identity/        → quickpatch-identity
-│       ├── actors/          → quickpatch-actors
-│       ├── catalog/         → quickpatch-catalog
-│       ├── service-request/ → quickpatch-service-request
-│       ├── matching/        → quickpatch-matching
-│       ├── ranking/         → quickpatch-ranking
-│       ├── payments/        → quickpatch-payments
-│       └── communication/   → quickpatch-communication
-└── kafka/               → quickpatch-kafka
-    ├── events/              (esquemas de eventos)
-    ├── topics/              (un topic por eventType)
-    └── deploy/              (despliegue de Kafka)
-
-tests/
-├── integration/
-├── contract/
-├── e2e/
-├── performance/
-└── security/
-
-infrastructure/          → quickpatch-infrastructure (pasa a ser carpeta de este repositorio, SCRUM-338)
-
-docs/
-├── requirements/
-├── architecture/
-├── design/
-├── infrastructure/
-└── governance/
+    Cliente --> UC1
+    Cliente --> UC2
+    Cliente --> UC3
+    Cliente --> UC4
+    Cliente --> UC5
+    Empresa --> UC1
+    Empresa --> UC2
+    Empresa --> UC3
+    Empresa --> UC4
+    Empresa --> UC5
+    Tecnico --> UC6
+    Tecnico --> UC7
+    Admin --> UC8
+    UC4 -.-> PSP
 ```
-
-Cada repositorio de servicio contiene su código, sus pruebas unitarias y de integración, su `Dockerfile`, su pipeline de CI propio y los contratos como submódulos fijados en una versión: `contracts/api-gateway/` (REST) y `contracts/kafka/` (eventos). Web y mobile incluyen solo `contracts/api-gateway/`.
-
-`apps/` concentra el código productivo; `tests/` contiene las pruebas transversales; `infrastructure/` contiene los artefactos asociados al despliegue; y los repositorios `quickpatch-api-gateway` y `quickpatch-kafka` mantienen las fronteras versionadas utilizadas por las aplicaciones y microservicios.
-
-![Estructura del repositorio QUICKPATCH](diagrams/sdd/07_vista_desarrollo_repositorio.svg)
-
-**Figura 14. Estructura del repositorio principal de QUICKPATCH.**
-
-La Figura 14 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
-
-### 6.1.1 Responsabilidades por repositorio
-
-Las historias no se asignan por especialidad fija (Working Agreements, «Distribución y reasignación de tareas»), así que la propiedad de cada repositorio se expresa por **rol**: el rol propietario revisa los cambios del repositorio y responde por su pipeline, aunque cualquier integrante pueda tomar una historia sobre él.
-
-| Repositorio | Ruta en `quickpatch` | Responsabilidad | Rol propietario | Contratos que consume (fijados por tag) |
-|---|---|---|---|---|
-| `quickpatch` | raíz | Documentación (SRS, SAD, SDD, DD), contexto de agentes, pruebas del sistema completo (`tests/`) y punteros de los submódulos | Arquitectura (transversal) | — |
-| `quickpatch-mobile` | `apps/mobile/` | App Flutter de clientes, empresas, técnicos y proveedores | Frontend | `contracts/api-gateway/` |
-| `quickpatch-web` | `apps/web/` | Panel Angular de `admin_tenant` y `admin_plataforma` | Frontend | `contracts/api-gateway/` |
-| `quickpatch-api-gateway` | `apps/api-gateway/` | Contratos REST (`openapi/`) y configuración de Nginx (`nginx/`) | Backend (contratos); DevOps (despliegue de Nginx) | — (es la fuente) |
-| `quickpatch-kafka` | `apps/kafka/` | Esquemas de eventos (`events/`), topics (`topics/topics.yaml`) y despliegue del broker (`deploy/`) | Backend (contratos); DevOps (despliegue) | — (es la fuente) |
-| `quickpatch-identity`, `-actors`, `-catalog`, `-service-request`, `-ranking`, `-payments`, `-communication` | `apps/backend/services/<servicio>/` | Un microservicio ASP.NET Core con su base de datos, migraciones, pruebas, `Dockerfile` y manifiestos k3s | Backend | `contracts/api-gateway/` y `contracts/kafka/` |
-| `quickpatch-matching` | `apps/backend/services/matching/` | Microservicio Java + Spring Boot de asignación de técnicos | Backend | `contracts/api-gateway/` y `contracts/kafka/` |
-| `quickpatch-infrastructure` | `infrastructure/` | Inventario y playbooks de Ansible, plantillas reutilizables de CI/CD | DevOps | — |
-
-`quickpatch-infrastructure` sigue como submódulo mientras los pipelines de despliegue dependan de sus plantillas; ADR-021 lo integra como carpeta del repositorio principal (SCRUM-338).
-
-La solicitud SCRUM-288 nombra `quickpatch-contracts` como fuente contractual. Ese repositorio quedó reemplazado por ADR-021: los contratos REST viven en `quickpatch-api-gateway` y los de eventos en `quickpatch-kafka`, cada uno junto al componente que los expone.
-
-### 6.1.2 Reglas de evolución entre repositorios
-
-1. **Un cambio nace en el repositorio propietario.** Se revisa y fusiona allí primero; después `quickpatch` actualiza el puntero del submódulo en un commit propio. El flujo de ramas, las revisiones y los quality gates son los de Working Agreements («GitFlow: modelo de ramas» y «Pull Requests») y del pipeline de cada repositorio; esta sección no los repite.
-2. **Los contratos se consumen por versión.** Cada consumidor fija `contracts/api-gateway/` y `contracts/kafka/` en un tag SemVer. Subir de versión es un commit explícito del consumidor, de modo que un cambio de contrato no rompe a nadie hasta que este lo adopta (ADR-021).
-3. **Un cambio de contrato pasa por su repositorio fuente.** Allí corren la validación con Spectral/oasdiff (REST) o AJV y la verificación de compatibilidad (eventos), y el cambio identifica productor, consumidores e impacto (`.ai/workflows/api-change.md`, `.ai/workflows/event-change.md`).
-4. **No hay dependencias internas entre microservicios.** Un servicio no incluye a otro como submódulo, no importa sus paquetes ni lee su base de datos. Se integra solo por REST a través del gateway o por eventos Kafka, y replica localmente lo que necesita (ADR-017). Hoy el código transversal de los servicios .NET (correlación, Problem Details, validación de JWT) está copiado en cada servicio; ADR-020, todavía propuesto, plantea publicarlo como paquetes NuGet internos versionados y sin lógica de dominio.
-5. **Cada repositorio se construye y prueba solo.** Su pipeline compila, prueba y mide cobertura sin clonar otros repositorios de la solución; las pruebas que cruzan servicios viven en `tests/` del repositorio principal.
 
 ---
 
-## 6.2 Organización por aplicación
+### 8.13.2 Escenarios principales
 
-### 6.2.1 Aplicación web administrativa
+Para cada escenario se documenta: actor, precondiciones, flujo principal, flujos alternos, servicios participantes, datos involucrados, eventos/endpoints, relación con las demás vistas y requisitos asociados (SRS v3.0, CODEBRIDGE).
 
-El panel administrativo se ubica en:
+#### Escenario 1 — Cliente registra una cuenta y crea una solicitud
 
-```text
-apps/web/
-```
-
-y utiliza **Angular + TypeScript**.
-
-Su responsabilidad es implementar las funcionalidades administrativas de QUICKPATCH para el administrador del tenant (`admin_tenant`) y el administrador de plataforma (`admin_plataforma`), y consumir los contratos REST publicados por el backend.
-
-La organización interna objetivo separa:
-
-- presentación;
-- funcionalidades o módulos;
-- componentes reutilizables;
-- servicios de aplicación;
-- cliente REST;
-- pruebas unitarias.
-
-El frontend no debe definir de forma independiente endpoints o estructuras de respuesta que no estén representados en los contratos publicados.
-
-### 6.2.2 Aplicación móvil
-
-La aplicación móvil se ubica en:
-
-```text
-apps/mobile/
-```
-
-y utiliza **Flutter + Dart**.
-
-Atiende los flujos de clientes, empresas cliente, técnicos y proveedores, y consume las capacidades del backend mediante REST.
-
-Su organización de desarrollo contempla:
-
-- presentación;
-- funcionalidades o `features`;
-- elementos de núcleo o `core`;
-- componentes compartidos;
-- cliente REST;
-- pruebas unitarias.
-
-### 6.2.3 Backend
-
-Los servicios backend se ubican en:
-
-```text
-apps/backend/services/
-```
-
-La asignación tecnológica definida por el SDD es:
-
-| Microservicio | Tecnología |
+| | |
 |---|---|
-| `identity/` | ASP.NET Core / .NET |
-| `actors/` | ASP.NET Core / .NET |
-| `catalog/` | ASP.NET Core / .NET |
-| `service-request/` | ASP.NET Core / .NET |
-| `matching/` | Java + Spring Boot |
-| `ranking/` | ASP.NET Core / .NET |
-| `payments/` | ASP.NET Core / .NET |
-| `communication/` | ASP.NET Core / .NET |
+| **Actor** | Cliente (variante: Empresa) |
+| **Precondiciones** | El usuario no tiene cuenta. El Catalog Service tiene categorías vigentes. |
+| **Flujo principal** | 1. `POST /v1/auth/register/client` (Identity Service) crea `User` y, si aplica, `Tenant`. 2. `POST /v1/auth/login`, se obtiene `AuthenticatedContext` (userId, tenantId, rol). 3. El cliente consulta `ServiceCategory` disponibles (Catalog Service). 4. `POST /v1/service-requests` (ServiceRequest Service): se crea el agregado en estado `buscando_tecnico`. 5. Se produce el evento `service-request.created`. |
+| **Flujos alternos** | Correo ya registrado → rechazo (RF-01). Token expirado en login → reintento de autenticación. |
+| **Servicios participantes** | API Gateway, Identity Service, Catalog Service, ServiceRequest Service, Kafka. |
+| **Datos involucrados** | `users`, `tenants`, `service_categories`, `service_requests`. |
+| **Eventos / Endpoints** | `POST /v1/auth/register/client`, `POST /v1/auth/login`, `POST /v1/service-requests` · produce `service-request.created`. |
+| **Relación con Container y Component** | Identity Service + Catalog Service + ServiceRequest Service (Sección 6). |
+| **Relación con Dynamic (sección 8)** | **Resuelto:** Ver **Sección 8.2** (flujos síncronos frente al cliente) y **Sección 8.3** (ingesta síncrona y publicación asíncrona por Outbox). |
+| **Relación con la organización del código (sección 10)** | *Pendiente Backend+Frontend* — formulario de registro/solicitud (Angular / Flutter) contra los contratos REST anteriores. |
+| **Relación con Deployment (sección 9)** | *Pendiente DevOps* — ruta API Gateway → Identity/Catalog/ServiceRequest dentro del clúster k3s. |
+| **Requisitos (SRS)** | RF-01, RF-03, RF-04, RF-06, RF-07, RF-08 |
 
-Cada servicio mantiene su propio límite funcional y debe poder evolucionar y desplegarse sin requerir dependencia directa del código interno de otro microservicio.
+#### Escenario 2 — El sistema encuentra y asigna un técnico
 
-![Componentes por aplicación](diagrams/sdd/08_componentes_por_aplicacion.svg)
-
-**Figura 15. Organización de componentes por aplicación y tecnología.**
-
----
-
-## 6.3 Estructura interna de los microservicios
-
-La Vista Lógica y el Diseño Detallado establecen una estructura común de cuatro capas para los microservicios backend:
-
-| Capa | Contenido |
+| | |
 |---|---|
-| **API / Interface** | Controllers, endpoints, validación de entrada y contratos expuestos |
-| **Application** | Casos de uso, comandos, queries y coordinación del flujo de aplicación |
-| **Domain** | Entidades, value objects y reglas de negocio |
-| **Infrastructure** | Repositorios, Kafka, PostgreSQL, Redis, PSP y adaptadores externos |
+| **Actor** | Sistema (Matching Service), Técnico/Ally |
+| **Precondiciones** | Evento `service-request.created` publicado. Existen `TechnicianAvailability` y `CoverageZone` compatibles con la solicitud. |
+| **Flujo principal** | 1. Matching Service consume `service-request.created`. 2. Valida el contexto de la solicitud. 3. Busca técnicos disponibles (`TechnicianAvailability`). 4. Filtra por cobertura geográfica (`CoverageZone`, PostGIS). 5. Ordena candidatos por criterios de matching. 6. Registra el intento de asignación (`MatchingAttempt`). 7. Si se encontró un técnico elegible, produce `matching.technician-assigned`. 8. ServiceRequest Service consume el evento y transiciona a `asignado`. 9. Communication Service notifica al técnico. |
+| **Flujos alternos** | Ningún candidato elegible tras el filtrado/ordenamiento → Escenario 3. |
+| **Servicios participantes** | Matching Service, ServiceRequest Service, Communication Service, Kafka. |
+| **Datos involucrados** | `technician_availability`, `coverage_zones`, `matching_attempts`, `service_requests`. |
+| **Eventos / Endpoints** | Consume `service-request.created` · produce `matching.technician-assigned`. |
+| **Relación con Container y Component** | Matching Service (Sección 6.8), Figura 14 (flujo lógico del matching). |
+| **Relación con Dynamic (sección 8)** | **Resuelto:** Ver **Sección 8.7** (Consumer Groups asignados) y **Sección 8.8** (Concurrencia y bloqueo temporal `expires_at`). |
+| **Relación con la organización del código (sección 10)** | *Pendiente* — módulo Java/Spring Boot del Matching Service. |
+| **Relación con Deployment (sección 9)** | *Pendiente DevOps* — nodo/contenedor del Matching Service y latencia hacia PostgreSQL+PostGIS. |
+| **Requisitos (SRS)** | RF-09, RF-10 · RNF-05 (asignación en menos de 60s) |
 
-La dirección conceptual de dependencias es:
+#### Escenario 3 — No existe técnico disponible y la solicitud queda en espera
 
-```text
-API / Interface
-      |
-      v
-Application
-      |
-      v
-Domain
-
-Infrastructure
-      |
-      +----> Application / Domain
-             mediante interfaces
-```
-
-La capa `Domain` concentra las reglas de negocio y no debe depender directamente de mecanismos externos como Kafka, PostgreSQL, Redis o proveedores de pago.
-
-Los siete servicios ASP.NET Core y `Matching Service` mantienen la misma separación conceptual, aunque cada tecnología utilice mecanismos propios para implementarla.
-
----
-
-## 6.4 Contratos, DTOs y elementos compartidos
-
-La comunicación entre aplicaciones y microservicios se realiza mediante contratos explícitos.
-
-### REST / OpenAPI
-
-Los contratos REST se mantienen en el repositorio `quickpatch-api-gateway`, junto al componente que los expone, en:
-
-```text
-openapi/          (en los consumidores: contracts/api-gateway/openapi/)
-```
-
-Estos contratos constituyen la frontera entre Angular, Flutter y los servicios backend.
-
-Los clientes no deben depender de clases internas del backend ni asumir campos que no formen parte del contrato publicado.
-
-### Eventos Kafka
-
-Los contratos de eventos se mantienen en el repositorio `quickpatch-kafka`, junto con la definición de los topics, en:
-
-```text
-events/           (en los servicios: contracts/kafka/events/)
-topics/topics.yaml
-```
-
-Cada servicio incluye `quickpatch-api-gateway` y `quickpatch-kafka` como submódulos fijados en una versión (tag SemVer); cambiar de versión es un commit explícito en el servicio (ADR-021).
-
-Los eventos permiten integrar servicios de forma asíncrona sin compartir implementaciones internas.
-
-Cada contrato de evento debe identificar como mínimo:
-
-- nombre;
-- versión;
-- productor;
-- consumidores;
-- esquema;
-- campos obligatorios y opcionales;
-- semántica;
-- compatibilidad.
-
-### DTOs y código compartido
-
-Los DTOs utilizados internamente pertenecen al componente que los implementa.
-
-No se establece una librería común de lógica de dominio entre los microservicios. En particular, los servicios .NET y `Matching Service` en Java no comparten clases internas; su interoperabilidad depende de contratos REST/OpenAPI y eventos Kafka versionados.
-
----
-
-## 6.5 Dependencias entre proyectos y módulos
-
-Las dependencias deben respetar los límites definidos por la arquitectura.
-
-Las principales reglas son:
-
-1. Angular y Flutter consumen servicios mediante REST.
-2. Las solicitudes síncronas ingresan a través del API Gateway.
-3. Kafka se utiliza para coordinación asíncrona entre dominios.
-4. Los servicios .NET y Java se integran mediante contratos, no mediante código compartido de negocio.
-5. Un microservicio no importa directamente la lógica interna de otro.
-6. Un microservicio no realiza escrituras directas sobre datos propiedad de otro servicio.
-7. `API / Interface` depende de `Application`.
-8. `Application` utiliza `Domain`.
-9. `Infrastructure` implementa los mecanismos externos requeridos por `Application` y `Domain`.
-
-![Dependencias entre proyectos y módulos](diagrams/sdd/09_dependencias_modulos.svg)
-
-**Figura 16. Dependencias permitidas entre aplicaciones, contratos y microservicios.**
-
-Estas reglas mantienen bajo el acoplamiento entre servicios y preservan la independencia tecnológica entre ASP.NET Core y Spring Boot.
-
----
-
-## 6.6 Organización de pruebas
-
-Las pruebas se dividen entre pruebas próximas al componente propietario y pruebas transversales.
-
-Las pruebas unitarias permanecen preferiblemente junto al código de la aplicación o microservicio correspondiente.
-
-Las pruebas que requieren interacción entre varios componentes se ubican en:
-
-```text
-tests/
-├── integration/
-├── contract/
-├── e2e/
-├── performance/
-└── security/
-```
-
-| Carpeta | Propósito |
+| | |
 |---|---|
-| `integration/` | Validar integración entre componentes y dependencias |
-| `contract/` | Verificar compatibilidad entre productores y consumidores |
-| `e2e/` | Validar flujos completos del sistema |
-| `performance/` | Verificar escenarios de rendimiento y carga |
-| `security/` | Ejecutar validaciones de seguridad |
+| **Actor** | Sistema (Matching Service) |
+| **Precondiciones** | Candidate Search no retorna candidatos válidos. |
+| **Flujo principal** | 1. Matching Service no encuentra técnico compatible. 2. Produce `matching.no-technician-available`. 3. ServiceRequest Service consume el evento y transiciona a `en_espera`. |
+| **Flujos alternos** | Reintento posterior cuando cambia la disponibilidad de algún técnico (fuera de alcance del MVP si no está implementado como *retry* automático). |
+| **Servicios participantes** | Matching Service, ServiceRequest Service. |
+| **Datos involucrados** | `matching_attempts`, `service_requests`. |
+| **Eventos / Endpoints** | Produce `matching.no-technician-available`. |
+| **Relación con Container y Component** | Matching Service, estado `en_espera` de `ServiceRequestStatus`. |
+| **Relación con las demás vistas** | *Pendiente* de integración por los responsables respectivos. |
+| **Requisitos (SRS)** | RF-09 (manejo explícito de "En espera" cuando no hay técnico disponible) |
 
-Entre las herramientas de prueba previstas para los diferentes componentes se encuentran:
+#### Escenario 4 — El técnico inicia y completa el servicio
 
-- `dotnet test` para los servicios ASP.NET Core;
-- Maven o Gradle para las pruebas de Matching;
-- `ng test` para Angular;
-- `flutter test` para Flutter.
-
----
-
-## 6.7 Convenciones de organización y nombres
-
-El código debe seguir las convenciones propias de cada lenguaje y framework, manteniendo consistencia entre los diferentes componentes.
-
-Como reglas generales:
-
-- variables y funciones utilizan las convenciones del lenguaje correspondiente;
-- clases utilizan `PascalCase` cuando aplica;
-- tablas y columnas PostgreSQL utilizan `snake_case`;
-- los nombres de elementos de dominio deben reflejar el vocabulario de QUICKPATCH;
-- los términos obligatorios del framework conservan su nomenclatura técnica;
-- las carpetas deben respetar los límites de aplicación, servicio y dominio definidos por esta vista.
-
-Las convenciones no deben utilizarse para crear dependencias entre microservicios ni para compartir lógica de dominio que pertenece a un servicio específico.
-
----
-
-## 6.8 Build y artefactos
-
-Cada aplicación y microservicio mantiene su propio proceso de construcción.
-
-### Panel Angular
-
-El proceso produce los artefactos estáticos que posteriormente son servidos mediante Nginx.
-
-```text
-Angular
-   ↓
-pruebas / build
-   ↓
-artefactos web
-```
-
-### Aplicación Flutter
-
-El proceso de construcción incluye análisis, pruebas y generación del artefacto correspondiente a la plataforma objetivo.
-
-```text
-flutter analyze
-      ↓
-flutter test
-      ↓
-flutter build
-      ↓
-artefacto móvil
-```
-
-### Microservicios ASP.NET Core
-
-Los siete servicios .NET se construyen y prueban de manera independiente y generan imágenes Docker independientes.
-
-### Matching Service
-
-`Matching Service` mantiene su propio proceso de build y pruebas bajo Java/Spring Boot y genera igualmente una imagen Docker independiente.
-
-Las ocho imágenes del backend se publican en el registro definido para el proyecto y son desplegadas individualmente.
-
-![Mapa de carpetas y artefactos de build](diagrams/sdd/10_mapa_carpetas_build.svg)
-
-**Figura 17. Relación entre código fuente, procesos de build, pruebas, artefactos y despliegue.**
-
----
-
-## 6.9 Integración con CI/CD
-
-La arquitectura de desarrollo establece pipelines separados por aplicación y por microservicio.
-
-Un cambio en un único servicio debe ejecutar el pipeline correspondiente al componente afectado, sin requerir el build completo de los ocho microservicios.
-
-Los gates definidos son:
-
-| Rama / etapa | Validaciones principales |
+| | |
 |---|---|
-| `feature/*` → PR a `develop` | Lint + pruebas unitarias del componente afectado |
-| `develop` | Pruebas de integración y contrato |
-| `release/x.y.z` | E2E, UAT y seguridad |
-| `main` | Build y despliegue |
-| Post-despliegue | Smoke tests y pruebas de rendimiento |
+| **Actor** | Técnico/Ally, Cliente / Empresa (observador del estado) |
+| **Precondiciones** | Solicitud en estado `asignado`. |
+| **Flujo principal** | 1. El técnico consulta `GET /v1/service-requests/{id}`. 2. `POST /v1/service-requests/{id}/start` → transición a `en_progreso`. 3. El cliente o la empresa que originó la solicitud observa el cambio de estado en tiempo real (vía Communication Service / canal de notificaciones). 4. `POST /v1/service-requests/{id}/complete` → transición a `completado`. 5. Se produce `service-request.completed`. |
+| **Flujos alternos** | Intento de completar sin haber iniciado → rechazo por `State Validation`. |
+| **Servicios participantes** | ServiceRequest Service, Communication Service. |
+| **Datos involucrados** | `service_requests`. |
+| **Eventos / Endpoints** | `POST /v1/service-requests/{id}/start`, `POST /v1/service-requests/{id}/complete` · produce `service-request.completed`. |
+| **Relación con Container y Component** | ServiceRequest Service — módulo *Service Lifecycle* y *State Validation* (Sección 6.7). |
+| **Relación con Dynamic (sección 8)** | **Resuelto:** Ver **Sección 8.3** (Notificación push asíncrona) y **Sección 8.12.1** (SLA de actualización de estado < 60s). |
+| **Requisitos (SRS)** | RF-11, RF-13, RF-14, RF-15 · RNF-06 (reflejo de estado en menos de 1 minuto) |
 
-El detalle operativo del pipeline pertenece a la infraestructura del proyecto. Desde la Vista de Desarrollo, la regla relevante es que cada aplicación o servicio debe poder construirse, probarse y desplegarse de forma independiente.
+#### Escenario 5 — El cliente realiza el pago
+
+| | |
+|---|---|
+| **Actor** | Cliente / Empresa |
+| **Precondiciones** | Solicitud en estado `completado`. |
+| **Flujo principal** | 1. `POST /v1/service-requests/{id}/payment` (Payments Service). 2. *PSP Adapter* tokeniza la operación con el proveedor de pagos externo (PSP). 3. Se crea `Payment` con `PaymentTokenReference`, sin almacenar PAN/CVV. |
+| **Flujos alternos** | Ver Escenario 6 (aprobación/rechazo del PSP). |
+| **Servicios participantes** | Payments Service (PSP Adapter), ServiceRequest Service. |
+| **Datos involucrados** | `payments`. |
+| **Eventos / Endpoints** | `POST /v1/service-requests/{id}/payment`. |
+| **Relación con Container y Component** | Payments Service — módulos *Payment Processing* y *PSP Adapter* (Sección 6.10). |
+| **Relación con Deployment (sección 9)** | *Pendiente DevOps* — salida de red autorizada hacia el PSP externo, reglas de seguridad. |
+| **Requisitos (SRS)** | RF-22, RF-23 · RNF-01 (PCI-DSS, no se persiste PAN/CVV) · RIE-01 |
+
+#### Escenario 6 — El PSP aprueba o rechaza el pago
+
+| | |
+|---|---|
+| **Actor** | Sistema (Payments Service), PSP externo |
+| **Precondiciones** | Pago iniciado (Escenario 5). |
+| **Flujo principal** | 1. El PSP responde de forma asíncrona. 2. Payments Service produce `payment.approved` o `payment.rejected`. 3. ServiceRequest Service consume el evento: si es `approved`, transiciona a `pagado`; si es `rejected`, permanece en `completado` y permite reintento. 4. Si fue aprobado, Billing genera `Invoice`. |
+| **Flujos alternos** | Pago rechazado → el cliente puede reintentar (vuelve al Escenario 5). |
+| **Servicios participantes** | Payments Service, ServiceRequest Service. |
+| **Datos involucrados** | `payments`, `invoices`. |
+| **Eventos / Endpoints** | Produce `payment.approved` / `payment.rejected` · `GET /v1/payments/{id}/invoice`. |
+| **Relación con Container y Component** | Payments Service — módulo *Billing / Invoice Management*. |
+| **Relación con Dynamic (sección 8)** | **Resuelto:** Ver **Sección 8.4** (Separación entre interacción PCI-DSS de Wompi y el procesamiento asíncrono) y **Sección 8.10** (Idempotencia). |
+| **Requisitos (SRS)** | RF-24 |
+
+#### Escenario 7 — El cliente califica el servicio
+
+| | |
+|---|---|
+| **Actor** | Cliente / Empresa |
+| **Precondiciones** | Solicitud en estado `pagado`. |
+| **Flujo principal** | 1. `POST /v1/service-requests/{id}/rating` (ServiceRequest Service) crea `Rating`, asociado al usuario o cuenta corporativa que originó la solicitud. 2. Ranking Service consume el resultado y recalcula la reputación del técnico. |
+| **Flujos alternos** | Intento de calificar sin pago confirmado → rechazo. |
+| **Servicios participantes** | ServiceRequest Service, Ranking Service. |
+| **Datos involucrados** | `ratings`. |
+| **Eventos / Endpoints** | `POST /v1/service-requests/{id}/rating`. |
+| **Relación con Container y Component** | ServiceRequest Service (módulo *Ratings*) + Ranking Service (Sección 6.9). |
+| **Requisitos (SRS)** | RF-12 |
+
+#### Escenario 8 — Una empresa/tenant consulta información sin acceder a datos de otro tenant
+
+| | |
+|---|---|
+| **Actor** | Empresa, Admin |
+| **Precondiciones** | Usuario autenticado con `AuthenticatedContext` (incluye `tenantId`). |
+| **Flujo principal** | 1. El usuario consulta sus solicitudes/dashboard. 2. Cada servicio filtra automáticamente por `tenant_id` derivado del contexto autenticado. 3. Un intento de acceder a datos de otro `tenant_id` es rechazado. |
+| **Flujos alternos** | Intento de acceso no autorizado → error 403, registrado en log (RNF-04). |
+| **Servicios participantes** | API Gateway (propagación de identidad/tenant), todos los microservicios (aislamiento en sus propias consultas). |
+| **Datos involucrados** | Todas las tablas con columna `tenant_id`. |
+| **Relación con Container y Component** | Regla transversal de *Multi-tenancy* (Sección 5.4 y 6.12). PostgreSQL RLS como defensa adicional. |
+| **Requisitos (SRS)** | RF-04, RF-05, RF-18, RF-21 · RNF-04, RNF-09, RNF-10 |
+
+#### Escenario 9 — Kafka presenta una falla temporal y el evento se recupera mediante Outbox
+
+| | |
+|---|---|
+| **Actor** | Sistema (cualquier servicio productor) |
+| **Precondiciones** | Un servicio necesita publicar un evento (ej. `service-request.created`, `payment.approved`) y Kafka no está disponible. |
+| **Flujo principal** | 1. El servicio registra localmente el cambio de estado y el evento pendiente (Transactional Outbox). 2. El publicador reintenta con backoff hasta que Kafka esté disponible. 3. El evento se publica y los consumidores lo procesan de forma idempotente usando `eventId`. |
+| **Flujos alternos** | Reintentos agotados → DLQ (sección 8.9). |
+| **Servicios participantes** | Cualquier servicio productor, Kafka. |
+| **Relación con Container y Component** | Regla transversal *Idempotencia* y *Transactional Outbox* (Sección 6.12). |
+| **Relación con Dynamic (sección 8)** | **Resuelto:** Ver **Sección 8.9** (Reintentos, backoff exponencial con jitter y desvío a DLQ) y **Sección 8.11** (Tolerancia a fallos). |
+| **Requisitos (SRS)** | RNF-07, RNF-08 (disponibilidad; un fallo no debe bloquear el flujo de negocio de forma permanente) |
 
 ---
 
-## 6.10 Regla de actualización de la vista
+### 8.13.3 Diagrama de secuencia — Escenario crítico de extremo a extremo
 
-La Vista de Desarrollo debe mantenerse sincronizada con el repositorio real.
+Cubre el flujo Escenarios 1 → 2 → 4 → 5 → 6 → 7 (registro → matching → ejecución → pago → calificación), que corresponde a la prueba end-to-end de RF-27.
 
-Debe actualizarse cuando se produzcan cambios como:
+> En este diagrama, el actor `Cliente` representa indistintamente a un **Cliente** o a una **Empresa**, ya que ambos siguen el mismo flujo de seguimiento, pago y calificación sobre sus propias solicitudes.
 
-- creación o eliminación de una aplicación;
-- creación, división o eliminación de un microservicio;
-- modificación del stack tecnológico;
-- cambio en la estructura interna de proyectos o capas;
-- modificación de contratos compartidos;
-- cambio en la organización de pruebas;
-- cambio en las dependencias permitidas;
-- modificación significativa del proceso de build o CI/CD.
+```mermaid
+sequenceDiagram
+    actor C as Cliente
+    participant GW as API Gateway
+    participant ID as Identity Service
+    participant SR as ServiceRequest Service
+    participant MS as Matching Service
+    participant PAY as Payments Service
+    participant PSP as PSP externo
+    participant RK as Ranking Service
+    participant K as Kafka
 
-Los diagramas de esta sección no deben representar como implementada una carpeta o estructura que todavía exista únicamente como diseño objetivo. Cuando exista esa diferencia, debe quedar indicada explícitamente.
+    C->>GW: POST /auth/register/client
+    GW->>ID: registrar usuario
+    C->>GW: POST /auth/login
+    GW->>ID: validar credenciales
+    ID-->>C: AuthenticatedContext
+
+    C->>GW: POST /service-requests
+    GW->>SR: crear solicitud
+    SR->>K: service-request.created
+
+    K->>MS: consume service-request.created
+    MS->>MS: Candidate Search (PostGIS)
+    MS->>K: matching.technician-assigned
+    K->>SR: consume evento -> estado asignado
+
+    C->>GW: POST /service-requests/{id}/start
+    GW->>SR: estado en_progreso
+    C->>GW: POST /service-requests/{id}/complete
+    GW->>SR: estado completado
+
+    C->>GW: POST /service-requests/{id}/payment
+    GW->>PAY: iniciar pago
+    PAY->>PSP: tokenizar y procesar
+    PSP-->>PAY: aprobado
+    PAY->>K: payment.approved
+    K->>SR: consume evento -> estado pagado
+
+    C->>GW: POST /service-requests/{id}/rating
+    GW->>SR: registrar Rating
+    SR->>RK: actualizar reputación
+```
 
 ---
-# 7. Vista Física
 
-**Corresponde a:** DevOps (Sebastian).
+### 8.13.4 Matriz escenario → componentes → diagramas
 
-Esta sección presenta cómo se despliega físicamente el sistema descrito en la Vista Lógica: las 7 VMs propias del proyecto, los ambientes de prueba y producción, y el modelo de seguridad de red y gestión de secretos. El detalle operativo completo (inventario de VMs, Ansible, CI/CD paso a paso, healthchecks, orden de arranque, presupuesto de recursos por microservicio y la limitación del clúster k3s de un solo nodo) vive en `Documento de Infraestructura.md` — esta sección consolida la vista física para el SDD sin duplicar ese contenido, siguiendo la misma regla de actualización de la sección 2.
+| # | Escenario | Componentes principales | Container y Component | Dynamic | Organización del código | Deployment |
+|---|---|---|---|---|---|---|
+| 1 | Registro y creación de solicitud | Identity, Catalog, ServiceRequest | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+| 2 | Matching y asignación | Matching, ServiceRequest, Communication | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+| 3 | Sin técnico disponible | Matching, ServiceRequest | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+| 4 | Ejecución del servicio | ServiceRequest, Communication | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+| 5 | Pago | Payments, ServiceRequest | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+| 6 | Aprobación/rechazo PSP | Payments, ServiceRequest | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+| 7 | Calificación | ServiceRequest, Ranking | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+| 8 | Aislamiento multi-tenant | API Gateway, todos los servicios | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+| 9 | Falla temporal de Kafka | Cualquier productor, Kafka | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
 
-## 7.1 Diagrama de despliegue
+**Criterio de validación del Product Owner:** un escenario queda completamente validado cuando las cuatro vistas técnicas lo resuelven de forma coherente. Actualmente los 9 escenarios están cubiertos por la Vista Lógica; falta la confirmación de Backend+QA (Procesos), Backend+Frontend (Desarrollo) y DevOps (Física) para cerrar la integración cruzada indicada en la Sección 9 del SDD.
+
+---
+
+### 8.13.5 Requisitos no cubiertos explícitamente por ningún escenario
+
+Como parte de la validación de completitud, reviso qué RF/RNF del SRS v3.0 **no** quedan representados en los 9 escenarios anteriores, para que el equipo decida si se documentan aparte o se consideran fuera del alcance de esta vista:
+
+- **RF-16, RF-17** (gestión de equipo del Proveedor/Ally, historial del técnico) — no tienen escenario propio; se recomienda agregarlos si el Actors Service define su persistencia en un sprint próximo.
+- **RF-19, RF-20** (aprobación/suspensión de técnicos por Admin) — mencionados tangencialmente en el Escenario 8, pero no tienen flujo propio.
+- **RF-26 a RF-29** (CI/CD, pruebas, logging, cifrado) — corresponden a la Vista Física/Procesos, no a escenarios de negocio; se consideran cubiertos por esas vistas cuando DevOps las entregue.
+
+---
+
+# 9. Deployment diagrams
+
+Los diagramas de despliegue de C4 muestran dónde se ejecuta cada contenedor: las 7 VMs propias del proyecto, los ambientes de prueba y producción, y el modelo de seguridad de red y gestión de secretos. El detalle operativo completo (inventario de VMs, Ansible, CI/CD paso a paso, healthchecks, orden de arranque, presupuesto de recursos por microservicio y la limitación del clúster k3s de un solo nodo) vive en `Documento de Infraestructura.md` — esta sección consolida el despliegue para el SDD sin duplicar ese contenido, siguiendo la misma regla de actualización de la sección 2.
+
+## 9.1 Producción y QA
 
 El diagrama muestra la distribución aprobada en ADR-022: VM1 de herramientas y entrada, producción en VM3, VM4 y VM6, y QA con la misma forma en VM2, VM5 y VM7. La implementación está en curso (SCRUM-334); hasta que termine, la distribución operativa es la del Documento de Infraestructura, sección 3.2.
 
-```mermaid
-flowchart TB
-    CLIENTE(["Cliente — web / móvil<br/>(VPN de la universidad, sin acceso público — R9)"])
-    EQUIPO(["Equipo<br/>VPN · SSH"])
+![Despliegue de producción (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-Produccion.png)
 
-    subgraph LAB["Red privada del laboratorio — 10.43.x.x"]
-    direction TB
+**Figura 30. Despliegue de producción: VM1, VM3, VM4 y VM6 (C4 · Deployment, ADR-022). Vista `C4-06-Despliegue-Produccion`.**
 
-        subgraph VM1N["VM1 · 10.43.100.168 · Herramientas"]
-            VM1["Proxy Nginx :443 · TLS autofirmado<br/>Runner de GitHub · k6<br/>Prometheus · Loki · Grafana"]
-        end
+![Despliegue de QA (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-QA.png)
 
-        subgraph PROD["Producción"]
-            direction TB
-            subgraph VM3N["VM3 · 10.43.98.205 · Aplicación"]
-                VM3["k3s, nodo único · Traefik :30080<br/>API Gateway · Panel Angular<br/>8 microservicios"]
-            end
-            subgraph VM4N["VM4 · 10.43.98.209 · Datos"]
-                VM4[("PostgreSQL + PostGIS<br/>una base por servicio<br/>Redis")]
-            end
-            subgraph VM6N["VM6 · 10.43.99.12 · Mensajería y almacenamiento"]
-                VM6["Apache Kafka + Kafka UI<br/>Garage S3"]
-            end
-        end
+**Figura 31. Despliegue de QA: VM2, VM5 y VM7, con la VM1 compartida (C4 · Deployment, ADR-022). Vista `C4-06-Despliegue-QA`.**
 
-        subgraph QA["QA — misma forma que producción"]
-            direction TB
-            VM2["VM2 · 10.43.98.15<br/>Aplicación (k3s)"]
-            VM5[("VM5 · 10.43.98.29<br/>Datos")]
-            VM7["VM7 · 10.43.99.8<br/>Mensajería y almacenamiento"]
-        end
-
-        VM1 -->|"quickpatch.internal<br/>NodePort 30080"| VM3
-        VM1 -->|"qa.quickpatch.internal<br/>NodePort 30080"| VM2
-        VM3 -->|"5432 · 6379"| VM4
-        VM3 -->|"9092 · 9000 evidencias"| VM6
-        VM4 -->|"9000 · respaldo diario"| VM6
-        VM2 --> VM5
-        VM2 --> VM7
-    end
-
-    CLIENTE -->|"443 HTTPS — único punto de entrada"| VM1
-    EQUIPO -.->|"grafana.quickpatch.internal<br/>por VM1"| VM1
-
-    style LAB fill:#f4f6fa,stroke:#00468C,stroke-width:1.5px,stroke-dasharray:4 3
-    style VM1N fill:#E1EBFA,stroke:#00468C,stroke-width:1.5px
-    style PROD fill:#E6F5E6,stroke:#00468C,stroke-width:1.5px
-    style QA fill:#FFF0DC,stroke:#00468C,stroke-width:1.5px
-    style VM3N fill:#FFFFFF,stroke:#00468C,stroke-width:1.5px
-    style VM4N fill:#FFFFFF,stroke:#00468C,stroke-width:1.5px
-    style VM6N fill:#FFFFFF,stroke:#00468C,stroke-width:1.5px
-```
-
-**Figura 18. Diagrama de despliegue de QUICKPATCH: herramientas, producción y QA (ADR-022).**
+IPs del laboratorio: VM1 10.43.100.168, VM3 10.43.98.205, VM4 10.43.98.209, VM6 10.43.99.12; QA: VM2 10.43.98.15, VM5 10.43.98.29, VM7 10.43.99.8. VM1 reenvía `quickpatch.internal` y `qa.quickpatch.internal` al NodePort 30080 de Traefik en VM3 y VM2.
 
 Las VMs son idénticas en hardware (4 vCPU · 11 GiB RAM · 68 GB disco) y solo difieren en el software que alojan (Documento de Infraestructura, sección 3). VM3 es un clúster k3s de un solo nodo: es el punto único de falla reconocido del sistema (SAD, limitación de la sección 5.2); lo mismo ocurre con VM4 (base de datos y caché) y VM6 (bus y almacenamiento). Las 7 VMs envían métricas (`node_exporter`, 9100) y logs (Promtail, 3100) a VM1; esas flechas no se dibujan para no cruzar el diagrama. Las VMs de QA no pueden conectarse con las de producción. El firewall aplica `default deny incoming`; ninguna VM acepta conexiones directas del exterior salvo VM1 (443) y el acceso SSH del equipo (Documento de Infraestructura, sección 10.2).
 
-## 7.2 Ambientes Dev / QA / Prod
+## 9.2 Ambientes Dev / QA / Prod
 
 ```mermaid
 flowchart TB
@@ -1560,11 +1330,11 @@ flowchart TB
     style P fill:#E6F5E6,stroke:#00468C,stroke-width:1.5px
 ```
 
-**Figura 19. Ambientes de desarrollo, pruebas y producción.**
+**Figura 32. Ambientes de desarrollo, pruebas y producción.**
 
 Dev es el único ambiente efímero: existe solo mientras corre el pipeline en un runner de GitHub Actions. QA ocupa hardware dedicado, VM2, VM5 y VM7 (ADR-015, ADR-022): replica la forma de producción VM por VM, con datos y secretos propios, y no puede conectarse a los servicios de producción. Cada versión `release/*` se despliega en QA y allí corren las pruebas de sistema (E2E, OWASP ZAP, escáner PCI-DSS y carga con k6); producción se despliega al fusionar en `main` (Documento de Infraestructura, secciones 4 y 6).
 
-## 7.3 Seguridad de red y gestión de secretos
+## 9.3 Seguridad de red y gestión de secretos
 
 ```mermaid
 flowchart TB
@@ -1618,7 +1388,7 @@ flowchart TB
     style RED fill:#f4f6fa,stroke:#00468C,stroke-width:1.5px,stroke-dasharray:4 3
 ```
 
-**Figura 20. Seguridad de red y gestión de secretos.**
+**Figura 33. Seguridad de red y gestión de secretos.**
 
 TLS se termina en VM1 con certificado autofirmado — no hay dominio público (R9), por lo que Let's Encrypt no es viable (Documento de Infraestructura, sección 10.1). Los secretos se gestionan por dos mecanismos: Ansible Vault para la infraestructura de las 7 VMs (el archivo cifrado no se sube a Git, y QA tiene secretos propios, distintos a los de producción) y `Secret` de Kubernetes para los microservicios dentro de VM3 y VM2. El CI/CD no guarda credenciales de Kubernetes: el runner de VM1 usa los kubeconfig que deja Ansible en la propia VM, y la publicación de imágenes usa el token temporal de cada ejecución (Documento de Infraestructura, sección 8).
 
@@ -1626,317 +1396,450 @@ El acceso por SSH es con contraseña, con la cuenta que entrega el laboratorio. 
 
 ---
 
-# 8. Vista de Escenarios (+1)
+# 10. Organización del código y del desarrollo (complemento de C4)
+
+C4 no modela repositorios, carpetas ni pipelines, así que esta sección complementa los diagramas C4 con la organización estática del código de QUICKPATCH. Su propósito es definir cómo se distribuyen las aplicaciones, microservicios, proyectos, capas, contratos, dependencias y pruebas dentro del repositorio.
+
+Mantiene la decisión tecnológica vigente:
+
+- panel administrativo: Angular + TypeScript;
+- aplicación móvil: Flutter + Dart;
+- Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication: ASP.NET Core / .NET;
+- Matching: Java + Spring Boot;
+- integración síncrona: REST/HTTPS;
+- integración asíncrona: Apache Kafka.
 
 ---
 
-## 8.1 Diagrama de casos de uso
+## 10.1 Estructura del repositorio
 
-```mermaid
-flowchart LR
-    Cliente((Cliente))
-    Empresa((Empresa))
-    Tecnico((Técnico / Ally))
-    Admin((Admin))
-    PSP[PSP externo]
+QUICKPATCH tiene 12 repositorios, uno por componente de la solución, en la organización `ARQUI-202630`: la aplicación móvil, el panel web, el API Gateway, los 8 microservicios y Apache Kafka. Un repositorio principal (`quickpatch`) los reúne como submódulos de Git y contiene la documentación, el contexto de agentes, las pruebas del sistema completo y el aprovisionamiento (ADR-013, modificado por ADR-021).
 
-    subgraph CODEBRIDGE [CODEBRIDGE]
-        UC1[Registrarse / Iniciar sesión]
-        UC2[Crear solicitud de servicio]
-        UC3[Ver seguimiento en tiempo real]
-        UC4[Pagar servicio]
-        UC5[Calificar servicio]
-        UC6[Configurar disponibilidad]
-        UC7[Aceptar / iniciar / completar servicio]
-        UC8[Aprobar técnicos y administrar tenants]
-    end
+La estructura del repositorio principal es la siguiente; las carpetas marcadas con `→` son submódulos:
 
-    Cliente --> UC1
-    Cliente --> UC2
-    Cliente --> UC3
-    Cliente --> UC4
-    Cliente --> UC5
-    Empresa --> UC1
-    Empresa --> UC2
-    Empresa --> UC3
-    Empresa --> UC4
-    Empresa --> UC5
-    Tecnico --> UC6
-    Tecnico --> UC7
-    Admin --> UC8
-    UC4 -.-> PSP
+```text
+apps/
+├── mobile/              → quickpatch-mobile
+├── web/                 → quickpatch-web
+├── api-gateway/         → quickpatch-api-gateway
+│   ├── nginx/               (enrutamiento /api/<servicio>)
+│   └── openapi/             (contratos REST)
+├── backend/
+│   └── services/
+│       ├── identity/        → quickpatch-identity
+│       ├── actors/          → quickpatch-actors
+│       ├── catalog/         → quickpatch-catalog
+│       ├── service-request/ → quickpatch-service-request
+│       ├── matching/        → quickpatch-matching
+│       ├── ranking/         → quickpatch-ranking
+│       ├── payments/        → quickpatch-payments
+│       └── communication/   → quickpatch-communication
+└── kafka/               → quickpatch-kafka
+    ├── events/              (esquemas de eventos)
+    ├── topics/              (un topic por eventType)
+    └── deploy/              (despliegue de Kafka)
+
+tests/
+├── integration/
+├── contract/
+├── e2e/
+├── performance/
+└── security/
+
+infrastructure/          → quickpatch-infrastructure (pasa a ser carpeta de este repositorio, SCRUM-338)
+
+docs/
+├── requirements/
+├── architecture/
+├── design/
+├── infrastructure/
+└── governance/
 ```
 
----
+Cada repositorio de servicio contiene su código, sus pruebas unitarias y de integración, su `Dockerfile`, su pipeline de CI propio y los contratos como submódulos fijados en una versión: `contracts/api-gateway/` (REST) y `contracts/kafka/` (eventos). Web y mobile incluyen solo `contracts/api-gateway/`.
 
-## 8.2 Escenarios principales
+`apps/` concentra el código productivo; `tests/` contiene las pruebas transversales; `infrastructure/` contiene los artefactos asociados al despliegue; y los repositorios `quickpatch-api-gateway` y `quickpatch-kafka` mantienen las fronteras versionadas utilizadas por las aplicaciones y microservicios.
 
-Para cada escenario se documenta: actor, precondiciones, flujo principal, flujos alternos, servicios participantes, datos involucrados, eventos/endpoints, relación con las demás vistas y requisitos asociados (SRS v3.0, CODEBRIDGE).
+![Estructura del repositorio QUICKPATCH](diagrams/sdd/07_vista_desarrollo_repositorio.svg)
 
-### Escenario 1 — Cliente registra una cuenta y crea una solicitud
+**Figura 34. Estructura del repositorio principal de QUICKPATCH.**
 
-| | |
-|---|---|
-| **Actor** | Cliente (variante: Empresa) |
-| **Precondiciones** | El usuario no tiene cuenta. El Catalog Service tiene categorías vigentes. |
-| **Flujo principal** | 1. `POST /v1/auth/register/client` (Identity Service) crea `User` y, si aplica, `Tenant`. 2. `POST /v1/auth/login`, se obtiene `AuthenticatedContext` (userId, tenantId, rol). 3. El cliente consulta `ServiceCategory` disponibles (Catalog Service). 4. `POST /v1/service-requests` (ServiceRequest Service): se crea el agregado en estado `buscando_tecnico`. 5. Se produce el evento `service-request.created`. |
-| **Flujos alternos** | Correo ya registrado → rechazo (RF-01). Token expirado en login → reintento de autenticación. |
-| **Servicios participantes** | API Gateway, Identity Service, Catalog Service, ServiceRequest Service, Kafka. |
-| **Datos involucrados** | `users`, `tenants`, `service_categories`, `service_requests`. |
-| **Eventos / Endpoints** | `POST /v1/auth/register/client`, `POST /v1/auth/login`, `POST /v1/service-requests` · produce `service-request.created`. |
-| **Relación con Vista Lógica** | Identity Service + Catalog Service + ServiceRequest Service (Sección 3.2). |
-| **Relación con Vista de Procesos** | **Resuelto:** Ver **Sección 5.2** (flujos síncronos frente al cliente) y **Sección 5.3** (ingesta síncrona y publicación asíncrona por Outbox). |
-| **Relación con Vista de Desarrollo** | *Pendiente Backend+Frontend* — formulario de registro/solicitud (Angular / Flutter) contra los contratos REST anteriores. |
-| **Relación con Vista Física** | *Pendiente DevOps* — ruta API Gateway → Identity/Catalog/ServiceRequest dentro del clúster k3s. |
-| **Requisitos (SRS)** | RF-01, RF-03, RF-04, RF-06, RF-07, RF-08 |
+La Figura 34 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
 
-### Escenario 2 — El sistema encuentra y asigna un técnico
+### 10.1.1 Responsabilidades por repositorio
 
-| | |
-|---|---|
-| **Actor** | Sistema (Matching Service), Técnico/Ally |
-| **Precondiciones** | Evento `service-request.created` publicado. Existen `TechnicianAvailability` y `CoverageZone` compatibles con la solicitud. |
-| **Flujo principal** | 1. Matching Service consume `service-request.created`. 2. Valida el contexto de la solicitud. 3. Busca técnicos disponibles (`TechnicianAvailability`). 4. Filtra por cobertura geográfica (`CoverageZone`, PostGIS). 5. Ordena candidatos por criterios de matching. 6. Registra el intento de asignación (`MatchingAttempt`). 7. Si se encontró un técnico elegible, produce `matching.technician-assigned`. 8. ServiceRequest Service consume el evento y transiciona a `asignado`. 9. Communication Service notifica al técnico. |
-| **Flujos alternos** | Ningún candidato elegible tras el filtrado/ordenamiento → Escenario 3. |
-| **Servicios participantes** | Matching Service, ServiceRequest Service, Communication Service, Kafka. |
-| **Datos involucrados** | `technician_availability`, `coverage_zones`, `matching_attempts`, `service_requests`. |
-| **Eventos / Endpoints** | Consume `service-request.created` · produce `matching.technician-assigned`. |
-| **Relación con Vista Lógica** | Matching Service (Sección 3.2.6), Figura 6 (flujo lógico del matching). |
-| **Relación con Vista de Procesos** | **Resuelto:** Ver **Sección 5.6** (Consumer Groups asignados) y **Sección 5.7** (Concurrencia y bloqueo temporal `expires_at`). |
-| **Relación con Vista de Desarrollo** | *Pendiente* — módulo Java/Spring Boot del Matching Service. |
-| **Relación con Vista Física** | *Pendiente DevOps* — nodo/contenedor del Matching Service y latencia hacia PostgreSQL+PostGIS. |
-| **Requisitos (SRS)** | RF-09, RF-10 · RNF-05 (asignación en menos de 60s) |
+Las historias no se asignan por especialidad fija (Working Agreements, «Distribución y reasignación de tareas»), así que la propiedad de cada repositorio se expresa por **rol**: el rol propietario revisa los cambios del repositorio y responde por su pipeline, aunque cualquier integrante pueda tomar una historia sobre él.
 
-### Escenario 3 — No existe técnico disponible y la solicitud queda en espera
+| Repositorio | Ruta en `quickpatch` | Responsabilidad | Rol propietario | Contratos que consume (fijados por tag) |
+|---|---|---|---|---|
+| `quickpatch` | raíz | Documentación (SRS, SAD, SDD, DD), contexto de agentes, pruebas del sistema completo (`tests/`) y punteros de los submódulos | Arquitectura (transversal) | — |
+| `quickpatch-mobile` | `apps/mobile/` | App Flutter de clientes, empresas, técnicos y proveedores | Frontend | `contracts/api-gateway/` |
+| `quickpatch-web` | `apps/web/` | Panel Angular de `admin_tenant` y `admin_plataforma` | Frontend | `contracts/api-gateway/` |
+| `quickpatch-api-gateway` | `apps/api-gateway/` | Contratos REST (`openapi/`) y configuración de Nginx (`nginx/`) | Backend (contratos); DevOps (despliegue de Nginx) | — (es la fuente) |
+| `quickpatch-kafka` | `apps/kafka/` | Esquemas de eventos (`events/`), topics (`topics/topics.yaml`) y despliegue del broker (`deploy/`) | Backend (contratos); DevOps (despliegue) | — (es la fuente) |
+| `quickpatch-identity`, `-actors`, `-catalog`, `-service-request`, `-ranking`, `-payments`, `-communication` | `apps/backend/services/<servicio>/` | Un microservicio ASP.NET Core con su base de datos, migraciones, pruebas, `Dockerfile` y manifiestos k3s | Backend | `contracts/api-gateway/` y `contracts/kafka/` |
+| `quickpatch-matching` | `apps/backend/services/matching/` | Microservicio Java + Spring Boot de asignación de técnicos | Backend | `contracts/api-gateway/` y `contracts/kafka/` |
+| `quickpatch-infrastructure` | `infrastructure/` | Inventario y playbooks de Ansible, plantillas reutilizables de CI/CD | DevOps | — |
 
-| | |
-|---|---|
-| **Actor** | Sistema (Matching Service) |
-| **Precondiciones** | Candidate Search no retorna candidatos válidos. |
-| **Flujo principal** | 1. Matching Service no encuentra técnico compatible. 2. Produce `matching.no-technician-available`. 3. ServiceRequest Service consume el evento y transiciona a `en_espera`. |
-| **Flujos alternos** | Reintento posterior cuando cambia la disponibilidad de algún técnico (fuera de alcance del MVP si no está implementado como *retry* automático). |
-| **Servicios participantes** | Matching Service, ServiceRequest Service. |
-| **Datos involucrados** | `matching_attempts`, `service_requests`. |
-| **Eventos / Endpoints** | Produce `matching.no-technician-available`. |
-| **Relación con Vista Lógica** | Matching Service, estado `en_espera` de `ServiceRequestStatus`. |
-| **Relación con las demás vistas** | *Pendiente* de integración por los responsables respectivos. |
-| **Requisitos (SRS)** | RF-09 (manejo explícito de "En espera" cuando no hay técnico disponible) |
+`quickpatch-infrastructure` sigue como submódulo mientras los pipelines de despliegue dependan de sus plantillas; ADR-021 lo integra como carpeta del repositorio principal (SCRUM-338).
 
-### Escenario 4 — El técnico inicia y completa el servicio
+La solicitud SCRUM-288 nombra `quickpatch-contracts` como fuente contractual. Ese repositorio quedó reemplazado por ADR-021: los contratos REST viven en `quickpatch-api-gateway` y los de eventos en `quickpatch-kafka`, cada uno junto al componente que los expone.
 
-| | |
-|---|---|
-| **Actor** | Técnico/Ally, Cliente / Empresa (observador del estado) |
-| **Precondiciones** | Solicitud en estado `asignado`. |
-| **Flujo principal** | 1. El técnico consulta `GET /v1/service-requests/{id}`. 2. `POST /v1/service-requests/{id}/start` → transición a `en_progreso`. 3. El cliente o la empresa que originó la solicitud observa el cambio de estado en tiempo real (vía Communication Service / canal de notificaciones). 4. `POST /v1/service-requests/{id}/complete` → transición a `completado`. 5. Se produce `service-request.completed`. |
-| **Flujos alternos** | Intento de completar sin haber iniciado → rechazo por `State Validation`. |
-| **Servicios participantes** | ServiceRequest Service, Communication Service. |
-| **Datos involucrados** | `service_requests`. |
-| **Eventos / Endpoints** | `POST /v1/service-requests/{id}/start`, `POST /v1/service-requests/{id}/complete` · produce `service-request.completed`. |
-| **Relación con Vista Lógica** | ServiceRequest Service — módulo *Service Lifecycle* y *State Validation* (Sección 3.2.5). |
-| **Relación con Vista de Procesos** | **Resuelto:** Ver **Sección 5.3** (Notificación push asíncrona) y **Sección 5.11.1** (SLA de actualización de estado < 60s). |
-| **Requisitos (SRS)** | RF-11, RF-13, RF-14, RF-15 · RNF-06 (reflejo de estado en menos de 1 minuto) |
+### 10.1.2 Reglas de evolución entre repositorios
 
-### Escenario 5 — El cliente realiza el pago
-
-| | |
-|---|---|
-| **Actor** | Cliente / Empresa |
-| **Precondiciones** | Solicitud en estado `completado`. |
-| **Flujo principal** | 1. `POST /v1/service-requests/{id}/payment` (Payments Service). 2. *PSP Adapter* tokeniza la operación con el proveedor de pagos externo (PSP). 3. Se crea `Payment` con `PaymentTokenReference`, sin almacenar PAN/CVV. |
-| **Flujos alternos** | Ver Escenario 6 (aprobación/rechazo del PSP). |
-| **Servicios participantes** | Payments Service (PSP Adapter), ServiceRequest Service. |
-| **Datos involucrados** | `payments`. |
-| **Eventos / Endpoints** | `POST /v1/service-requests/{id}/payment`. |
-| **Relación con Vista Lógica** | Payments Service — módulos *Payment Processing* y *PSP Adapter* (Sección 3.2.8). |
-| **Relación con Vista Física** | *Pendiente DevOps* — salida de red autorizada hacia el PSP externo, reglas de seguridad. |
-| **Requisitos (SRS)** | RF-22, RF-23 · RNF-01 (PCI-DSS, no se persiste PAN/CVV) · RIE-01 |
-
-### Escenario 6 — El PSP aprueba o rechaza el pago
-
-| | |
-|---|---|
-| **Actor** | Sistema (Payments Service), PSP externo |
-| **Precondiciones** | Pago iniciado (Escenario 5). |
-| **Flujo principal** | 1. El PSP responde de forma asíncrona. 2. Payments Service produce `payment.approved` o `payment.rejected`. 3. ServiceRequest Service consume el evento: si es `approved`, transiciona a `pagado`; si es `rejected`, permanece en `completado` y permite reintento. 4. Si fue aprobado, Billing genera `Invoice`. |
-| **Flujos alternos** | Pago rechazado → el cliente puede reintentar (vuelve al Escenario 5). |
-| **Servicios participantes** | Payments Service, ServiceRequest Service. |
-| **Datos involucrados** | `payments`, `invoices`. |
-| **Eventos / Endpoints** | Produce `payment.approved` / `payment.rejected` · `GET /v1/payments/{id}/invoice`. |
-| **Relación con Vista Lógica** | Payments Service — módulo *Billing / Invoice Management*. |
-| **Relación con Vista de Procesos** | **Resuelto:** Ver **Sección 5.4** (Separación entre interacción PCI-DSS de Wompi y el procesamiento asíncrono) y **Sección 5.9** (Idempotencia). |
-| **Requisitos (SRS)** | RF-24 |
-
-### Escenario 7 — El cliente califica el servicio
-
-| | |
-|---|---|
-| **Actor** | Cliente / Empresa |
-| **Precondiciones** | Solicitud en estado `pagado`. |
-| **Flujo principal** | 1. `POST /v1/service-requests/{id}/rating` (ServiceRequest Service) crea `Rating`, asociado al usuario o cuenta corporativa que originó la solicitud. 2. Ranking Service consume el resultado y recalcula la reputación del técnico. |
-| **Flujos alternos** | Intento de calificar sin pago confirmado → rechazo. |
-| **Servicios participantes** | ServiceRequest Service, Ranking Service. |
-| **Datos involucrados** | `ratings`. |
-| **Eventos / Endpoints** | `POST /v1/service-requests/{id}/rating`. |
-| **Relación con Vista Lógica** | ServiceRequest Service (módulo *Ratings*) + Ranking Service (Sección 3.2.7). |
-| **Requisitos (SRS)** | RF-12 |
-
-### Escenario 8 — Una empresa/tenant consulta información sin acceder a datos de otro tenant
-
-| | |
-|---|---|
-| **Actor** | Empresa, Admin |
-| **Precondiciones** | Usuario autenticado con `AuthenticatedContext` (incluye `tenantId`). |
-| **Flujo principal** | 1. El usuario consulta sus solicitudes/dashboard. 2. Cada servicio filtra automáticamente por `tenant_id` derivado del contexto autenticado. 3. Un intento de acceder a datos de otro `tenant_id` es rechazado. |
-| **Flujos alternos** | Intento de acceso no autorizado → error 403, registrado en log (RNF-04). |
-| **Servicios participantes** | API Gateway (propagación de identidad/tenant), todos los microservicios (aislamiento en sus propias consultas). |
-| **Datos involucrados** | Todas las tablas con columna `tenant_id`. |
-| **Relación con Vista Lógica** | Regla transversal de *Multi-tenancy* (Sección 3.1.3 y 4.2). PostgreSQL RLS como defensa adicional. |
-| **Requisitos (SRS)** | RF-04, RF-05, RF-18, RF-21 · RNF-04, RNF-09, RNF-10 |
-
-### Escenario 9 — Kafka presenta una falla temporal y el evento se recupera mediante Outbox
-
-| | |
-|---|---|
-| **Actor** | Sistema (cualquier servicio productor) |
-| **Precondiciones** | Un servicio necesita publicar un evento (ej. `service-request.created`, `payment.approved`) y Kafka no está disponible. |
-| **Flujo principal** | 1. El servicio registra localmente el cambio de estado y el evento pendiente (Transactional Outbox). 2. El publicador reintenta con backoff hasta que Kafka esté disponible. 3. El evento se publica y los consumidores lo procesan de forma idempotente usando `eventId`. |
-| **Flujos alternos** | Reintentos agotados → DLQ (a definir en Vista de Procesos). |
-| **Servicios participantes** | Cualquier servicio productor, Kafka. |
-| **Relación con Vista Lógica** | Regla transversal *Idempotencia* y *Transactional Outbox* (Sección 4.2). |
-| **Relación con Vista de Procesos** | **Resuelto:** Ver **Sección 5.8** (Reintentos, backoff exponencial con jitter y desvío a DLQ) y **Sección 5.10** (Tolerancia a fallos). |
-| **Requisitos (SRS)** | RNF-07, RNF-08 (disponibilidad; un fallo no debe bloquear el flujo de negocio de forma permanente) |
+1. **Un cambio nace en el repositorio propietario.** Se revisa y fusiona allí primero; después `quickpatch` actualiza el puntero del submódulo en un commit propio. El flujo de ramas, las revisiones y los quality gates son los de Working Agreements («GitFlow: modelo de ramas» y «Pull Requests») y del pipeline de cada repositorio; esta sección no los repite.
+2. **Los contratos se consumen por versión.** Cada consumidor fija `contracts/api-gateway/` y `contracts/kafka/` en un tag SemVer. Subir de versión es un commit explícito del consumidor, de modo que un cambio de contrato no rompe a nadie hasta que este lo adopta (ADR-021).
+3. **Un cambio de contrato pasa por su repositorio fuente.** Allí corren la validación con Spectral/oasdiff (REST) o AJV y la verificación de compatibilidad (eventos), y el cambio identifica productor, consumidores e impacto (`.ai/workflows/api-change.md`, `.ai/workflows/event-change.md`).
+4. **No hay dependencias internas entre microservicios.** Un servicio no incluye a otro como submódulo, no importa sus paquetes ni lee su base de datos. Se integra solo por REST a través del gateway o por eventos Kafka, y replica localmente lo que necesita (ADR-017). Hoy el código transversal de los servicios .NET (correlación, Problem Details, validación de JWT) está copiado en cada servicio; ADR-020, todavía propuesto, plantea publicarlo como paquetes NuGet internos versionados y sin lógica de dominio.
+5. **Cada repositorio se construye y prueba solo.** Su pipeline compila, prueba y mide cobertura sin clonar otros repositorios de la solución; las pruebas que cruzan servicios viven en `tests/` del repositorio principal.
 
 ---
 
-## 8.3 Diagrama de secuencia — Escenario crítico de extremo a extremo
+## 10.2 Organización por aplicación
 
-Cubre el flujo Escenarios 1 → 2 → 4 → 5 → 6 → 7 (registro → matching → ejecución → pago → calificación), que corresponde a la prueba end-to-end de RF-27.
+### 10.2.1 Aplicación web administrativa
 
-> En este diagrama, el actor `Cliente` representa indistintamente a un **Cliente** o a una **Empresa**, ya que ambos siguen el mismo flujo de seguimiento, pago y calificación sobre sus propias solicitudes.
+El panel administrativo se ubica en:
 
-```mermaid
-sequenceDiagram
-    actor C as Cliente
-    participant GW as API Gateway
-    participant ID as Identity Service
-    participant SR as ServiceRequest Service
-    participant MS as Matching Service
-    participant PAY as Payments Service
-    participant PSP as PSP externo
-    participant RK as Ranking Service
-    participant K as Kafka
-
-    C->>GW: POST /auth/register/client
-    GW->>ID: registrar usuario
-    C->>GW: POST /auth/login
-    GW->>ID: validar credenciales
-    ID-->>C: AuthenticatedContext
-
-    C->>GW: POST /service-requests
-    GW->>SR: crear solicitud
-    SR->>K: service-request.created
-
-    K->>MS: consume service-request.created
-    MS->>MS: Candidate Search (PostGIS)
-    MS->>K: matching.technician-assigned
-    K->>SR: consume evento -> estado asignado
-
-    C->>GW: POST /service-requests/{id}/start
-    GW->>SR: estado en_progreso
-    C->>GW: POST /service-requests/{id}/complete
-    GW->>SR: estado completado
-
-    C->>GW: POST /service-requests/{id}/payment
-    GW->>PAY: iniciar pago
-    PAY->>PSP: tokenizar y procesar
-    PSP-->>PAY: aprobado
-    PAY->>K: payment.approved
-    K->>SR: consume evento -> estado pagado
-
-    C->>GW: POST /service-requests/{id}/rating
-    GW->>SR: registrar Rating
-    SR->>RK: actualizar reputación
+```text
+apps/web/
 ```
 
+y utiliza **Angular + TypeScript**.
+
+Su responsabilidad es implementar las funcionalidades administrativas de QUICKPATCH para el administrador del tenant (`admin_tenant`) y el administrador de plataforma (`admin_plataforma`), y consumir los contratos REST publicados por el backend.
+
+La organización interna objetivo separa:
+
+- presentación;
+- funcionalidades o módulos;
+- componentes reutilizables;
+- servicios de aplicación;
+- cliente REST;
+- pruebas unitarias.
+
+El frontend no debe definir de forma independiente endpoints o estructuras de respuesta que no estén representados en los contratos publicados.
+
+### 10.2.2 Aplicación móvil
+
+La aplicación móvil se ubica en:
+
+```text
+apps/mobile/
+```
+
+y utiliza **Flutter + Dart**.
+
+Atiende los flujos de clientes, empresas cliente, técnicos y proveedores, y consume las capacidades del backend mediante REST.
+
+Su organización de desarrollo contempla:
+
+- presentación;
+- funcionalidades o `features`;
+- elementos de núcleo o `core`;
+- componentes compartidos;
+- cliente REST;
+- pruebas unitarias.
+
+### 10.2.3 Backend
+
+Los servicios backend se ubican en:
+
+```text
+apps/backend/services/
+```
+
+La asignación tecnológica definida por el SDD es:
+
+| Microservicio | Tecnología |
+|---|---|
+| `identity/` | ASP.NET Core / .NET |
+| `actors/` | ASP.NET Core / .NET |
+| `catalog/` | ASP.NET Core / .NET |
+| `service-request/` | ASP.NET Core / .NET |
+| `matching/` | Java + Spring Boot |
+| `ranking/` | ASP.NET Core / .NET |
+| `payments/` | ASP.NET Core / .NET |
+| `communication/` | ASP.NET Core / .NET |
+
+Cada servicio mantiene su propio límite funcional y debe poder evolucionar y desplegarse sin requerir dependencia directa del código interno de otro microservicio.
+
+![Componentes por aplicación](diagrams/sdd/08_componentes_por_aplicacion.svg)
+
+**Figura 35. Organización de componentes por aplicación y tecnología.**
+
 ---
 
-## 8.4 Matriz Escenario → Componentes → Vistas
+## 10.3 Estructura interna de los microservicios
 
-| # | Escenario | Componentes principales | Vista Lógica | Vista de Procesos | Vista de Desarrollo | Vista Física |
-|---|---|---|---|---|---|---|
-| 1 | Registro y creación de solicitud | Identity, Catalog, ServiceRequest | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
-| 2 | Matching y asignación | Matching, ServiceRequest, Communication | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
-| 3 | Sin técnico disponible | Matching, ServiceRequest | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
-| 4 | Ejecución del servicio | ServiceRequest, Communication | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
-| 5 | Pago | Payments, ServiceRequest | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
-| 6 | Aprobación/rechazo PSP | Payments, ServiceRequest | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
-| 7 | Calificación | ServiceRequest, Ranking | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
-| 8 | Aislamiento multi-tenant | API Gateway, todos los servicios | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
-| 9 | Falla temporal de Kafka | Cualquier productor, Kafka | ✅ Validado | ⏳ Pendiente | ⏳ Pendiente | ⏳ Pendiente |
+La Vista Lógica y el Diseño Detallado establecen una estructura común de cuatro capas para los microservicios backend:
 
-**Criterio de validación del Product Owner:** un escenario queda completamente validado cuando las cuatro vistas técnicas lo resuelven de forma coherente. Actualmente los 9 escenarios están cubiertos por la Vista Lógica; falta la confirmación de Backend+QA (Procesos), Backend+Frontend (Desarrollo) y DevOps (Física) para cerrar la integración cruzada indicada en la Sección 9 del SDD.
+| Capa | Contenido |
+|---|---|
+| **API / Interface** | Controllers, endpoints, validación de entrada y contratos expuestos |
+| **Application** | Casos de uso, comandos, queries y coordinación del flujo de aplicación |
+| **Domain** | Entidades, value objects y reglas de negocio |
+| **Infrastructure** | Repositorios, Kafka, PostgreSQL, Redis, PSP y adaptadores externos |
 
----
+La dirección conceptual de dependencias es:
 
-## 8.5 Requisitos no cubiertos explícitamente por ningún escenario
+```text
+API / Interface
+      |
+      v
+Application
+      |
+      v
+Domain
 
-Como parte de la validación de completitud, reviso qué RF/RNF del SRS v3.0 **no** quedan representados en los 9 escenarios anteriores, para que el equipo decida si se documentan aparte o se consideran fuera del alcance de esta vista:
+Infrastructure
+      |
+      +----> Application / Domain
+             mediante interfaces
+```
 
-- **RF-16, RF-17** (gestión de equipo del Proveedor/Ally, historial del técnico) — no tienen escenario propio; se recomienda agregarlos si el Actors Service define su persistencia en un sprint próximo.
-- **RF-19, RF-20** (aprobación/suspensión de técnicos por Admin) — mencionados tangencialmente en el Escenario 8, pero no tienen flujo propio.
-- **RF-26 a RF-29** (CI/CD, pruebas, logging, cifrado) — corresponden a la Vista Física/Procesos, no a escenarios de negocio; se consideran cubiertos por esas vistas cuando DevOps las entregue.
+La capa `Domain` concentra las reglas de negocio y no debe depender directamente de mecanismos externos como Kafka, PostgreSQL, Redis o proveedores de pago.
 
-## Para cada escenario se recomienda documentar
-
-- actor;
-- precondiciones;
-- flujo principal;
-- flujos alternos;
-- servicios participantes;
-- datos involucrados;
-- eventos y endpoints;
-- relación con Vista Lógica;
-- relación con Vista de Procesos;
-- relación con Vista de Desarrollo;
-- relación con Vista Física;
-- requisitos funcionales y no funcionales asociados.
-
-## Diagramas recomendados
-
-- casos de uso de escenarios principales;
-- secuencia de extremo a extremo para los escenarios críticos;
-- matriz escenario -> componentes -> vistas.
+Los siete servicios ASP.NET Core y `Matching Service` mantienen la misma separación conceptual, aunque cada tecnología utilice mecanismos propios para implementarla.
 
 ---
 
-# 9. Integración entre vistas
+## 10.4 Contratos, DTOs y elementos compartidos
+
+La comunicación entre aplicaciones y microservicios se realiza mediante contratos explícitos.
+
+### REST / OpenAPI
+
+Los contratos REST se mantienen en el repositorio `quickpatch-api-gateway`, junto al componente que los expone, en:
+
+```text
+openapi/          (en los consumidores: contracts/api-gateway/openapi/)
+```
+
+Estos contratos constituyen la frontera entre Angular, Flutter y los servicios backend.
+
+Los clientes no deben depender de clases internas del backend ni asumir campos que no formen parte del contrato publicado.
+
+### Eventos Kafka
+
+Los contratos de eventos se mantienen en el repositorio `quickpatch-kafka`, junto con la definición de los topics, en:
+
+```text
+events/           (en los servicios: contracts/kafka/events/)
+topics/topics.yaml
+```
+
+Cada servicio incluye `quickpatch-api-gateway` y `quickpatch-kafka` como submódulos fijados en una versión (tag SemVer); cambiar de versión es un commit explícito en el servicio (ADR-021).
+
+Los eventos permiten integrar servicios de forma asíncrona sin compartir implementaciones internas.
+
+Cada contrato de evento debe identificar como mínimo:
+
+- nombre;
+- versión;
+- productor;
+- consumidores;
+- esquema;
+- campos obligatorios y opcionales;
+- semántica;
+- compatibilidad.
+
+### DTOs y código compartido
+
+Los DTOs utilizados internamente pertenecen al componente que los implementa.
+
+No se establece una librería común de lógica de dominio entre los microservicios. En particular, los servicios .NET y `Matching Service` en Java no comparten clases internas; su interoperabilidad depende de contratos REST/OpenAPI y eventos Kafka versionados.
+
+---
+
+## 10.5 Dependencias entre proyectos y módulos
+
+Las dependencias deben respetar los límites definidos por la arquitectura.
+
+Las principales reglas son:
+
+1. Angular y Flutter consumen servicios mediante REST.
+2. Las solicitudes síncronas ingresan a través del API Gateway.
+3. Kafka se utiliza para coordinación asíncrona entre dominios.
+4. Los servicios .NET y Java se integran mediante contratos, no mediante código compartido de negocio.
+5. Un microservicio no importa directamente la lógica interna de otro.
+6. Un microservicio no realiza escrituras directas sobre datos propiedad de otro servicio.
+7. `API / Interface` depende de `Application`.
+8. `Application` utiliza `Domain`.
+9. `Infrastructure` implementa los mecanismos externos requeridos por `Application` y `Domain`.
+
+![Dependencias entre proyectos y módulos](diagrams/sdd/09_dependencias_modulos.svg)
+
+**Figura 36. Dependencias permitidas entre aplicaciones, contratos y microservicios.**
+
+Estas reglas mantienen bajo el acoplamiento entre servicios y preservan la independencia tecnológica entre ASP.NET Core y Spring Boot.
+
+---
+
+## 10.6 Organización de pruebas
+
+Las pruebas se dividen entre pruebas próximas al componente propietario y pruebas transversales.
+
+Las pruebas unitarias permanecen preferiblemente junto al código de la aplicación o microservicio correspondiente.
+
+Las pruebas que requieren interacción entre varios componentes se ubican en:
+
+```text
+tests/
+├── integration/
+├── contract/
+├── e2e/
+├── performance/
+└── security/
+```
+
+| Carpeta | Propósito |
+|---|---|
+| `integration/` | Validar integración entre componentes y dependencias |
+| `contract/` | Verificar compatibilidad entre productores y consumidores |
+| `e2e/` | Validar flujos completos del sistema |
+| `performance/` | Verificar escenarios de rendimiento y carga |
+| `security/` | Ejecutar validaciones de seguridad |
+
+Entre las herramientas de prueba previstas para los diferentes componentes se encuentran:
+
+- `dotnet test` para los servicios ASP.NET Core;
+- Maven o Gradle para las pruebas de Matching;
+- `ng test` para Angular;
+- `flutter test` para Flutter.
+
+---
+
+## 10.7 Convenciones de organización y nombres
+
+El código debe seguir las convenciones propias de cada lenguaje y framework, manteniendo consistencia entre los diferentes componentes.
+
+Como reglas generales:
+
+- variables y funciones utilizan las convenciones del lenguaje correspondiente;
+- clases utilizan `PascalCase` cuando aplica;
+- tablas y columnas PostgreSQL utilizan `snake_case`;
+- los nombres de elementos de dominio deben reflejar el vocabulario de QUICKPATCH;
+- los términos obligatorios del framework conservan su nomenclatura técnica;
+- las carpetas deben respetar los límites de aplicación, servicio y dominio definidos por esta vista.
+
+Las convenciones no deben utilizarse para crear dependencias entre microservicios ni para compartir lógica de dominio que pertenece a un servicio específico.
+
+---
+
+## 10.8 Build y artefactos
+
+Cada aplicación y microservicio mantiene su propio proceso de construcción.
+
+### Panel Angular
+
+El proceso produce los artefactos estáticos que posteriormente son servidos mediante Nginx.
+
+```text
+Angular
+   ↓
+pruebas / build
+   ↓
+artefactos web
+```
+
+### Aplicación Flutter
+
+El proceso de construcción incluye análisis, pruebas y generación del artefacto correspondiente a la plataforma objetivo.
+
+```text
+flutter analyze
+      ↓
+flutter test
+      ↓
+flutter build
+      ↓
+artefacto móvil
+```
+
+### Microservicios ASP.NET Core
+
+Los siete servicios .NET se construyen y prueban de manera independiente y generan imágenes Docker independientes.
+
+### Matching Service
+
+`Matching Service` mantiene su propio proceso de build y pruebas bajo Java/Spring Boot y genera igualmente una imagen Docker independiente.
+
+Las ocho imágenes del backend se publican en el registro definido para el proyecto y son desplegadas individualmente.
+
+![Mapa de carpetas y artefactos de build](diagrams/sdd/10_mapa_carpetas_build.svg)
+
+**Figura 37. Relación entre código fuente, procesos de build, pruebas, artefactos y despliegue.**
+
+---
+
+## 10.9 Integración con CI/CD
+
+La arquitectura de desarrollo establece pipelines separados por aplicación y por microservicio.
+
+Un cambio en un único servicio debe ejecutar el pipeline correspondiente al componente afectado, sin requerir el build completo de los ocho microservicios.
+
+Los gates definidos son:
+
+| Rama / etapa | Validaciones principales |
+|---|---|
+| `feature/*` → PR a `develop` | Lint + pruebas unitarias del componente afectado |
+| `develop` | Pruebas de integración y contrato |
+| `release/x.y.z` | E2E, UAT y seguridad |
+| `main` | Build y despliegue |
+| Post-despliegue | Smoke tests y pruebas de rendimiento |
+
+El detalle operativo del pipeline pertenece a la infraestructura del proyecto. Desde la organización del código, la regla relevante es que cada aplicación o servicio debe poder construirse, probarse y desplegarse de forma independiente.
+
+---
+
+## 10.10 Regla de actualización
+
+Esta sección debe mantenerse sincronizada con el repositorio real.
+
+Debe actualizarse cuando se produzcan cambios como:
+
+- creación o eliminación de una aplicación;
+- creación, división o eliminación de un microservicio;
+- modificación del stack tecnológico;
+- cambio en la estructura interna de proyectos o capas;
+- modificación de contratos compartidos;
+- cambio en la organización de pruebas;
+- cambio en las dependencias permitidas;
+- modificación significativa del proceso de build o CI/CD.
+
+Los diagramas de esta sección no deben representar como implementada una carpeta o estructura que todavía exista únicamente como diseño objetivo. Cuando exista esa diferencia, debe quedar indicada explícitamente.
+
+---
+
+# 11. Trazabilidad entre diagramas
 
 Antes de consolidar una versión final del SDD se debe verificar:
 
-- [ ] todo microservicio de la Vista Lógica existe en la Vista de Desarrollo;
-- [ ] todo componente desplegable de la Vista de Desarrollo aparece en la Vista Física;
-- [ ] los flujos de la Vista de Procesos utilizan componentes definidos en la Vista Lógica;
-- [ ] los escenarios (+1) pueden seguirse a través de las cuatro vistas;
-- [ ] los contratos REST coinciden con DD/OpenAPI;
-- [ ] los eventos coinciden con DD/AsyncAPI;
+- [ ] todo contenedor del diagrama de contenedores tiene repositorio, pipeline y despliegue (secciones 9 y 10);
+- [ ] todo contenedor desplegable aparece en los diagramas de despliegue de producción y QA;
+- [ ] los diagramas dinámicos usan solo contenedores y relaciones del modelo C4;
+- [ ] los escenarios de validación pueden seguirse en los diagramas de contenedores, componentes, dinámicos y de despliegue;
+- [ ] los contratos REST coinciden con el DD y con `quickpatch-api-gateway`;
+- [ ] los eventos coinciden con el DD y con `quickpatch-kafka`;
 - [ ] los estados de `ServiceRequest` son consistentes con SRS, DD y código;
-- [ ] los nombres de servicios son uniformes en SAD, SDD, repositorio y despliegue;
+- [ ] los nombres de servicios son uniformes en SAD, SDD, repositorios y despliegue;
 - [ ] ningún servicio modifica directamente datos propiedad de otro dominio;
-- [ ] las decisiones de seguridad multi-tenant aparecen de forma coherente en todas las vistas.
+- [ ] las decisiones de seguridad multi-tenant aparecen de forma coherente en todos los diagramas.
 
 ---
 
-# 10. Estado actual del documento
+# 12. Estado actual del documento
 
 | Sección | Corresponde a | Estado |
 |---|---|---|
-| Vista Lógica | Backend | **Desarrollada - lista para revisión** |
-| Vista de Procesos | Backend + QA | **Desarrollada - lista para revisión** |
-| Vista de Desarrollo | Backend + Frontend / Miguel | Pendiente |
-| Vista Física | DevOps / Sebastian | **Desarrollada - lista para revisión** |
-| Vista de Escenarios (+1) | Angy + equipo | Pendiente |
-| Revisión cruzada | Todo el equipo | Pendiente al completar las vistas |
+| System Landscape, System Context y Container (3 a 5) | Arquitectura | **Desarrollada - lista para revisión** |
+| Component y Code (6 y 7) | Backend + Frontend | **Desarrollada - lista para revisión** |
+| Dynamic (8) | Backend + QA | **Desarrollada - lista para revisión** |
+| Deployment (9) | DevOps | **Desarrollada - lista para revisión** |
+| Organización del código (10) | Backend + Frontend | **Desarrollada - lista para revisión** |
+| Escenarios de validación (8.13) | Equipo | Pendiente de completar la matriz |
+| Revisión cruzada | Todo el equipo | Pendiente (SCRUM-301) |
 
 ---
 

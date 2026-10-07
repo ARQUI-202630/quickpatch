@@ -43,7 +43,7 @@ El presente Documento de Diseño tiene como propósito definir el modelo de dato
 
 El documento funciona principalmente como un diccionario de datos vivo, en el cual se documentan las entidades que actualmente pueden identificarse y justificarse a partir de los requisitos funcionales y no funcionales existentes.
 
-Este documento desarrolla la Arquitectura de Datos del SAD (sección 8) y se mantiene alineado con la descomposición por microservicios del SAD (sección 4.2.2) y del SDD (sección 3.2). Las decisiones de arquitectura que lo sustentan son ADR-004 (PostgreSQL + PostGIS), ADR-005 (shared-schema con `tenant_id` + RLS), ADR-006 (Kafka como bus de eventos), ADR-007 (Transactional Outbox + idempotencia) y ADR-009 (tokenización de pagos).
+Este documento desarrolla la Arquitectura de Datos del SAD (sección 8) y se mantiene alineado con la descomposición por microservicios del SAD (sección 4.2.2) y del SDD (sección 6). Las decisiones de arquitectura que lo sustentan son ADR-004 (PostgreSQL + PostGIS), ADR-005 (shared-schema con `tenant_id` + RLS), ADR-006 (Kafka como bus de eventos), ADR-007 (Transactional Outbox + idempotencia) y ADR-009 (tokenización de pagos).
 
 ### 1.2 Carácter evolutivo del modelo
 
@@ -101,16 +101,16 @@ _Cuadro 1: Convenciones utilizadas en el diccionario de datos_
 
 ## 3. Distribución de datos por servicio
 
-QUICKPATCH se descompone en 8 microservicios de dominio (SAD, sección 4.2.2), desplegados en VM3 sobre k3s (ADR-011). Cada servicio es propietario de sus datos en su propia base o esquema dentro de PostgreSQL (VM4). La asignación de tablas sigue la descomposición lógica del SDD (sección 3.2).
+QUICKPATCH se descompone en 8 microservicios de dominio (SAD, sección 4.2.2), desplegados en VM3 sobre k3s (ADR-011). Cada servicio es propietario de sus datos en su propia base o esquema dentro de PostgreSQL (VM4). La asignación de tablas sigue la descomposición lógica del SDD (sección 6).
 
 |Servicio|Entidades persistentes en esta versión|
 |---|---|
 |Identity Service|`tenants`, `users`, `technician_profiles`|
-|Actors Service|Ninguna todavía. `Supplier`, `Ally` y `Client` son conceptos evolutivos (SDD, sección 4.4).|
+|Actors Service|Ninguna todavía. `Supplier`, `Ally` y `Client` son conceptos evolutivos (SDD, sección 6.14).|
 |Catalog Service|`service_categories`|
 |Matching Service|`technician_availability`, `coverage_zones`, `matching_attempts`|
 |ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence` y la réplica de lectura `service_request_categories`|
-|Ranking Service|Ninguna todavía. Consume las calificaciones; su persistencia es evolutiva (SDD, sección 4.4).|
+|Ranking Service|Ninguna todavía. Consume las calificaciones; su persistencia es evolutiva (SDD, sección 6.14).|
 |Payments Service|`payments`, `invoices`|
 |Communication Service|Ninguna todavía. Consume eventos para notificar; `Notification`, `Conversation` y `Complaint` son evolutivos.|
 |Transversal (en cada servicio)|`audit_logs`, `outbox_events`, `processed_events`|
@@ -619,7 +619,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 **Propósito:** Define las zonas geográficas dentro de las cuales un técnico presta servicios.
 
-**Requisitos relacionados:** RF-09, RF-13, RIE-02.
+**Requisitos relacionados:** RF-09, RF-13.
 
 |Campo|Tipo|Nulo|Clave|Descripción|
 |---|---|---|---|---|
@@ -1441,7 +1441,7 @@ Cómo se comporta:
 
 |Operación|De dónde sale el tenant|
 |---|---|
-|Petición REST autenticada|Del token emitido en el login, propagado por el API Gateway (SDD, sección 3.2.1).|
+|Petición REST autenticada|Del token emitido en el login, propagado por el API Gateway (SDD, sección 6.3).|
 |Login y registro|Del canal por el que llega la petición (RN-U5).|
 |Consumo de un evento|De `tenantId` en el sobre del evento.|
 |Publicación de un evento|De `outbox_events.tenant_id`, que fijó la base de datos con el tenant de la sesión que escribió el evento.|
@@ -1471,7 +1471,7 @@ Cada endpoint de la sección 8.1 exige un rol. El rol viaja en el claim `role` d
 
 **Claims del token.** Los datos del contexto autenticado se publican así: `userId` en `sub` (claim estándar de JWT), `tenantId` en `tenant_id` y el rol en `role`. El token se firma con RS256; solo Identity tiene la llave privada.
 
-**Canales.** El panel web es para `admin_tenant` y `admin_plataforma`; la app móvil es para `cliente`, `empresa_contacto`, `tecnico` y `proveedor` (SDD, sección 3.1).
+**Canales.** El panel web es para `admin_tenant` y `admin_plataforma`; la app móvil es para `cliente`, `empresa_contacto`, `tecnico` y `proveedor` (SDD, sección 5).
 
 |Endpoint|Roles permitidos|Regla adicional|Fuente|Estado|
 |---|---|---|---|---|
@@ -1507,11 +1507,11 @@ El modelo de esta versión depende de las siguientes decisiones de diseño, que 
 |ID|Elemento del modelo|Decisión de la que depende|Referencia|
 |---|---|---|---|
 |DEP-01|RN-TP1 y RN-TP2 en Matching Service|Mecanismo por el cual Matching Service conoce `technician_profiles.verification_status`.|SAD, sección 3.9|
-|DEP-02|`technician_profiles.specialty_id` y `provider_id`|Persistencia de las especialidades en Catalog Service y de proveedores y aliados en Actors Service.|SAD, sección 8.1; SDD, sección 4.4|
+|DEP-02|`technician_profiles.specialty_id` y `provider_id`|Persistencia de las especialidades en Catalog Service y de proveedores y aliados en Actors Service.|SAD, sección 8.1; SDD, sección 6.14|
 |DEP-03|`service_categories`|Atributo de riesgo físico por categoría de servicio, requerido por los escenarios de Safety.|SAD, sección 3.9 (AC9)|
-|DEP-04|`technician_profiles.average_rating`|Persistencia de Ranking Service y evento que publica ServiceRequest al registrar una calificación (`SERVICE_EVALUATED` en el SAD).|SAD, D3; SDD, sección 4.4|
+|DEP-04|`technician_profiles.average_rating`|Persistencia de Ranking Service y evento que publica ServiceRequest al registrar una calificación (`SERVICE_EVALUATED` en el SAD).|SAD, D3; SDD, sección 6.14|
 |DEP-05|`users.role`|Correspondencia entre los valores de `role` y los roles del SAD. `admin_plataforma` y `admin_tenant` corresponden a `PLATFORM_ADMIN` y `TENANT_ADMIN`; falta definir cómo se reflejan `EMPLOYEE`, `ALLY`, `SUPPLIER` y `BUSINESS_CLIENT`.|SAD, sección 7.2|
-|DEP-06|Contratos de la sección 8|Incorporación en el SDD de los endpoints de ofertas, cotización y cancelación, de los eventos nuevos y de la propiedad de `service_categories` por Catalog Service.|SDD, secciones 3.2.5 y 3.4|
+|DEP-06|Contratos de la sección 8|Incorporación en el SDD de los endpoints de ofertas, cotización y cancelación, de los eventos nuevos y de la propiedad de `service_categories` por Catalog Service.|SDD, secciones 6.7 y 5.6|
 |DEP-07|Sección 9|ADR de adopción de la capa analítica, con evaluación de capacidad frente a R5 y R10.|SAD, sección 6|
 |DEP-08|`payments`|Mecanismo de recepción de la respuesta del PSP dentro de la red del laboratorio.|R9; SAD, sección 1.2|
 |DEP-09|Sección 10.3|Identificación del canal de registro de cada tenant cuando opere más de uno.|RNF-09|

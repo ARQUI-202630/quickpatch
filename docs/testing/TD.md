@@ -336,8 +336,8 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **CAT-004** | RF-04 | Integración | Aislamiento multi-tenant en categorías personalizadas. | Categorías exclusivas de Tenant A invisibles para consultas de Tenant B. |
 | **CAT-005** | SRS 4.1 | Unitaria | Desactivación lógica de categoría de servicio. | `DELETE /v1/catalog/categories/{id}` establece `active = false` (sin borrado físico). |
 | **CAT-006** | SRS 4.1 | Integración | Categoría inactiva excluida de selección de servicios. | Categoría desactivada no figura en listado para nuevas solicitudes. |
-| **CAT-007** | SDD 3.2 | Integración | Consulta de categoría por UUID existente. | `GET /v1/catalog/categories/{id}` retorna HTTP 200 con atributos íntegros. |
-| **CAT-008** | SDD 3.2 | Integración | Consulta de categoría inexistente. | `GET /v1/catalog/categories/{random_id}` retorna HTTP 404 Not Found. |
+| **CAT-007** | SDD 6 | Integración | Consulta de categoría por UUID existente. | `GET /v1/catalog/categories/{id}` retorna HTTP 200 con atributos íntegros. |
+| **CAT-008** | SDD 6 | Integración | Consulta de categoría inexistente. | `GET /v1/catalog/categories/{random_id}` retorna HTTP 404 Not Found. |
 | **CAT-009** | SRS 4.1 | Unitaria | Modificación de nombre y descripción de categoría. | `PUT /v1/catalog/categories/{id}` actualiza campos en BD; HTTP 200 OK. |
 | **CAT-010** | AC6-E3 | Unitaria | Restricción RBAC: Cliente intentando mutar catálogo. | `POST /v1/catalog/categories` con rol `cliente` retorna HTTP 403 Forbidden. |
 | **CAT-011** | OpenAPI | Contrato | Verificación de contrato REST de Catálogo con Spectral CLI. | 100% concordancia con especificación OpenAPI 3.0 en `quickpatch-contracts` sin errores de linting ni campos faltantes. |
