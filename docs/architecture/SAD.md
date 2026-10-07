@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.22 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.23 — QUICKPATCH
 
 ---
 
@@ -138,6 +138,45 @@ Son los escenarios prioritarios de la sección 3.10 (importancia de negocio Alta
 |AC1-E1 Filtro de especialidad en el matching †|Functional Suitability|Alta / Media|D1|0% de asignaciones a un técnico de otra especialidad|—|
 |AC7-E6 Validación del incremento en QA antes de producción †|Maintainability|Alta / Media|D8|100% de los despliegues pasan antes por QA (VM2, VM5 y VM7); 0 pruebas de carga o de seguridad contra producción|ADR-015 (relacionado)|
 |AC8-E3 Incorporación de un nuevo canal o tipo de cliente|Flexibility|Alta / Media|—|0 cambios en los microservicios de dominio para un nuevo tipo de cliente|—|
+
+### 2.2 Validación de la arquitectura contra los RNF
+
+Cada requisito no funcional del SRS (sección 5) se sigue hasta el escenario que lo mide, las decisiones y componentes que lo atienden y la evidencia que existe hoy en el código o en la operación. La validación se hizo el 7 de octubre de 2026 sobre `develop` de los 12 repositorios.
+
+**Estado:** *Cubierto* = hay escenario, decisión y evidencia en el código o en un pipeline; *Parcial* = la arquitectura lo atiende, pero falta el escenario o la evidencia; *Sin cobertura* = ningún componente lo implementa todavía.
+
+|RNF|Escenario|Decisiones y componentes|Evidencia actual|Estado|
+|---|---|---|---|---|
+|RNF-01 PCI-DSS, tarjeta en un proveedor certificado|AC6-E1|ADR-009 (tokenización); Payments Service|Payments Service es todavía un esqueleto sin flujo de pago|Parcial|
+|RNF-02 HTTPS/TLS cliente-servidor|Ninguno|API Gateway Nginx con TLS 1.2/1.3 (VM1); la app móvil fija el certificado de QA (`CERT_SHA256`)|`gateway-nginx.conf.j2` y `qa-nginx.conf.j2` limitan los protocolos a TLS 1.2 y 1.3; `cliente_api.dart` valida el certificado|Parcial|
+|RNF-03 Contraseñas con *hashing* seguro|Ninguno|Identity Service|`BCryptPasswordHasher` con factor de trabajo configurable; una prueba de integración verifica que el registro guarda un hash BCrypt|Parcial|
+|RNF-04 Log de todo acceso denegado (403)|AC6-E3, AC6-E8|Identity, Catalog y ServiceRequest; Loki (ADR-016)|Manejador de autorización que registra método, ruta, usuario y rol en cada 403, en los tres servicios con endpoints protegidos|Cubierto|
+|RNF-05 Matching inicia en menos de 60 s|AC2-E3 (7 s, más exigente)|ADR-006 (Kafka), ADR-007 (Outbox); ServiceRequest → `service-request.created` → Matching|Prueba local del 7 de octubre: la solicitud llega a Matching por el Outbox (`tests/e2e/evidencias/mvp-local-2026-10-07.txt`); sin medición en QA|Parcial|
+|RNF-06 Cambio de estado visible en menos de 1 minuto|AC2-E3, AC4-E9|ADR-006; Communication Service; canal en tiempo real de la app|La app tiene el modelo del mensaje en tiempo real, pero la pantalla de detalle solo se actualiza al deslizar; Communication Service no emite notificaciones|Sin cobertura|
+|RNF-07 Ambiente de QA permanente|AC7-E6|ADR-015 y ADR-022 (QA en VM2, VM5 y VM7)|Los pipelines despliegan `release/**` en QA (`deploy-k3s.yml`); el despliegue real depende de los secretos y las VMs de DevOps|Parcial|
+|RNF-08 Un fallo en QA bloquea producción|AC7-E6, AC9-E7|ADR-015; pipelines por repositorio; `pruebas-sistema.yml`|Las pruebas del sistema corren al hacer *push* a `release/**`, pero el job `produccion` de cada servicio solo depende de la imagen: nada impide desplegar en producción si fallaron|Parcial|
+|RNF-09 Nuevos tenants sin afectar a los existentes|AC8-E1|ADR-005 (RLS); Identity (`tenants`, administradores iniciales)|Listado y activación de tenants (`/v1/platform/tenants`, SCRUM-112); el alta de un tenant es por datos semilla, no por la API|Parcial|
+|RNF-10 Filtro automático por `tenant_id`|AC6-E2|ADR-005, ADR-019 (roles de base de datos)|RLS con `app.current_tenant` en Identity, Catalog y ServiceRequest; pruebas de aislamiento contra PostgreSQL real|Cubierto|
+|RNF-11 Solicitud en máximo 3 pasos|AC4-E1|Flutter (ADR-002)|`nueva_solicitud_page.dart`: un formulario con categoría, descripción, dirección y ubicación, y una pantalla de confirmación|Cubierto|
+|RNF-12 Diseño responsivo|AC4-E2|Flutter (ADR-002) y Angular|Sin pruebas de tamaños de pantalla en ninguna de las dos apps|Parcial|
+|RNF-13 Control de versiones de entregables y Jira|— (requisito de proceso)|Repositorio `quickpatch`, Working Agreements|Historial de versiones de SRS, SAD, SDD y DD; trazabilidad a SCRUM en los commits|Cubierto|
+
+**RNF sin escenario.** RNF-02 y RNF-03 no tienen un escenario de calidad que los mida. Se registran como decisión abierta: o se agregan como escenarios de AC6 (*Confidentiality*), o se aceptan como restricciones verificables por inspección y se mueven a la sección 1.2.2.
+
+**Acciones correctivas.**
+
+|RNF|Acción|Responsable|
+|---|---|---|
+|RNF-08|Hacer que el despliegue a producción dependa del resultado de `pruebas-sistema.yml` sobre la misma versión, o un ambiente protegido con aprobación en GitHub|DevOps|
+|RNF-06|Implementar el canal de estado en Communication Service y suscribir la pantalla de detalle; mientras tanto, consultar el estado cada 30 segundos|Backend y Frontend|
+|RNF-05, RNF-07|Medir en QA el tiempo desde `POST /v1/service-requests` hasta el consumo en Matching, cuando el ambiente esté desplegado|QA|
+|RNF-09|Exponer el alta de tenants en la API de plataforma y medir AC8-E1 (tenant funcional en menos de 1 hora)|Backend|
+|RNF-12|Agregar pruebas de diseño por tamaño de pantalla (widget tests en Flutter, viewport en Angular)|Frontend|
+|RNF-01|Validar AC6-E1 cuando Payments implemente la tokenización|Backend y QA|
+
+**Hallazgo de contratos.** La app móvil llama a `POST /v1/auth/register/company`, que el DD lista como pendiente (DEP-13) pero que no existe en `identity.v1.yaml`. Hasta que Backend lo publique en el contrato, el registro de empresas desde la app falla.
+
+---
 
 ## 3. Escenarios de Calidad
 
@@ -1202,3 +1241,4 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.20|6 oct 2026|Trade-offs (SCRUM-281). La sección 6.1 consolida en una matriz qué atributo favorece (+) y cuál sacrifica (−) cada ADR, con el efecto arquitectónico y el costo aceptado; la 6.2 agrega los puntos de sensibilidad y de trade-off (intervalo del Outbox, vida del token, límites de memoria, pools de conexión, retraso de las réplicas) con los escenarios que se deben repetir si cambian, y los riesgos aceptados. La justificación de ADR-007 cita D4 y AC9-E5, y la de ADR-015 cita D8 y AC7-E6. La síntesis de la sección 6 se precisa: AC9 solo aparece como escenario en la justificación de ADR-007.|
 |2.21|6 oct 2026|Multirepo de 12 repositorios (SCRUM-333). Se agrega ADR-021, que modifica a ADR-013 por la revisión del profesor: el multirepo tiene un repositorio por componente de la solución (Flutter, Angular, API Gateway, los 8 microservicios y Apache Kafka) más el repositorio principal. Los contratos REST pasan a `quickpatch-api-gateway`, los de eventos a `quickpatch-kafka` y cada repositorio tiene su propio CI. Se actualizan la tabla y la síntesis de la sección 6 y la matriz 6.1.|
 |2.22|6 oct 2026|Redistribución de las 7 VMs (SCRUM-334, SCRUM-341). Se agrega ADR-022, que modifica a ADR-015 por la revisión del profesor: VM1 pasa a ser la VM de herramientas y la única entrada; producción ocupa VM3 (aplicación), VM4 (PostgreSQL y Redis) y VM6 (Kafka y Garage), y QA es una copia en VM2, VM5 y VM7. Se actualizan las secciones 5.1 a 5.3 y 5.5, los escenarios AC2-E5, AC7-E6 y el de disco de AC9, la trazabilidad de D7 y D8, la matriz 6.1 y los riesgos de la 6.2. La implementación está en curso; hasta que termine, la distribución operativa es la de ADR-015. Es el reparto que DevOps implementa en Ansible (`quickpatch-infrastructure`, PRs #20 a #23). La sección 5.2 relaciona los recursos por servicio con el diagrama de alto nivel.|
+|2.23|7 oct 2026|Validación contra los RNF (SCRUM-283). La nueva sección 2.2 sigue los 13 RNF del SRS hasta su escenario, sus decisiones y componentes y la evidencia actual en el código: 4 cubiertos, 8 parciales y 1 sin cobertura (RNF-06). Registra que RNF-02 y RNF-03 no tienen escenario (decisión abierta), las acciones correctivas por rol —la principal: el despliegue a producción no depende hoy de las pruebas de QA (RNF-08)— y un hallazgo de contratos: la app móvil llama a `POST /v1/auth/register/company`, que no está en `identity.v1.yaml`.|
