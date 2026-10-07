@@ -21,6 +21,7 @@ Los diagramas y descripciones del SDD deben mantenerse alineados con las fuentes
 
 | Artefacto / vista | Fuentes primarias de diseño | Elementos que deben mantenerse sincronizados |
 |---|---|---|
+| **Diagrama de contexto (C4, nivel 1)** | `SRS.md` (tipos de usuario, RIE), `SAD.md` (sección 4.1, killers y restricciones), `DD.md` (roles, RN-U6) | Personas, límite del sistema, sistemas externos y relaciones. |
 | **Vista Lógica** | `SAD.md`, `SRS.md`, `DD.md` | Microservicios, módulos, dominios, entidades, relaciones lógicas, responsabilidades, contratos y eventos. |
 | **Vista de Procesos** | `SRS.md`, `DD.md`, `SAD.md`, escenarios de calidad | Flujos síncronos/asíncronos, secuencias, productores/consumidores, concurrencia, reintentos, fallos. |
 | **Vista de Desarrollo** | Repositorio de código, `Documento Politicas y Herramientas.md`, `SAD.md` | Carpetas, paquetes, proyectos, dependencias, convenciones, librerías, pruebas y CI/CD. |
@@ -47,6 +48,64 @@ Para cualquier diagrama nuevo o modificado se debe verificar, según corresponda
 ## 3.1 Vista Lógica del Sistema
 
 La arquitectura lógica del backend se organiza por dominios y servicios. Los clientes acceden a través del API Gateway; los microservicios contienen capacidades de negocio separadas; Kafka gestiona la integración asíncrona; y PostgreSQL/PostGIS, Redis y Garage soportan persistencia, cache y evidencias.
+
+### 3.1.0 Contexto del sistema (C4, nivel 1)
+
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'lineColor':'#374151','textColor':'#111827','edgeLabelBackground':'#ffffff','fontSize':'16px'}}}%%
+flowchart LR
+    subgraph PER[" "]
+        direction TB
+        P1(["Cliente<br/>[Persona]<br/>Pide servicios técnicos<br/>para el hogar"])
+        P2(["Empresa cliente<br/>[Persona]<br/>Pide y paga servicios<br/>para sus sedes"])
+        P3(["Técnico<br/>[Persona]<br/>Ejecuta los servicios<br/>asignados"])
+        P4(["Proveedor<br/>[Persona]<br/>Administra su equipo<br/>de técnicos (RF-16)"])
+        P5(["Admin del tenant<br/>[Persona]<br/>Aprueba y suspende técnicos<br/>de su tenant (RF-19, RF-20)"])
+        P6(["Admin de plataforma<br/>[Persona]<br/>Administra los tenants<br/>(RF-21)"])
+    end
+
+    SIS["QUICKPATCH<br/>[Sistema]<br/>Plataforma multi-tenant de<br/>servicios técnicos para hogares<br/>y empresas en Bogotá D.C."]
+
+    subgraph EXT[" "]
+        direction TB
+        PAY["Pasarela de pagos PCI-DSS<br/>[Sistema externo, RIE-01]<br/>Tokeniza y cobra"]
+        MAPS["Servicio de geocodificación<br/>[Sistema externo, RIE-02]<br/>Dirección a coordenadas"]
+        NOTI["Proveedor de notificaciones<br/>[Sistema externo, RIE-03]<br/>Correo y push"]
+    end
+
+    P1 -->|"pide, sigue, paga y califica<br/>[app móvil, HTTPS]"| SIS
+    P2 -->|"pide y paga servicios<br/>[app móvil, HTTPS]"| SIS
+    P3 -->|"gestiona su disponibilidad<br/>y ejecuta servicios<br/>[app móvil, HTTPS]"| SIS
+    P4 -->|"administra su equipo<br/>[app móvil, HTTPS]"| SIS
+    P5 -->|"aprueba y suspende técnicos<br/>[panel web, HTTPS]"| SIS
+    P6 -->|"administra los tenants<br/>[panel web, HTTPS]"| SIS
+    SIS -->|"cobra con tarjeta tokenizada<br/>[HTTPS]"| PAY
+    SIS -->|"geocodifica direcciones<br/>[HTTPS]"| MAPS
+    SIS -->|"envía correo y push<br/>[HTTPS]"| NOTI
+
+    classDef persona fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef sistema fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef externo fill:#999999,stroke:#6b6b6b,color:#ffffff
+    class P1,P2,P3,P4,P5,P6 persona
+    class SIS sistema
+    class PAY,MAPS,NOTI externo
+    style PER fill:#ffffff,stroke:#ffffff
+    style EXT fill:#ffffff,stroke:#ffffff
+```
+
+**Figura 0. Diagrama C4 de contexto de QUICKPATCH.**
+
+El diagrama ubica a QUICKPATCH frente a las personas que lo usan y los sistemas externos con los que se integra, sin abrir el sistema: el nivel 2 está en la sección 3.1.4 y el nivel 3, en la 3.1.5. Las personas son los roles del SRS (secciones 2.1 y 2.2) con el administrador separado en dos, según el DD (`users.role`, RN-U6): el admin del tenant administra solo su tenant y el admin de plataforma administra los tenants. Cada relación indica qué hace la persona y por qué canal: la app móvil Flutter para clientes, empresas cliente, técnicos y proveedores, y el panel web Angular para los dos administradores. El alcance se limita a Bogotá D.C. (SAD, R6).
+
+Los sistemas externos salen del SRS (RIE-01 a RIE-03): la pasarela de pagos certificada PCI-DSS (SAD, K2), el servicio de geocodificación y el proveedor de notificaciones por correo y push. La geocodificación se reduce a convertir direcciones en coordenadas: la app envía las coordenadas de la solicitud (contrato `service-request.v1.yaml`) y la cercanía entre cliente y técnico la calcula PostGIS (sección 3.1.4), sin servicio externo. Los proveedores concretos no están definidos.
+
+**Relación con el SAD (sección 4.1).** El SAD presenta la misma frontera como vista general de alto nivel, con las dos aplicaciones cliente dentro del sistema. Este diagrama es el nivel 1 estricto de C4: el sistema es una sola caja y los canales se indican en las relaciones. Las personas, los canales y los sistemas externos deben coincidir en los dos; un cambio en uno se refleja en el otro.
+
+> **Contradicción por resolver:** el SAD (R5) indica que la pasarela de pagos es la única dependencia externa de producción, pero el SRS define la geocodificación (RIE-02) y las notificaciones (RIE-03) como servicios con los que el sistema se integra, y el C4 de contenedores los dibuja como sistemas externos. Si alguno corre dentro de las 7 VMs, deja de ser un sistema externo y debe salir de este diagrama y del de contenedores; si es externo, R5 debe ajustarse.
+
+> **Decisión abierta (SAD 4.1):** el canal del estado en tiempo real entre las apps y el sistema (WebSocket o notificaciones push más consulta por REST) no está decidido. Por eso las relaciones de este diagrama solo indican HTTPS.
+
+> **Numeración:** esta sección se numera 3.1.0 y su figura, 0, para no renumerar las secciones y figuras existentes mientras haya otros cambios del SDD en curso. Se renumerará una sola vez cuando cierre el SDD V2.
 
 ### 3.1.1 Vista lógica general por capas
 
