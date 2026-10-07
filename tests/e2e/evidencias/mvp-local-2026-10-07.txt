@@ -1,0 +1,84 @@
+newman
+
+QUICKPATCH — MVP Sprint 3 (flujo de punta a punta)
+
+Folder 1. Administrador del tenant
+Sub-folder Login del administrador
+  POST http://host.docker.internal:18080/api/v1/auth/login [200 OK, 1.2kB, 377ms]
+  Pass  200 con token
+  Pass  rol admin_tenant
+
+Sub-folder Crear categoría
+  POST http://host.docker.internal:18080/api/v1/catalog/admin/categories [201 Created, 418B, 28ms]
+  Pass  201 creada y activa
+
+Sub-folder Categoría con nombre repetido → 409
+  POST http://host.docker.internal:18080/api/v1/catalog/admin/categories [409 Conflict, 486B, 12ms]
+  Pass  409 categoría registrada
+  Pass  Problem Details (RFC 9457) con correlationId
+
+Folder 2. Cliente
+Sub-folder Registro de cliente
+  POST http://host.docker.internal:18080/api/v1/auth/register/client [201 Created, 421B, 288ms]
+  Pass  201 registrado
+
+Sub-folder Login del cliente
+  POST http://host.docker.internal:18080/api/v1/auth/login [200 OK, 1.2kB, 281ms]
+  Pass  200 con rol cliente
+
+Sub-folder Categorías del tenant incluyen la nueva
+  GET http://host.docker.internal:18080/api/v1/catalog/categories [200 OK, 472B, 13ms]
+  Pass  200 y la categoría está activa
+
+Folder 3. Solicitud de servicio
+Sub-folder Crear solicitud (espera la réplica de la categoría)
+  POST http://host.docker.internal:18080/api/v1/service-requests [201 Created, 646B, 16ms]
+  Pass  201 en buscando_tecnico
+  Pass  responde con X-Correlation-Id
+
+Sub-folder Consultar la solicitud
+  GET http://host.docker.internal:18080/api/v1/service-requests/01a1150e-9b84-7f3e-a8b5-a3058944fd0d [200 OK, 571B, 13ms]
+  Pass  200 con la misma solicitud
+
+Folder 4. Casos negativos
+Sub-folder Sin token → 401
+  POST http://host.docker.internal:18080/api/v1/service-requests [401 Unauthorized, 483B, 9ms]
+  Pass  401
+
+Sub-folder Administrador no crea solicitudes → 403
+  POST http://host.docker.internal:18080/api/v1/service-requests [403 Forbidden, 450B, 9ms]
+  Pass  403
+
+Sub-folder Cliente no administra categorías → 403
+  POST http://host.docker.internal:18080/api/v1/catalog/admin/categories [403 Forbidden, 450B, 9ms]
+  Pass  403
+
+Sub-folder Fuera de Bogotá → 422
+  POST http://host.docker.internal:18080/api/v1/service-requests [422 Unprocessable Entity, 565B, 8ms]
+  Pass  422 fuera de cobertura
+  Pass  Problem Details (RFC 9457) con correlationId
+
+Sub-folder Descripción corta → 400 por campo
+  POST http://host.docker.internal:18080/api/v1/service-requests [400 Bad Request, 559B, 8ms]
+  Pass  400 con error en description
+  Pass  Problem Details (RFC 9457) con correlationId
+
+-------------------------------------------------------------------
+|                         |          executed |            failed |
+--------------------------+-------------------+--------------------
+|              iterations |                 1 |                 0 |
+--------------------------+-------------------+--------------------
+|                requests |                13 |                 0 |
+--------------------------+-------------------+--------------------
+|            test-scripts |                13 |                 0 |
+--------------------------+-------------------+--------------------
+|      prerequest-scripts |                 1 |                 0 |
+--------------------------+-------------------+--------------------
+|              assertions |                18 |                 0 |
+-------------------------------------------------------------------
+| total run duration: 1384ms                                      |
+-------------------------------------------------------------------
+| total data received: 4.77kB (approx)                            |
+-------------------------------------------------------------------
+| average response time: 82ms [min: 8ms, max: 377ms, s.d.: 129ms] |
+-------------------------------------------------------------------
