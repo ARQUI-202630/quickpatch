@@ -981,6 +981,33 @@ Cada repositorio de servicio contiene su código, sus pruebas unitarias y de int
 
 La Figura 12 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
 
+### 6.1.1 Responsabilidades por repositorio
+
+Las historias no se asignan por especialidad fija (Working Agreements, «Distribución y reasignación de tareas»), así que la propiedad de cada repositorio se expresa por **rol**: el rol propietario revisa los cambios del repositorio y responde por su pipeline, aunque cualquier integrante pueda tomar una historia sobre él.
+
+| Repositorio | Ruta en `quickpatch` | Responsabilidad | Rol propietario | Contratos que consume (fijados por tag) |
+|---|---|---|---|---|
+| `quickpatch` | raíz | Documentación (SRS, SAD, SDD, DD), contexto de agentes, pruebas del sistema completo (`tests/`) y punteros de los submódulos | Arquitectura (transversal) | — |
+| `quickpatch-mobile` | `apps/mobile/` | App Flutter de clientes, empresas, técnicos y proveedores | Frontend | `contracts/api-gateway/` |
+| `quickpatch-web` | `apps/web/` | Panel Angular de `admin_tenant` y `admin_plataforma` | Frontend | `contracts/api-gateway/` |
+| `quickpatch-api-gateway` | `apps/api-gateway/` | Contratos REST (`openapi/`) y configuración de Nginx (`nginx/`) | Backend (contratos); DevOps (despliegue de Nginx) | — (es la fuente) |
+| `quickpatch-kafka` | `apps/kafka/` | Esquemas de eventos (`events/`), topics (`topics/topics.yaml`) y despliegue del broker (`deploy/`) | Backend (contratos); DevOps (despliegue) | — (es la fuente) |
+| `quickpatch-identity`, `-actors`, `-catalog`, `-service-request`, `-ranking`, `-payments`, `-communication` | `apps/backend/services/<servicio>/` | Un microservicio ASP.NET Core con su base de datos, migraciones, pruebas, `Dockerfile` y manifiestos k3s | Backend | `contracts/api-gateway/` y `contracts/kafka/` |
+| `quickpatch-matching` | `apps/backend/services/matching/` | Microservicio Java + Spring Boot de asignación de técnicos | Backend | `contracts/api-gateway/` y `contracts/kafka/` |
+| `quickpatch-infrastructure` | `infrastructure/` | Inventario y playbooks de Ansible, plantillas reutilizables de CI/CD | DevOps | — |
+
+`quickpatch-infrastructure` sigue como submódulo mientras los pipelines de despliegue dependan de sus plantillas; ADR-021 lo integra como carpeta del repositorio principal (SCRUM-338).
+
+La solicitud SCRUM-288 nombra `quickpatch-contracts` como fuente contractual. Ese repositorio quedó reemplazado por ADR-021: los contratos REST viven en `quickpatch-api-gateway` y los de eventos en `quickpatch-kafka`, cada uno junto al componente que los expone.
+
+### 6.1.2 Reglas de evolución entre repositorios
+
+1. **Un cambio nace en el repositorio propietario.** Se revisa y fusiona allí primero; después `quickpatch` actualiza el puntero del submódulo en un commit propio. El flujo de ramas, las revisiones y los quality gates son los de Working Agreements («GitFlow: modelo de ramas» y «Pull Requests») y del pipeline de cada repositorio; esta sección no los repite.
+2. **Los contratos se consumen por versión.** Cada consumidor fija `contracts/api-gateway/` y `contracts/kafka/` en un tag SemVer. Subir de versión es un commit explícito del consumidor, de modo que un cambio de contrato no rompe a nadie hasta que este lo adopta (ADR-021).
+3. **Un cambio de contrato pasa por su repositorio fuente.** Allí corren la validación con Spectral/oasdiff (REST) o AJV y la verificación de compatibilidad (eventos), y el cambio identifica productor, consumidores e impacto (`.ai/workflows/api-change.md`, `.ai/workflows/event-change.md`).
+4. **No hay dependencias internas entre microservicios.** Un servicio no incluye a otro como submódulo, no importa sus paquetes ni lee su base de datos. Se integra solo por REST a través del gateway o por eventos Kafka, y replica localmente lo que necesita (ADR-017). Hoy el código transversal de los servicios .NET (correlación, Problem Details, validación de JWT) está copiado en cada servicio; ADR-020, todavía propuesto, plantea publicarlo como paquetes NuGet internos versionados y sin lógica de dominio.
+5. **Cada repositorio se construye y prueba solo.** Su pipeline compila, prueba y mide cobertura sin clonar otros repositorios de la solución; las pruebas que cruzan servicios viven en `tests/` del repositorio principal.
+
 ---
 
 ## 6.2 Organización por aplicación
