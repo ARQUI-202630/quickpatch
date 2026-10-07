@@ -881,7 +881,7 @@ Esta sección presenta la vista general de componentes del sistema y cómo se co
 
 ### 4.1 Diagrama general (C4 de alto nivel)
 
-El diagrama de alto nivel sigue el nivel de contexto de C4: las personas que usan QUICKPATCH, las dos aplicaciones por las que entran, el backend como una sola caja y los sistemas externos de los que depende. Está orientado de izquierda a derecha para proyectarse. El detalle de contenedores (gateway, los 8 microservicios, Kafka y los almacenes de datos) está en el SDD, sección 3.1.4, y el de componentes de las apps cliente, en la 3.1.5.
+El diagrama de alto nivel sigue el nivel de contexto de C4: las personas que usan QUICKPATCH, las dos aplicaciones por las que entran, el backend como una sola caja y los sistemas externos de los que depende. Está orientado de izquierda a derecha para proyectarse. El detalle de contenedores (gateway, los 8 microservicios, Kafka y los almacenes de datos) está en el SDD, sección 5.1, y el de componentes de las apps cliente, en la 6.2.
 
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'lineColor':'#374151','textColor':'#111827','edgeLabelBackground':'#ffffff','fontSize':'18px'}}}%%
@@ -936,7 +936,7 @@ flowchart LR
 - **Personas y canal.** Los usuarios operativos (cliente, empresa cliente, técnico y proveedor) solo entran por la app móvil; los dos administradores, solo por el panel web (SRS 2.1 y 2.2, RN-U6). El proveedor es el rol que administra un equipo de técnicos (RF-16), no el proveedor de materiales (`SUPPLIER`, sección 7.2).
 - **Frontera del sistema.** Todo el tráfico de las apps entra por el API Gateway, que es la única entrada (ADR-022). Los microservicios no se llaman entre sí para cumplir su función: se integran por eventos en Kafka (sección 4.3).
 - **Sistemas externos.** Son los tres del SRS (RIE-01 a RIE-03). Los proveedores concretos no están definidos.
-- **Decisión abierta: canal de estado en tiempo real.** Este diagrama pone solo HTTPS entre las apps y el backend. La versión anterior de este diagrama mostraba WebSocket hacia el gateway, mientras que el SDD (3.1.4) descarta un canal WebSocket y resuelve RF-11 con notificaciones push y consulta por REST. La implementación todavía no tiene ninguno de los dos (sección 2.2, RNF-06). Mientras el equipo no decida, ninguno de los dos documentos debe darlo por hecho.
+- **Decisión abierta: canal de estado en tiempo real.** Este diagrama pone solo HTTPS entre las apps y el backend. La versión anterior de este diagrama mostraba WebSocket hacia el gateway, mientras que el SDD (5.1) descarta un canal WebSocket y resuelve RF-11 con notificaciones push y consulta por REST. La implementación todavía no tiene ninguno de los dos (sección 2.2, RNF-06). Mientras el equipo no decida, ninguno de los dos documentos debe darlo por hecho.
 
 ### 4.2 Componentes
 
