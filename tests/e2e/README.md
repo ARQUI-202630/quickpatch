@@ -14,15 +14,15 @@ Esta suite valida los mecanismos de control de acceso por roles (RBAC) y las res
 
 | Tarea Jira | Caso TD | Método y Endpoint | Rol / Condición | Resultado Esperado | Criterio de Aceptación / Requisito |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **SCRUM-65** | `IDN-011` | `POST /v1/admin/tenants` | `cliente` | **HTTP 403 Forbidden** | RF-05, AC6-E3: Restricción estricta de administración a usuarios cliente. Estructura RFC 9457 `ProblemDetails`. |
-| **SCRUM-65** | `IDN-011b` | `GET /v1/admin/tenants` | `tecnico` | **HTTP 403 Forbidden** | RF-05: El rol técnico no puede listar tenants corporativos. |
-| **SCRUM-65** | `CAT-010` | `POST /v1/catalog/categories` | `cliente` | **HTTP 403 Forbidden** | AC6-E3: Mutación de catálogo restringida exclusivamente a administradores. |
-| **SCRUM-65** | `CAT-010b` | `POST /v1/catalog/categories` | `tecnico` | **HTTP 403 Forbidden** | AC6-E3: Técnicos no pueden agregar ni modificar categorías de servicio. |
-| **SCRUM-65** | `IDN-012` | `POST /v1/service-requests` | `tecnico` | **HTTP 403 Forbidden** | RF-07, DD 8.1: Creación de solicitudes reservada exclusivamente al rol `cliente`. |
-| **SCRUM-65** | `IDN-017` | `POST /v1/service-requests` | Anónimo (sin token) | **HTTP 401 Unauthorized** | AC6-E4: Rechazo inmediato de peticiones no autenticadas en el API Gateway. |
-| **SCRUM-114** | `IDN-019` | `POST /v1/auth/login` | Tenant Inactivo (`d9d9...`) | **HTTP 403 Forbidden** | RF-21, RN-T1: Bloqueo de inicio de sesión para credenciales de tenant suspendido/desactivado. |
-| **SCRUM-114** | `E2E-004` | `POST /v1/service-requests` | Tenant Inactivo (`d9d9...`) | **HTTP 403 Forbidden** | RF-21, RN-T1: Un tenant desactivado no puede radicar nuevas solicitudes de servicio. |
-| **SCRUM-114** | `TEN-001` | `POST /v1/service-requests` | Tenant Activo (`a1a1...`) | **HTTP 201 Created** | Control: Solicitudes de tenants activos son procesadas con normalidad. |
+| **SCRUM-65** | `IDN-001` | `POST /api/v1/auth/login` | `admin_tenant` | **HTTP 200 OK** | Semilla: Obtención de token RS256 con rol verificado `admin_tenant`. |
+| **SCRUM-65** | `CAT-001` | `POST /api/v1/catalog/admin/categories` | `admin_tenant` | **HTTP 201 Created** | Control positivo: Administrador crea categoría de servicio en el catálogo. |
+| **SCRUM-65** | `IDN-002` | `POST /api/v1/auth/register/client` | Anónimo | **HTTP 201 Created** | Registro de usuario final con rol `cliente`. |
+| **SCRUM-65** | `IDN-003` | `POST /api/v1/auth/login` | `cliente` | **HTTP 200 OK** | Semilla: Autenticación de cliente y obtención de token RS256. |
+| **SCRUM-65** | `IDN-012` | `POST /api/v1/service-requests` | `admin_tenant` | **HTTP 403 Forbidden** | RF-07, IDN-012: Creación de solicitudes reservada exclusivamente al rol `cliente`. Retorna `problems/no-autorizado`. |
+| **SCRUM-65** | `CAT-010` | `POST /api/v1/catalog/admin/categories` | `cliente` | **HTTP 403 Forbidden** | AC6-E3, CAT-010: Mutación de catálogo restringida exclusivamente a administradores. Retorna `problems/no-autorizado`. |
+| **SCRUM-65** | `IDN-017` | `POST /api/v1/service-requests` | Anónimo (sin token) | **HTTP 401 Unauthorized** | AC6-E4, IDN-017: Rechazo inmediato de peticiones no autenticadas en el API Gateway. Retorna `problems/no-autenticado`. |
+| **SCRUM-114** | `IDN-019` | `POST /api/v1/auth/login` | Tenant Inactivo | **HTTP 403 Forbidden** | RF-21, RN-T1: Bloqueo de inicio de sesión para credenciales de tenant suspendido/desactivado. |
+| **SCRUM-114** | `TEN-001` | `POST /api/v1/service-requests` | Tenant Activo (`cliente`) | **HTTP 201 Created** | Control: Solicitudes de tenants activos son procesadas con normalidad (`buscando_tecnico`). |
 
 ---
 

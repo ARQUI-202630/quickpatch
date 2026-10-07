@@ -1,4 +1,3 @@
-
 /**
  * Ejecutor local de pruebas E2E con Newman (QA)
  * 
@@ -28,6 +27,8 @@ function runNewman() {
         'run',
         collectionFile,
         '--env-var', `baseUrl=${baseUrl}`,
+        '--env-var', `adminEmail=admin@quickpatch.test`,
+        '--env-var', `adminPassword=PasswordAdmin123*`,
         '--insecure',
         '--reporters', 'cli'
     ];

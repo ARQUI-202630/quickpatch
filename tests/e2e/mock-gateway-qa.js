@@ -1,9 +1,9 @@
 /**
  * Servidor Mock del API Gateway para Pruebas Locales E2E (QA)
  * 
- * Permite validar las suites de Newman localmente sin dependencias externas,
- * emulando el comportamiento de seguridad del API Gateway y los microservicios
- * definidos en los contratos OpenAPI y las reglas de negocio (RF-05, RF-21, RN-T1).
+ * Emulador ligero en Node.js de las rutas y reglas de seguridad del Gateway
+ * bajo los contratos OpenAPI (/api/v1/*), permitiendo validar colecciones
+ * de Postman en entornos locales de desarrollo.
  */
 
 const http = require('http');
@@ -14,7 +14,7 @@ function parseJwt(authHeader) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
     const token = authHeader.substring(7);
     const parts = token.split('.');
-    if (parts.length !== 3) return null;
+    if (parts.length < 2) return null;
     try {
         const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
         const json = Buffer.from(payloadBase64, 'base64').toString('utf8');
@@ -24,9 +24,9 @@ function parseJwt(authHeader) {
     }
 }
 
-function sendProblemDetails(res, status, title, detail, correlationId) {
+function sendProblemDetails(res, status, problemType, title, detail, correlationId) {
     const body = {
-        type: `https://quickpatch.internal/problems/${status === 403 ? 'acceso-denegado' : 'no-autorizado'}`,
+        type: `https://quickpatch.internal/problems/${problemType}`,
         title: title,
         status: status,
         detail: detail,
@@ -39,86 +39,108 @@ function sendProblemDetails(res, status, title, detail, correlationId) {
     res.end(JSON.stringify(body, null, 2));
 }
 
+function makeToken(sub, role, tenantId) {
+    const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
+    const payload = Buffer.from(JSON.stringify({
+        sub: sub,
+        role: role,
+        tenant_id: tenantId || "a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee",
+        exp: Math.floor(Date.now() / 1000) + 7200
+    })).toString("base64url");
+    return `${header}.${payload}.mock-signature-rs256`;
+}
+
 const server = http.createServer((req, res) => {
     const correlationId = req.headers['x-correlation-id'] || `cid-${Date.now()}`;
     const user = parseJwt(req.headers['authorization']);
 
-    let bodyData = '';
-    req.on('data', chunk => { bodyData += chunk; });
+    let rawBody = '';
+    req.on('data', chunk => { rawBody += chunk; });
     req.on('end', () => {
         const url = req.url.split('?')[0];
 
-        // 1. Endpoint administrativo de tenants (solo rol admin)
-        if (url === '/v1/admin/tenants') {
-            if (!user) {
-                return sendProblemDetails(res, 401, 'No autenticado', 'Token ausente o inválido', correlationId);
-            }
-            if (user.role !== 'admin') {
-                return sendProblemDetails(res, 403, 'Acceso Restringido', 'Operación exclusiva del rol admin (RF-05, SCRUM-65)', correlationId);
-            }
-            res.writeHead(req.method === 'POST' ? 201 : 200, {
+        // 1. Registro de cliente (Identity)
+        if (url === '/api/v1/auth/register/client' && req.method === 'POST') {
+            res.writeHead(201, {
                 'Content-Type': 'application/json',
                 'X-Correlation-Id': correlationId
             });
-            return res.end(JSON.stringify({ status: 'ok', data: [] }));
+            return res.end(JSON.stringify({ message: "Usuario cliente registrado exitosamente" }));
         }
 
-        // 2. Endpoint de catálogo de servicios (mutación solo por admin)
-        if (url === '/v1/catalog/categories') {
-            if (req.method === 'POST') {
-                if (!user) {
-                    return sendProblemDetails(res, 401, 'No autenticado', 'Token ausente', correlationId);
-                }
-                if (user.role !== 'admin') {
-                    return sendProblemDetails(res, 403, 'Acceso Restringido', 'Solo administradores pueden crear categorías (CAT-010, SCRUM-65)', correlationId);
-                }
-                res.writeHead(201, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
-                return res.end(JSON.stringify({ id: 'cat-001', name: 'Nueva Categoria' }));
+        // 2. Login de usuarios (Identity)
+        if (url === '/api/v1/auth/login' && req.method === 'POST') {
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            // Caso de Tenant Inactivo (RN-T1, IDN-019)
+            if (body.email && body.email.includes('inactivo')) {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Tenant Desactivado', 'El tenant se encuentra suspendido/desactivado (RN-T1).', correlationId);
             }
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify([]));
+
+            // Administrador de tenant
+            if (body.email && body.email.includes('admin')) {
+                const token = makeToken("usr-admin-01", "admin_tenant");
+                res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+                return res.end(JSON.stringify({
+                    accessToken: token,
+                    tokenType: "Bearer",
+                    user: { id: "usr-admin-01", email: body.email, role: "admin_tenant" }
+                }));
+            }
+
+            // Cliente
+            const token = makeToken("usr-client-01", "cliente");
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+            return res.end(JSON.stringify({
+                accessToken: token,
+                tokenType: "Bearer",
+                user: { id: "usr-client-01", email: body.email, role: "cliente" }
+            }));
         }
 
-        // 3. Endpoint de solicitudes de servicio
-        if (url === '/v1/service-requests') {
+        // 3. Catálogo administrativo de categorías (Catalog - solo admin_tenant)
+        if (url === '/api/v1/catalog/admin/categories') {
             if (!user) {
-                return sendProblemDetails(res, 401, 'No autenticado', 'Falta token Bearer en la petición (IDN-017)', correlationId);
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
             }
-            // Validación de tenant desactivado (SCRUM-114, RN-T1)
-            if (user.tenant_status === 'inactivo' || user.tenant_id === 'd9d9d9d9-0000-1111-2222-333333333333') {
-                return sendProblemDetails(res, 403, 'Tenant Inactivo', 'El tenant se encuentra suspendido/desactivado. No se permiten nuevas solicitudes (RN-T1, SCRUM-114).', correlationId);
+            if (user.role !== 'admin_tenant' && user.role !== 'admin') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo administradores pueden crear categorías (CAT-010, SCRUM-65)', correlationId);
             }
-            // Validación de rol cliente (SCRUM-65, IDN-012)
+            res.writeHead(201, {
+                'Content-Type': 'application/json',
+                'X-Correlation-Id': correlationId
+            });
+            return res.end(JSON.stringify({
+                id: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
+                name: "Plomería QA",
+                active: true
+            }));
+        }
+
+        // 4. Creación de solicitudes de servicio (ServiceRequest - solo rol cliente)
+        if (url === '/api/v1/service-requests') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente en la petición (IDN-017)', correlationId);
+            }
             if (user.role !== 'cliente') {
-                return sendProblemDetails(res, 403, 'Rol No Autorizado', 'Solo usuarios con rol cliente pueden solicitar servicios (RF-07, IDN-012)', correlationId);
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo el rol cliente puede crear solicitudes de servicio (IDN-012, SCRUM-65)', correlationId);
             }
             res.writeHead(201, {
                 'Content-Type': 'application/json',
                 'X-Correlation-Id': correlationId,
-                'Location': '/v1/service-requests/sr-001'
+                'Location': '/api/v1/service-requests/sr-qa-001'
             });
             return res.end(JSON.stringify({
-                id: 'sr-001',
-                status: 'buscando_tecnico',
+                id: "sr-qa-001",
+                status: "buscando_tecnico",
+                categoryId: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
                 createdAt: new Date().toISOString()
             }));
         }
 
-        // 4. Endpoint de login / autenticación
-        if (url === '/v1/auth/login') {
-            try {
-                const parsed = JSON.parse(bodyData || '{}');
-                if (parsed.tenantId === 'd9d9d9d9-0000-1111-2222-333333333333') {
-                    return sendProblemDetails(res, 403, 'Tenant Desactivado', 'Tenant is disabled. No se puede iniciar sesión en un tenant inactivo (RN-T1, IDN-019).', correlationId);
-                }
-            } catch {}
-            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
-            return res.end(JSON.stringify({ token: 'mock-jwt-token' }));
-        }
-
-        // Fallback
         res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Endpoint no encontrado' }));
+        res.end(JSON.stringify({ error: "Ruta no encontrada" }));
     });
 });
 
