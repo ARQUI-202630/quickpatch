@@ -1,25 +1,25 @@
-# Documento de Pruebas (TD V1) — QUICKPATCH
+# Documento de Pruebas (TD V1.4) — QUICKPATCH
 ## Sistema Multi-tenant de Servicios Técnicos para el Hogar y las Empresas
 
 | | |
 |---|---|
 | **Tipo de documento** | Documento de Diseño y Definición de Pruebas (Test Document - TD) |
-| **Versión** | 1.0 (Entrega Sprint 3 / Semana 10) |
+| **Versión** | 1.4 (Entrega Sprint 3 / Semana 10) |
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
 | **Rol Responsable** | Líder de Aseguramiento de Calidad (QA Lead) |
 | **Estándares Aplicados** | ISO/IEC/IEEE 29119 (Software Testing), ISO/IEC 25010:2023 (Calidad de Software), PCI-DSS v4.0 (K2) |
-| **Alcance** | Estrategia de pruebas automatizadas sobre 12 repositorios de componentes más el repositorio principal, y validación en 7 Máquinas Virtuales |
+| **Alcance** | Estrategia de pruebas automatizadas sobre 12 repositorios de componentes más el repositorio principal, y validación en 7 Máquinas Virtuales (ADR-022) |
 
 ---
 
 ## Índice
 
 1. [Introducción y Propósito (Test Plan)](#1-introducción-y-propósito)
-2. [Estrategia de Pruebas y Topología Multirepo (Test Strategy - ADR-013)](#2-estrategia-de-pruebas-y-topología-de-repositorios-adr-013)
+2. [Estrategia de Pruebas y Topología Multirepo (Test Strategy - ADR-013, ADR-021)](#2-estrategia-de-pruebas-y-topología-de-repositorios-adr-013-adr-021)
 3. [El Ciclo de Calidad: Desarrollo → Pruebas → Ambiente](#3-el-ciclo-de-calidad-desarrollo--pruebas--ambiente)
 4. [Justificación Técnica de Herramientas frente a Alternativas](#4-justificación-técnica-de-herramientas-frente-a-alternativas)
-5. [Operación en las 7 Máquinas Virtuales (Red 10.43.x.x)](#5-operación-en-las-7-máquinas-virtuales-red-1043xx)
+5. [Operación en las 7 Máquinas Virtuales (Red 10.43.x.x - ADR-022)](#5-operación-en-las-7-máquinas-virtuales-red-1043xx---adr-022)
 6. [Mecanismo de Bloqueo Local Pre-Push](#6-mecanismo-de-bloqueo-local-pre-push)
 7. [Matriz de Trazabilidad RTM y Catálogo de Pruebas (Test Scenarios, RTM & Test Cases)](#7-matriz-de-trazabilidad-rtm-y-catálogo-de-pruebas-187-casos)
 8. [Gestión de Datos de Prueba (Test Data)](#8-gestión-de-datos-de-prueba-test-data)
@@ -32,16 +32,16 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.2) y los escenarios de calidad del SAD (versión vigente 2.13) de cara a los entregables del Sprint 3.
+El presente Documento de Pruebas (TD V1.4) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.3) y los escenarios de calidad del SAD (versión vigente 2.24) de cara a los entregables del Sprint 3.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
 2. **Proteger los Atributos de Calidad Críticos (SAD):**
    - **Aislamiento Multi-tenant (AC6-E2):** Cero fuga de información entre empresas clientes y usuarios mediante Row-Level Security (RLS).
    - **Cumplimiento PCI-DSS (K2, AC6-E1):** Cero almacenamiento de números de tarjeta (PAN) o códigos de seguridad (CVV) en bases de datos o logs.
-   - **Capacidad de Matching bajo Carga (AC2-E4, AC2-E5):** Soporte de 50 VU (normal) y 150 VU (estrés) evaluados sobre el ambiente de QA en VM2 (ADR-015), garantizando 0 caída de pods, 0 desalojos por `OOMKilled` y degradación controlada, protegiendo a Producción (VM3) de estrés rutinario.
+   - **Capacidad de Matching bajo Carga (AC2-E4, AC2-E5):** Soporte de 50 VU (normal) y 150 VU (estrés) evaluados sobre el ambiente de QA (k3s en VM2, PostgreSQL/Redis en VM5, Kafka/Garage en VM7 - ADR-015, ADR-022), garantizando 0 caída de pods, 0 desalojos por `OOMKilled`, cumplimiento del umbral formal de RAM $\le 6.5\text{ GiB}$ en VM3 (AC2-E5, con seguimiento en SCRUM-347 e INFRASTRUCTURE §5.6) y degradación controlada, protegiendo a Producción (VM3) de estrés rutinario.
    - **Resiliencia e Idempotencia (AC5-E4, AC5-E5):** Cero pérdida de eventos ante caída de Kafka (vía Transactional Outbox) y cero efectos duplicados.
-   - **Seguridad en el Ciclo del Servicio (AC9-E1, D7):** Bloqueo estricto de transiciones de estado inválidas y exigencia de evidencia fotográfica obligatoria en Garage (ADR-016) antes de completar cualquier trabajo.
+   - **Seguridad en el Ciclo del Servicio (AC9-E1, D7):** Bloqueo estricto de transiciones de estado inválidas y exigencia de evidencia fotográfica obligatoria en Garage (VM7 en QA, VM6 en Producción, ADR-016, ADR-022) antes de completar cualquier trabajo.
 
 ---
 
@@ -109,18 +109,18 @@ El flujo de promoción asegura que ningún código defectuoso llegue a las máqu
        │ • Unitarias + Testcontainers (Postgres/Kafka efímeros en Docker)
        │ • Cobertura >= 80%
        ▼ 
-[Compuerta 2: Pruebas de Sistema en Ambiente de QA (VM2 - ADR-015)]
-       │ • Pipeline de pruebas de sistema ejecutado desde Runner en VM1
+[Compuerta 2: Pruebas de Sistema en Ambiente de QA (VM2, VM5, VM7 - ADR-015, ADR-022)]
+       │ • Pipeline de pruebas de sistema ejecutado desde Runner en VM1 hacia QA (VM2/VM5/VM7)
        │ • Playwright E2E + Colecciones Newman (qa.quickpatch.internal)
-       │ • OWASP ZAP (DAST) contra Gateway de QA
-       │ • Escáner Regex PCI-DSS en logs de QA en Loki (0 PAN / 0 CVV)
-       │ • k6 normal: 50 VU con p95 < 3 s
-       │ • k6 estrés: 150 VU con degradación controlada y sin caída
+       │ • OWASP ZAP (DAST) contra Gateway de QA en VM1
+       │ • Escáner Regex PCI-DSS en logs de QA en Loki (VM1: 0 PAN / 0 CVV)
+       │ • k6 normal: 50 VU con p95 < 3 s (base de datos en VM5)
+       │ • k6 estrés: 150 VU con degradación controlada y sin caída de pods
        ▼ 
 [Compuerta 3: Despliegue en Producción (VM3 k3s)]
        │ • Rolling Update en VM3 mediante Runner en VM1
        │ • Smoke + kubectl rollout status
-       │ • Verificación de estabilidad: 0 OOMKilled, 0 caída de pods y medición de consumo de CPU/RAM en Prometheus
+       │ • Verificación de estabilidad: 0 OOMKilled, 0 caída de pods, cumplimiento de RAM <= 6.5 GiB (AC2-E5, SCRUM-347) y métricas en Prometheus (VM1)
        ├───(Pasa)───> [Versión Operativa y Tráfico Habilitado]
        └───(Falla)──> [kubectl rollout undo automático inmediato]
 ```
@@ -139,19 +139,19 @@ El flujo de promoción asegura que ningún código defectuoso llegue a las máqu
 
 ---
 
-## 5. Operación en las 7 Máquinas Virtuales (Red 10.43.x.x)
+## 5. Operación en las 7 Máquinas Virtuales (Red 10.43.x.x - ADR-022)
 
-Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.x.x`). Las pruebas interactúan con cada nodo respetando su asignación de recursos y roles:
+Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.x.x`). Conforme a la redistribución oficial aprobada en el **ADR-022** (1 de herramientas, 3 de producción y 3 de QA), las pruebas interactúan con cada nodo respetando su asignación de recursos y roles:
 
 | VM | IP | Software Principal | Rol en la Ejecución de Pruebas |
 |---|---|---|---|
-| **VM1** | `10.43.100.168` | Nginx + API Gateway + Panel Angular + Self-hosted Runner | Punto de entrada único HTTPS (puerto 443). Enruta tráfico por Virtual Hosts: producción (`quickpatch.internal`), QA (`qa.quickpatch.internal`) y Grafana (`grafana.quickpatch.internal`). Aloja el runner de GitHub Actions que ejecuta las pruebas de sistema y k6 hacia QA en VM2. |
-| **VM2** | `10.43.98.15` | Ambiente de QA Dedicado (ADR-015): k3s, PostgreSQL+PostGIS, Redis, Kafka (Docker) y Nginx | **Sujeto de las pruebas de sistema y carga.** Aloja el entorno de QA permanente e independiente. Recibe las pruebas de Playwright, Newman, ZAP Baseline y las pruebas de estrés de k6 (150 VU) protegiendo el clúster de producción. |
-| **VM3** | `10.43.98.205` | k3s (nodo único) con 8 microservicios de Producción | **Entorno de Producción.** Comparte 4 vCPU y 11 GiB de RAM. Matching opera con QoS *Guaranteed* (1 vCPU / 1 GiB). Protegido contra sobrecarga de pruebas de estrés al ejecutarse la carga destructiva exclusivamente en VM2 (ADR-015); VM3 no recibe estrés rutinario durante el sprint y solo se observa operativamente. |
-| **VM4** | `10.43.98.209` | PostgreSQL 16 + PostGIS (puerto 5432) | Base de datos de Producción. Ejecuta las consultas espaciales (`ST_DWithin`) y valida las políticas RLS. (QA en VM2 utiliza su propia base de datos aislada en Docker Compose). |
-| **VM5** | `10.43.98.29` | Redis 7 (puerto 6379) | Valida el almacenamiento en cache de cotizaciones temporales y coordinación de tareas programadas (RN-Q6). |
-| **VM6** | `10.43.99.12` | Apache Kafka (puerto 9092) | Valida la publicación confiable vía Outbox, la tolerancia a desconexión del broker y el consumo idempotente de eventos por `eventId`. |
-| **VM7** | `10.43.99.8` | Garage + Prometheus + Loki + Grafana | **Árbitro de observabilidad y almacenamiento.** Garage almacena las fotos obligatorias de evidencia y backups de PostgreSQL (ADR-016). Prometheus y Grafana monitorean en tiempo real el consumo de CPU/RAM, verificando 0 caídas de pods y registrando el baseline de recursos. |
+| **VM1** | `10.43.100.168` | Nginx :443 (Gateway) + Panel Angular + Self-hosted Runner + Observabilidad (Prometheus, Loki, Grafana :3000) | **Herramientas y Observabilidad.** Punto de entrada único HTTPS (puerto 443) desde la VPN de la universidad (R9). Enruta tráfico por Virtual Hosts (`quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal`). Aloja el runner de GitHub Actions que ejecuta las pruebas de sistema y k6 hacia QA, y centraliza Prometheus, Loki y Grafana monitoreando las 7 VMs. |
+| **VM2** | `10.43.98.15` | QA - Aplicación (ADR-015, ADR-022): k3s (nodo único), Traefik :30080 y servicios de QA | **Sujeto de las pruebas de sistema y carga (Aplicación QA).** Aloja los microservicios de QA en k3s de forma independiente. Recibe las pruebas de Playwright, Newman, ZAP Baseline y las pruebas de estrés de k6 (150 VU) protegiendo el clúster de producción (VM3). |
+| **VM3** | `10.43.98.205` | Producción - Aplicación: k3s (nodo único), Traefik :30080 con 8 microservicios de Producción | **Entorno de Producción (Aplicación).** Comparte 4 vCPU y 11 GiB de RAM. Matching opera con QoS *Guaranteed* (1 vCPU / 1 GiB). Protegido contra sobrecarga de pruebas de estrés al ejecutarse la carga destructiva exclusivamente en el ambiente de QA (VM2/VM5/VM7); VM3 no recibe estrés rutinario y solo se observa operativamente. |
+| **VM4** | `10.43.98.209` | Producción - Datos: PostgreSQL 16 + PostGIS (puerto 5432, una base por servicio) y Redis 7 (puerto 6379) | **Base de datos de Producción.** Ejecuta las consultas espaciales (`ST_DWithin`) y valida las políticas RLS en producción. Cuenta con respaldo diario automático hacia Garage en VM6. Permanece 100% aislada e intacta durante las pruebas de QA. |
+| **VM5** | `10.43.98.29` | QA - Datos (ADR-022): PostgreSQL 16 + PostGIS (puerto 5432, una base por servicio) y Redis 7 (puerto 6379) | **Base de datos dedicada de QA.** Almacena la persistencia de los servicios de QA desplegados en VM2. Aloja los datos del tenant de carga `tenant_qa_loadtest`, recibe las consultas de las pruebas k6 y ejecuta el script de purga post-carga sin afectar jamás a producción. |
+| **VM6** | `10.43.99.12` | Producción - Mensajería y Almacenamiento: Apache Kafka (puerto 9092) + Kafka UI y Garage S3 (puerto 9000) | **Infraestructura de Producción.** Kafka procesa eventos del bus de producción (Outbox / Idempotencia) y Garage (ADR-016) almacena fotos de evidencia y respaldos de PostgreSQL de VM4. |
+| **VM7** | `10.43.99.8` | QA - Mensajería y Almacenamiento (ADR-022): Apache Kafka (puerto 9092) y Garage S3 (puerto 9000) | **Infraestructura dedicada de QA.** Instancia propia de Kafka y Garage para el ambiente de pruebas. Garage en VM7 recibe las evidencias fotográficas generadas durante las pruebas E2E y de sistema, y Kafka procesa eventos de prueba aislados del bus de producción. |
 
 ---
 
@@ -268,31 +268,31 @@ El SAD v2.13 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **Total Escenarios** | **37 automatizados** | **51** | **100% de los escenarios de software y arquitectura cubiertos** |
 
 #### 7.1.3 Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 3 — Subtarea SCRUM-317)
-En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguiente matriz mapea bidireccionalmente cada **Historia de Usuario (HU)** del backlog del Sprint 3 en Jira (`jorgefortich3.atlassian.net`) con sus Requisitos Funcionales del SRS v3.2, Atributos de Calidad del SAD v2.13, las subtareas específicas de QA y el conjunto de casos de prueba automatizados responsables de validar sus criterios de aceptación:
+En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguiente matriz mapea bidireccionalmente cada **Historia de Usuario (HU)** del backlog del Sprint 3 en Jira (`jorgefortich3.atlassian.net`) con sus Requisitos Funcionales del SRS v3.3, Atributos de Calidad del SAD v2.24, las subtareas específicas de QA y el conjunto de casos de prueba automatizados responsables de validar sus criterios de aceptación:
 
 | Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS / SAD | Nivel de Prueba | Casos de Prueba Asociados | Subtarea QA en Jira | Criterio de Cobertura QA |
 |---|---|---|---|---|---|---|
-| **SCRUM-21** | Registro de Cliente con correo y contraseña | RF-01, RNF-03 | Unitaria, Integración, E2E | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` | `SCRUM-53` — consultar estado vigente en Jira | Email válido, password $\ge 8$ caracteres, rechazo duplicado en tenant y hash seguro. |
-| **SCRUM-22** | Registro de Técnico/Proveedor con datos y documentos | RF-02, RF-16 | Unitaria, Integración | `IDN-004`, `ACT-001`, `ACT-002`, `ACT-007` | Subtarea QA de sprint — consultar Jira | Documento obligatorio, perfil creado en estado `pendiente`, vinculación a proveedor. |
-| **SCRUM-23** | Inicio de sesión seguro para todos los roles | RF-03, AC6-E8 | Unitaria, Integración | `IDN-005`, `IDN-006`, `IDN-007`, `IDN-008`, `IDN-017`, `IDN-018` | `SCRUM-59` — consultar estado vigente en Jira | JWT con claims válidos (`sub`, `tenant_id`, `role`), bloqueo tras 5 intentos fallidos (HTTP 423) y rechazo de tokens expirados o alterados. |
-| **SCRUM-24** | Aislamiento lógico de datos por Tenant (Multi-tenant) | RF-04, AC6-E2 | Integración, Seguridad | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-007`, `ACT-009`, `PAY-008`, `RNK-008` | Subtarea QA de sprint — consultar Jira | Validación RLS en PostgreSQL: consultas entre tenants retornan 0 filas; rechazo de escrituras cruzadas (HTTP 403). |
-| **SCRUM-25** | Definición de roles y permisos diferenciados | RF-05, AC6-E3 | Unitaria, Seguridad | `IDN-011`, `IDN-012`, `CAT-010` | `SCRUM-65` — consultar estado vigente en Jira | Validación RBAC estricta: HTTP 403 ante accesos no autorizados y emisión de log estructurado en Loki. |
-| **SCRUM-26** | Registro de cuenta corporativa (Empresa) | RF-06 | Integración, E2E | `IDN-013`, `IDN-014`, `E2E-004` | Subtarea QA de sprint — consultar Jira | Alta de tenant corporativo activo, validación de unicidad de NIT (HTTP 409). |
-| **SCRUM-27** | Creación de solicitud de servicio técnico (Cliente) | RF-07, AC4-E1, AC5-E4 | Unitaria, Integración, E2E | `SRQ-001`, `SRQ-002`, `SRQ-003`, `E2E-001`, `E2E-005` | `SCRUM-72` — consultar estado vigente en Jira | Formulario Flutter / REST, campos obligatorios, estado inicial `buscando_tecnico` y publicación Outbox `service-request.created`. |
-| **SCRUM-28** | Creación de solicitud de servicio técnico (Empresa) | RF-08 | Integración | `SRQ-004` | Subtarea QA de sprint — consultar Jira | Solicitud asociada correctamente al `tenant_id` corporativo de la empresa. |
-| **SCRUM-29** | Asignación automática de técnico (Motor de Matching) | RF-09, RF-10, AC1-E1, AC2-E4 | Integración, Rendimiento | `MAT-001` a `MAT-022`, `PRF-001`, `PRF-004` | Subtarea QA de sprint — consultar Jira | Filtro estricto de especialidad, ordenamiento espacial PostGIS, tolerancia a 50 VU normal y 150 VU estrés en k6 sobre QA (VM2) sin caída de pods. |
-| **SCRUM-41** | Gestión de tenants/clientes (Admin) | RF-21, RN-T1, AC8-E1 | Integración, UI E2E | `IDN-019`, `E2E-004` | `SCRUM-114` — consultar estado vigente en Jira | Desactivación de tenant impide autenticación y creación de nuevas solicitudes (`tenant is disabled`). |
-| **SCRUM-42** | Pago del servicio con tarjeta (Cliente, PCI-DSS) | RF-22, K2, AC6-E1 | Unitaria, Integración, Seguridad | `PAY-001`, `PAY-002`, `PAY-003`, `PAY-010`, `PAY-011`, `E2E-009` | Subtarea QA de sprint — consultar Jira | Cero PAN/CVV en BD y logs de Loki; cobro con token de pasarela (`tok_wompi_test_*`) y prevención de doble cobro. |
-| **SCRUM-43** | Pago corporativo centralizado (Empresa) | RF-23 | Unitaria, Integración | `PAY-006` | Subtarea QA de sprint — consultar Jira | Factura a nombre de empresa corporativa con NIT y razón social. |
-| **SCRUM-44** | Generación de factura/comprobante de pago | RF-24, D4 | Integración | `PAY-004`, `PAY-005` | Subtarea QA de sprint — consultar Jira | Emisión automática de comprobante fiscal consecutivo a nombre de QUICKPATCH. |
-| **SCRUM-45** | Registro de pagos recibidos (Técnico/Proveedor) | RF-25 | Integración | `PAY-007`, `PAY-008` | Subtarea QA de sprint — consultar Jira | Consulta paginada de ingresos percibidos filtrada por `tenant_id` del técnico. |
-| **SCRUM-46** | Pipeline de integración y despliegue continuo (CI/CD) | RF-26, RNF-08 | CI/CD, Infraestructura | `INF-016` | Subtarea QA de sprint — consultar Jira | Compuertas automatizadas en GitHub Actions; bloqueo ante fallos de prueba unitaria. |
-| **SCRUM-47** | Pruebas automatizadas del flujo crítico (Smoke Test E2E) | RF-27, AC1-E2 | E2E Completo | `E2E-001`, `E2E-012` | Subtarea QA de sprint — consultar Jira | Recorrido integral de 10 pasos en Playwright sin intervención manual; tasa de error 5xx < 1%. |
-| **SCRUM-48** | Logging centralizado y monitoreo de errores | RF-28, RNF-04, INFRA 7.1 | Observabilidad | `INF-011`, `INF-012`, `PRF-010` | Subtarea QA de sprint — consultar Jira | Ingesta de métricas en Prometheus y logs estructurados JSON con correlationId en Promtail/Loki. |
-| **SCRUM-49** | Cifrado de datos sensibles en tránsito y en reposo | RF-29, K9, RNF-02 | Infraestructura, Seguridad | `IDN-015`, `IDN-021`, `INF-005` | Subtarea QA de sprint — consultar Jira | Terminación TLS 1.3 en API Gateway Nginx (VM1) y hash unidireccional de contraseñas. |
-| **SCRUM-254** | Documentación Calidad y Pruebas V1 | TD V1, RTM | Documentación | 187 casos formalizados | `SCRUM-266` a `SCRUM-271` — consultar estado vigente en Jira | Documento de diseño de pruebas completo con matriz RTM, TDM, Bug reporting y compuertas. |
-| **SCRUM-306** | Despliegue del incremento funcional en ambiente QA | ADR-015, Compuerta 2 | Infraestructura QA | `INF-003`, `INF-004`, `INF-005` | Subtarea QA de sprint — consultar Jira | Puesta en marcha de contenedores de QA en VM2 aislados de producción. |
-| **SCRUM-307** | Informe de pruebas y evidencias del Sprint 3 | Calidad y Reporte | Trazabilidad y Evidencia | Catálogo completo y suites ejecutables | `SCRUM-317`, `SCRUM-315` — consultar estado vigente en Jira | Consolidación de casos, precondiciones, pasos, resultados esperados y evidencias reproducibles. |
+| **SCRUM-21** | Registro de Cliente con correo y contraseña | RF-01, RNF-03 | Unitaria, Integración, E2E | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` | `SCRUM-53` | Email válido, password $\ge 8$ caracteres, rechazo duplicado en tenant y hash seguro. |
+| **SCRUM-22** | Registro de Técnico/Proveedor con datos y documentos | RF-02, RF-16 | Unitaria, Integración | `IDN-004`, `ACT-001`, `ACT-002`, `ACT-007` | `SCRUM-321` | Documento obligatorio, perfil creado en estado `pendiente`, vinculación a proveedor. |
+| **SCRUM-23** | Inicio de sesión seguro para todos los roles | RF-03, AC6-E8 | Unitaria, Integración | `IDN-005`, `IDN-006`, `IDN-007`, `IDN-008`, `IDN-017`, `IDN-018` | `SCRUM-59` | JWT con claims válidos (`sub`, `tenant_id`, `role`), bloqueo tras 5 intentos fallidos (HTTP 423) y rechazo de tokens expirados o alterados. |
+| **SCRUM-24** | Aislamiento lógico de datos por Tenant (Multi-tenant) | RF-04, AC6-E2 | Integración, Seguridad | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-007`, `ACT-009`, `PAY-008`, `RNK-008` | `SCRUM-65` | Validación RLS en PostgreSQL: consultas entre tenants retornan 0 filas; rechazo de escrituras cruzadas (HTTP 403). |
+| **SCRUM-25** | Definición de roles y permisos diferenciados | RF-05, AC6-E3 | Unitaria, Seguridad | `IDN-011`, `IDN-012`, `CAT-010` | `SCRUM-65` | Validación RBAC estricta: HTTP 403 ante accesos no autorizados y emisión de log estructurado en Loki. |
+| **SCRUM-26** | Registro de cuenta corporativa (Empresa) | RF-06 | Integración, E2E | `IDN-013`, `IDN-014`, `E2E-004` | `SCRUM-321` | Alta de tenant corporativo activo, validación de unicidad de NIT (HTTP 409). |
+| **SCRUM-27** | Creación de solicitud de servicio técnico (Cliente) | RF-07, AC4-E1, AC5-E4 | Unitaria, Integración, E2E | `SRQ-001`, `SRQ-002`, `SRQ-003`, `E2E-001`, `E2E-005` | `SCRUM-72` | Formulario Flutter / REST, campos obligatorios, estado inicial `buscando_tecnico` y publicación Outbox `service-request.created`. |
+| **SCRUM-28** | Creación de solicitud de servicio técnico (Empresa) | RF-08 | Integración | `SRQ-004` | `SCRUM-321` | Solicitud asociada correctamente al `tenant_id` corporativo de la empresa. |
+| **SCRUM-29** | Asignación automática de técnico (Motor de Matching) | RF-09, RF-10, AC1-E1, AC2-E4 | Integración, Rendimiento | `MAT-001` a `MAT-022`, `PRF-001`, `PRF-004` | `SCRUM-320` | Filtro estricto de especialidad, ordenamiento espacial PostGIS, tolerancia a 50 VU normal y 150 VU estrés en k6 sobre QA (VM2) sin caída de pods. |
+| **SCRUM-41** | Gestión de tenants/clientes (Admin) | RF-21, RN-T1, AC8-E1 | Integración, UI E2E | `IDN-019`, `E2E-004` | `SCRUM-114` | Desactivación de tenant impide nuevos inicios de sesión (HTTP 403 en `/api/v1/auth/login`); conforme a DD 7.12, tokens emitidos siguen vigentes hasta expirar. Probado por `IDN-019` y `E2E-004`. |
+| **SCRUM-42** | Pago del servicio con tarjeta (Cliente, PCI-DSS) | RF-22, K2, AC6-E1 | Unitaria, Integración, Seguridad | `PAY-001`, `PAY-002`, `PAY-003`, `PAY-010`, `PAY-011`, `E2E-009` | `SCRUM-320` | Cero PAN/CVV en BD y logs de Loki; cobro con token de pasarela (`tok_wompi_test_*`) y prevención de doble cobro. |
+| **SCRUM-43** | Pago corporativo centralizado (Empresa) | RF-23 | Unitaria, Integración | `PAY-006` | `SCRUM-321` | Factura a nombre de empresa corporativa con NIT y razón social. |
+| **SCRUM-44** | Generación de factura/comprobante de pago | RF-24, D4 | Integración | `PAY-004`, `PAY-005` | `SCRUM-321` | Emisión automática de comprobante fiscal consecutivo a nombre de QUICKPATCH. |
+| **SCRUM-45** | Registro de pagos recibidos (Técnico/Proveedor) | RF-25 | Integración | `PAY-007`, `PAY-008` | `SCRUM-321` | Consulta paginada de ingresos percibidos filtrada por `tenant_id` del técnico. |
+| **SCRUM-46** | Pipeline de integración y despliegue continuo (CI/CD) | RF-26, RNF-08 | CI/CD, Infraestructura | `INF-016` | `SCRUM-322` | Compuertas automatizadas en GitHub Actions; bloqueo ante fallos de prueba unitaria. |
+| **SCRUM-47** | Pruebas automatizadas del flujo crítico (Smoke Test E2E) | RF-27, AC1-E2 | E2E Completo | `E2E-001`, `E2E-012` | `SCRUM-321` | Recorrido integral de 10 pasos en Playwright sin intervención manual; tasa de error 5xx < 1%. |
+| **SCRUM-48** | Logging centralizado y monitoreo de errores | RF-28, RNF-04, INFRA 7.1 | Observabilidad | `INF-011`, `INF-012`, `PRF-010` | `SCRUM-325` | Ingesta de métricas en Prometheus y logs estructurados JSON con correlationId en Promtail/Loki. |
+| **SCRUM-49** | Cifrado de datos sensibles en tránsito y en reposo | RF-29, R9, RNF-02 | Infraestructura, Seguridad | `IDN-015`, `IDN-021`, `INF-005` | `SCRUM-320` | Terminación TLS 1.3 en API Gateway Nginx (VM1) y hash unidireccional de contraseñas. |
+| **SCRUM-254** | Documentación Calidad y Pruebas V1 | TD V1.4, RTM | Documentación | 187 casos formalizados | `SCRUM-317` | Documento de diseño de pruebas completo con matriz RTM, TDM, Bug reporting y compuertas. |
+| **SCRUM-306** | Despliegue del incremento funcional en ambiente QA | ADR-015, ADR-022 | Infraestructura QA | `INF-003`, `INF-004`, `INF-005` | `SCRUM-322` | Puesta en marcha de contenedores de QA en VM2, VM5 y VM7 aislados de producción. |
+| **SCRUM-307** | Informe de pruebas y evidencias del Sprint 3 | Calidad y Reporte | Trazabilidad y Evidencia | Catálogo completo y suites ejecutables | `SCRUM-322` | Consolidación de casos, precondiciones, pasos, resultados esperados y evidencias reproducibles. |
 
 ---
 
@@ -426,7 +426,7 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **MAT-018** | AC2-E1 | Rendimiento | Latencia de búsqueda geoespacial bajo 50 consultas concurrentes. | Tiempo de respuesta `http_req_duration p(95) < 3000 ms`. |
 | **MAT-019** | AC2-E3 | Rendimiento | Tiempo extremo a extremo desde solicitud hasta notificación de oferta. | Lapso total cronometrado inferior a 7.0 segundos. |
 | **MAT-020** | AC2-E4 | Estrés | **Pico de carga sostenido de 150 solicitudes de matching concurrentes.** | 150 VU de estrés en k6 durante 5 minutos contra QA (VM2 - ADR-015); 0 errores 5xx no controlados; sin caída de pod; Producción (VM3) no recibe estrés rutinario. |
-| **MAT-021** | AC2-E5, K10 | Capacidad | Límite de memoria de Matching Service en k3s (QoS Guaranteed). | Consumo de RAM no excede 1.0 GiB asignado; 0 desalojos por `OOMKilled`. |
+| **MAT-021** | AC2-E5, R10 | Capacidad | Límite de memoria de Matching Service en k3s (QoS Guaranteed). | Consumo de RAM no excede 1.0 GiB asignado; 0 desalojos por `OOMKilled`. |
 | **MAT-022** | AC3-E2 | Resiliencia | Convivencia en VM3: saturación de Ranking pod no degrada a Matching. | Matching mantiene latencia p95 < 3s ante pico de CPU provocado en otro pod. |
 
 ---
@@ -518,22 +518,22 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 ---
 
 ### 7.11 Módulo: Infraestructura, Resiliencia y Servidores (`quickpatch-infrastructure`)
-* **Requisitos:** RF-26, RNF-01, RNF-02, RNF-07, RNF-08 | K5, K7, K9, K10, K11 | INFRASTRUCTURE.md | SAD: AC5-E1, AC5-E2, AC7-E5, AC8-E5
+* **Requisitos:** RF-26, RNF-01, RNF-02, RNF-07, RNF-08 | R5, R7, R9, R10, R11 | INFRASTRUCTURE.md | SAD: AC5-E1, AC5-E2, AC7-E5, AC8-E5
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
 |---|---|---|---|---|
-| **INF-001** | K11 | Linter | Verificación de buenas prácticas e idempotencia en Ansible. | `ansible-lint ansible/playbooks/*.yml` retorna 0 advertencias o errores. |
+| **INF-001** | R11 | Linter | Verificación de buenas prácticas e idempotencia en Ansible. | `ansible-lint ansible/playbooks/*.yml` retorna 0 advertencias o errores. |
 | **INF-002** | AC8-E5 | Idempotencia | Re-ejecución limpia de playbooks en las 7 VMs. | Segunda ejecución consecutiva retorna exactamente `changed=0, failed=0`. |
-| **INF-003** | K9, INFRA 10.2| Red | Aislamiento de puertos por firewall (UFW en VM1/VM3/VM4/VM6/VM7 y firewalld en VM2/VM5). | Conexión externa directa a puerto 5432 (Postgres en VM4) o 6379 (Redis en VM5) rechazada por defecto. |
+| **INF-003** | R9, INFRA 10.2| Red | Aislamiento de puertos por firewall (UFW en VM1/VM3/VM4/VM6/VM7 y firewalld en VM2/VM5). | Conexión externa directa a puerto 5432 o 6379 (Postgres/Redis en VM4 y VM5) rechazada por defecto. |
 | **INF-004** | INFRA 10.2 | Red | Conexión permitida exclusivamente en pares origen-destino. | Tráfico desde VM3 a VM4 puerto 5432 y VM6 puerto 9092 opera con éxito. |
-| **INF-005** | K9, RNF-02 | Seguridad | Conexión segura TLS autofirmada en API Gateway (VM1). | Petición a `https://quickpatch.internal` (puerto 443) negocia cifrado TLS exitoso. |
+| **INF-005** | R9, RNF-02 | Seguridad | Conexión segura TLS autofirmada en API Gateway (VM1). | Petición a `https://quickpatch.internal` (puerto 443) negocia cifrado TLS exitoso. |
 | **INF-006** | INFRA 10.3 | Acceso | Bloqueo de acceso SSH directo como root en las 7 VMs. | Intento de conexión SSH como usuario root (`ssh root@10.43.x.x`) es rechazado en las 7 VMs (`PermitRootLogin no`); acceso restringido a usuarios estándar no privilegiados. |
-| **INF-007** | INFRA 9.2, ADR-016 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de Garage en VM7. |
-| **INF-008** | AC5-E1 | Recuperación | Restauración de base de datos desde dump de backup en VM7. | `pg_restore` restablece esquema y datos de manera íntegra dentro de la ventana de recuperación RTO. |
+| **INF-007** | INFRA 9.2, ADR-016 | Backup | Automatización de backup diario de PostgreSQL. | Ejecución de cron `pg_dump` transfiere dump exitosamente al bucket de Garage en VM6 (producción) y VM7 (QA). |
+| **INF-008** | AC5-E1 | Recuperación | Restauración de base de datos desde dump de backup en Garage. | `pg_restore` restablece esquema y datos de manera íntegra dentro de la ventana de recuperación RTO. |
 | **INF-009** | INFRA 8.2 | Secretos | Cero secretos o credenciales en texto plano en Git. | Escaneo con `gitleaks` retorna 0 hallazgos de passwords o llaves privadas. |
 | **INF-010** | INFRA 5.2 | k3s | Rango CIDR de k3s configurado fuera de `10.43.0.0/16`. | `--service-cidr=10.44.0.0/16` verificado; 0 colisión de red con VMs del lab. |
-| **INF-011** | INFRA 7.1 | Observabilidad| Exportación de métricas de servidor vía `node_exporter`. | Prometheus en VM7 recolecta métricas de CPU, RAM y disco cada 15 segundos. |
-| **INF-012** | INFRA 7.1 | Observabilidad| Recolección de logs de contenedores con Promtail y Loki. | Logs de microservicios visibles en Grafana filtrados por etiqueta de servicio `{job="..."}` o `{container_name="..."}`. |
+| **INF-011** | INFRA 7.1 | Observabilidad| Exportación de métricas de servidor vía `node_exporter`. | Prometheus en VM1 recolecta métricas de CPU, RAM y disco de las 7 VMs cada 15 segundos. |
+| **INF-012** | INFRA 7.1 | Observabilidad| Recolección de logs de contenedores con Promtail y Loki. | Logs recolectados por Promtail y enviados a Loki en VM1, visibles en Grafana (:3000) filtrados por etiqueta de servicio `{job="..."}` o `{container_name="..."}`. |
 | **INF-013** | RNF-02, RNF-07 | Seguridad DAST| Escaneo dinámico de vulnerabilidades web con OWASP ZAP contra API Gateway (VM1). | ZAP Baseline Scan reporta 0 vulnerabilidades de severidad Alta o Crítica en endpoints expuestos. |
 | **INF-014** | AC5-E4 | Resiliencia | Desconexión temporal de Kafka y persistencia en Outbox. | Eventos generados durante caída de Kafka se publican automáticamente tras reconexión. |
 | **INF-015** | INFRA 5.8 | Despliegue | Actualización con Rolling Update sin caída del backend. | Despliegue de nueva versión en k3s mantiene disponibilidad 100% durante el cambio. |
@@ -562,20 +562,20 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 ---
 
 ### 7.13 Módulo: Pruebas de Rendimiento, Estrés y Capacidad (`quickpatch/tests/performance`)
-* **Requisitos:** RNF-05, RNF-06, RNF-07, RNF-08 | K10 | SAD: AC2-E1, AC2-E2, AC2-E3, AC2-E4, AC2-E5
+* **Requisitos:** RNF-05, RNF-06, RNF-07, RNF-08 | R10 | SAD: AC2-E1, AC2-E2, AC2-E3, AC2-E4, AC2-E5
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
 |---|---|---|---|---|
 | **PRF-001** | AC2-E1 | Rendimiento | Búsqueda geoespacial cercana en hora pico con k6. | Latencia de respuesta `http_req_duration p(95) < 3000 ms` bajo 50 VU. |
 | **PRF-002** | AC2-E2 | Rendimiento | Consulta de historial paginado con acumulación de datos. | Carga de página de historial en menos de 1.5 segundos (p95 < 1500 ms). |
 | **PRF-003** | AC2-E3 | Rendimiento | Procesamiento en segundo plano desde solicitud hasta oferta. | Lapso total cronometrado inferior a 7.0 segundos para el 95% de las solicitudes. |
-| **PRF-004** | **AC2-E4** | Estrés Pico | **Pico de carga inesperado de 150 solicitudes de matching concurrentes.** | k6 inyecta 150 VU de estrés en QA (VM2 - ADR-015) durante 5 minutos; tasa de error 5xx = 0% o degradación controlada; 0 caídas de pod; Producción (VM3) protegida. |
-| **PRF-005** | **AC2-E5, K10** | Capacidad | **Presupuesto y estabilidad de recursos bajo carga.** | 0 procesos terminados por `OOMKilled`; 0 caída de pods; degradación controlada; registro del consumo de CPU y RAM para establecer el baseline operativo formal. |
-| **PRF-006** | SAD 1.2 | Limpieza | Purga de datos del tenant de prueba tras test de carga. | Scripts de teardown independientes limpian registros de `tenant_qa_loadtest` en las bases de datos de ServiceRequest y Matching en el ambiente de QA (VM2); la base de datos de producción en VM4 permanece aislada e intacta. |
+| **PRF-004** | **AC2-E4** | Estrés Pico | **Pico de carga inesperado de 150 solicitudes de matching concurrentes.** | k6 inyecta 150 VU de estrés en QA (k3s en VM2, datos en VM5, Kafka en VM7 - ADR-015, ADR-022) durante 5 minutos; tasa de error 5xx = 0% o degradación controlada; 0 caídas de pod; Producción (VM3) protegida. |
+| **PRF-005** | **AC2-E5, R10** | Capacidad | **Presupuesto y estabilidad de recursos bajo carga.** | Consumo de RAM en VM3 $\le 6.5\text{ GiB}$ conforme al escenario AC2-E5 del SAD (con seguimiento formal en INFRASTRUCTURE §5.6 y SCRUM-347 sobre validación empírica con servicios reales); 0 procesos terminados por `OOMKilled`; 0 caída de pods; degradación controlada; registro de métricas en Prometheus (VM1). |
+| **PRF-006** | SAD 1.2 | Limpieza | Purga de datos del tenant de prueba tras test de carga. | Scripts de teardown independientes limpian registros de `tenant_qa_loadtest` en las bases de datos de ServiceRequest y Matching en el ambiente de QA (PostgreSQL en VM5); la base de datos de producción en VM4 permanece aislada e intacta. |
 | **PRF-007** | RNF-06 | Resistencia | Operación sostenida bajo carga normal (50 VU) por 30 minutos. | Cero fugas progresivas de memoria; consumo de CPU estable por debajo del 75%. |
 | **PRF-008** | RNF-08 | Rollback | Mecanismo de Rollback Automático ante fallo de carga. | Pipeline detecta violación de umbral y ejecuta `kubectl rollout undo` de forma automatizada. |
-| **PRF-009** | INFRA 5.7 | Conexiones | Pool de conexiones a PostgreSQL en QA (VM2) bajo 150 VU. | Pool opera dentro de los límites de `max_connections` en QA sin errores `too many clients`, sin afectar a producción en VM4. |
-| **PRF-010** | AC9-E6 | Alertas | Disparo de alertas en Grafana al superar el 85% de RAM. | Alerta activa generada en Grafana alertando al equipo antes de un desalojo. |
+| **PRF-009** | INFRA 5.7 | Conexiones | Pool de conexiones a PostgreSQL en QA (VM5) bajo 150 VU. | Pool opera dentro de los límites de `max_connections` en QA (VM5) sin errores `too many clients`, sin afectar a producción en VM4. |
+| **PRF-010** | AC9-E6 | Alertas | Disparo de alertas en Grafana (VM1) al superar el 85% de RAM. | Alerta activa generada en Grafana (VM1) alertando al equipo antes de un desalojo. |
 
 ---
 
@@ -589,7 +589,7 @@ Para garantizar la repetibilidad, el aislamiento y la independencia de las prueb
 1. **Datos Sintéticos y Efímeros (Shift-Left):** En las compuertas 1 (Local) y 2 (CI), los datos se generan dinámicamente mediante semillas (*seeds*) administradas por **Testcontainers**. Al finalizar la suite, los contenedores y los datos se destruyen automáticamente.
 2. **Aislamiento Multi-Tenant Estricto (AC6-E2):** Ninguna prueba utiliza datos compartidos entre tenants. Se crean tenants dedicados exclusivamente para propósitos de prueba para evitar colisiones:
    - `tenant_qa_automated`: Utilizado para pruebas de integración y flujos E2E de regresión.
-   - `tenant_qa_loadtest` (UUID: `a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee`): Utilizado exclusivamente para las pruebas de carga con k6 sobre el ambiente dedicado de QA en VM2 (PostgreSQL propio de QA).
+   - `tenant_qa_loadtest` (UUID: `a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee`): Utilizado exclusivamente para las pruebas de carga con k6 sobre el ambiente dedicado de QA (servicios en VM2, PostgreSQL en VM5 - ADR-015, ADR-022).
 3. **Cumplimiento PCI-DSS en Datos de Prueba (K2, AC6-E1):** Está terminantemente prohibido el uso de datos reales de tarjetas de crédito o débito. Todas las pruebas de pagos utilizan **tokens opacos sintéticos** provistos por las librerías mock de pasarelas (ej. `tok_test_visa_approved_001`, `tok_test_declined_funds`).
 
 ### 8.2 Perfiles y Conjuntos de Datos Semilla (Fixtures)
@@ -597,7 +597,7 @@ Para garantizar la repetibilidad, el aislamiento y la independencia de las prueb
 | Tipo de Dato | Identificador / Clave | Atributos y Coordenadas de Prueba | Propósito de Validación |
 |---|---|---|---|
 | **Tenant Empresarial** | `tenant_empresa_alfa` | NIT: `900.123.456-1`, Razón Social: *Servicios Alfa S.A.S.*, Activo: `true` | Validar flujos B2B y aislamiento RLS |
-| **Tenant Carga** | `tenant_qa_loadtest` | UUID: `a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee`, Cuota: 10,000 req/min | Pruebas de carga (50 VU) y estrés (150 VU) exclusivamente en QA (VM2) |
+| **Tenant Carga** | `tenant_qa_loadtest` | UUID: `a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee`, Cuota: 10,000 req/min | Pruebas de carga (50 VU) y estrés (150 VU) exclusivamente en QA (VM2 / VM5) |
 | **Cliente Hogar** | `usr_cliente_01` | Email: `qa.cliente1@quickpatch.local`, Rol: `CLIENTE`, Tel: `3001234567` | Solicitud y pago de servicios |
 | **Técnico Cerrajería** | `usr_tec_cerrajero_01` | Especialidad: Cerrajería, Coordenadas: Chapinero (`4.6486, -74.0630`), Estado: `disponible`, Rating: `4.8` | Matching por cercanía geográfica |
 | **Técnico Plomería** | `usr_tec_plomero_01` | Especialidad: Plomería, Coordenadas: Suba (`4.7431, -74.0886`), Estado: `disponible`, Rating: `4.2` | Filtrado por categoría y radio de cobertura |
@@ -606,19 +606,19 @@ Para garantizar la repetibilidad, el aislamiento y la independencia de las prueb
 | **Ubicación Solicitud B** | Coordenadas: `4.8100, -74.0300` | Zona: Chía / Límite Norte (Fuera del radio de cobertura estándar) | Escenario `matching.no-technician-available` |
 | **Token Pasarela Aprobado** | `tok_wompi_test_approved_ok` | Franquicia: Visa simulada, Fondos: Ilimitados | Flujo exitoso de autorización y captura |
 | **Token Pasarela Rechazado** | `tok_wompi_test_declined_insufficient` | Error simulado: `INSUFFICIENT_FUNDS` | Manejo de rechazo de pago y reintento (RN-SR5) |
-| **Evidencia Fotográfica** | `mock_cerrojo_reparado.jpg` | Tamaño: 245 KB, MIME: `image/jpeg`, Hash: `e3b0c44298fc1c149afb...` | Subida a Garage (VM7) antes de completar servicio |
+| **Evidencia Fotográfica** | `mock_cerrojo_reparado.jpg` | Tamaño: 245 KB, MIME: `image/jpeg`, Hash: `e3b0c44298fc1c149afb...` | Subida a Garage (VM7 en QA, VM6 en Prod) antes de completar servicio |
 
 ### 8.3 Ciclo de Vida y Limpieza de Datos (Tear-down)
 * **Post-Test Local/CI:** Las bases de datos en Testcontainers se eliminan al destruirse el contenedor Docker.
-* **Post-Carga en QA (VM2):** Al concluir las pruebas de k6 de 50/150 VU en el ambiente de QA, se ejecuta automáticamente el procedimiento de purga en el PostgreSQL propio de QA en VM2 respetando el aislamiento de bases de datos independientes:
+* **Post-Carga en QA (VM5):** Al concluir las pruebas de k6 de 50/150 VU en el ambiente de QA, se ejecuta automáticamente el procedimiento de purga en el PostgreSQL propio de QA en VM5 (`10.43.98.29:5432`) respetando el aislamiento de bases de datos independientes:
   ```sql
-  -- 1. En la base de datos de ServiceRequest Service (QA en VM2):
+  -- 1. En la base de datos de ServiceRequest Service (QA en VM5):
   DELETE FROM service_requests WHERE tenant_id = 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee';
 
-  -- 2. En la base de datos de Matching Service (QA en VM2):
+  -- 2. En la base de datos de Matching Service (QA en VM5):
   DELETE FROM matching_attempts WHERE tenant_id = 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee';
   ```
-  Esto garantiza que la base de datos de QA en VM2 conserve espacio libre y no degrade las lecturas de los índices espaciales de PostGIS; la base de datos de producción en VM4 permanece 100% aislada e intacta.
+  Esto garantiza que la base de datos de QA en VM5 conserve espacio libre y no degrade las lecturas de los índices espaciales de PostGIS; la base de datos de producción en VM4 permanece 100% aislada e intacta.
 
 ---
 
@@ -684,7 +684,7 @@ El sistema debe retornar HTTP 201 Created y publicar el evento `service-request.
 El sistema retornó HTTP 500 Internal Server Error o no generó el evento en la tabla `outbox_events`.
 
 #### Evidencias y Trazas
-* **Logs de Loki (VM7):** `trace_id`, error stack trace.
+* **Logs de Loki (VM1):** `trace_id`, error stack trace.
 * **Captura de Pantalla / Video:** (Adjuntar archivo si aplica para Angular o Flutter).
 * **Payload JSON:** Petición y respuesta capturadas.
 ```
@@ -694,15 +694,15 @@ El sistema retornó HTTP 500 Internal Server Error o no generó el evento en la 
 ## 10. Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3)
 
 ### 10.1 Resumen Ejecutivo del Incremento de Valor
-En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad (QA) ha completado el diseño, estructuración y especificación formal de la arquitectura de pruebas integral para la plataforma QUICKPATCH sobre los 13 repositorios y el entorno de las 7 Máquinas Virtuales.
+En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad (QA) ha completado el diseño, estructuración y especificación formal de la arquitectura de pruebas integral para la plataforma QUICKPATCH sobre los 13 repositorios y el entorno de las 7 Máquinas Virtuales (ADR-022).
 
 | Métrica de Aseguramiento de Calidad | Meta del Sprint 3 | Estado Alcanzado | Cumplimiento |
 |---|:---:|:---:|:---:|
 | **Casos de Prueba Diseñados y Formalizados** | $\ge 150$ casos | **187 casos de prueba** | 100% (Superado) |
-| **Requisitos Funcionales con Cobertura (RTM)** | 32 / 32 RFs activos | **32 RFs mapeados (100% vigentes del SRS v3.2)** | 100% |
-| **Escenarios de Calidad del SAD con Cobertura** | 37 / 37 automatizables | **37 ACs mapeados (100% arquitectura/software del SAD v2.13)** | 100% |
-| **Compuertas de Calidad Automatizadas Definidas** | 4 compuertas | **4 compuertas diseñadas (Local, CI, QA en VM2, Producción)** | 100% |
-| **Validación de Restricciones Críticas (Killers)** | K2, K5, K9, K10 | **Diseñados y especificados en la arquitectura de pruebas** | 100% |
+| **Requisitos Funcionales con Cobertura (RTM)** | 32 / 32 RFs activos | **32 RFs mapeados (100% vigentes del SRS v3.3)** | 100% |
+| **Escenarios de Calidad del SAD con Cobertura** | 37 / 37 automatizables | **37 ACs mapeados (100% arquitectura/software del SAD v2.24)** | 100% |
+| **Compuertas de Calidad Automatizadas Definidas** | 4 compuertas | **4 compuertas diseñadas (Local, CI, QA en VM2/VM5/VM7, Producción)** | 100% |
+| **Validación de Restricciones Críticas (Killers y Restricciones)** | K2, R3, R5, R7, R9, R10, R11 | **Diseñados y especificados en la arquitectura de pruebas** | 100% |
 | **Mecanismo de Bloqueo Local Pre-Push** | 12 repositorios + principal | **Script unificado de Git Hooks diseñado para distribución** | 100% |
 
 ### 10.2 Estado de los Componentes y Servicios Evaluados
@@ -713,12 +713,12 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
    - Pruebas de sanitización de logs y payloads planeadas para certificar 0% de campos sensibles de tarjeta de crédito (K2).
    - Políticas de Row-Level Security (RLS) diseñadas y catalogadas en la matriz para las tablas compartidas en PostgreSQL.
 3. **Rendimiento y Capacidad de Infraestructura:**
-   - La prueba de carga (50 VU) y estrés (150 VU en Matching) está planeada y especificada para ejecutarse contra el ambiente de QA (VM2 - ADR-015) con monitoreo en Prometheus/Grafana (VM7).
+   - La prueba de carga (50 VU) y estrés (150 VU en Matching) está planeada y especificada para ejecutarse contra el ambiente dedicado de QA (k3s en VM2, PostgreSQL en VM5, Kafka en VM7 - ADR-015, ADR-022) con monitoreo en Prometheus/Grafana (VM1).
    - Estrategia de rollback automático (`kubectl rollout undo`) y alerta diseñada formalmente ante fallos de despliegue, saturación crítica o caídas de pods en k3s.
 
 ### 10.3 Evidencias Preparadas para la Presentación y Sustentación
-1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 3.2), escenarios del SAD (versión vigente 2.13) e Historias de Usuario de Jira (Sprint 3 — SCRUM-317) hasta las aserciones de código de prueba.
-2. **Defensa de la Topología en las 7 VMs:** Justificación técnica demostrando cómo se protege producción aislando las pruebas de sistema y estrés en la VM2 (QA según ADR-015).
+1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 3.3), escenarios del SAD (versión vigente 2.24) e Historias de Usuario de Jira (Sprint 3 — SCRUM-317) hasta las aserciones de código de prueba.
+2. **Defensa de la Topología en las 7 VMs:** Justificación técnica demostrando cómo se protege producción aislando las pruebas de sistema y estrés en el ambiente de QA (VM2, VM5 y VM7 según ADR-015 y ADR-022).
 3. **Cuadro Comparativo de Herramientas:** Sustentación académica y técnica de la selección de Playwright, k6, Testcontainers y Spectral frente a herramientas legadas.
 
 ### 10.4 Protocolo de Ejecución y Almacenamiento de Evidencias (Subtareas SCRUM-307 y SCRUM-315)
@@ -739,9 +739,9 @@ quickpatch/tests/evidence/
 | **Unitarias / CI (Compuerta 1)** | 92 | 92 | 92 | 0 | Cobertura $\ge 80\%$, linters sin errores en GitHub Actions |
 | **Integración / Testcontainers (Compuerta 1)** | 48 | 48 | 48 | 0 | 100% pruebas de persistencia y Kafka efímero aprobadas |
 | **Contratos (OpenAPI & Schemas)** | 10 | 10 | 10 | 0 | 0 errores en Spectral CLI y esquemas AJV consistentes |
-| **Pruebas de Sistema / E2E (Compuerta 2 - VM2)** | 12 | 12 | 12 | Release QA | Flujo crítico de 10 pasos exitoso en Playwright |
-| **Carga y Rendimiento (Compuerta 2 - VM2)** | 10 | 10 | 10 | Release QA | 50 VU normal con p95 < 3s; 150 VU estrés sin caída de pods, 0 OOMKilled y degradación controlada |
-| **Seguridad y PCI-DSS (Compuerta 2 - VM2)** | 15 | 15 | 15 | Release QA | 0 coincidencias de PAN/CVV en logs y 0 alertas altas en ZAP |
+| **Pruebas de Sistema / E2E (Compuerta 2 - QA)** | 12 | 12 | 12 | Release QA | Flujo crítico de 10 pasos exitoso en Playwright / Newman |
+| **Carga y Rendimiento (Compuerta 2 - QA)** | 10 | 10 | 10 | Release QA | 50 VU normal con p95 < 3s; 150 VU estrés sin caída de pods, 0 OOMKilled, RAM en VM3 $\le 6.5\text{ GiB}$ y degradación controlada |
+| **Seguridad y PCI-DSS (Compuerta 2 - QA)** | 15 | 15 | 15 | Release QA | 0 coincidencias de PAN/CVV en logs y 0 alertas altas en ZAP |
 | **Total Global** | **187** | **187** | **187** | **Incremento QA** | **100% trazabilidad e integridad técnica garantizada** |
 
 ---
@@ -754,4 +754,5 @@ quickpatch/tests/evidence/
 | **1.1** | 4 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Sincronización técnica del stack multirepo V2 (.NET 10, Java 25, Angular 22, Flutter 3.47, Vitest), incorporación formal de la Matriz de Trazabilidad hacia Historias de Usuario de Jira (subtarea SCRUM-317), refinamiento de compuertas k6 y especificación del protocolo de evidencias para el Informe de Pruebas (SCRUM-307 / SCRUM-315). |
 | **1.2** | 5 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Incorporación de observaciones del equipo: (1) Enfoque exclusivo de carga (50 VU) y estrés (150 VU) en QA (VM2 - ADR-015), protegiendo Producción (VM3) de estrés rutinario; (2) Reemplazo de umbral rígido de 6.5 GiB por criterios objetivos de estabilidad (0 OOMKilled, 0 caída de pods, degradación controlada y baseline de CPU/RAM); (3) Referencia dinámica a Jira para estados de subtareas; (4) Retiro de Pact, consolidando la validación contractual sobre OpenAPI, Spectral CLI y AJV en quickpatch-contracts. |
 | **1.3** | 6 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Corrección de aislamiento de base de datos en pruebas de carga (revisión PR #20): eliminación de toda referencia a VM4 en pasos de carga y teardown; la inyección de carga y la purga SQL se direccionan exclusivamente al PostgreSQL propio de QA en VM2, garantizando que la BD de producción en VM4 permanezca 100% aislada. |
+| **1.4** | 7 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Incorporación de observaciones de revisión (PR #20): (1) Alineación con la redistribución de 7 VMs según ADR-022 (QA en VM2, VM5 y VM7; Producción en VM3, VM4 y VM6; Herramientas y observabilidad unificada en VM1); (2) Traslado de la persistencia de QA a PostgreSQL en VM5 para pruebas de carga, conexiones (PRF-009) y scripts de purga post-carga; (3) Mantenimiento del umbral formal de RAM $\le 6.5\text{ GiB}$ en VM3 conforme al escenario AC2-E5 del SAD, registrando la nota de INFRASTRUCTURE §5.6 y SCRUM-347; (4) Clarificación del comportamiento de desactivación de tenants (RN-T1) conforme a DD 7.12 (rechazo de login en IDN-019); (5) Actualización de versiones vigentes a SRS v3.3 y SAD v2.24, y completitud de claves de Jira de QA para el sprint. |
 
