@@ -44,9 +44,9 @@ Este documento describe cómo se construye, despliega y opera la infraestructura
 
 ### 2.1 Vista general
 
-Qué corre hoy en cada VM, cómo se conectan y por dónde entra el tráfico. El inventario de hardware está en la sección 3 y las reglas exactas de firewall en la sección 10.
+Qué corre en cada VM, cómo se conectan y por dónde entra el tráfico. El inventario está en la sección 3 y las reglas exactas de firewall en la sección 10.
 
-> **Redistribución aprobada (ADR-022), implementación en curso (SCRUM-334).** Este diagrama y las secciones operativas describen la distribución desplegada hoy (ADR-015). La distribución objetivo —3 VMs de producción, 3 de QA y 1 de herramientas— y el plan de migración están en la sección 3.3; cada sección operativa se actualiza a medida que DevOps migra cada VM.
+> **Reparto del ADR-022, aplicado el 7 de octubre de 2026.** Producción son VM3, VM4 y VM6; QA son VM2, VM5 y VM7; VM1 es de herramientas. El API Gateway y el panel todavía los sirve VM1, hasta que tengan imagen para correr en el k3s (sección 3.2).
 
 ```mermaid
 flowchart TB
@@ -55,11 +55,12 @@ flowchart TB
     GH(["GitHub<br/>Actions y GHCR"])
 
     subgraph LAB["Red del laboratorio 10.43.x.x"]
-        subgraph VM1["VM1 · Gateway"]
+        subgraph VM1["VM1 · Herramientas"]
             direction LR
             NGX["Nginx :443<br/>elige destino por nombre"]
             PANEL["Panel Angular"]
             RUN["Runner de GitHub<br/>kubectl y k6"]
+            OBS["Prometheus, Loki<br/>y Grafana :3000"]
         end
         subgraph PROD["Producción"]
             subgraph VM3["VM3 · k3s, un nodo"]
@@ -67,45 +68,56 @@ flowchart TB
                 TRF["Traefik :30080"] --> MS["8 microservicios"]
             end
             PG[("VM4 · PostgreSQL + PostGIS :5432<br/>una base por servicio")]
-            RD[("VM5 · Redis :6379")]
-            KF["VM6 · Kafka :9092<br/>Kafka UI :8080"]
-            subgraph VM7["VM7 · Storage y observabilidad"]
+            RD[("VM4 · Redis :6379")]
+            subgraph VM6["VM6 · Mensajería y almacenamiento"]
                 direction LR
+                KF["Kafka :9092"]
                 GAR[("Garage S3 :9000<br/>ADR-016")]
-                OBS["Prometheus, Loki<br/>y Grafana :3000"]
             end
         end
-        subgraph VM2["VM2 · QA (ADR-015)"]
-            QA["k3s, PostgreSQL, Redis,<br/>Kafka, Garage y Nginx propios"]
+        subgraph QAENV["QA (ADR-015 y ADR-022)"]
+            subgraph VM2["VM2 · k3s, un nodo"]
+                direction LR
+                TRFQ["Traefik :30080"] --> MSQ["Servicios de QA"]
+            end
+            PGQ[("VM5 · PostgreSQL + Redis")]
+            subgraph VM7["VM7 · Mensajería y almacenamiento"]
+                direction LR
+                KFQ["Kafka :9092"]
+                GARQ[("Garage S3 :9000")]
+            end
         end
     end
 
     EQ -->|"443"| PERIM -->|"443"| NGX
     NGX --- PANEL
     NGX -->|"quickpatch.internal /api/"| TRF
-    NGX -->|"qa.quickpatch.internal"| QA
+    NGX -->|"qa.quickpatch.internal"| TRFQ
     NGX -->|"grafana.quickpatch.internal"| OBS
     MS --> PG
     MS --> RD
     MS --> KF
     MS -->|"evidencias"| GAR
     PG -.->|"respaldo diario"| GAR
+    MSQ --> PGQ
+    MSQ --> KFQ
+    MSQ -->|"evidencias"| GARQ
     RUN -->|"despliegue :6443"| TRF
-    RUN -->|"despliegue y pruebas"| QA
+    RUN -->|"despliegue :6443 y pruebas"| TRFQ
     GH <-.->|"trabajos, conexión saliente"| RUN
-    QA -. "bloqueado" .-x PG
+    MSQ -. "bloqueado" .-x PG
 ```
 
-- **Una sola entrada.** Desde la VPN, el firewall de la universidad solo deja pasar el 443 de VM1 (sección 10.2). El Nginx de VM1 reenvía según el nombre: `quickpatch.internal` a producción (el panel, servido en la misma VM1, y `/api/` a Traefik en VM3), `qa.quickpatch.internal` a VM2 y `grafana.quickpatch.internal` a VM7.
-- **Producción** son VM1 y VM3 a VM7. Los 8 microservicios corren en el k3s de VM3 y usan PostgreSQL (VM4), Redis (VM5), Kafka (VM6) y Garage (VM7).
-- **QA** es VM2, con su propia copia de todo. No puede conectarse a los servicios de producción.
+- **Una sola entrada.** Desde la VPN, el firewall de la universidad solo deja pasar el 443 de VM1 (sección 10.2). El Nginx de VM1 reenvía según el nombre: `quickpatch.internal` a producción (el panel, servido en la misma VM1, y `/api/` al Traefik de VM3), `qa.quickpatch.internal` al Traefik de VM2 y `grafana.quickpatch.internal` a Grafana, en VM1.
+- **Producción** son VM3, VM4 y VM6. Los 8 microservicios corren en el k3s de VM3 y usan PostgreSQL y Redis (VM4), y Kafka y Garage (VM6).
+- **QA** son VM2, VM5 y VM7, con la misma forma que producción y datos y secretos propios. No puede conectarse a los servicios de producción.
 - **El runner de VM1** despliega en los dos k3s y corre las pruebas de sistema contra QA. Se conecta hacia GitHub para recibir trabajos; GitHub nunca entra a la red del laboratorio.
-- **Monitoreo:** las 7 VMs envían métricas (`node_exporter`, 9100) y logs (Promtail, 3100) a VM7 (sección 7). No se dibuja para no cruzar todas las flechas.
+- **Monitoreo:** las 7 VMs envían métricas (`node_exporter`, 9100) y logs (Promtail, 3100) a VM1 (sección 7). No se dibuja para no cruzar todas las flechas.
 
 ### 2.2 Principios de la arquitectura de despliegue
 
 - **Sin servicios administrados en la nube (R5, R10):** todo el sistema corre en las 7 VMs propias asignadas por el laboratorio de la Javeriana; no hay bases de datos, colas ni cómputo administrado por un proveedor cloud.
-- **Un rol por VM, salvo VM1, VM3 y VM7:** cada VM aloja un componente principal (base de datos, cache, mensajería, QA). VM1 combina el gateway, el panel Angular y el runner de despliegue (SAD, ADR-015); VM3 concentra los 8 microservicios en k3s (ADR-011), y VM7 combina el almacenamiento de objetos (Garage, ADR-016) y la observabilidad (Prometheus, Loki y Grafana), porque no hay una octava VM (R10).
+- **Cada VM tiene un rol (ADR-022):** VM1 es de herramientas y combina el gateway, el panel Angular, el runner de despliegue y la observabilidad de los dos ambientes; cada ambiente tiene una VM de aplicación en k3s (VM3 en producción, VM2 en QA, ADR-011), una de datos con PostgreSQL y Redis (VM4 y VM5) y una de mensajería y almacenamiento con Kafka y Garage (VM6 y VM7, ADR-016).
 - **Kubernetes solo donde corren los microservicios:** VM3 (producción) y VM2 (QA) usan k3s, porque los servicios necesitan rolling updates y auto-healing independientes. El resto de componentes usa Docker Compose por simplicidad operativa (sección 5).
 - **Automatizado, no manual:** el aprovisionamiento de las 7 VMs y el despliegue de cada componente se hacen con Ansible (sección 5), no a mano, dado que una sola persona (DevOps) administra las 7 máquinas (SAD, sección 5.3).
 - **Red cerrada por defecto:** ninguna VM acepta tráfico entrante salvo las rutas explícitas de la sección 10.3; el único punto de entrada desde fuera de la red del laboratorio es VM1.
@@ -120,7 +132,7 @@ flowchart TB
 | Punto | Mecanismo | Alcance |
 |---|---|---|
 | Entrada (VM1) | Nginx enruta por nombre (producción, QA, Grafana) y por ruta (`/api/` hacia VM3) | Una sola instancia: enruta, pero no reparte entre varios servidores |
-| VM1 → VM3 | Nginx envía la API a Traefik, el ingress de k3s (NodePort 30080) | Un solo nodo |
+| VM1 → VM3 y VM2 | Nginx envía la API al Traefik de k3s, que escucha en la red del host (puerto 30080) | Un solo nodo por ambiente |
 | Dentro de k3s | Cada servicio de Kubernetes reparte las peticiones entre las réplicas (pods) de su Deployment | **Escalado horizontal real**, limitado por la RAM de VM3 (sección 5.6) |
 | Eventos (Kafka) | Las réplicas de un consumidor comparten las particiones de un tópico (grupo de consumidores) | Reparte el procesamiento de eventos, por ejemplo del Matching bajo pico (AC2-E4) |
 
@@ -130,12 +142,10 @@ k3s trae `metrics-server`, así que un servicio puede escalar sus réplicas auto
 
 | Componente | Si falla | Mitigación |
 |---|---|---|
-| VM1 (gateway) | Nadie entra desde la VPN: ni producción, ni QA, ni Grafana | Túnel SSH directo a VM7 para diagnosticar; reconstrucción con `deploy-gateway.yml` (SAD, ADR-015) |
+| VM1 (entrada y herramientas) | Nadie entra desde la VPN (producción, QA y Grafana) y se pierden las métricas, los logs y el runner de los dos ambientes | Entrar por SSH a cada VM para diagnosticar; reconstrucción con `deploy-gateway.yml`, `deploy-observabilidad.yml` y `deploy-runner.yml` (SAD, ADR-015) |
 | VM3 (k3s) | Se caen los 8 microservicios a la vez | k3s reinicia los pods que fallan; si cae la VM completa, reconstrucción (SAD, sección 5.2) |
-| VM4 (PostgreSQL) | El sistema deja de atender: es la fuente de verdad | Respaldo diario en Garage; restauración por base (sección 9.3) |
-| VM5 (Redis) | Se pierde la cache y las colas cortas; el sistema sigue, más lento | Se reconstruye sola con el uso |
-| VM6 (Kafka) | Se detiene la comunicación asíncrona entre servicios | Patrón Outbox: los eventos esperan en cada base y se publican cuando Kafka vuelve (ADR-007, AC5-E4) |
-| VM7 (Garage y observabilidad) | No se suben evidencias ni respaldos, y no hay métricas ni logs | Las evidencias no tienen copia (sección 9.5); las métricas y logs se vuelven a acumular |
+| VM4 (PostgreSQL y Redis) | El sistema deja de atender: PostgreSQL es la fuente de verdad | Respaldo diario en Garage (VM6); restauración por base (sección 9.3). Redis, que guarda cache y colas cortas, se reconstruye sola con el uso |
+| VM6 (Kafka y Garage) | Se detiene la comunicación asíncrona entre servicios y no se suben evidencias ni respaldos | Patrón Outbox para Kafka: los eventos esperan en cada base y se publican cuando vuelve (ADR-007, AC5-E4). Las evidencias no tienen copia (sección 9.5) |
 
 #### Lo que sí protege la disponibilidad
 
@@ -170,58 +180,56 @@ Ansible maneja las dos familias de sistema operativo (`tasks/base-debian.yml` y 
 
 ### 3.2 Detalle por VM
 
-Uso medido el 3 de octubre de 2026, con toda la infraestructura desplegada y **todavía sin microservicios**:
+Reparto del ADR-022, aprobado el 6 de octubre de 2026 por la revisión del profesor y aplicado el 7 de octubre: 1 VM de herramientas, 3 de producción y 3 de QA. Las IPs y el hardware no cambiaron.
 
-| VM | Rol | IP | Software del proyecto | RAM usada | Disco usado |
-|---|---|---|---|---|---|
-| VM1 | Gateway | `10.43.100.168` | Nginx (gateway y panel Angular), runner de GitHub, kubectl y k6 | 2,7 GiB | 22 GB (34%) |
-| VM2 | Ambiente de QA | `10.43.98.15` | k3s, PostgreSQL + PostGIS, Redis, Kafka, Garage y Nginx (SAD, ADR-015) | 3,3 GiB | 8 GB (11%) |
-| VM3 | Backend | `10.43.98.205` | k3s de un nodo para los 8 microservicios | 3,0 GiB (k3s: 0,5) | 19 GB (30%) |
-| VM4 | Base de datos | `10.43.98.209` | PostgreSQL + PostGIS (una base por servicio) y respaldo diario | 2,4 GiB | 19 GB (29%) |
-| VM5 | Cache | `10.43.98.29` | Redis | 2,3 GiB | 5 GB (6%) |
-| VM6 | Mensajería | `10.43.99.12` | Apache Kafka y Kafka UI | 3,6 GiB (Kafka y UI: 1,2) | 19 GB (28%) |
-| VM7 | Storage y observabilidad | `10.43.99.8` | Garage (SAD, ADR-016), Prometheus, Loki y Grafana | 2,6 GiB | 18 GB (28%) |
+```mermaid
+flowchart LR
+    subgraph H["Herramientas"]
+        VM1["VM1<br/>Entrada, runner<br/>y observabilidad"]
+    end
+    subgraph P["Producción"]
+        VM3["VM3 · Aplicación"] --> VM4["VM4 · Datos"]
+        VM3 --> VM6["VM6 · Mensajería<br/>y almacenamiento"]
+    end
+    subgraph Q["QA"]
+        VM2["VM2 · Aplicación"] --> VM5["VM5 · Datos"]
+        VM2 --> VM7["VM7 · Mensajería<br/>y almacenamiento"]
+    end
+    VM1 -->|"proxy y despliegue"| VM3
+    VM1 -->|"proxy y despliegue"| VM2
+```
 
-Además, las 7 VMs corren `node_exporter` y Promtail (unos 40 MiB entre los dos). Sin microservicios, ninguna VM pasa del 32% de la RAM ni del 34% del disco. La medición se repite cuando los servicios estén desplegados en VM3 y en QA.
-
-
-### 3.3 Distribución objetivo (ADR-022)
-
-Aprobada el 6 de octubre de 2026 por la revisión del profesor: 3 VMs para producción, 3 para QA y 1 para herramientas. Las IPs y el hardware no cambian.
-
-| VM | Ambiente | Rol | Software del proyecto | Cambia respecto de hoy |
+| VM | Ambiente | Rol | IP | Software del proyecto |
 |---|---|---|---|---|
-| VM1 | Herramientas | Entrada y herramientas | Proxy Nginx :443 por nombre (`quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal`); runner de GitHub, kubectl y k6; Prometheus, Loki y Grafana de los dos ambientes | Recibe la observabilidad de VM7. El panel y el gateway pasan al k3s de VM3 |
-| VM3 | Producción | Aplicación | k3s: 8 microservicios, API Gateway (`quickpatch-api-gateway`) y panel Angular | Recibe el gateway y el panel |
-| VM4 | Producción | Datos | PostgreSQL + PostGIS y Redis | Recibe Redis de VM5 |
-| VM6 | Producción | Mensajería y almacenamiento | Kafka y Kafka UI (`quickpatch-kafka`); Garage (evidencias y respaldos) | Recibe Garage de VM7, con sus buckets |
-| VM2 | QA | Aplicación | Igual que VM3 | Deja de alojar el QA completo: conserva el k3s |
-| VM5 | QA | Datos | Igual que VM4 | Pasa de Redis de producción a datos de QA |
-| VM7 | QA | Mensajería y almacenamiento | Igual que VM6 | Pasa de almacenamiento y observabilidad de producción a mensajería y almacenamiento de QA |
+| VM1 | Herramientas | Entrada y herramientas | `10.43.100.168` | Nginx :443 por nombre (`quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal`) y el panel Angular; runner de GitHub, kubectl y k6; Prometheus, Loki y Grafana de los dos ambientes |
+| VM3 | Producción | Aplicación | `10.43.98.205` | k3s de un nodo: los 8 microservicios (el API Gateway y el panel pasarán aquí al tener imagen) |
+| VM4 | Producción | Datos | `10.43.98.209` | PostgreSQL + PostGIS (una base por servicio), respaldo diario y Redis |
+| VM6 | Producción | Mensajería y almacenamiento | `10.43.99.12` | Kafka y Kafka UI (`quickpatch-kafka`); Garage (evidencias y respaldos) |
+| VM2 | QA | Aplicación | `10.43.98.15` | k3s de un nodo, igual que VM3 |
+| VM5 | QA | Datos | `10.43.98.29` | PostgreSQL + PostGIS y Redis, igual que VM4, sin respaldo |
+| VM7 | QA | Mensajería y almacenamiento | `10.43.99.8` | Kafka y Garage, igual que VM6, sin Kafka UI |
 
-**Conexiones permitidas** (las reglas exactas se escriben en `firewall.yml` al migrar, sección 10.3):
+Las 7 VMs corren `node_exporter` y Promtail (unos 40 MiB entre los dos). **Consumo medido:** el 3 de octubre, con el reparto anterior y todavía sin microservicios, ninguna VM pasaba del 32% de la RAM ni del 34% del disco. Con el reparto nuevo la medición está pendiente y se repite con los servicios desplegados (SCRUM-347); hasta entonces vale la sección 5.6 para VM3.
+
+**Pendiente del reparto:** el API Gateway y el panel todavía no corren en el k3s porque aún no tienen imagen. Mientras tanto los sirve el Nginx de VM1; cuando existan, pasan a VM3 (producción) y VM2 (QA) y el proxy de VM1 cambia (paso 4 del ADR-022).
+
+### 3.3 Conexiones permitidas
+
+Las reglas exactas están en `firewall.yml` (sección 10.3). Ninguna VM de QA acepta conexiones de una VM de producción ni al revés.
 
 | Origen | Destino | Puertos | Para qué |
 |---|---|---|---|
 | VPN de la universidad | VM1 | 443 | Única entrada (R9) |
-| VM1 | VM3 y VM2 | 30080, 6443 | Proxy hacia el gateway de cada ambiente; despliegue con kubectl |
+| VM1 | VM3 y VM2 | 30080, 6443 | Proxy hacia el Traefik de cada ambiente; despliegue con kubectl |
 | VM3 | VM4 | 5432, 6379 | Servicios de producción → PostgreSQL y Redis |
 | VM3 | VM6 | 9092, 9000 | Servicios de producción → Kafka y Garage (evidencias) |
 | VM4 | VM6 | 9000 | Respaldo diario de PostgreSQL a Garage |
-| VM2 | VM5, VM7 | 5432, 6379, 9092, 9000 | Lo mismo, dentro de QA |
-| Las 7 VMs | VM1 | 3100 | Logs (Promtail → Loki) |
+| VM2 | VM5 | 5432, 6379 | Servicios de QA → PostgreSQL y Redis |
+| VM2 | VM7 | 9092, 9000 | Servicios de QA → Kafka y Garage |
+| Las demás VMs | VM1 | 3100 | Logs (Promtail → Loki) |
 | VM1 | Las 7 VMs | 9100 | Métricas (Prometheus → `node_exporter`) |
 
-Ninguna VM de QA acepta conexiones de una VM de producción ni al revés.
-
-**Plan de migración** (DevOps, SCRUM-343 a SCRUM-347; el orden evita dejar producción sin observabilidad ni respaldo):
-
-1. VM1: instalar Prometheus, Loki y Grafana y apuntar a ellos las 7 VMs; apagar la observabilidad de VM7.
-2. VM6: instalar Garage y copiar los buckets `evidencias` y `backups-postgres` desde VM7; cambiar el destino del respaldo de VM4.
-3. VM4: instalar Redis con los usuarios por servicio de la sección 3.4; apuntar los servicios de VM3; apagar Redis de VM5.
-4. VM3: desplegar el API Gateway y el panel en el k3s; cambiar el proxy de VM1.
-5. QA: desplegar PostgreSQL y Redis en VM5 y Kafka y Garage en VM7 con los mismos playbooks parametrizados por ambiente; dejar en VM2 solo el k3s.
-6. Firewall por VM según la tabla anterior; medir RAM y disco y repetir la tabla de la sección 3.2 (SCRUM-347).
+**Cómo se hizo la migración** (DevOps, SCRUM-343 a SCRUM-347; el orden evitó dejar producción sin observabilidad ni respaldo): observabilidad a VM1; Garage a VM6 con sus buckets y el destino del respaldo cambiado; Redis a VM4 con un usuario por servicio; QA reconstruido en VM5 y VM7 con los mismos playbooks y el grupo `qa`; limpieza de lo viejo y firewall por VM. Quedan el API Gateway y el panel en k3s, y la medición de recursos.
 
 ### 3.4 Recursos por servicio
 
@@ -244,9 +252,9 @@ Ansible ya crea un usuario de Redis por servicio y las llaves de Garage en uso (
 Reglas:
 
 - **PostgreSQL:** una base por servicio con los roles del DD 10.2 (`<servicio>_app` sin `BYPASSRLS`, `_outbox` y `_migrator`; ADR-019). El servicio se conecta solo a su base.
-- **Redis:** un usuario ACL por servicio, restringido a su prefijo de claves (`~<servicio>:*`) y sin comandos administrativos (`-@dangerous`). Reemplaza la contraseña única compartida de hoy (`requirepass`). Redis 7.4 ya soporta ACL.
-- **Garage:** una llave por servicio, con permiso solo sobre sus buckets, en lugar de la llave `servicios` compartida de hoy. El bucket `evidencias` pasa a llamarse `service-request-evidencias` al migrar a VM6.
-- **PostGIS:** se habilita en `db_matching` y en `db_service_request` (la ubicación de la solicitud es `geometry(Point, 4326)`). Hoy Ansible solo lo habilita en `db_matching` (`postgis_databases`): hay que agregar `service_request`.
+- **Redis:** un usuario ACL por servicio, restringido a su prefijo de claves (`~<servicio>:*`) y sin comandos administrativos (`-@dangerous`), más un usuario de administración; el usuario `default` está desactivado. Reemplaza la contraseña única compartida (`requirepass`).
+- **Garage:** una llave por uso, con permiso solo sobre su bucket: `service-request` para `service-request-evidencias` y `backups` para `backups-postgres`. Reemplaza la llave `servicios` compartida del reparto anterior.
+- **PostGIS:** se habilita en `db_matching` y en `db_service_request` (la ubicación de la solicitud es `geometry(Point, 4326)`). Ansible lo hace al crear esas bases.
 - **Credenciales:** en Ansible Vault, y cada servicio las recibe en su propio `Secret` de Kubernetes (namespace `quickpatch`). QA usa credenciales distintas de producción.
 
 ---
@@ -259,10 +267,10 @@ Reglas:
 |---|---|---|---|
 | Local | Computador de cada integrante | Mientras se desarrolla, no compartido | Desarrollo, lint y pruebas unitarias (hook pre-push opcional) |
 | Dev | Runners de GitHub Actions | Efímero: se crea y se destruye en cada ejecución | Lint, pruebas unitarias y de integración (Testcontainers) y cobertura, en cada PR y push a `develop` |
-| QA | **VM2**, permanente (SAD, ADR-015) | Siempre encendido, con datos y secretos propios | Despliegue de cada versión (`release/*`) y pruebas de sistema: E2E, OWASP ZAP, escáner PCI-DSS y carga con k6 |
-| Producción | VM1 y VM3 a VM7 | Siempre encendido | El sistema completo; se despliega al fusionar en `main` |
+| QA | **VM2, VM5 y VM7**, permanentes (SAD, ADR-015 y ADR-022) | Siempre encendido, con datos y secretos propios | Despliegue de cada versión (`release/*`) y pruebas de sistema: E2E, OWASP ZAP, escáner PCI-DSS y carga con k6 |
+| Producción | VM3, VM4 y VM6 (más VM1, de herramientas, para la entrada y la observabilidad) | Siempre encendido | El sistema completo; se despliega al fusionar en `main` |
 
-QA replica la forma de producción en una sola VM: k3s con la misma versión, PostgreSQL + PostGIS con una base por servicio, Redis, Kafka, Garage y Nginx. No puede conectarse a los servicios de producción (sección 10.3) y se entra por `https://qa.quickpatch.internal`, a través de VM1 (sección 11).
+QA replica la forma de producción en tres VMs: k3s con la misma versión (VM2), PostgreSQL + PostGIS y Redis (VM5), y Kafka y Garage (VM7). No puede conectarse a los servicios de producción (sección 10.3) y se entra por `https://qa.quickpatch.internal`, a través de VM1 (sección 11).
 
 ### 4.2 Requisitos del ambiente local
 
@@ -278,17 +286,17 @@ La infraestructura está implementada con Ansible en el repositorio `quickpatch-
 
 `ansible/inventory/hosts.yml`:
 
-| Grupo | VM | IP |
-|---|---|---|
-| `gateway` | VM1 | `10.43.100.168` |
-| `qa` | VM2 | `10.43.98.15` |
-| `backend` | VM3 | `10.43.98.205` |
-| `database` | VM4 | `10.43.98.209` |
-| `cache` | VM5 | `10.43.98.29` |
-| `messaging` | VM6 | `10.43.99.12` |
-| `storage_observability` | VM7 | `10.43.99.8` |
+| Grupo | VM | IP | Ambiente |
+|---|---|---|---|
+| `gateway` y `observabilidad` | VM1 | `10.43.100.168` | Herramientas |
+| `backend` | VM3 | `10.43.98.205` | Producción |
+| `database` y `cache` | VM4 | `10.43.98.209` | Producción |
+| `messaging` y `storage` | VM6 | `10.43.99.12` | Producción |
+| `qa_app` | VM2 | `10.43.98.15` | QA |
+| `qa_datos` | VM5 | `10.43.98.29` | QA |
+| `qa_mensajeria` | VM7 | `10.43.99.8` | QA |
 
-Las variables están en `inventory/group_vars/all/`: `main.yml` (IPs, versiones fijadas de cada imagen, rangos de k3s, nombres del gateway y bases de datos), `firewall.yml` (reglas de la sección 10.3) y `vault.yml` (secretos cifrados con Ansible Vault, sección 8).
+Los grupos `produccion` (VM3, VM4 y VM6) y `qa` (VM2, VM5 y VM7) reúnen los de cada ambiente. Las variables están en `inventory/group_vars/`: `all/main.yml` (IPs, versiones fijadas de cada imagen, rangos de k3s, nombres del gateway y bases de datos), `all/firewall.yml` (reglas de la sección 10.3), `all/vault.yml` (secretos cifrados con Ansible Vault, sección 8) y los valores propios de cada ambiente en `produccion.yml` y `qa.yml` (memoria de Redis, retención de Kafka, capacidad de Garage, contraseñas y respaldo).
 
 ### 5.2 Playbooks
 
@@ -296,23 +304,23 @@ Las variables están en `inventory/group_vars/all/`: `main.yml` (IPs, versiones 
 |---|---|---|
 | `diagnostico.yml` | Las 7 VMs | Solo lectura: sistema, recursos, Docker y firewall |
 | `setup-base.yml` | Las 7 VMs | Paquetes base, usuario de despliegue, SSH sin `root`, Docker, firewall (`ufw` o `firewalld`), `node_exporter` y Promtail |
-| `deploy-storage-observability.yml` | VM7 | Garage (buckets y llaves), Prometheus, Loki y Grafana |
-| `deploy-db.yml` | VM4 | PostgreSQL + PostGIS, una base y un rol por servicio, y el respaldo diario a Garage |
-| `deploy-cache.yml` | VM5 | Redis con contraseña |
-| `deploy-kafka.yml` | VM6 | Kafka en modo KRaft y Kafka UI |
-| `deploy-k3s.yml` | VM3 | k3s de un nodo con los rangos de red de abajo, Traefik como NodePort, namespace `quickpatch` y kubeconfig para el runner |
-| `deploy-qa.yml` | VM2 | k3s, PostgreSQL + PostGIS, Redis, Kafka, Garage y Nginx de QA, con secretos propios |
+| `deploy-observabilidad.yml` | VM1 | Prometheus, Loki y Grafana de los dos ambientes, con las alertas por correo |
+| `deploy-garage.yml` | VM6 y VM7 | Garage, sus buckets y una llave por uso |
+| `deploy-db.yml` | VM4 y VM5 | PostgreSQL + PostGIS, una base y un rol por servicio; en VM4, el respaldo diario a Garage |
+| `deploy-cache.yml` | VM4 y VM5 | Redis con un usuario ACL por servicio, restringido a su prefijo |
+| `deploy-kafka.yml` | VM6 y VM7 | Kafka en modo KRaft; en VM6, también Kafka UI |
+| `deploy-k3s.yml` | VM3 y VM2 | k3s de un nodo con los rangos de red de abajo, Traefik en la red del host (puertos 30080 y 30443), namespace `quickpatch` y kubeconfig para el runner |
 | `deploy-gateway.yml` | VM1 | Nginx con los tres nombres (sección 11), el panel Angular y el certificado |
 | `deploy-runner.yml` | VM1 | kubectl, k6, kubeconfig de QA y producción, llave SSH hacia VM2 y el runner de GitHub como servicio |
-| `site.yml` | Todas | Aplica todos los anteriores en orden (Anexo A) |
+| `migrar-adr-022.yml` | VM1 a VM7 | Pasa un ambiente del reparto anterior al del ADR-022, por fases con etiquetas; solo borra lo viejo con `-e confirmar_borrado=true` |
+| `site.yml` | Todas | Aplica los de despliegue en orden (Anexo A) |
 
-Las tareas compartidas están en `ansible/tasks/`: la base de cada familia de sistema operativo (`base-debian.yml` y `base-redhat.yml`), la instalación de k3s (`k3s.yml`, usada por VM3 y VM2) y la configuración de Garage (`garage.yml`, usada por VM7 y VM2). El antiguo `deploy-frontend.yml` desapareció: el panel ahora lo sirve el gateway.
+Las tareas compartidas están en `ansible/tasks/`: la base de cada familia de sistema operativo (`base-debian.yml` y `base-redhat.yml`), la instalación de k3s (`k3s.yml`, usada por VM3 y VM2) y la configuración de Garage (`garage.yml`, usada por VM6 y VM7). El antiguo `deploy-frontend.yml` desapareció: el panel ahora lo sirve el gateway. Con el ADR-022 desaparecieron también `deploy-qa.yml` y `deploy-storage-observability.yml`: QA usa los mismos playbooks que producción, y la observabilidad tiene el suyo.
 
 > **Nota crítica sobre el rango de red de k3s:** el `--service-cidr` por defecto de k3s es `10.43.0.0/16` — exactamente el rango en el que viven las 7 VMs del laboratorio (`10.43.98.x`, `10.43.99.x`, `10.43.100.x`). Sin cambiarlo, un `ClusterIP` que k3s asigne a un `Service` puede coincidir con la IP real de otra VM (por ejemplo, `10.43.98.209`, la IP de VM4): el tráfico de un pod hacia esa IP se enrutaría al Service en vez de a PostgreSQL, un fallo intermitente y dependiente del orden de asignación de IPs, no reproducible de forma confiable. Por eso `deploy-k3s.yml` instala k3s con `--service-cidr` y `--cluster-cidr` fijados fuera de `10.43.0.0/16` (ver tabla arriba) — este flag se fija en el momento de instalación y no se puede cambiar después sin reinstalar el clúster.
 
-> **Nota sobre logging de aplicación:** los siete servicios ASP.NET Core deben emitir logging estructurado mediante las abstracciones estándar de `Microsoft.Extensions.Logging` (con un proveedor estructurado como Serilog si el equipo lo adopta); Matching utiliza logging estructurado del ecosistema Spring/SLF4J. Los logs se escriben a la salida estándar de los contenedores. Promtail los recolecta y Loki los almacena en VM7; Grafana consulta Loki junto con Prometheus. La elección del proveedor de logging no cambia el contrato operativo: salida estructurada, correlation ID y ausencia de secretos/PAN/CVV.
 
-> **Nota sobre logging de aplicación:** los siete servicios ASP.NET Core deben emitir logging estructurado mediante `Microsoft.Extensions.Logging` (con un proveedor estructurado como Serilog si el equipo lo adopta); Matching usa logging estructurado de Spring/SLF4J. Los logs se escriben a la salida estándar de los contenedores; Promtail los recolecta y Loki los almacena en VM7. El contrato operativo no depende del proveedor: salida estructurada, correlation ID y ausencia de secretos, PAN y CVV.
+> **Nota sobre logging de aplicación:** los siete servicios ASP.NET Core deben emitir logging estructurado mediante `Microsoft.Extensions.Logging` (con un proveedor estructurado como Serilog si el equipo lo adopta); Matching usa logging estructurado de Spring/SLF4J. Los logs se escriben a la salida estándar de los contenedores; Promtail los recolecta y Loki los almacena en VM1. El contrato operativo no depende del proveedor: salida estructurada, correlation ID y ausencia de secretos, PAN y CVV.
 
 ### 5.3 Primer despliegue de los microservicios
 
@@ -335,8 +343,8 @@ Todo se aplica con `./ap playbooks/site.yml -k -K`, o playbook por playbook. El 
 quickpatch-infrastructure/
 ├── ansible/
 │   ├── Dockerfile, ap, ansible.cfg, requirements.yml, .ansible-lint
-│   ├── inventory/   hosts.yml y group_vars/all/ (main, firewall, vault)
-│   ├── playbooks/   los 11 de la sección 5.2
+│   ├── inventory/   hosts.yml y group_vars/ (all/, produccion.yml y qa.yml)
+│   ├── playbooks/   los 12 de la sección 5.2
 │   ├── tasks/       base-debian, base-redhat, k3s, garage
 │   └── templates/   compose, Nginx, PostgreSQL, Prometheus, Loki, Grafana, Garage y respaldo
 ├── .github/
@@ -349,7 +357,7 @@ quickpatch-infrastructure/
 └── vm1-gateway/ … vm7-storage-observability/   carpetas del andamiaje inicial, solo con README
 ```
 
-Los manifiestos de Kubernetes de los 8 servicios (sección 5.3) todavía no existen. Irán en `k8s/` del repositorio de infraestructura, porque se aplican en los dos k3s (QA en VM2 y producción en VM3); las carpetas `vm1-gateway/` a `vm7-storage-observability/` son del andamiaje inicial y solo tienen un README.
+Los manifiestos de Kubernetes de los 8 servicios (sección 5.3) todavía no existen. Irán en `k8s/` del repositorio de infraestructura, porque se aplican en los dos k3s (QA en VM2 y producción en VM3). Las carpetas `vm1-gateway/` a `vm7-storage-observability/` son del andamiaje inicial y solo tienen un README. El destino de este repositorio, de los workflows y del CI/CD por componente está en SCRUM-338 y en el ADR-021.
 
 ### 5.6 Presupuesto de recursos en VM3
 
@@ -451,7 +459,7 @@ QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a 
 
 **Alcance de la reversión.** Si el rolling update no termina (por ejemplo, pods que no arrancan o se caen por falta de memoria), el pipeline ejecuta `kubectl rollout undo`, que vuelve a la imagen anterior. Eso no revierte migraciones de esquema de la base de datos: solo es seguro si el cambio siguió el patrón expand-contract (sección 5.8). Si no, la recuperación real es restaurar el respaldo de la base (sección 9.3), con hasta 24 horas de pérdida de datos.
 
-**Prueba de carga.** k6 corre contra QA (SAD, ADR-015), así que una versión que no cumple los umbrales se detecta antes de llegar a producción. En QA todo corre en una sola VM, por lo que el resultado es una aproximación: un mal resultado indica un problema, y la validación final son las métricas de producción en Grafana.
+**Prueba de carga.** k6 corre contra QA (SAD, ADR-015), así que una versión que no cumple los umbrales se detecta antes de llegar a producción. QA tiene la misma forma que producción, con VMs de la misma especificación, pero con datos de prueba, por lo que el resultado es una aproximación: un mal resultado indica un problema, y la validación final son las métricas de producción en Grafana.
 
 ### 6.3 Runner self-hosted en VM1
 
@@ -524,12 +532,12 @@ Ningún secreto (contraseñas, llaves de Garage, tokens de la pasarela de pagos,
 
 | Secreto | Usado por | Dónde se gestiona |
 |---|---|---|
-| Superusuario de PostgreSQL y contraseña de cada servicio | PostgreSQL (VM4) y cada microservicio con su propia base | Ansible Vault; `Secret` de Kubernetes para los servicios |
-| Contraseña de Redis | Redis (VM5) y los servicios | Ansible Vault; `Secret` de Kubernetes |
-| Llaves de Garage `servicios` y `backups` | Servicios que suben evidencias; respaldo diario de VM4 | Ansible Vault (VM7 y VM4); `Secret` de Kubernetes |
-| Secreto RPC y token de administración de Garage | Garage (VM7 y VM2) | Ansible Vault |
-| Contraseña de administrador de Grafana | Grafana (VM7) | Ansible Vault |
-| Secretos de QA (bases, Redis y Garage) | Ambiente de QA (VM2) | Ansible Vault, separados de los de producción |
+| Superusuario de PostgreSQL y contraseña de cada servicio | PostgreSQL (VM4 y VM5) y cada microservicio con su propia base | Ansible Vault; `Secret` de Kubernetes para los servicios |
+| Contraseña de administrador de Redis y contraseña de cada usuario de servicio | Redis (VM4 y VM5) y los servicios | Ansible Vault; `Secret` de Kubernetes |
+| Llaves de Garage, una por uso (`service-request` para evidencias y `backups` para el respaldo diario de VM4) | El servicio que sube evidencias y el respaldo | Ansible Vault; `Secret` de Kubernetes |
+| Secreto RPC y token de administración de Garage | Garage (VM6 y VM7) | Ansible Vault |
+| Contraseña de administrador de Grafana y contraseña de aplicación del correo de las alertas | Grafana (VM1) | Ansible Vault |
+| Secretos de QA (bases, Redis y Garage) | Ambiente de QA (VM2, VM5 y VM7) | Ansible Vault, separados de los de producción |
 | Kubeconfig de QA y producción | Runner de VM1 | Copiados a VM1 por `deploy-runner.yml`; no están en GitHub |
 | Llaves de firma JWT y credenciales de la pasarela de pagos | Identity, el resto de servicios y Payments | `Secret` de Kubernetes (pendiente, sección 5.3) |
 | Token de registro del runner | Solo al registrar el runner | Se pasa una vez al playbook y no se guarda (Anexo A.5) |
@@ -542,12 +550,12 @@ Ningún secreto (contraseñas, llaves de Garage, tokens de la pasarela de pagos,
 
 | Dato | ¿Se respalda? | Por qué |
 |---|---|---|
-| PostgreSQL (VM4) | **Sí**, a diario en Garage (VM7) | Es la fuente de verdad del negocio: tenants, usuarios, solicitudes, pagos, calificaciones y referencias a las evidencias. Perderla es perder la plataforma. |
-| Evidencias en Garage (VM7) | No | Son archivos, no filas, y no hay otra VM dedicada donde duplicarlos. Limitación aceptada, ver 9.5. |
+| PostgreSQL (VM4) | **Sí**, a diario en Garage (VM6) | Es la fuente de verdad del negocio: tenants, usuarios, solicitudes, pagos, calificaciones y referencias a las evidencias. Perderla es perder la plataforma. |
+| Evidencias en Garage (VM6) | No | Son archivos, no filas, y no hay otra VM dedicada donde duplicarlos. Limitación aceptada, ver 9.5. |
 | Kafka (VM6) | No | Es un bus de mensajes en tránsito, no un sistema de registro. El patrón Outbox (ADR-007) garantiza que un evento no se pierde entre que se genera y se publica. |
-| Redis (VM5) | No | Cache y colas cortas: se reconstruye con el uso normal y no guarda nada que no exista en otro lado. |
-| Métricas y logs (Prometheus y Loki, VM7) | No | Datos de diagnóstico con retención de 15 días; si se pierden, se vuelven a acumular. Los dashboards y fuentes de datos de Grafana son código de Ansible. |
-| Ambiente de QA (VM2) | No | Solo tiene datos de prueba; se reconstruye con `deploy-qa.yml`. |
+| Redis (VM4) | No | Cache y colas cortas: se reconstruye con el uso normal y no guarda nada que no exista en otro lado. |
+| Métricas y logs (Prometheus y Loki, VM1) | No | Datos de diagnóstico con retención de 14 a 15 días; si se pierden, se vuelven a acumular. Los dashboards y fuentes de datos de Grafana son código de Ansible. |
+| Ambiente de QA (VM2, VM5 y VM7) | No | Solo tiene datos de prueba; se reconstruye con los mismos playbooks y el grupo `qa`. |
 | Configuración de infraestructura (Ansible, workflows de CI/CD) | No hace falta | Vive versionada en `quickpatch-infrastructure`: el repositorio es su respaldo. |
 | Secretos (Ansible Vault) | **Ver 9.4** | `vault.yml` está cifrado pero no se sube a Git; sin él y sin su contraseña no se pueden reconstruir las VMs con las mismas credenciales. |
 
@@ -556,10 +564,11 @@ Ningún secreto (contraseñas, llaves de Garage, tokens de la pasarela de pagos,
 | Aspecto | Implementación |
 |---|---|
 | Programación | Cron en VM4 a las 2:00, script `/usr/local/bin/quickpatch-pg-backup` (plantilla `pg-backup.sh.j2`) |
+| Alcance | Solo producción. QA no tiene respaldo: sus datos son de prueba |
 | Contenido | Roles y permisos (`pg_dumpall --globals-only`) y un `pg_dump -Fc` por cada una de las 8 bases de servicio |
-| Destino | Bucket `backups-postgres` de Garage en VM7 (ADR-016), una carpeta por día. VM distinta de VM4: una falla de VM4 no se lleva su propio respaldo |
+| Destino | Bucket `backups-postgres` de Garage en VM6 (ADR-016), una carpeta por día. VM distinta de VM4: una falla de VM4 no se lleva su propio respaldo |
 | Credenciales | Llave `backups` de Garage, que solo tiene acceso a ese bucket |
-| Retención | 7 días en Garage y 2 días en el disco de VM4 (copia local para restaurar sin depender de VM7) |
+| Retención | 7 días en Garage y 2 días en el disco de VM4 (copia local para restaurar sin depender de VM6) |
 | Registro | `/var/log/quickpatch-pg-backup.log` en VM4 |
 
 ### 9.3 Cómo restaurar una base
@@ -568,7 +577,7 @@ La restauración es **manual**, por R7 (sin operación 24/7), dentro de la venta
 
 1. Elegir el día en Garage. Desde VM4, con las credenciales de la llave `backups`:
    ```
-   aws --endpoint-url http://10.43.99.8:9000 s3 ls s3://backups-postgres/
+   aws --endpoint-url http://10.43.99.12:9000 s3 ls s3://backups-postgres/
    ```
 2. Detener el servicio dueño de la base en k3s (`kubectl scale deployment/<servicio> --replicas=0`), para que no escriba durante la restauración.
 3. Restaurar: bajar el `.dump` y pasarlo a `pg_restore --clean --if-exists -d db_<servicio>` dentro del contenedor de PostgreSQL. Si el respaldo de Garage no está disponible, usar la copia local en `/opt/quickpatch/postgres/backups/<fecha>/`.
@@ -585,7 +594,7 @@ Como toda la configuración es código de Ansible, la recuperación de una VM es
 | Se cae un microservicio | k3s reinicia el pod (AC5-E3) | Automático | Segundos a minutos |
 | Un despliegue sale mal | El pipeline detecta que el rolling update no termina | Automático: `kubectl rollout undo` | Minutos |
 | Datos dañados o borrados en una base | El servicio funciona con datos incorrectos | Restaurar el respaldo de esa base (9.3) | Menos de una hora; se pierden hasta 24 horas de datos |
-| Se pierde una VM completa | El laboratorio la reaprovisiona | `setup-base.yml` y el playbook de su rol. VM4: restaurar el último respaldo. VM7: las evidencias se pierden (9.5). VM1: volver a registrar el runner | 12 a 24 horas (R7, AC5-E1) |
+| Se pierde una VM completa | El laboratorio la reaprovisiona | `setup-base.yml` y el playbook de su rol, con `--limit`. VM4: restaurar el último respaldo. VM6: las evidencias se pierden (9.5). VM1: volver a registrar el runner; el historial de métricas y logs se pierde | 12 a 24 horas (R7, AC5-E1) |
 | Se pierden todas las VMs | — | `site.yml`, que aplica todo en orden, y restaurar las bases | 12 a 24 horas |
 
 **Lo que hace falta para reconstruir:**
@@ -597,9 +606,9 @@ Como toda la configuración es código de Ansible, la recuperación de una VM es
 
 ### 9.5 Evidencias en Garage: sin respaldo, limitación aceptada
 
-Garage en VM7 es el almacenamiento principal de las evidencias fotográficas y, si algo le pasa a esa VM, el único lugar donde existen: no hay una octava VM para duplicarlas (R10).
+Garage de producción, en VM6, es el almacenamiento principal de las evidencias fotográficas y, si algo le pasa a esa VM, el único lugar donde existen: no hay una octava VM para duplicarlas (R10).
 
-**Se documenta como limitación aceptada**, con el mismo tratamiento que el punto único de falla de VM3 (SAD, sección 5.2). Si VM7 falla por completo, se pierden las evidencias de los servicios ya completados, pero no la plataforma: el ciclo de negocio (RF-15, pagos y calificaciones) no depende de que la evidencia siga disponible después de completado el servicio.
+**Se documenta como limitación aceptada**, con el mismo tratamiento que el punto único de falla de VM3 (SAD, sección 5.2). Si VM6 falla por completo, se pierden las evidencias de los servicios ya completados, pero no la plataforma: el ciclo de negocio (RF-15, pagos y calificaciones) no depende de que la evidencia siga disponible después de completado el servicio. El Garage de QA (VM7) solo tiene archivos de prueba.
 
 ---
 
@@ -614,7 +623,8 @@ En su lugar, se usan **certificados autofirmados** con vigencia de 10 años:
 | Dónde | Nombres que cubre | Lo genera |
 |---|---|---|
 | VM1 (gateway) | `quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal` y la IP de VM1 | `deploy-gateway.yml`, que lo regenera si a la lista de nombres le falta alguno |
-| VM2 (QA) | `qa.quickpatch.internal` y la IP de VM2 | `deploy-qa.yml` |
+
+El TLS de QA termina también en VM1, así que QA no tiene certificado propio.
 
 Esto cumple RNF-02 (el tráfico va cifrado), aunque el navegador muestre una advertencia la primera vez porque el certificado no viene de una CA reconocida. Es una limitación aceptada (sección 13): no hay CA pública sin dominio público (R9) ni presupuesto para una comercial (R5).
 
@@ -624,7 +634,7 @@ El tráfico entre VMs, dentro de la red privada del laboratorio, no usa TLS: nun
 
 El tráfico pasa por dos filtros antes de llegar a un servicio:
 
-1. **El firewall perimetral de la universidad**, que el equipo no controla (R9). Desde la VPN solo deja pasar algunos puertos: se comprobó que pasan el 443 de VM1, el 8080 de VM6 y el 22 de todas las VMs, y que no pasan el 3000 y el 9090 de VM7 ni el 443 de VM2. Por eso VM1 es la única entrada a producción, QA y Grafana (SAD, ADR-015).
+1. **El firewall perimetral de la universidad**, que el equipo no controla (R9). Desde la VPN solo deja pasar algunos puertos: se comprobó que pasan el 443 de VM1 y el 22 de todas las VMs, y que no pasan los puertos de Grafana y Prometheus (3000 y 9090) ni el 443 de VM2. Por eso VM1 es la única entrada a producción, QA y Grafana (SAD, ADR-015).
 2. **El firewall de cada VM**, configurado por `setup-base.yml` con política de denegar todo lo entrante y abrir solo los pares origen-puerto de la sección 10.3:
    - **Ubuntu** (VM1, VM3, VM4, VM6, VM7): `ufw`. Abre el 22 antes de activarse, para no perder la conexión.
    - **Rocky Linux** (VM2, VM5): `firewalld`, con una zona propia `quickpatch` en modo DROP. La interfaz se asigna a esa zona desde NetworkManager, porque si no vuelve a la zona `public` al reiniciar.
@@ -644,7 +654,7 @@ Las reglas están en `ansible/inventory/group_vars/all/firewall.yml`. "Equipo" e
 | Puerto | Desde | Para qué |
 |---|---|---|
 | 22 | Cualquiera (el perímetro lo limita a la red de la universidad) | Administración por SSH (10.4) |
-| 9100 | VM7 | Prometheus lee las métricas de `node_exporter` |
+| 9100 | VM1 | Prometheus lee las métricas de `node_exporter` |
 | 3389 | Equipo | Escritorio remoto del laboratorio |
 | 10050 | Red del laboratorio | Agente de Zabbix del laboratorio |
 | Ping | Red del laboratorio | Diagnóstico |
@@ -654,21 +664,22 @@ Las reglas están en `ansible/inventory/group_vars/all/firewall.yml`. "Equipo" e
 | VM | Puerto | Desde | Para qué |
 |---|---|---|---|
 | VM1 | 443 | Cualquiera | Gateway: producción, QA y Grafana por nombre |
-| VM2 | 443 | Equipo y VM1 | Entrada de QA; VM1 la usa para el proxy y para las pruebas de sistema |
+| VM1 | 3100 | Las demás VMs | Promtail envía los logs a Loki |
+| VM2 | 30080 | VM1 | Traefik de QA: proxy por nombre y pruebas de sistema |
 | VM2 | 6443 | VM1 | API de k3s de QA, para los despliegues del runner |
-| VM3 | 30080 y 30443 | VM1 | Traefik (entrada a los microservicios) |
+| VM3 | 30080 y 30443 | VM1 | Traefik de producción (entrada a los servicios) |
 | VM3 | 6443 | VM1 | API de k3s de producción, para los despliegues del runner |
-| VM4 | 5432 | VM3 | PostgreSQL |
-| VM5 | 6379 | VM3 | Redis |
-| VM6 | 9092 | VM3 | Kafka |
-| VM6 | 8080 | Equipo | Kafka UI |
-| VM7 | 9000 | VM3 y VM4 | Garage (S3): evidencias de los servicios y respaldo de PostgreSQL |
-| VM7 | 3100 | Las 7 VMs | Promtail envía los logs a Loki |
-| VM7 | 3000 y 9090 | Equipo | Grafana y Prometheus (desde la VPN, Grafana se usa por el gateway de VM1) |
+| VM4 | 5432 y 6379 | VM3 | PostgreSQL y Redis de producción |
+| VM5 | 5432 y 6379 | VM2 | PostgreSQL y Redis de QA |
+| VM6 | 9092 | VM3 | Kafka de producción |
+| VM6 | 9000 | VM3 y VM4 | Garage de producción (S3): evidencias de los servicios y respaldo de PostgreSQL |
+| VM7 | 9092 y 9000 | VM2 | Kafka y Garage de QA |
 
-QA no puede llegar a producción: PostgreSQL, Redis, Kafka y Garage de producción solo aceptan conexiones de VM3 (y Garage, también de VM4). En VM2, los servicios de QA (Garage, PostgreSQL, Redis y Kafka) solo son alcanzables desde sus propios pods.
+Grafana (3000) y Prometheus (9090) no tienen puerto abierto hacia la red: Grafana se usa por el gateway de VM1, que habla con ellos dentro de la misma VM.
 
-**Pendiente:** Kafka UI (VM6:8080) no tiene login, y el perímetro sí deja pasar ese puerto desde la VPN.
+QA no puede llegar a producción ni al revés: los servicios de datos de cada ambiente solo aceptan conexiones del k3s de su propio ambiente (y Garage de producción, también de VM4). El 7 de octubre se comprobó con una matriz de conexiones entre las 7 VMs.
+
+**Kafka UI** (VM6, puerto 8080) no tiene login y por eso no tiene regla de firewall: se entra por un túnel SSH, `ssh -L 8080:10.43.99.12:8080 estudiante@10.43.99.12`, y después `http://localhost:8080`.
 
 ### 10.4 Acceso administrativo (SSH)
 
@@ -681,7 +692,7 @@ El acceso es **con contraseña**, con la cuenta que entrega el laboratorio (`est
 Lo que sí está configurado:
 
 - **El login como `root` por SSH está desactivado** en las 7 VMs (`PermitRootLogin no`).
-- **Usuario de despliegue `quickpatch`**, sin contraseña y en el grupo de Docker. Lo usa el runner de VM1, que además tiene una llave SSH hacia VM2 para publicar el panel de QA.
+- **Usuario de despliegue `quickpatch`**, sin contraseña y en el grupo de Docker. Lo usa el runner de VM1, que además tiene una llave SSH hacia VM2 para publicar el panel de QA mientras el panel no pase al k3s (SCRUM-338).
 - `setup-base.yml` ya permite agregar llaves públicas del equipo (`deploy_user_pubkeys`) y desactivar la contraseña (`ssh_disable_password_auth`) si en el futuro se decide hacerlo.
 
 **Riesgo aceptado:** la contraseña es la misma en las 7 VMs. Cualquiera dentro de la red de la universidad que la conozca puede entrar a todas.
@@ -700,20 +711,20 @@ Para no escribir IPs en todos lados, el sistema usa tres nombres lógicos. Los t
 
 | Nombre | Destino |
 |---|---|
-| `quickpatch.internal` (o la IP de VM1) | Producción: el panel y `/api/` hacia VM3 |
-| `qa.quickpatch.internal` | Ambiente de QA en VM2 |
-| `grafana.quickpatch.internal` | Grafana en VM7 |
+| `quickpatch.internal` (o la IP de VM1) | Producción: el panel (servido en VM1 hasta que pase al k3s) y `/api/` hacia el Traefik de VM3 |
+| `qa.quickpatch.internal` | Ambiente de QA: el Traefik de VM2 |
+| `grafana.quickpatch.internal` | Grafana en VM1 |
 
 - **No hay DNS:** cada persona agrega una vez esta línea a su archivo `hosts` (`/etc/hosts`, o `C:\Windows\System32\drivers\etc\hosts` en Windows, editado como administrador):
   ```
   10.43.100.168  quickpatch.internal  qa.quickpatch.internal  grafana.quickpatch.internal
   ```
-- El runner de VM1 tiene en su propio `/etc/hosts` el nombre de QA apuntando a VM2, para que las pruebas de sistema entren por el nombre, como lo haría un usuario (`deploy-runner.yml`).
+- El runner de VM1 tiene en su propio `/etc/hosts` el nombre de QA apuntando a VM1, el proxy, para que las pruebas de sistema entren por el nombre y por el mismo camino que un usuario (`deploy-runner.yml`).
 - **No son registros DNS públicos:** nadie fuera de esos computadores puede resolverlos.
 
 ### 11.3 Consecuencia sobre TLS
 
-Sin dominio público no es posible obtener un certificado de una CA reconocida (sección 10.1). El certificado autofirmado de VM1 cubre los tres nombres y la IP `10.43.100.168`; el de QA en VM2 cubre `qa.quickpatch.internal` y la IP de VM2.
+Sin dominio público no es posible obtener un certificado de una CA reconocida (sección 10.1). El certificado autofirmado de VM1 cubre los tres nombres y la IP `10.43.100.168`. QA ya no tiene certificado propio: el TLS termina en VM1 y de ahí el proxy habla con el Traefik de VM2.
 
 ### 11.4 Fuera de alcance: dominio real en un despliegue de producción
 
@@ -769,7 +780,7 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | Sin alta disponibilidad entre máquinas: cada componente corre en una sola VM | R7, R10 | Sección 2.3 |
 | VM1 es la única entrada desde la VPN a producción, QA y Grafana | R9 | SAD, ADR-015; sección 2.3 |
 | Las 7 VMs tienen la misma especificación sin importar el rol, y el software del laboratorio ya usa unos 2,3 GiB de RAM en cada una | Laboratorio de la Javeriana | Sección 3.1 |
-| La prueba de carga en QA es una aproximación: allí todo corre en una sola VM | R10 | SAD, ADR-015; sección 6.2 |
+| La prueba de carga en QA es una aproximación: sus VMs tienen la misma especificación que las de producción, pero con datos de prueba y sin tráfico real | R10 | SAD, ADR-015; sección 6.2 |
 | El umbral de 6,5 GiB de RAM en VM3 no alcanza con los límites actuales; se decide al medir los servicios | Medición del 3 de octubre | Sección 5.6 |
 | `kubectl rollout undo` solo revierte la imagen del contenedor, no las migraciones de esquema: exige expand-contract | Diseño de Kubernetes | Secciones 5.8 y 6.2 |
 | Evidencias en Garage sin copia en otra VM | R10 | Sección 9.5 |
@@ -779,7 +790,7 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | Parámetros de `readinessProbe` y `livenessProbe` sin definir | Falta de datos medidos | Sección 5.8 |
 | Certificados TLS autofirmados, sin CA reconocida | R9 | Secciones 10.1 y 11 |
 | SSH con contraseña, la misma en las 7 VMs | Decisión del equipo | Sección 10.4 |
-| Kafka UI sin login, alcanzable desde la VPN | Pendiente | Sección 10.3 |
+| Kafka UI sin login: solo se usa por túnel SSH desde el equipo de DevOps | Decisión de DevOps | Sección 10.3 |
 
 Ninguna de estas limitaciones se considera un defecto a corregir dentro del alcance de este documento — son restricciones aceptadas conscientemente, consistentes con las restricciones R3, R5, R7, R9, R10 y R11 del SAD (sección 1.2.2).
 
@@ -837,14 +848,16 @@ La primera vez conviene simular la base en una VM, aplicarla ahí, comprobar que
 | Orden | Playbook | VM | Qué deja | Por qué en este orden |
 |---|---|---|---|---|
 | 1 | `setup-base.yml` | Las 7 | Paquetes, usuario de despliegue, Docker, firewall, `node_exporter` y Promtail | Todo lo demás depende de Docker y del firewall |
-| 2 | `deploy-storage-observability.yml` | VM7 | Garage, Prometheus, Loki y Grafana | El respaldo de VM4 escribe en Garage |
-| 3 | `deploy-db.yml` | VM4 | PostgreSQL + PostGIS, una base por servicio y el respaldo diario | |
-| 4 | `deploy-cache.yml` | VM5 | Redis | |
-| 5 | `deploy-kafka.yml` | VM6 | Kafka y Kafka UI | |
-| 6 | `deploy-k3s.yml` | VM3 | k3s de producción y su kubeconfig | El runner lo necesita |
-| 7 | `deploy-qa.yml` | VM2 | Ambiente de QA completo | El runner necesita su kubeconfig |
+| 2 | `deploy-observabilidad.yml` | VM1 | Prometheus, Loki y Grafana de los dos ambientes | Las demás VMs envían sus logs a Loki |
+| 3 | `deploy-garage.yml` | VM6 y VM7 | Garage, buckets y llaves de cada ambiente | El respaldo de VM4 escribe en Garage |
+| 4 | `deploy-db.yml` | VM4 y VM5 | PostgreSQL + PostGIS y una base por servicio; el respaldo diario solo en producción | |
+| 5 | `deploy-cache.yml` | VM4 y VM5 | Redis con un usuario por servicio | |
+| 6 | `deploy-kafka.yml` | VM6 y VM7 | Kafka (en VM6, también Kafka UI) | |
+| 7 | `deploy-k3s.yml` | VM3 y VM2 | k3s de producción y de QA, y sus kubeconfig | El runner los necesita |
 | 8 | `deploy-gateway.yml` | VM1 | Nginx con los tres nombres, el panel y el certificado | |
-| 9 | `deploy-runner.yml` | VM1 | kubectl, k6, llave SSH hacia VM2 y el runner | Va al final porque usa los kubeconfig de los pasos 6 y 7 |
+| 9 | `deploy-runner.yml` | VM1 | kubectl, k6, llave SSH hacia VM2 y el runner | Va al final porque usa los kubeconfig del paso 7 |
+
+Cada playbook de la tabla se aplica a los dos ambientes: el grupo `produccion` (VM3, VM4 y VM6) y el grupo `qa` (VM2, VM5 y VM7) toman sus valores de `inventory/group_vars/produccion.yml` y `qa.yml` (memoria de Redis, retención de Kafka, capacidad de Garage, contraseñas). Para llevar un ambiente del reparto anterior al actual existe `migrar-adr-022.yml`, con una fase por etiqueta; no hace falta en una instalación desde cero y solo borra lo viejo con `-e confirmar_borrado=true`.
 
 Para reconstruir una sola VM se aplican `setup-base.yml` y el playbook de su rol con `--limit`, por ejemplo `--limit vm4`. Todos los playbooks se pueden volver a correr sin cambiar lo que ya está bien.
 
@@ -897,3 +910,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 2.0 | 3 oct 2026 | Pasa de plan a infraestructura implementada. Las secciones 3 a 10 describen lo que está aplicado en las 7 VMs: VM2 como ambiente de QA y VM1 como entrada única por nombre (SAD, ADR-015), Garage en lugar de MinIO (SAD, ADR-016), VM2 y VM5 con Rocky Linux, y Ansible implementado. Nuevas secciones: 2.3 (balanceo de carga y alta disponibilidad) y Anexo A (manual de despliegue). Se reescriben la 2.1 (topología), la 3 (consumo medido de cada VM), la 6 (CI/CD con workflows reutilizables en el multirepo, ADR-013, y pruebas según el Documento de Pruebas), la 9 (respaldo implementado y recuperación ante desastres) y la 10 (dos capas de firewall, reglas por VM y SSH con contraseña). La 5.6 deja registrado que el umbral de 6,5 GiB no alcanza con los límites actuales. |
 | 2.1 | 6 oct 2026 | CI por repositorio (ADR-021, SCRUM-337): la sección 6.1 describe el CI propio de cada uno de los 12 repositorios (incluidos `quickpatch-api-gateway` y `quickpatch-kafka`); el despliegue sigue con los workflows de `quickpatch-infrastructure` hasta SCRUM-338. |
 | 2.2 | 6 oct 2026 | Redistribución de VMs (ADR-022, SCRUM-342) y recursos por servicio (SCRUM-339). Nueva sección 3.3 con la distribución objetivo (VM1 herramientas; producción en VM3, VM4 y VM6; QA en VM2, VM5 y VM7), las conexiones permitidas y el plan de migración. Nueva sección 3.4: base de datos, usuario de Redis y llave de Garage por servicio. Las secciones operativas siguen describiendo la distribución actual hasta que DevOps migre cada VM. |
+| 2.4 | 7 oct 2026 | El reparto del ADR-022 queda aplicado en las VMs y el documento lo describe como estado actual: observabilidad en VM1; producción en VM3, VM4 y VM6; QA en VM2, VM5 y VM7, con los mismos playbooks parametrizados por ambiente. Se actualizan las secciones 2, 3, 4, 5, 6, 8, 9, 10, 11 y el Anexo A (inventario, playbooks, firewall, respaldo, secretos y nombres). Se corrige la 3.4: Redis con un usuario por servicio, llaves de Garage por uso y PostGIS en `db_service_request`, ya aplicados. Kafka UI deja de tener puerto abierto: se usa por túnel SSH. Quedan pendientes el API Gateway y el panel en k3s (paso 4, esperan sus imágenes) y la medición de RAM y disco con servicios reales (SCRUM-347). |
