@@ -604,6 +604,152 @@ Permanecen sujetos a definición de Sprints posteriores:
 5. nuevos eventos o endpoints introducidos por historias de usuario futuras;
 6. value objects y clases auxiliares surgidos de la implementación.
 
+## 4.5 Código de las áreas críticas (C4, nivel 4)
+
+El nivel 4 de C4 se usa solo en dos áreas, donde el diagrama de componentes no basta para entender o revisar el código:
+
+1. **Publicación y consumo confiable de eventos**: se reparte entre dos servicios y dos tecnologías, y depende de que varias clases compartan una misma transacción.
+2. **Aislamiento entre tenants en la base de datos**: un error aquí filtra datos de un tenant a otro, y la única operación que lo omite debe quedar acotada.
+
+El resto del sistema sigue el patrón de cuatro capas de la sección 4.1 sin variaciones que justifiquen un diagrama de clases. Los diagramas se trazaron sobre el código de `develop` del 7 de octubre de 2026 y nombran clases reales; los métodos y las dependencias que no intervienen en el mecanismo se omiten.
+
+### 4.5.1 Outbox e idempotencia de `service-request.created`
+
+```mermaid
+classDiagram
+    direction LR
+    namespace ServiceRequest_NET {
+        class CreateServiceRequestHandler {
+            +HandleAsync(command, ct) CreateServiceRequestResult
+        }
+        class ITenantUnitOfWork {
+            <<interface>>
+            +ExecuteAsync(tenantId, work, ct) T
+        }
+        class IOutbox {
+            <<interface>>
+            +Enqueue(OutboxMessage)
+        }
+        class IServiceRequestRepository {
+            <<interface>>
+            +Add(ServiceRequest)
+        }
+        class TenantUnitOfWork
+        class EfOutbox
+        class OutboxPublisher {
+            <<BackgroundService>>
+            +PublishPendingAsync(ct) int
+        }
+        class outbox_events {
+            <<tabla PostgreSQL>>
+            published_at
+            attempts
+        }
+    }
+    namespace Matching_Java {
+        class ServiceRequestCreatedListener {
+            <<KafkaListener>>
+            +onMessage(ConsumerRecord)
+        }
+        class ServiceRequestCreatedHandler {
+            +handle(EventEnvelope) Outcome
+        }
+        class TenantTransaction {
+            <<interface>>
+            +execute(tenantId, work) T
+        }
+        class ProcessedEventStore {
+            <<interface>>
+            +register(eventId, tenantId, eventType) boolean
+        }
+        class MatchingStarter {
+            <<interface>>
+            +start(EventEnvelope)
+        }
+        class JdbcTenantTransaction
+        class JdbcProcessedEventStore
+        class PendingMatchingStarter
+    }
+    CreateServiceRequestHandler --> ITenantUnitOfWork
+    CreateServiceRequestHandler --> IServiceRequestRepository
+    CreateServiceRequestHandler --> IOutbox
+    TenantUnitOfWork ..|> ITenantUnitOfWork
+    EfOutbox ..|> IOutbox
+    EfOutbox ..> outbox_events : inserta
+    OutboxPublisher ..> outbox_events : lee y marca
+    OutboxPublisher ..> ServiceRequestCreatedListener : Kafka service-request.created
+    ServiceRequestCreatedListener --> ServiceRequestCreatedHandler
+    ServiceRequestCreatedHandler --> TenantTransaction
+    ServiceRequestCreatedHandler --> ProcessedEventStore
+    ServiceRequestCreatedHandler --> MatchingStarter
+    JdbcTenantTransaction ..|> TenantTransaction
+    JdbcProcessedEventStore ..|> ProcessedEventStore
+    PendingMatchingStarter ..|> MatchingStarter
+```
+
+**Figura 9. Clases de la publicación y el consumo de `service-request.created` (C4, nivel 4).**
+
+| Clase | Repositorio | Responsabilidad en el mecanismo |
+|---|---|---|
+| `CreateServiceRequestHandler` | `quickpatch-service-request` | Dentro de `ITenantUnitOfWork.ExecuteAsync` agrega la solicitud y encola el evento en `IOutbox`; los dos cambios se confirman en la misma transacción (ADR-007). El `eventId` es un UUID v7. |
+| `TenantUnitOfWork` | `quickpatch-service-request` | Abre la transacción, fija `app.current_tenant` con `set_config(..., true)` (RLS), ejecuta el trabajo, guarda y confirma. |
+| `EfOutbox` | `quickpatch-service-request` | Inserta el mensaje en `outbox_events` con el mismo `DbContext` de la solicitud. |
+| `OutboxPublisher` | `quickpatch-service-request` | Servicio en segundo plano: toma lotes con `FOR UPDATE SKIP LOCKED` y el rol de publicación (`SET LOCAL ROLE`), publica en Kafka con la clave del agregado y las cabeceras `eventId` y `eventType`, y marca `published_at`. Si Kafka falla, incrementa `attempts` y reintenta en el siguiente ciclo. |
+| `ServiceRequestCreatedListener` | `quickpatch-matching` | Consume el topic, descarta y registra los mensajes que no cumplen el contrato, y propaga `correlationId`, `tenantId` y `eventId` en el MDC de los logs. |
+| `ServiceRequestCreatedHandler` | `quickpatch-matching` | En una transacción por tenant, registra el evento y solo si es nuevo inicia el matching: resultado `APPLIED` o `DUPLICATE`. |
+| `JdbcProcessedEventStore` | `quickpatch-matching` | `INSERT ... ON CONFLICT (event_id) DO NOTHING` en `processed_events`: la base de datos garantiza la deduplicación aun con dos consumidores concurrentes (RN-EV1). |
+| `PendingMatchingStarter` | `quickpatch-matching` | Punto de extensión donde entra el algoritmo de matching (RF-09); hoy solo registra el inicio. |
+
+Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija de 2 segundos y sin límite de intentos (`KafkaConfig`). La DLQ de la sección 5.8 todavía no está implementada.
+
+### 4.5.2 Aislamiento entre tenants en Identity
+
+```mermaid
+classDiagram
+    direction LR
+    class ITenantUnitOfWork {
+        <<interface>>
+        +ExecuteAsync(tenantId, work, ct) T
+    }
+    class IPlatformUnitOfWork {
+        <<interface>>
+        +ExecuteAsync(work, ct) T
+    }
+    class TenantUnitOfWork {
+        set_config app.current_tenant
+    }
+    class PlatformUnitOfWork {
+        SET LOCAL ROLE identity_platform
+    }
+    class IPlatformTenantRepository {
+        <<interface>>
+        +ListAsync(ct) Tenant[]
+        +FindForUpdateAsync(tenantId, ct) Tenant
+    }
+    class IAuditLog {
+        <<interface>>
+        +Add(AuditEntry)
+    }
+    class ListTenantsHandler
+    class UpdateTenantStatusHandler
+    class LoginHandler
+    class RegisterClientHandler
+    TenantUnitOfWork ..|> ITenantUnitOfWork
+    PlatformUnitOfWork ..|> IPlatformUnitOfWork
+    LoginHandler --> ITenantUnitOfWork
+    RegisterClientHandler --> ITenantUnitOfWork
+    ListTenantsHandler --> IPlatformUnitOfWork
+    ListTenantsHandler --> IPlatformTenantRepository
+    UpdateTenantStatusHandler --> IPlatformUnitOfWork
+    UpdateTenantStatusHandler --> IPlatformTenantRepository
+    UpdateTenantStatusHandler --> IAuditLog
+```
+
+**Figura 10. Clases del aislamiento por tenant y de la operación de plataforma en Identity (C4, nivel 4).**
+
+- **Operación normal.** Todo caso de uso de un tenant corre dentro de `TenantUnitOfWork`, que fija `app.current_tenant` en la transacción; las políticas RLS de PostgreSQL filtran cada consulta con ese valor (ADR-005, DD 10.2). El tenant sale del canal o del JWT, nunca del cuerpo de la petición. Catalog, ServiceRequest y Matching repiten el mismo patrón con sus propias clases (`ITenantUnitOfWork` en .NET, `JdbcTenantTransaction` en Java).
+- **Operación de plataforma.** Solo `ListTenantsHandler` y `UpdateTenantStatusHandler` usan `PlatformUnitOfWork`, que adopta el rol `identity_platform` (`BYPASSRLS`) con `SET LOCAL ROLE`: el rol vuelve al de la aplicación al cerrar la transacción. La aplicación puede adoptarlo pero no hereda sus permisos (`INHERIT FALSE`, `db/roles.sql`, ADR-019). Los endpoints exigen `admin_plataforma`, y cada cambio de estado deja un `AuditEntry` en la misma transacción.
+
 ---
 
 # 5. Vista de Procesos
@@ -710,7 +856,7 @@ sequenceDiagram
     GW->>M: Técnico acepta la solicitud
 ```
 
-**Figura 9. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
+**Figura 11. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
 
 ---
 
@@ -773,7 +919,7 @@ sequenceDiagram
     end
 ```
 
-**Figura 10. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
+**Figura 12. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
 
 ---
 
@@ -882,7 +1028,7 @@ sequenceDiagram
     end
 ```
 
-**Figura 11. Tolerancia a fallos con Transactional Outbox ante indisponibilidad del broker.**
+**Figura 13. Tolerancia a fallos con Transactional Outbox ante indisponibilidad del broker.**
 
 ---
 
@@ -979,9 +1125,9 @@ Cada repositorio de servicio contiene su código, sus pruebas unitarias y de int
 
 ![Estructura del repositorio QUICKPATCH](diagrams/sdd/07_vista_desarrollo_repositorio.svg)
 
-**Figura 12. Estructura del repositorio principal de QUICKPATCH.**
+**Figura 14. Estructura del repositorio principal de QUICKPATCH.**
 
-La Figura 12 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
+La Figura 14 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
 
 ### 6.1.1 Responsabilidades por repositorio
 
@@ -1083,7 +1229,7 @@ Cada servicio mantiene su propio límite funcional y debe poder evolucionar y de
 
 ![Componentes por aplicación](diagrams/sdd/08_componentes_por_aplicacion.svg)
 
-**Figura 13. Organización de componentes por aplicación y tecnología.**
+**Figura 15. Organización de componentes por aplicación y tecnología.**
 
 ---
 
@@ -1187,7 +1333,7 @@ Las principales reglas son:
 
 ![Dependencias entre proyectos y módulos](diagrams/sdd/09_dependencias_modulos.svg)
 
-**Figura 14. Dependencias permitidas entre aplicaciones, contratos y microservicios.**
+**Figura 16. Dependencias permitidas entre aplicaciones, contratos y microservicios.**
 
 Estas reglas mantienen bajo el acoplamiento entre servicios y preservan la independencia tecnológica entre ASP.NET Core y Spring Boot.
 
@@ -1286,7 +1432,7 @@ Las ocho imágenes del backend se publican en el registro definido para el proye
 
 ![Mapa de carpetas y artefactos de build](diagrams/sdd/10_mapa_carpetas_build.svg)
 
-**Figura 15. Relación entre código fuente, procesos de build, pruebas, artefactos y despliegue.**
+**Figura 17. Relación entre código fuente, procesos de build, pruebas, artefactos y despliegue.**
 
 ---
 
@@ -1391,7 +1537,7 @@ flowchart TB
     style VM6N fill:#FFFFFF,stroke:#00468C,stroke-width:1.5px
 ```
 
-**Figura 16. Diagrama de despliegue de QUICKPATCH: herramientas, producción y QA (ADR-022).**
+**Figura 18. Diagrama de despliegue de QUICKPATCH: herramientas, producción y QA (ADR-022).**
 
 Las VMs son idénticas en hardware (4 vCPU · 11 GiB RAM · 68 GB disco) y solo difieren en el software que alojan (Documento de Infraestructura, sección 3). VM3 es un clúster k3s de un solo nodo: es el punto único de falla reconocido del sistema (SAD, limitación de la sección 5.2); lo mismo ocurre con VM4 (base de datos y caché) y VM6 (bus y almacenamiento). Las 7 VMs envían métricas (`node_exporter`, 9100) y logs (Promtail, 3100) a VM1; esas flechas no se dibujan para no cruzar el diagrama. Las VMs de QA no pueden conectarse con las de producción. El firewall aplica `default deny incoming`; ninguna VM acepta conexiones directas del exterior salvo VM1 (443) y el acceso SSH del equipo (Documento de Infraestructura, sección 10.2).
 
@@ -1414,7 +1560,7 @@ flowchart TB
     style P fill:#E6F5E6,stroke:#00468C,stroke-width:1.5px
 ```
 
-**Figura 17. Ambientes de desarrollo, pruebas y producción.**
+**Figura 19. Ambientes de desarrollo, pruebas y producción.**
 
 Dev es el único ambiente efímero: existe solo mientras corre el pipeline en un runner de GitHub Actions. QA ocupa hardware dedicado, VM2, VM5 y VM7 (ADR-015, ADR-022): replica la forma de producción VM por VM, con datos y secretos propios, y no puede conectarse a los servicios de producción. Cada versión `release/*` se despliega en QA y allí corren las pruebas de sistema (E2E, OWASP ZAP, escáner PCI-DSS y carga con k6); producción se despliega al fusionar en `main` (Documento de Infraestructura, secciones 4 y 6).
 
@@ -1472,7 +1618,7 @@ flowchart TB
     style RED fill:#f4f6fa,stroke:#00468C,stroke-width:1.5px,stroke-dasharray:4 3
 ```
 
-**Figura 18. Seguridad de red y gestión de secretos.**
+**Figura 20. Seguridad de red y gestión de secretos.**
 
 TLS se termina en VM1 con certificado autofirmado — no hay dominio público (R9), por lo que Let's Encrypt no es viable (Documento de Infraestructura, sección 10.1). Los secretos se gestionan por dos mecanismos: Ansible Vault para la infraestructura de las 7 VMs (el archivo cifrado no se sube a Git, y QA tiene secretos propios, distintos a los de producción) y `Secret` de Kubernetes para los microservicios dentro de VM3 y VM2. El CI/CD no guarda credenciales de Kubernetes: el runner de VM1 usa los kubeconfig que deja Ansible en la propia VM, y la publicación de imágenes usa el token temporal de cada ejecución (Documento de Infraestructura, sección 8).
 
