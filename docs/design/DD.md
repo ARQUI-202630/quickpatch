@@ -694,7 +694,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 **Servicio propietario:** ServiceRequest Service.
 
-**Propósito:** Registra la evidencia fotográfica que el Técnico adjunta obligatoriamente al completar una solicitud de servicio. El archivo en sí se almacena en Garage (VM7); esta tabla guarda la referencia.
+**Propósito:** Registra la evidencia fotográfica que el Técnico adjunta obligatoriamente al completar una solicitud de servicio. El archivo en sí se almacena en Garage (VM7; VM6 en QA); esta tabla guarda la referencia.
 
 **Requisitos relacionados:** RF-15; driver D7 del SAD.
 
@@ -1055,7 +1055,7 @@ Derivadas de RF-10 y del driver D1 del SAD.
 
 - **RN-E1:** una solicitud requiere al menos un registro en esta tabla antes de poder pasar al estado `completado`.
 - **RN-E2:** solo el técnico asignado a la solicitud puede subir evidencia para esa solicitud.
-- **RN-E3:** el archivo referenciado se almacena en Garage (VM7), no en la base de datos.
+- **RN-E3:** el archivo referenciado se almacena en Garage (VM7; VM6 en QA), no en la base de datos.
 
 ### 7.8 Reglas de `payments`
 
@@ -1118,7 +1118,7 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 |RN-P5|Índice único parcial sobre los pagos abiertos, y paso a `procesando` con `UPDATE ... WHERE status = 'pendiente' RETURNING id`, que solo una petición concurrente puede completar. El `id` del pago viaja como clave de idempotencia hacia la pasarela cuando esta la soporte.|
 |RN-Q2, RN-Q4|Índices únicos parciales sobre `quotes` (sección 5.11). ServiceRequest Service no expone ninguna operación que modifique una cotización aceptada.|
 |RN-Q5, RN-Q7|Lógica de cancelación y de rechazo en ServiceRequest Service. RN-Q7 cuenta las cotizaciones con la fila de la solicitud bloqueada (`SELECT ... FOR UPDATE`) para evitar carreras.|
-|RN-Q6|Tarea programada de ServiceRequest Service con coordinación temporal mediante Redis en VM5 (SAD sección 5.1).|
+|RN-Q6|Tarea programada de ServiceRequest Service con coordinación temporal mediante Redis en VM4 (VM6 en QA; SAD sección 5.1).|
 |RN-A1|Permisos: los roles de aplicación solo tienen `INSERT` y `SELECT` sobre `audit_logs` (sección 10.2).|
 
 ---

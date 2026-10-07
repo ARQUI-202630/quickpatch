@@ -7,6 +7,8 @@
 - **Atributo sacrificado:** AC5 Reliability (la instancia es un punto único de falla)
 - **Restricciones:** R5, R10, R11
 
+> **Actualización (ADR-022, 6 de octubre de 2026):** la instancia de QA pasa de VM2 a VM6; producción sigue en VM4.
+
 ## Contexto
 
 Con microservicios (ADR-003), cada servicio debe ser dueño de sus datos: ningún otro puede leer sus tablas ni depender de su esquema. La forma habitual es un servidor de base de datos por servicio, pero solo hay 7 VMs (R10) y una sola persona que las administra (R11). VM4 es la VM de base de datos.

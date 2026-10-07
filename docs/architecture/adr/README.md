@@ -11,17 +11,18 @@ Cada decisión de arquitectura tiene su propio archivo en esta carpeta, con cont
 | [ADR-006](ADR-006-kafka-bus-eventos.md) | Kafka como bus de eventos | AC5, AC8 | Aceptado |
 | [ADR-007](ADR-007-outbox-idempotencia.md) | Outbox + idempotencia | AC5 | Aceptado |
 | [ADR-009](ADR-009-tokenizacion-pagos.md) | Tokenización de pagos | AC6 | Aceptado |
-| [ADR-011](ADR-011-k3s-orquestacion.md) | k3s para los microservicios | AC5 | Aceptado; ampliado por ADR-015 |
+| [ADR-011](ADR-011-k3s-orquestacion.md) | k3s para los microservicios | AC5 | Aceptado; ampliado por ADR-015; QA pasa a VM5 por ADR-022 |
 | [ADR-012](ADR-012-stack-tecnologico-polyglot.md) | Stack polyglot | AC7 | Aceptado |
 | [ADR-013](ADR-013-estrategia-de-repositorios.md) | Un repositorio por componente | AC7 | Aceptado; modificado por ADR-021 |
 | [ADR-014](ADR-014-postgresql-instancia-unica.md) | Una instancia de PostgreSQL, una base por servicio | AC7 | Aceptado |
-| [ADR-015](ADR-015-ambiente-qa-en-vm2.md) | QA en VM2 y acceso por VM1 | AC7 | Aceptado |
+| [ADR-015](ADR-015-ambiente-qa-en-vm2.md) | QA en VM2 y acceso por VM1 | AC7 | Aceptado; la parte de QA en una sola VM la reemplaza el ADR-022 |
 | [ADR-016](ADR-016-garage-storage-objetos.md) | Garage como almacenamiento de objetos | AC6, AC2 | Aceptado |
 | [ADR-017](ADR-017-replicas-locales-por-eventos.md) | Réplicas locales alimentadas por eventos | AC5, AC2 | Aceptado |
 | [ADR-018](ADR-018-jwt-rs256-identity.md) | JWT RS256 firmado solo por Identity | AC6 | Aceptado |
 | [ADR-019](ADR-019-roles-base-de-datos.md) | Roles de base de datos por responsabilidad | AC6 | Propuesto |
 | [ADR-020](ADR-020-codigo-transversal-compartido.md) | Código transversal compartido (.NET) | AC7 | Propuesto |
 | [ADR-021](ADR-021-doce-repositorios.md) | Doce repositorios por componente de la solución | AC7 | Aceptado |
+| [ADR-022](ADR-022-reparto-de-vms-por-ambiente.md) | Reparto de las 7 VMs: 1 de herramientas, 3 de QA y 3 de producción | AC7 | Aceptado |
 
 **Números sin asignar.** ADR-001 y ADR-010 nunca se usaron. ADR-008 aparecía en versiones anteriores del SAD como referencia a una decisión que no existía y se retiró en la versión 2.0. No se reutilizan, para no confundir referencias históricas.
 
