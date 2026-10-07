@@ -78,7 +78,7 @@ Producción primero. VM5 y VM6 son hoy producción (Redis y Kafka), así que se 
 
 ### Costos y riesgos
 
-- **Rompe dos principios del SAD 5.2:** "base de datos sola en su VM" y "Kafka aislado de lo síncrono, Redis separado de Kafka". Se acepta como excepción. Las ráfagas de Kafka pueden competir con PostgreSQL por CPU y memoria, y si VM4 cae se pierden a la vez bases, caché y bus. **Mitigación:** límites de memoria por contenedor (heap de Kafka, memoria de PostgreSQL, `maxmemory` de Redis), alerta de RAM al 85% y medición con los servicios reales (pendiente).
+- **Rompe dos principios del SAD 5.2:** "base de datos sola en su VM" y "Kafka aislado de lo síncrono, Redis separado de Kafka". Se acepta como excepción. Las ráfagas de Kafka pueden competir con PostgreSQL por CPU y memoria, y si VM4 cae se pierden a la vez bases, caché y bus. **Mitigación:** topes de memoria donde ya existen (heap de Kafka de 1 a 2 GB y `maxmemory` de Redis, que baja de 6 GB a 1 GB para esta VM), alerta de RAM al 85% y medición con los servicios reales (pendiente). La memoria de PostgreSQL queda con su valor por defecto hasta que se mida.
 - **k3s sigue de un solo nodo** en producción (VM3) y en QA (VM5): sigue siendo punto único de falla. Un clúster de varios nodos exigiría quitar VMs a otros roles.
 - **Kafka UI deja de estar accesible desde la VPN** y queda con túnel SSH.
 - **QA estará caído durante la migración**, porque se reconstruye.
