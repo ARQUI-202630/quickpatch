@@ -42,7 +42,7 @@ El SAD fija ocho dominios: Identity, Actors, Catalog, ServiceRequest, Matching, 
 ## Evidencia
 
 - ServiceRequest, Catalog e Identity implementados con bases separadas y comunicación por eventos (`catalog.category-changed`, `service-request.created`), con pruebas de integración contra PostgreSQL y Kafka reales.
-- Pendiente: POC-BE-001 de punta a punta entre .NET y Spring Boot (`docs/architecture/poc/`).
+- POC-BE-001 de punta a punta entre .NET y Spring Boot (`docs/architecture/poc/backend-dotnet/`).
 
 ## Trazabilidad
 

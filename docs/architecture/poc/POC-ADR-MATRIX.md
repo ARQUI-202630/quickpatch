@@ -2,7 +2,7 @@
 
 | Evidencia | Decisión | ADR | Estado |
 |---|---|---|---|
-| POC-BE-001 | .NET → Kafka → Spring, Outbox/idempotencia | ADR-006, ADR-007, ADR-012 | Planeada |
+| POC-BE-001 | .NET → Kafka → Spring, Outbox/idempotencia | ADR-006, ADR-007, ADR-012 | Ejecutada (6 oct 2026): 7 casos correctos; un defecto encontrado y corregido. Ver `backend-dotnet/POC-BE-001-interoperabilidad-dotnet-kafka-spring.md` |
 | BENCH-BE-001 | ASP.NET Core principal | ADR-012 | Cualitativa |
 | PoC Matching/PostGIS | geoespacial | ADR-004 | Ejecutada según evidencia del rol |
 | PoC DevOps | operación/orquestación | ADR-011, ADR-015 | Según evidencia DevOps |
