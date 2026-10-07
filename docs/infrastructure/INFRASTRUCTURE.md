@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 2.1 |
+| **Versión** | 2.3 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -44,12 +44,14 @@ Este documento describe cómo se construye, despliega y opera la infraestructura
 
 ### 2.1 Vista general
 
-Qué corre en cada VM, cómo se conectan y por dónde entra el tráfico. El inventario de hardware está en la sección 3 y las reglas exactas de firewall en la sección 10.
+Qué corre hoy en cada VM, cómo se conectan y por dónde entra el tráfico. El inventario de hardware está en la sección 3 y las reglas exactas de firewall en la sección 10.
+
+> **Redistribución aprobada (ADR-022), implementación en curso (SCRUM-334).** Este diagrama y las secciones operativas describen la distribución desplegada hoy (ADR-015). La distribución objetivo —3 VMs de producción, 3 de QA y 1 de herramientas— y el plan de migración están en la sección 3.3; cada sección operativa se actualiza a medida que DevOps migra cada VM.
 
 ```mermaid
 flowchart TB
     EQ(["Equipo y usuarios<br/>VPN de la universidad"])
-    PERIM{{"Firewall perimetral de la universidad (K9)<br/>desde la VPN solo pasa el 443 de VM1"}}
+    PERIM{{"Firewall perimetral de la universidad (R9)<br/>desde la VPN solo pasa el 443 de VM1"}}
     GH(["GitHub<br/>Actions y GHCR"])
 
     subgraph LAB["Red del laboratorio 10.43.x.x"]
@@ -102,8 +104,8 @@ flowchart TB
 
 ### 2.2 Principios de la arquitectura de despliegue
 
-- **Sin servicios administrados en la nube (K5, K10):** todo el sistema corre en las 7 VMs propias asignadas por el laboratorio de la Javeriana; no hay bases de datos, colas ni cómputo administrado por un proveedor cloud.
-- **Un rol por VM, salvo VM1, VM3 y VM7:** cada VM aloja un componente principal (base de datos, cache, mensajería, QA). VM1 combina el gateway, el panel Angular y el runner de despliegue (SAD, ADR-015); VM3 concentra los 8 microservicios en k3s (ADR-011), y VM7 combina el almacenamiento de objetos (Garage, ADR-016) y la observabilidad (Prometheus, Loki y Grafana), porque no hay una octava VM (K10).
+- **Sin servicios administrados en la nube (R5, R10):** todo el sistema corre en las 7 VMs propias asignadas por el laboratorio de la Javeriana; no hay bases de datos, colas ni cómputo administrado por un proveedor cloud.
+- **Un rol por VM, salvo VM1, VM3 y VM7:** cada VM aloja un componente principal (base de datos, cache, mensajería, QA). VM1 combina el gateway, el panel Angular y el runner de despliegue (SAD, ADR-015); VM3 concentra los 8 microservicios en k3s (ADR-011), y VM7 combina el almacenamiento de objetos (Garage, ADR-016) y la observabilidad (Prometheus, Loki y Grafana), porque no hay una octava VM (R10).
 - **Kubernetes solo donde corren los microservicios:** VM3 (producción) y VM2 (QA) usan k3s, porque los servicios necesitan rolling updates y auto-healing independientes. El resto de componentes usa Docker Compose por simplicidad operativa (sección 5).
 - **Automatizado, no manual:** el aprovisionamiento de las 7 VMs y el despliegue de cada componente se hacen con Ansible (sección 5), no a mano, dado que una sola persona (DevOps) administra las 7 máquinas (SAD, sección 5.3).
 - **Red cerrada por defecto:** ninguna VM acepta tráfico entrante salvo las rutas explícitas de la sección 10.3; el único punto de entrada desde fuera de la red del laboratorio es VM1.
@@ -111,7 +113,7 @@ flowchart TB
 
 ### 2.3 Balanceo de carga y alta disponibilidad
 
-**Resumen:** el sistema balancea carga **dentro de VM3**, entre réplicas de un mismo servicio, pero **no tiene alta disponibilidad entre máquinas**. Con 7 VMs fijas (K10) y sin operación 24/7 (K7), cada componente corre en una sola VM; lo que se protege es la recuperación rápida dentro de cada máquina y la reconstrucción completa con Ansible.
+**Resumen:** el sistema balancea carga **dentro de VM3**, entre réplicas de un mismo servicio, pero **no tiene alta disponibilidad entre máquinas**. Con 7 VMs fijas (R10) y sin operación 24/7 (R7), cada componente corre en una sola VM; lo que se protege es la recuperación rápida dentro de cada máquina y la reconstrucción completa con Ansible.
 
 #### Dónde hay balanceo de carga
 
@@ -140,9 +142,9 @@ k3s trae `metrics-server`, así que un servicio puede escalar sus réplicas auto
 - **Auto-healing en k3s:** si un pod falla, Kubernetes lo reinicia sin afectar a los demás servicios (AC5-E3).
 - **Rolling updates sin downtime:** un despliegue crea el pod nuevo y solo retira el anterior cuando el nuevo está listo; si no termina, el pipeline revierte (secciones 5.8 y 6.2).
 - **Reinicio automático de contenedores:** los servicios en Docker Compose (PostgreSQL, Redis, Kafka, Garage, observabilidad y Nginx) usan `restart: unless-stopped`, así que vuelven solos después de una caída o de un reinicio de la VM. El runner de VM1 también corre como servicio del sistema.
-- **Recuperación por código:** cualquier VM se reconstruye con sus playbooks de Ansible, en la ventana de 12 a 24 horas aceptada (K7, sección 9.4).
+- **Recuperación por código:** cualquier VM se reconstruye con sus playbooks de Ansible, en la ventana de 12 a 24 horas aceptada (R7, sección 9.4).
 
-**Por qué no hay alta disponibilidad entre máquinas:** exigiría duplicar cada componente en otra VM (dos gateways, un clúster de k3s de varios nodos, réplicas de PostgreSQL y Kafka), y el laboratorio solo asigna 7 VMs, que ya están ocupadas (K10). Sin operación 24/7 (K7), una caída se atiende en horario del equipo, lo que el SAD acepta en el escenario AC5-E1.
+**Por qué no hay alta disponibilidad entre máquinas:** exigiría duplicar cada componente en otra VM (dos gateways, un clúster de k3s de varios nodos, réplicas de PostgreSQL y Kafka), y el laboratorio solo asigna 7 VMs, que ya están ocupadas (R10). Sin operación 24/7 (R7), una caída se atiende en horario del equipo, lo que el SAD acepta en el escenario AC5-E1.
 
 ---
 
@@ -181,6 +183,71 @@ Uso medido el 3 de octubre de 2026, con toda la infraestructura desplegada y **t
 | VM7 | Storage y observabilidad | `10.43.99.8` | Garage (SAD, ADR-016), Prometheus, Loki y Grafana | 2,6 GiB | 18 GB (28%) |
 
 Además, las 7 VMs corren `node_exporter` y Promtail (unos 40 MiB entre los dos). Sin microservicios, ninguna VM pasa del 32% de la RAM ni del 34% del disco. La medición se repite cuando los servicios estén desplegados en VM3 y en QA.
+
+
+### 3.3 Distribución objetivo (ADR-022)
+
+Aprobada el 6 de octubre de 2026 por la revisión del profesor: 3 VMs para producción, 3 para QA y 1 para herramientas. Las IPs y el hardware no cambian.
+
+| VM | Ambiente | Rol | Software del proyecto | Cambia respecto de hoy |
+|---|---|---|---|---|
+| VM1 | Herramientas | Entrada y herramientas | Proxy Nginx :443 por nombre (`quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal`); runner de GitHub, kubectl y k6; Prometheus, Loki y Grafana de los dos ambientes | Recibe la observabilidad de VM7. El panel y el gateway pasan al k3s de VM3 |
+| VM3 | Producción | Aplicación | k3s: 8 microservicios, API Gateway (`quickpatch-api-gateway`) y panel Angular | Recibe el gateway y el panel |
+| VM4 | Producción | Datos | PostgreSQL + PostGIS y Redis | Recibe Redis de VM5 |
+| VM6 | Producción | Mensajería y almacenamiento | Kafka y Kafka UI (`quickpatch-kafka`); Garage (evidencias y respaldos) | Recibe Garage de VM7, con sus buckets |
+| VM2 | QA | Aplicación | Igual que VM3 | Deja de alojar el QA completo: conserva el k3s |
+| VM5 | QA | Datos | Igual que VM4 | Pasa de Redis de producción a datos de QA |
+| VM7 | QA | Mensajería y almacenamiento | Igual que VM6 | Pasa de almacenamiento y observabilidad de producción a mensajería y almacenamiento de QA |
+
+**Conexiones permitidas** (las reglas exactas se escriben en `firewall.yml` al migrar, sección 10.3):
+
+| Origen | Destino | Puertos | Para qué |
+|---|---|---|---|
+| VPN de la universidad | VM1 | 443 | Única entrada (R9) |
+| VM1 | VM3 y VM2 | 30080, 6443 | Proxy hacia el gateway de cada ambiente; despliegue con kubectl |
+| VM3 | VM4 | 5432, 6379 | Servicios de producción → PostgreSQL y Redis |
+| VM3 | VM6 | 9092, 9000 | Servicios de producción → Kafka y Garage (evidencias) |
+| VM4 | VM6 | 9000 | Respaldo diario de PostgreSQL a Garage |
+| VM2 | VM5, VM7 | 5432, 6379, 9092, 9000 | Lo mismo, dentro de QA |
+| Las 7 VMs | VM1 | 3100 | Logs (Promtail → Loki) |
+| VM1 | Las 7 VMs | 9100 | Métricas (Prometheus → `node_exporter`) |
+
+Ninguna VM de QA acepta conexiones de una VM de producción ni al revés.
+
+**Plan de migración** (DevOps, SCRUM-343 a SCRUM-347; el orden evita dejar producción sin observabilidad ni respaldo):
+
+1. VM1: instalar Prometheus, Loki y Grafana y apuntar a ellos las 7 VMs; apagar la observabilidad de VM7.
+2. VM6: instalar Garage y copiar los buckets `evidencias` y `backups-postgres` desde VM7; cambiar el destino del respaldo de VM4.
+3. VM4: instalar Redis con los usuarios por servicio de la sección 3.4; apuntar los servicios de VM3; apagar Redis de VM5.
+4. VM3: desplegar el API Gateway y el panel en el k3s; cambiar el proxy de VM1.
+5. QA: desplegar PostgreSQL y Redis en VM5 y Kafka y Garage en VM7 con los mismos playbooks parametrizados por ambiente; dejar en VM2 solo el k3s.
+6. Firewall por VM según la tabla anterior; medir RAM y disco y repetir la tabla de la sección 3.2 (SCRUM-347).
+
+### 3.4 Recursos por servicio
+
+Cada servicio tiene sus propios recursos de datos y no puede leer los de otro (ADR-003, ADR-014, ADR-021). Así lo muestra el diagrama de alto nivel (vista lógica): cada servicio con su base PostgreSQL, su caché Redis y su almacenamiento en Garage según corresponda. En la vista física comparten la instancia de cada motor por ambiente, con el aislamiento dentro del motor. Esta tabla es la fuente para Ansible y para los secretos de Kubernetes.
+
+| Servicio | PostgreSQL (prod VM4; QA VM5) | Redis (prod VM4; QA VM5) | Garage (prod VM6; QA VM7) |
+|---|---|---|---|
+| Identity | `db_identity` | Usuario `identity`, claves `identity:*` | — |
+| Actors | `db_actors` | Usuario `actors`, claves `actors:*` | Bucket `actors-archivos` (reservado) |
+| Catalog | `db_catalog` | Usuario `catalog`, claves `catalog:*` | Bucket `catalog-archivos` (reservado) |
+| ServiceRequest | `db_service_request` (con PostGIS) | Usuario `service-request`, claves `service-request:*` (en uso: coordinación de tareas programadas, RN-Q6) | Llave `service-request` solo en `service-request-evidencias` (en uso: evidencias, D7) |
+| Matching | `db_matching` (con PostGIS) | Usuario `matching`, claves `matching:*` | Bucket `matching-archivos` (reservado) |
+| Ranking | `db_ranking` | Usuario `ranking`, claves `ranking:*` | Bucket `ranking-archivos` (reservado) |
+| Payments | `db_payments` | Usuario `payments`, claves `payments:*` | Bucket `payments-archivos` (reservado) |
+| Communication | `db_communication` | Usuario `communication`, claves `communication:*` | Bucket `communication-archivos` (reservado) |
+| Respaldo (VM4) | Lectura de todas las bases (`pg_dump`) | — | Llave `backups` solo en `backups-postgres` |
+
+Ansible ya crea un usuario de Redis por servicio y las llaves de Garage en uso (`quickpatch-infrastructure`, PRs #21 a #23). Los buckets marcados como reservados se crean, con su propia llave, cuando el servicio los necesite.
+
+Reglas:
+
+- **PostgreSQL:** una base por servicio con los roles del DD 10.2 (`<servicio>_app` sin `BYPASSRLS`, `_outbox` y `_migrator`; ADR-019). El servicio se conecta solo a su base.
+- **Redis:** un usuario ACL por servicio, restringido a su prefijo de claves (`~<servicio>:*`) y sin comandos administrativos (`-@dangerous`). Reemplaza la contraseña única compartida de hoy (`requirepass`). Redis 7.4 ya soporta ACL.
+- **Garage:** una llave por servicio, con permiso solo sobre sus buckets, en lugar de la llave `servicios` compartida de hoy. El bucket `evidencias` pasa a llamarse `service-request-evidencias` al migrar a VM6.
+- **PostGIS:** se habilita en `db_matching` y en `db_service_request` (la ubicación de la solicitud es `geometry(Point, 4326)`). Hoy Ansible solo lo habilita en `db_matching` (`postgis_databases`): hay que agregar `service_request`.
+- **Credenciales:** en Ansible Vault, y cada servicio las recibe en su propio `Secret` de Kubernetes (namespace `quickpatch`). QA usa credenciales distintas de producción.
 
 ---
 
@@ -329,23 +396,30 @@ VM4 mantiene PostgreSQL como almacén común de infraestructura con ownership l�
 
 ### 6.1 Estructura del pipeline
 
-El pipeline está en GitHub Actions y sigue el multirepo (SAD, ADR-013): cada uno de los 11 repositorios de componentes tiene su propio pipeline, así que un cambio en un servicio solo dispara el de ese servicio (AC7-E1).
+El pipeline está en GitHub Actions y sigue el multirepo (SAD, ADR-013 y ADR-021): cada uno de los 12 repositorios de componentes tiene su propio pipeline, así que un cambio en un servicio solo dispara el de ese servicio (AC7-E1).
 
-Para no mantener 11 copias, la lógica vive una sola vez en `quickpatch-infrastructure` como **workflows reutilizables**, y cada repositorio tiene un archivo corto (`.github/workflows/ci-cd.yml`) que los llama. Las plantillas de ese archivo están en `plantillas/ci/` y ya están instaladas en los 11 repositorios.
+**El CI vive en cada repositorio** (ADR-021, SCRUM-337): `.github/workflows/ci-cd.yml` contiene el job de CI completo de su stack, sin llamar a workflows de otro repositorio, y `.github/scripts/cobertura.py` mide la cobertura. Así, un cambio en un repositorio no altera el pipeline de los demás. El costo es que una mejora del CI se aplica repositorio por repositorio.
+
+| CI (en cada repositorio) | Qué hace | Repositorios |
+|---|---|---|
+| .NET | Formato, compilación, pruebas de `tests/unit` y `tests/integration` (Testcontainers) y cobertura | 7 servicios ASP.NET Core |
+| Java | Pruebas unitarias e integración (`*IT`, Testcontainers) con Maven y cobertura con JaCoCo | `quickpatch-matching` |
+| Angular | Lint, pruebas, cobertura y build; guarda el build para publicarlo | `quickpatch-web` |
+| Flutter | Formato, análisis, pruebas y cobertura; APK en `release/*` y `main` | `quickpatch-mobile` |
+| Contratos REST | Spectral, compatibilidad con `oasdiff` contra la rama base, `nginx -t` y tags `vX.Y.Z` | `quickpatch-api-gateway` |
+| Eventos | AJV, alineación de topics y esquemas, compatibilidad contra la rama base y tags `vX.Y.Z` | `quickpatch-kafka` |
+| Composición y documentación | Submódulos y contratos en versiones etiquetadas; referencias obsoletas en la documentación | Repositorio principal |
+
+**El despliegue (CD) todavía es compartido:** mientras DevOps lo traslada a cada repositorio (SCRUM-338), estos workflows siguen en `quickpatch-infrastructure`:
 
 | Workflow | Qué hace | Lo usan |
 |---|---|---|
-| `ci-dotnet.yml` | Formato, compilación, pruebas de `tests/unit` y `tests/integration` (Testcontainers) y cobertura | 7 servicios ASP.NET Core |
-| `ci-java.yml` | Compilación, pruebas unitarias y de integración (Gradle o Maven) y cobertura con JaCoCo | Matching |
-| `ci-angular.yml` | Lint, pruebas, cobertura y build; guarda el build para publicarlo | `quickpatch-web` |
-| `ci-flutter.yml` | Formato, análisis, pruebas y cobertura; APK en `release/*` y `main` | `quickpatch-mobile` |
-| `ci-contratos.yml` | Spectral sobre OpenAPI, AJV sobre los esquemas de eventos y tags `vX.Y.Z` | `quickpatch-contracts` |
 | `imagen.yml` | Construye y publica la imagen en GitHub Container Registry | Servicios |
 | `deploy-k3s.yml` | Actualiza la imagen en k3s y espera el rolling update; si falla, lo revierte | Servicios |
-| `deploy-panel.yml` | Publica el build del panel en VM1 (producción) o VM2 (QA) | `quickpatch-web` |
+| `deploy-panel.yml` | Publica el build del panel en producción o QA | `quickpatch-web` |
 | `pruebas-sistema.yml` | E2E, OWASP ZAP, escáner PCI-DSS y k6 contra QA | Repositorio principal |
 
-Las pruebas siguen el Documento de Pruebas: estructura de carpetas, herramientas y **cobertura mínima de 80%**, que hace fallar el pipeline. Si un repositorio todavía no tiene código, cada workflow lo detecta y termina en verde con un aviso. El detalle de convenciones por stack está en `CI-CD.md` de `quickpatch-infrastructure`.
+Las pruebas siguen el Documento de Pruebas: estructura de carpetas, herramientas y **cobertura mínima de 80%**, que hace fallar el pipeline. El detalle de convenciones por stack está en el README de cada repositorio.
 
 ### 6.2 Qué corre en cada rama
 
@@ -394,8 +468,8 @@ Los runners de GitHub corren en la nube y no llegan a la red del laboratorio (`1
 
 Dos tipos de información, cada uno con su propia cadena de recolección y almacenamiento, unificados en un solo panel:
 
-- **Métricas** (números que cambian en el tiempo: CPU, RAM, peticiones por segundo, errores por minuto) — recolectadas por `node_exporter` en cada VM, almacenadas por Prometheus en VM7.
-- **Logs** (mensajes de texto que describen eventos: "pago rechazado", "acceso denegado") — recolectados por Promtail en cada VM, almacenados por Loki en VM7.
+- **Métricas** (números que cambian en el tiempo: CPU, RAM, peticiones por segundo, errores por minuto) — recolectadas por `node_exporter` en cada VM, almacenadas por Prometheus en VM1.
+- **Logs** (mensajes de texto que describen eventos: "pago rechazado", "acceso denegado") — recolectados por Promtail en cada VM, almacenados por Loki en VM1.
 
 Ninguno de los dos sustituye al otro: las métricas dicen *qué tan rápido u ocupado* está el sistema; los logs dicen *qué pasó exactamente*. Grafana consulta ambas fuentes desde el mismo panel, lo que permite cruzarlos — por ejemplo, ver qué decían los logs justo cuando una métrica de CPU se disparó.
 
@@ -405,9 +479,9 @@ flowchart LR
         NE["node_exporter<br/>(métricas de la VM)"]
         PT["Promtail<br/>(logs de los contenedores)"]
     end
-    NE -->|"scrape cada ~15s"| PROM["Prometheus<br/>(VM7)"]
-    PT -->|"envío continuo"| LOKI["Loki<br/>(VM7)"]
-    PROM --> GRAF["Grafana<br/>(VM7)"]
+    NE -->|"scrape cada ~15s"| PROM["Prometheus<br/>(VM1)"]
+    PT -->|"envío continuo"| LOKI["Loki<br/>(VM1)"]
+    PROM --> GRAF["Grafana<br/>(VM1)"]
     LOKI --> GRAF
 ```
 
@@ -417,11 +491,11 @@ flowchart LR
 |---|---|---|
 | `node_exporter` | Las 7 VMs (`setup-base.yml`) | Expone las métricas de esa VM para que Prometheus las recolecte |
 | Promtail | Las 7 VMs (`setup-base.yml`) | Recolecta los logs de los contenedores de esa VM y los envía a Loki |
-| Prometheus | VM7 (`deploy-storage-observability.yml`) | Almacena el historial de métricas de las 7 VMs |
-| Loki | VM7 (`deploy-storage-observability.yml`) | Almacena el historial de logs de las 7 VMs |
-| Grafana | VM7 (`deploy-storage-observability.yml`) | Panel único para consultar Prometheus y Loki, con las dos fuentes de datos ya configuradas |
+| Prometheus | VM1 (`deploy-observabilidad.yml`) | Almacena el historial de métricas de las 7 VMs, de producción y de QA |
+| Loki | VM1 (`deploy-observabilidad.yml`) | Almacena el historial de logs de las 7 VMs, de producción y de QA |
+| Grafana | VM1 (`deploy-observabilidad.yml`) | Panel único para consultar Prometheus y Loki, con las dos fuentes de datos ya configuradas |
 
-- **Acceso:** Grafana se abre en `https://grafana.quickpatch.internal`, a través del gateway de VM1 (sección 11), con el usuario `admin` y la contraseña del vault. Prometheus no se publica: se consulta desde Grafana.
+- **Acceso:** Grafana corre en la propia VM1 (ADR-022) y se abre en `https://grafana.quickpatch.internal` por el proxy Nginx de esa misma VM (sección 11), con el usuario `admin` y la contraseña del vault. Prometheus (9090) y Grafana (3000) no tienen puerto abierto en el firewall: solo el 3100 de Loki, para los logs de las 7 VMs. Prometheus no se publica: se consulta desde Grafana.
 - **Etiquetas de los logs:** Loki etiqueta cada línea con la VM (`vm`, de `vm1` a `vm7`), el `job`, el `entorno` (`qa` en VM2, `prod` en el resto) y, en los pods de k3s (VM2 y VM3), el `namespace` y el `service` (el contenedor, que se llama como el microservicio), sacados de la ruta del log. Las pruebas de sistema usan esas etiquetas para revisar los logs de QA en busca de datos de tarjetas (sección 6.2).
 - **Reloj:** las 7 VMs se sincronizan con servidores NTP públicos mediante `chrony`, que `setup-base.yml` deja activo. Importa para cruzar logs entre VMs y para validar certificados y firmas de token: en Rocky Linux (VM2 y VM5) el servicio no arrancaba solo y VM2 llegó a ir unos 54 s atrasada.
 - **Retención:** 15 días de métricas en Prometheus; los datos de diagnóstico no se respaldan (sección 9.1).
@@ -460,7 +534,7 @@ Los paneles de errores suponen logs en JSON con los campos `level` y `correlatio
 
 Las notificaciones salen por correo a `sanchezse@javeriana.edu.co`, agrupadas por alerta y VM, con repetición cada 4 horas. Grafana envía el correo por el SMTP de una cuenta de Gmail con contraseña de aplicación (`vault_smtp_password` en el vault de Ansible); si esa contraseña no existe, el correo queda desactivado y las reglas se ven igual en el panel.
 
-**Limitación:** las alertas viven en VM7, junto a Grafana, Prometheus y Loki. Si VM7 cae, no hay quien avise de que VM7 cayó. Un monitor externo lo resolvería y queda fuera del alcance (K10: sin VM adicional).
+**Limitación:** las alertas viven en VM1, junto a Grafana, Prometheus y Loki, y VM1 también es la entrada desde la VPN y el runner (riesgo aceptado en el ADR-022). Si VM1 cae, no hay acceso ni monitoreo, y no hay quien avise de que VM1 cayó. Un monitor externo lo resolvería y queda fuera del alcance (R10: sin VM adicional).
 
 ---
 
@@ -520,7 +594,7 @@ Ningún secreto (contraseñas, llaves de Garage, tokens de la pasarela de pagos,
 
 ### 9.3 Cómo restaurar una base
 
-La restauración es **manual**, por K7 (sin operación 24/7), dentro de la ventana de 12 a 24 horas aceptada para fallas de infraestructura (SAD, escenario AC5-E1). Con un respaldo diario, la pérdida máxima de datos (RPO) es de 24 horas.
+La restauración es **manual**, por R7 (sin operación 24/7), dentro de la ventana de 12 a 24 horas aceptada para fallas de infraestructura (SAD, escenario AC5-E1). Con un respaldo diario, la pérdida máxima de datos (RPO) es de 24 horas.
 
 1. Elegir el día en Garage. Desde VM4, con las credenciales de la llave `backups`:
    ```
@@ -541,19 +615,19 @@ Como toda la configuración es código de Ansible, la recuperación de una VM es
 | Se cae un microservicio | k3s reinicia el pod (AC5-E3) | Automático | Segundos a minutos |
 | Un despliegue sale mal | El pipeline detecta que el rolling update no termina | Automático: `kubectl rollout undo` | Minutos |
 | Datos dañados o borrados en una base | El servicio funciona con datos incorrectos | Restaurar el respaldo de esa base (9.3) | Menos de una hora; se pierden hasta 24 horas de datos |
-| Se pierde una VM completa | El laboratorio la reaprovisiona | `setup-base.yml` y el playbook de su rol. VM4: restaurar el último respaldo. VM7: las evidencias se pierden (9.5). VM1: volver a registrar el runner | 12 a 24 horas (K7, AC5-E1) |
+| Se pierde una VM completa | El laboratorio la reaprovisiona | `setup-base.yml` y el playbook de su rol. VM4: restaurar el último respaldo. VM7: las evidencias se pierden (9.5). VM1: volver a registrar el runner | 12 a 24 horas (R7, AC5-E1) |
 | Se pierden todas las VMs | — | `site.yml`, que aplica todo en orden, y restaurar las bases | 12 a 24 horas |
 
 **Lo que hace falta para reconstruir:**
 
 - El repositorio `quickpatch-infrastructure`.
-- El archivo cifrado `vault.yml` y su contraseña. **Hoy existen en un solo computador, el del responsable de DevOps (K11):** si ese equipo se pierde, se pierden las contraseñas de las bases, de Redis y de Garage. Se pueden regenerar, pero las bases restauradas necesitarían que se les cambien las credenciales. Pendiente: guardar una copia del vault y de su contraseña fuera de ese computador, por ejemplo en el gestor de contraseñas del equipo.
+- El archivo cifrado `vault.yml` y su contraseña. **Hoy existen en un solo computador, el del responsable de DevOps (R11):** si ese equipo se pierde, se pierden las contraseñas de las bases, de Redis y de Garage. Se pueden regenerar, pero las bases restauradas necesitarían que se les cambien las credenciales. Pendiente: guardar una copia del vault y de su contraseña fuera de ese computador, por ejemplo en el gestor de contraseñas del equipo.
 - Las credenciales de las VMs que entrega el laboratorio.
 - Un token nuevo de la organización en GitHub para registrar el runner de VM1.
 
 ### 9.5 Evidencias en Garage: sin respaldo, limitación aceptada
 
-Garage en VM7 es el almacenamiento principal de las evidencias fotográficas y, si algo le pasa a esa VM, el único lugar donde existen: no hay una octava VM para duplicarlas (K10).
+Garage en VM7 es el almacenamiento principal de las evidencias fotográficas y, si algo le pasa a esa VM, el único lugar donde existen: no hay una octava VM para duplicarlas (R10).
 
 **Se documenta como limitación aceptada**, con el mismo tratamiento que el punto único de falla de VM3 (SAD, sección 5.2). Si VM7 falla por completo, se pierden las evidencias de los servicios ya completados, pero no la plataforma: el ciclo de negocio (RF-15, pagos y calificaciones) no depende de que la evidencia siga disponible después de completado el servicio.
 
@@ -572,7 +646,7 @@ En su lugar, se usan **certificados autofirmados** con vigencia de 10 años:
 | VM1 (gateway) | `quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal` y la IP de VM1 | `deploy-gateway.yml`, que lo regenera si a la lista de nombres le falta alguno |
 | VM2 (QA) | `qa.quickpatch.internal` y la IP de VM2 | `deploy-qa.yml` |
 
-Esto cumple RNF-02 (el tráfico va cifrado), aunque el navegador muestre una advertencia la primera vez porque el certificado no viene de una CA reconocida. Es una limitación aceptada (sección 13): no hay CA pública sin dominio público (K9) ni presupuesto para una comercial (K5).
+Esto cumple RNF-02 (el tráfico va cifrado), aunque el navegador muestre una advertencia la primera vez porque el certificado no viene de una CA reconocida. Es una limitación aceptada (sección 13): no hay CA pública sin dominio público (R9) ni presupuesto para una comercial (R5).
 
 El tráfico entre VMs, dentro de la red privada del laboratorio, no usa TLS: nunca sale a Internet, y cifrarlo exigiría gestionar certificados internos sin un beneficio real.
 
@@ -580,7 +654,7 @@ El tráfico entre VMs, dentro de la red privada del laboratorio, no usa TLS: nun
 
 El tráfico pasa por dos filtros antes de llegar a un servicio:
 
-1. **El firewall perimetral de la universidad**, que el equipo no controla (K9). Desde la VPN solo deja pasar algunos puertos: se comprobó que pasan el 443 de VM1, el 8080 de VM6 y el 22 de todas las VMs, y que no pasan el 3000 y el 9090 de VM7 ni el 443 de VM2. Por eso VM1 es la única entrada a producción, QA y Grafana (SAD, ADR-015).
+1. **El firewall perimetral de la universidad**, que el equipo no controla (R9). Desde la VPN solo deja pasar algunos puertos: se comprobó que pasan el 443 de VM1, el 8080 de VM6 y el 22 de todas las VMs, y que no pasan el 3000 y el 9090 de VM7 ni el 443 de VM2. Por eso VM1 es la única entrada a producción, QA y Grafana (SAD, ADR-015).
 2. **El firewall de cada VM**, configurado por `setup-base.yml` con política de denegar todo lo entrante y abrir solo los pares origen-puerto de la sección 10.3:
    - **Ubuntu** (VM1, VM3, VM4, VM6, VM7): `ufw`. Abre el 22 antes de activarse, para no perder la conexión.
    - **Rocky Linux** (VM2, VM5): `firewalld`, con una zona propia `quickpatch` en modo DROP. La interfaz se asigna a esa zona desde NetworkManager, porque si no vuelve a la zona `public` al reiniciar.
@@ -630,8 +704,8 @@ QA no puede llegar a producción: PostgreSQL, Redis, Kafka y Garage de producci�
 
 El acceso es **con contraseña**, con la cuenta que entrega el laboratorio (`estudiante`). Se decidió no exigir llaves públicas (3 de octubre de 2026) porque:
 
-- las VMs solo son alcanzables desde la red de la universidad y su VPN (K9);
-- solo el responsable de DevOps administra las VMs (K11): el resto del equipo no entra por SSH, sino que despliega por el pipeline de CI/CD;
+- las VMs solo son alcanzables desde la red de la universidad y su VPN (R9);
+- solo el responsable de DevOps administra las VMs (R11): el resto del equipo no entra por SSH, sino que despliega por el pipeline de CI/CD;
 - desactivar la contraseña en todas las cuentas podría dejar sin acceso al laboratorio, que administra sus propias cuentas en las VMs.
 
 Lo que sí está configurado:
@@ -648,7 +722,7 @@ Lo que sí está configurado:
 
 ### 11.1 Alcance: sin dominio público
 
-Las 7 VMs del proyecto viven en el rango privado `10.43.x.x` del laboratorio de virtualización de la Javeriana (sección 3), no enrutable desde Internet. No hay NAT, port-forwarding ni un gateway público administrado por el equipo que exponga VM1 hacia afuera de la red del laboratorio — eso está fuera del control del equipo y del alcance de este proyecto académico. Esta es la restricción K9 del SAD (red privada del laboratorio, sin dominio público). En consecuencia, **el proyecto no usa un dominio público real ni un proveedor de DNS público** (Cloudflare, Route 53, GoDaddy, etc.).
+Las 7 VMs del proyecto viven en el rango privado `10.43.x.x` del laboratorio de virtualización de la Javeriana (sección 3), no enrutable desde Internet. No hay NAT, port-forwarding ni un gateway público administrado por el equipo que exponga VM1 hacia afuera de la red del laboratorio — eso está fuera del control del equipo y del alcance de este proyecto académico. Esta es la restricción R9 del SAD (red privada del laboratorio, sin dominio público). En consecuencia, **el proyecto no usa un dominio público real ni un proveedor de DNS público** (Cloudflare, Route 53, GoDaddy, etc.).
 
 ### 11.2 Nombres lógicos y resolución interna
 
@@ -673,7 +747,7 @@ Sin dominio público no es posible obtener un certificado de una CA reconocida (
 
 ### 11.4 Fuera de alcance: dominio real en un despliegue de producción
 
-Si el proyecto pasara de entorno académico a un despliegue real de producción, se necesitaría: (1) un dominio público comprado a un registrador, (2) un proveedor de DNS público, y (3) salir de la red privada del laboratorio hacia infraestructura con IP pública o un túnel administrado — momento en el cual sí sería viable tramitar un certificado real de Let's Encrypt. Esta migración está fuera del alcance de este documento y de las restricciones académicas K3/K5.
+Si el proyecto pasara de entorno académico a un despliegue real de producción, se necesitaría: (1) un dominio público comprado a un registrador, (2) un proveedor de DNS público, y (3) salir de la red privada del laboratorio hacia infraestructura con IP pública o un túnel administrado — momento en el cual sí sería viable tramitar un certificado real de Let's Encrypt. Esta migración está fuera del alcance de este documento y de las restricciones académicas R3/R5.
 
 ---
 
@@ -694,7 +768,7 @@ Si el proyecto pasara de entorno académico a un despliegue real de producción,
 | Registro de imágenes (GitHub Container Registry) | $0 | Incluido con el repositorio de GitHub |
 | Dominio y DNS público | $0 | No aplica — el proyecto no usa dominio público (sección 11) |
 | Certificado TLS | $0 | Autofirmado (sección 10.1) |
-| **Total real** | **$0** | Todo el costo de infraestructura y herramientas queda cubierto por recursos gratuitos o asignados por la universidad, consistente con K5 |
+| **Total real** | **$0** | Todo el costo de infraestructura y herramientas queda cubierto por recursos gratuitos o asignados por la universidad, consistente con R5 |
 
 ### 12.3 Costo estimado si se contratara en la nube (referencia, no aplica al proyecto)
 
@@ -711,7 +785,7 @@ Solo para dimensionar qué costaría este mismo diseño fuera del contexto acad�
 
 ### 12.4 Resumen
 
-El proyecto, dadas sus restricciones académicas (K3, K5), opera con **costo real de $0**: las 7 VMs las asigna la universidad y todo el software usado es open source o de plan gratuito. La comparación de la sección 12.3 es puramente ilustrativa, para dimensionar la diferencia frente a una operación comercial real, y no representa una decisión de presupuesto tomada por el equipo.
+El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo real de $0**: las 7 VMs las asigna la universidad y todo el software usado es open source o de plan gratuito. La comparación de la sección 12.3 es puramente ilustrativa, para dimensionar la diferencia frente a una operación comercial real, y no representa una decisión de presupuesto tomada por el equipo.
 
 ---
 
@@ -721,23 +795,23 @@ El proyecto, dadas sus restricciones académicas (K3, K5), opera con **costo rea
 
 | Limitación | Origen | Detalle en |
 |---|---|---|
-| VM3 es punto único de falla: los 8 microservicios caen juntos si cae la VM | K10 | SAD, sección 5.2; sección 2.3 |
-| Sin alta disponibilidad entre máquinas: cada componente corre en una sola VM | K7, K10 | Sección 2.3 |
-| VM1 es la única entrada desde la VPN a producción, QA y Grafana | K9 | SAD, ADR-015; sección 2.3 |
+| VM3 es punto único de falla: los 8 microservicios caen juntos si cae la VM | R10 | SAD, sección 5.2; sección 2.3 |
+| Sin alta disponibilidad entre máquinas: cada componente corre en una sola VM | R7, R10 | Sección 2.3 |
+| VM1 es la única entrada desde la VPN a producción, QA y Grafana | R9 | SAD, ADR-015; sección 2.3 |
 | Las 7 VMs tienen la misma especificación sin importar el rol, y el software del laboratorio ya usa unos 2,3 GiB de RAM en cada una | Laboratorio de la Javeriana | Sección 3.1 |
-| La prueba de carga en QA es una aproximación: allí todo corre en una sola VM | K10 | SAD, ADR-015; sección 6.2 |
+| La prueba de carga en QA es una aproximación: allí todo corre en una sola VM | R10 | SAD, ADR-015; sección 6.2 |
 | El umbral de 6,5 GiB de RAM en VM3 no alcanza con los límites actuales; se decide al medir los servicios | Medición del 3 de octubre | Sección 5.6 |
 | `kubectl rollout undo` solo revierte la imagen del contenedor, no las migraciones de esquema: exige expand-contract | Diseño de Kubernetes | Secciones 5.8 y 6.2 |
-| Evidencias en Garage sin copia en otra VM | K10 | Sección 9.5 |
-| El vault y su contraseña existen en un solo computador | K11 | Sección 9.4 |
-| Recuperación manual entre 12 y 24 horas ante una falla de infraestructura | K7 | SAD, escenario AC5-E1; sección 9.4 |
+| Evidencias en Garage sin copia en otra VM | R10 | Sección 9.5 |
+| El vault y su contraseña existen en un solo computador | R11 | Sección 9.4 |
+| Recuperación manual entre 12 y 24 horas ante una falla de infraestructura | R7 | SAD, escenario AC5-E1; sección 9.4 |
 | QoS "Guaranteed" del Matching protege contra desalojo, pero le quita capacidad de ráfaga | Trade-off de diseño | Sección 5.6 |
 | Parámetros de `readinessProbe` y `livenessProbe` sin definir | Falta de datos medidos | Sección 5.8 |
-| Certificados TLS autofirmados, sin CA reconocida | K9 | Secciones 10.1 y 11 |
+| Certificados TLS autofirmados, sin CA reconocida | R9 | Secciones 10.1 y 11 |
 | SSH con contraseña, la misma en las 7 VMs | Decisión del equipo | Sección 10.4 |
 | Kafka UI sin login, alcanzable desde la VPN | Pendiente | Sección 10.3 |
 
-Ninguna de estas limitaciones se considera un defecto a corregir dentro del alcance de este documento — son restricciones aceptadas conscientemente, consistentes con los killers K3, K5, K7, K9, K10 y K11 del SAD (sección 1.2).
+Ninguna de estas limitaciones se considera un defecto a corregir dentro del alcance de este documento — son restricciones aceptadas conscientemente, consistentes con las restricciones R3, R5, R7, R9, R10 y R11 del SAD (sección 1.2.2).
 
 ---
 
@@ -851,4 +925,6 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 1.2 | (sin fecha registrada) | Corrige tres hallazgos bloqueantes de una revisión crítica independiente: (1) el `--service-cidr` por defecto de k3s coincidía con la red del laboratorio (`10.43.0.0/16`) — se fija explícitamente fuera de ese rango en `deploy-k3s.yml` (sección 5.2); (2) se documenta que `kubectl rollout undo` no revierte migraciones de esquema y se exige el patrón expand-contract para toda migración (sección 5.8), y se aclara que la prueba de carga corre contra un tenant de prueba dedicado, no contra datos reales (sección 6.2); (3) se completa la tabla de puertos con las rutas que otras secciones ya requerían pero no estaban habilitadas (scrape de `node_exporter`, envío de logs a Loki, API server de k3s para el despliegue, subida del backup a MinIO — sección 10.2). |
 | 1.3 | 22 sep 2026 | Se alinea con el SAD v2.10: las citas que usaban K5 con el sentido de "sin VMs adicionales" pasan a K10 (hardware fijo de 7 VMs), y el TLS autofirmado y la ausencia de dominio público citan K9 (red privada del laboratorio). Se actualizan los códigos de escenario a la numeración ISO/IEC 25010 del SAD (AC1-E4 → AC2-E4, AC4-E3 → AC8-E2, AC5-E1 → AC7-E1, AC6-E1/E2 → AC6-E5/E6, AC3-E1/E3 → AC5-E1/E3). La ventana de recuperación de 12–24 h cita el escenario AC5-E1 en vez de la sección 5.2 del SAD. Se corrigen referencias internas desactualizadas por la reorganización de la versión 1.1 (presupuesto de recursos en la sección 5.6, benchmarking en la sección 13) y se elimina la referencia a "Vista Física, SDD": la vista física conceptual vive en el SAD y el despliegue operativo en la sección 2 de este documento. |
 | 2.0 | 3 oct 2026 | Pasa de plan a infraestructura implementada. Las secciones 3 a 10 describen lo que está aplicado en las 7 VMs: VM2 como ambiente de QA y VM1 como entrada única por nombre (SAD, ADR-015), Garage en lugar de MinIO (SAD, ADR-016), VM2 y VM5 con Rocky Linux, y Ansible implementado. Nuevas secciones: 2.3 (balanceo de carga y alta disponibilidad) y Anexo A (manual de despliegue). Se reescriben la 2.1 (topología), la 3 (consumo medido de cada VM), la 6 (CI/CD con workflows reutilizables en el multirepo, ADR-013, y pruebas según el Documento de Pruebas), la 9 (respaldo implementado y recuperación ante desastres) y la 10 (dos capas de firewall, reglas por VM y SSH con contraseña). La 5.6 deja registrado que el umbral de 6,5 GiB no alcanza con los límites actuales. |
-| 2.1 | 6 oct 2026 | Observabilidad aplicada: etiquetas `entorno`, `namespace` y `service` en los logs (sección 7.1), sincronización de hora con `chrony` en las 7 VMs, y nueva sección 7.3 con el dashboard "QUICKPATCH — Logs y errores" y las alertas de RAM, disco y VM caída por correo. Deja pendientes el dashboard de métricas y los logs en JSON de los servicios (SCRUM-323). |
+| 2.1 | 6 oct 2026 | CI por repositorio (ADR-021, SCRUM-337): la sección 6.1 describe el CI propio de cada uno de los 12 repositorios (incluidos `quickpatch-api-gateway` y `quickpatch-kafka`); el despliegue sigue con los workflows de `quickpatch-infrastructure` hasta SCRUM-338. |
+| 2.2 | 6 oct 2026 | Redistribución de VMs (ADR-022, SCRUM-342) y recursos por servicio (SCRUM-339). Nueva sección 3.3 con la distribución objetivo (VM1 herramientas; producción en VM3, VM4 y VM6; QA en VM2, VM5 y VM7), las conexiones permitidas y el plan de migración. Nueva sección 3.4: base de datos, usuario de Redis y llave de Garage por servicio. Las secciones operativas siguen describiendo la distribución actual hasta que DevOps migre cada VM. |
+| 2.3 | 7 oct 2026 | Observabilidad aplicada en VM1 (ADR-022, paso 1 de la migración): la sección 7 pasa de VM7 a VM1, y se agregan etiquetas `entorno`, `namespace` y `service` en los logs (sección 7.1), sincronización de hora con `chrony` en las 7 VMs, y nueva sección 7.3 con el dashboard "QUICKPATCH — Logs y errores" y las alertas de RAM, disco y VM caída por correo. Deja pendientes el dashboard de métricas y los logs en JSON de los servicios (SCRUM-323). |

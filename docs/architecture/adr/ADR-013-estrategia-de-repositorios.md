@@ -1,6 +1,6 @@
 # ADR-013 — Estrategia de repositorios: un repositorio por componente, unidos con submódulos
 
-- **Estado:** Aceptado
+- **Estado:** Aceptado; modificado por ADR-021 (12 repositorios: entran `quickpatch-api-gateway` y `quickpatch-kafka`, salen `quickpatch-contracts` y `quickpatch-infrastructure`)
 - **Fecha:** 2026-10-01
 - **Decisión:** Multirepo por componente, con un repositorio principal que referencia a los demás como submódulos de Git
 - **Implementación:** PR #9 de `quickpatch` (organización `ARQUI-202630`)
@@ -71,7 +71,7 @@ Se descartó porque cada servicio necesita los contratos para construirse en su 
 
 ### Publicar los contratos como paquetes (NuGet y Maven)
 
-Se descartó por ahora porque exige mantener dos registros de paquetes, y una sola persona administra la infraestructura (K11).
+Se descartó por ahora porque exige mantener dos registros de paquetes, y una sola persona administra la infraestructura (R11).
 
 ### `git subtree` en lugar de submódulos
 
@@ -82,7 +82,7 @@ Se descartó porque copia el código de cada componente dentro del principal y v
 - Crear los teams de la organización y asignar el acceso por repositorio.
 - Mover a cada servicio las pruebas de integración y de contrato que hoy están en `tests/integration/` y `tests/contract/` del repositorio principal.
 - Ajustar el Documento de Infraestructura (sección 6, un pipeline por repositorio) y el documento de Políticas (GitFlow por repositorio y responsable de actualizar los punteros).
-- Regenerar la Figura 10 del SDD, que todavía dibuja `contracts/` dentro de `docs/`.
+- Regenerar la Figura 12 del SDD, que todavía dibuja `contracts/` dentro de `docs/`.
 
 ## Trazabilidad
 

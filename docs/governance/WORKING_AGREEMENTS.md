@@ -43,13 +43,13 @@ El proyecto opera sobre **7 máquinas virtuales**, administradas por el rol de D
 
 |VM|Rol|Para qué sirve|
 |---|---|---|
-|VM1|Gateway|Recibe el tráfico entrante y lo dirige hacia el sitio web o la API|
-|VM2|Frontend Web|Sirve el sitio público y el panel administrativo (Angular)|
-|VM3|Backend|Ejecuta la lógica de negocio de la plataforma (ASP.NET Core)|
-|VM4|Base de datos|Almacena la información del sistema, incluida la geolocalización (PostgreSQL + PostGIS)|
-|VM5|Cache|Acelera respuestas frecuentes y gestiona colas de trabajos programados (Redis)|
-|VM6|Mensajería|Procesa eventos en segundo plano: matching, ranking, notificaciones, pagos (Kafka)|
-|VM7|Storage y observabilidad|Guarda evidencias fotográficas y centraliza logs/métricas de las demás VMs|
+|VM1|Herramientas|Única entrada desde la VPN, CI y pruebas de carga, métricas y logs de los dos ambientes|
+|VM3|Producción — aplicación|Ejecuta los 8 microservicios, el API Gateway y el panel administrativo (k3s)|
+|VM4|Producción — datos|Almacena la información del sistema, incluida la geolocalización (PostgreSQL + PostGIS), y la caché (Redis)|
+|VM6|Producción — mensajería y almacenamiento|Procesa eventos en segundo plano (Kafka) y guarda las evidencias fotográficas y los respaldos (Garage)|
+|VM2, VM5, VM7|QA|Copia de producción con la misma forma, para probar cada versión antes de desplegarla|
+
+La distribución en 3 VMs de producción, 3 de QA y 1 de herramientas se aprobó el 6 de octubre de 2026 (SAD, ADR-022) y su migración está en curso.
 
 ---
 
