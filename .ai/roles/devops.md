@@ -7,13 +7,12 @@
 
 ## Stack a desplegar
 
-- VM2: Angular Admin Web.
-- VM3: siete servicios ASP.NET Core + Matching Java/Spring Boot en k3s.
-- VM4: PostgreSQL/PostGIS.
-- VM5: Redis.
-- VM6: Kafka.
-- VM7: Garage + observabilidad.
-- VM1: Nginx/Gateway y componentes operativos definidos por infraestructura.
+Distribución aprobada en ADR-022 (3 + 3 + 1), migración en curso (SCRUM-334):
+
+- VM1, herramientas: proxy de entrada :443, runner de GitHub, k6, Prometheus, Loki y Grafana.
+- Producción: VM3 k3s (8 servicios, API Gateway y panel Angular), VM4 PostgreSQL/PostGIS y Redis, VM6 Kafka y Garage.
+- QA, misma forma: VM2 k3s, VM5 datos, VM7 Kafka y Garage.
+- Recursos por servicio (base, usuario de Redis, llave de Garage): `docs/infrastructure/INFRASTRUCTURE.md`, sección 3.4.
 
 ## Toolchains
 

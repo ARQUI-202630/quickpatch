@@ -9,7 +9,7 @@
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
 | **Rol Responsable** | Líder de Aseguramiento de Calidad (QA Lead) |
 | **Estándares Aplicados** | ISO/IEC/IEEE 29119 (Software Testing), ISO/IEC 25010:2023 (Calidad de Software), PCI-DSS v4.0 (K2) |
-| **Alcance** | Estrategia de pruebas automatizadas sobre 13 repositorios y validación en 7 Máquinas Virtuales |
+| **Alcance** | Estrategia de pruebas automatizadas sobre 12 repositorios de componentes más el repositorio principal, y validación en 7 Máquinas Virtuales |
 
 ---
 
@@ -45,9 +45,9 @@ El presente Documento de Pruebas (TD V1) formaliza la estrategia integral de ase
 
 ---
 
-## 2. Estrategia de Pruebas y Topología de Repositorios (ADR-013)
+## 2. Estrategia de Pruebas y Topología de Repositorios (ADR-013, ADR-021)
 
-De acuerdo con la decisión arquitectónica **ADR-013**, el proyecto se distribuye en 13 repositorios independientes vinculados mediante Git Submodules. La estrategia de pruebas se desacopla para maximizar la velocidad y la independencia de cada equipo:
+De acuerdo con las decisiones arquitectónicas **ADR-013** y **ADR-021**, el proyecto se distribuye en 12 repositorios de componentes más el repositorio principal, vinculados mediante Git Submodules. Cada repositorio tiene su propio pipeline de CI. La estrategia de pruebas se desacopla para maximizar la velocidad y la independencia de cada equipo:
 
 ```
 # Repositorios individuales de microservicios (quickpatch-identity, matching, payments, etc.)
@@ -56,10 +56,14 @@ quickpatch-<servicio>/
     ├── unit/                   Pruebas unitarias de lógica y reglas de dominio (xUnit / JUnit 5)
     └── integration/            Pruebas de integración con bases de datos y Kafka efímeros (Testcontainers)
 
-# Repositorio central de contratos (quickpatch-contracts)
-quickpatch-contracts/
-├── openapi/                    Contratos REST (validación de sintaxis con Spectral CLI)
-└── events/                     Esquemas JSON Schema de eventos Kafka (validación con AJV)
+# Contratos REST en el repositorio del API Gateway (quickpatch-api-gateway)
+quickpatch-api-gateway/
+└── openapi/                    Contratos REST (Spectral CLI y oasdiff contra la rama base)
+
+# Contratos de eventos en el repositorio de Kafka (quickpatch-kafka)
+quickpatch-kafka/
+├── events/                     Esquemas JSON Schema de eventos (AJV y compatibilidad contra la rama base)
+└── topics/                     Un topic por eventType, alineado con events/
 
 # Repositorio principal (quickpatch) — Territorio de QA
 quickpatch/
@@ -73,10 +77,11 @@ quickpatch/
 | Repositorio | Stack | Nivel de Prueba que Aloja | Herramienta |
 |---|---|---|---|
 | `quickpatch` (Principal) | Orquestación / Markdown | Pruebas de Sistema Completo: E2E, Carga y Seguridad DAST | Playwright, k6, OWASP ZAP, Newman |
-| `quickpatch-contracts` | OpenAPI / JSON Schema | Linting de contratos REST y esquemas de eventos | Spectral CLI, AJV Validator |
+| `quickpatch-api-gateway` | OpenAPI / Nginx | Linting y compatibilidad de contratos REST; sintaxis de la configuración del gateway | Spectral CLI, oasdiff, `nginx -t` |
+| `quickpatch-kafka` | JSON Schema / YAML | Validación y compatibilidad de esquemas de eventos; alineación de topics | AJV Validator, scripts del repositorio |
 | `quickpatch-web` | Angular 22.1.x / TypeScript 6.0.x | Pruebas unitarias de componentes y servicios web | Vitest |
 | `quickpatch-mobile` | Flutter 3.47.5 / Dart 3.13.4 | Pruebas unitarias de lógica y widgets móviles | Flutter Test, Patrol |
-| `quickpatch-infrastructure`| Ansible / k3s | Verificación de sintaxis de playbooks y manifiestos k3s | Ansible Lint, Kubeconform |
+| `quickpatch/infrastructure/` (antes `quickpatch-infrastructure`, SCRUM-338) | Ansible / k3s | Verificación de sintaxis de playbooks y manifiestos k3s | Ansible Lint, Kubeconform |
 | `quickpatch-identity` | ASP.NET Core 10 / C# | Unitarias y de integración RLS multi-tenant | xUnit, Moq, Testcontainers (Npgsql) |
 | `quickpatch-actors` | ASP.NET Core 10 / C# | Unitarias de perfiles de técnicos y proveedores | xUnit, Testcontainers |
 | `quickpatch-catalog` | ASP.NET Core 10 / C# | Unitarias de taxonomía y categorías de servicio | xUnit, Testcontainers |
@@ -465,7 +470,7 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **RNK-006** | AC5-E3 | Integración | Tolerancia a caída y recuperación de Ranking Service. | Ranking consume eventos encolados en Kafka tras reinicio sin pérdida de datos. |
 | **RNK-007** | RF-12 | Unitaria | Asignación de puntaje inicial tras primer servicio calificado. | Primera nota de 5 estrellas establece promedio en `5.00` y contador en 1. |
 | **RNK-008** | RF-04 | Integración | Aislamiento de reputación por tenant. | Evaluaciones de Tenant A no afectan el promedio de técnicos en Tenant B. |
-| **RNK-009** | EDA | Contrato | Validación de esquema JSON de evento de calificación. | Payload cumple 100% el esquema versionado en `quickpatch-contracts`. |
+| **RNK-009** | EDA | Contrato | Validación de esquema JSON de evento de calificación. | Payload cumple 100% el esquema versionado en `quickpatch-kafka`. |
 | **RNK-010** | AC2-E2 | Rendimiento | Latencia de actualización de reputación tras calificación. | Promedio persistido en base de datos en menos de 500 ms tras consumo del evento. |
 | **RNK-011** | AC9-E2 | Unitaria | Cero suspensión automática desatendida. | Técnico señalado permanece activo hasta decisión manual del Administrador. |
 | **RNK-012** | RNF-04 | Observabilidad| Emisión de log estructurado ante detección de bajo promedio. | Log de advertencia con nivel `WARNING` emitido con ID de técnico y promedio para Loki. |
@@ -494,8 +499,8 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 
 ---
 
-### 7.10 Módulo: Gobernanza de Contratos (`quickpatch-contracts`)
-* **Requisitos:** ADR-012, ADR-013 | SDD Sección 6 | SAD Sección 4.3
+### 7.10 Módulo: Gobernanza de Contratos (`quickpatch-api-gateway` y `quickpatch-kafka`)
+* **Requisitos:** ADR-012, ADR-013, ADR-021 | SDD Sección 6 | SAD Sección 4.3
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |
 |---|---|---|---|---|
@@ -507,8 +512,8 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **CTR-006** | SemVer | Contrato | Versionamiento semántico en tags de release. | Formato `vMAJOR.MINOR.PATCH` verificado; tags arbitrarios bloqueados. |
 | **CTR-007** | ADR-013 | Compatibilidad| Detección de Breaking Changes en especificaciones REST. | Modificaciones no rompen compatibilidad hacia atrás sin incremento `MAJOR`. |
 | **CTR-008** | ADR-013 | Compatibilidad| Detección de Breaking Changes en esquemas de eventos Kafka. | Nuevos campos en esquemas son declarados opcionales para consumidores antiguos. |
-| **CTR-009** | ADR-013 | CI/CD | Sincronización de submódulos en microservicios. | Submódulos `contracts/` de los 8 servicios apuntan a tags válidos y consistentes. |
-| **CTR-010** | ADR-012 | Gobernanza | Cero duplicación de contratos entre repositorios. | `quickpatch-contracts` es la única fuente de verdad contractual del sistema. |
+| **CTR-009** | ADR-013 | CI/CD | Sincronización de submódulos en microservicios. | Submódulos `contracts/api-gateway/` y `contracts/kafka/` de los 8 servicios (y `contracts/api-gateway/` de web y mobile) apuntan a tags válidos; lo comprueba `tools/validate-composition.sh`. |
+| **CTR-010** | ADR-012 | Gobernanza | Cero duplicación de contratos entre repositorios. | `quickpatch-api-gateway` (REST) y `quickpatch-kafka` (eventos) son las únicas fuentes de verdad contractual del sistema. |
 
 ---
 
@@ -698,10 +703,10 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
 | **Escenarios de Calidad del SAD con Cobertura** | 37 / 37 automatizables | **37 ACs mapeados (100% arquitectura/software del SAD v2.13)** | 100% |
 | **Compuertas de Calidad Automatizadas Definidas** | 4 compuertas | **4 compuertas diseñadas (Local, CI, QA en VM2, Producción)** | 100% |
 | **Validación de Restricciones Críticas (Killers)** | K2, K5, K9, K10 | **Diseñados y especificados en la arquitectura de pruebas** | 100% |
-| **Mecanismo de Bloqueo Local Pre-Push** | 13 repositorios | **Script unificado de Git Hooks diseñado para distribución** | 100% |
+| **Mecanismo de Bloqueo Local Pre-Push** | 12 repositorios + principal | **Script unificado de Git Hooks diseñado para distribución** | 100% |
 
 ### 10.2 Estado de los Componentes y Servicios Evaluados
-1. **Contratos e Interoperabilidad (`quickpatch-contracts`):** 
+1. **Contratos e Interoperabilidad (`quickpatch-api-gateway` y `quickpatch-kafka`):** 
    - Contratos OpenAPI 3.0 diseñados y especificados formalmente para los 8 servicios.
    - 9 esquemas de eventos Kafka definidos con validación obligatoria de `eventId`, `tenantId` y `occurredAt`.
 2. **Seguridad y Aislamiento:**

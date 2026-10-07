@@ -8,6 +8,7 @@
 - DD: `docs/design/DD.md`
 - Infraestructura: `docs/infrastructure/INFRASTRUCTURE.md`
 - ADR tecnológica: `docs/architecture/adr/ADR-012-stack-tecnologico-polyglot.md`
+- Índice de ADR: `docs/architecture/adr/README.md` (leer solo el ADR relacionado con la tarea)
 
 ## Canales
 

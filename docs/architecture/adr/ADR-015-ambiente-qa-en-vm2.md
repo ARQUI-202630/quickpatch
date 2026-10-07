@@ -1,6 +1,6 @@
 # ADR-015 — Ambiente de QA en VM2 y acceso a través del gateway de VM1
 
-- **Estado:** Aceptado (3 de octubre de 2026)
+- **Estado:** Aceptado (3 de octubre de 2026); modificado por ADR-022: QA pasa de una sola VM (VM2) a tres (VM2, VM5 y VM7) y VM1 queda como VM de herramientas. Siguen vigentes el ambiente de QA permanente y VM1 como única entrada desde la VPN
 - **Fecha:** 2026-10-03
 - **Decisión:** VM2 deja de servir el panel web y aloja un ambiente de QA permanente. El panel pasa al Nginx de VM1, que además es la única entrada desde la VPN a producción, a QA y a Grafana, y elige el destino según el nombre pedido.
 - **Implementación:** rama `feature/devops/ansible-base` de `quickpatch-infrastructure`
@@ -9,7 +9,7 @@
 
 ### Ambiente de QA
 
-Hasta ahora QA no ocupaba ninguna VM (Documento de Infraestructura, sección 4.1). Las pruebas funcionales, de aceptación y de seguridad corrían en un runner de GitHub Actions que levantaba `docker-compose.staging.yml` y lo destruía al terminar. La prueba de carga corría contra VM3 de producción, después del despliegue y con reversión si fallaba (SRS, RNF-07 y RNF-08). La razón era K10: el laboratorio asigna 7 VMs fijas y no da una octava.
+Hasta ahora QA no ocupaba ninguna VM (Documento de Infraestructura, sección 4.1). Las pruebas funcionales, de aceptación y de seguridad corrían en un runner de GitHub Actions que levantaba `docker-compose.staging.yml` y lo destruía al terminar. La prueba de carga corría contra VM3 de producción, después del despliegue y con reversión si fallaba (SRS, RNF-07 y RNF-08). La razón era R10: el laboratorio asigna 7 VMs fijas y no da una octava.
 
 Ese modelo funciona, pero deja tres problemas:
 
@@ -21,7 +21,7 @@ Mientras tanto, VM2 solo servía el panel Angular, que son archivos estáticos.
 
 ### Acceso desde la VPN
 
-Al configurar las VMs (3 de octubre de 2026) se encontró que el firewall perimetral de la universidad, que el equipo no controla (K9), solo deja pasar algunos puertos desde la VPN. Pasan el 443 de VM1, el 8080 de VM6 (Kafka UI) y el 22 de todas las VMs. No pasan el 3000 (Grafana) ni el 9090 (Prometheus) de VM7, ni el 443 de VM2. Desde dentro del laboratorio, por ejemplo desde VM1, los tres responden.
+Al configurar las VMs (3 de octubre de 2026) se encontró que el firewall perimetral de la universidad, que el equipo no controla (R9), solo deja pasar algunos puertos desde la VPN. Pasan el 443 de VM1, el 8080 de VM6 (Kafka UI) y el 22 de todas las VMs. No pasan el 3000 (Grafana) ni el 9090 (Prometheus) de VM7, ni el 443 de VM2. Desde dentro del laboratorio, por ejemplo desde VM1, los tres responden.
 
 Sin una solución, el equipo no puede ver Grafana ni QA desde la VPN, que es como trabaja.
 
@@ -55,7 +55,7 @@ El Nginx de VM1 escucha en el 443, el único puerto que el firewall perimetral d
 | `qa.quickpatch.internal` | QA en VM2 | Solo `10.0.0.0/8` (red de la universidad y VPN) |
 | `grafana.quickpatch.internal` | Grafana en VM7 | Solo `10.0.0.0/8`, con el login de Grafana |
 
-- No hay DNS (K9). Cada persona agrega una línea a su archivo `hosts` con los tres nombres apuntando a VM1, como ya preveía la sección 11.2 del Documento de Infraestructura para `quickpatch.internal`.
+- No hay DNS (R9). Cada persona agrega una línea a su archivo `hosts` con los tres nombres apuntando a VM1, como ya preveía la sección 11.2 del Documento de Infraestructura para `quickpatch.internal`.
 - El certificado autofirmado de VM1 incluye los tres nombres.
 - Prometheus no se publica. Sus datos se consultan desde Grafana, que lo alcanza dentro del laboratorio, y Prometheus no tiene login.
 
@@ -94,7 +94,7 @@ Con nombres, cada destino vive en su propia raíz y QA usa exactamente el mismo 
 
 ### Costos
 
-- **Una VM más que mantener para una sola persona (K11).** Se mitiga con un playbook propio (`deploy-qa.yml`) y el mismo inventario de Ansible.
+- **Una VM más que mantener para una sola persona (R11).** Se mitiga con un playbook propio (`deploy-qa.yml`) y el mismo inventario de Ansible.
 - **La prueba de carga en QA es una aproximación.** En QA todo corre en una VM; en producción, en siete. Un resultado aceptable en QA no garantiza el mismo resultado en producción, pero un resultado malo en QA sí indica un problema. Las métricas de producción en Grafana siguen siendo la validación final.
 - **Recursos de VM2.** Con QA levantado y sin microservicios todavía, VM2 usa 3,3 GB de 11 GiB (medido el 3 de octubre de 2026). El consumo con los 8 servicios está por medirse.
 - **Una línea en el archivo `hosts` por persona** para entrar a QA y a Grafana.
@@ -126,7 +126,7 @@ Se descartó porque QA competiría por recursos con producción en la VM más ca
 
 ### Pedir una octava VM
 
-Se descartó porque el laboratorio no la asigna (K10).
+Se descartó porque el laboratorio no la asigna (R10).
 
 ### Publicar QA y Grafana por ruta en la IP de VM1
 
@@ -138,7 +138,7 @@ Se descartó por depender de un tercero, cuando VM1 resuelve el acceso con los p
 
 ## Pendientes
 
-- Decidir si QA usa el sandbox de la pasarela de pagos o un simulador. Se recomienda el simulador, porque QA tampoco puede recibir webhooks desde fuera del laboratorio (K9).
+- Decidir si QA usa el sandbox de la pasarela de pagos o un simulador. Se recomienda el simulador, porque QA tampoco puede recibir webhooks desde fuera del laboratorio (R9).
 - ~~Definir el reemplazo de MinIO~~: resuelto en el ADR-016 (Garage, en producción y en QA).
 - Medir el consumo de VM2 con los 8 microservicios desplegados.
 - Agregar login al panel de QA o restringir `team_networks` a los rangos de la VPN del equipo, si el laboratorio los asigna fijos.

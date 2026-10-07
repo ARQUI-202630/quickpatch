@@ -5,7 +5,7 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 3.2 (MVP) |
+| **Versión del documento** | 3.3 (MVP) |
 | **Estándar de referencia** | IEEE Std 830-1998 |
 
 ---
@@ -311,8 +311,8 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 - **RNF-06** Los cambios de estado de una solicitud deben reflejarse en la interfaz del Cliente en menos de 1 minuto.
 
 **Disponibilidad y Confiabilidad**
-- **RNF-07** El sistema debe contar con un ambiente de *staging* separado de producción para las pruebas funcionales, de aceptación y de seguridad (E2E, UAT, OWASP ZAP). Las pruebas de carga y rendimiento (k6) se ejecutan sobre la infraestructura de producción, contra un tenant de prueba dedicado y en una ventana de mantenimiento programada sin usuarios activos, porque el proyecto no cuenta con una VM adicional para staging de carga (K10 del SAD, hardware fijo de 7 VMs).
-- **RNF-08** Un fallo en las pruebas automatizadas funcionales, de aceptación o de seguridad del flujo crítico, ejecutadas antes del despliegue (ver RNF-07), debe bloquear el despliegue a producción. La prueba de carga (k6) se ejecuta inmediatamente después del despliegue, dentro de la misma ventana de mantenimiento: si no cumple el umbral definido, el despliegue se revierte (`kubectl rollout undo`) antes de habilitar tráfico real, porque no existe una segunda instancia de producción donde probar la carga antes de desplegar (K10).
+- **RNF-07** El sistema debe contar con un ambiente de QA permanente separado de producción (VM2, ADR-015 del SAD) para las pruebas funcionales, de aceptación, de seguridad (E2E, UAT, OWASP ZAP) y de carga y rendimiento (k6). Las pruebas de carga se ejecutan contra un tenant de prueba dedicado en ese ambiente, nunca contra la infraestructura de producción.
+- **RNF-08** Un fallo en las pruebas automatizadas funcionales, de aceptación, de seguridad o de carga del flujo crítico, ejecutadas en el ambiente de QA antes del despliegue (ver RNF-07), debe bloquear el despliegue a producción. Si el despliegue en producción falla su verificación de salud, se revierte (`kubectl rollout undo`) antes de habilitar tráfico real.
 
 **Escalabilidad y Arquitectura Multi-tenant**
 - **RNF-09** La arquitectura debe permitir incorporar nuevos tenants (nuevas empresas o zonas geográficas) sin afectar el aislamiento de datos de los tenants existentes.
@@ -381,7 +381,8 @@ El presente MVP contempla un total de **32 requisitos funcionales**, agrupados e
 | 2.0 | (edición posterior) | Se elimina el alcance del proyecto ya que no corresponde a este documento. Se agrega el Capítulo de Usuarios del Sistema (independiente); se agrega el Capítulo de Módulos del Producto (dominio y transversales); se agrega la Matriz Comparativa frente a plataformas similares; se reincorpora la sección de Referencias. |
 | 3.0 | (edición posterior) | Se añade la Épica 7 (Control de cambios - equipo) con su Feature F7.1 y el requisito no funcional RNF-13. Se actualiza la matriz de trazabilidad y el resumen de requisitos para incluir la nueva épica y sus historias de usuario asociadas. Se renombra el producto de QUICKPATCH a **CODEBRIDGE**. |
 | 3.1 | 14 sep 2026 | Conversión a Markdown. Se corrige la tabla de la Feature F7.1: se agregan SCRUM-126 y SCRUM-127, que estaban omitidos, completando el rango real de 13 tareas (SCRUM-121 a SCRUM-133) verificado directamente en Jira. Se agrega el detalle de estado y responsable de cada tarea de la Épica 7. |
-| 3.2 | *(este documento)* | Se alinea con el SAD v2.11 y el DD v2.2 (dependencia DEP-10 del DD). RF-15 vuelve a exigir al menos una evidencia fotográfica antes de completar el servicio (driver D7 del SAD). Se agregan RF-34 (cotización del técnico), RF-35 (respuesta del cliente a la cotización) y RF-36 (cancelación antes de iniciar el servicio), que el SAD define en el ciclo de vida del servicio (sección 7.4); sus historias en Jira están por crear. RNF-07 y RNF-08 recuperan la redefinición del modelo de staging acordada en las versiones 2.3 y 2.4, alineada con el Documento de Infraestructura. El producto vuelve a llamarse QUICKPATCH en todo el documento: CODEBRIDGE es el nombre del curso, no del producto. Se actualiza el estado de la Épica 7 según Jira (SCRUM-127 corresponde a la presentación del Sprint 2). |
+| 3.2 | 23 sep 2026 | Se alinea con el SAD v2.11 y el DD v2.2 (dependencia DEP-10 del DD). RF-15 vuelve a exigir al menos una evidencia fotográfica antes de completar el servicio (driver D7 del SAD). Se agregan RF-34 (cotización del técnico), RF-35 (respuesta del cliente a la cotización) y RF-36 (cancelación antes de iniciar el servicio), que el SAD define en el ciclo de vida del servicio (sección 7.4); sus historias en Jira están por crear. RNF-07 y RNF-08 recuperan la redefinición del modelo de staging acordada en las versiones 2.3 y 2.4, alineada con el Documento de Infraestructura. El producto vuelve a llamarse QUICKPATCH en todo el documento: CODEBRIDGE es el nombre del curso, no del producto. Se actualiza el estado de la Épica 7 según Jira (SCRUM-127 corresponde a la presentación del Sprint 2). |
+| 3.3 | *(este documento)* | RNF-07 y RNF-08 se alinean con el ADR-015 del SAD (ambiente de QA permanente en VM2): las pruebas de carga y rendimiento (k6) dejan de ejecutarse sobre la infraestructura de producción en una ventana de mantenimiento y pasan al ambiente de QA, junto con las pruebas funcionales, de aceptación y de seguridad; un fallo en cualquiera de ellas bloquea el despliegue a producción. La reversión automática (`kubectl rollout undo`) queda solo para un despliegue en producción que falle su verificación de salud. |
 
 ---
 

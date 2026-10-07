@@ -5,16 +5,16 @@
 ### Admin Web
 - Ruta: `apps/web/**`
 - Stack: Angular + TypeScript
-- Usuarios: administración
+- Usuarios: administrador del tenant y administrador de plataforma
 
 ### Mobile
 - Ruta: `apps/mobile/**`
 - Stack: Flutter + Dart
-- Usuarios: clientes y técnicos
+- Usuarios: clientes, empresas cliente, técnicos y proveedores
 
 ## Fuente de verdad
 
-REST/OpenAPI: `contracts/openapi/`, del repo `quickpatch-contracts`.
+REST/OpenAPI: `contracts/api-gateway/openapi/`, del repo `quickpatch-api-gateway`.
 
 No inventar endpoints, campos, respuestas o estados backend.
 
