@@ -16,7 +16,7 @@ Mapa tecnológico:
 No cambies el stack asignado a un servicio sin una nueva decisión arquitectónica.
 
 Contratos:
-- `contracts/openapi/`
-- `contracts/events/`
+- `contracts/api-gateway/openapi/`
+- `contracts/kafka/events/`
 
-(Submódulo de `quickpatch-contracts` dentro de cada servicio.)
+(Submódulos de `quickpatch-api-gateway` y `quickpatch-kafka` dentro de cada servicio.)

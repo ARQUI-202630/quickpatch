@@ -16,6 +16,7 @@ const collectionFile = path.join(__dirname, 'scrum-65-roles-y-tenants.postman_co
 function runNewman() {
     console.log(`\n======================================================`);
     console.log(` EJECUTANDO PRUEBAS DE SISTEMA (SCRUM-65 & SCRUM-114)`);
+    console.log(` Modo: ${isRemote ? 'Ambiente Real QA (VM2)' : 'Simulación Local Preparatoria'}`);
     console.log(` Target: ${baseUrl}`);
     console.log(` Colección: ${path.basename(collectionFile)}`);
     console.log(`======================================================\n`);

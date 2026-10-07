@@ -146,7 +146,7 @@ const server = http.createServer((req, res) => {
 
 if (require.main === module) {
     server.listen(PORT, () => {
-        console.log(`[QA Mock Gateway] Escuchando en http://localhost:${PORT}`);
+        console.log(`[Simulación Preparatoria] Mock Gateway escuchando en http://localhost:${PORT}`);
     });
 }
 

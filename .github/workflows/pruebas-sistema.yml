@@ -50,6 +50,12 @@ jobs:
             bash -c "npm ci && npx playwright test"
 
       - name: Newman (colecciones de API)
+        env:
+          # Administrador inicial de QA (Bootstrap de Identity); secretos del repositorio, nunca en la colección.
+          QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
+          QA_ADMIN_PASSWORD: ${{ secrets.QA_ADMIN_PASSWORD }}
+          QA_PLATFORM_ADMIN_EMAIL: ${{ secrets.QA_PLATFORM_ADMIN_EMAIL }}
+          QA_PLATFORM_ADMIN_PASSWORD: ${{ secrets.QA_PLATFORM_ADMIN_PASSWORD }}
         run: |
           shopt -s nullglob
           colecciones=(tests/e2e/*.postman_collection.json)
@@ -59,7 +65,9 @@ jobs:
           fi
           for c in "${colecciones[@]}"; do
             docker run --rm --add-host "$QA_HOST:$QA_IP" -v "$PWD/tests/e2e:/etc/newman" \
-              postman/newman:6-alpine run "$(basename "$c")" --insecure --env-var "baseUrl=$BASE_URL"
+              postman/newman:6-alpine run "$(basename "$c")" --insecure --env-var "baseUrl=$BASE_URL" \
+              --env-var "adminEmail=$QA_ADMIN_EMAIL" --env-var "adminPassword=$QA_ADMIN_PASSWORD" \
+              --env-var "platformAdminEmail=$QA_PLATFORM_ADMIN_EMAIL" --env-var "platformAdminPassword=$QA_PLATFORM_ADMIN_PASSWORD"
           done
 
       - name: Guardar reportes

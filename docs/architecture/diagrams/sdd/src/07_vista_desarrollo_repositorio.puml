@@ -1,0 +1,79 @@
+@startuml 07_vista_desarrollo_repositorio
+' Figura de la vista de desarrollo del SDD (sección 10.1): composición del multirepo (ADR-013, ADR-021).
+' Generar: docker run --rm -v "$PWD:/data" plantuml/plantuml -tsvg -o .. /data/07_vista_desarrollo_repositorio.puml
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam ArrowColor #555555
+left to right direction
+
+skinparam package {
+  BackgroundColor<<principal>> #ECEFF1
+  BackgroundColor<<cliente>> #E3F2FD
+  BackgroundColor<<servicio>> #E8F5E9
+  BackgroundColor<<plataforma>> #FFF3E0
+  BackgroundColor<<carpeta>> #FFFFFF
+  BorderColor #607D8B
+}
+skinparam rectangle {
+  BackgroundColor<<servicio>> #C8E6C9
+  BorderColor #607D8B
+}
+
+package "quickpatch (repositorio principal)" <<principal>> as ROOT {
+  package "docs/" <<carpeta>> as DOCS {
+    rectangle "requirements/ · architecture/ (SAD, SDD, ADR) · design/ (DD)\ninfrastructure/ · testing/ (TD) · governance/" as DOCS_CONTENT
+  }
+  package "tests/" <<carpeta>> as TESTS {
+    rectangle "e2e/ · performance/ (k6) · security/ (ZAP)\nintegration/ · contract/" as TESTS_CONTENT
+  }
+  package "infrastructure/" <<carpeta>> as INFRA {
+    rectangle "Ansible y k3s\n(hoy submódulo quickpatch-infrastructure;\npasa a carpeta, SCRUM-338)" as INFRA_CONTENT
+  }
+  package ".ai/ · AGENTS.md · CLAUDE.md · tools/" <<carpeta>> as AI {
+    rectangle "Contexto de agentes y\nvalidate-composition.sh" as AI_CONTENT
+  }
+
+  package "apps/ (12 submódulos)" <<carpeta>> as APPS {
+    package "mobile/ → quickpatch-mobile" <<cliente>> as MOBILE {
+      rectangle "Flutter + Dart" as MOBILE_STACK
+    }
+    package "web/ → quickpatch-web" <<cliente>> as WEB {
+      rectangle "Angular + TypeScript" as WEB_STACK
+    }
+    package "api-gateway/ → quickpatch-api-gateway" <<plataforma>> as GW {
+      rectangle "nginx/ (rutas /api/<servicio>)" as GW_NGINX
+      rectangle "openapi/ (contratos REST)" as GW_OPENAPI
+    }
+    package "backend/services/" <<carpeta>> as SERVICES {
+      rectangle "identity/ → quickpatch-identity" <<servicio>> as ID
+      rectangle "actors/ → quickpatch-actors" <<servicio>> as ACT
+      rectangle "catalog/ → quickpatch-catalog" <<servicio>> as CAT
+      rectangle "service-request/ → quickpatch-service-request" <<servicio>> as SR
+      rectangle "matching/ → quickpatch-matching (Java)" <<servicio>> as MATCH
+      rectangle "ranking/ → quickpatch-ranking" <<servicio>> as RANK
+      rectangle "payments/ → quickpatch-payments" <<servicio>> as PAY
+      rectangle "communication/ → quickpatch-communication" <<servicio>> as COMM
+    }
+    package "kafka/ → quickpatch-kafka" <<plataforma>> as KAFKA {
+      rectangle "events/ (esquemas de eventos)" as K_EVENTS
+      rectangle "topics/ (un topic por eventType)" as K_TOPICS
+      rectangle "deploy/ (despliegue de Kafka)" as K_DEPLOY
+    }
+  }
+}
+
+SERVICES ..> GW_OPENAPI : contracts/api-gateway/
+SERVICES ..> K_EVENTS : contracts/kafka/
+WEB ..> GW_OPENAPI : contracts/api-gateway/
+MOBILE ..> GW_OPENAPI : contracts/api-gateway/
+
+legend right
+  |= Color |= Significado |
+  |<#E3F2FD>| Cliente (Flutter, Angular) |
+  |<#C8E6C9>| Microservicio (8) |
+  |<#FFF3E0>| Plataforma con contratos (API Gateway, Kafka) |
+  |<#ECEFF1>| Repositorio principal |
+  → submódulo · flecha punteada: submódulo de contratos fijado en un tag
+endlegend
+@enduml
