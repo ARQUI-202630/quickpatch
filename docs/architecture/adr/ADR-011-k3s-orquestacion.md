@@ -1,14 +1,12 @@
 # ADR-011 — k3s como orquestador de los microservicios
 
-- **Estado:** Aceptado; ampliado por ADR-015
+- **Estado:** Aceptado; ampliado por ADR-015 y ADR-022 (el k3s de cada ambiente aloja también el API Gateway y el panel Angular)
 - **Fecha:** agosto de 2026 (SAD 1.0); enmienda del 3 de octubre de 2026
 - **Decisión:** Kubernetes en su distribución k3s, en un clúster de un solo nodo, para los 8 microservicios (VM3 en producción y VM2 en QA); Docker Compose para el resto de VMs
 - **Atributo priorizado:** AC5 Reliability (rolling updates sin downtime y auto-healing de contenedores)
 - **Atributo sacrificado:** costo y simplicidad operativa (curva de aprendizaje y administración de un clúster)
 - **Restricciones:** R5 (sin presupuesto), R7 (sin operación 24/7), R10 (7 VMs fijas), R11 (un solo administrador de infraestructura)
 - **Implementación:** `quickpatch-infrastructure` (playbooks de Ansible y manifiestos de k3s)
-
-> **Actualización (ADR-022, 6 de octubre de 2026):** el k3s de QA pasa de VM2 a VM5; producción sigue en VM3. Ambos siguen siendo clústeres de un solo nodo.
 
 ## Contexto
 

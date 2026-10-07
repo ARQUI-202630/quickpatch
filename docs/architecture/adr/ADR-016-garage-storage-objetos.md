@@ -1,14 +1,12 @@
 # ADR-016 — Garage como almacenamiento de objetos compatible con S3
 
-- **Estado:** Aceptado
+- **Estado:** Aceptado; ubicación actualizada por ADR-022 (producción en VM6 junto con Kafka; QA en VM7). La prueba de concepto se hizo en VM7
 - **Fecha:** 3 de octubre de 2026
 - **Decisión:** Garage v2.4.1 en un solo nodo, en VM7 para producción y con una instancia propia en VM2 para QA, en lugar de MinIO
 - **Atributos priorizados:** AC6 Security (un solo puerto expuesto, llaves separadas por uso) y uso de recursos de VM7 (AC2)
 - **Atributos sacrificados:** funciones avanzadas de S3 (versionado, bloqueo de objetos) y consola web
 - **Driver y restricciones:** D7 (evidencia fotográfica), R5, R10
 - **Implementación:** `quickpatch-infrastructure` (Ansible, llaves en Ansible Vault)
-
-> **Actualización (ADR-022, 6 de octubre de 2026):** la instancia de Garage de QA pasa de VM2 a VM6; producción sigue en VM7.
 
 ## Contexto
 

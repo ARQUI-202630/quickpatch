@@ -1,13 +1,11 @@
 # ADR-014 — Una instancia de PostgreSQL con una base de datos por servicio
 
-- **Estado:** Aceptado
+- **Estado:** Aceptado; ubicación actualizada por ADR-022 (producción en VM4 junto con Redis; QA en VM5)
 - **Fecha:** septiembre de 2026 (registrado como archivo el 6 de octubre de 2026; ya lo citaban el SDD y el Documento de Infraestructura)
 - **Decisión:** Una sola instancia de PostgreSQL + PostGIS en VM4, con una base de datos propia por microservicio (`db_<servicio>`) y credenciales separadas
 - **Atributo priorizado:** AC7 Maintainability (Modularity: cada servicio es dueño de sus datos) dentro del presupuesto de recursos
 - **Atributo sacrificado:** AC5 Reliability (la instancia es un punto único de falla)
 - **Restricciones:** R5, R10, R11
-
-> **Actualización (ADR-022, 6 de octubre de 2026):** la instancia de QA pasa de VM2 a VM6; producción sigue en VM4.
 
 ## Contexto
 
