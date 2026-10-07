@@ -22,29 +22,30 @@ La decisión está formalizada en `docs/architecture/adr/ADR-012-stack-tecnologi
 
 ## Repositorios
 
-QUICKPATCH usa un repositorio por componente, unidos por este repositorio principal mediante submódulos de Git (ADR-013). Este repo contiene la documentación, las pruebas del sistema completo y los punteros a los demás repos de la organización `ARQUI-202630`.
+QUICKPATCH tiene **12 repositorios**, uno por componente de la solución (retroalimentación del profesor, SCRUM-333): Flutter, Angular, API Gateway, los 8 microservicios y Apache Kafka. Este repositorio principal los une mediante submódulos de Git (ADR-013) y contiene la documentación, las pruebas del sistema completo y los punteros a los demás repos de la organización `ARQUI-202630`.
 
 ```text
 quickpatch/                          (este repo)
 ├── apps/
-│   ├── web/                         → quickpatch-web (Angular)
 │   ├── mobile/                      → quickpatch-mobile (Flutter)
-│   └── backend/services/
-│       ├── identity/                → quickpatch-identity
-│       ├── actors/                  → quickpatch-actors
-│       ├── catalog/                 → quickpatch-catalog
-│       ├── service-request/         → quickpatch-service-request
-│       ├── matching/                → quickpatch-matching (Java + Spring Boot)
-│       ├── ranking/                 → quickpatch-ranking
-│       ├── payments/                → quickpatch-payments
-│       └── communication/           → quickpatch-communication
-├── contracts/                       → quickpatch-contracts (OpenAPI y eventos)
-├── infrastructure/                  → quickpatch-infrastructure (Ansible y k3s)
+│   ├── web/                         → quickpatch-web (Angular)
+│   ├── api-gateway/                 → quickpatch-api-gateway (gateway y contratos REST/OpenAPI)
+│   ├── backend/services/
+│   │   ├── identity/                → quickpatch-identity
+│   │   ├── actors/                  → quickpatch-actors
+│   │   ├── catalog/                 → quickpatch-catalog
+│   │   ├── service-request/         → quickpatch-service-request
+│   │   ├── matching/                → quickpatch-matching (Java + Spring Boot)
+│   │   ├── ranking/                 → quickpatch-ranking
+│   │   ├── payments/                → quickpatch-payments
+│   │   └── communication/           → quickpatch-communication
+│   └── kafka/                       → quickpatch-kafka (bus de eventos, esquemas y topics)
+├── infrastructure/                  → quickpatch-infrastructure (Ansible y k3s; pasa a ser carpeta de este repo, SCRUM-338)
 ├── tests/                           pruebas del sistema completo
 └── docs/                            SRS, SAD, SDD, DD, Infraestructura, Políticas
 ```
 
-Las rutas marcadas con `→` son submódulos. Cada servicio incluye además `contracts/` como submódulo, fijado en una versión.
+Las rutas marcadas con `→` son submódulos. Cada servicio incluye además los contratos como submódulos fijados en una versión: `contracts/api-gateway/` (REST) y `contracts/kafka/` (eventos); web y mobile solo `contracts/api-gateway/`. `tools/validate-composition.sh` lo comprueba en el CI.
 
 ### Clonar
 
@@ -75,10 +76,10 @@ Dentro de la carpeta del submódulo, cambiarse primero a una rama (`git switch d
 
 ## Contratos
 
-- REST: `contracts/openapi/`
-- Kafka: `contracts/events/`
+- REST: `openapi/` del repo `quickpatch-api-gateway` (en los consumidores, `contracts/api-gateway/openapi/`).
+- Kafka: `events/` y `topics/` del repo `quickpatch-kafka` (en los servicios, `contracts/kafka/events/`).
 
-Ambos en el repo `quickpatch-contracts`, versionado con tags SemVer.
+Ambos versionados con tags SemVer. Hasta octubre de 2026 vivían juntos en `quickpatch-contracts`, ahora archivado.
 
 ## GitFlow
 
