@@ -331,7 +331,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     runnerProd = infrastructureNode "Runner de GitHub Actions" "kubectl y k6; despliega la imagen de main." "GitHub Actions runner"
                     observabilidadProd = softwareSystemInstance observabilidad
                 }
-                deploymentNode "VM3 · Aplicación · 10.43.98.205" "" "4 vCPU · 11 GiB RAM · 68 GB" {
+                deploymentNode "VM3 · Aplicación · 10.43.98.205" "Los servicios llegan a VM4 (PostgreSQL 5432, Redis 6379) y a VM6 (Kafka 9092, Garage 9000)." "4 vCPU · 11 GiB RAM · 68 GB" {
                     deploymentNode "k3s (un nodo)" "" "k3s + Traefik" {
                         traefikProd = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
                         gatewayProd = containerInstance gateway
@@ -346,7 +346,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         communicationProd = containerInstance communication
                     }
                 }
-                deploymentNode "VM4 · Datos · 10.43.98.209" "" "4 vCPU · 11 GiB RAM · 68 GB" {
+                deploymentNode "VM4 · Datos · 10.43.98.209" "Recibe 5432 y 6379 desde VM3; respaldo diario a Garage de VM6." "4 vCPU · 11 GiB RAM · 68 GB" {
                     deploymentNode "PostgreSQL 16 + PostGIS" "Una instancia, una base por servicio (ADR-014). pg_dump diario a Garage." "PostgreSQL" {
                         dbIdentityProd = containerInstance dbIdentity
                         dbActorsProd = containerInstance dbActors
@@ -359,7 +359,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     }
                     redisProd = containerInstance redis
                 }
-                deploymentNode "VM6 · Mensajería y almacenamiento · 10.43.99.12" "" "4 vCPU · 11 GiB RAM · 68 GB" {
+                deploymentNode "VM6 · Mensajería y almacenamiento · 10.43.99.12" "Recibe 9092 y 9000 desde VM3 y 9000 desde VM4." "4 vCPU · 11 GiB RAM · 68 GB" {
                     kafkaProd = containerInstance kafka
                     garageProd = containerInstance garage
                 }
@@ -382,7 +382,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     runnerQa = infrastructureNode "Runner de GitHub Actions" "Despliega release/* y corre Newman, Playwright, ZAP y k6 contra QA." "GitHub Actions runner"
                     observabilidadQa = softwareSystemInstance observabilidad
                 }
-                deploymentNode "VM2 · Aplicación · 10.43.98.15" "" "4 vCPU · 11 GiB RAM · 68 GB" {
+                deploymentNode "VM2 · Aplicación · 10.43.98.15" "Los servicios llegan a VM5 (5432, 6379) y a VM7 (9092, 9000)." "4 vCPU · 11 GiB RAM · 68 GB" {
                     deploymentNode "k3s (un nodo)" "" "k3s + Traefik" {
                         traefikQa = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
                         gatewayQa = containerInstance gateway
@@ -397,7 +397,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         communicationQa = containerInstance communication
                     }
                 }
-                deploymentNode "VM5 · Datos · 10.43.98.29" "" "4 vCPU · 11 GiB RAM · 68 GB" {
+                deploymentNode "VM5 · Datos · 10.43.98.29" "Recibe 5432 y 6379 desde VM2; sin respaldo." "4 vCPU · 11 GiB RAM · 68 GB" {
                     deploymentNode "PostgreSQL 16 + PostGIS" "Datos de prueba, sin respaldo." "PostgreSQL" {
                         dbIdentityQa = containerInstance dbIdentity
                         dbActorsQa = containerInstance dbActors
@@ -410,7 +410,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     }
                     redisQa = containerInstance redis
                 }
-                deploymentNode "VM7 · Mensajería y almacenamiento · 10.43.99.8" "" "4 vCPU · 11 GiB RAM · 68 GB" {
+                deploymentNode "VM7 · Mensajería y almacenamiento · 10.43.99.8" "Recibe 9092 y 9000 desde VM2." "4 vCPU · 11 GiB RAM · 68 GB" {
                     kafkaQa = containerInstance kafka
                     garageQa = containerInstance garage
                 }
@@ -427,7 +427,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
         systemLandscape "C4-01-Landscape" "Entorno de software de QUICKPATCH: el sistema, sus sistemas externos y los sistemas de soporte del equipo." {
             include *
-            autoLayout lr
+            autoLayout tb 200 80
         }
 
         systemContext quickpatch "C4-02-Contexto" "QUICKPATCH frente a las personas que lo usan y los sistemas externos (RIE-01 a RIE-03)." {
@@ -514,7 +514,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             communication -> kafka "Consume el resultado"
             communication -> notificaciones "Pide el aviso al cliente y al técnico"
             notificaciones -> mobile "Entrega la notificación push"
-            autoLayout lr
+            autoLayout lr 200 100
+            properties {
+                "structurizr.groups" false
+            }
         }
 
         dynamic quickpatch "C4-05-Dinamico-Pago" "Pago tokenizado y facturación (RF-22 a RF-24, ADR-009)." {
@@ -551,13 +554,17 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción: VM1 (entrada y herramientas), VM3, VM4 y VM6 (ADR-022)." {
             include *
             exclude "mobProd -> gatewayProd" "webProd -> gatewayProd"
-            autoLayout lr
+            exclude "* -> kafkaProd" "* -> redisProd" "* -> garageProd"
+            include "serviceRequestProd -> kafkaProd"
+            autoLayout lr 200 60
         }
 
         deployment quickpatch qa "C4-06-Despliegue-QA" "QA: copia de producción en VM2, VM5 y VM7; comparte VM1 (ADR-022)." {
             include *
             exclude "mobQa -> gatewayQa" "webQa -> gatewayQa"
-            autoLayout lr
+            exclude "* -> kafkaQa" "* -> redisQa" "* -> garageQa"
+            include "serviceRequestQa -> kafkaQa"
+            autoLayout lr 200 60
         }
 
         styles {
@@ -607,12 +614,16 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 border dashed
                 opacity 70
             }
+            element "Deployment Node" {
+                color #000000
+            }
             element "Infrastructure Node" {
                 background #ffffff
                 color #000000
             }
             relationship "Relationship" {
                 fontSize 22
+                dashed false
             }
             relationship "Planeado" {
                 dashed true
