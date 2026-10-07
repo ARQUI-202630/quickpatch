@@ -127,6 +127,7 @@ El DD v3.0 se escribió sobre la versión 2.2, en paralelo con las versiones 2.3
 |Cobertura al crear|Localidades de Bogotá|Rectángulo configurable (RN-SR9); las localidades (P-04) siguen para la cobertura del técnico en Matching|ServiceRequest no tiene las localidades|
 |`service-request.created`|Sin `description`, con `clientType` y `companyId`|Con `description` (decisión del equipo); `clientType` y `companyId` llegan con RF-08|Contrato v1|
 |Réplica de categorías|—|Tabla 5.20 y evento `catalog.category-changed`|SAD 4.3: sin llamadas síncronas entre servicios|
+|`service_categories.updated_at`|—|Columna nueva; el nombre es único por tenant sin distinguir mayúsculas (`lower(name)`)|`catalog.category-changed` necesita ordenar versiones|
 |Matriz RBAC|Columna **Roles** del catálogo 8.2|La matriz de la versión 2.4 (antes sección 10.5) se integra en la columna Roles de 8.2; el registro de cada 403 queda en 8.1.1|Una sola fuente por endpoint|
 |Numeración|Multi-tenancy en la sección 11|Se conserva: las referencias "DD 10.2" y "DD 10.3" de los contratos y del código pasan a 11.2 y 11.3|—|
 |`Idempotency-Key`|Convención vigente|Propuesta P-08|No está en los contratos v1|
@@ -650,6 +651,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 |description|VARCHAR(255)|Sí|—|Descripción opcional.|
 |active|BOOLEAN|No|—|Indica si la categoría está disponible.|
 |created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
+|updated_at|TIMESTAMPTZ|No|—|**Nuevo v3.1.** Momento del último cambio. Viaja como `data.updatedAt` en `catalog.category-changed` y define la versión que gana en las réplicas (5.20).|
 
 **Ejemplos iniciales:**
 
