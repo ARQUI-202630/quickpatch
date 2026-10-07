@@ -48,8 +48,9 @@ coleccion = {
             "Administrador crea una categoría (Catalog publica catalog.category-changed) → cliente se registra e inicia "
             "sesión (Identity) → crea una solicitud (ServiceRequest valida la categoría en su réplica y publica "
             "service-request.created, que consume Matching) → consulta el detalle. Incluye casos negativos de "
-            "autenticación, rol y cobertura. Variables: baseUrl (https://qa.quickpatch.internal), adminEmail y "
-            "adminPassword (secretos de QA, nunca en el repositorio). Contratos: quickpatch-api-gateway/openapi."
+            "autenticación, rol y cobertura, y la gestión de tenants del administrador de la plataforma (SCRUM-112). "
+            "Variables: baseUrl (https://qa.quickpatch.internal), adminEmail, adminPassword, platformAdminEmail y "
+            "platformAdminPassword (secretos de QA, nunca en el repositorio). Contratos: quickpatch-api-gateway/openapi."
         ),
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     },
@@ -57,6 +58,8 @@ coleccion = {
         {"key": "baseUrl", "value": "https://qa.quickpatch.internal"},
         {"key": "adminEmail", "value": ""},
         {"key": "adminPassword", "value": ""},
+        {"key": "platformAdminEmail", "value": ""},
+        {"key": "platformAdminPassword", "value": ""},
     ],
     "item": [
         {
@@ -172,6 +175,60 @@ coleccion = {
                         "  pm.expect(pm.response.json().errors).to.have.property('description');",
                         "});",
                     ] + problem),
+            ],
+        },
+        {
+            "name": "5. Administrador de la plataforma (SCRUM-112)",
+            "item": [
+                req("Login del administrador de la plataforma", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
+                    {"email": "{{platformAdminEmail}}", "password": "{{platformAdminPassword}}"},
+                    pruebas=[
+                        "pm.test('200 con rol admin_plataforma', () => {",
+                        "  pm.response.to.have.status(200);",
+                        "  pm.expect(pm.response.json().user.role).to.eql('admin_plataforma');",
+                        "});",
+                        "pm.collectionVariables.set('plataformaToken', pm.response.json().accessToken);",
+                    ]),
+                req("Listar tenants", "GET", "/v1/platform/tenants", [CORR, auth("plataformaToken")],
+                    pruebas=[
+                        "pm.test('200 con al menos el tenant del canal', () => {",
+                        "  pm.response.to.have.status(200);",
+                        "  const t = pm.response.json();",
+                        "  pm.expect(t).to.be.an('array').that.is.not.empty;",
+                        "  t.forEach(x => pm.expect(x.status).to.be.oneOf(['activo', 'inactivo']));",
+                        "});",
+                        "// El tenant del canal es el del administrador de la plataforma en el MVP (DD 10.3).",
+                        "const yo = JSON.parse(require('atob')(pm.collectionVariables.get('plataformaToken').split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+                        "pm.collectionVariables.set('tenantPropio', yo.tenant_id);",
+                        "pm.test('el tenant propio está en la lista', () => pm.expect(pm.response.json().map(x => x.id)).to.include(pm.collectionVariables.get('tenantPropio')));",
+                    ]),
+                req("Administrador del tenant no lista tenants → 403", "GET", "/v1/platform/tenants", [CORR, auth("adminToken")],
+                    pruebas=["pm.test('403', () => pm.response.to.have.status(403));"]),
+                req("Cliente no cambia el estado de un tenant → 403", "PATCH", "/v1/platform/tenants/{{tenantPropio}}", [JSON, CORR, auth("clienteToken")],
+                    {"status": "inactivo"},
+                    pruebas=["pm.test('403', () => pm.response.to.have.status(403));"]),
+                req("Desactivar el tenant de la plataforma → 409", "PATCH", "/v1/platform/tenants/{{tenantPropio}}", [JSON, CORR, auth("plataformaToken")],
+                    {"status": "inactivo"},
+                    pruebas=["pm.test('409 tenant de la plataforma', () => pm.response.to.have.status(409));"] + problem),
+                req("Activar el tenant propio es idempotente → 200", "PATCH", "/v1/platform/tenants/{{tenantPropio}}", [JSON, CORR, auth("plataformaToken")],
+                    {"status": "activo"},
+                    pruebas=[
+                        "pm.test('200 y sigue activo', () => {",
+                        "  pm.response.to.have.status(200);",
+                        "  pm.expect(pm.response.json().status).to.eql('activo');",
+                        "});",
+                    ]),
+                req("Estado fuera del contrato → 400 por campo", "PATCH", "/v1/platform/tenants/{{tenantPropio}}", [JSON, CORR, auth("plataformaToken")],
+                    {"status": "suspendido"},
+                    pruebas=[
+                        "pm.test('400 con error en status', () => {",
+                        "  pm.response.to.have.status(400);",
+                        "  pm.expect(pm.response.json().errors).to.have.property('status');",
+                        "});",
+                    ] + problem),
+                req("Tenant inexistente → 404", "PATCH", "/v1/platform/tenants/{{$guid}}", [JSON, CORR, auth("plataformaToken")],
+                    {"status": "activo"},
+                    pruebas=["pm.test('404', () => pm.response.to.have.status(404));"] + problem),
             ],
         },
     ],
