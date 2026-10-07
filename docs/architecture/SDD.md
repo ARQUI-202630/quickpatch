@@ -237,6 +237,37 @@ Reglas comunes a las dos aplicaciones:
 - **Contratos:** Mobile consume `service-request.v1.yaml` y `catalog.v1.yaml`. El inicio de sesión (`POST /v1/auth/login` y `GET /v1/users/me`, sección 3.4.1) y la administración de tenants todavía no tienen especificación OpenAPI.
 - **Pendiente:** el contrato v1 de creación de solicitudes solo admite el rol `cliente` y responde 403 a los demás, mientras que el SRS (F2.1) incluye a la empresa cliente. Se debe resolver antes de cerrar SCRUM-27.
 
+
+### 3.1.6 Componentes de ServiceRequest Service (C4, nivel 3)
+
+El nivel 3 del backend abre un solo contenedor de la Figura 3: ServiceRequest Service, porque es el que usa el incremento del Sprint 3 (creación de solicitud, SCRUM-27) y el que reúne las decisiones de diseño que los demás servicios repiten: reglas de negocio validadas contra una réplica local, máquina de estados, aislamiento por tenant con RLS, Transactional Outbox y consumo idempotente de eventos. La fuente del diagrama está en Structurizr DSL, en `diagrams/sdd/c4/c4-l3-backend.dsl`.
+
+Los componentes siguen las capas de la sección 4.1 (la tecnología de cada uno indica su capa) y solo incluyen lo que tiene contrato en `quickpatch-contracts`: `openapi/service-request.v1.yaml`, `events/service-request.created.v1.json` y `events/catalog.category-changed.v1.json`. Por eso no aparecen todavía los consumidores de `matching.technician-assigned`, `matching.no-technician-available` y `payment.*` (sección 3.2.5) ni los endpoints de cotización, inicio, evidencia, cierre y calificación; se agregan cuando tengan contrato. Todas las relaciones del diagrama tienen especificación, así que no hay flechas rojas punteadas.
+
+![Componentes de ServiceRequest Service](diagrams/sdd/c4/C4-L3-Backend.svg)
+
+**Figura 6. Componentes de ServiceRequest Service (C4, nivel 3).**
+
+| Componente | Responsabilidad | Regla/contrato |
+|---|---|---|
+| Contexto autenticado | Toma el usuario (`sub`), el tenant (`tenant_id`) y el rol de los claims del JWT que propaga el API Gateway. Nunca lee el tenant del cuerpo. | RN-U3; DD, sección 10.3 |
+| API REST de solicitudes | Expone la creación y la consulta, valida el formato de entrada, solo deja crear al rol `cliente` (403) y responde `application/problem+json` con `X-Correlation-Id`. | `POST /v1/service-requests` y `GET /v1/service-requests/{id}` (`service-request.v1.yaml`) |
+| Casos de uso de la solicitud | Crear y consultar. Al crear, coordina validación, agregado, persistencia y outbox en una sola transacción local. | RF-07; ADR-007 |
+| Validación de reglas de creación | Comprueba la ubicación dentro del área de Bogotá configurada (`422 ubicacion-fuera-de-cobertura`), la categoría activa en el tenant (`422 categoria-no-disponible`) y las longitudes de descripción y dirección. | RN-SR1, RN-SR9, RN-SR10, RN-SR11 |
+| Agregado ServiceRequest y máquina de estados | Crea la solicitud en `buscando_tecnico` y sin técnico, y solo admite las transiciones válidas. | RN-SR2 a RN-SR7; DD, sección 7.4 |
+| Repositorio de solicitudes | Lee y escribe `service_requests` en una transacción que fija `SET LOCAL app.current_tenant`; RLS filtra por tenant, y una solicitud de otro tenant o de otro cliente responde 404. | DD, secciones 5.5 y 10.2 |
+| Registro en outbox | Inserta `service-request.created` en `outbox_events` en la misma transacción que la solicitud; el `tenant_id` lo fija la base con el tenant de la sesión. | ADR-007; DD, sección 5.15 |
+| Publicador del outbox | Proceso en segundo plano que publica los eventos pendientes en el topic `service-request.created` (clave `serviceRequestId`), marca `published_at` y reintenta con backoff si Kafka no responde. Usa el rol `service_request_outbox`. | `service-request.created.v1.json`; sección 5.9.1 |
+| Consumidor de `catalog.category-changed` | Aplica cada evento con el `tenantId` del sobre, una sola vez por `eventId` (`processed_events`), y descarta los que traen un `updatedAt` anterior al guardado. | `catalog.category-changed.v1.json`; RN-EV1; sección 5.9.2 |
+| Réplica de categorías | Lee y escribe `service_request_categories` bajo RLS. Solo la escribe el consumidor; la validación de RN-SR10 solo la lee, así que crear una solicitud no depende de que Catalog Service responda. | RN-SR10; DD, sección 5.17 |
+
+Decisiones que muestra el diagrama:
+
+- **Validación sin llamada síncrona:** la categoría se valida contra la réplica local, no contra Catalog Service (event-carried state transfer, principio de comunicación por eventos del SAD, sección 4.3). Si Catalog no está disponible, la creación sigue funcionando con la última versión replicada.
+- **Una transacción por operación:** la solicitud y su evento se guardan juntos, y el publicador es el único que habla con Kafka. Si Kafka cae, la API sigue respondiendo y los eventos esperan en `outbox_events` (sección 5.10).
+- **Tenant por transacción:** tanto las peticiones REST como el consumidor fijan el tenant antes de cualquier consulta; sin tenant fijado, RLS no devuelve filas.
+- **Pendiente:** la sección 3.2.5 todavía lista `ServiceCategory` y `service_categories` como datos de ServiceRequest, pero según el DD (secciones 3 y 5.17) la tabla es de Catalog Service y ServiceRequest solo guarda la réplica `service_request_categories`. Se debe corregir la sección 3.2.5. Además, como en la sección 3.1.5, el contrato v1 solo permite crear solicitudes al rol `cliente`, aunque el SRS (F2.1) incluye a la empresa cliente.
+
 ---
 
 ## 3.2 Descomposición lógica por microservicio
@@ -384,7 +415,7 @@ El siguiente diagrama representa el flujo lógico principal del proceso de match
 
 ![Diagrama de flujo del Matching Service](sdd_v3_assets/05_matching_flow.png)
 
-*Figura 6. Flujo lógico principal del Matching Service.*
+*Figura 7. Flujo lógico principal del Matching Service.*
 
 ### 3.2.7 Ranking Service
 
@@ -442,7 +473,7 @@ Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean inco
 
 ![Modelo lógico de dominio](diagrams/sdd/03_modelo_logico_dominio.png)
 
-**Figura 7. Modelo lógico de dominio y referencias entre servicios.**
+**Figura 8. Modelo lógico de dominio y referencias entre servicios.**
 
 Las relaciones continuas representan relaciones internas al mismo dominio que pueden implementarse como claves foráneas. Las relaciones punteadas representan referencias lógicas entre servicios independientes.
 
@@ -535,7 +566,7 @@ La interoperabilidad entre stacks se mantiene mediante contratos REST/OpenAPI y 
 
 ![Capas internas de un microservicio](diagrams/sdd/04_capas_microservicio.png)
 
-**Figura 8. Estructura lógica interna de un microservicio.**
+**Figura 9. Estructura lógica interna de un microservicio.**
 
 La estructura interna se divide en cuatro capas lógicas:
 
@@ -708,7 +739,7 @@ sequenceDiagram
     GW->>M: Técnico acepta la solicitud
 ```
 
-**Figura 9. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
+**Figura 10. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
 
 ---
 
@@ -771,7 +802,7 @@ sequenceDiagram
     end
 ```
 
-**Figura 10. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
+**Figura 11. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
 
 ---
 
@@ -879,7 +910,7 @@ sequenceDiagram
     end
 ```
 
-**Figura 11. Tolerancia a fallos con Transactional Outbox ante indisponibilidad del broker.**
+**Figura 12. Tolerancia a fallos con Transactional Outbox ante indisponibilidad del broker.**
 
 ---
 
@@ -973,9 +1004,9 @@ Cada repositorio de servicio contiene su código, sus pruebas unitarias y de int
 
 ![Estructura del repositorio QUICKPATCH](diagrams/sdd/07_vista_desarrollo_repositorio.svg)
 
-**Figura 12. Estructura del repositorio principal de QUICKPATCH.**
+**Figura 13. Estructura del repositorio principal de QUICKPATCH.**
 
-La Figura 12 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
+La Figura 13 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
 
 ---
 
@@ -1050,7 +1081,7 @@ Cada servicio mantiene su propio límite funcional y debe poder evolucionar y de
 
 ![Componentes por aplicación](diagrams/sdd/08_componentes_por_aplicacion.svg)
 
-**Figura 13. Organización de componentes por aplicación y tecnología.**
+**Figura 14. Organización de componentes por aplicación y tecnología.**
 
 ---
 
@@ -1153,7 +1184,7 @@ Las principales reglas son:
 
 ![Dependencias entre proyectos y módulos](diagrams/sdd/09_dependencias_modulos.svg)
 
-**Figura 14. Dependencias permitidas entre aplicaciones, contratos y microservicios.**
+**Figura 15. Dependencias permitidas entre aplicaciones, contratos y microservicios.**
 
 Estas reglas mantienen bajo el acoplamiento entre servicios y preservan la independencia tecnológica entre ASP.NET Core y Spring Boot.
 
@@ -1252,7 +1283,7 @@ Las ocho imágenes del backend se publican en el registro definido para el proye
 
 ![Mapa de carpetas y artefactos de build](diagrams/sdd/10_mapa_carpetas_build.svg)
 
-**Figura 15. Relación entre código fuente, procesos de build, pruebas, artefactos y despliegue.**
+**Figura 16. Relación entre código fuente, procesos de build, pruebas, artefactos y despliegue.**
 
 ---
 
@@ -1352,7 +1383,7 @@ flowchart TB
     style VM7N fill:#EBEBEB,stroke:#555555,stroke-width:1.5px
 ```
 
-**Figura 16. Diagrama de despliegue de producción de QUICKPATCH (VM1 y VM3 a VM7).**
+**Figura 17. Diagrama de despliegue de producción de QUICKPATCH (VM1 y VM3 a VM7).**
 
 Las VMs son idénticas en hardware (4 vCPU · 11 GiB RAM · 68 GB disco) y solo difieren en el software que alojan (Documento de Infraestructura, sección 3). VM3 es un clúster k3s de un solo nodo: es el punto único de falla reconocido del sistema (SAD, limitación de la sección 5.2). VM1 aloja además el panel Angular y el runner de despliegue, que no se dibujan para mantener el diagrama solo con el sistema en ejecución. Las 6 VMs de producción envían métricas (`node_exporter`, 9100) y logs (Promtail, 3100) a VM7; esas flechas tampoco se dibujan para no cruzar el diagrama. El firewall aplica `default deny incoming`; ninguna VM acepta conexiones directas del exterior salvo VM1 (443) y el acceso SSH del equipo (Documento de Infraestructura, sección 10.2).
 
@@ -1375,7 +1406,7 @@ flowchart TB
     style P fill:#E6F5E6,stroke:#00468C,stroke-width:1.5px
 ```
 
-**Figura 17. Ambientes de desarrollo, pruebas y producción.**
+**Figura 18. Ambientes de desarrollo, pruebas y producción.**
 
 Dev es el único ambiente efímero: existe solo mientras corre el pipeline en un runner de GitHub Actions. QA ocupa hardware dedicado, la VM2 (ADR-015): replica la forma de producción en una sola VM, con datos y secretos propios, y no puede conectarse a los servicios de producción. Cada versión `release/*` se despliega en QA y allí corren las pruebas de sistema (E2E, OWASP ZAP, escáner PCI-DSS y carga con k6); producción se despliega al fusionar en `main` (Documento de Infraestructura, secciones 4 y 6).
 
@@ -1433,7 +1464,7 @@ flowchart TB
     style RED fill:#f4f6fa,stroke:#00468C,stroke-width:1.5px,stroke-dasharray:4 3
 ```
 
-**Figura 18. Seguridad de red y gestión de secretos.**
+**Figura 19. Seguridad de red y gestión de secretos.**
 
 TLS se termina en VM1 con certificado autofirmado — no hay dominio público (R9), por lo que Let's Encrypt no es viable (Documento de Infraestructura, sección 10.1). Los secretos se gestionan por dos mecanismos: Ansible Vault para la infraestructura de las 7 VMs (el archivo cifrado no se sube a Git, y QA tiene secretos propios, distintos a los de producción) y `Secret` de Kubernetes para los microservicios dentro de VM3 y VM2. El CI/CD no guarda credenciales de Kubernetes: el runner de VM1 usa los kubeconfig que deja Ansible en la propia VM, y la publicación de imágenes usa el token temporal de cada ejecución (Documento de Infraestructura, sección 8).
 
@@ -1516,7 +1547,7 @@ Para cada escenario se documenta: actor, precondiciones, flujo principal, flujos
 | **Servicios participantes** | Matching Service, ServiceRequest Service, Communication Service, Kafka. |
 | **Datos involucrados** | `technician_availability`, `coverage_zones`, `matching_attempts`, `service_requests`. |
 | **Eventos / Endpoints** | Consume `service-request.created` · produce `matching.technician-assigned`. |
-| **Relación con Vista Lógica** | Matching Service (Sección 3.2.6), Figura 6 (flujo lógico del matching). |
+| **Relación con Vista Lógica** | Matching Service (Sección 3.2.6), Figura 7 (flujo lógico del matching). |
 | **Relación con Vista de Procesos** | **Resuelto:** Ver **Sección 5.6** (Consumer Groups asignados) y **Sección 5.7** (Concurrencia y bloqueo temporal `expires_at`). |
 | **Relación con Vista de Desarrollo** | *Pendiente* — módulo Java/Spring Boot del Matching Service. |
 | **Relación con Vista Física** | *Pendiente DevOps* — nodo/contenedor del Matching Service y latencia hacia PostgreSQL+PostGIS. |
