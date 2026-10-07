@@ -1,0 +1,75 @@
+@startuml C4-07-Codigo-AislamientoTenant
+' QUICKPATCH — C4 nivel 4 (Code): aislamiento entre tenants en Identity
+' Transacción por tenant (RLS) frente a la transacción de plataforma (BYPASSRLS acotado).
+' Clases reales de develop (7 de octubre de 2026). Fuentes: ADR-005, ADR-019, DD 10.2 y 10.4, SDD 4.5.2.
+title C4-07 · Code · Aislamiento entre tenants en Identity
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 14
+skinparam packageStyle rectangle
+allowmixing
+set separator none
+left to right direction
+
+package "Application" {
+  class LoginHandler
+  class RegisterClientHandler
+  class ListTenantsHandler {
+    +HandleAsync(ct) : IReadOnlyList<Tenant>
+  }
+  class UpdateTenantStatusHandler {
+    +HandleAsync(command, ct) : UpdateTenantStatusResult
+  }
+  interface ITenantUnitOfWork <<puerto>> {
+    +ExecuteAsync<T>(tenantId, work, ct) : T
+  }
+  interface IPlatformUnitOfWork <<puerto>> {
+    +ExecuteAsync<T>(work, ct) : T
+  }
+  interface IPlatformTenantRepository <<puerto>> {
+    +ListAsync(ct) : IReadOnlyList<Tenant>
+    +FindForUpdateAsync(tenantId, ct) : Tenant
+  }
+  interface IAuditLog <<puerto>> {
+    +Add(AuditEntry)
+  }
+}
+
+package "Infrastructure" {
+  class TenantUnitOfWork {
+    set_config('app.current_tenant', tenant, true)
+  }
+  class PlatformUnitOfWork {
+    SET LOCAL ROLE identity_platform
+  }
+  class PlatformTenantRepository
+  class AuditLog
+}
+
+database "db_identity" {
+  class "Políticas RLS" as rls <<tenant_isolation>>
+  class "identity_platform" as rol <<rol BYPASSRLS>> {
+    concedido a identity_app
+    WITH INHERIT FALSE, SET TRUE
+  }
+}
+
+LoginHandler --> ITenantUnitOfWork
+RegisterClientHandler --> ITenantUnitOfWork
+ListTenantsHandler --> IPlatformUnitOfWork
+ListTenantsHandler --> IPlatformTenantRepository
+UpdateTenantStatusHandler --> IPlatformUnitOfWork
+UpdateTenantStatusHandler --> IPlatformTenantRepository
+UpdateTenantStatusHandler --> IAuditLog
+TenantUnitOfWork ..|> ITenantUnitOfWork
+PlatformUnitOfWork ..|> IPlatformUnitOfWork
+PlatformTenantRepository ..|> IPlatformTenantRepository
+AuditLog ..|> IAuditLog
+TenantUnitOfWork ..> rls : las consultas se filtran con app.current_tenant
+PlatformUnitOfWork ..> rol : adopta el rol solo dentro de la transacción
+
+note bottom of UpdateTenantStatusHandler
+  Solo admin_plataforma (endpoint). No desactiva el tenant
+  de la plataforma (409). El cambio y su AuditEntry se
+  confirman juntos.
+end note
+@enduml

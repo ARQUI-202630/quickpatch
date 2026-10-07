@@ -1,0 +1,109 @@
+@startuml C4-07-Codigo-OutboxIdempotencia
+' QUICKPATCH — C4 nivel 4 (Code): publicación y consumo de service-request.created
+' Transactional Outbox en ServiceRequest (.NET) y consumo idempotente en Matching (Java).
+' Clases reales de develop (7 de octubre de 2026); se omiten métodos que no intervienen.
+' Fuentes: ADR-007, DD RN-EV1, SDD 4.5.1 y 5.9.
+title C4-07 · Code · Outbox e idempotencia de service-request.created
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 14
+skinparam packageStyle rectangle
+allowmixing
+set separator none
+left to right direction
+
+package "quickpatch-service-request (ASP.NET Core)" {
+  class CreateServiceRequestHandler <<Application>> {
+    +HandleAsync(command, ct) : CreateServiceRequestResult
+    -BuildCreatedEvent(serviceRequest, correlationId, now) : OutboxMessage
+  }
+  interface ITenantUnitOfWork <<puerto>> {
+    +ExecuteAsync<T>(tenantId, work, ct) : T
+  }
+  interface IServiceRequestRepository <<puerto>> {
+    +Add(ServiceRequest)
+    +FindForClientAsync(id, clientId, ct) : ServiceRequest
+  }
+  interface IOutbox <<puerto>> {
+    +Enqueue(OutboxMessage)
+  }
+  class OutboxMessage <<record>> {
+    +Id : Guid  (eventId, UUID v7)
+    +TenantId : Guid
+    +AggregateId : Guid
+    +EventType : string
+    +Payload : string
+  }
+  class TenantUnitOfWork <<Infrastructure>> {
+    set_config('app.current_tenant', tenant, true)
+  }
+  class ServiceRequestRepository <<Infrastructure>>
+  class EfOutbox <<Infrastructure>>
+  class OutboxPublisher <<BackgroundService>> {
+    +PublishPendingAsync(ct) : int
+    FOR UPDATE SKIP LOCKED
+    SET LOCAL ROLE (publicador)
+  }
+  class outbox_events <<tabla>> {
+    published_at
+    attempts
+  }
+}
+
+queue "Kafka\nservice-request.created" as topic
+
+package "quickpatch-matching (Spring Boot)" {
+  class ServiceRequestCreatedListener <<@KafkaListener>> {
+    +onMessage(ConsumerRecord)
+  }
+  class ServiceRequestCreatedHandler <<application>> {
+    +handle(EventEnvelope) : Outcome
+  }
+  enum Outcome {
+    APPLIED
+    DUPLICATE
+  }
+  interface TenantTransaction <<puerto>> {
+    +execute(tenantId, work) : T
+  }
+  interface ProcessedEventStore <<puerto>> {
+    +register(eventId, tenantId, eventType) : boolean
+  }
+  interface MatchingStarter <<puerto>> {
+    +start(EventEnvelope)
+  }
+  class JdbcTenantTransaction <<infrastructure>>
+  class JdbcProcessedEventStore <<infrastructure>> {
+    INSERT ... ON CONFLICT (event_id) DO NOTHING
+  }
+  class PendingMatchingStarter <<infrastructure>>
+}
+
+CreateServiceRequestHandler --> ITenantUnitOfWork
+CreateServiceRequestHandler --> IServiceRequestRepository
+CreateServiceRequestHandler --> IOutbox
+CreateServiceRequestHandler ..> OutboxMessage : crea
+TenantUnitOfWork ..|> ITenantUnitOfWork
+ServiceRequestRepository ..|> IServiceRequestRepository
+EfOutbox ..|> IOutbox
+EfOutbox ..> outbox_events : inserta (misma transacción)
+OutboxPublisher ..> outbox_events : lee y marca
+OutboxPublisher ..> topic : publica
+topic ..> ServiceRequestCreatedListener : entrega
+ServiceRequestCreatedListener --> ServiceRequestCreatedHandler
+ServiceRequestCreatedHandler --> TenantTransaction
+ServiceRequestCreatedHandler --> ProcessedEventStore
+ServiceRequestCreatedHandler --> MatchingStarter
+ServiceRequestCreatedHandler ..> Outcome
+JdbcTenantTransaction ..|> TenantTransaction
+JdbcProcessedEventStore ..|> ProcessedEventStore
+PendingMatchingStarter ..|> MatchingStarter
+
+note bottom of CreateServiceRequestHandler
+  Solicitud + evento en una sola transacción
+  del tenant (ADR-007).
+end note
+note bottom of ServiceRequestCreatedHandler
+  Si register() devuelve false, el evento ya se
+  aplicó: DUPLICATE y no se inicia el matching.
+end note
+@enduml
