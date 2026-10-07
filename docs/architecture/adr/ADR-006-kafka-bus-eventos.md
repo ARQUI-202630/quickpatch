@@ -8,6 +8,8 @@
 - **Drivers que la motivan:** D1, D2 y D6
 - **Escenarios que la sustentan:** AC2-E3, AC5-E4
 
+> **Actualización (ADR-021, 6 de octubre de 2026):** en producción, Kafka pasa de VM6 a VM4, y VM6 pasa a ser la VM de datos de QA.
+
 ## Contexto
 
 Con microservicios orientados a eventos (ADR-003), los servicios necesitan un medio para publicar hechos ("se creó una solicitud", "se aprobó un pago") que otros consumen a su ritmo, aunque estén caídos en ese momento. El historial de esos hechos también sirve para reconstruir el ciclo de vida de un servicio ante una reclamación (D6).

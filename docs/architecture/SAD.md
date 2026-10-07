@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.20 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.21 — QUICKPATCH
 
 ---
 
@@ -19,7 +19,7 @@ Cada driver es un requisito que da forma a la arquitectura. **Criterio de inclus
 |D5|Multi-tenancy y soporte a múltiples empresas oferentes|RF-04, RF-06, RNF-09, RNF-10; modelo de negocio B2B2E|AC6, AC8|Si el aislamiento depende solo de que cada consulta recuerde filtrar por tenant, un error de código expone datos de una empresa a otra|Aislamiento de datos por tenant desde el diseño inicial|
 |D6|Trazabilidad ante reclamaciones|RF-28; necesidad de resolver disputas entre cliente y técnico|AC6, AC7|Sin un historial completo del ciclo de vida, no es posible reconstruir quién hizo qué ante una reclamación|Registro histórico de eventos del ciclo de vida del servicio|
 |D7|Evidencia fotográfica obligatoria para completar un servicio|RF-15; SRS, Feature F3.2 (cierre del servicio con evidencia fotográfica obligatoria)|AC6|Si las fotos se guardan en la base de datos o en un servicio externo, se satura PostgreSQL o se viola R5; sin el bloqueo, un servicio se completa y se cobra sin evidencia|Almacenamiento de objetos en infraestructura propia (Garage en VM7, ADR-016), tabla `service_evidence` y bloqueo de la transición a `completado` sin al menos una foto|
-|D8|Ambiente de pruebas separado de producción y bloqueo del despliegue ante fallos|RNF-07, RNF-08; SRS, sección 5.3|AC7, AC9|Sin un ambiente aislado y un bloqueo automático, un cambio defectuoso en el flujo crítico llega a producción; con 7 VMs fijas (R10), el ambiente de pruebas compite por capacidad con producción|Ambiente de QA permanente en VM2 con sus propios k3s, PostgreSQL, Redis, Kafka y Garage (ADR-015), y quality gate que bloquea el despliegue si fallan las pruebas del flujo crítico|
+|D8|Ambiente de pruebas separado de producción y bloqueo del despliegue ante fallos|RNF-07, RNF-08; SRS, sección 5.3|AC7, AC9|Sin un ambiente aislado y un bloqueo automático, un cambio defectuoso en el flujo crítico llega a producción; con 7 VMs fijas (R10), el ambiente de pruebas compite por capacidad con producción|Ambiente de QA permanente en 3 VMs (VM2, VM5 y VM6) con la misma forma que producción y sus propios k3s, PostgreSQL, Redis, Kafka y Garage (ADR-015, ADR-021), y quality gate que bloquea el despliegue si fallan las pruebas del flujo crítico|
 
 > Los requisitos de pago con PCI-DSS, que antes eran el driver D4, pasan al killer K2: son una condición no negociable, no una fuerza que impulse el diseño. La numeración anterior saltaba del D5 al D8 sin que existieran D6 ni D7; en esta versión los drivers se numeran de forma consecutiva (equivalencias en la sección 9, versión 2.10).
 
@@ -83,7 +83,7 @@ Cada driver se sigue desde los requisitos que lo originan hasta los escenarios d
 |D5 Multi-tenancy|RF-04, RF-06, RF-21, RNF-09, RNF-10|AC6-E2, AC8-E1|ADR-005 (shared-schema con RLS)|
 |D6 Trazabilidad ante reclamaciones|RF-28, RNF-04|AC6-E5, AC6-E6, AC6-E7, AC7-E4|ADR-006 (Kafka), ADR-007 (Outbox)|
 |D7 Evidencia fotográfica|RF-15|AC6-E5|ADR-016: almacenamiento de objetos con Garage en VM7 (sección 5.5)|
-|D8 Ambiente de pruebas y bloqueo del despliegue|RNF-07, RNF-08|AC7-E6, AC9-E7|ADR-015: ambiente de QA permanente en VM2 (sección 5.5)|
+|D8 Ambiente de pruebas y bloqueo del despliegue|RNF-07, RNF-08|AC7-E6, AC9-E7|ADR-015 y ADR-021: ambiente de QA permanente en tres VMs (sección 5.5)|
 
 ## 2. Atributos de Calidad
 
@@ -136,7 +136,7 @@ Son los escenarios prioritarios de la sección 3.10 (importancia de negocio Alta
 |AC9-E5 Pasarela de pagos sin respuesta †|Safety|Alta / Alta|D4|0 servicios en `pagado` sin `payment.approved` y 0 cobros duplicados por reintento|ADR-007 (relacionado)|
 |AC9-E1 Transiciones seguras del ciclo de servicio †|Safety|Alta / Media|—|0 transiciones inválidas en `service_requests`|—|
 |AC1-E1 Filtro de especialidad en el matching †|Functional Suitability|Alta / Media|D1|0% de asignaciones a un técnico de otra especialidad|—|
-|AC7-E6 Validación del incremento en QA antes de producción †|Maintainability|Alta / Media|D8|100% de los despliegues pasan antes por VM2; 0 pruebas de carga o de seguridad contra producción|ADR-015 (relacionado)|
+|AC7-E6 Validación del incremento en QA antes de producción †|Maintainability|Alta / Media|D8|100% de los despliegues pasan antes por QA; 0 pruebas de carga o de seguridad contra producción|ADR-015 y ADR-021 (relacionados)|
 |AC8-E3 Incorporación de un nuevo canal o tipo de cliente|Flexibility|Alta / Media|—|0 cambios en los microservicios de dominio para un nuevo tipo de cliente|—|
 
 ## 3. Escenarios de Calidad
@@ -240,7 +240,7 @@ Característica agregada en esta versión (ver sección 2). Cubre si el sistema 
 |---|---|
 |Fuente|Carga de usuarios|
 |Estímulo|Operación sostenida en hora pico, con ~50 solicitudes de matching concurrentes (la carga esperada del Escenario 4)|
-|Ambiente|Ambiente de QA en VM2 (ADR-015), con los 8 microservicios desplegados con los mismos `requests` y `limits` de producción|
+|Ambiente|Ambiente de QA en VM2, VM5 y VM6 (ADR-015, ADR-021), con los 8 microservicios desplegados con los mismos `requests` y `limits` de producción|
 |Artefacto|Pods en k3s con los `requests` y `limits` del Documento de Infraestructura, sección 5.6|
 |Respuesta|Cada servicio opera dentro de sus límites declarados y el consumo queda registrado|
 |Medida|0 reinicios por OOMKilled y cada pod dentro de sus `limits` declarados, medidos con `kubectl` y Grafana durante la prueba de carga con k6 en QA; el consumo de CPU y RAM queda registrado como línea base. El total de RAM no se compara con el presupuesto de VM3, porque en QA todos los componentes comparten una sola VM|
@@ -595,10 +595,10 @@ Característica agregada en esta versión (ver sección 2). Cubre si el sistema 
 |---|---|
 |Fuente|Pipeline de CI/CD (runner en VM1)|
 |Estímulo|Un incremento que pasó la integración continua debe promoverse a producción|
-|Ambiente|Ambiente de QA permanente en VM2 (ADR-015), aislado de producción, con un tenant de prueba dedicado|
-|Artefacto|Los 8 microservicios desplegados en el k3s de VM2, con PostgreSQL, Redis, Kafka y Garage propios|
-|Respuesta|El incremento se despliega en VM2 y allí se ejecutan las pruebas funcionales, de aceptación y de seguridad (E2E, UAT, OWASP ZAP) y la prueba de carga (k6) (RNF-07); si alguna falla, la promoción a producción se bloquea (RNF-08)|
-|Medida|100% de los despliegues a producción pasan antes por VM2 con todas esas pruebas aprobadas; 0 pruebas de carga o de seguridad se ejecutan contra producción (VM3 y VM4)|
+|Ambiente|Ambiente de QA permanente en VM2, VM5 y VM6 (ADR-015, ADR-021), aislado de producción, con un tenant de prueba dedicado|
+|Artefacto|Los 8 microservicios desplegados en el k3s de VM5, con PostgreSQL, Redis, Kafka y Garage propios|
+|Respuesta|El incremento se despliega en QA y allí se ejecutan las pruebas funcionales, de aceptación y de seguridad (E2E, UAT, OWASP ZAP) y la prueba de carga (k6) (RNF-07); si alguna falla, la promoción a producción se bloquea (RNF-08)|
+|Medida|100% de los despliegues a producción pasan antes por QA con todas esas pruebas aprobadas; 0 pruebas de carga o de seguridad se ejecutan contra producción (VM3 y VM4)|
 
 ### 3.8 AC8 — Flexibility
 
@@ -943,12 +943,12 @@ Esta sección describe cómo se distribuye el sistema sobre las 7 VMs propias (R
 
 |VM|IP|Rol|Qué corre|
 |---|---|---|---|
-|VM1|10.43.100.168|Gateway / Entry point|Nginx + API Gateway: sirve el panel Angular (archivos estáticos) y enruta a los 8 microservicios en VM3. Única entrada desde la VPN, también hacia QA y Grafana (ADR-015)|
-|VM2|10.43.98.15|Ambiente de QA|QA permanente: k3s, PostgreSQL, Redis, Kafka y Garage propios, aislado de producción (ADR-015)|
-|VM3|10.43.98.205|Backend — microservicios|8 microservicios (Identity, Actors, Catalog, Matching, ServiceRequest, Ranking, Payments, Communication) como Deployments de Kubernetes (k3s)|
-|VM4|10.43.98.209|Base de datos|PostgreSQL + PostGIS (fuente de verdad, incluye datos geoespaciales)|
-|VM5|10.43.98.29|Cache / colas cortas|Redis (cache y coordinación temporal para procesos programados)|
-|VM6|10.43.99.12|Mensajería asíncrona|Apache Kafka + Kafka UI (matching, ranking, notificaciones, pagos)|
+|VM1|10.43.100.168|Producción — entrada (gateway)|Nginx + API Gateway: sirve el panel Angular (archivos estáticos) y enruta a los 8 microservicios en VM3. Única entrada desde la VPN, también hacia QA y Grafana (ADR-015)|
+|VM2|10.43.98.15|QA — entrada|Nginx de QA y panel Angular de QA; reenvía `/api/` al k3s de VM5 (ADR-015, ADR-021)|
+|VM3|10.43.98.205|Producción — servicios|8 microservicios (Identity, Actors, Catalog, Matching, ServiceRequest, Ranking, Payments, Communication) como Deployments de Kubernetes (k3s)|
+|VM4|10.43.98.209|Producción — datos|PostgreSQL + PostGIS (fuente de verdad, incluye datos geoespaciales), Redis (cache y coordinación temporal) y Apache Kafka con Kafka UI (ADR-021)|
+|VM5|10.43.98.29|QA — servicios|k3s de QA con los 8 microservicios (ADR-021)|
+|VM6|10.43.99.12|QA — datos|PostgreSQL + PostGIS, Redis, Apache Kafka y Garage de QA (ADR-021)|
 |VM7|10.43.99.8|Storage + Observabilidad|Garage, compatible con S3 (evidencias fotográficas obligatorias al completar un servicio, ver RF-15, y respaldos de PostgreSQL; ADR-016) + Prometheus + Loki + Grafana (métricas y logs, ver Documento de Infraestructura, sección 7)|
 
 > **Nota sobre storage de evidencias (self-hosted vs. Cloudflare R2):** confirmado con el equipo que la evidencia fotográfica sí está en el alcance del MVP. El storage se aprovisiona **self-hosted en VM7**, consistente con R5: primero MinIO y, desde la versión 2.13, Garage (ADR-016), porque MinIO dejó de distribuir su edición comunitaria. El diagrama de la presentación de Sprint 1 mostraba "MinIO / Cloudflare R2" como si fueran intercambiables; se descarta Cloudflare R2 para esta versión por R5: guardaría datos de usuarios en producción (las evidencias) fuera de las 7 VMs, aunque su capa gratuita no tenga costo. GitHub Container Registry sí se usa porque solo guarda imágenes de contenedor, no datos de usuarios. Si en el futuro se reconsidera, debe evaluarse explícitamente contra R5 antes de adoptarlo.
@@ -957,9 +957,8 @@ Dado R10 (hardware fijo de 7 VMs), los 8 microservicios no reciben una VM cada u
 
 ### 5.2 Principio de distribución
 
-- **Separación por criticidad**: lo síncrono (VM1-VM4) queda aislado de lo asíncrono (VM6), así si Kafka se satura no tumba la API.
-- **Base de datos sola en su VM** (VM4): es el recurso más sensible — nunca comparte máquina con procesos que puedan consumir su CPU/RAM.
-- **Redis separado de Kafka** (VM5 vs. VM6): aunque ambos son infraestructura de soporte, tienen patrones de carga distintos (Redis = baja latencia constante, Kafka = throughput por ráfagas).
+- **Misma forma en cada ambiente (ADR-021)**: producción (VM1, VM3 y VM4) y QA (VM2, VM5 y VM6) tienen una VM de entrada, una de servicios y una de datos. Lo que atiende al usuario queda separado de los datos y del bus, y QA prueba las mismas conexiones por red que producción.
+- **Excepción aceptada — datos juntos en VM4 (ADR-021)**: antes la base de datos estaba sola en su VM, Redis separado de Kafka y Kafka aislado de lo síncrono. Con 3 VMs de producción, PostgreSQL, Redis y Kafka comparten VM4. El riesgo es que las ráfagas de Kafka compitan con PostgreSQL por CPU y memoria, y que la caída de VM4 tumbe bases, caché y bus a la vez. Se mitiga con límites de memoria por contenedor y la alerta de RAM al 85%, y se mide cuando haya servicios reales.
 
 > **Limitación reconocida — punto único de falla en VM3:** k3s aísla los 8 microservicios entre sí a nivel de pod, con auto-healing (si un pod falla, Kubernetes lo reinicia automáticamente sin afectar a los demás, ver escenario AC5-E3), pero **siguen compartiendo la misma máquina física** al ser un clúster de un solo nodo. Si VM3 completa falla (hardware, memoria agotada, etc.), los 8 servicios caen simultáneamente porque no hay un segundo nodo al cual Kubernetes pueda reprogramar los pods. Esto limita el beneficio de "resiliencia ante fallos aislados" atribuido a los microservicios en el ADR-003 al nivel de proceso/pod, no al nivel de máquina — un clúster multi-nodo eliminaría esta limitación, pero requeriría VMs adicionales que violan R10 (hardware fijo de 7 VMs). El presupuesto de CPU/RAM por microservicio que mitiga el riesgo de que la memoria agotada dispare esta falla se define en el Documento de Infraestructura, sección 5.6.
 
@@ -967,20 +966,19 @@ Dado R10 (hardware fijo de 7 VMs), los 8 microservicios no reciben una VM cada u
 
 Existen dependencias de arranque entre componentes: PostgreSQL y Kafka deben estar disponibles antes que los microservicios. Este orden se garantiza con healthchecks en Docker Compose, probes de Kubernetes (`readinessProbe`/`livenessProbe`) en k3s, y/o con un script de orquestación:
 
-1. VM4 (PostgreSQL/PostGIS) y VM5 (Redis)
-2. VM6 (Kafka) — los microservicios dependen del bus de eventos para operar correctamente
-3. VM3 (los 8 microservicios, vía Kubernetes/k3s)
-4. VM1 (Nginx Gateway / API Gateway y panel Angular)
-5. VM7 (Garage + Observabilidad) — independiente, puede iniciar en paralelo
+1. VM4 (PostgreSQL/PostGIS, Redis y Kafka) — los microservicios dependen de las bases y del bus de eventos para operar correctamente
+2. VM3 (los 8 microservicios, vía Kubernetes/k3s)
+3. VM1 (Nginx Gateway / API Gateway y panel Angular)
+4. VM7 (Garage + Observabilidad) — independiente, puede iniciar en paralelo
 
-VM2 (QA, ADR-015) es independiente de producción y arranca por separado.
+QA (ADR-015, ADR-021) es independiente de producción y arranca por separado, en el mismo orden: VM6 (datos), VM5 (servicios) y VM2 (entrada).
 
 ### 5.4 Automatización, despliegue y CI/CD
 
 El detalle operativo de esta sección (playbooks de Ansible, manifiestos de Kubernetes, estructura del pipeline de CI/CD, runner self-hosted, gates por rama) se documenta y se mantiene actualizado en el **Documento de Infraestructura V1**, no aquí — evita que el mismo contenido opere desde dos lugares y se desincronice. Los principios que sí son decisiones de arquitectura, y por tanto pertenecen a este documento, son:
 
 - Una sola persona (DevOps) administra las 7 VMs → la automatización con Ansible no es opcional (Documento de Infraestructura, sección 5.1).
-- Solo VM3 (producción) y VM2 (QA, ADR-015) usan Kubernetes (k3s); el resto de VMs usa Docker Compose, porque son las únicas que alojan múltiples servicios independientes que se benefician de esa orquestación (ver ADR-011, sección 5.5).
+- Solo VM3 (producción) y VM5 (QA, ADR-015 y ADR-021) usan Kubernetes (k3s); el resto de VMs usa Docker Compose, porque son las únicas que alojan múltiples servicios independientes que se benefician de esa orquestación (ver ADR-011, sección 5.5).
 - El pipeline de CI/CD está separado por microservicio para que un cambio en uno no dispare el de los 8 (Documento de Infraestructura, sección 6).
 
 ### 5.5 ADR de infraestructura
@@ -988,9 +986,10 @@ El detalle operativo de esta sección (playbooks de Ansible, manifiestos de Kube
 |ID|Decisión|Atributo priorizado|Atributo sacrificado|Justificación|
 |---|---|---|---|---|
 |ADR-011|Kubernetes (k3s, clúster de un solo nodo en VM3) para orquestar los 8 microservicios; Docker Compose para el resto de VMs|AC5 Reliability (rolling updates sin downtime, auto-healing de contenedores)|Costo/simplicidad operativa (curva de aprendizaje y administración de un clúster, aunque sea de un solo nodo)|Kubernetes real (vía k3s) sin salirse del presupuesto de 7 VMs (R5); el equipo asume conscientemente la mayor complejidad operativa pese a R7 (sin operación 24/7), confiando en la capacidad propia para administrarlo|
-|ADR-014|Una sola instancia de PostgreSQL + PostGIS en VM4 (y otra en VM2 para QA), con una base de datos y credenciales propias por microservicio|AC7 Maintainability (Modularity: cada servicio es dueño de sus datos y el motor impide JOINs entre bases)|AC5 Reliability: la instancia es un punto único de falla y sus recursos se comparten entre los 8 servicios|R10 y R11: un servidor por servicio no cabe en 7 VMs ni lo puede mantener una sola persona. Detalle en `docs/architecture/adr/ADR-014-postgresql-instancia-unica.md`|
-|ADR-015|VM2 como ambiente de QA permanente, con k3s, PostgreSQL, Redis y Kafka propios. El panel Angular pasa a VM1, que es la única entrada desde la VPN y elige el destino por nombre (producción, QA o Grafana)|AC7 Maintainability (Testability: el despliegue y la prueba de carga se ejecutan en QA antes de producción)|AC5 Reliability: si VM1 cae, se pierde a la vez el acceso a producción, QA y Grafana. También suma una VM más que mantener (R11)|D8 (AC7-E6: todo despliegue y toda prueba de carga pasan antes por QA). R10: no hay una octava VM, y VM2 solo servía archivos estáticos. R9: desde la VPN, el perímetro de la universidad solo deja pasar el 443 de VM1. Detalle, opciones descartadas y riesgos en `docs/architecture/adr/ADR-015-ambiente-qa-en-vm2.md`|
+|ADR-014|Una sola instancia de PostgreSQL + PostGIS en VM4 (y otra en VM6 para QA), con una base de datos y credenciales propias por microservicio|AC7 Maintainability (Modularity: cada servicio es dueño de sus datos y el motor impide JOINs entre bases)|AC5 Reliability: la instancia es un punto único de falla y sus recursos se comparten entre los 8 servicios|R10 y R11: un servidor por servicio no cabe en 7 VMs ni lo puede mantener una sola persona. Detalle en `docs/architecture/adr/ADR-014-postgresql-instancia-unica.md`|
+|ADR-015|(La parte de QA en una sola VM la reemplaza el ADR-021.) VM2 como ambiente de QA permanente, con k3s, PostgreSQL, Redis y Kafka propios. El panel Angular pasa a VM1, que es la única entrada desde la VPN y elige el destino por nombre (producción, QA o Grafana)|AC7 Maintainability (Testability: el despliegue y la prueba de carga se ejecutan en QA antes de producción)|AC5 Reliability: si VM1 cae, se pierde a la vez el acceso a producción, QA y Grafana. También suma una VM más que mantener (R11)|D8 (AC7-E6: todo despliegue y toda prueba de carga pasan antes por QA). R10: no hay una octava VM, y VM2 solo servía archivos estáticos. R9: desde la VPN, el perímetro de la universidad solo deja pasar el 443 de VM1. Detalle, opciones descartadas y riesgos en `docs/architecture/adr/ADR-015-ambiente-qa-en-vm2.md`|
 |ADR-016|Garage, compatible con S3, como almacenamiento de objetos para evidencias y respaldos de PostgreSQL en VM7 (y una instancia propia en QA), en lugar de MinIO|AC6 Security (un solo puerto expuesto, llaves separadas por uso) y uso de recursos de VM7 (AC2)|Funciones avanzadas de S3 (versionado, bloqueo de objetos) y consola web|D7 y R5: MinIO dejó de distribuir su edición comunitaria; en la prueba de concepto Garage cumplió lo mismo que SeaweedFS con unas 20 veces menos memoria. Detalle, prueba de concepto y opciones descartadas en `docs/architecture/adr/ADR-016-garage-storage-objetos.md`|
+|ADR-021|Las 7 VMs se reparten en 1 de herramientas (VM7), 3 de producción (VM1 entrada, VM3 servicios y VM4 datos) y 3 de QA (VM2 entrada, VM5 servicios y VM6 datos), con la misma forma en producción y QA|AC7 Maintainability (Testability: QA con la misma forma que producción, y prueba de carga más representativa)|AC5 Reliability: en producción PostgreSQL, Redis y Kafka comparten VM4 y caen juntos; k3s sigue de un solo nodo en cada ambiente|R10 (7 VMs fijas) y R11. D8 y AC7-E6: todo despliegue pasa antes por un QA con la forma de producción. R9: VM1 sigue siendo la única entrada. Detalle, opciones descartadas y riesgos en `docs/architecture/adr/ADR-021-reparto-de-vms-por-ambiente.md`|
 
 > **Nota:** se descartó un clúster de Kubernetes multi-nodo (vía `kubeadm` completo) por requerir VMs adicionales dedicadas al control plane, lo cual viola R10. k3s resuelve esto al ser una distribución de Kubernetes completa pero liviana, capaz de correr en un solo nodo (VM3) sin sacrificar la API estándar de Kubernetes ni los manifiestos de Deployment/Service. El resto de las VMs (base de datos, cache, mensajería, storage) se mantiene en Docker Compose simple, ya que no alojan múltiples servicios independientes que se beneficien de orquestación.
 
@@ -1044,8 +1043,9 @@ Vista consolidada de las tablas de las secciones 5.5 y 6: **+** indica el atribu
 |ADR-016| |+| | | |+| | | |Un puerto y una llave por uso, casi sin memoria|Sin versionado ni consola; un solo nodo|
 |ADR-017| |+| | |+| |−| | |Validar sin llamar al dueño de los datos|La réplica va segundos atrás|
 |ADR-018| | | | | |+|−| | |Validación local del token; nadie más puede emitirlo|Un token vale hasta que expira; rotación de llaves|
+|ADR-021| | | | |−| |+| | |QA con la misma forma que producción; datos y bus juntos en VM4|Una caída de VM4 tumba bases, caché y bus; k3s de un solo nodo en cada ambiente|
 
-**Lectura.** AC5 es el atributo más favorecido (5 decisiones) y AC7 el más sacrificado (8), aunque también es el que más se favorece (6), lo que es consistente con un sistema distribuido construido por un equipo pequeño: se paga en complejidad lo que se gana en tolerancia a fallos. Ninguna decisión prioriza ni sacrifica AC1, AC3, AC4 ni AC9: sus escenarios se atienden dentro de cada servicio, no con decisiones de estructura.
+**Lectura.** AC5 es el atributo más favorecido (5 decisiones) y AC7 el más sacrificado (8), aunque también es el que más se favorece (7), lo que es consistente con un sistema distribuido construido por un equipo pequeño: se paga en complejidad lo que se gana en tolerancia a fallos. Ninguna decisión prioriza ni sacrifica AC1, AC3, AC4 ni AC9: sus escenarios se atienden dentro de cada servicio, no con decisiones de estructura.
 
 ### 6.2 Puntos de sensibilidad, puntos de trade-off y riesgos
 
@@ -1055,7 +1055,7 @@ En términos de ATAM, un **punto de sensibilidad** es un parámetro de la arquit
 |---|---|---|---|---|
 |Intervalo del publicador del Outbox (ADR-007)|Trade-off|AC2 (latencia hasta la notificación) frente a la carga sobre PostgreSQL|1 segundo|AC2-E3 (menos de 7 s), AC2-E5|
 |Vida del token de acceso (ADR-018)|Trade-off|AC6 (ventana en que un token de un usuario o tenant desactivado sigue válido) frente a AC4 (frecuencia con que se pide iniciar sesión)|`expiresIn` del login|AC6-E2; regla RN-T1|
-|`requests` y `limits` de memoria en k3s (ADR-011)|Trade-off|AC2-E5 (uso de recursos) frente a AC5 (reinicios por falta de memoria)|Por medir en QA (VM2)|AC2-E5, AC5-E1|
+|`requests` y `limits` de memoria en k3s (ADR-011)|Trade-off|AC2-E5 (uso de recursos) frente a AC5 (reinicios por falta de memoria)|Por medir en QA (VM5)|AC2-E5, AC5-E1|
 |Tamaño de los pools de conexión por servicio (ADR-014)|Trade-off|AC2 de cada servicio frente al límite de 100 conexiones compartido|Por defecto del driver|AC2-E1, AC2-E4|
 |Índices GiST y radio de búsqueda del matching (ADR-004)|Sensibilidad|AC2|Por definir en Matching|AC2-E1|
 |Retraso de las réplicas por eventos (ADR-017)|Trade-off|AC5 (independencia de Catalog) frente a AC1 (una categoría recién creada o desactivada tarda en reflejarse)|Segundos (depende del Outbox y del consumidor)|AC1-E1, AC5-E3|
@@ -1063,7 +1063,7 @@ En términos de ATAM, un **punto de sensibilidad** es un parámetro de la arquit
 
 **Riesgos aceptados** (decisiones cuyo costo puede materializarse):
 
-- **Un solo nodo en VM3, VM4, VM6 y VM7 (ADR-011, ADR-014, ADR-016, R10).** La caída de la VM tumba todos los servicios, todas las bases, el bus o las evidencias. Mitigación: respaldo diario a Garage y recuperación manual dentro de lo que fija AC5-E1 (R7).
+- **Un solo nodo en VM3, VM4 y VM7 (ADR-011, ADR-014, ADR-016, ADR-021, R10).** La caída de la VM tumba todos los servicios, o a la vez todas las bases, la caché y el bus (VM4), o las evidencias. QA tiene la misma forma, con VM5 y VM6. Mitigación: respaldo diario a Garage y recuperación manual dentro de lo que fija AC5-E1 (R7).
 - **Sistema distribuido con un equipo pequeño (ADR-003, ADR-006, R3).** Mitigación: contratos versionados, pruebas de integración con Testcontainers en cada servicio y la PoC POC-BE-001 entre .NET y Spring Boot (pendiente).
 - **Lógica transversal copiada en cada servicio .NET (AC7-E5).** Una corrección de seguridad debe repetirse en cada copia. Mitigación propuesta: ADR-020.
 - **Roles de base de datos distintos entre el DD y la infraestructura (ADR-019).** Mientras no se alineen, el servicio se conecta en producción con el rol dueño de la base. Mitigación: decisión de DevOps antes del primer despliegue a producción.
@@ -1194,3 +1194,4 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.18|6 oct 2026|La sección 4.2.1 corrige qué roles usa cada cliente, según el SRS (2.1, 2.2) y el DD (`users.role`, RN-U6): la app Flutter atiende a clientes, empresas cliente, técnicos y proveedores, y el panel Angular al administrador del tenant y al de plataforma.|
 |2.19|6 oct 2026|ADR completos (SCRUM-280). Todos los ADR tienen ahora un archivo en `docs/architecture/adr/` con contexto, decisión, alternativas descartadas, consecuencias, evidencia y trazabilidad; el detalle de ADR-016 pasa de la sección 5.5.1 a su archivo. Se registra ADR-014 (una instancia de PostgreSQL con una base por servicio), que el SDD y el Documento de Infraestructura ya citaban sin documento, y se agregan ADR-017 (réplicas locales alimentadas por eventos) y ADR-018 (JWT RS256 firmado solo por Identity), decisiones ya implementadas en SCRUM-27 y SCRUM-63. ADR-019 (roles de base de datos) y ADR-020 (código transversal compartido) quedan propuestos. La sección 5.4 reconoce que VM2 también usa k3s (ADR-015). Los números ADR-001, ADR-008 y ADR-010 quedan sin asignar.|
 |2.20|6 oct 2026|Trade-offs (SCRUM-281). La sección 6.1 consolida en una matriz qué atributo favorece (+) y cuál sacrifica (−) cada ADR, con el efecto arquitectónico y el costo aceptado; la 6.2 agrega los puntos de sensibilidad y de trade-off (intervalo del Outbox, vida del token, límites de memoria, pools de conexión, retraso de las réplicas) con los escenarios que se deben repetir si cambian, y los riesgos aceptados. La justificación de ADR-007 cita D4 y AC9-E5, y la de ADR-015 cita D8 y AC7-E6. La síntesis de la sección 6 se precisa: AC9 solo aparece como escenario en la justificación de ADR-007.|
+|2.21|6 oct 2026|Reparto de las 7 VMs por ambiente (ADR-021): 1 de herramientas, 3 de producción y 3 de QA con la misma forma. La sección 5.1 cambia el rol de VM2, VM4, VM5 y VM6; la 5.2 reemplaza los principios "base de datos sola" y "Redis separado de Kafka" por la excepción aceptada de VM4; la 5.3 ajusta el orden de arranque; las tablas 5.5 y 6.1 agregan el ADR-021, y los escenarios y drivers que decían "QA en VM2" pasan a QA en tres VMs. Se agregan notas de actualización a los ADR-006, 011, 014, 015 y 016. La implementación en Ansible y la actualización del Documento de Infraestructura y del SDD siguen pendientes.|

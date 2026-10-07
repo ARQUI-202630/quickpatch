@@ -8,6 +8,8 @@
 - **Driver y restricciones:** D7 (evidencia fotográfica), R5, R10
 - **Implementación:** `quickpatch-infrastructure` (Ansible, llaves en Ansible Vault)
 
+> **Actualización (ADR-021, 6 de octubre de 2026):** la instancia de Garage de QA pasa de VM2 a VM6; producción sigue en VM7.
+
 ## Contexto
 
 Las evidencias fotográficas (D7, RF-15) y los respaldos diarios de PostgreSQL se guardan en un almacenamiento de objetos propio en VM7 (R5). La herramienta elegida era MinIO, pero al configurar las VMs (octubre de 2026) se encontró que dejó de distribuir su edición comunitaria: las imágenes de Docker no se actualizan y `dl.min.io` responde 410. Mientras se decidía, el almacenamiento quedó apagado y no había respaldo de la base de datos.
