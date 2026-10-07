@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 2.2 |
+| **Versión** | 2.3 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -476,8 +476,8 @@ Los runners de GitHub corren en la nube y no llegan a la red del laboratorio (`1
 
 Dos tipos de información, cada uno con su propia cadena de recolección y almacenamiento, unificados en un solo panel:
 
-- **Métricas** (números que cambian en el tiempo: CPU, RAM, peticiones por segundo, errores por minuto) — recolectadas por `node_exporter` en cada VM, almacenadas por Prometheus en VM7.
-- **Logs** (mensajes de texto que describen eventos: "pago rechazado", "acceso denegado") — recolectados por Promtail en cada VM, almacenados por Loki en VM7.
+- **Métricas** (números que cambian en el tiempo: CPU, RAM, peticiones por segundo, errores por minuto) — recolectadas por `node_exporter` en cada VM, almacenadas por Prometheus en VM1.
+- **Logs** (mensajes de texto que describen eventos: "pago rechazado", "acceso denegado") — recolectados por Promtail en cada VM, almacenados por Loki en VM1.
 
 Ninguno de los dos sustituye al otro: las métricas dicen *qué tan rápido u ocupado* está el sistema; los logs dicen *qué pasó exactamente*. Grafana consulta ambas fuentes desde el mismo panel, lo que permite cruzarlos — por ejemplo, ver qué decían los logs justo cuando una métrica de CPU se disparó.
 
@@ -487,9 +487,9 @@ flowchart LR
         NE["node_exporter<br/>(métricas de la VM)"]
         PT["Promtail<br/>(logs de los contenedores)"]
     end
-    NE -->|"scrape cada ~15s"| PROM["Prometheus<br/>(VM7)"]
-    PT -->|"envío continuo"| LOKI["Loki<br/>(VM7)"]
-    PROM --> GRAF["Grafana<br/>(VM7)"]
+    NE -->|"scrape cada ~15s"| PROM["Prometheus<br/>(VM1)"]
+    PT -->|"envío continuo"| LOKI["Loki<br/>(VM1)"]
+    PROM --> GRAF["Grafana<br/>(VM1)"]
     LOKI --> GRAF
 ```
 
@@ -499,20 +499,50 @@ flowchart LR
 |---|---|---|
 | `node_exporter` | Las 7 VMs (`setup-base.yml`) | Expone las métricas de esa VM para que Prometheus las recolecte |
 | Promtail | Las 7 VMs (`setup-base.yml`) | Recolecta los logs de los contenedores de esa VM y los envía a Loki |
-| Prometheus | VM7 (`deploy-storage-observability.yml`) | Almacena el historial de métricas de las 7 VMs |
-| Loki | VM7 (`deploy-storage-observability.yml`) | Almacena el historial de logs de las 7 VMs |
-| Grafana | VM7 (`deploy-storage-observability.yml`) | Panel único para consultar Prometheus y Loki, con las dos fuentes de datos ya configuradas |
+| Prometheus | VM1 (`deploy-observabilidad.yml`) | Almacena el historial de métricas de las 7 VMs, de producción y de QA |
+| Loki | VM1 (`deploy-observabilidad.yml`) | Almacena el historial de logs de las 7 VMs, de producción y de QA |
+| Grafana | VM1 (`deploy-observabilidad.yml`) | Panel único para consultar Prometheus y Loki, con las dos fuentes de datos ya configuradas |
 
-- **Acceso:** Grafana se abre en `https://grafana.quickpatch.internal`, a través del gateway de VM1 (sección 11), con el usuario `admin` y la contraseña del vault. Prometheus no se publica: se consulta desde Grafana.
-- **Etiquetas de los logs:** Loki etiqueta cada línea con la VM (`vm`, de `vm1` a `vm7`), el `job` y el contenedor. Las pruebas de sistema usan esa etiqueta para revisar los logs de QA en busca de datos de tarjetas (sección 6.2).
+- **Acceso:** Grafana corre en la propia VM1 (ADR-022) y se abre en `https://grafana.quickpatch.internal` por el proxy Nginx de esa misma VM (sección 11), con el usuario `admin` y la contraseña del vault. Prometheus (9090) y Grafana (3000) no tienen puerto abierto en el firewall: solo el 3100 de Loki, para los logs de las 7 VMs. Prometheus no se publica: se consulta desde Grafana.
+- **Etiquetas de los logs:** Loki etiqueta cada línea con la VM (`vm`, de `vm1` a `vm7`), el `job`, el `entorno` (`qa` en VM2, `prod` en el resto) y, en los pods de k3s (VM2 y VM3), el `namespace` y el `service` (el contenedor, que se llama como el microservicio), sacados de la ruta del log. Las pruebas de sistema usan esas etiquetas para revisar los logs de QA en busca de datos de tarjetas (sección 6.2).
+- **Reloj:** las 7 VMs se sincronizan con servidores NTP públicos mediante `chrony`, que `setup-base.yml` deja activo. Importa para cruzar logs entre VMs y para validar certificados y firmas de token: en Rocky Linux (VM2 y VM5) el servicio no arrancaba solo y VM2 llegó a ir unos 54 s atrasada.
 - **Retención:** 15 días de métricas en Prometheus; los datos de diagnóstico no se respaldan (sección 9.1).
-- **Pendiente:** dashboards y alertas. Hoy Grafana solo tiene las fuentes de datos; faltan un dashboard de las 7 VMs y las alertas de RAM (85%, escenario AC9-E6 del SAD), disco y VM caída. Además, Promtail está en fin de vida y su reemplazo es Grafana Alloy.
+- **Pendiente:** un dashboard de métricas de las 7 VMs y que los servicios escriban sus logs en JSON con `level` y `correlationId` (SCRUM-323). Además, Promtail está en fin de vida y su reemplazo es Grafana Alloy.
 
 ### 7.2 Qué cubre esto en el SRS y el SAD
 
 - **RNF-04** (todo 403 queda en log): el 403 se escribe con el logger estructurado del servicio ASP.NET Core o Spring Boot, Promtail lo recolecta, Loki lo guarda permanentemente — sin esta cadena, el log existiría solo mientras el contenedor no se reinicie, lo cual pasa en cada despliegue.
 - **AC6-E5/E6** (reconstruir una disputa, trazabilidad de pagos): requieren historial persistente de eventos — Loki es lo que hace posible que ese historial sobreviva más allá de la vida de un contenedor.
 - **AC5-E1/E3 y AC2-E5** (disponibilidad y uso de recursos, "límite de capacidad a vigilar" de la sección 3.1): Prometheus + `node_exporter` son el instrumento real para vigilar esa capacidad — sin ellos, "vigilar" no tenía con qué hacerse.
+
+### 7.3 Dashboard de logs y alertas
+
+Ambos se aprovisionan desde `quickpatch-infrastructure` (`ansible/files/grafana/`) al correr `deploy-observabilidad.yml`, así que no se editan a mano en Grafana.
+
+**Dashboard "QUICKPATCH — Logs y errores"** (carpeta QUICKPATCH). Filtros por entorno y servicio, y seis paneles:
+
+| Panel | Qué responde |
+|---|---|
+| Errores por servicio | Cuántas líneas con `level` error, fatal o critical hay por servicio |
+| Errores recientes | Las últimas líneas de error de los servicios elegidos |
+| Trazar un correlationId | Todas las líneas de todos los servicios que contienen el identificador escrito en la variable |
+| Accesos 403 por servicio | Líneas de los servicios con `403` (RNF-04) |
+| 403 en el gateway | Accesos rechazados en el registro de Nginx de VM1 |
+| Logs recibidos por VM | Cuántas líneas llegan de cada VM: una VM sin barras no está enviando logs |
+
+Los paneles de errores suponen logs en JSON con los campos `level` y `correlationId`; el formato lo fija SCRUM-323. Los paneles de 403, de correlationId y de logs por VM no dependen del formato. Hasta que haya servicios corriendo en k3s, los paneles por servicio aparecen vacíos.
+
+**Alertas de infraestructura** (carpeta QUICKPATCH, evaluadas cada minuto sobre las métricas de `node_exporter`):
+
+| Alerta | Condición | Severidad |
+|---|---|---|
+| RAM alta | Más del 85% de la memoria de una VM durante 5 minutos (escenario AC9-E6 del SAD) | Alta |
+| Disco casi lleno | Más del 85% de la partición raíz durante 10 minutos | Alta |
+| VM sin métricas | Prometheus no lee `node_exporter` de una VM durante 2 minutos, o no devuelve datos | Crítica |
+
+Las notificaciones salen por correo a `sanchezse@javeriana.edu.co`, agrupadas por alerta y VM, con repetición cada 4 horas. Grafana envía el correo por el SMTP de una cuenta de Gmail con contraseña de aplicación (`vault_smtp_password` en el vault de Ansible); si esa contraseña no existe, el correo queda desactivado y las reglas se ven igual en el panel.
+
+**Limitación:** las alertas viven en VM1, junto a Grafana, Prometheus y Loki, y VM1 también es la entrada desde la VPN y el runner (riesgo aceptado en el ADR-022). Si VM1 cae, no hay acceso ni monitoreo, y no hay quien avise de que VM1 cayó. Un monitor externo lo resolvería y queda fuera del alcance (R10: sin VM adicional).
 
 ---
 
@@ -910,4 +940,5 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 2.0 | 3 oct 2026 | Pasa de plan a infraestructura implementada. Las secciones 3 a 10 describen lo que está aplicado en las 7 VMs: VM2 como ambiente de QA y VM1 como entrada única por nombre (SAD, ADR-015), Garage en lugar de MinIO (SAD, ADR-016), VM2 y VM5 con Rocky Linux, y Ansible implementado. Nuevas secciones: 2.3 (balanceo de carga y alta disponibilidad) y Anexo A (manual de despliegue). Se reescriben la 2.1 (topología), la 3 (consumo medido de cada VM), la 6 (CI/CD con workflows reutilizables en el multirepo, ADR-013, y pruebas según el Documento de Pruebas), la 9 (respaldo implementado y recuperación ante desastres) y la 10 (dos capas de firewall, reglas por VM y SSH con contraseña). La 5.6 deja registrado que el umbral de 6,5 GiB no alcanza con los límites actuales. |
 | 2.1 | 6 oct 2026 | CI por repositorio (ADR-021, SCRUM-337): la sección 6.1 describe el CI propio de cada uno de los 12 repositorios (incluidos `quickpatch-api-gateway` y `quickpatch-kafka`); el despliegue sigue con los workflows de `quickpatch-infrastructure` hasta SCRUM-338. |
 | 2.2 | 6 oct 2026 | Redistribución de VMs (ADR-022, SCRUM-342) y recursos por servicio (SCRUM-339). Nueva sección 3.3 con la distribución objetivo (VM1 herramientas; producción en VM3, VM4 y VM6; QA en VM2, VM5 y VM7), las conexiones permitidas y el plan de migración. Nueva sección 3.4: base de datos, usuario de Redis y llave de Garage por servicio. Las secciones operativas siguen describiendo la distribución actual hasta que DevOps migre cada VM. |
+| 2.3 | 7 oct 2026 | Observabilidad aplicada en VM1 (ADR-022, paso 1 de la migración): la sección 7 pasa de VM7 a VM1, y se agregan etiquetas `entorno`, `namespace` y `service` en los logs (sección 7.1), sincronización de hora con `chrony` en las 7 VMs, y nueva sección 7.3 con el dashboard "QUICKPATCH — Logs y errores" y las alertas de RAM, disco y VM caída por correo. Deja pendientes el dashboard de métricas y los logs en JSON de los servicios (SCRUM-323). |
 | 2.4 | 7 oct 2026 | El reparto del ADR-022 queda aplicado en las VMs y el documento lo describe como estado actual: observabilidad en VM1; producción en VM3, VM4 y VM6; QA en VM2, VM5 y VM7, con los mismos playbooks parametrizados por ambiente. Se actualizan las secciones 2, 3, 4, 5, 6, 8, 9, 10, 11 y el Anexo A (inventario, playbooks, firewall, respaldo, secretos y nombres). Se corrige la 3.4: Redis con un usuario por servicio, llaves de Garage por uso y PostGIS en `db_service_request`, ya aplicados. Kafka UI deja de tener puerto abierto: se usa por túnel SSH. Quedan pendientes el API Gateway y el panel en k3s (paso 4, esperan sus imágenes) y la medición de RAM y disco con servicios reales (SCRUM-347). |
