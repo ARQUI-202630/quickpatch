@@ -35,6 +35,7 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run quic
 2. Secretos de Kubernetes de cada servicio (`deploy/k8s/README.md` de Identity, Catalog, ServiceRequest y Matching). Un solo par de llaves RSA: la privada para Identity y la pública para los demás.
 3. `kubectl apply -f deploy/k8s/<servicio>.yaml` en cada repositorio.
 4. Rama `release/*` en cada servicio: el pipeline publica la imagen y la despliega en QA; los init containers aplican las migraciones.
-5. Solo la primera vez: `db/roles.sql` de cada servicio, el alta del tenant (`identity/db/seed-tenant.example.sql`) y `kubectl -n quickpatch rollout restart deployment` para que Identity cree el administrador inicial.
-6. Rama `release/*` en este repositorio: corre esta colección contra QA.
-7. App móvil: `config/qa.json` con la huella del certificado de VM1 (`quickpatch-mobile`, README).
+5. Solo la primera vez: `db/roles.sql` de cada servicio, el alta del tenant (`identity/db/seed-tenant.example.sql`) y `kubectl -n quickpatch rollout restart deployment` para que Identity cree los administradores iniciales (`admin-email` y `platform-admin-email` del Secret `identity-secretos`).
+6. Panel web: el administrador de la plataforma entra en `https://qa.quickpatch.internal`, ve los tenants y los activa o desactiva (SCRUM-41).
+7. Rama `release/*` en este repositorio: corre esta colección contra QA.
+8. App móvil: `config/qa.json` con la huella del certificado de VM1 (`quickpatch-mobile`, README).
