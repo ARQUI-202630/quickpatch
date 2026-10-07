@@ -41,7 +41,7 @@ Si un servicio guarda un cambio y luego publica el evento en Kafka como dos paso
 - ServiceRequest: la solicitud y su evento se guardan en la misma transacción, y una prueba de integración verifica que el evento llega a Kafka con `eventId` igual al id del Outbox.
 - ServiceRequest: el consumidor de `catalog.category-changed` aplica una sola vez un evento repetido (prueba de integración) y descarta un cambio atrasado (prueba unitaria).
 - Catalog: el alta y la desactivación publican el estado completo por Outbox.
-- Pendiente: POC-BE-001 (caída y recuperación de Kafka con consumidor en Spring Boot).
+- POC-BE-001: con Kafka caído la solicitud se creó y su evento llegó a Matching 8 s después de que Kafka volvió, sin pérdidas; un evento repetido se descartó en Matching. Pendiente: caída de más de 5 minutos.
 
 ## Trazabilidad
 

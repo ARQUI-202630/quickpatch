@@ -40,7 +40,7 @@ Con microservicios orientados a eventos (ADR-003), los servicios necesitan un me
 ## Evidencia
 
 - `service-request.created` y `catalog.category-changed` publicados y consumidos contra un Kafka real (Testcontainers) en ServiceRequest y Catalog.
-- Pendiente: POC-BE-001 entre .NET y Spring Boot.
+- POC-BE-001 (6 de octubre de 2026): ServiceRequest (.NET) publica y Matching (Spring Boot) consume `service-request.created` solo con el contrato; 723 ms de punta a punta con una solicitud.
 
 ## Trazabilidad
 
