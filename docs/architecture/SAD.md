@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.23 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.24 — QUICKPATCH
 
 ---
 
@@ -879,55 +879,64 @@ De estos 16, **7 no sustentan ningún ADR todavía** (AC1-E1, AC5-E1, AC5-E6, AC
 
 Esta sección presenta la vista general de componentes del sistema y cómo se conectan entre sí, sin entrar aún al detalle interno de cada uno. La arquitectura se plantea como un conjunto de **microservicios independientes**, organizados según los dominios de negocio, que se comunican principalmente mediante **eventos publicados en Apache Kafka** (Event-Driven Architecture) en lugar de llamadas síncronas directas entre servicios.
 
-### 4.1 Diagrama general
+### 4.1 Diagrama general (C4 de alto nivel)
+
+El diagrama de alto nivel sigue el nivel de contexto de C4: las personas que usan QUICKPATCH, las dos aplicaciones por las que entran, el backend como una sola caja y los sistemas externos de los que depende. Está orientado de izquierda a derecha para proyectarse. El detalle de contenedores (gateway, los 8 microservicios, Kafka y los almacenes de datos) está en el SDD, sección 3.1.4, y el de componentes de las apps cliente, en la 3.1.5.
 
 ```mermaid
-flowchart TB
-    subgraph Usuarios["Usuarios"]
-        direction LR
-        U1[Cliente]
-        U2[Aliado/Tecnico]
-        U3[Empleado]
-        U4[Proveedor]
-        U5[Empresa]
-        U6[Admin]
+%%{init: {'theme':'base','themeVariables':{'lineColor':'#374151','textColor':'#111827','edgeLabelBackground':'#ffffff','fontSize':'18px'}}}%%
+flowchart LR
+    subgraph PER[" "]
+        direction TB
+        P1(["Cliente y empresa cliente<br/>[Persona]<br/>Pide, sigue y paga servicios"])
+        P2(["Técnico y proveedor<br/>[Persona]<br/>Atiende las solicitudes asignadas"])
+        P3(["Admin del tenant<br/>[Persona]<br/>Aprueba y suspende técnicos"])
+        P4(["Admin de plataforma<br/>[Persona]<br/>Administra los tenants"])
     end
 
-    subgraph Frontend["Clientes"]
-        direction LR
-        WEB["Angular (Web)<br/>Panel Admin"]
-        MOBILE["Flutter<br/>(iOS/Android)"]
+    subgraph SIS["QUICKPATCH [Sistema de software]"]
+        direction TB
+        MOB["Flutter Mobile<br/>[Contenedor: iOS y Android]<br/>Usuarios operativos"]
+        WEB["Angular Web<br/>[Contenedor]<br/>Administración"]
+        CORE["Backend QUICKPATCH<br/>[API Gateway + 8 microservicios<br/>+ Apache Kafka]<br/>Solicitudes, matching, pagos,<br/>reputación y notificaciones"]
     end
 
-    Usuarios --> Frontend
-
-    WEB -->|"HTTPS - REST - WebSocket"| GW
-    MOBILE -->|"HTTPS - REST - WebSocket"| GW
-
-    GW["API Gateway"]
-
-    subgraph Services["Microservicios"]
-        direction LR
-        S1["Identity Service<br/>Auth . Tenants . Users"]
-        S2["Actors Service<br/>Suppliers . Allies . Clients"]
-        S3["Catalog Service"]
-        S4["Matching Service<br/>+ CoverageZone"]
-        S5["ServiceRequest Service<br/>orquesta ciclo de vida"]
-        S6["Ranking Service<br/>servicio + materiales"]
-        S7["Payments Service<br/>Payments . Billing . Payroll-lite"]
-        S8["Communication Service<br/>Notifications<br/>(Chat . Complaints: futuro)"]
+    subgraph EXT[" "]
+        direction TB
+        PAY["Pasarela de pagos PCI-DSS<br/>[Sistema externo, RIE-01]"]
+        MAPS["Servicio de geocodificación<br/>[Sistema externo, RIE-02]"]
+        NOTI["Proveedor de notificaciones<br/>[Sistema externo, RIE-03]<br/>Correo y push"]
     end
 
-    GW --> Services
+    P1 -->|"usa"| MOB
+    P2 -->|"usa"| MOB
+    P3 -->|"usa"| WEB
+    P4 -->|"usa"| WEB
+    MOB -->|"HTTPS"| CORE
+    WEB -->|"HTTPS"| CORE
+    CORE -->|"tokeniza y cobra"| PAY
+    CORE -->|"convierte direcciones<br/>en coordenadas"| MAPS
+    CORE -->|"envía avisos por correo<br/>y push a las personas"| NOTI
 
-    KAFKA{{"Apache Kafka<br/>Bus de eventos"}}
-
-    Services <--> KAFKA
-
-    Services --> DB[("PostgreSQL + PostGIS<br/>por servicio o esquema")]
-    Services --> CACHE[("Redis<br/>cache / colas cortas")]
-    Services --> STORAGE[("Garage (S3)<br/>archivos y evidencias")]
+    classDef persona fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef contenedor fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef sistema fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef externo fill:#999999,stroke:#6b6b6b,color:#ffffff
+    class P1,P2,P3,P4 persona
+    class MOB,WEB contenedor
+    class CORE sistema
+    class PAY,MAPS,NOTI externo
+    style PER fill:#ffffff,stroke:#ffffff
+    style EXT fill:#ffffff,stroke:#ffffff
+    style SIS fill:#ffffff,stroke:#444444,stroke-dasharray:6 4
 ```
+
+**Límites y canales.**
+
+- **Personas y canal.** Los usuarios operativos (cliente, empresa cliente, técnico y proveedor) solo entran por la app móvil; los dos administradores, solo por el panel web (SRS 2.1 y 2.2, RN-U6). El proveedor es el rol que administra un equipo de técnicos (RF-16), no el proveedor de materiales (`SUPPLIER`, sección 7.2).
+- **Frontera del sistema.** Todo el tráfico de las apps entra por el API Gateway, que es la única entrada (ADR-022). Los microservicios no se llaman entre sí para cumplir su función: se integran por eventos en Kafka (sección 4.3).
+- **Sistemas externos.** Son los tres del SRS (RIE-01 a RIE-03). Los proveedores concretos no están definidos.
+- **Decisión abierta: canal de estado en tiempo real.** Este diagrama pone solo HTTPS entre las apps y el backend. La versión anterior de este diagrama mostraba WebSocket hacia el gateway, mientras que el SDD (3.1.4) descarta un canal WebSocket y resuelve RF-11 con notificaciones push y consulta por REST. La implementación todavía no tiene ninguno de los dos (sección 2.2, RNF-06). Mientras el equipo no decida, ninguno de los dos documentos debe darlo por hecho.
 
 ### 4.2 Componentes
 
@@ -1242,3 +1251,4 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.21|6 oct 2026|Multirepo de 12 repositorios (SCRUM-333). Se agrega ADR-021, que modifica a ADR-013 por la revisión del profesor: el multirepo tiene un repositorio por componente de la solución (Flutter, Angular, API Gateway, los 8 microservicios y Apache Kafka) más el repositorio principal. Los contratos REST pasan a `quickpatch-api-gateway`, los de eventos a `quickpatch-kafka` y cada repositorio tiene su propio CI. Se actualizan la tabla y la síntesis de la sección 6 y la matriz 6.1.|
 |2.22|6 oct 2026|Redistribución de las 7 VMs (SCRUM-334, SCRUM-341). Se agrega ADR-022, que modifica a ADR-015 por la revisión del profesor: VM1 pasa a ser la VM de herramientas y la única entrada; producción ocupa VM3 (aplicación), VM4 (PostgreSQL y Redis) y VM6 (Kafka y Garage), y QA es una copia en VM2, VM5 y VM7. Se actualizan las secciones 5.1 a 5.3 y 5.5, los escenarios AC2-E5, AC7-E6 y el de disco de AC9, la trazabilidad de D7 y D8, la matriz 6.1 y los riesgos de la 6.2. La implementación está en curso; hasta que termine, la distribución operativa es la de ADR-015. Es el reparto que DevOps implementa en Ansible (`quickpatch-infrastructure`, PRs #20 a #23). La sección 5.2 relaciona los recursos por servicio con el diagrama de alto nivel.|
 |2.23|7 oct 2026|Validación contra los RNF (SCRUM-283). La nueva sección 2.2 sigue los 13 RNF del SRS hasta su escenario, sus decisiones y componentes y la evidencia actual en el código: 4 cubiertos, 8 parciales y 1 sin cobertura (RNF-06). Registra que RNF-02 y RNF-03 no tienen escenario (decisión abierta), las acciones correctivas por rol —la principal: el despliegue a producción no depende hoy de las pruebas de QA (RNF-08)— y un hallazgo de contratos: la app móvil llama a `POST /v1/auth/register/company`, que no está en `identity.v1.yaml`.|
+|2.24|7 oct 2026|Arquitectura de alto nivel en C4 (SCRUM-279). La sección 4.1 reemplaza el diagrama general por uno de contexto C4 horizontal: personas, Flutter Mobile para los usuarios operativos, Angular Web para los administradores, el backend como una caja y los tres sistemas externos del SRS (RIE-01 a RIE-03). Deja como decisión abierta el canal de estado en tiempo real: el diagrama anterior mostraba WebSocket y el SDD lo descarta.|
