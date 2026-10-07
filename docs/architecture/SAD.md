@@ -915,7 +915,7 @@ flowchart LR
     MOB -->|"HTTPS"| CORE
     WEB -->|"HTTPS"| CORE
     CORE -->|"tokeniza y cobra"| PAY
-    CORE -->|"convierte direcciones<br/>en coordenadas"| MAPS
+    MOB -->|"convierte la dirección<br/>del cliente en coordenadas"| MAPS
     CORE -->|"envía avisos por correo<br/>y push a las personas"| NOTI
 
     classDef persona fill:#08427b,stroke:#052e56,color:#ffffff

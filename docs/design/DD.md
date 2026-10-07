@@ -619,7 +619,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 **Propósito:** Define las zonas geográficas dentro de las cuales un técnico presta servicios.
 
-**Requisitos relacionados:** RF-09, RF-13, RIE-02.
+**Requisitos relacionados:** RF-09, RF-13.
 
 |Campo|Tipo|Nulo|Clave|Descripción|
 |---|---|---|---|---|

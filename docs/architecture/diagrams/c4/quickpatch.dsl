@@ -61,6 +61,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     mobInicio = component "Inicio por rol" "Opciones habilitadas según el rol del usuario." "Flutter · features/inicio"
                     mobSolicitudes = component "Solicitudes" "Nueva solicitud en un formulario (RNF-11) y detalle con su estado." "Riverpod · features/solicitudes"
                     mobUbicacion = component "Ubicación del dispositivo" "Permiso y lectura del GPS con respaldo en LocationManager y límite de 15 s." "geolocator · features/solicitudes/data"
+                    mobGeocodificacion = component "Geocodificación de la dirección" "Convierte la dirección escrita en coordenadas cuando el cliente no comparte la ubicación del dispositivo (RIE-02)." "HTTPS" "Planeado"
                     mobTiempoReal = component "Estado en tiempo real" "Recibe cambios de estado de la solicitud (RF-11, RNF-06). Canal por decidir (SAD 4.1)." "Dart · core/realtime" "Planeado"
                 }
                 web = container "Angular Web" "Panel de administración del tenant y de la plataforma." "Angular 22 + TypeScript" "Web Browser" {
@@ -129,7 +130,6 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     maTransaccion = component "Transacción por tenant" "set_config app.current_tenant antes de cada trabajo (RLS)." "JDBC · infrastructure/persistence"
                     maBusqueda = component "Búsqueda de candidatos" "Filtra por especialidad, disponibilidad y cobertura con PostGIS y ordena (RN-M1 a RN-M7)." "PostGIS" "Planeado"
                     maAsignacion = component "Asignación y resultado" "Registra el intento y publica matching.technician-assigned o matching.no-technician-available." "Outbox" "Planeado"
-                    maGeocodificador = component "Adaptador de geocodificación" "Convierte direcciones de cobertura en coordenadas." "HTTPS" "Planeado"
                 }
                 ranking = container "Ranking Service" "Reputación de técnicos." "ASP.NET Core (.NET 10)" {
                     raConsumidor = component "Consumidor de service-request.evaluated" "Recibe cada calificación, una vez por eventId." "Kafka consumer" "Planeado"
@@ -190,6 +190,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         mobAuth -> mobHttp "POST /v1/auth/* con"
         mobSolicitudes -> mobUbicacion "Obtiene las coordenadas con"
         mobSolicitudes -> mobHttp "GET categorías, POST y GET solicitudes con"
+        mobSolicitudes -> mobGeocodificacion "Convierte la dirección en coordenadas con" "" "Planeado"
+        mobGeocodificacion -> geocodificacion "Geocodifica la dirección del cliente" "HTTPS" "Planeado"
         mobSolicitudes -> mobTiempoReal "Escucha cambios de estado en" "" "Planeado"
         mobHttp -> mobConfig "Lee URL base y certificado de"
         mobHttp -> mobSesion "Lee el token de"
@@ -280,8 +282,6 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         maBusqueda -> maAsignacion "Entrega el mejor candidato a" "" "Planeado"
         maBusqueda -> redis "Cachea disponibilidad en" "RESP" "Planeado"
         maAsignacion -> kafka "Publica matching.technician-assigned o matching.no-technician-available" "Kafka" "Planeado"
-        maGeocodificador -> geocodificacion "Geocodifica direcciones" "HTTPS" "Planeado"
-        maBusqueda -> maGeocodificador "Resuelve direcciones con" "" "Planeado"
         maProcesados -> dbMatching "INSERT en processed_events" "SQL"
         maTransaccion -> dbMatching "set_config app.current_tenant" "SQL"
         maBusqueda -> dbMatching "Consulta disponibilidad y cobertura (PostGIS)" "SQL" "Planeado"
@@ -450,7 +450,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
         component mobile "C4-04-Componentes-Mobile" "Componentes de Flutter Mobile." {
             include *
-            autoLayout lr
+            autoLayout tb 150 80
         }
         component web "C4-04-Componentes-Web" "Componentes de Angular Web." {
             include *

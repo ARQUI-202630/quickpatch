@@ -113,7 +113,7 @@ El diagrama de contexto deja solo lo que interactúa con el sistema en operació
 
 **Figura 2. Contexto de QUICKPATCH (C4 · System Context). Vista `C4-02-Contexto`.**
 
-Los sistemas externos son la pasarela de pagos certificada PCI-DSS (SAD, K2), el servicio de geocodificación y el proveedor de notificaciones por correo y push. La geocodificación se reduce a convertir direcciones en coordenadas: la app envía las coordenadas de la solicitud y la cercanía entre cliente y técnico la calcula PostGIS, sin servicio externo. Los proveedores concretos no están definidos. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
+Los sistemas externos son la pasarela de pagos certificada PCI-DSS (SAD, K2), el servicio de geocodificación y el proveedor de notificaciones por correo y push. La geocodificación convierte en coordenadas la dirección que escribe el cliente cuando no comparte la ubicación de su dispositivo (SRS, RIE-02); la app envía siempre las coordenadas de la solicitud y la cercanía entre la solicitud y los técnicos la calcula PostGIS, sin servicio externo. Los proveedores concretos no están definidos. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
 
 > **Contradicción por resolver:** el SAD (R5) indica que la pasarela de pagos es la única dependencia externa de producción, pero el SRS define la geocodificación (RIE-02) y las notificaciones (RIE-03) como servicios con los que el sistema se integra. Si alguno corre dentro de las 7 VMs, deja de ser un sistema externo y sale de estos diagramas; si es externo, R5 debe ajustarse.
 
@@ -133,7 +133,7 @@ Para que las capas se lean (personas, apps, gateway, servicios y almacenes), est
 
 El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 9.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): Flutter Mobile es el canal de clientes, empresas cliente, técnicos y proveedores, y Angular Web es el panel de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 6.5), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que enruta por REST a los 8 microservicios.
 
-Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Identity y Actors solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte direcciones en coordenadas (Matching; la cercanía entre cliente y técnico se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication), que entrega las notificaciones push en la app móvil. El seguimiento en tiempo real de la solicitud (RF-11) se resuelve con esas notificaciones y la consulta del estado por REST (secciones 8.3 y 8.12.1); el canal de estado en tiempo real sigue siendo una decisión abierta (SAD 4.1). Los proveedores concretos no están definidos.
+Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Identity y Actors solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación (Flutter Mobile; la cercanía entre la solicitud y los técnicos se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication), que entrega las notificaciones push en la app móvil. El seguimiento en tiempo real de la solicitud (RF-11) se resuelve con esas notificaciones y la consulta del estado por REST (secciones 8.3 y 8.12.1); el canal de estado en tiempo real sigue siendo una decisión abierta (SAD 4.1). Los proveedores concretos no están definidos.
 
 ## 5.2 Vista por capas (complementaria)
 
@@ -329,6 +329,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Inicio por rol | `features/inicio` | Opciones habilitadas según el rol. | SCRUM-27 |
 | Solicitudes | `features/solicitudes` | Nueva solicitud en un solo formulario (RNF-11) y detalle con su estado. | SCRUM-27 / SCRUM-71 |
 | Ubicación del dispositivo | `features/solicitudes/data` | Permiso y lectura del GPS, con respaldo en `LocationManager` y límite de 15 s. | SCRUM-27 / SCRUM-71 |
+| Geocodificación de la dirección *(planeado)* | — | Convierte la dirección escrita en coordenadas cuando el cliente no comparte la ubicación (RIE-02). | — |
 | Estado en tiempo real *(planeado)* | `core/realtime` | Cambios de estado de la solicitud (RF-11, RNF-06); canal por decidir (SAD 4.1). | — |
 
 Reglas comunes a las dos aplicaciones:
@@ -536,7 +537,7 @@ El siguiente diagrama representa el flujo lógico principal del proceso de match
 
 **Figura 15. Componentes de Matching Service (C4 · Component). Vista `C4-04-Componentes-Matching`.**
 
-Hoy está implementado el consumo idempotente de `service-request.created` (listener, manejador, registro de eventos procesados y transacción por tenant). La búsqueda de candidatos con PostGIS, la asignación y el adaptador de geocodificación están planeados.
+Hoy está implementado el consumo idempotente de `service-request.created` (listener, manejador, registro de eventos procesados y transacción por tenant). La búsqueda de candidatos con PostGIS y la asignación están planeadas. Matching no usa la geocodificación: recibe la solicitud con coordenadas.
 
 ## 6.9 Ranking Service
 
