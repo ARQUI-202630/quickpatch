@@ -12,7 +12,7 @@
  * decisiones no están documentadas. La tecnología indica la carpeta del repositorio donde vive
  * cada componente (apps/web/src/app/{core,features,shared}, apps/mobile/lib/{core,features}).
  *
- * Contratos: quickpatch-contracts/openapi (service-request.v1.yaml, catalog.v1.yaml) y SDD 3.4.1.
+ * Contratos: quickpatch-api-gateway/openapi (service-request.v1.yaml, catalog.v1.yaml) y SDD 3.4.1.
  * Las relaciones con la etiqueta "Contrato pendiente" aún no tienen especificación OpenAPI.
  *
  * Multi-tenancy (DD 10.3): en el login y el registro el tenant sale del canal por el que llega

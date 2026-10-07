@@ -27,10 +27,10 @@ Web:
 Mobile:
 `.flutter-version` + pubspec.lock
 
-Contracts:
+API Gateway y Kafka:
 `.nvmrc`
 
 CI:
-quickpatch-infrastructure/.github/workflows/
+`.github/workflows/` de cada repositorio (CI propio, ADR-021). El despliegue usa los workflows de `quickpatch-infrastructure` hasta SCRUM-338.
 
 No usar preview, RC, beta o nightly en el scaffold base.

@@ -13,7 +13,7 @@ Cada decisión de arquitectura tiene su propio archivo en esta carpeta, con cont
 | [ADR-009](ADR-009-tokenizacion-pagos.md) | Tokenización de pagos | AC6 | Aceptado |
 | [ADR-011](ADR-011-k3s-orquestacion.md) | k3s para los microservicios | AC5 | Aceptado; ampliado por ADR-015 |
 | [ADR-012](ADR-012-stack-tecnologico-polyglot.md) | Stack polyglot | AC7 | Aceptado |
-| [ADR-013](ADR-013-estrategia-de-repositorios.md) | Un repositorio por componente | AC7 | Aceptado |
+| [ADR-013](ADR-013-estrategia-de-repositorios.md) | Un repositorio por componente | AC7 | Aceptado; modificado por ADR-021 |
 | [ADR-014](ADR-014-postgresql-instancia-unica.md) | Una instancia de PostgreSQL, una base por servicio | AC7 | Aceptado |
 | [ADR-015](ADR-015-ambiente-qa-en-vm2.md) | QA en VM2 y acceso por VM1 | AC7 | Aceptado |
 | [ADR-016](ADR-016-garage-storage-objetos.md) | Garage como almacenamiento de objetos | AC6, AC2 | Aceptado |
@@ -21,6 +21,7 @@ Cada decisión de arquitectura tiene su propio archivo en esta carpeta, con cont
 | [ADR-018](ADR-018-jwt-rs256-identity.md) | JWT RS256 firmado solo por Identity | AC6 | Aceptado |
 | [ADR-019](ADR-019-roles-base-de-datos.md) | Roles de base de datos por responsabilidad | AC6 | Propuesto |
 | [ADR-020](ADR-020-codigo-transversal-compartido.md) | Código transversal compartido (.NET) | AC7 | Propuesto |
+| [ADR-021](ADR-021-doce-repositorios.md) | Doce repositorios por componente de la solución | AC7 | Aceptado |
 
 **Números sin asignar.** ADR-001 y ADR-010 nunca se usaron. ADR-008 aparecía en versiones anteriores del SAD como referencia a una decisión que no existía y se retiró en la versión 2.0. No se reutilizan, para no confundir referencias históricas.
 
