@@ -2,7 +2,7 @@
 ' QUICKPATCH — C4 nivel 4 (Code): publicación y consumo de service-request.created
 ' Transactional Outbox en ServiceRequest (.NET) y consumo idempotente en Matching (Java).
 ' Clases reales de develop (7 de octubre de 2026); se omiten métodos que no intervienen.
-' Fuentes: ADR-007, DD RN-EV1, SDD 4.5.1 y 5.9.
+' Fuentes: ADR-007, DD RN-EV1, SDD 7.1 y 8.10.
 title C4-07 · Code · Outbox e idempotencia de service-request.created
 skinparam classAttributeIconSize 0
 skinparam defaultFontSize 14

@@ -17,8 +17,8 @@
  * Etiqueta "Planeado": elemento o relación diseñado en el SDD/DD que todavía no está en el
  * código de develop (7 de octubre de 2026). Se dibuja con borde punteado.
  *
- * Fuentes: SRS (roles y RIE-01 a RIE-03), SAD (4.1, ADR-003 a ADR-022), SDD (3.1 a 3.2, 4.1,
- * 5.3 a 5.9, 7.1), DD (5, 7.2, 10) y el código de los 12 repositorios. Integra el C4-L1 del
+ * Fuentes: SRS (roles y RIE-01 a RIE-03), SAD (4.1, ADR-003 a ADR-022), SDD (secciones 3 a 9),
+ * DD (5, 7.2, 10) y el código de los 12 repositorios. Integra el C4-L1 del
  * PR #33, el C4-L3 de ServiceRequest del PR #34 y el C4-L3 de las apps cliente (SCRUM-303).
  *
  * Exportar: Structurizr Lite o structurizr.com → cada vista en PNG. El archivo se llama
@@ -76,7 +76,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 }
             }
 
-            gateway = container "API Gateway" "Única entrada HTTP: enruta /api/<servicio>, valida el JWT y limita peticiones (SDD 3.2.1)." "Nginx (quickpatch-api-gateway)" "Gateway"
+            gateway = container "API Gateway" "Única entrada HTTP: enruta /api/<servicio>, valida el JWT y limita peticiones (SDD 6.3)." "Nginx (quickpatch-api-gateway)" "Gateway"
 
             group "Microservicios" {
                 identity = container "Identity Service" "Autenticación, usuarios, tenants y auditoría." "ASP.NET Core (.NET 10)" {

@@ -1,7 +1,7 @@
 @startuml C4-07-Codigo-AislamientoTenant
 ' QUICKPATCH — C4 nivel 4 (Code): aislamiento entre tenants en Identity
 ' Transacción por tenant (RLS) frente a la transacción de plataforma (BYPASSRLS acotado).
-' Clases reales de develop (7 de octubre de 2026). Fuentes: ADR-005, ADR-019, DD 10.2 y 10.4, SDD 4.5.2.
+' Clases reales de develop (7 de octubre de 2026). Fuentes: ADR-005, ADR-019, DD 10.2 y 10.4, SDD 7.2.
 title C4-07 · Code · Aislamiento entre tenants en Identity
 skinparam classAttributeIconSize 0
 skinparam defaultFontSize 14

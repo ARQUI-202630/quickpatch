@@ -39,29 +39,29 @@ En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el 
 
 | Clave | Tipo C4 | Sección del SDD |
 |---|---|---|
-| `C4-01-Landscape` | System Landscape | 3.1.0 |
-| `C4-02-Contexto` | System Context | 3.1.0 |
-| `C4-03-Contenedores` | Container | 3.1.4 |
-| `C4-04-Componentes-Web` | Component | 3.1.5 |
-| `C4-04-Componentes-Mobile` | Component | 3.1.5 |
-| `C4-04-Componentes-Identity` | Component | 3.2.2 |
-| `C4-04-Componentes-Actors` | Component | 3.2.3 |
-| `C4-04-Componentes-Catalog` | Component | 3.2.4 |
-| `C4-04-Componentes-ServiceRequest` | Component | 3.2.5 |
-| `C4-04-Componentes-Matching` | Component | 3.2.6 |
-| `C4-04-Componentes-Ranking` | Component | 3.2.7 |
-| `C4-04-Componentes-Payments` | Component | 3.2.8 |
-| `C4-04-Componentes-Communication` | Component | 3.2.9 |
-| `C4-07-Codigo-OutboxIdempotencia` | Code (PlantUML) | 4.5.1 |
-| `C4-07-Codigo-AislamientoTenant` | Code (PlantUML) | 4.5.2 |
-| `C4-05-Dinamico-CrearSolicitud` | Dynamic | 5.3 |
-| `C4-05-Dinamico-Pago` | Dynamic | 5.4 |
-| `C4-05-Dinamico-InicioSesion` | Dynamic | 5.12 |
-| `C4-05-Dinamico-ReplicaCategorias` | Dynamic | 5.12 |
-| `C4-05-Dinamico-Calificacion` | Dynamic | 5.12 |
-| `C4-05-Dinamico-GestionTenants` | Dynamic | 5.12 |
-| `C4-06-Despliegue-Produccion` | Deployment | 7.1 |
-| `C4-06-Despliegue-QA` | Deployment | 7.1 |
+| `C4-01-Landscape` | System Landscape | 3 |
+| `C4-02-Contexto` | System Context | 4 |
+| `C4-03-Contenedores` | Container | 5.1 |
+| `C4-04-Componentes-Web` | Component | 6.2 |
+| `C4-04-Componentes-Mobile` | Component | 6.2 |
+| `C4-04-Componentes-Identity` | Component | 6.4 |
+| `C4-04-Componentes-Actors` | Component | 6.5 |
+| `C4-04-Componentes-Catalog` | Component | 6.6 |
+| `C4-04-Componentes-ServiceRequest` | Component | 6.7 |
+| `C4-04-Componentes-Matching` | Component | 6.8 |
+| `C4-04-Componentes-Ranking` | Component | 6.9 |
+| `C4-04-Componentes-Payments` | Component | 6.10 |
+| `C4-04-Componentes-Communication` | Component | 6.11 |
+| `C4-07-Codigo-OutboxIdempotencia` | Code (PlantUML) | 7.1 |
+| `C4-07-Codigo-AislamientoTenant` | Code (PlantUML) | 7.2 |
+| `C4-05-Dinamico-CrearSolicitud` | Dynamic | 8.3 |
+| `C4-05-Dinamico-Pago` | Dynamic | 8.4 |
+| `C4-05-Dinamico-InicioSesion` | Dynamic | 8.5 |
+| `C4-05-Dinamico-ReplicaCategorias` | Dynamic | 8.5 |
+| `C4-05-Dinamico-Calificacion` | Dynamic | 8.5 |
+| `C4-05-Dinamico-GestionTenants` | Dynamic | 8.5 |
+| `C4-06-Despliegue-Produccion` | Deployment | 9.1 |
+| `C4-06-Despliegue-QA` | Deployment | 9.1 |
 
 ## Convenciones
 

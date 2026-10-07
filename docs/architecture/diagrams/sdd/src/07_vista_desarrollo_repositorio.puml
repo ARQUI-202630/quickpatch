@@ -1,5 +1,5 @@
 @startuml 07_vista_desarrollo_repositorio
-' Figura de la vista de desarrollo del SDD (sección 6.1): composición del multirepo (ADR-013, ADR-021).
+' Figura de la vista de desarrollo del SDD (sección 10.1): composición del multirepo (ADR-013, ADR-021).
 ' Generar: docker run --rm -v "$PWD:/data" plantuml/plantuml -tsvg -o .. /data/07_vista_desarrollo_repositorio.puml
 skinparam defaultFontName Arial
 skinparam shadowing false
