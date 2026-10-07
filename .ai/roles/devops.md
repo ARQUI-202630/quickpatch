@@ -7,11 +7,11 @@
 
 ## Stack a desplegar
 
-Distribución aprobada en ADR-022 (3 + 3 + 1), migración en curso (SCRUM-334):
+Reparto aprobado en ADR-022 (1 + 3 + 3), migración en curso (SCRUM-334):
 
-- VM1, herramientas: proxy de entrada :443, runner de GitHub, k6, Prometheus, Loki y Grafana.
-- Producción: VM3 k3s (8 servicios, API Gateway y panel Angular), VM4 PostgreSQL/PostGIS y Redis, VM6 Kafka y Garage.
-- QA, misma forma: VM2 k3s, VM5 datos, VM7 Kafka y Garage.
+- VM7, herramientas: Garage de producción, Prometheus, Loki y Grafana.
+- Producción: VM1 entrada (Nginx, API Gateway, panel Angular, runner y k6), VM3 k3s con los 8 servicios, VM4 PostgreSQL/PostGIS, Redis y Kafka.
+- QA, misma forma: VM2 entrada, VM5 k3s, VM6 datos, Kafka y Garage de QA.
 - Recursos por servicio (base, usuario de Redis, llave de Garage): `docs/infrastructure/INFRASTRUCTURE.md`, sección 3.4.
 
 ## Toolchains
