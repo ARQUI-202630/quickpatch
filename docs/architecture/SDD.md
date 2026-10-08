@@ -468,7 +468,7 @@ buscando_tecnico
     -> pagado
 ```
 
-**Datos documentados:** `service_requests`, `service_request_categories` (réplica), `outbox_events`, `processed_events` y `ratings` (planeado). `service_categories` es de Catalog Service (DD 5.17).
+**Datos documentados:** `service_requests`, `service_request_categories` (réplica), `outbox_events`, `processed_events` y `ratings` (planeado). `service_categories` es de Catalog Service (DD 5.4); la réplica es la tabla 5.20.
 
 **Referencias lógicas externas:** `client_id`, `technician_id`, `tenant_id`.
 
@@ -908,7 +908,7 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 ## 8.6 Productores y consumidores Kafka
 
-La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 7.2) es la siguiente:
+La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 8.4) es la siguiente:
 
 | Tópico / Evento | Microservicio Productor | Microservicios Consumidores | Propósito del Flujo |
 |---|---|---|---|
