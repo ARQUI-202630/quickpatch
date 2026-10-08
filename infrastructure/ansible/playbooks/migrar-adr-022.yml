@@ -1,0 +1,307 @@
+# Limpieza por fases de la migración al reparto del ADR-022 (3 VMs de producción, 3 de QA y 1 de herramientas).
+# DESTRUCTIVA: borra volúmenes, archivos y reglas de firewall del reparto anterior. Todo estaba vacío (sin servicios ni
+# datos). Cada fase exige -e confirmar_borrado=true y se corre solo después de comprobar la fase anterior.
+# setup-base.yml solo agrega reglas de firewall: lo que sobra de antes se quita aquí.
+#
+# Paso 1 (observabilidad en VM1):
+#   --tags obs-vm7   quita Prometheus, Loki y Grafana viejos de VM7 y sus reglas (3100, 3000 y 9090).
+#                    Correr después de deploy-garage.yml, que saca esos contenedores de VM7.
+#   --tags fw-9100   quita en las 7 VMs la regla vieja que dejaba a VM7 leer node_exporter (ahora lee VM1).
+#
+# Paso 2 (Garage y Kafka de producción en VM6):
+#   --tags qa-vm6      vacía el QA que quedó en VM6 (PostgreSQL, Redis, Kafka y Garage de QA) y sus reglas.
+#                      Correr ANTES de deploy-kafka.yml y deploy-garage.yml: usan los mismos puertos (9092 y 9000).
+#   --tags kafka-vm4   quita el Kafka que quedó en VM4 y su regla, después de que Kafka corra en VM6.
+#
+# Paso 3 (Redis con usuarios por servicio en VM4):
+#   --tags redis-vm5   quita en VM5 la regla que dejaba entrar a VM3 (producción) al 6379 de QA.
+#
+# Paso 5 (QA en VM2, VM5 y VM7):
+#   --tags qa-vm2      quita de VM2 el Nginx del QA anterior (y su carpeta) y las reglas del 443.
+#                      Correr antes de deploy-k3s.yml: el k3s de QA vuelve a VM2.
+#   --tags qa-vm5      quita de VM5 el k3s de QA y sus reglas, después de que PostgreSQL y Redis de QA corran en VM5.
+#
+#   --tags kafka-ui    cierra el 8080 de VM6 que abría el equipo hacia Kafka UI (sin login; se entra por túnel SSH).
+#                      setup-base.yml lo había vuelto a abrir mientras firewall.yml todavía lo traía.
+#   --tags pg-roles    borra los roles app_<servicio> de PostgreSQL (VM4 y VM5), después de que deploy-db.yml cree los
+#                      <servicio>_migrator y <servicio>_app del DD 10.2 y cambie los dueños de las bases.
+#   --tags garage-vm7  quita el Garage de producción de VM7 y sus reglas, después de que Garage corra en VM6 y el
+#                      respaldo de VM4 apunte a VM6.
+- name: Quitar la observabilidad vieja de VM7
+  hosts: vm7
+  tags: [obs-vm7]
+  vars:
+    dir: "{{ stack_dir }}/observabilidad"
+  tasks:
+    - name: Exigir confirmación
+      ansible.builtin.assert:
+        that: confirmar_borrado | default(false) | bool
+        fail_msg: "Operación destructiva: repetir con -e confirmar_borrado=true"
+    - name: Borrar los volúmenes de Prometheus, Loki y Grafana de VM7
+      ansible.builtin.command: docker volume rm --force observabilidad_{{ item }}
+      loop: [prometheus-data, loki-data, grafana-data]
+      changed_when: true
+    - name: Borrar la configuración vieja de Prometheus, Loki y Grafana de VM7
+      ansible.builtin.file:
+        path: "{{ dir }}/{{ item }}"
+        state: absent
+      loop: [prometheus.yml, loki.yml, grafana-provisioning]
+    - name: Quitar de VM7 la regla de Loki (3100) para las 7 VMs
+      community.general.ufw:
+        rule: allow
+        port: "3100"
+        proto: tcp
+        from_ip: "{{ item }}"
+        delete: true
+      loop: "{{ all_vms }}"
+    - name: Quitar de VM7 las reglas de Grafana (3000) y Prometheus (9090) del equipo
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.0 }}"
+        proto: tcp
+        from_ip: "{{ item.1 }}"
+        delete: true
+      loop: "{{ ['3000', '9090'] | product(team_networks) | list }}"
+
+- name: Quitar la regla vieja de node_exporter en las 7 VMs
+  hosts: all
+  tags: [fw-9100]
+  tasks:
+    - name: Exigir confirmación
+      ansible.builtin.assert:
+        that: confirmar_borrado | default(false) | bool
+        fail_msg: "Operación destructiva: repetir con -e confirmar_borrado=true"
+    - name: Quitar 9100 desde VM7 (ufw)
+      community.general.ufw:
+        rule: allow
+        port: "9100"
+        proto: tcp
+        from_ip: "{{ ip.vm7 }}"
+        delete: true
+      when: ansible_os_family == 'Debian'
+    - name: Quitar 9100 desde VM7 (firewalld)
+      ansible.posix.firewalld:
+        zone: quickpatch
+        rich_rule: 'rule family="ipv4" source address="{{ ip.vm7 }}" port port="9100" protocol="tcp" accept'
+        permanent: true
+        immediate: true
+        state: disabled
+      when: ansible_os_family == 'RedHat'
+
+- name: Vaciar el QA que quedó en VM6
+  hosts: vm6
+  tags: [qa-vm6]
+  vars:
+    dir: "{{ stack_dir }}/qa"
+  tasks:
+    - name: Exigir confirmación
+      ansible.builtin.assert:
+        that: confirmar_borrado | default(false) | bool
+        fail_msg: "Operación destructiva: repetir con -e confirmar_borrado=true"
+    - name: ¿Existe el QA anterior?
+      ansible.builtin.stat: { path: "{{ dir }}/compose.yml" }
+      register: qa_viejo
+    - name: Bajar PostgreSQL, Redis, Kafka y Garage de QA y borrar sus volúmenes
+      community.docker.docker_compose_v2:
+        project_src: "{{ dir }}"
+        state: absent
+        remove_volumes: true
+      when: qa_viejo.stat.exists
+    - name: Borrar la carpeta del QA anterior
+      ansible.builtin.file: { path: "{{ dir }}", state: absent }
+    - name: Quitar las reglas de VM5 hacia los datos de QA de VM6
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+        from_ip: "{{ ip.vm5 }}"
+        delete: true
+      loop: ["5432", "6379", "9092", "9000"]
+
+- name: Quitar Kafka de VM4
+  hosts: vm4
+  tags: [kafka-vm4]
+  vars:
+    dir: "{{ stack_dir }}/kafka"
+  tasks:
+    - name: Exigir confirmación
+      ansible.builtin.assert:
+        that: confirmar_borrado | default(false) | bool
+        fail_msg: "Operación destructiva: repetir con -e confirmar_borrado=true"
+    - name: ¿Existe Kafka en VM4?
+      ansible.builtin.stat: { path: "{{ dir }}/compose.yml" }
+      register: kafka_vm4
+    - name: Bajar Kafka y Kafka UI y borrar sus volúmenes
+      community.docker.docker_compose_v2:
+        project_src: "{{ dir }}"
+        state: absent
+        remove_volumes: true
+      when: kafka_vm4.stat.exists
+    - name: Borrar la carpeta de Kafka
+      ansible.builtin.file: { path: "{{ dir }}", state: absent }
+    - name: Quitar la regla de VM3 hacia el Kafka de VM4
+      community.general.ufw:
+        rule: allow
+        port: "9092"
+        proto: tcp
+        from_ip: "{{ ip.vm3 }}"
+        delete: true
+
+- name: Quitar el Garage de producción de VM7
+  hosts: vm7
+  tags: [garage-vm7]
+  vars:
+    dir: "{{ stack_dir }}/observabilidad"
+  tasks:
+    - name: Exigir confirmación
+      ansible.builtin.assert:
+        that: confirmar_borrado | default(false) | bool
+        fail_msg: "Operación destructiva: repetir con -e confirmar_borrado=true"
+    - name: ¿Existe Garage en VM7?
+      ansible.builtin.stat: { path: "{{ dir }}/compose.yml" }
+      register: garage_vm7
+    - name: Bajar Garage y borrar sus volúmenes
+      community.docker.docker_compose_v2:
+        project_src: "{{ dir }}"
+        state: absent
+        remove_volumes: true
+      when: garage_vm7.stat.exists
+    - name: Borrar la carpeta de Garage
+      ansible.builtin.file: { path: "{{ dir }}", state: absent }
+    - name: Quitar de VM7 las reglas del 9000 para VM3 y VM4
+      community.general.ufw:
+        rule: allow
+        port: "9000"
+        proto: tcp
+        from_ip: "{{ item }}"
+        delete: true
+      loop: ["{{ ip.vm3 }}", "{{ ip.vm4 }}"]
+
+- name: Cerrar el 8080 de Kafka UI en VM6
+  hosts: vm6
+  tags: [kafka-ui]
+  tasks:
+    - name: Exigir confirmación
+      ansible.builtin.assert:
+        that: confirmar_borrado | default(false) | bool
+        fail_msg: "Operación destructiva: repetir con -e confirmar_borrado=true"
+    - name: Quitar la regla del equipo hacia Kafka UI
+      community.general.ufw:
+        rule: allow
+        port: "8080"
+        proto: tcp
+        from_ip: "{{ item }}"
+        delete: true
+      loop: "{{ team_networks }}"
+
+- name: Quitar de VM5 el acceso de producción al Redis de QA
+  hosts: vm5
+  tags: [redis-vm5]
+  tasks:
+    - name: Exigir confirmación
+      ansible.builtin.assert:
+        that: confirmar_borrado | default(false) | bool
+        fail_msg: "Operación destructiva: repetir con -e confirmar_borrado=true"
+    - name: Quitar la regla de VM3 hacia el 6379 de VM5
+      ansible.posix.firewalld:
+        zone: quickpatch
+        rich_rule: 'rule family="ipv4" source address="{{ ip.vm3 }}" port port="6379" protocol="tcp" accept'
+        permanent: true
+        immediate: true
+        state: disabled
+
+- name: Quitar el Nginx del QA anterior de VM2
+  hosts: vm2
+  tags: [qa-vm2]
+  vars:
+    dir: "{{ stack_dir }}/qa"
+  tasks:
+    - name: Exigir confirmación
+      ansible.builtin.assert:
+        that: confirmar_borrado | default(false) | bool
+        fail_msg: "Operación destructiva: repetir con -e confirmar_borrado=true"
+    - name: ¿Existe el QA anterior?
+      ansible.builtin.stat: { path: "{{ dir }}/compose.yml" }
+      register: qa_vm2
+    - name: Bajar el Nginx de QA
+      community.docker.docker_compose_v2:
+        project_src: "{{ dir }}"
+        state: absent
+        remove_volumes: true
+      when: qa_vm2.stat.exists
+    - name: Borrar la carpeta del QA anterior
+      ansible.builtin.file: { path: "{{ dir }}", state: absent }
+    - name: Quitar las reglas del 443 (equipo y runner) hacia el Nginx de QA
+      ansible.posix.firewalld:
+        zone: quickpatch
+        rich_rule: 'rule family="ipv4" source address="{{ item }}" port port="443" protocol="tcp" accept'
+        permanent: true
+        immediate: true
+        state: disabled
+      loop: "{{ team_networks + [ip.vm1] }}"
+
+- name: Quitar el k3s de QA de VM5
+  hosts: vm5
+  tags: [qa-vm5]
+  tasks:
+    - name: Exigir confirmación
+      ansible.builtin.assert:
+        that: confirmar_borrado | default(false) | bool
+        fail_msg: "Operación destructiva: repetir con -e confirmar_borrado=true"
+    - name: ¿Existe el instalador de k3s?
+      ansible.builtin.stat: { path: /usr/local/bin/k3s-uninstall.sh }
+      register: k3s_vm5
+    - name: Desinstalar k3s de VM5
+      ansible.builtin.command: /usr/local/bin/k3s-uninstall.sh
+      when: k3s_vm5.stat.exists
+      changed_when: true
+    - name: Quitar las reglas del k3s de QA que estaba en VM5
+      ansible.posix.firewalld:
+        zone: quickpatch
+        rich_rule: 'rule family="ipv4" source address="{{ item.from }}" port port="{{ item.port }}" protocol="tcp" accept'
+        permanent: true
+        immediate: true
+        state: disabled
+      loop:
+        - { from: "{{ ip.vm2 }}", port: "30080" }
+        - { from: "{{ ip.vm1 }}", port: "6443" }
+      loop_control:
+        label: "{{ item.port }} desde {{ item.from }}"
+    - name: Quitar de la zona de confianza los rangos de pods y servicios de k3s
+      ansible.posix.firewalld:
+        zone: trusted
+        source: "{{ item }}"
+        permanent: true
+        immediate: true
+        state: disabled
+      loop: ["{{ k3s_cluster_cidr }}", "{{ k3s_service_cidr }}"]
+
+- name: Quitar los roles app_<servicio> de PostgreSQL
+  hosts: database:qa_datos
+  tags: [pg-roles]
+  vars:
+    dir: "{{ stack_dir }}/postgres"
+  tasks:
+    - name: Exigir confirmación
+      ansible.builtin.assert:
+        that: confirmar_borrado | default(false) | bool
+        fail_msg: "Operación destructiva: repetir con -e confirmar_borrado=true"
+
+    # Antes de borrar el rol, la base ya debe tener a <servicio>_migrator como dueño (lo hace deploy-db.yml).
+    - name: Comprobar que ninguna base sigue siendo de un rol app_
+      ansible.builtin.command: >-
+        docker compose -f {{ dir }}/compose.yml exec -T -u postgres postgres
+        psql -d postgres -Atc "SELECT datname FROM pg_database d JOIN pg_roles r ON r.oid = d.datdba WHERE r.rolname LIKE 'app\_%'"
+      register: bases_viejas
+      changed_when: false
+      failed_when: bases_viejas.stdout | trim != ''
+
+    - name: Borrar el rol app_<servicio> y lo que tenga asignado
+      ansible.builtin.command: >-
+        docker compose -f {{ dir }}/compose.yml exec -T -u postgres postgres
+        psql -v ON_ERROR_STOP=1 -q -d db_{{ item }} -c
+        "DO $$ BEGIN
+        IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_{{ item }}') THEN
+        DROP OWNED BY app_{{ item }}; DROP ROLE app_{{ item }}; END IF; END $$"
+      loop: "{{ postgres_databases }}"
+      changed_when: true

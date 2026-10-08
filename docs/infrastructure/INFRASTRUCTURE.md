@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 2.3 |
+| **Versión** | 2.6 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -280,7 +280,7 @@ El toolchain está fijado por `docs/governance/TOOLCHAIN.md`: .NET SDK 10.0.401,
 
 ## 5. Contenedores y orquestación
 
-La infraestructura está implementada con Ansible en el repositorio `quickpatch-infrastructure` (carpeta `ansible/`) y aplicada en las 7 VMs. Ansible corre dentro de un contenedor de Docker (`ansible/Dockerfile` y el wrapper `ap`), así que todo el equipo usa la misma versión (ansible-core 2.18). Los playbooks pasan `ansible-lint` con el perfil `production` en el CI del repositorio (sección 6.1). Lo que sigue pendiente son los manifiestos de Kubernetes de los microservicios (sección 5.3).
+La infraestructura está implementada con Ansible en la carpeta `infrastructure/ansible/` del repositorio principal (antes el repositorio `quickpatch-infrastructure`, archivado en SCRUM-338) y aplicada en las 7 VMs. Ansible corre dentro de un contenedor de Docker (`ansible/Dockerfile` y el wrapper `ap`), así que todo el equipo usa la misma versión (ansible-core 2.18). Los playbooks pasan `ansible-lint` con el perfil `production` en el CI del repositorio principal (sección 6.1).
 
 ### 5.1 Inventario de Ansible
 
@@ -338,27 +338,26 @@ Después del primer despliegue, las actualizaciones las hace el pipeline (secci�
 
 Todo se aplica con `./ap playbooks/site.yml -k -K`, o playbook por playbook. El orden, la preparación del computador y la reconstrucción de una sola VM están en el Anexo A. El orden respeta las dependencias del SAD (sección 5.3): Garage antes que el respaldo de la base, y los dos k3s antes que el runner, que necesita sus kubeconfig.
 
-### 5.5 Estructura del repositorio de infraestructura
+### 5.5 Estructura de la infraestructura en el repositorio
 
 ```
-quickpatch-infrastructure/
-├── ansible/
-│   ├── Dockerfile, ap, ansible.cfg, requirements.yml, .ansible-lint
-│   ├── inventory/   hosts.yml y group_vars/ (all/, produccion.yml y qa.yml)
-│   ├── playbooks/   los 12 de la sección 5.2
-│   ├── tasks/       base-debian, base-redhat, k3s, garage
-│   └── templates/   compose, Nginx, PostgreSQL, Prometheus, Loki, Grafana, Garage y respaldo
-├── .github/
-│   ├── workflows/   workflows reutilizables de CI/CD (sección 6.1)
-│   └── actions/     acción compartida de cobertura
-├── plantillas/
-│   ├── ci/          el ci-cd.yml de cada tipo de repositorio
-│   └── hooks/       hook pre-push
-├── CI-CD.md
-└── vm1-gateway/ … vm7-storage-observability/   carpetas del andamiaje inicial, solo con README
+quickpatch/
+├── infrastructure/
+│   ├── ansible/
+│   │   ├── Dockerfile, ap, ansible.cfg, requirements.yml, .ansible-lint
+│   │   ├── inventory/   hosts.yml y group_vars/ (all/, produccion.yml y qa.yml)
+│   │   ├── playbooks/   los de la sección 5.2
+│   │   ├── tasks/       base-debian, base-redhat, k3s, garage
+│   │   ├── templates/   compose, PostgreSQL, Prometheus, Loki, Grafana, Garage, respaldo y Secrets de los servicios
+│   │   └── files/       aprovisionamiento de Grafana (tableros y alertas)
+│   ├── plantillas/hooks/pre-push
+│   ├── CI-CD.md
+│   └── README.md
+├── apps/api-gateway/nginx/   gateway-nginx.conf.j2 (submódulo quickpatch-api-gateway)
+└── apps/kafka/deploy/        deploy-kafka.yml y compose.yml.j2 (submódulo quickpatch-kafka)
 ```
 
-Los manifiestos de Kubernetes de los 8 servicios (sección 5.3) todavía no existen. Irán en `k8s/` del repositorio de infraestructura, porque se aplican en los dos k3s (QA en VM2 y producción en VM3). Las carpetas `vm1-gateway/` a `vm7-storage-observability/` son del andamiaje inicial y solo tienen un README. El destino de este repositorio, de los workflows y del CI/CD por componente está en SCRUM-338 y en el ADR-021.
+Cada componente es dueño de su despliegue (ADR-021, SCRUM-338): la configuración del gateway está en `quickpatch-api-gateway`, el despliegue de Kafka y la creación de los topics de `topics/topics.yaml` en `quickpatch-kafka`, y los manifiestos de k3s de cada servicio en `deploy/k8s/` de su repositorio. `deploy-gateway.yml` y `deploy-kafka.yml` usan esos archivos desde los submódulos, así que Ansible aplica la versión que fija cada submódulo. `./ap` monta el repositorio completo para alcanzarlos.
 
 ### 5.6 Presupuesto de recursos en VM3
 
@@ -420,14 +419,16 @@ El pipeline está en GitHub Actions y sigue el multirepo (SAD, ADR-013 y ADR-021
 | Eventos | AJV, alineación de topics y esquemas, compatibilidad contra la rama base y tags `vX.Y.Z` | `quickpatch-kafka` |
 | Composición y documentación | Submódulos y contratos en versiones etiquetadas; referencias obsoletas en la documentación | Repositorio principal |
 
-**El despliegue (CD) todavía es compartido:** mientras DevOps lo traslada a cada repositorio (SCRUM-338), estos workflows siguen en `quickpatch-infrastructure`:
+**El despliegue (CD) también vive en cada repositorio** (SCRUM-338): el mismo `ci-cd.yml` construye la imagen y la despliega, sin workflows de otros repositorios.
 
-| Workflow | Qué hace | Lo usan |
+| Job | Qué hace | Repositorios |
 |---|---|---|
-| `imagen.yml` | Construye y publica la imagen en GitHub Container Registry | Servicios |
-| `deploy-k3s.yml` | Actualiza la imagen en k3s y espera el rolling update; si falla, lo revierte | Servicios |
-| `deploy-panel.yml` | Publica el build del panel en producción o QA | `quickpatch-web` |
+| `imagen` | Construye y publica la imagen en GitHub Container Registry, etiquetada por contenido | Servicios |
+| `desplegar` | Actualiza la imagen en k3s de QA (`release/*`) o producción (`main`) y espera el rolling update; si falla, lo revierte | Servicios |
+| `desplegar` | Publica el build del panel en QA o en producción | `quickpatch-web` |
 | `pruebas-sistema.yml` | E2E, OWASP ZAP, escáner PCI-DSS y k6 contra QA | Repositorio principal |
+
+El repositorio principal revisa además la infraestructura en cada PR (`pr-quality.yml`): actionlint, sintaxis y `ansible-lint` de los playbooks y gitleaks sobre `infrastructure/`. El detalle está en `infrastructure/CI-CD.md`.
 
 Las pruebas siguen el Documento de Pruebas: estructura de carpetas, herramientas y **cobertura mínima de 80%**, que hace fallar el pipeline. El detalle de convenciones por stack está en el README de cada repositorio.
 
@@ -457,7 +458,7 @@ flowchart LR
 
 QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a `develop`, para que se mantenga estable mientras se prueba.
 
-**Producción despliega exactamente la imagen probada en QA.** `imagen.yml` etiqueta cada imagen con el hash del contenido del repositorio, no con el del commit. Al fusionar `release/x.y.z` en `main` sin otros cambios, el contenido es el mismo, la imagen ya existe y no se vuelve a construir. Si `main` trae algo que no pasó por `release/*`, el workflow construye una imagen nueva y deja un aviso.
+**Producción despliega exactamente la imagen probada en QA.** El job `imagen` de cada repositorio etiqueta cada imagen con el hash del contenido del repositorio, no con el del commit. Al fusionar `release/x.y.z` en `main` sin otros cambios, el contenido es el mismo, la imagen ya existe y no se vuelve a construir. Si `main` trae algo que no pasó por `release/*`, el workflow construye una imagen nueva y deja un aviso.
 
 **Alcance de la reversión.** Si el rolling update no termina (por ejemplo, pods que no arrancan o se caen por falta de memoria), el pipeline ejecuta `kubectl rollout undo`, que vuelve a la imagen anterior. Eso no revierte migraciones de esquema de la base de datos: solo es seguro si el cambio siguió el patrón expand-contract (sección 5.8). Si no, la recuperación real es restaurar el respaldo de la base (sección 9.3), con hasta 24 horas de pérdida de datos.
 
@@ -519,7 +520,7 @@ flowchart LR
 
 ### 7.3 Dashboard de logs y alertas
 
-Ambos se aprovisionan desde `quickpatch-infrastructure` (`ansible/files/grafana/`) al correr `deploy-observabilidad.yml`, así que no se editan a mano en Grafana.
+Ambos se aprovisionan desde `infrastructure/ansible/files/grafana/` al correr `deploy-observabilidad.yml`, así que no se editan a mano en Grafana.
 
 **Dashboard "QUICKPATCH — Logs y errores"** (carpeta QUICKPATCH). Filtros por entorno y servicio, y seis paneles:
 
@@ -588,7 +589,7 @@ Ningún secreto (contraseñas, llaves de Garage, tokens de la pasarela de pagos,
 | Redis (VM4) | No | Cache y colas cortas: se reconstruye con el uso normal y no guarda nada que no exista en otro lado. |
 | Métricas y logs (Prometheus y Loki, VM1) | No | Datos de diagnóstico con retención de 14 a 15 días; si se pierden, se vuelven a acumular. Los dashboards y fuentes de datos de Grafana son código de Ansible. |
 | Ambiente de QA (VM2, VM5 y VM7) | No | Solo tiene datos de prueba; se reconstruye con los mismos playbooks y el grupo `qa`. |
-| Configuración de infraestructura (Ansible, workflows de CI/CD) | No hace falta | Vive versionada en `quickpatch-infrastructure`: el repositorio es su respaldo. |
+| Configuración de infraestructura (Ansible, workflows de CI/CD) | No hace falta | Vive versionada en `infrastructure/` del repositorio principal y en el `ci-cd.yml` de cada repositorio: GitHub es su respaldo. |
 | Secretos (Ansible Vault) | **Ver 9.4** | `vault.yml` está cifrado pero no se sube a Git; sin él y sin su contraseña no se pueden reconstruir las VMs con las mismas credenciales. |
 
 ### 9.2 Respaldo de PostgreSQL
@@ -631,7 +632,7 @@ Como toda la configuración es código de Ansible, la recuperación de una VM es
 
 **Lo que hace falta para reconstruir:**
 
-- El repositorio `quickpatch-infrastructure`.
+- El repositorio `quickpatch` (carpeta `infrastructure/` y submódulos `apps/api-gateway` y `apps/kafka`).
 - El archivo cifrado `vault.yml` y su contraseña. **Hoy existen en un solo computador, el del responsable de DevOps (R11):** si ese equipo se pierde, se pierden las contraseñas de las bases, de Redis y de Garage. Se pueden regenerar, pero las bases restauradas necesitarían que se les cambien las credenciales. Pendiente: guardar una copia del vault y de su contraseña fuera de ese computador, por ejemplo en el gestor de contraseñas del equipo.
 - Las credenciales de las VMs que entrega el laboratorio.
 - Un token nuevo de la organización en GitHub para registrar el runner de VM1.
@@ -838,7 +839,7 @@ Pasos para dejar las 7 VMs funcionando desde cero, o para reconstruir una sola (
 |---|---|
 | Linux o WSL con Docker | Correr Ansible en un contenedor |
 | VPN de la universidad conectada | Llegar a las VMs (`10.43.x.x`) |
-| Repositorio `quickpatch-infrastructure` | Playbooks, plantillas e inventario |
+| Repositorio `quickpatch` con los submódulos `apps/api-gateway` y `apps/kafka` | Playbooks, plantillas e inventario |
 | `vault.yml` (cifrado) y su contraseña | Secretos de las bases, Redis, Garage y Grafana (sección 9.4) |
 | Usuario y contraseña de las VMs | Los entrega el laboratorio |
 | Un token de registro de la organización en GitHub | Registrar el runner de VM1 (solo en el paso A.5) |
@@ -847,8 +848,10 @@ Pasos para dejar las 7 VMs funcionando desde cero, o para reconstruir una sola (
 
 1. Clonar el repositorio y construir la imagen de Ansible:
    ```
-   git clone https://github.com/ARQUI-202630/quickpatch-infrastructure.git
-   cd quickpatch-infrastructure/ansible
+   git clone https://github.com/ARQUI-202630/quickpatch.git
+   cd quickpatch
+   git submodule update --init apps/api-gateway apps/kafka
+   cd infrastructure/ansible
    docker build -t quickpatch-ansible .
    ```
 2. Poner los secretos:
@@ -917,7 +920,7 @@ Para reconstruir una sola VM se aplican `setup-base.yml` y el playbook de su rol
 Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 
 - Cada repositorio de componente ya tiene su `ci-cd.yml` instalado. Un push a `release/*` publica la imagen y la despliega en QA; un merge a `main` despliega la misma imagen en producción.
-- **Antes del primer despliegue de un servicio** debe existir su Deployment en k3s: el workflow de despliegue (`.github/workflows/deploy-k3s.yml`, distinto del playbook del mismo nombre) actualiza la imagen de un Deployment existente, no lo crea. Los manifiestos de los servicios están pendientes.
+- **Antes del primer despliegue de un servicio** debe existir su Deployment en k3s: el job `desplegar` del `ci-cd.yml` de cada servicio actualiza la imagen de un Deployment existente, no lo crea. Los manifiestos están en `deploy/k8s/` de cada repositorio de servicio y los aplica `primer-despliegue-servicios.yml`.
 
 ### A.8 Tareas frecuentes
 
@@ -945,3 +948,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 2.3 | 7 oct 2026 | Observabilidad aplicada en VM1 (ADR-022, paso 1 de la migración): la sección 7 pasa de VM7 a VM1, y se agregan etiquetas `entorno`, `namespace` y `service` en los logs (sección 7.1), sincronización de hora con `chrony` en las 7 VMs, y nueva sección 7.3 con el dashboard "QUICKPATCH — Logs y errores" y las alertas de RAM, disco y VM caída por correo. Deja pendientes el dashboard de métricas y los logs en JSON de los servicios (SCRUM-323). |
 | 2.4 | 7 oct 2026 | El reparto del ADR-022 queda aplicado en las VMs y el documento lo describe como estado actual: observabilidad en VM1; producción en VM3, VM4 y VM6; QA en VM2, VM5 y VM7, con los mismos playbooks parametrizados por ambiente. Se actualizan las secciones 2, 3, 4, 5, 6, 8, 9, 10, 11 y el Anexo A (inventario, playbooks, firewall, respaldo, secretos y nombres). Se corrige la 3.4: Redis con un usuario por servicio, llaves de Garage por uso y PostGIS en `db_service_request`, ya aplicados. Kafka UI deja de tener puerto abierto: se usa por túnel SSH. Quedan pendientes el API Gateway y el panel en k3s (paso 4, esperan sus imágenes) y la medición de RAM y disco con servicios reales (SCRUM-347). |
 | 2.5 | 7 oct 2026 | Roles de PostgreSQL del DD 10.2 aplicados en QA y producción: `<servicio>_migrator` y `<servicio>_app` por base, en lugar del único `app_<servicio>`; playbook `aplicar-roles-db.yml` para los permisos que define cada servicio. Se actualizan las secciones 3.4, 5.2 y 8.3. |
+| 2.6 | 7 oct 2026 | Traslado del aprovisionamiento (SCRUM-338): Ansible pasa a `infrastructure/` del repositorio principal, la configuración del gateway a `quickpatch-api-gateway/nginx/` y el despliegue de Kafka, con la creación de los topics de `topics.yaml`, a `quickpatch-kafka/deploy/`. El CD vive en el `ci-cd.yml` de cada repositorio (sección 6.1) y `quickpatch-infrastructure` se archiva. Secciones 5, 5.5, 6.1 y Anexo A. |

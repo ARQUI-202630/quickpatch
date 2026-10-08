@@ -1,4 +1,4 @@
-# Pruebas del sistema completo contra el ambiente de QA (VM2).
+# Pruebas del sistema completo contra el ambiente de QA (VM2, VM5 y VM7; se entra por el gateway de VM1, ADR-022).
 # Son las compuertas 2 y 3 del Documento de Pruebas (E2E, seguridad y carga), ejecutadas
 # contra QA en lugar de un staging efímero o de producción (ADR-015).
 #
@@ -27,9 +27,12 @@ concurrency:
 
 env:
   QA_HOST: qa.quickpatch.internal
-  QA_IP: 10.43.98.15
+  QA_IP: 10.43.100.168   # VM1: el gateway recibe qa.quickpatch.internal y lo reenvía al k3s de QA (VM2)
+  # Los contenedores de prueba usan la red del host (--network host): con la red bridge de Docker llegan al Nginx de VM1
+  # con la IP 172.17.x.x, que el bloque de QA rechaza (solo permite 10.0.0.0/8) con un 403 HTML. Con la red del host salen con la
+  # IP de VM1 y el servicio responde de verdad.
   BASE_URL: https://qa.quickpatch.internal
-  LOKI: http://10.43.99.8:3100
+  LOKI: http://10.43.100.168:3100   # Loki está en VM1 desde el ADR-022 (VM7 es ahora Kafka y Garage de QA)
 
 jobs:
   e2e:
@@ -45,7 +48,7 @@ jobs:
             echo "::notice::Todavía no hay pruebas de Playwright (tests/e2e/package.json)."
             exit 0
           fi
-          docker run --rm --ipc=host --add-host "$QA_HOST:$QA_IP" -e BASE_URL -e CI=true \
+          docker run --rm --network host --ipc=host --add-host "$QA_HOST:$QA_IP" -e BASE_URL -e CI=true \
             -v "$PWD/tests/e2e:/e2e" -w /e2e mcr.microsoft.com/playwright:v1.48.2-jammy \
             bash -c "npm ci && npx playwright test"
 
@@ -64,7 +67,7 @@ jobs:
             exit 0
           fi
           for c in "${colecciones[@]}"; do
-            docker run --rm --add-host "$QA_HOST:$QA_IP" -v "$PWD/tests/e2e:/etc/newman" \
+            docker run --rm --network host --add-host "$QA_HOST:$QA_IP" -v "$PWD/tests/e2e:/etc/newman" \
               postman/newman:6-alpine run "$(basename "$c")" --insecure --env-var "baseUrl=$BASE_URL" \
               --env-var "adminEmail=$QA_ADMIN_EMAIL" --env-var "adminPassword=$QA_ADMIN_PASSWORD" \
               --env-var "platformAdminEmail=$QA_PLATFORM_ADMIN_EMAIL" --env-var "platformAdminPassword=$QA_PLATFORM_ADMIN_PASSWORD"
@@ -96,7 +99,7 @@ jobs:
             cp tests/security/zap-baseline.conf zap/
             reglas=(-c zap-baseline.conf)
           fi
-          docker run --rm --add-host "$QA_HOST:$QA_IP" -v "$PWD/zap:/zap/wrk:rw" \
+          docker run --rm --network host --add-host "$QA_HOST:$QA_IP" -v "$PWD/zap:/zap/wrk:rw" \
             ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t "$BASE_URL" -I -r zap.html "${reglas[@]}"
 
       # PAY-002 y compuerta 2: ningún número de tarjeta (validado con Luhn) ni CVV en los logs de QA.
@@ -161,6 +164,11 @@ jobs:
 
       # PRF-001 a PRF-007: los umbrales (thresholds) de cada script deciden si la prueba pasa.
       - name: k6 contra QA
+        env:
+          # Cliente de QA con el que los scripts inician sesión en su setup (sin él, k6 aborta); secretos, nunca en el repo.
+          # k6 run expone las variables de entorno del sistema en __ENV, así que no van en la línea de comandos.
+          QA_CLIENT_EMAIL: ${{ secrets.QA_CLIENT_EMAIL }}
+          QA_CLIENT_PASSWORD: ${{ secrets.QA_CLIENT_PASSWORD }}
         run: |
           shopt -s nullglob
           scripts=(tests/performance/*.js)
