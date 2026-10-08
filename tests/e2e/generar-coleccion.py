@@ -41,6 +41,11 @@ problem = [
     "});",
 ]
 
+def tipo(nombre):
+    """Comprueba el tipo de Problem Details del contrato (https://quickpatch.internal/problems/<nombre>)."""
+    return [f"pm.test('tipo {nombre}', () => pm.expect(pm.response.json().type).to.match(/\\/{nombre}$/));"]
+
+
 coleccion = {
     "info": {
         "name": "QUICKPATCH — MVP Sprint 3 (flujo de punta a punta)",
@@ -48,7 +53,9 @@ coleccion = {
             "Administrador crea una categoría (Catalog publica catalog.category-changed) → cliente se registra e inicia "
             "sesión (Identity) → crea una solicitud (ServiceRequest valida la categoría en su réplica y publica "
             "service-request.created, que consume Matching) → consulta el detalle. Incluye casos negativos de "
-            "autenticación, rol y cobertura, y la gestión de tenants del administrador de la plataforma (SCRUM-112). "
+            "autenticación, rol y cobertura, la gestión de tenants del administrador de la plataforma (SCRUM-112) y los casos "
+            "de SCRUM-287: perfil, correo y documento repetidos, login fallido y bloqueo, solicitud de otro cliente, "
+            "desactivación de categoría y registro de técnico. "
             "Variables: baseUrl (https://qa.quickpatch.internal), adminEmail, adminPassword, platformAdminEmail y "
             "platformAdminPassword (secretos de QA, nunca en el repositorio). Contratos: quickpatch-api-gateway/openapi."
         ),
@@ -103,6 +110,19 @@ coleccion = {
                         "});",
                         "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);",
                     ]),
+                req("Perfil del cliente (GET /v1/users/me)", "GET", "/v1/users/me", [CORR, auth("clienteToken")],
+                    pruebas=[
+                        "pm.test('200 con su propio usuario', () => {",
+                        "  pm.response.to.have.status(200);",
+                        "  const u = pm.response.json();",
+                        "  pm.expect(u.email).to.eql('cliente.' + pm.collectionVariables.get('sufijo') + '@quickpatch.test');",
+                        "  pm.expect(u.role).to.eql('cliente');",
+                        "  pm.expect(u.verificationStatus).to.eql(null);",
+                        "});",
+                    ]),
+                req("Correo repetido → 409", "POST", "/v1/auth/register/client", [JSON, CORR, CANAL],
+                    {"email": "cliente.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Cliente repetido"},
+                    pruebas=["pm.test('409', () => pm.response.to.have.status(409));"] + problem + tipo("correo-registrado")),
                 req("Categorías del tenant incluyen la nueva", "GET", "/v1/catalog/categories", [CORR, auth("clienteToken")],
                     pruebas=[
                         "pm.test('200 y la categoría está activa', () => {",
@@ -175,6 +195,40 @@ coleccion = {
                         "  pm.expect(pm.response.json().errors).to.have.property('description');",
                         "});",
                     ] + problem),
+                req("Contraseña incorrecta → 401", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
+                    {"email": "cliente.{{sufijo}}@quickpatch.test", "password": "Incorrecta123"},
+                    pruebas=["pm.test('401', () => pm.response.to.have.status(401));"] + problem + tipo("credenciales-invalidas")),
+                req("Registro de un cliente para el bloqueo", "POST", "/v1/auth/register/client", [JSON, CORR, CANAL],
+                    {"email": "bloqueo.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Cliente bloqueo"},
+                    pruebas=["pm.test('201 registrado', () => pm.response.to.have.status(201));"]),
+                req("Intentos fallidos hasta el bloqueo → 423", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
+                    {"email": "bloqueo.{{sufijo}}@quickpatch.test", "password": "Incorrecta123"},
+                    pruebas=[
+                        "// RN-U4: al 5.º intento fallido la cuenta queda bloqueada 15 minutos (LockoutPolicy.Default).",
+                        "const n = Number(pm.collectionVariables.get('fallidos') || 0) + 1;",
+                        "if (pm.response.code === 401 && n < 10) {",
+                        "  pm.collectionVariables.set('fallidos', n);",
+                        "  postman.setNextRequest(pm.info.requestName);",
+                        "} else {",
+                        "  pm.collectionVariables.unset('fallidos');",
+                        "  pm.test('423 al llegar al máximo de intentos', () => pm.response.to.have.status(423));",
+                        "  pm.test('bloqueo al 5.º intento', () => pm.expect(n).to.eql(5));",
+                        "}",
+                    ]),
+                req("Contraseña correcta durante el bloqueo → 423", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
+                    {"email": "bloqueo.{{sufijo}}@quickpatch.test", "password": "Segura123"},
+                    pruebas=["pm.test('423', () => pm.response.to.have.status(423));"] + problem + tipo("cuenta-bloqueada")),
+                req("Registro de un segundo cliente", "POST", "/v1/auth/register/client", [JSON, CORR, CANAL],
+                    {"email": "otro.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Otro cliente"},
+                    pruebas=["pm.test('201 registrado', () => pm.response.to.have.status(201));"]),
+                req("Login del segundo cliente", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
+                    {"email": "otro.{{sufijo}}@quickpatch.test", "password": "Segura123"},
+                    pruebas=[
+                        "pm.test('200', () => pm.response.to.have.status(200));",
+                        "pm.collectionVariables.set('otroToken', pm.response.json().accessToken);",
+                    ]),
+                req("Solicitud de otro cliente → 404", "GET", "/v1/service-requests/{{solicitudId}}", [CORR, auth("otroToken")],
+                    pruebas=["pm.test('404, sin revelar que existe', () => pm.response.to.have.status(404));"] + problem),
             ],
         },
         {
@@ -229,6 +283,76 @@ coleccion = {
                 req("Tenant inexistente → 404", "PATCH", "/v1/platform/tenants/{{$guid}}", [JSON, CORR, auth("plataformaToken")],
                     {"status": "activo"},
                     pruebas=["pm.test('404', () => pm.response.to.have.status(404));"] + problem),
+            ],
+        },
+        {
+            "name": "6. Catálogo: desactivar una categoría (SCRUM-287)",
+            "item": [
+                req("Crear una categoría para desactivar", "POST", "/v1/catalog/admin/categories", [JSON, CORR, auth("adminToken")],
+                    {"name": "Cerrajería {{sufijo}}"},
+                    pruebas=[
+                        "pm.test('201', () => pm.response.to.have.status(201));",
+                        "pm.collectionVariables.set('categoriaInactivaId', pm.response.json().id);",
+                    ]),
+                req("Desactivar la categoría", "PATCH", "/v1/catalog/admin/categories/{{categoriaInactivaId}}", [JSON, CORR, auth("adminToken")],
+                    {"active": False},
+                    pruebas=[
+                        "pm.test('200 inactiva y con updatedAt', () => {",
+                        "  pm.response.to.have.status(200);",
+                        "  pm.expect(pm.response.json().active).to.eql(false);",
+                        "  pm.expect(pm.response.json().updatedAt).to.be.a('string');",
+                        "});",
+                    ]),
+                req("El cliente ya no la ve", "GET", "/v1/catalog/categories", [CORR, auth("clienteToken")],
+                    pruebas=[
+                        "pm.test('200 sin la categoría inactiva', () => {",
+                        "  pm.response.to.have.status(200);",
+                        "  pm.expect(pm.response.json().map(c => c.id)).to.not.include(pm.collectionVariables.get('categoriaInactivaId'));",
+                        "});",
+                    ]),
+                req("Categoría inexistente → 404", "PATCH", "/v1/catalog/admin/categories/{{$guid}}", [JSON, CORR, auth("adminToken")],
+                    {"active": False},
+                    pruebas=["pm.test('404', () => pm.response.to.have.status(404));"] + problem + tipo("no-encontrado")),
+            ],
+        },
+        {
+            "name": "7. Técnico (SCRUM-287)",
+            "item": [
+                req("Registro de técnico", "POST", "/v1/auth/register/technician", [JSON, CORR, CANAL],
+                    {"email": "tecnico.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Técnico de prueba",
+                     "phone": "3007654321", "documentId": "{{documento}}", "specialtyId": "{{categoriaId}}", "role": "tecnico"},
+                    previo=["pm.collectionVariables.set('documento', String(Date.now()).slice(-10));"],
+                    pruebas=[
+                        "pm.test('201 pendiente de verificación', () => {",
+                        "  pm.response.to.have.status(201);",
+                        "  pm.expect(pm.response.json().role).to.eql('tecnico');",
+                        "  pm.expect(pm.response.json().verificationStatus).to.eql('pendiente');",
+                        "});",
+                    ]),
+                req("Documento repetido → 409", "POST", "/v1/auth/register/technician", [JSON, CORR, CANAL],
+                    {"email": "tecnico2.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Técnico repetido",
+                     "phone": "3007654321", "documentId": "{{documento}}", "specialtyId": "{{categoriaId}}", "role": "tecnico"},
+                    pruebas=["pm.test('409', () => pm.response.to.have.status(409));"] + problem + tipo("documento-registrado")),
+                req("Login del técnico", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
+                    {"email": "tecnico.{{sufijo}}@quickpatch.test", "password": "Segura123"},
+                    pruebas=[
+                        "pm.test('200 con rol tecnico', () => {",
+                        "  pm.response.to.have.status(200);",
+                        "  pm.expect(pm.response.json().user.role).to.eql('tecnico');",
+                        "});",
+                        "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);",
+                    ]),
+                req("Perfil del técnico muestra la verificación", "GET", "/v1/users/me", [CORR, auth("tecnicoToken")],
+                    pruebas=[
+                        "pm.test('200 con verificationStatus pendiente', () => {",
+                        "  pm.response.to.have.status(200);",
+                        "  pm.expect(pm.response.json().verificationStatus).to.eql('pendiente');",
+                        "});",
+                    ]),
+                req("El técnico no crea solicitudes → 403", "POST", "/v1/service-requests", [JSON, CORR, auth("tecnicoToken")],
+                    {"categoryId": "{{categoriaId}}", "description": "Fuga de agua debajo del lavaplatos",
+                     "location": {"latitude": 4.6533, "longitude": -74.0836}, "addressText": "Calle 45 # 13-20"},
+                    pruebas=["pm.test('403', () => pm.response.to.have.status(403));"] + problem),
             ],
         },
     ],
