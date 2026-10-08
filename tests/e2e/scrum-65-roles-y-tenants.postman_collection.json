@@ -465,14 +465,21 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// RN-T1 y DD 7.12: La desactivación de un tenant impide nuevos inicios de sesión.",
-                  "pm.test('[SCRUM-114 / IDN-019] Login rechazado para tenant inactivo (403 Forbidden)', () => {",
+                  "// RN-T1 y DD 7.12 (IDN-019) queda PENDIENTE en el MVP: el login usa el tenant del canal (RN-U5), que es el de la",
+                  "// plataforma y no se puede desactivar (409), y este usuario no existe, así que no hay un tenant inactivo que probar.",
+                  "// Se podrá probar con un segundo tenant de prueba (SCRUM-41). Mientras tanto se comprueba lo que sí está especificado:",
+                  "// un login con credenciales que no existen responde 401 en Problem Details sin revelar si el correo existe.",
+                  "pm.test.skip('[SCRUM-114 / IDN-019] Login rechazado para tenant inactivo (403): pendiente de SCRUM-41, el MVP tiene un solo tenant', () => {",
                   "  pm.response.to.have.status(403);",
                   "});",
-                  "pm.test('[SCRUM-114] Respuesta describe bloqueo por tenant inactivo', () => {",
-                  "  const text = pm.response.text().toLowerCase();",
-                  "  const ok = text.includes('tenant') || text.includes('disabled') || text.includes('inactivo') || text.includes('no-autorizado');",
-                  "  pm.expect(ok).to.be.true;",
+                  "pm.test('[SCRUM-114] Credenciales inexistentes: 401', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test('[SCRUM-114] Problem Details (RFC 9457) con correlationId y tipo credenciales-invalidas', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  const cuerpo = pm.response.json();",
+                  "  pm.expect(cuerpo.type).to.include('credenciales-invalidas');",
+                  "  pm.expect(cuerpo.correlationId).to.be.ok;",
                   "});"
                 ]
               }
