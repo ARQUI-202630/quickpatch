@@ -1,6 +1,6 @@
 # ADR-015 — Ambiente de QA en VM2 y acceso a través del gateway de VM1
 
-- **Estado:** Aceptado (3 de octubre de 2026)
+- **Estado:** Aceptado (3 de octubre de 2026); modificado por ADR-022: QA pasa de una sola VM (VM2) a tres (VM2, VM5 y VM7) y VM1 queda como VM de herramientas. Siguen vigentes el ambiente de QA permanente y VM1 como única entrada desde la VPN
 - **Fecha:** 2026-10-03
 - **Decisión:** VM2 deja de servir el panel web y aloja un ambiente de QA permanente. El panel pasa al Nginx de VM1, que además es la única entrada desde la VPN a producción, a QA y a Grafana, y elige el destino según el nombre pedido.
 - **Implementación:** rama `feature/devops/ansible-base` de `quickpatch-infrastructure`

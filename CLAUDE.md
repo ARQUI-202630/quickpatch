@@ -42,7 +42,7 @@ No resuelvas contradicciones silenciosamente.
 ### Backend
 `.ai/roles/backend.md`
 
-Área principal futura: `apps/backend/**`
+Áreas principales: `apps/backend/**`, `apps/api-gateway/**` (contratos REST) y `apps/kafka/**` (esquemas de eventos y topics)
 
 ### Frontend
 `.ai/roles/frontend.md`
@@ -57,7 +57,7 @@ No resuelvas contradicciones silenciosamente.
 ### DevOps
 `.ai/roles/devops.md`
 
-Áreas principales futuras: `infrastructure/**` y `.github/workflows/**`
+Áreas principales: `infrastructure/**`, `.github/workflows/**` y el despliegue de `apps/api-gateway/nginx/` y `apps/kafka/deploy/`
 
 ## 5. Política de contexto
 
@@ -88,13 +88,13 @@ No modificar reglas de negocio, endpoints o modelos de dominio por defecto.
 ## 7. Contratos
 
 ### REST
-`contracts/openapi/` (repo `quickpatch-contracts`)
+`openapi/` del repo `quickpatch-api-gateway` (submódulo `contracts/api-gateway/` en cada consumidor)
 
 Frontend no debe inventar endpoints.
 Backend no debe modificar contratos implícitamente.
 
 ### Kafka
-`contracts/events/` (repo `quickpatch-contracts`)
+`events/` y `topics/` del repo `quickpatch-kafka` (submódulo `contracts/kafka/` en cada servicio)
 
 Los cambios deben identificar productor, consumidores, compatibilidad, campos e impacto.
 

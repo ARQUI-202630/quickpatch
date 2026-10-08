@@ -22,10 +22,10 @@ No cambiar el stack asignado sin nueva ADR.
 
 ## Contratos
 
-Viven en el repo `quickpatch-contracts`, incluido como submódulo en `contracts/` de cada servicio, fijado en una versión (tag SemVer).
+Cada servicio los incluye como submódulos fijados en una versión (tag SemVer): `contracts/api-gateway/` (repo `quickpatch-api-gateway`) y `contracts/kafka/` (repo `quickpatch-kafka`).
 
-- REST: `contracts/openapi/`
-- Eventos: `contracts/events/`
+- REST: `contracts/api-gateway/openapi/`
+- Eventos: `contracts/kafka/events/` (topics en `quickpatch-kafka/topics/topics.yaml`)
 
 Cambiar de versión de contratos es un commit explícito en el servicio, no una actualización automática.
 
