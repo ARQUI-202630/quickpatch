@@ -84,10 +84,10 @@ La versión 3.0 corresponde a la historia SCRUM-259 (Documentación DD V3). Cada
 
 |Subtarea|Contenido|Secciones|
 |---|---|---|
-|SCRUM-284|Modelo entidad-relación y diccionario de datos|4, 5, 6, 7|
+|SCRUM-284|Modelo entidad-relación y diccionario de datos, con su estado de implementación|4, 5 (Cuadro 6), 6, 7|
 |SCRUM-285|Diagramas de flujo de datos de los procesos principales|Trasladado al SDD V2 (sección 11, flujos de negocio)|
 |SCRUM-286|Mockups y wireframes de las interfaces de usuario|Trasladado a SCRUM-332 — Prototipos Front (sección 9)|
-|SCRUM-287|Contratos de las APIs y de los eventos|8|
+|SCRUM-287|Contratos de las APIs y de los eventos, trazados a `quickpatch-api-gateway`, `quickpatch-kafka`, el código y la colección de Postman|8 (trazabilidad en 8.8)|
 |SCRUM-288|Estructura de carpetas y organización del código fuente|Trasladado al SDD V2 (sección 10)|
 |SCRUM-289|Algoritmos complejos y lógica de negocio crítica|Trasladado al SDD V2 (secciones 7, 8 y 11)|
 
@@ -105,7 +105,7 @@ Algunos elementos de esta versión resuelven dependencias que el DD v2.2 dejaba 
 |P-04|La cobertura de un técnico se expresa por localidades de Bogotá, a partir de un catálogo de referencia `localities` en Matching Service.|RF-13 (SCRUM-33)|SDD, sección 6.8|
 |P-05|Matching Service persiste las solicitudes que debe asignar (`matching_requests`) para poder reintentar las que quedan en espera.|SCRUM-29, criterio 3|SDD, sección 8.3|
 |P-06|Las tareas programadas que recorren filas de todos los tenants usan un rol `<servicio>_scheduler` que solo puede leer identificadores y aplica cada cambio con el rol `_app` y el tenant de la fila.|RN-M3, RN-Q6|Documento de Infraestructura, sección 5.7|
-|P-07|Agregar `code` a Problem Details con el catálogo del Cuadro 7.|Errores homogéneos para el frontend|Contratos OpenAPI (cambio compatible)|
+|P-07|Agregar `code` a Problem Details con el catálogo del Cuadro 8.|Errores homogéneos para el frontend|Contratos OpenAPI (cambio compatible)|
 |P-08|Aceptar `Idempotency-Key` en la creación de solicitudes y en el pago.|AC5-E5|Contratos OpenAPI (cambio compatible)|
 
 _Cuadro 2: Propuestas de diseño pendientes de validación del equipo_
@@ -130,6 +130,8 @@ El DD v3.0 se escribió sobre la versión 2.2, en paralelo con las versiones 2.3
 |Numeración|Multi-tenancy sigue en la sección 10|Los artefactos relacionados pasan a la 1.7 para no correr la numeración: las referencias "DD 10.2", "DD 10.3" y "DD 10.4" de los contratos y del código siguen vigentes|—|
 |`Idempotency-Key`|Convención vigente|Propuesta P-08|No está en los contratos v1|
 |`POST /v1/auth/refresh`|Nuevo|Se conserva en el catálogo, sin contrato todavía; antes de emitir refresh tokens hay que definir su revocación|Un refresh token de larga vida sin revocación es un riesgo|
+|Gestión de tenants|`POST /v1/platform/tenants/{id}/activate` y `/deactivate`|`PATCH /v1/platform/tenants/{id}` con `{ "status": "activo" \| "inactivo" }`|Contrato Identity 1.2.0 e implementación de SCRUM-112|
+|Repositorios de contratos|`quickpatch-contracts`|REST en `quickpatch-api-gateway/openapi/` y eventos en `quickpatch-kafka/events/`|ADR-021|
 
 
 ### 1.7 Artefactos relacionados
@@ -138,9 +140,9 @@ El DD v3.0 se escribió sobre la versión 2.2, en paralelo con las versiones 2.3
 
 |Tema|Artefacto que lo documenta|
 |---|---|
-|Diagramas de flujo de datos (DFD)|SDD V2|
-|Algoritmos y lógica de negocio crítica (matching, máquina de estados, cotizaciones, pago, Outbox, consumo idempotente, inicio de sesión)|SDD V2|
-|Organización del código y estructura multirepo|SDD V2, ADR-013 y Working Agreements|
+|Diagramas de flujo de datos (DFD)|SDD, sección 11 (flujos de negocio en BPMN, SCRUM-285)|
+|Algoritmos y lógica de negocio crítica (matching, máquina de estados, cotizaciones, pago, Outbox, consumo idempotente, inicio de sesión)|SDD, secciones 7 (C4 nivel 4), 8 (diagramas dinámicos) y 11 (BPMN, SCRUM-289)|
+|Organización del código y estructura multirepo|SDD, sección 10 (SCRUM-288), ADR-013, ADR-021 y Working Agreements|
 |Mockups, wireframes y relación pantalla–contrato|SCRUM-332 — Prototipos Front|
 
 _Cuadro 3: Temas documentados fuera del DD_
@@ -237,6 +239,7 @@ flowchart TB
         quotes["quotes"]:::entity
         ratings["ratings"]:::entity
         service_evidence["service_evidence"]:::entity
+        service_request_categories["service_request_categories<br/>(réplica de lectura)"]:::entity
         service_requests -->|"1 : N"| quotes
         service_requests -->|"1 : 0..1"| ratings
         service_requests -->|"1 : N"| service_evidence
@@ -284,6 +287,7 @@ flowchart TB
     users -.->|"client_id"| service_requests
     technician_profiles -.->|"technician_id"| service_requests
     service_categories -.->|"category_id"| service_requests
+    service_categories -.->|"catalog.category-changed (réplica)"| service_request_categories
     technician_profiles -.->|"technician_id"| technician_availability
     technician_profiles -.->|"technician_id"| coverage_zones
     technician_profiles -.->|"technician_id"| matching_attempts
@@ -341,6 +345,7 @@ erDiagram
     technician_profiles ||..o{ matching_attempts : "technician_id (ref. lógica)"
     service_requests ||..o| matching_requests : "service_request_id (ref. lógica)"
     service_categories ||..o{ matching_requests : "category_id (ref. lógica)"
+    service_categories ||..o| service_request_categories : "category_id (réplica por evento)"
     service_categories ||..o{ technician_profiles : "specialty_id (ref. lógica)"
     users |o..o{ service_requests : "cancelled_by (ref. lógica)"
     client_companies |o..o{ service_requests : "company_id (ref. lógica)"
@@ -393,6 +398,13 @@ erDiagram
         numeric average_rating
         timestamptz created_at
     }
+    service_request_categories {
+        uuid category_id PK
+        uuid tenant_id
+        varchar name
+        boolean active
+        timestamptz updated_at
+    }
     service_categories {
         uuid id PK
         uuid tenant_id
@@ -400,6 +412,7 @@ erDiagram
         varchar description
         boolean active
         timestamptz created_at
+        timestamptz updated_at
     }
     service_requests {
         uuid id PK
@@ -492,6 +505,7 @@ erDiagram
         varchar response
         timestamptz responded_at
         timestamptz expires_at
+        numeric distance_m
     }
     payments {
         uuid id PK
@@ -551,6 +565,19 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 ## 5. Diccionario de Datos
 
+**Estado de implementación (`develop`, 7 de octubre de 2026).** El diccionario describe el modelo completo de esta versión; no todas sus tablas existen todavía en el código. Este cuadro resume qué tablas ya tienen migración en cada servicio y qué falta. Las columnas pendientes se marcan en su tabla con **Pendiente de implementar**.
+
+|Servicio|Tablas implementadas|Pendiente|
+|---|---|---|
+|Identity|`tenants`, `users`, `technician_profiles`, `audit_logs`|`users.company_id` y `client_companies` (RF-06)|
+|Catalog|`service_categories` (con `updated_at`), `outbox_events`|—|
+|ServiceRequest|`service_requests`, `service_request_categories`, `outbox_events`, `processed_events`|`company_id` y `client_type` (RF-08), `cancelled_by` y `cancelled_by_type` (RF-36); `quotes`, `ratings` y `service_evidence`|
+|Matching|`processed_events`|`technician_availability`, `coverage_zones`, `matching_attempts`, `matching_requests` y `localities`|
+|Payments|—|`payments` e `invoices`|
+|Actors, Ranking, Communication|—|Sin tablas en esta versión|
+
+_Cuadro 6: Estado de implementación del modelo de datos_
+
 ### 5.1 Tabla `tenants`
 
 **Servicio propietario:** Identity Service.
@@ -595,7 +622,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 |phone|VARCHAR(30)|Sí|—|Número de teléfono.|
 |failed_login_attempts|INTEGER|No|—|Cantidad de intentos fallidos consecutivos.|
 |locked_until|TIMESTAMPTZ|Sí|—|Fecha hasta la cual permanece bloqueada la cuenta.|
-|company_id|UUID|Sí|FK local|**Nuevo v3.** Empresa cliente a la que pertenece el usuario (`client_companies.id`). Obligatorio cuando `role = 'empresa_contacto'` y nulo en los demás roles (RN-CC2).|
+|company_id|UUID|Sí|FK local|**Nuevo v3. Pendiente de implementar (RF-06).** Empresa cliente a la que pertenece el usuario (`client_companies.id`). Obligatorio cuando `role = 'empresa_contacto'` y nulo en los demás roles (RN-CC2).|
 |created_at|TIMESTAMPTZ|No|—|Fecha de creación del usuario.|
 
 **Valores iniciales de `role`:**
@@ -694,8 +721,8 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 |client_id|UUID|No|Ref. lógica|Usuario que creó la solicitud.|
 |category_id|UUID|No|Ref. lógica|Categoría del servicio (Catalog Service).|
 |technician_id|UUID|Sí|Ref. lógica|Técnico asignado a la solicitud.|
-|company_id|UUID|Sí|Ref. lógica|**Nuevo v3.** Empresa cliente (`client_companies.id`) cuando la crea un `empresa_contacto`; sale del token (RN-SR12).|
-|client_type|VARCHAR(10)|No|CHECK|**Nuevo v3.** `hogar` o `empresa`. Se fija a partir del rol del creador: `empresa_contacto` produce `empresa` (RF-08, SCRUM-28).|
+|company_id|UUID|Sí|Ref. lógica|**Nuevo v3. Pendiente de implementar (RF-08).** Empresa cliente (`client_companies.id`) cuando la crea un `empresa_contacto`; sale del token (RN-SR12).|
+|client_type|VARCHAR(10)|No|CHECK|**Nuevo v3. Pendiente de implementar (RF-08).** `hogar` o `empresa`. Se fija a partir del rol del creador: `empresa_contacto` produce `empresa` (RF-08, SCRUM-28).|
 |description|TEXT|No|—|Descripción del problema.|
 |location|geometry(POINT,4326)|No|—|Ubicación geográfica del servicio.|
 |address_text|VARCHAR(255)|No|—|Dirección escrita.|
@@ -705,8 +732,8 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 |completed_at|TIMESTAMPTZ|Sí|—|Finalización del servicio.|
 |cancelled_at|TIMESTAMPTZ|Sí|—|Momento de la cancelación, si la hubo.|
 |cancellation_reason|TEXT|Sí|—|Motivo de la cancelación. Obligatorio cuando la cancela un usuario (RF-36).|
-|cancelled_by|UUID|Sí|Ref. lógica|**Nuevo v3.** Usuario que canceló la solicitud. Nulo cuando la cancela el propio servicio (RN-Q6, RN-Q7).|
-|cancelled_by_type|VARCHAR(15)|Sí|CHECK|**Nuevo v3.** `cliente`, `admin_tenant` o `sistema` (RN-SR8).|
+|cancelled_by|UUID|Sí|Ref. lógica|**Nuevo v3. Pendiente de implementar (RF-36).** Usuario que canceló la solicitud. Nulo cuando la cancela el propio servicio (RN-Q6, RN-Q7).|
+|cancelled_by_type|VARCHAR(15)|Sí|CHECK|**Nuevo v3. Pendiente de implementar (RF-36).** `cliente`, `admin_tenant` o `sistema` (RN-SR8).|
 |created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
 
 **Estados:**
@@ -1185,6 +1212,7 @@ Hacia Catalog Service
   matching_requests.category_id        --> service_categories.id
   technician_profiles.specialty_id     --> service_categories.id   (P-03)
   technician_availability.specialty_id --> service_categories.id   (copia, P-01)
+  service_request_categories.category_id --> service_categories.id (réplica alimentada por catalog.category-changed)
 
 Hacia ServiceRequest Service
   matching_requests.service_request_id --> service_requests.id
@@ -1423,7 +1451,7 @@ Esta sección define los contratos REST y de eventos de QUICKPATCH. Siguen el pr
 |Paginación|`?page=1&size=20` (máximo 100). La respuesta es `{ "items": [...], "page": 1, "size": 20, "totalItems": 57 }`.|
 |Recursos de otro tenant|Se responden como `404 Not Found`, nunca como `403`, para no revelar que existen (AC6-E2).|
 
-_Cuadro 6: Convenciones comunes de los contratos REST_
+_Cuadro 7: Convenciones comunes de los contratos REST_
 
 #### 8.1.1 Formato de error
 
@@ -1468,7 +1496,7 @@ Los errores siguen el formato *Problem Details* (RFC 9457) de los contratos v1: 
 |502|`PAYMENT_PROVIDER_ERROR`|La pasarela no respondió o respondió con error técnico. El pago queda `procesando` y se concilia (SDD V2, antes DD §10.9).|
 |503|`SERVICE_UNAVAILABLE`|El servicio o la base de datos no están disponibles (SDD, sección 8.11).|
 
-_Cuadro 7: Códigos de error propuestos (P-07). Los contratos v1 ya publicados usan, entre otros, `validacion` (400), `no-autenticado` (401), `credenciales-invalidas` (401), `no-autorizado` (403), `no-encontrado` (404), `correo-registrado` (409), `categoria-no-disponible` (422), `ubicacion-fuera-de-cobertura` (422), `tenant-inactivo` (403 en el login) y `cuenta-bloqueada` (423)._
+_Cuadro 8: Códigos de error propuestos (P-07). Los contratos v1 ya publicados usan, entre otros, `validacion` (400), `no-autenticado` (401), `credenciales-invalidas` (401), `no-autorizado` (403), `no-encontrado` (404), `correo-registrado` (409), `categoria-no-disponible` (422), `ubicacion-fuera-de-cobertura` (422), `tenant-inactivo` (403 en el login) y `cuenta-bloqueada` (423)._
 
 ### 8.2 Catálogo de endpoints REST
 
@@ -1491,10 +1519,9 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |POST|`/v1/admin/technicians/{userId}/suspend`|`admin_tenant`|RF-20|Nuevo|Suspender con motivo.|
 |POST|`/v1/providers/me/technicians`|`proveedor`|RF-16|Nuevo|Dar de alta un técnico del equipo (RN-TP3).|
 |GET|`/v1/providers/me/technicians?status=`|`proveedor`|RF-16|Nuevo|Listar el equipo; `status` es `activo` (aprobado) o `inactivo` (pendiente, rechazado o suspendido).|
-|GET|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Nuevo|Listar tenants.|
-|POST|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Nuevo|Crear un tenant (empresa oferente).|
-|POST|`/v1/platform/tenants/{id}/activate`|`admin_plataforma`|RF-21|Nuevo|Activar.|
-|POST|`/v1/platform/tenants/{id}/deactivate`|`admin_plataforma`|RF-21|Nuevo|Desactivar (RN-T1).|
+|GET|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.2.0|Listar todos los tenants, activos e inactivos, ordenados por nombre.|
+|POST|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Nuevo|Crear un tenant (empresa oferente). Sin contrato todavía.|
+|PATCH|`/v1/platform/tenants/{id}`|`admin_plataforma`|RF-21|Contrato v1.2.0|Activar o desactivar con `{ "status": "activo" \| "inactivo" }` (RN-T1). Repetir el estado no es error; desactivar el tenant de la plataforma responde `409 tenant-plataforma`. Queda en `audit_logs`.|
 
 #### 8.2.2 Catalog Service
 
@@ -1904,7 +1931,7 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 |`payment.rejected`|Payments|ServiceRequest, Communication|La solicitud permanece en `completado` (RN-SR5).||
 |`catalog.category-changed`|Catalog|ServiceRequest, Matching|Estado completo de una categoría para las réplicas locales (`service_request_categories`).|Contrato v1|
 
-_Cuadro 8: Eventos Kafka, productores y consumidores_
+_Cuadro 9: Eventos Kafka, productores y consumidores_
 
 #### 8.4.1 Estructura base de evento
 
@@ -1946,7 +1973,7 @@ Todos los campos son obligatorios salvo que se indique "opcional". Los eventos n
 |`payment.approved`|`paymentId`, `serviceRequestId`, `amount`, `invoiceId`, `approvedAt`|
 |`payment.rejected`|`paymentId`, `serviceRequestId`, `amount`, `reasonCode` (opcional), `rejectedAt`|
 
-_Cuadro 9: Contenido de `data` por evento_
+_Cuadro 10: Contenido de `data` por evento_
 
 #### 8.4.3 Versionado y compatibilidad
 
@@ -2054,18 +2081,48 @@ sequenceDiagram
 
 ### 8.7 Diferencias con el SDD que deben corregirse
 
-La sección 3.4 y la Vista de Procesos del SDD describen una versión anterior de los contratos. Mientras no se actualicen (DEP-06), rige lo que define este documento, según la precedencia de `docs/README.md` (el DD define los contratos concretos).
+La sección 5.6 y los diagramas dinámicos (sección 8) del SDD describen una versión anterior de los contratos. Mientras no se actualicen (DEP-06), rige lo que define este documento, según la precedencia de `docs/README.md` (el DD define los contratos concretos).
 
 |Tema|SDD|DD v3|Dónde corregir en el SDD|
 |---|---|---|---|
-|Endpoints de ofertas|`POST /v1/matching/{id}/accept` y `/reject`|`POST /v1/matching/offers/{attemptId}/accept` y `/reject`|Sección 5.3, paso 8, y Figura 4|
-|Momento de `matching.technician-assigned`|Se publica al seleccionar al candidato, antes de que acepte|Se publica solo cuando el técnico acepta (RN-M4); al seleccionar se publica `matching.offer-created`|Sección 5.3, paso 6, y Figura 4|
-|Reserva del técnico durante la oferta|`technician_availability.status = 'ofrecido'`|No existe el estado `ofrecido`: el índice único parcial de RN-M7 impide una segunda oferta y la aceptación cambia `disponible` a `ocupado`|Sección 5.7, punto 1|
-|Endpoints REST|7 endpoints de solicitud y pago|Catálogo completo de la sección 8.2, con ofertas, cotización, cancelación, evidencias, disponibilidad, cobertura y administración|Sección 3.4.1|
-|Eventos|6 eventos|16 eventos (Cuadro 8)|Secciones 3.4.2 y 5.5|
-|Sobre del evento|Sin `eventType`|Incluye `eventType`|Sección 3.4.2|
+|Endpoints de ofertas|`POST /v1/matching/{id}/accept` y `/reject`|`POST /v1/matching/offers/{attemptId}/accept` y `/reject`|Sección 8.3, paso 8, y su diagrama de secuencia|
+|Momento de `matching.technician-assigned`|Se publica al seleccionar al candidato, antes de que acepte|Se publica solo cuando el técnico acepta (RN-M4); al seleccionar se publica `matching.offer-created`|Sección 8.3, paso 6, y su diagrama de secuencia|
+|Reserva del técnico durante la oferta|`technician_availability.status = 'ofrecido'`|No existe el estado `ofrecido`: el índice único parcial de RN-M7 impide una segunda oferta y la aceptación cambia `disponible` a `ocupado`|Sección 8.8, punto 1|
+|Endpoints REST|7 endpoints de solicitud y pago|Catálogo completo de la sección 8.2, con ofertas, cotización, cancelación, evidencias, disponibilidad, cobertura y administración|Sección 5.6.1|
+|Eventos|6 eventos|17 eventos (Cuadro 9)|Secciones 5.6.2 y 8.6|
+|Sobre del evento|Sin `eventType`|Incluye `eventType`|Sección 5.6.2|
 
-_Cuadro 10: Diferencias entre el SDD y el DD v3 en contratos_
+_Cuadro 11: Diferencias entre el SDD y el DD v3 en contratos_
+
+### 8.8 Trazabilidad de contratos, implementación y pruebas
+
+**Nuevo v3.1 (SCRUM-287).** Cada endpoint y evento del catálogo con su contrato publicado, su implementación en `develop` y el caso de la colección de Postman que lo cubre. Los contratos REST están en `quickpatch-api-gateway/openapi/` (tag `v0.3.0`) y los de eventos en `quickpatch-kafka/events/` (tag `v0.2.0`), según el ADR-021. La colección es `tests/e2e/quickpatch-mvp.postman_collection.json`, que se genera con `tests/e2e/generar-coleccion.py` y corre contra QA en cada `release/*` (workflow `pruebas-sistema.yml`); el número indica la carpeta.
+
+|Endpoint|Contrato|Implementado en `develop`|Postman: éxito|Postman: errores|
+|---|---|---|---|---|
+|`POST /v1/auth/register/client`|`identity.v1.yaml` 1.2.0|Identity|2|2: correo repetido (409)|
+|`POST /v1/auth/register/technician`|`identity.v1.yaml` 1.2.0|Identity|7|7: documento repetido (409)|
+|`POST /v1/auth/login`|`identity.v1.yaml` 1.2.0|Identity|1, 2, 5, 7|4: contraseña incorrecta (401), bloqueo al 5.º intento y durante el bloqueo (423)|
+|`GET /v1/users/me`|`identity.v1.yaml` 1.2.0|Identity|2 (cliente), 7 (técnico con `verificationStatus`)|—|
+|`GET /v1/platform/tenants`|`identity.v1.yaml` 1.2.0|Identity (SCRUM-112)|5|5: rol sin permiso (403)|
+|`PATCH /v1/platform/tenants/{id}`|`identity.v1.yaml` 1.2.0|Identity (SCRUM-112)|5 (activar, idempotente)|5: rol sin permiso (403), tenant de la plataforma (409), estado inválido (400), inexistente (404)|
+|`GET /v1/catalog/categories`|`catalog.v1.yaml` 1.1.0|Catalog|2, 6 (sin la categoría inactiva)|—|
+|`POST /v1/catalog/admin/categories`|`catalog.v1.yaml` 1.1.0|Catalog|1, 6|1: nombre repetido (409); 4: rol sin permiso (403)|
+|`PATCH /v1/catalog/admin/categories/{id}`|`catalog.v1.yaml` 1.1.0|Catalog|6 (desactivar)|6: inexistente (404)|
+|`POST /v1/service-requests`|`service-request.v1.yaml` 1.0.0|ServiceRequest|3|4: sin token (401), rol sin permiso (403), fuera de Bogotá (422), descripción corta (400); 7: técnico (403)|
+|`GET /v1/service-requests/{id}`|`service-request.v1.yaml` 1.0.0|ServiceRequest|3|4: solicitud de otro cliente (404)|
+|`POST /v1/auth/register/company`, `POST /v1/auth/refresh`, `POST /v1/companies/me/users`, `POST /v1/platform/tenants`, verificación de técnicos y equipo del proveedor|Sin contrato|Pendiente|—|—|
+|Resto de ServiceRequest (listado, cancelación, cotizaciones, inicio, evidencia, cierre, calificación, historial y resumen), Matching, Payments y `/v1/realtime`|Sin contrato|Pendiente|—|—|
+
+|Evento|Contrato|Productor|Consumidores implementados|Evidencia|
+|---|---|---|---|---|
+|`service-request.created`|`service-request.created.v1.json` (`quickpatch-kafka` `v0.2.0`; topic de 3 particiones)|ServiceRequest, con Transactional Outbox|Matching (`ServiceRequestCreatedConsumerIT`). Communication: pendiente|Postman 3 (la solicitud se crea en `buscando_tecnico`)|
+|`catalog.category-changed`|`catalog.category-changed.v1.json` (`quickpatch-kafka` `v0.2.0`; topic de 1 partición, clave `categoryId`)|Catalog, con Transactional Outbox|ServiceRequest (réplica `service_request_categories`). Matching: pendiente|Postman 3 (reintenta hasta que la réplica tiene la categoría) y 6|
+|Los 15 eventos restantes del Cuadro 9|Sin esquema|Pendiente|—|—|
+
+_Cuadro 12: Trazabilidad entre el catálogo, los contratos, el código y la colección de Postman_
+
+Al publicar un contrato nuevo se agrega aquí su fila, con el caso de Postman que lo prueba.
 
 ---
 
@@ -2288,7 +2345,7 @@ El modelo de esta versión depende de las siguientes decisiones de diseño, que 
 |DEP-08|`payments`|Mecanismo de recepción de la respuesta del PSP dentro de la red del laboratorio.|R9; SAD, sección 1.2|Parcial: el SDD V2 (antes DD §10.9) resuelve el resultado del cobro por consulta (conciliación), sin *webhooks*. Falta la decisión de R9 sobre el acceso externo.|
 |DEP-09|Sección 14.3|Identificación del canal de registro de cada tenant cuando opere más de uno.|RNF-09|Abierta. La cabecera `X-Channel-Id` queda definida (sección 8.1).|
 |DEP-10|`quotes`, estado `cancelado`, `service_evidence`|Requisitos en el SRS para la cotización, la cancelación y la evidencia fotográfica obligatoria, que el SAD define y el SRS v3.1 no incluye.|SAD, sección 7.4 y D7|**Resuelta** con el SRS v3.2 (RF-15, RF-34, RF-35 y RF-36).|
-|DEP-11|RN-R3|Orden entre evaluación y pago. El SRS (RF-12) permite calificar desde `completado` y el SAD (sección 7.4) libera el pago después de la evaluación, mientras que el SDD (escenario 7) y RF-27 ponen el pago antes de la calificación. Este documento sigue al SDD y a RF-27.|RF-12, RF-27; SDD, escenario 7|Abierta. SCRUM-32 sigue diciendo que se califica desde "Completado".|
+|DEP-11|RN-R3|Orden entre evaluación y pago. El SRS (RF-12) permite calificar desde `completado` y el SAD (sección 7.4) libera el pago después de la evaluación, mientras que el SDD (escenario 7) y RF-27 ponen el pago antes de la calificación. Este documento sigue al SDD y a RF-27.|RF-12, RF-27; SDD, escenario 7|**Resuelta** con el SRS V4: RF-12 habilita la calificación cuando la solicitud está en `pagado`, igual que RN-R3. Falta actualizar el ciclo de vida del SAD (sección 7.4), como registra el SRS (P2), y el criterio de SCRUM-32.|
 |DEP-12|Sección 14.2|Resuelto mediante ADR-012: Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication usan ASP.NET Core / .NET 10; Matching usa Java 25 + Spring Boot 4.1.1. Para persistencia se adopta EF Core + Npgsql en .NET y Spring Data/JPA en Matching.|ADR-012; Infraestructura 5.6 y 5.7|Resuelta (ADR-012).|
 |DEP-13|`tenants`, `register/company`|RF-06 asocia cada empresa cliente a un tenant propio; el SAD (sección 7.1) define el tenant como la empresa oferente y a las empresas cliente como usuarios de ese tenant. Este documento sigue al SAD, así que RF-06 no queda cubierto tal como está redactado.|RF-06; SAD, sección 7.1|Parcial: la tabla `client_companies` (sección 5.19) cubre la razón social, el NIT y los varios usuarios de SCRUM-26, dentro del tenant de la empresa oferente. La diferencia con la redacción de RF-06 se mantiene.|
 |DEP-14|`payments`|El SAD (sección 8.1) lista la entidad `PayoutRecord`, pero R1 excluye la liquidación a técnicos. Este documento no la modela.|R1; SAD, sección 8.1|Abierta.|
@@ -2325,11 +2382,11 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |2.4|Matriz RBAC (SCRUM-25)|Se agrega la sección 10.5 con la matriz de roles y permisos por endpoint, el registro de cada `403` (RNF-04) y la equivalencia entre el contexto autenticado y los claims del token (`userId` → `sub`, `tenantId` → `tenant_id`, `role`).|
 |3.0|Sprint actual (SCRUM-259)|Alineación con el SRS v3.2 y el SAD v2.13, y ampliación del documento a diseño detallado. **Modelo:** DEP-10 queda resuelta (RF-34, RF-35, RF-36); se agregan `client_companies` y `users.company_id` para la razón social, el NIT y los varios usuarios de una empresa cliente (SCRUM-26, SCRUM-43); `service_requests` agrega `company_id`, `client_type`, `cancelled_by` y `cancelled_by_type`; `payments` agrega `client_id` y `company_id`; se propone que `technician_profiles.provider_id` pase a FK física hacia el proveedor (P-02) y que `specialty_id` sea una categoría de servicio (P-03); se propone que Matching Service agregue la proyección de especialidad y verificación en `technician_availability` (P-01), las tablas `matching_requests` (P-05) y `localities` (P-04), `coverage_zones.locality_code` y `matching_attempts.distance_m`, y `coverage_zones.area` pasa a `MULTIPOLYGON`. Se actualizan los diagramas de dominios y entidad-relación. **Reglas:** se agregan RN-TP3, RN-TP4, RN-SR12, RN-SR13, RN-M8 a RN-M10, RN-Q8, RN-P6 y RN-CC1 a RN-CC3, y se ajusta RN-SR8. **Contratos:** convenciones comunes, formato y catálogo de errores, catálogo completo de 48 endpoints con roles, especificación de los endpoints principales, 7 eventos nuevos (16 en total) con el contenido de `data`, reglas de versionado, canal en tiempo real y lista de diferencias con el SDD. **Secciones nuevas:** diagramas de flujo de datos (9), algoritmos y lógica crítica (10), organización del código de datos y contratos (11) y relación con las interfaces de usuario con wireframes de las pantallas nuevas (12). Las secciones de arquitectura analítica, multi-tenancy, evolución y control de cambios pasan a ser la 13, 14, 15 y 16. **Multi-tenancy:** se propone el rol `<servicio>_scheduler` para las tareas programadas (P-06) y `companyId` en el token. **Dependencias:** se agrega la columna de estado y DEP-15 a DEP-19.|
 |3.0 (ajuste Sprint 3)|SCRUM-259|El DD se limita a Modelos de Datos + Contratos. Las secciones de DFD (9), lógica crítica (10), organización del código (11) e interfaces de usuario (12) se trasladan al SDD V2 y a SCRUM-332 y se reemplazan por la sección 1.7, Artefactos relacionados; las secciones 13 a 17 pasan a ser la 9 a 13. Referencias al SAD actualizadas a v2.13. Las propuestas P-01 a P-06 se redactan como pendientes de validación. La aplicación móvil atiende a cliente, empresa cliente, técnico y proveedor; el panel web, solo a la administración.|
-|3.1|Conciliación (SCRUM-25, SCRUM-27)|Une el v3.0 con las versiones 2.3 y 2.4 de develop. Ver la sección 1.6: renumeración de RN-SR12 y RN-SR13, token RS256 con `sub` y `tenant_id`, errores y ubicación según los contratos v1, endpoint `/v1/catalog/categories`, tabla 5.20 `service_request_categories`, evento `catalog.category-changed`, propuestas P-07 y P-08, y restricciones con prefijo R (SAD 2.16).|
+|3.1|Conciliación (SCRUM-25, SCRUM-27)|Une el v3.0 con las versiones 2.3 y 2.4 de develop. Ver la sección 1.6: renumeración de RN-SR12 y RN-SR13, token RS256 con `sub` y `tenant_id`, errores y ubicación según los contratos v1, endpoint `/v1/catalog/categories`, tabla 5.20 `service_request_categories`, evento `catalog.category-changed`, propuestas P-07 y P-08, y restricciones con prefijo R (SAD 2.16). Además: gestión de tenants con `PATCH /v1/platform/tenants/{id}` (Identity 1.2.0); DEP-11 resuelta por el SRS V4; el DER y la Figura 1 incluyen `service_request_categories`, `service_categories.updated_at` y `matching_attempts.distance_m` (SCRUM-284); estado de implementación del modelo (Cuadro 6) y trazabilidad de contratos, código y Postman (sección 8.8, SCRUM-287).|
 |3.1 (revisión)|SCRUM-259|Atiende la revisión del PR #35: los artefactos relacionados pasan a la sección 1.7 para que Multi-tenancy siga en la 10 (el código y los contratos citan DD 10.2 a 10.4). Se incorporan los cambios de develop: VMs de ADR-022, contratos en `quickpatch-api-gateway` y `quickpatch-kafka` (ADR-021), referencias al SDD organizado por C4 y la geocodificación de RIE-02 fuera de `coverage_zones`. Se corrige la tabla de propuestas y se alinea con SRS V4 y SAD v2.25.|
 |3.2|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas P-01 a P-06 según la validación del equipo.|
 
-_Cuadro 11: Evolución del documento de diseño_
+_Cuadro 13: Evolución del documento de diseño_
 
 ---
 
