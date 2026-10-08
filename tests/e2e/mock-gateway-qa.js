@@ -73,9 +73,10 @@ const server = http.createServer((req, res) => {
             let body = {};
             try { body = JSON.parse(rawBody || '{}'); } catch {}
 
-            // Caso de Tenant Inactivo (RN-T1, IDN-019)
+            // IDN-019 / RN-T1 está PENDIENTE en el MVP (un solo tenant, SCRUM-41). El sistema real responde 401
+            // credenciales-invalidas a un correo que no existe, y eso es lo que simula este mock.
             if (body.email && body.email.includes('inactivo')) {
-                return sendProblemDetails(res, 403, 'no-autorizado', 'Tenant Desactivado', 'El tenant se encuentra suspendido/desactivado (RN-T1).', correlationId);
+                return sendProblemDetails(res, 401, 'credenciales-invalidas', 'Correo o contraseña incorrectos', 'Correo o contraseña incorrectos.', correlationId);
             }
 
             // Administrador de tenant
