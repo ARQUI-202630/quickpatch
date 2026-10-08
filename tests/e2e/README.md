@@ -94,8 +94,9 @@ Esta suite complementa la verificación de seguridad del release validando espec
   - `IDN-001` a `IDN-003`: Autenticación RS256 contra `/api/v1/auth/login` y registro legítimo de cliente.
   - `IDN-012` & `CAT-010`: Rechazo de creación de solicitud por `admin_tenant` (403) y creación de categoría administrativa por `cliente` (403), verificando RFC 9457 `problems/no-autorizado`.
   - `IDN-017`: Rechazo inmediato de peticiones anónimas sin token (401), retornando `problems/no-autenticado`.
+  - `IDN-019` & `E2E-004`: regla **RN-T1** (rechazo de inicio de sesión de un tenant inactivo). **Pendiente en el MVP** y marcada como `skipped` en la colección: el login usa el tenant del canal (RN-U5), que es el de la plataforma y no se puede desactivar (409), así que no hay un tenant inactivo que probar. Se activa con un segundo tenant de prueba (SCRUM-41). Mientras tanto la colección verifica que un correo inexistente recibe 401 en Problem Details con `correlationId`.
   - `TEN-001`: Control positivo de procesamiento de solicitudes para tenants activos (`buscando_tecnico`).
-  *(Nota: El caso de tenant inactivo IDN-019 se ejecuta en la suite de simulación para no deshabilitar ni depender de usuarios sintéticos en el tenant compartido de QA).*
+  *(Nota: mientras IDN-019 está pendiente en QA, el rechazo por tenant inactivo también se ejecuta contra el simulador en `scrum-318-web-admin.simulacion.json`, caso 5.3).*
 
 ### Ejecución
 
