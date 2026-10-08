@@ -56,6 +56,8 @@ En la base: la solicitud quedó en `buscando_tecnico` con su punto, el Outbox pu
 7. Rama `release/*` en este repositorio: corre esta colección contra QA.
 8. App móvil: `config/qa.json` con la huella del certificado de VM1 (`quickpatch-mobile`, README).
 
+---
+
 ## Validación y Diagnóstico de Errores (SCRUM-325)
 
 Procedimiento automatizado que demuestra la trazabilidad de errores y la capacidad de diagnóstico en los logs centralizados de Loki (VM1) sin acceso interactivo por SSH (SAD §3.7 / AC7-E4 y SAD §3.6 / RNF-04 / AC6-E3):
@@ -94,6 +96,7 @@ Esta suite complementa la verificación de seguridad del release validando espec
   - `IDN-017`: Rechazo inmediato de peticiones anónimas sin token (401), retornando `problems/no-autenticado`.
   - `IDN-019` & `E2E-004`: regla **RN-T1** (rechazo de inicio de sesión de un tenant inactivo). **Pendiente en el MVP** y marcada como `skipped` en la colección: el login usa el tenant del canal (RN-U5), que es el de la plataforma y no se puede desactivar (409), así que no hay un tenant inactivo que probar. Se activa con un segundo tenant de prueba (SCRUM-41). Mientras tanto la colección verifica que un correo inexistente recibe 401 en Problem Details con `correlationId`.
   - `TEN-001`: Control positivo de procesamiento de solicitudes para tenants activos (`buscando_tecnico`).
+  *(Nota: mientras IDN-019 está pendiente en QA, el rechazo por tenant inactivo también se ejecuta contra el simulador en `scrum-318-web-admin.simulacion.json`, caso 5.3).*
 
 ### Ejecución
 
@@ -115,3 +118,38 @@ npx --yes newman run tests/e2e/scrum-65-roles-y-tenants.postman_collection.json 
   --insecure \
   --reporters cli
 ```
+
+---
+
+## Flujo Web Administrativo y Gestión de Tenants (SCRUM-318)
+
+Pruebas de sistema de extremo a extremo que validan el flujo de administración web en Angular, los contratos REST de Identity/Plataforma y el control de acceso RBAC según los mockups de diseño W-01 a W-07 y DD 7.12. Se mantiene como archivo de simulación `scrum-318-web-admin.simulacion.json` para desacoplarlo del runner de CI (`*.postman_collection.json`) de QA:
+
+1. **Autenticación administrativa (W-01):** inicio de sesión en `/iniciar-sesion` para `admin_plataforma` (usando `{{platformAdminEmail}}` y `{{platformAdminPassword}}`) y `admin_tenant` verificando claims de JWT y ausencia de selector manual de tenant en la interfaz.
+2. **Manejo de errores de acceso (W-02):** rechazo de credenciales inválidas (401) y detección de cuenta bloqueada tras múltiples intentos fallidos (423 Locked bajo RN-U4).
+3. **Control de acceso por roles RBAC (W-03):** intentos de acceso de `admin_tenant` a la gestión de empresas devuelven 403 Forbidden (`/problems/no-autorizado`), interceptados por el guard de Angular con notificación toast y bloqueo de acceso.
+4. **Consulta y filtros de empresas (W-04):** listado de tenants por `admin_plataforma`, filtros por estado activo/inactivo y presencia de atributos requeridos (nombre, NIT, estado).
+5. **Desactivación de tenant (W-05):** actualización de estado a inactivo (SCRUM-113) y confirmación de que sus usuarios no pueden iniciar sesión (RN-T1 / SCRUM-114).
+6. **Estados de interfaz y concurrencia (W-06):** manejo de skeleton, estados vacíos y rechazo por conflicto de concurrencia optimista (409 Conflict con `/problems/conflicto-concurrencia`).
+7. **Navegación dinámica (W-07):** adaptación del sidebar según el rol (`admin_tenant` no visualiza la opción de tenants).
+
+### Ejecución
+
+#### Simulación Local Preparatoria
+Para correr las pruebas localmente con el servidor mock del gateway:
+```bash
+node tests/e2e/run-web-admin-e2e.js
+```
+*Nota:* Ejecución preparatoria en desarrollo contra `scrum-318-web-admin.simulacion.json`. La corrida formal contra el panel web desplegado en k3s (VM2) queda agendada para el pipeline de release.
+
+#### Ejecución contra el Ambiente de QA en VM2
+```bash
+node tests/e2e/run-web-admin-e2e.js --remote
+```
+
+### Ejecución de Pruebas de Interfaz (Playwright)
+La especificación de pruebas de interfaz en navegador se encuentra definida en `specs/web-admin.spec.ts`, modelando la sesión en `sessionStorage` con la clave `quickpatch.sesion` conforme a la arquitectura real de `apps/web/src/app/core/sesion.ts`. Su ejecución contra el navegador queda agendada para el entorno desplegado de QA una vez el panel web esté publicado en VM2. Para evitar que el runner de CI de `release/*` intente levantar un navegador headless sin el panel desplegado, el paquete se mantiene desacoplado del root de `tests/e2e/`.
+
+### Evidencia de Validación de Contratos (Newman)
+`evidencias/scrum-318-web-admin-2026-10-07.txt`: corrida local preparatoria ejecutada con **Newman** sobre la suite `scrum-318-web-admin.simulacion.json` contra el simulador de API del panel administrativo (`mock-admin-gateway.js`), con un resultado de **11 peticiones y 31 aserciones aprobadas sin fallos (100% Pass)**.
+

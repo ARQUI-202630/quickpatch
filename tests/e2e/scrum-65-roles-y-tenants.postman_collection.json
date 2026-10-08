@@ -531,7 +531,7 @@
                   "if (pm.response.code === 422 && intento < 8) {",
                   "  pm.collectionVariables.set('retryCount', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  postman.setNextRequest(pm.info.requestName);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
                   "} else {",
                   "  pm.collectionVariables.unset('retryCount');",
                   "  pm.test('[SCRUM-114 / TEN-001] Solicitud creada exitosamente (201 Created)', () => {",

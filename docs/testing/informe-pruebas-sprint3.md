@@ -134,7 +134,7 @@ A continuación se presentan las métricas de ejecución y el estado de validaci
 ---
 
 ### 4.2 Suite 2: Consola Web Administrativa Angular (SCRUM-318)
-- **Herramienta:** Newman (`tests/e2e/scrum-318-web-admin.postman_collection.json` contra `mock-admin-gateway.js`) & Especificación Playwright (`tests/e2e/specs/web-admin.spec.ts`)  
+- **Herramienta:** Newman (`tests/e2e/scrum-318-web-admin.simulacion.json` contra `mock-admin-gateway.js`) & Especificación Playwright (`tests/e2e/specs/web-admin.spec.ts`)  
 - **Estado de la Compuerta:** **Pendiente de QA** (Validada preliminarmente en simulación local de contratos con Newman arrojando 31/31 aserciones aprobadas; la especificación E2E de Playwright modela la sesión en `sessionStorage` con `quickpatch.sesion` y queda desacoplada para ejecutarse contra el contenedor del panel desplegado en el clúster k3s de QA en VM2).  
 - **Alineación con la Aplicación Real (`apps/web`):**
   - **W-01 (Login Administrativo):** Acceso a través de la ruta `/iniciar-sesion` con inputs `#email`, `#password` y botón 'Ingresar'. Redirección a `/tenants` para `admin_plataforma` y a `/inicio` para `admin_tenant`.
@@ -210,7 +210,7 @@ La siguiente tabla formaliza la trazabilidad bidireccional entre las Historias d
 |:---:|---|---|---|---|:---:|
 | **SCRUM-25 / 65** | **RF-01 / RF-02** (Autenticación y Roles RBAC) | SRS §5.1 / SAD §3.6 | Newman MVP: Casos 1 y 2 | `tests/e2e/evidencias/scrum-287-local-2026-10-07.txt` | ✅ PASS |
 | **SCRUM-27** | **RF-07 / RN-SR9** (Creación de Solicitud y Cobertura) | SRS §5.2 / DD §8.2 | Newman MVP: Caso 3 (Solicitud) | `tests/e2e/evidencias/scrum-287-local-2026-10-07.txt` | ✅ PASS |
-| **SCRUM-41 / 114**| **RN-T1** (Desactivación de Tenant y Bloqueo Login) | SRS §5.1 / DD §7.12 | Newman: Sub-folder 3.1 IDN-019 | `tests/e2e/scrum-65-roles-y-tenants.postman_collection.json` | ⏳ Pendiente QA (Simulación local) |
+| **SCRUM-41 / 114**| **RN-T1** (Desactivación de Tenant y Bloqueo Login) | SRS §5.1 / DD §7.12 | Newman: Caso 5.3 (RN-T1) | `tests/e2e/scrum-318-web-admin.simulacion.json` | ⏳ Pendiente QA (Simulación local) |
 | **SCRUM-41 / 112**| **RF-21** (Gestión de Tenants por Admin Plataforma) | SRS §5.4 / SAD §3.4 | Newman: `/api/v1/platform/tenants` | `tests/e2e/quickpatch-mvp.postman_collection.json` | ✅ PASS |
 | **SCRUM-318** | **HU-ADM-01 a 07** (Flujo Web Administrativo) | SRS §5.4 / Prototipos SAD W-01 a W-07 | Newman (Simulación API Web): W-01 a W-07 | `tests/e2e/evidencias/scrum-318-web-admin-2026-10-07.txt` | ⏳ Pendiente QA |
 | **SCRUM-320** | **RNF-07 / RNF-08** (Rendimiento: Latencia $p95 \le 2s$, $\ge 20$ req/s) | SAD §3.2 / AC1-E1, AC1-E2 | k6: PRF-001 a PRF-004 | `tests/performance/load-test-50vu.js` | ⏳ Pendiente QA |
