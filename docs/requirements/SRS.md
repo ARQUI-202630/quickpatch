@@ -5,7 +5,7 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 3.3 (MVP) |
+| **Versión del documento** | 4.0 (MVP) |
 | **Estándar de referencia** | IEEE Std 830-1998 |
 
 ---
@@ -27,11 +27,13 @@
 
 ### 1.1 Propósito
 
-El propósito de este documento es especificar de manera clara, completa y verificable los requisitos de software para la **Versión 3 (MVP)** de la plataforma multi-tenant de servicios técnicos para el hogar y empresas. Este documento sigue la estructura general del estándar IEEE 830 y está dirigido a:
+El propósito de este documento es especificar de manera clara, completa y verificable los requisitos de software para la **Versión 4 (MVP)** de la plataforma multi-tenant de servicios técnicos para el hogar y empresas. Este documento sigue la estructura general del estándar IEEE 830 y está dirigido a:
 
 - El equipo de desarrollo, como guía para el diseño, la implementación y las pruebas del sistema.
 - El docente y evaluadores del curso de Arquitectura de Software, como soporte académico del proyecto.
 - Futuros integrantes del equipo, como documentación de referencia del alcance funcional del MVP.
+
+Los requisitos de este documento son la entrada del SAD: los drivers, killers, restricciones y escenarios de calidad del SAD (secciones 1 a 3) citan los RF y RNF definidos aquí.
 
 ### 1.2 Definiciones, Acrónimos y Abreviaturas
 
@@ -41,7 +43,7 @@ El propósito de este documento es especificar de manera clara, completa y verif
 | SRS | Software Requirements Specification — Especificación de Requisitos de Software. |
 | SAD | Software Architecture Document — Documento de Arquitectura de Software. |
 | DD | Detailed Design — Diseño Detallado. |
-| Tenant | Entidad lógica que representa a un cliente independiente (hogar o empresa) dentro de una arquitectura multi-tenant, con sus datos aislados de otros tenants. |
+| Tenant | Empresa oferente de servicios técnicos que opera dentro de la plataforma, identificada por su NIT, con sus propios usuarios, técnicos, catálogo de servicios y datos aislados de los demás tenants. Los clientes hogar y las empresas cliente son usuarios de un tenant, no tenants propios (SAD, sección 7.1). |
 | HU | Historia de Usuario. |
 | RF | Requisito Funcional. |
 | RNF | Requisito No Funcional. |
@@ -50,7 +52,13 @@ El propósito de este documento es especificar de manera clara, completa y verif
 | Módulo Transversal | Componente de soporte utilizado por varios (o todos) los módulos de dominio (ej. seguridad, multi-tenancy, logging). |
 | PCI-DSS | Payment Card Industry Data Security Standard — estándar de seguridad para el manejo de datos de tarjetas de pago. |
 | Matching | Proceso automático mediante el cual el sistema asigna un técnico disponible a una solicitud de servicio. |
-| Admin | Usuario administrador de la plataforma, con visibilidad y control operativo sobre uno o varios tenants. |
+| Admin del tenant | Usuario que administra un tenant: verifica y suspende a sus técnicos y proveedores y supervisa su operación. Solo actúa sobre su propio tenant. |
+| Admin de plataforma | Usuario de la empresa dueña de la plataforma que administra los tenants (alta, activación y desactivación). |
+| App móvil | Aplicación Flutter (iOS/Android), canal de Clientes, Empresas, Técnicos y Proveedores. |
+| Panel web | Aplicación Angular de uso exclusivo de los administradores (del tenant y de plataforma). No tiene páginas públicas. |
+| Cotización | Precio de mano de obra y materiales que el Técnico asignado propone para una solicitud, y que el Cliente acepta o rechaza antes de iniciar el servicio. |
+| Evidencia fotográfica | Foto del trabajo realizado que el Técnico adjunta a la solicitud antes de marcarla como completada. |
+| BPMN | Business Process Model and Notation — notación para modelar procesos de negocio. |
 | Proveedor | Empresa u organización que agrupa y administra un equipo de técnicos dentro de la plataforma. |
 
 ---
@@ -61,30 +69,45 @@ El propósito de este documento es especificar de manera clara, completa y verif
 
 La plataforma es un sistema nuevo, independiente, compuesto por:
 
-- Una aplicación web/móvil para **Clientes** y **Empresas** (creación y seguimiento de solicitudes).
-- Una aplicación para **Técnicos** y **Proveedores** (gestión de disponibilidad y ejecución de servicios).
-- Un panel administrativo para el rol **Admin** (operación, verificación y control multi-tenant).
+- Una **app móvil** para **Clientes**, **Empresas**, **Técnicos** y **Proveedores**: creación, cotización, seguimiento, pago y calificación de solicitudes; disponibilidad, ejecución y cierre de servicios; gestión del equipo de técnicos.
+- Un **panel web** de uso exclusivo de los administradores (**Admin del tenant** y **Admin de plataforma**): operación, verificación de técnicos y gestión de tenants. El panel web no tiene sitio público.
 - Un backend con arquitectura **multi-tenant**, un motor de *matching*, y una pasarela de pagos certificada **PCI-DSS** integrada mediante un proveedor externo.
+
+**Canales por rol**
+
+| Rol | Canal |
+|---|---|
+| Cliente | App móvil |
+| Empresa (usuarios autorizados) | App móvil |
+| Técnico | App móvil |
+| Proveedor | App móvil |
+| Admin del tenant | Panel web |
+| Admin de plataforma | Panel web |
 
 ### 2.2 Funciones del Producto
 
 A alto nivel, el MVP debe permitir:
 
 1. Registro y autenticación segura de usuarios, con aislamiento de datos por tenant.
-2. Creación de solicitudes de servicio técnico por parte de Clientes y Empresas.
+2. Creación de solicitudes de servicio técnico por parte de Clientes y Empresas, cotización del Técnico y aceptación del Cliente antes de iniciar el servicio.
 3. Asignación automática (matching) de un técnico disponible a cada solicitud.
-4. Ejecución y seguimiento del servicio por parte del Técnico, en tiempo real para el Cliente.
+4. Ejecución del servicio por parte del Técnico, con evidencia fotográfica al cerrarlo, y seguimiento en tiempo real para el Cliente.
 5. Procesamiento seguro de pagos y generación de comprobantes/facturas.
 6. Calificación del servicio por parte del Cliente.
-7. Administración operativa (verificación de técnicos, gestión de tenants) por parte del Admin.
+7. Administración operativa: verificación de técnicos por parte del Admin del tenant y gestión de tenants por parte del Admin de plataforma.
 8. Infraestructura mínima de CI/CD, pruebas automatizadas, logging/monitoreo y cifrado de datos sensibles.
 
 ### 2.3 Restricciones
 
 - El manejo de datos de tarjetas de pago debe cumplir el estándar **PCI-DSS**; no se deben almacenar datos completos de tarjeta en los servidores propios del sistema.
 - La arquitectura debe garantizar **aislamiento lógico** de datos entre tenants.
-- El MVP se limita a la ciudad de **Bogotá D.C.** como zona de cobertura inicial.
+- El MVP se limita a la ciudad de **Bogotá D.C.** como zona de cobertura inicial: una solicitud con ubicación fuera de Bogotá se rechaza.
 - El desarrollo debe ajustarse al tiempo y alcance definidos para el curso de Arquitectura de Software.
+- El sistema de producción corre en las 7 máquinas virtuales del laboratorio de la universidad, sin servicios con costo (SAD, restricciones R5 y R10).
+- El sistema debe cumplir la normativa colombiana que aplica al producto: protección de datos personales (Ley 1581 de 2012), protección al consumidor (Ley 1480 de 2011) y facturación electrónica (SAD, killers K12 a K14).
+- El técnico no es subordinado de la plataforma: el sistema no impone turnos, exclusividad ni sanciones por rechazar una solicitud (SAD, restricción R12).
+
+**Fuera del alcance del MVP:** modo sin conexión en la app móvil, sitio web público, chat dentro de la aplicación y módulo de reclamos (SAD, sección 1.3).
 
 ### 2.4 Supuestos y Dependencias
 
@@ -96,15 +119,56 @@ A alto nivel, el MVP debe permitir:
 
 ## 3. Usuarios del Sistema
 
-La plataforma QUICKPATCH está diseñada para cinco tipos de usuario, cada uno con necesidades, nivel de acceso y objetivos distintos dentro del ciclo de negocio (*Cliente solicita → Técnico ejecuta → Cliente paga → Cliente califica*).
+La plataforma QUICKPATCH está diseñada para seis tipos de usuario, cada uno con necesidades, nivel de acceso y objetivos distintos dentro del ciclo de negocio (*Cliente solicita → Técnico cotiza → Cliente acepta → Técnico ejecuta → Cliente paga → Cliente califica*). Todos los usuarios pertenecen a un tenant, la empresa oferente que presta los servicios. El Admin de plataforma pertenece al tenant dueño de la plataforma.
 
 | Rol | Descripción | Necesidades | Nivel de acceso |
 |---|---|---|---|
-| Cliente | Persona natural que solicita servicios técnicos para el hogar. No requiere conocimientos técnicos previos. | Solicitar un servicio rápido y confiable, hacer seguimiento en tiempo real, pagar de forma segura y calificar la experiencia. | Autenticado — datos propios y de su tenant únicamente. |
-| Empresa | Cuenta corporativa (ej. una compañía que requiere mantenimiento en sus sedes) que solicita y paga servicios técnicos a nombre de la organización. | Centralizar solicitudes y pagos de varias sedes bajo una sola cuenta; delegar la solicitud a distintos usuarios autorizados. | Autenticado — cuenta corporativa aislada como tenant propio. |
-| Técnico | Persona certificada que ejecuta los servicios técnicos solicitados. Puede operar de forma independiente o vinculada a un Proveedor. | Recibir solicitudes acordes a su especialidad y zona, gestionar su disponibilidad, y recibir el pago de forma confiable. | Autenticado — solo sus propias solicitudes y pagos. |
-| Proveedor | Empresa que administra un equipo de técnicos dentro de la plataforma. | Administrar su equipo de técnicos y visualizar el desempeño y los pagos generados por su equipo. | Autenticado — su equipo y su tenant asociado. |
-| Admin | Usuario interno de la plataforma con permisos de verificación, supervisión y operación sobre uno o varios tenants. | Verificar técnicos/proveedores, monitorear la operación en tiempo real y administrar los tenants de la plataforma. | Autenticado con privilegios elevados — uno o varios tenants según alcance. |
+| Cliente | Persona natural que solicita servicios técnicos para el hogar. No requiere conocimientos técnicos previos. Usa la app móvil. | Solicitar un servicio rápido y confiable, conocer el precio antes de aceptarlo, hacer seguimiento en tiempo real, pagar de forma segura y calificar la experiencia. | Autenticado — solo sus propias solicitudes y pagos. |
+| Empresa | Cuenta corporativa de una empresa cliente (ej. una compañía que requiere mantenimiento en sus sedes) que solicita y paga servicios técnicos a nombre de la organización. Es una cuenta de usuario dentro del tenant, no un tenant propio. Sus usuarios autorizados usan la app móvil. | Centralizar solicitudes y pagos de varias sedes bajo una sola cuenta; delegar la solicitud a distintos usuarios autorizados. | Autenticado — solicitudes y pagos de su cuenta corporativa. |
+| Técnico | Persona certificada que ejecuta los servicios técnicos solicitados. Puede operar de forma independiente o vinculada a un Proveedor. Decide su disponibilidad y puede rechazar solicitudes sin penalización. Usa la app móvil. | Recibir solicitudes acordes a su especialidad y zona, cotizar el trabajo, gestionar su disponibilidad, y recibir el pago de forma confiable. | Autenticado — solo sus propias solicitudes y pagos. |
+| Proveedor | Empresa que administra un equipo de técnicos dentro de la plataforma. Usa la app móvil. | Administrar su equipo de técnicos y visualizar el desempeño y los pagos generados por su equipo. | Autenticado — su equipo y su tenant asociado. |
+| Admin del tenant | Administrador de la empresa oferente (el tenant). Usa el panel web. | Verificar, aprobar y suspender técnicos y proveedores, monitorear la operación de su tenant y cancelar solicitudes cuando sea necesario. | Autenticado con privilegios elevados — solo su propio tenant. |
+| Admin de plataforma | Administrador de la empresa dueña de la plataforma. Usa el panel web. | Dar de alta, activar y desactivar tenants, y monitorear la operación de todos ellos. | Autenticado con privilegios elevados — todos los tenants, solo para su administración. |
+
+### 3.1 Flujo principal del Cliente
+
+La Figura 1 modela en notación BPMN el flujo principal de una solicitud de servicio, desde que el Cliente la crea hasta que la califica. Cada tarea indica su participante, y el color equivale al carril de BPMN: rosado para el Cliente, naranja para el Técnico y verde para la plataforma (incluida la pasarela de pagos). Los rombos son compuertas exclusivas (una sola salida) y los círculos, los eventos de inicio y fin. Para mantenerlo conciso, la figura omite el registro y el inicio de sesión (RF-01, RF-03), y la cancelación por parte del Cliente (RF-36), que es posible en cualquier punto anterior al inicio del servicio.
+
+**Figura 1: Flujo principal del Cliente (BPMN)**
+
+```mermaid
+flowchart LR
+    S((Inicio)):::evento --> C1["Cliente<br/>Crear solicitud:<br/>categoría, ubicación<br/>y descripción"]:::cliente
+    C1 --> G1{"¿Ubicación en<br/>Bogotá y datos<br/>válidos?"}:::plataforma
+    G1 -- No --> E1((Solicitud<br/>rechazada)):::evento
+    G1 -- Sí --> P1["Plataforma<br/>Buscar técnico<br/>cercano y disponible"]:::plataforma
+    P1 --> G2{"¿Hay técnico<br/>disponible?"}:::plataforma
+    G2 -- No --> P2["Plataforma<br/>Dejar la solicitud<br/>en espera"]:::plataforma
+    P2 -. cambia la<br/>disponibilidad .-> P1
+    G2 -- Sí --> G3{"Técnico<br/>¿Acepta la<br/>solicitud?"}:::tecnico
+    G3 -- "No / sin respuesta" --> P1
+    G3 -- Sí --> T1["Técnico<br/>Emitir cotización:<br/>mano de obra<br/>y materiales"]:::tecnico
+    T1 --> G4{"Cliente<br/>¿Acepta la<br/>cotización?"}:::cliente
+    G4 -- No --> G5{"¿Es la tercera<br/>cotización<br/>rechazada?"}:::plataforma
+    G5 -- No --> T1
+    G5 -- Sí --> E2((Solicitud<br/>cancelada)):::evento
+    G4 -- "Sin respuesta<br/>antes del vencimiento" --> E2
+    G4 -- Sí --> T2["Técnico<br/>Ejecutar el servicio<br/>(el Cliente lo sigue<br/>en tiempo real)"]:::tecnico
+    T2 --> T3["Técnico<br/>Adjuntar evidencia<br/>fotográfica y marcar<br/>completado"]:::tecnico
+    T3 --> C2["Cliente<br/>Pagar con tarjeta"]:::cliente
+    C2 --> G6{"Pasarela PCI-DSS<br/>¿Pago aprobado?"}:::plataforma
+    G6 -- "No: reintentar" --> C2
+    G6 -- Sí --> P3["Plataforma<br/>Generar comprobante"]:::plataforma
+    P3 --> C3["Cliente<br/>Calificar el servicio<br/>de 1 a 5"]:::cliente
+    C3 --> E3((Servicio<br/>calificado)):::evento
+
+    classDef cliente fill:#fdf0fb,stroke:#b04aa0,color:#222
+    classDef tecnico fill:#fff4e6,stroke:#d9822b,color:#222
+    classDef plataforma fill:#e9f8f6,stroke:#2a9d8f,color:#222
+    classDef evento fill:#ffffff,stroke:#333,stroke-width:2px,color:#222
+```
+
+_Requisitos que cubre cada paso: creación (RF-07, RF-08, RNF-11), asignación y reasignación (RF-09, RF-10, RNF-05), cotización (RF-34, RF-35), ejecución y cierre con evidencia (RF-14, RF-15), seguimiento (RF-11, RNF-06), pago y comprobante (RF-22 a RF-24) y calificación (RF-12)._
 
 ---
 
@@ -117,11 +181,11 @@ El sistema se organiza en dos tipos de módulos: los **módulos de dominio**, qu
 | Módulo | Descripción | Épica / Features |
 |---|---|---|
 | Gestión de Usuarios y Cuentas | Registro y autenticación de Cliente, Técnico/Proveedor y Empresa; administración de roles y permisos. | SCRUM-7 (F1.1, F1.3, F1.4) |
-| Solicitudes y Matching | Creación de solicitudes de servicio y motor de asignación automática de técnico (matching). | SCRUM-8 (F2.1, F2.2) |
+| Solicitudes y Matching | Creación de solicitudes de servicio, respuesta a la cotización, cancelación antes de iniciar el servicio y motor de asignación automática de técnico (matching). | SCRUM-8 (F2.1, F2.2) |
 | Seguimiento y Calificación | Seguimiento en tiempo real del estado de la solicitud y calificación del servicio al finalizar. | SCRUM-8 (F2.3, F2.4) |
-| Ejecución de Servicios (Técnico) | Gestión de disponibilidad, detalle y cierre de solicitudes asignadas, historial de servicios. | SCRUM-9 (F3.1, F3.2, F3.4) |
+| Ejecución de Servicios (Técnico) | Gestión de disponibilidad, detalle, cotización y cierre con evidencia fotográfica de solicitudes asignadas, historial de servicios. | SCRUM-9 (F3.1, F3.2, F3.4) |
 | Gestión de Equipos (Proveedor) | Administración del equipo de técnicos por parte de un Proveedor. | SCRUM-9 (F3.3) |
-| Administración y Operaciones | Dashboard operativo, aprobación/suspensión de técnicos, gestión de tenants. | SCRUM-10 (F4.1, F4.2, F4.3) |
+| Administración y Operaciones | Panel web de los administradores: dashboard operativo y aprobación/suspensión de técnicos (Admin del tenant), gestión de tenants (Admin de plataforma). | SCRUM-10 (F4.1, F4.2, F4.3) |
 | Pagos y Facturación | Cobro del servicio (Cliente/Empresa), generación de comprobantes y registro de pagos recibidos. | SCRUM-11 (F5.1, F5.2, F5.3) |
 
 ### 4.2 Módulos Transversales
@@ -134,7 +198,7 @@ El sistema se organiza en dos tipos de módulos: los **módulos de dominio**, qu
 | Notificaciones | Envío de confirmaciones y alertas (correo/notificación en app) usadas por Registro, Matching, Seguimiento y Pagos. | Transversal a SCRUM-7, 8, 11 |
 | Logging y Monitoreo | Registro centralizado de errores y alertas de disponibilidad, usado por todos los módulos del sistema. | SCRUM-12 (F6.3) |
 | Integración y Despliegue Continuo (CI/CD) | Infraestructura de build, pruebas automáticas y despliegue que da soporte al desarrollo de todos los módulos anteriores. | SCRUM-12 (F6.1, F6.2) |
-| Control de Cambios y Gestión Documental | Proceso de gestión de versiones de documentos (SRS, SAD, DD, etc.), control de cambios en el equipo y seguimiento de entregables. | SCRUM-120 (F7.1) |
+| Gestión del Proyecto y Documentación | Proceso de gestión de versiones de documentos (SRS, SAD, SDD, DD, etc.), control de cambios en el equipo y seguimiento de entregables. | SCRUM-120 (F7.1) |
 
 **Relación entre módulos transversales y módulos de dominio**
 
@@ -146,7 +210,7 @@ El sistema se organiza en dos tipos de módulos: los **módulos de dominio**, qu
 | Notificaciones | Gestión de Usuarios, Solicitudes y Matching, Pagos y Facturación. |
 | Logging y Monitoreo | Todos los módulos de dominio. |
 | CI/CD | Todos los módulos de dominio (indirectamente, como infraestructura de entrega). |
-| Control de Cambios y Gestión Documental | Todos los módulos del proyecto (documentación y proceso). |
+| Gestión del Proyecto y Documentación | Todos los módulos del proyecto (documentación y proceso). |
 
 ---
 
@@ -165,16 +229,16 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 | F1.1 — Registro y Autenticación | Registro de Cliente y Técnico/Proveedor, e inicio de sesión seguro para todos los roles. | RF-01, RF-02, RF-03 | SCRUM-21, 22, 23 |
 | F1.2 — Arquitectura Multi-tenant | Aislamiento lógico de datos entre tenants mediante *tenant_id*. | RF-04 | SCRUM-24 |
 | F1.3 — Roles y Permisos | Definición y validación de permisos diferenciados por rol (RBAC). | RF-05 | SCRUM-25 |
-| F1.4 — Registro de Empresas | Registro de cuentas corporativas asociadas a un tenant propio. | RF-06 | SCRUM-26 |
+| F1.4 — Registro de Empresas | Registro de cuentas corporativas de empresas cliente dentro del tenant. | RF-06 | SCRUM-26 |
 
 #### Épica 2 — Motor de Matching y Experiencia del Cliente (SCRUM-8)
 
 | Feature (Jira label) | Descripción | Requisitos | HU (Jira) |
 |---|---|---|---|
 | F2.1 — Solicitud de Servicio | Creación de solicitudes de servicio técnico por Cliente y Empresa, respuesta a la cotización y cancelación antes de iniciar el servicio. | RF-07, RF-08, RF-35, RF-36 | SCRUM-27, 28 (RF-35 y RF-36: historias por crear) |
-| F2.2 — Motor de Matching | Asignación automática de técnico y aceptación/rechazo de la solicitud. | RF-09, RF-10 | SCRUM-29, 30 |
+| F2.2 — Motor de Matching | Asignación automática de técnico y aceptación/rechazo de la solicitud por parte del Técnico. | RF-09, RF-10 | SCRUM-29, 30 |
 | F2.3 — Seguimiento del Servicio | Visualización en tiempo real del estado de la solicitud. | RF-11 | SCRUM-31 |
-| F2.4 — Calificación del Servicio | Calificación del servicio por parte del Cliente al finalizar. | RF-12 | SCRUM-32 |
+| F2.4 — Calificación del Servicio | Calificación del servicio por parte del Cliente después de pagarlo. | RF-12 | SCRUM-32 |
 
 #### Épica 3 — Herramientas para el Técnico y Proveedores (SCRUM-9)
 
@@ -189,7 +253,7 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 
 | Feature (Jira label) | Descripción | Requisitos | HU (Jira) |
 |---|---|---|---|
-| F4.1 — Dashboard Operativo | Panel de solicitudes activas por tenant y por estado. | RF-18 | SCRUM-38 |
+| F4.1 — Dashboard Operativo | Panel web de solicitudes activas por tenant y por estado. | RF-18 | SCRUM-38 |
 | F4.2 — Gestión de Técnicos/Proveedores | Aprobación, rechazo y suspensión de técnicos y proveedores. | RF-19, RF-20 | SCRUM-39, 40 |
 | F4.3 — Gestión de Tenants | Administración (activar/desactivar) de tenants. | RF-21 | SCRUM-41 |
 
@@ -201,7 +265,7 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 | F5.2 — Facturación | Generación automática de comprobante/factura al confirmar el pago. | RF-24 | SCRUM-44 |
 | F5.3 — Registro de Pagos Recibidos | Consulta de pagos recibidos por Técnico/Proveedor. | RF-25 | SCRUM-45 |
 
-#### Épica 6 — Infraestructura y Preparación para Producción (SCRUM-12)
+#### Épica 6 — Infraestructura y Preparación para Producción (DevOps & QA) (SCRUM-12)
 
 | Feature (Jira label) | Descripción | Requisitos | HU (Jira) |
 |---|---|---|---|
@@ -210,15 +274,23 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 | F6.3 — Monitoreo y Logging | Registro centralizado de errores y alertas básicas de caída de servicio. | RF-28 | SCRUM-48 |
 | F6.4 — Seguridad de Datos | Cifrado de datos sensibles en tránsito y en reposo. | RF-29 | SCRUM-49 |
 
-#### Épica 7 — Control de Cambios - Equipo (SCRUM-120)
+La Épica 6 tiene además tres historias de infraestructura sin etiqueta de Feature en Jira. No agregan requisitos: implementan los que ya existen.
+
+| Jira | Historia | Requisitos que implementa | Estado (Jira, 7 oct 2026) |
+|---|---|---|---|
+| SCRUM-306 | Despliegue del incremento funcional de Sprint 3 en ambiente QA | RF-26, RNF-07, RNF-08 | Backlog |
+| SCRUM-333 | Reestructuración multirepo: 12 repositorios del profesor + repositorio principal | RF-26 (cada repositorio tiene su propio pipeline de CI) | En desarrollo |
+| SCRUM-334 | Redistribución de VMs: 3 de producción, 3 de QA y 1 de herramientas | RNF-07, RNF-08 | En desarrollo |
+
+#### Épica 7 — Gestión del Proyecto y Documentación Transversal (SCRUM-120)
 
 | Feature (Jira label) | Descripción | Requisitos | HU (Jira) |
 |---|---|---|---|
-| F7.1 — Gestión Documental | Creación, revisión y versionado de documentos clave del proyecto (SRS, SAD, DD, Infraestructura, Herramientas) y seguimiento de entregas. | RNF-13 | SCRUM-121 a SCRUM-133 |
+| F7.1 — Gestión Documental | Creación, revisión y versionado de documentos clave del proyecto (SRS, SAD, SDD, DD, Infraestructura, Calidad y Pruebas, Herramientas), prototipos, gestión de cada sprint y seguimiento de entregas. | RNF-13 | SCRUM-121 a SCRUM-133, SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307, SCRUM-332 |
 
-**Detalle de las 13 tareas de F7.1 (estado en Jira, consultado el 23 de septiembre de 2026):**
+**Detalle de los 25 elementos de F7.1 (estado en Jira, consultado el 7 de octubre de 2026):**
 
-| Jira | Tarea | Responsable | Estado |
+| Jira | Tarea o historia | Responsable | Estado |
 |---|---|---|---|
 | SCRUM-121 | SRS Versión 2 | Angy Bautista | ✅ Finalizado |
 | SCRUM-122 | Herramientas y Políticas v2 | Sebastian Sánchez Olaya | ✅ Finalizado |
@@ -233,6 +305,18 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 | SCRUM-131 | Documento DD V2 | joseval2910 (Jose Eduardo) | ✅ Finalizado |
 | SCRUM-132 | Documento de Infraestructura V1 | Sebastian Sánchez Olaya | ✅ Finalizado |
 | SCRUM-133 | Documento de diseño SDD V1 | Jorge Fortich | ✅ Finalizado |
+| SCRUM-189 | Organización Repositorio Git | Juan Diego Rojas Vargas | ✅ Finalizado |
+| SCRUM-252 | Documentación de SRS V4 (este documento) | Angy Bautista | Code Review |
+| SCRUM-253 | Documentación de Infraestructura V2 | Sebastian Sánchez Olaya | ✅ Finalizado |
+| SCRUM-254 | Documentación Calidad y Pruebas V1 | kathe | ✅ Finalizado |
+| SCRUM-255 | Gestión del Sprint 3 y presentación | Jorge Fortich | En desarrollo |
+| SCRUM-256 | Documentación SDD V2 — C4 Model | Juan Diego Rojas Vargas | En desarrollo |
+| SCRUM-257 | Configuración de máquinas virtuales (VMs) | Sebastian Sánchez Olaya | ✅ Finalizado |
+| SCRUM-258 | Documentación SAD V3 | Juan Diego Rojas Vargas | En desarrollo |
+| SCRUM-259 | DD V3 — Diccionario de Datos y Contratos | joseval2910 (Jose Eduardo) | En desarrollo |
+| SCRUM-305 | Backlog V4 y métricas de avance del Sprint 3 | Jorge Fortich | Backlog |
+| SCRUM-307 | Informe de pruebas y evidencias del Sprint 3 | kathe | En desarrollo |
+| SCRUM-332 | Actualización de Prototipos Front — Web y Mobile | Miguel Sarmiento | Code Review |
 
 ### 5.2 Requisitos Funcionales
 
@@ -240,23 +324,23 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 
 | ID | Descripción | Prior. | Feature | Jira |
 |---|---|---|---|---|
-| RF-01 | El sistema debe permitir a un Cliente registrarse con correo y contraseña, validando formato y unicidad del correo. | Alta | F1.1 | SCRUM-21 |
+| RF-01 | El sistema debe permitir a un Cliente registrarse desde la app móvil con correo y contraseña, validando el formato del correo, su unicidad dentro del tenant y una contraseña de mínimo 8 caracteres. | Alta | F1.1 | SCRUM-21 |
 | RF-02 | El sistema debe permitir a un Técnico/Proveedor registrarse aportando datos y documentos básicos, quedando en estado "Pendiente de verificación". | Alta | F1.1 | SCRUM-22 |
-| RF-03 | El sistema debe permitir el inicio de sesión seguro para todos los roles, con bloqueo temporal tras intentos fallidos repetidos. | Alta | F1.1 | SCRUM-23 |
-| RF-04 | El sistema debe aislar lógicamente los datos de cada tenant mediante un identificador de tenant (*tenant_id*) obligatorio en cada registro. | Alta | F1.2 | SCRUM-24 |
-| RF-05 | El sistema debe restringir el acceso a funciones y datos según el rol del usuario autenticado (Cliente, Técnico, Proveedor, Admin, Empresa). | Alta | F1.3 | SCRUM-25 |
-| RF-06 | El sistema debe permitir a una Empresa registrar una cuenta corporativa asociada a un tenant propio. | Alta | F1.4 | SCRUM-26 |
+| RF-03 | El sistema debe permitir el inicio de sesión seguro para todos los roles, con bloqueo temporal de la cuenta tras 5 intentos fallidos consecutivos. | Alta | F1.1 | SCRUM-23 |
+| RF-04 | El sistema debe aislar lógicamente los datos de cada tenant mediante un identificador de tenant (*tenant_id*) obligatorio en cada registro. El tenant de cada operación se toma del usuario autenticado, nunca de un dato enviado por la app o el panel. | Alta | F1.2 | SCRUM-24 |
+| RF-05 | El sistema debe restringir el acceso a funciones y datos según el rol del usuario autenticado (Cliente, Empresa, Técnico, Proveedor, Admin del tenant, Admin de plataforma) y según el canal: el panel web solo admite a los administradores y la app móvil, al resto de roles. | Alta | F1.3 | SCRUM-25 |
+| RF-06 | El sistema debe permitir a una Empresa registrar una cuenta corporativa dentro del tenant, con razón social, NIT y datos de contacto, y asociar a ella más de un usuario autorizado para solicitar servicios. | Alta | F1.4 | SCRUM-26 |
 
 #### Épica 2 — Motor de Matching y Experiencia del Cliente (SCRUM-8)
 
 | ID | Descripción | Prior. | Feature | Jira |
 |---|---|---|---|---|
-| RF-07 | El sistema debe permitir a un Cliente crear una solicitud de servicio indicando categoría, dirección y descripción. | Alta | F2.1 | SCRUM-27 |
-| RF-08 | El sistema debe permitir a una Empresa registrar solicitudes de servicio para sus sedes corporativas. | Alta | F2.1 | SCRUM-28 |
-| RF-09 | El sistema debe asignar automáticamente un técnico disponible y cercano a cada solicitud (motor de matching). | Alta | F2.2 | SCRUM-29 |
-| RF-10 | El sistema debe permitir al Técnico aceptar o rechazar una solicitud asignada, reasignando automáticamente en caso de rechazo o falta de respuesta. | Alta | F2.2 | SCRUM-30 |
+| RF-07 | El sistema debe permitir a un Cliente crear desde la app móvil una solicitud de servicio indicando una categoría activa del tenant, la ubicación del servicio y una descripción del problema. La ubicación debe estar dentro de Bogotá D.C.; la dirección escrita la complementa (torre, apartamento, indicaciones). | Alta | F2.1 | SCRUM-27 |
+| RF-08 | El sistema debe permitir a los usuarios autorizados de una Empresa registrar solicitudes de servicio para sus sedes corporativas, a nombre de la cuenta corporativa. | Alta | F2.1 | SCRUM-28 |
+| RF-09 | El sistema debe asignar automáticamente a cada solicitud un técnico aprobado, disponible, con la especialidad requerida y cercano a la ubicación del servicio (motor de matching). Si no hay técnico disponible, la solicitud queda en espera hasta que alguno lo esté. | Alta | F2.2 | SCRUM-29 |
+| RF-10 | El sistema debe permitir al Técnico aceptar o rechazar una solicitud asignada, sin penalización por rechazarla, reasignando automáticamente en caso de rechazo o falta de respuesta. | Alta | F2.2 | SCRUM-30 |
 | RF-11 | El sistema debe mostrar al Cliente el estado actual de su solicitud en tiempo real (mínimo 4 estados). | Alta | F2.3 | SCRUM-31 |
-| RF-12 | El sistema debe permitir al Cliente calificar el servicio (1 a 5) una vez la solicitud esté en estado "Completado". | Media | F2.4 | SCRUM-32 |
+| RF-12 | El sistema debe permitir al Cliente calificar el servicio (1 a 5, con comentario opcional) una sola vez, después de que se confirme el pago (estado "Pagado"). | Media | F2.4 | SCRUM-32 |
 | RF-35 | El sistema debe permitir al Cliente aceptar o rechazar la cotización de su solicitud. Una solicitud admite como máximo 3 cotizaciones, y una cotización sin respuesta antes de su vencimiento cancela la solicitud. | Alta | F2.1 | Por crear |
 | RF-36 | El sistema debe permitir al Cliente, o al administrador de su tenant, cancelar una solicitud mientras el servicio no haya iniciado, registrando el motivo de la cancelación. | Media | F2.1 | Por crear |
 
@@ -275,27 +359,27 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 
 | ID | Descripción | Prior. | Feature | Jira |
 |---|---|---|---|---|
-| RF-18 | El sistema debe mostrar al Admin un panel con las solicitudes activas por tenant y por estado. | Alta | F4.1 | SCRUM-38 |
-| RF-19 | El sistema debe permitir al Admin aprobar o rechazar el registro de nuevos técnicos y proveedores. | Alta | F4.2 | SCRUM-39 |
-| RF-20 | El sistema debe permitir al Admin suspender la cuenta de un técnico. | Media | F4.2 | SCRUM-40 |
-| RF-21 | El sistema debe permitir al Admin administrar (activar/desactivar) tenants. | Media | F4.3 | SCRUM-41 |
+| RF-18 | El sistema debe mostrar en el panel web las solicitudes activas por estado: al Admin del tenant, las de su tenant; al Admin de plataforma, las de todos los tenants, filtrables por tenant. | Alta | F4.1 | SCRUM-38 |
+| RF-19 | El sistema debe permitir al Admin del tenant aprobar o rechazar, con motivo, el registro de nuevos técnicos y proveedores de su tenant. | Alta | F4.2 | SCRUM-39 |
+| RF-20 | El sistema debe permitir al Admin del tenant suspender la cuenta de un técnico de su tenant, registrando la fecha y el responsable. | Media | F4.2 | SCRUM-40 |
+| RF-21 | El sistema debe permitir al Admin de plataforma administrar (activar/desactivar) tenants desde el panel web. Un tenant desactivado no puede crear nuevas solicitudes. | Media | F4.3 | SCRUM-41 |
 
 #### Épica 5 — Procesamiento de Pagos PCI-DSS y Facturación (SCRUM-11)
 
 | ID | Descripción | Prior. | Feature | Jira |
 |---|---|---|---|---|
-| RF-22 | El sistema debe permitir al Cliente pagar el servicio con tarjeta mediante un proveedor de pagos certificado PCI-DSS. | Alta | F5.1 | SCRUM-42 |
+| RF-22 | El sistema debe permitir al Cliente pagar con tarjeta, mediante un proveedor de pagos certificado PCI-DSS, el valor de la cotización aceptada una vez el servicio esté completado. Un pago rechazado no cambia el estado de la solicitud y permite reintentar. | Alta | F5.1 | SCRUM-42 |
 | RF-23 | El sistema debe permitir a una Empresa pagar servicios a nombre de su cuenta corporativa. | Alta | F5.1 | SCRUM-43 |
 | RF-24 | El sistema debe generar automáticamente un comprobante/factura al confirmarse un pago. | Alta | F5.2 | SCRUM-44 |
 | RF-25 | El sistema debe mostrar al Técnico/Proveedor el registro de pagos recibidos por sus servicios. | Media | F5.3 | SCRUM-45 |
 
-#### Épica 6 — Infraestructura y Preparación para Producción (SCRUM-12)
+#### Épica 6 — Infraestructura y Preparación para Producción (DevOps & QA) (SCRUM-12)
 
 | ID | Descripción | Prior. | Feature | Jira |
 |---|---|---|---|---|
 | RF-26 | El sistema debe contar con un pipeline de CI/CD que ejecute build y pruebas automáticas antes de desplegar. | Alta | F6.1 | SCRUM-46 |
-| RF-27 | El sistema debe contar con una prueba automatizada end-to-end del flujo crítico (solicitud → pago → calificación). | Alta | F6.2 | SCRUM-47 |
-| RF-28 | El sistema debe registrar logs centralizados de errores y contar con alertas básicas de caída de servicio. | Media | F6.3 | SCRUM-48 |
+| RF-27 | El sistema debe contar con una prueba automatizada end-to-end del flujo crítico (solicitud → asignación → cotización → servicio completado → pago → calificación). | Alta | F6.2 | SCRUM-47 |
+| RF-28 | El sistema debe registrar logs centralizados y estructurados de errores, con un identificador de correlación entre servicios, y contar con alertas básicas de caída de servicio. | Media | F6.3 | SCRUM-48 |
 | RF-29 | El sistema debe cifrar los datos sensibles en tránsito (HTTPS/TLS) y en reposo (contraseñas con hash seguro). | Alta | F6.4 | SCRUM-49 |
 
 ### 5.3 Requisitos No Funcionales
@@ -305,13 +389,14 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 - **RNF-02** Toda comunicación cliente-servidor debe realizarse mediante HTTPS/TLS.
 - **RNF-03** Las contraseñas deben almacenarse utilizando un algoritmo de *hashing* seguro (nunca en texto plano).
 - **RNF-04** El sistema debe registrar en log todo intento de acceso no autorizado (error 403) a recursos restringidos por rol.
+- **RNF-14** El sistema debe tratar los datos personales de clientes y técnicos (nombre, teléfono, dirección, ubicación y fotos de evidencia) conforme a la Ley 1581 de 2012: pedir la autorización del titular al registrarse, usarlos solo para la finalidad informada y permitirle consultarlos, actualizarlos y solicitar su supresión (SAD, killer K12).
 
 **Rendimiento**
 - **RNF-05** El motor de matching debe iniciar el proceso de asignación en menos de 60 segundos desde la creación de la solicitud (ambiente de prueba).
 - **RNF-06** Los cambios de estado de una solicitud deben reflejarse en la interfaz del Cliente en menos de 1 minuto.
 
 **Disponibilidad y Confiabilidad**
-- **RNF-07** El sistema debe contar con un ambiente de QA permanente separado de producción (VM2, ADR-015 del SAD) para las pruebas funcionales, de aceptación, de seguridad (E2E, UAT, OWASP ZAP) y de carga y rendimiento (k6). Las pruebas de carga se ejecutan contra un tenant de prueba dedicado en ese ambiente, nunca contra la infraestructura de producción.
+- **RNF-07** El sistema debe contar con un ambiente de QA permanente separado de producción, copia de su topología (VM2, VM5 y VM7; ADR-022 del SAD), para las pruebas funcionales, de aceptación, de seguridad (E2E, UAT, OWASP ZAP) y de carga y rendimiento (k6). Las pruebas de carga se ejecutan contra un tenant de prueba dedicado en ese ambiente, nunca contra la infraestructura de producción.
 - **RNF-08** Un fallo en las pruebas automatizadas funcionales, de aceptación, de seguridad o de carga del flujo crítico, ejecutadas en el ambiente de QA antes del despliegue (ver RNF-07), debe bloquear el despliegue a producción. Si el despliegue en producción falla su verificación de salud, se revierte (`kubectl rollout undo`) antes de habilitar tráfico real.
 
 **Escalabilidad y Arquitectura Multi-tenant**
@@ -320,16 +405,18 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 
 **Usabilidad**
 - **RNF-11** El flujo de creación de una solicitud de servicio (Cliente) debe poder completarse en un máximo de 3 pasos.
-- **RNF-12** Las interfaces de Cliente, Técnico y Admin deben adaptarse a dispositivos móviles y de escritorio (diseño responsivo).
+- **RNF-12** La app móvil debe funcionar en teléfonos Android e iOS de distintos tamaños de pantalla, y el panel web debe adaptarse a pantallas de escritorio y portátil (diseño responsivo).
 
 **Gestión del Proyecto y Documentación**
-- **RNF-13** El equipo debe mantener un control de versiones de todos los documentos entregables (SRS, SAD, DD, etc.) y utilizar Jira para el seguimiento de tareas y el control de cambios.
+- **RNF-13** El equipo debe mantener un control de versiones de todos los documentos entregables (SRS, SAD, SDD, DD, etc.) y utilizar Jira para el seguimiento de tareas y el control de cambios.
 
 ### 5.4 Requisitos de Interfaces Externas
 
 - **RIE-01 Pasarela de pagos:** el sistema debe integrarse con un proveedor de pagos externo certificado PCI-DSS mediante una API segura (tokenización de tarjeta).
-- **RIE-02 Servicio de geolocalización:** el sistema debe integrarse con un servicio de mapas/geocodificación para validar direcciones y calcular cercanía entre Cliente y Técnico.
-- **RIE-03 Servicio de notificaciones:** el sistema debe contar con un canal (correo electrónico y/o notificación en aplicación) para confirmar registro, asignación de técnico y cambios de estado.
+- **RIE-02 Servicio de geocodificación:** el sistema debe poder convertir una dirección escrita en coordenadas mediante un servicio de geocodificación, para cuando el Cliente no comparte la ubicación de su dispositivo. La app móvil envía las coordenadas de la solicitud y la cercanía entre la solicitud y los técnicos la calcula el propio sistema, sin servicio externo.
+- **RIE-03 Servicio de notificaciones:** el sistema debe contar con un canal (correo electrónico y/o notificación push en la app móvil) para confirmar registro, asignación de técnico, cotización y cambios de estado.
+
+> **Pendiente:** RIE-02 y RIE-03 contradicen la restricción R5 del SAD, según la cual la pasarela de pagos es la única dependencia externa de producción. Ver la sección 7.4.
 
 ---
 
@@ -346,9 +433,9 @@ Con el fin de justificar el enfoque del producto, se comparó QUICKPATCH frente 
 | Seguimiento en tiempo real del servicio | **Sí** | No especificado | No especificado | No aplica | No especificado |
 | Calificación del servicio en la app | Sí | Sí (reseñas) | No especificado | Sí | Sí |
 | Modelo de servicio | Bajo demanda puntual | Bajo demanda puntual | Bajo demanda puntual | Suscripción recurrente | Bajo demanda puntual |
-| Aislamiento de datos por cliente/empresa (multi-tenant) | **Sí** | No especificado | No especificado | No especificado | No especificado |
+| Aislamiento de datos por empresa oferente (multi-tenant) | **Sí** | No especificado | No especificado | No especificado | No especificado |
 
-**Conclusión de la comparación:** el diferenciador central de QUICKPATCH frente a las alternativas identificadas es la combinación de **arquitectura multi-tenant orientada a cuentas corporativas (B2B)** junto con un **motor de matching automático en tiempo real**, dos capacidades que no están confirmadas públicamente en los competidores analizados, los cuales se orientan principalmente al consumidor residencial individual.
+**Conclusión de la comparación:** el diferenciador central de QUICKPATCH frente a las alternativas identificadas es la combinación de una **arquitectura multi-tenant, en la que varias empresas oferentes operan aisladas en la misma plataforma y atienden cuentas corporativas (B2B)**, junto con un **motor de matching automático en tiempo real**, dos capacidades que no están confirmadas públicamente en los competidores analizados, los cuales se orientan principalmente al consumidor residencial individual.
 
 ---
 
@@ -359,20 +446,52 @@ Con el fin de justificar el enfoque del producto, se comparó QUICKPATCH frente 
 | Épica (Jira) | Features | Requisitos | Historias de Usuario (Jira) |
 |---|---|---|---|
 | SCRUM-7 — Fundación y Multi-tenant | F1.1 – F1.4 | RF-01 – RF-06 | SCRUM-21 a SCRUM-26 |
-| SCRUM-8 — Matching y Experiencia Cliente | F2.1 – F2.4 | RF-07 – RF-12, RF-35, RF-36 | SCRUM-27 a SCRUM-32 |
-| SCRUM-9 — Herramientas Técnico/Proveedor | F3.1 – F3.4 | RF-13 – RF-17, RF-34 | SCRUM-33 a SCRUM-37 |
+| SCRUM-8 — Matching y Experiencia Cliente | F2.1 – F2.4 | RF-07 – RF-12, RF-35, RF-36 | SCRUM-27 a SCRUM-32 (RF-35 y RF-36: por crear) |
+| SCRUM-9 — Herramientas Técnico/Proveedor | F3.1 – F3.4 | RF-13 – RF-17, RF-34 | SCRUM-33 a SCRUM-37 (RF-34: por crear) |
 | SCRUM-10 — Panel Administrativo | F4.1 – F4.3 | RF-18 – RF-21 | SCRUM-38 a SCRUM-41 |
 | SCRUM-11 — Pagos PCI-DSS y Facturación | F5.1 – F5.3 | RF-22 – RF-25 | SCRUM-42 a SCRUM-45 |
-| SCRUM-12 — Infraestructura y QA | F6.1 – F6.4 | RF-26 – RF-29 | SCRUM-46 a SCRUM-49 |
-| SCRUM-120 — Control de Cambios - Equipo | F7.1 | RNF-13 | SCRUM-121 a SCRUM-133 |
+| SCRUM-12 — Infraestructura (DevOps & QA) | F6.1 – F6.4 | RF-26 – RF-29, RNF-07, RNF-08 | SCRUM-46 a SCRUM-49, SCRUM-306, SCRUM-333, SCRUM-334 |
+| SCRUM-120 — Gestión del Proyecto y Documentación Transversal | F7.1 | RNF-13 | SCRUM-121 a SCRUM-133, SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307, SCRUM-332 |
 
 ### 7.2 Resumen de Requisitos Funcionales
 
-El presente MVP contempla un total de **32 requisitos funcionales**, agrupados en **23 Features**, organizados en **7 módulos de dominio** y soportados por **7 módulos transversales** (incluyendo la nueva épica de Control de Cambios), distribuidos en **7 épicas**. Todos los requisitos están priorizados como *Alta* o *Media* por ser esenciales para demostrar el ciclo completo del negocio: registro y autenticación multi-tenant, solicitud de servicio, asignación automática, cotización, ejecución técnica con evidencia fotográfica, pago seguro y calificación. La numeración salta de RF-29 a RF-34 porque RF-30 a RF-33 (versiones 2.x, control de cambios) se retiraron en la versión 3.0 al reemplazarse por RNF-13, y sus números no se reutilizan. Adicionalmente, se incluye un requisito no funcional (RNF-13) para la gestión documental y control de cambios del proyecto.
+El presente MVP contempla un total de **32 requisitos funcionales**, agrupados en **23 Features**, organizados en **7 módulos de dominio** y soportados por **7 módulos transversales** (incluyendo la Gestión del Proyecto y Documentación), distribuidos en **7 épicas**. Se definen además **14 requisitos no funcionales** y **3 requisitos de interfaces externas**. Todos los requisitos están priorizados como *Alta* o *Media* por ser esenciales para demostrar el ciclo completo del negocio: registro y autenticación multi-tenant, solicitud de servicio, asignación automática, cotización, ejecución técnica con evidencia fotográfica, pago seguro y calificación. La numeración salta de RF-29 a RF-34 porque RF-30 a RF-33 (versiones 2.x, control de cambios) se retiraron en la versión 3.0 al reemplazarse por RNF-13, y sus números no se reutilizan. Adicionalmente, se incluye un requisito no funcional (RNF-13) para la gestión documental y control de cambios del proyecto. Tres requisitos (RF-34, RF-35 y RF-36) todavía no tienen historia de usuario en Jira.
 
-**Estado de avance de la Épica 7 (consultado en Jira el 23 de septiembre de 2026):** las 13 tareas (SCRUM-121 a SCRUM-133) figuran como Finalizadas, incluidas las versiones V2 y V3 de los documentos (SRS, SAD, DD, Herramientas, Infraestructura y SDD) y la presentación de la entrega del Sprint 2.
+**Estado de avance de la Épica 7 (consultado en Jira el 7 de octubre de 2026):** de sus 25 elementos, 17 figuran como Finalizados: las 13 tareas de las versiones V1 a V3 (SCRUM-121 a SCRUM-133), la organización del repositorio (SCRUM-189), el Documento de Infraestructura V2 (SCRUM-253), el de Calidad y Pruebas V1 (SCRUM-254) y la configuración de las VMs (SCRUM-257). Están en curso los documentos del Sprint 3 (SAD V3, SDD V2, DD V3 y el informe de pruebas), la gestión del Sprint 3 y, en revisión, este SRS V4 (SCRUM-252) y los prototipos web y móvil (SCRUM-332).
 
-### 7.3 Control de Versiones del Documento
+### 7.3 Historias de Jira por actualizar
+
+Las siguientes historias de usuario tienen criterios de aceptación que no coinciden con la versión 4.0 de este documento. Se deben actualizar en Jira para que los criterios de aceptación y el SRS sean consistentes, y crear las historias de RF-34, RF-35 y RF-36.
+
+| Jira | Criterio de aceptación actual | Cambio necesario | Requisito |
+|---|---|---|---|
+| SCRUM-21 | El usuario queda asociado al tenant "Hogar/Bogotá" por defecto. | El Cliente queda en el tenant de la empresa oferente por cuyo canal se registra; no existe un tenant "Hogar". | RF-01, RF-04 |
+| SCRUM-24 | Existe un tenant de prueba tipo "Empresa" y uno tipo "Hogar". | Los tenants de prueba son dos empresas oferentes; hogar y empresa son tipos de usuario dentro de cada una. | RF-04 |
+| SCRUM-26 | La cuenta empresarial queda asociada a un tenant propio. | La cuenta empresarial es una cuenta de usuario dentro del tenant. | RF-06 |
+| SCRUM-32 | La calificación solo se habilita cuando la solicitud está en estado "Completado". | Se habilita cuando la solicitud está en estado "Pagado". | RF-12 |
+| SCRUM-34 | El técnico puede marcar el inicio del servicio ("En progreso"). | Solo después de que el Cliente acepte la cotización. | RF-14, RF-34 |
+| SCRUM-35 | No exige evidencia fotográfica. | Agregar: solo se puede completar con al menos una foto adjunta. | RF-15 |
+| SCRUM-38 | El Admin ve las solicitudes de todos los tenants. | El Admin del tenant ve solo su tenant; el Admin de plataforma ve todos, filtrables por tenant. | RF-18 |
+| SCRUM-39, SCRUM-40 | Actor "Admin". | El actor es el Admin del tenant, sobre los técnicos de su tenant. | RF-19, RF-20 |
+| SCRUM-46, SCRUM-47 | Ambiente de "staging". | Ambiente de QA (VM2, VM5 y VM7). | RNF-07, RNF-08 |
+| SCRUM-47 | Flujo Cliente → Técnico → Pago → Calificación. | Incluir la cotización y la evidencia fotográfica. | RF-27 |
+| Por crear | — | Historia para la cotización del Técnico. | RF-34 |
+| Por crear | — | Historia para la respuesta del Cliente a la cotización. | RF-35 |
+| Por crear | — | Historia para la cancelación antes de iniciar el servicio. | RF-36 |
+
+### 7.4 Decisiones pendientes
+
+Contradicciones conocidas entre este documento y el SAD que el equipo debe resolver. Mientras no se decidan, los requisitos afectados se mantienen como están redactados.
+
+| ID | Requisito | Contradicción | Opciones |
+|---|---|---|---|
+| P1 | RIE-02, RIE-03 | La restricción R5 del SAD dice que la pasarela de pagos es la única dependencia externa de producción, pero el sistema necesita geocodificación y un proveedor de notificaciones. | (a) Ampliar R5 para permitir servicios externos gratuitos que no guarden datos de usuarios; (b) resolver geocodificación y notificaciones dentro de las 7 VMs. |
+| P2 | RF-12 | Este documento, el SDD (escenario 7) y el DD (RN-R3) ponen el pago antes de la calificación; el ciclo de vida del SAD (sección 7.4) libera el pago después de la evaluación. | Actualizar la sección 7.4 del SAD al orden de este documento (pago → calificación). |
+| P3 | RF-24 | Al cobrar a nombre de la plataforma, la factura debe ser electrónica y validada por la DIAN (killer K14), lo que exige conexión a Internet y, en general, un proveedor con costo (R5, R9). | (a) Emitir en el MVP un comprobante de pago sin validez fiscal, rotulado como tal; (b) integrar la solución gratuita de la DIAN. |
+| P4 | — | La Ley 1480 de 2011 (killer K13) exige un mecanismo para recibir reclamos, y el módulo de reclamos está fuera del MVP (SAD, FA3). | (a) Un canal mínimo de reclamos asociado a la solicitud, que requeriría un RF nuevo; (b) un canal externo documentado (correo de soporte). |
+| P5 | RF-11, RF-22 | Los técnicos en campo y la respuesta de la pasarela de pagos deben alcanzar el sistema desde fuera de la red del laboratorio, que no es accesible desde Internet (SAD, R9). | Las del SAD, sección 1.2: demostración en la red del campus, túnel gratuito o IP pública de la universidad. |
+
+### 7.5 Control de Versiones del Documento
 
 | Versión | Fecha | Descripción del cambio |
 |---|---|---|
@@ -382,7 +501,8 @@ El presente MVP contempla un total de **32 requisitos funcionales**, agrupados e
 | 3.0 | (edición posterior) | Se añade la Épica 7 (Control de cambios - equipo) con su Feature F7.1 y el requisito no funcional RNF-13. Se actualiza la matriz de trazabilidad y el resumen de requisitos para incluir la nueva épica y sus historias de usuario asociadas. Se renombra el producto de QUICKPATCH a **CODEBRIDGE**. |
 | 3.1 | 14 sep 2026 | Conversión a Markdown. Se corrige la tabla de la Feature F7.1: se agregan SCRUM-126 y SCRUM-127, que estaban omitidos, completando el rango real de 13 tareas (SCRUM-121 a SCRUM-133) verificado directamente en Jira. Se agrega el detalle de estado y responsable de cada tarea de la Épica 7. |
 | 3.2 | 23 sep 2026 | Se alinea con el SAD v2.11 y el DD v2.2 (dependencia DEP-10 del DD). RF-15 vuelve a exigir al menos una evidencia fotográfica antes de completar el servicio (driver D7 del SAD). Se agregan RF-34 (cotización del técnico), RF-35 (respuesta del cliente a la cotización) y RF-36 (cancelación antes de iniciar el servicio), que el SAD define en el ciclo de vida del servicio (sección 7.4); sus historias en Jira están por crear. RNF-07 y RNF-08 recuperan la redefinición del modelo de staging acordada en las versiones 2.3 y 2.4, alineada con el Documento de Infraestructura. El producto vuelve a llamarse QUICKPATCH en todo el documento: CODEBRIDGE es el nombre del curso, no del producto. Se actualiza el estado de la Épica 7 según Jira (SCRUM-127 corresponde a la presentación del Sprint 2). |
-| 3.3 | *(este documento)* | RNF-07 y RNF-08 se alinean con el ADR-015 del SAD (ambiente de QA permanente en VM2): las pruebas de carga y rendimiento (k6) dejan de ejecutarse sobre la infraestructura de producción en una ventana de mantenimiento y pasan al ambiente de QA, junto con las pruebas funcionales, de aceptación y de seguridad; un fallo en cualquiera de ellas bloquea el despliegue a producción. La reversión automática (`kubectl rollout undo`) queda solo para un despliegue en producción que falle su verificación de salud. |
+| 3.3 | 5 oct 2026 | RNF-07 y RNF-08 se alinean con el ADR-015 del SAD (ambiente de QA permanente en VM2): las pruebas de carga y rendimiento (k6) dejan de ejecutarse sobre la infraestructura de producción en una ventana de mantenimiento y pasan al ambiente de QA, junto con las pruebas funcionales, de aceptación y de seguridad; un fallo en cualquiera de ellas bloquea el despliegue a producción. La reversión automática (`kubectl rollout undo`) queda solo para un despliegue en producción que falle su verificación de salud. |
+| 4.0 | *(este documento)* | SRS V4 (SCRUM-252). Se alinea con Jira al 7 de octubre de 2026, el SAD 2.22 y el DD 2.4. **Actores y canales:** el rol Admin se divide en Admin del tenant y Admin de plataforma (DD, RN-U6), con lo que los tipos de usuario pasan de cinco a seis; la app móvil es el canal de Clientes, Empresas, Técnicos y Proveedores, y el panel web es exclusivo de los administradores (SAD 4.2.1; criterio 2 de SCRUM-252). **Modelo de tenant:** el tenant es la empresa oferente y las empresas cliente son cuentas de usuario dentro de él, según la decisión del SAD (sección 7.1) y el DD (RN-T2, DEP-13); cambian la definición de tenant, la tabla de usuarios, F1.4 y RF-06. **Flujo del Cliente:** se agrega la sección 3.1 con el flujo principal en BPMN (Figura 1; criterio 3 de SCRUM-252). **RF:** RF-01 (correo único por tenant, contraseña de 8 caracteres), RF-03 (bloqueo tras 5 intentos), RF-04 (tenant tomado del usuario autenticado), RF-05 (seis roles y control por canal), RF-07 (categoría activa, ubicación dentro de Bogotá, app móvil; SCRUM-27), RF-08, RF-09 (técnico aprobado y con la especialidad; espera si no hay disponibles), RF-10 (rechazo sin penalización, R12), RF-12 (calificación después del pago, como RF-27, el SDD y el DD; DEP-11), RF-18 a RF-21 (alcance de cada administrador; SCRUM-41), RF-22 (cobro de la cotización aceptada y reintento), RF-27 (flujo crítico con cotización) y RF-28 (logs estructurados con identificador de correlación; SCRUM-48). **RNF:** se agrega RNF-14 (protección de datos personales, killer K12); RNF-07 pasa al ambiente de QA de ADR-022 (VM2, VM5 y VM7); RNF-12 distingue la app móvil del panel web. **Interfaces:** RIE-02 se limita a la geocodificación (la cercanía la calcula el sistema y la app envía las coordenadas) y RIE-03 incluye la cotización. **Restricciones (2.3):** se agregan R5, R10, R12 y los killers normativos K12 a K14 del SAD, y el fuera de alcance del MVP. **Jira:** la Épica 6 se llama "Infraestructura y Preparación para Producción (DevOps & QA)" y suma SCRUM-306, SCRUM-333 y SCRUM-334; la Épica 7 pasa a "Gestión del Proyecto y Documentación Transversal" y F7.1 pasa de 13 a 25 elementos (SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307 y SCRUM-332). Las historias de RF-34 a RF-36 siguen por crear. **Apéndices:** se agregan la sección 7.3 (historias de Jira cuyos criterios de aceptación hay que actualizar) y la 7.4 (decisiones pendientes con el SAD, entre ellas R5 frente a RIE-02 y RIE-03). |
 
 ---
 
@@ -390,7 +510,10 @@ El presente MVP contempla un total de **32 requisitos funcionales**, agrupados e
 
 1. IEEE Std 830-1998, *IEEE Recommended Practice for Software Requirements Specifications*, Institute of Electrical and Electronics Engineers.
 2. PCI Security Standards Council, *Payment Card Industry Data Security Standard (PCI-DSS)*. Disponible en: [https://www.pcisecuritystandards.org](https://www.pcisecuritystandards.org)
-3. Backlog de producto QUICKPATCH — Versión 1 (MVP), proyecto **SCRUM** en Jira (Atlassian), Épicas SCRUM-7 a SCRUM-12 y SCRUM-120, Historias SCRUM-21 a SCRUM-49 y SCRUM-121 a SCRUM-133.
+3. Backlog de producto QUICKPATCH (MVP), proyecto **SCRUM** en Jira (Atlassian), consultado el 7 de octubre de 2026: Épicas SCRUM-7 a SCRUM-12 y SCRUM-120; Historias SCRUM-21 a SCRUM-49, SCRUM-306, SCRUM-333 y SCRUM-334; tareas e historias de la Épica 7 SCRUM-121 a SCRUM-133, SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307 y SCRUM-332.
+9. QUICKPATCH, *Documento de Arquitectura de Software (SAD)*, versión 2.22, `docs/architecture/SAD.md`.
+10. QUICKPATCH, *DD — Documento de Diseño: Modelos de Datos y Contratos*, versión 2.4, `docs/design/DD.md`.
+11. Ley 1581 de 2012 (protección de datos personales) y Ley 1480 de 2011 (Estatuto del Consumidor), República de Colombia.
 4. Timbrit — Plataforma colombiana de contratación de profesionales para el hogar. Disponible en: [https://www.timbrit.com.co/](https://www.timbrit.com.co/)
 5. La República, *Conozca las aplicaciones disponibles que le ayudan con todas las tareas del hogar*, 2019. Disponible en: [https://www.larepublica.co/internet-economy/conozca-las-aplicaciones-disponibles-que-le-ayudan-con-todas-las-tareas-del-hogar-2936445](https://www.larepublica.co/internet-economy/conozca-las-aplicaciones-disponibles-que-le-ayudan-con-todas-las-tareas-del-hogar-2936445)
 6. La República, *Conozca cinco aplicaciones que le ayudan a reparar y asear su hogar*. Disponible en: [https://www.larepublica.co/infraestructura/conozca-cinco-aplicaciones-que-le-ayudan-a-reparar-y-asear-su-hogar-2897117](https://www.larepublica.co/infraestructura/conozca-cinco-aplicaciones-que-le-ayudan-a-reparar-y-asear-su-hogar-2897117)
