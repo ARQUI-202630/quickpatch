@@ -31,6 +31,6 @@ API Gateway y Kafka:
 `.nvmrc`
 
 CI:
-`.github/workflows/` de cada repositorio (CI propio, ADR-021). El despliegue usa los workflows de `quickpatch-infrastructure` hasta SCRUM-338.
+`.github/workflows/` de cada repositorio: CI (SCRUM-337) y despliegue (SCRUM-338) propios, sin workflows de otros repositorios (ADR-021).
 
 No usar preview, RC, beta o nightly en el scaffold base.

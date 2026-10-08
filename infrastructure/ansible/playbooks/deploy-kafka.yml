@@ -1,0 +1,4 @@
+# Kafka y sus topics (VM6 en producción, VM7 en QA). El playbook es de quickpatch-kafka (SCRUM-338): está en el
+# submódulo apps/kafka y usa este inventario. Se aplica la versión de quickpatch-kafka que fija el submódulo.
+- name: Mensajería
+  ansible.builtin.import_playbook: ../../../apps/kafka/deploy/deploy-kafka.yml

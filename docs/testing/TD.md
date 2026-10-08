@@ -81,7 +81,7 @@ quickpatch/
 | `quickpatch-kafka` | JSON Schema / YAML | Validación y compatibilidad de esquemas de eventos; alineación de topics | AJV Validator, scripts del repositorio |
 | `quickpatch-web` | Angular 22.1.x / TypeScript 6.0.x | Pruebas unitarias de componentes y servicios web | Vitest |
 | `quickpatch-mobile` | Flutter 3.47.5 / Dart 3.13.4 | Pruebas unitarias de lógica y widgets móviles | Flutter Test, Patrol |
-| `quickpatch/infrastructure/` (antes `quickpatch-infrastructure`, SCRUM-338) | Ansible / k3s | Verificación de sintaxis de playbooks y manifiestos k3s | Ansible Lint, Kubeconform |
+| `quickpatch/infrastructure/` (antes `quickpatch-infrastructure`, SCRUM-338) | Ansible | Verificación de sintaxis de playbooks, ansible-lint y secretos en el historial (`pr-quality.yml`) | Ansible Lint, actionlint, gitleaks |
 | `quickpatch-identity` | ASP.NET Core 10 / C# | Unitarias y de integración RLS multi-tenant | xUnit, Moq, Testcontainers (Npgsql) |
 | `quickpatch-actors` | ASP.NET Core 10 / C# | Unitarias de perfiles de técnicos y proveedores | xUnit, Testcontainers |
 | `quickpatch-catalog` | ASP.NET Core 10 / C# | Unitarias de taxonomía y categorías de servicio | xUnit, Testcontainers |
@@ -157,7 +157,7 @@ Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.
 
 ## 6. Mecanismo de Bloqueo Local Pre-Push
 
-Para evitar que se suba código con pruebas rotas al repositorio, se estandarizó la plantilla del gancho `pre-push` (Compuerta 0) en `quickpatch-infrastructure/plantillas/hooks/pre-push`, instalada en los repositorios copiándola a `.githooks/pre-push` y configurando `git config core.hooksPath .githooks`:
+Para evitar que se suba código con pruebas rotas al repositorio, se estandarizó la plantilla del gancho `pre-push` (Compuerta 0) en `infrastructure/plantillas/hooks/pre-push` del repositorio principal, instalada en los repositorios copiándola a `.githooks/pre-push` y configurando `git config core.hooksPath .githooks`:
 
 ```bash
 #!/usr/bin/env bash
@@ -517,7 +517,7 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 
 ---
 
-### 7.11 Módulo: Infraestructura, Resiliencia y Servidores (`quickpatch-infrastructure`)
+### 7.11 Módulo: Infraestructura, Resiliencia y Servidores (`quickpatch/infrastructure/`)
 * **Requisitos:** RF-26, RNF-01, RNF-02, RNF-07, RNF-08 | R5, R7, R9, R10, R11 | INFRASTRUCTURE.md | SAD: AC5-E1, AC5-E2, AC7-E5, AC8-E5
 
 | ID Caso | Requisito / AC | Tipo | Descripción de la Prueba | Criterio de Aserción Automatizado (Assert) |

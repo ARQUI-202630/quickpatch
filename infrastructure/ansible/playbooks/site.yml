@@ -1,0 +1,23 @@
+# Orden completo (sección 5.4, ADR-022). Herramientas: VM1. Producción: VM3, VM4 y VM6. QA: VM2, VM5 y VM7.
+# Los playbooks de Garage, base de datos, Redis, Kafka y k3s sirven a los dos ambientes.
+# La observabilidad va primero para que las demás VMs tengan a dónde mandar logs y métricas, y Garage antes
+# que la base de datos porque el respaldo escribe en Garage.
+# k3s de producción y QA van antes que el runner, que necesita sus kubeconfig.
+- name: Configuración base de las VMs
+  ansible.builtin.import_playbook: setup-base.yml
+- name: Observabilidad (VM1)
+  ansible.builtin.import_playbook: deploy-observabilidad.yml
+- name: Almacenamiento (Garage)
+  ansible.builtin.import_playbook: deploy-garage.yml
+- name: Base de datos (VM4)
+  ansible.builtin.import_playbook: deploy-db.yml
+- name: Cache (VM5)
+  ansible.builtin.import_playbook: deploy-cache.yml
+- name: Mensajería (VM6)
+  ansible.builtin.import_playbook: deploy-kafka.yml
+- name: K3s de producción y de QA (VM3 y VM2)
+  ansible.builtin.import_playbook: deploy-k3s.yml
+- name: Gateway (VM1)
+  ansible.builtin.import_playbook: deploy-gateway.yml
+- name: Runner de despliegue (VM1)
+  ansible.builtin.import_playbook: deploy-runner.yml
