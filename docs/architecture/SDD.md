@@ -305,10 +305,10 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 
 | Componente | Carpeta | Responsabilidad | HU |
 |---|---|---|---|
-| Shell y rutas | `app.routes.ts`, `app.ts` | Rutas, layout del panel y redirección a login o a acceso denegado. | SCRUM-25 |
+| Shell y rutas | `app.routes.ts`, `app.ts` | Rutas, layout del panel y redirección a login o al inicio del rol. | SCRUM-25 |
 | Sesión | `core/sesion.ts` | Conserva el token y expone usuario y rol como signals. | SCRUM-23, SCRUM-25 |
-| Interceptor HTTP | `core/http.ts` | Adjunta el JWT y `X-Correlation-Id`; traduce 401 y 403 en estados de la UI. | SCRUM-25 |
-| Guards de rol | `core/guards.ts` | Permiten cada ruta según el rol: `admin_plataforma` ve la gestión de tenants y `admin_tenant` no (RN-U6). | SCRUM-25 / SCRUM-64 |
+| Interceptor HTTP | `core/http.ts` | Adjunta el JWT y `X-Correlation-Id`; ante un 401 cierra la sesión y vuelve al login. | SCRUM-25 |
+| Guards de rol | `core/guards.ts` | Permiten cada ruta según el rol y envían al inicio del rol cuando no corresponde: `admin_plataforma` ve la gestión de tenants y `admin_tenant` no (RN-U6). | SCRUM-25 / SCRUM-64 |
 | Inicio de sesión | `features/autenticacion` | Formulario de acceso con validaciones y errores. | SCRUM-23 |
 | Inicio | `features/inicio` | Menú según el rol del administrador. | SCRUM-25 |
 | Gestión de tenants | `features/tenants/tenants.ts` | Lista los tenants y los activa o desactiva con confirmación. | SCRUM-41 / SCRUM-112 |
@@ -325,7 +325,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Configuración del ambiente | `core/config` | URL base, `Host` del gateway y huella SHA-256 del certificado de QA. | SCRUM-27 |
 | Cliente HTTP | `core/network` | Adjunta el JWT y `X-Correlation-Id`, fija el certificado y traduce `problem+json` en errores de la app. | SCRUM-27 |
 | Sesión | `core/session` | Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol. | SCRUM-23 |
-| Autenticación | `features/autenticacion` | Login y registro de cliente, técnico y empresa. | SCRUM-23 |
+| Autenticación | `features/autenticacion` | Login y registro de cliente hogar. El registro de empresa está oculto (`registroEmpresaHabilitado = false`) hasta SCRUM-26. | SCRUM-23 |
 | Inicio por rol | `features/inicio` | Opciones habilitadas según el rol. | SCRUM-27 |
 | Solicitudes | `features/solicitudes` | Nueva solicitud en un solo formulario (RNF-11) y detalle con su estado. | SCRUM-27 / SCRUM-71 |
 | Ubicación del dispositivo | `features/solicitudes/data` | Permiso y lectura del GPS, con respaldo en `LocationManager` y límite de 15 s. | SCRUM-27 / SCRUM-71 |
@@ -335,7 +335,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 Reglas comunes a las dos aplicaciones:
 
 - **Tenant:** ninguna app envía `tenant_id` (RN-U3 del DD). En el login y el registro todavía no hay JWT, así que el tenant sale del canal por el que llega la petición (RN-U5); en las peticiones autenticadas sale del token que propaga el API Gateway (DD, sección 10.3).
-- **Errores:** un 401 lleva al login y un 403 a la pantalla de acceso denegado; el resto de errores se muestran en la pantalla que los produjo, sin perder los datos ingresados.
+- **Errores:** un 401 cierra la sesión y lleva al login. Las apps no tienen pantalla de acceso denegado: en el panel, los guards envían al inicio del rol; un 403 de la API, como el resto de errores, se muestra en la pantalla que lo produjo, sin perder los datos ingresados.
 - **Contratos:** Mobile consume `identity.v1.yaml`, `catalog.v1.yaml` y `service-request.v1.yaml`; Web consume `identity.v1.yaml` (inicio de sesión y `/v1/platform/tenants`). Mobile llama además a `POST /v1/auth/register/company`, que todavía no está en `identity.v1.yaml` (SAD 2.2).
 - **Pendiente:** el contrato v1 de creación de solicitudes solo admite el rol `cliente` y responde 403 a los demás, mientras que el SRS (F2.1) incluye a la empresa cliente. Se debe resolver antes de cerrar SCRUM-27.
 
