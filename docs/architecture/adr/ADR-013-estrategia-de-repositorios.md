@@ -82,7 +82,7 @@ Se descartó porque copia el código de cada componente dentro del principal y v
 - Crear los teams de la organización y asignar el acceso por repositorio.
 - Mover a cada servicio las pruebas de integración y de contrato que hoy están en `tests/integration/` y `tests/contract/` del repositorio principal.
 - Ajustar el Documento de Infraestructura (sección 6, un pipeline por repositorio) y el documento de Políticas (GitFlow por repositorio y responsable de actualizar los punteros).
-- Regenerar la Figura 12 del SDD, que todavía dibuja `contracts/` dentro de `docs/`.
+- ~~Regenerar la figura de la estructura del repositorio en el SDD (hoy Figura 14), que dibujaba `contracts/` dentro de `docs/`.~~ Hecho: muestra `contracts/api-gateway/` y `contracts/kafka/` (ADR-021).
 
 ## Trazabilidad
 

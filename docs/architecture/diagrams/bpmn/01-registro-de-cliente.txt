@@ -1,0 +1,11 @@
+Cliente: (Quiere contratar servicios técnicos)
+Cliente: Registrarse con correo y datos personales
+Quickpatch: Verificar que el cliente no esté registrado
+Quickpatch: Dar de alta al cliente
+Cliente: (Cliente registrado)
+
+Cliente: (Quiere contratar servicios técnicos)
+Cliente: Registrarse con correo y datos personales
+Quickpatch: Verificar que el cliente no esté registrado
+Quickpatch: Rechazar el registro de un cliente existente
+Cliente: (Registro rechazado)

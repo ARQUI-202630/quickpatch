@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.22 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.25 — QUICKPATCH
 
 ---
 
@@ -138,6 +138,45 @@ Son los escenarios prioritarios de la sección 3.10 (importancia de negocio Alta
 |AC1-E1 Filtro de especialidad en el matching †|Functional Suitability|Alta / Media|D1|0% de asignaciones a un técnico de otra especialidad|—|
 |AC7-E6 Validación del incremento en QA antes de producción †|Maintainability|Alta / Media|D8|100% de los despliegues pasan antes por QA (VM2, VM5 y VM7); 0 pruebas de carga o de seguridad contra producción|ADR-015 (relacionado)|
 |AC8-E3 Incorporación de un nuevo canal o tipo de cliente|Flexibility|Alta / Media|—|0 cambios en los microservicios de dominio para un nuevo tipo de cliente|—|
+
+### 2.2 Validación de la arquitectura contra los RNF
+
+Cada requisito no funcional del SRS (sección 5) se sigue hasta el escenario que lo mide, las decisiones y componentes que lo atienden y la evidencia que existe hoy en el código o en la operación. La validación se hizo el 7 de octubre de 2026 sobre `develop` de los 12 repositorios.
+
+**Estado:** *Cubierto* = hay escenario, decisión y evidencia en el código o en un pipeline; *Parcial* = la arquitectura lo atiende, pero falta el escenario o la evidencia; *Sin cobertura* = ningún componente lo implementa todavía.
+
+|RNF|Escenario|Decisiones y componentes|Evidencia actual|Estado|
+|---|---|---|---|---|
+|RNF-01 PCI-DSS, tarjeta en un proveedor certificado|AC6-E1|ADR-009 (tokenización); Payments Service|Payments Service es todavía un esqueleto sin flujo de pago|Parcial|
+|RNF-02 HTTPS/TLS cliente-servidor|Ninguno|API Gateway Nginx con TLS 1.2/1.3 (VM1); la app móvil fija el certificado de QA (`CERT_SHA256`)|`gateway-nginx.conf.j2` y `qa-nginx.conf.j2` limitan los protocolos a TLS 1.2 y 1.3; `cliente_api.dart` valida el certificado|Parcial|
+|RNF-03 Contraseñas con *hashing* seguro|Ninguno|Identity Service|`BCryptPasswordHasher` con factor de trabajo configurable; una prueba de integración verifica que el registro guarda un hash BCrypt|Parcial|
+|RNF-04 Log de todo acceso denegado (403)|AC6-E3, AC6-E8|Identity, Catalog y ServiceRequest; Loki (ADR-016)|Manejador de autorización que registra método, ruta, usuario y rol en cada 403, en los tres servicios con endpoints protegidos|Cubierto|
+|RNF-05 Matching inicia en menos de 60 s|AC2-E3 (7 s, más exigente)|ADR-006 (Kafka), ADR-007 (Outbox); ServiceRequest → `service-request.created` → Matching|Prueba local del 7 de octubre: la solicitud llega a Matching por el Outbox (`tests/e2e/evidencias/mvp-local-2026-10-07.txt`); sin medición en QA|Parcial|
+|RNF-06 Cambio de estado visible en menos de 1 minuto|AC2-E3, AC4-E9|ADR-006; Communication Service; canal en tiempo real de la app|La app tiene el modelo del mensaje en tiempo real, pero la pantalla de detalle solo se actualiza al deslizar; Communication Service no emite notificaciones|Sin cobertura|
+|RNF-07 Ambiente de QA permanente|AC7-E6|ADR-015 y ADR-022 (QA en VM2, VM5 y VM7)|Los pipelines despliegan `release/**` en QA (`deploy-k3s.yml`); el despliegue real depende de los secretos y las VMs de DevOps|Parcial|
+|RNF-08 Un fallo en QA bloquea producción|AC7-E6, AC9-E7|ADR-015; pipelines por repositorio; `pruebas-sistema.yml`|Las pruebas del sistema corren al hacer *push* a `release/**`, pero el job `produccion` de cada servicio solo depende de la imagen: nada impide desplegar en producción si fallaron|Parcial|
+|RNF-09 Nuevos tenants sin afectar a los existentes|AC8-E1|ADR-005 (RLS); Identity (`tenants`, administradores iniciales)|Listado y activación de tenants (`/v1/platform/tenants`, SCRUM-112); el alta de un tenant es por datos semilla, no por la API|Parcial|
+|RNF-10 Filtro automático por `tenant_id`|AC6-E2|ADR-005, ADR-019 (roles de base de datos)|RLS con `app.current_tenant` en Identity, Catalog y ServiceRequest; pruebas de aislamiento contra PostgreSQL real|Cubierto|
+|RNF-11 Solicitud en máximo 3 pasos|AC4-E1|Flutter (ADR-002)|`nueva_solicitud_page.dart`: un formulario con categoría, descripción, dirección y ubicación, y una pantalla de confirmación|Cubierto|
+|RNF-12 Diseño responsivo|AC4-E2|Flutter (ADR-002) y Angular|Sin pruebas de tamaños de pantalla en ninguna de las dos apps|Parcial|
+|RNF-13 Control de versiones de entregables y Jira|— (requisito de proceso)|Repositorio `quickpatch`, Working Agreements|Historial de versiones de SRS, SAD, SDD y DD; trazabilidad a SCRUM en los commits|Cubierto|
+
+**RNF sin escenario.** RNF-02 y RNF-03 no tienen un escenario de calidad que los mida. Se registran como decisión abierta: o se agregan como escenarios de AC6 (*Confidentiality*), o se aceptan como restricciones verificables por inspección y se mueven a la sección 1.2.2.
+
+**Acciones correctivas.**
+
+|RNF|Acción|Responsable|
+|---|---|---|
+|RNF-08|Hacer que el despliegue a producción dependa del resultado de `pruebas-sistema.yml` sobre la misma versión, o un ambiente protegido con aprobación en GitHub|DevOps|
+|RNF-06|Implementar el canal de estado en Communication Service y suscribir la pantalla de detalle; mientras tanto, consultar el estado cada 30 segundos|Backend y Frontend|
+|RNF-05, RNF-07|Medir en QA el tiempo desde `POST /v1/service-requests` hasta el consumo en Matching, cuando el ambiente esté desplegado|QA|
+|RNF-09|Exponer el alta de tenants en la API de plataforma y medir AC8-E1 (tenant funcional en menos de 1 hora)|Backend|
+|RNF-12|Agregar pruebas de diseño por tamaño de pantalla (widget tests en Flutter, viewport en Angular)|Frontend|
+|RNF-01|Validar AC6-E1 cuando Payments implemente la tokenización|Backend y QA|
+
+**Hallazgo de contratos.** La app móvil llama a `POST /v1/auth/register/company`, que el DD lista como pendiente (DEP-13) pero que no existe en `identity.v1.yaml`. Hasta que Backend lo publique en el contrato, el registro de empresas desde la app falla.
+
+---
 
 ## 3. Escenarios de Calidad
 
@@ -840,55 +879,64 @@ De estos 16, **7 no sustentan ningún ADR todavía** (AC1-E1, AC5-E1, AC5-E6, AC
 
 Esta sección presenta la vista general de componentes del sistema y cómo se conectan entre sí, sin entrar aún al detalle interno de cada uno. La arquitectura se plantea como un conjunto de **microservicios independientes**, organizados según los dominios de negocio, que se comunican principalmente mediante **eventos publicados en Apache Kafka** (Event-Driven Architecture) en lugar de llamadas síncronas directas entre servicios.
 
-### 4.1 Diagrama general
+### 4.1 Diagrama general (C4 de alto nivel)
+
+El diagrama de alto nivel sigue el nivel de contexto de C4: las personas que usan QUICKPATCH, las dos aplicaciones por las que entran, el backend como una sola caja y los sistemas externos de los que depende. Está orientado de izquierda a derecha para proyectarse. El detalle de contenedores (gateway, los 8 microservicios, Kafka y los almacenes de datos) está en el SDD, sección 5.1, y el de componentes de las apps cliente, en la 6.2.
 
 ```mermaid
-flowchart TB
-    subgraph Usuarios["Usuarios"]
-        direction LR
-        U1[Cliente]
-        U2[Aliado/Tecnico]
-        U3[Empleado]
-        U4[Proveedor]
-        U5[Empresa]
-        U6[Admin]
+%%{init: {'theme':'base','themeVariables':{'lineColor':'#374151','textColor':'#111827','edgeLabelBackground':'#ffffff','fontSize':'18px'}}}%%
+flowchart LR
+    subgraph PER[" "]
+        direction TB
+        P1(["Cliente y empresa cliente<br/>[Persona]<br/>Pide, sigue y paga servicios"])
+        P2(["Técnico y proveedor<br/>[Persona]<br/>Atiende las solicitudes asignadas"])
+        P3(["Admin del tenant<br/>[Persona]<br/>Aprueba y suspende técnicos"])
+        P4(["Admin de plataforma<br/>[Persona]<br/>Administra los tenants"])
     end
 
-    subgraph Frontend["Clientes"]
-        direction LR
-        WEB["Angular (Web)<br/>Panel Admin"]
-        MOBILE["Flutter<br/>(iOS/Android)"]
+    subgraph SIS["QUICKPATCH [Sistema de software]"]
+        direction TB
+        MOB["Flutter Mobile<br/>[Contenedor: iOS y Android]<br/>Usuarios operativos"]
+        WEB["Angular Web<br/>[Contenedor]<br/>Administración"]
+        CORE["Backend QUICKPATCH<br/>[API Gateway + 8 microservicios<br/>+ Apache Kafka]<br/>Solicitudes, matching, pagos,<br/>reputación y notificaciones"]
     end
 
-    Usuarios --> Frontend
-
-    WEB -->|"HTTPS - REST - WebSocket"| GW
-    MOBILE -->|"HTTPS - REST - WebSocket"| GW
-
-    GW["API Gateway"]
-
-    subgraph Services["Microservicios"]
-        direction LR
-        S1["Identity Service<br/>Auth . Tenants . Users"]
-        S2["Actors Service<br/>Suppliers . Allies . Clients"]
-        S3["Catalog Service"]
-        S4["Matching Service<br/>+ CoverageZone"]
-        S5["ServiceRequest Service<br/>orquesta ciclo de vida"]
-        S6["Ranking Service<br/>servicio + materiales"]
-        S7["Payments Service<br/>Payments . Billing . Payroll-lite"]
-        S8["Communication Service<br/>Notifications<br/>(Chat . Complaints: futuro)"]
+    subgraph EXT[" "]
+        direction TB
+        PAY["Pasarela de pagos PCI-DSS<br/>[Sistema externo, RIE-01]"]
+        MAPS["Servicio de geocodificación<br/>[Sistema externo, RIE-02]"]
+        NOTI["Proveedor de notificaciones<br/>[Sistema externo, RIE-03]<br/>Correo y push"]
     end
 
-    GW --> Services
+    P1 -->|"usa"| MOB
+    P2 -->|"usa"| MOB
+    P3 -->|"usa"| WEB
+    P4 -->|"usa"| WEB
+    MOB -->|"HTTPS"| CORE
+    WEB -->|"HTTPS"| CORE
+    CORE -->|"tokeniza y cobra"| PAY
+    MOB -->|"convierte la dirección<br/>del cliente en coordenadas"| MAPS
+    CORE -->|"envía avisos por correo<br/>y push a las personas"| NOTI
 
-    KAFKA{{"Apache Kafka<br/>Bus de eventos"}}
-
-    Services <--> KAFKA
-
-    Services --> DB[("PostgreSQL + PostGIS<br/>por servicio o esquema")]
-    Services --> CACHE[("Redis<br/>cache / colas cortas")]
-    Services --> STORAGE[("Garage (S3)<br/>archivos y evidencias")]
+    classDef persona fill:#08427b,stroke:#052e56,color:#ffffff
+    classDef contenedor fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef sistema fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef externo fill:#999999,stroke:#6b6b6b,color:#ffffff
+    class P1,P2,P3,P4 persona
+    class MOB,WEB contenedor
+    class CORE sistema
+    class PAY,MAPS,NOTI externo
+    style PER fill:#ffffff,stroke:#ffffff
+    style EXT fill:#ffffff,stroke:#ffffff
+    style SIS fill:#ffffff,stroke:#444444,stroke-dasharray:6 4
 ```
+
+**Límites y canales.**
+
+- **Personas y canal.** Los usuarios operativos (cliente, empresa cliente, técnico y proveedor) solo entran por la app móvil; los dos administradores, solo por el panel web (SRS 2.1 y 2.2, RN-U6). El proveedor es el rol que administra un equipo de técnicos (RF-16), no el proveedor de materiales (`SUPPLIER`, sección 7.2).
+- **Frontera del sistema.** Todo el tráfico de las apps entra por el API Gateway, que es la única entrada (ADR-022). Los microservicios no se llaman entre sí para cumplir su función: se integran por eventos en Kafka (sección 4.3).
+- **Sistemas externos.** Son los tres del SRS (RIE-01 a RIE-03). Los proveedores concretos no están definidos.
+- **Decisión abierta: canal de estado en tiempo real.** Este diagrama pone solo HTTPS entre las apps y el backend. La versión anterior de este diagrama mostraba WebSocket hacia el gateway, mientras que el SDD (5.1) descarta un canal WebSocket y resuelve RF-11 con notificaciones push y consulta por REST. La implementación todavía no tiene ninguno de los dos (sección 2.2, RNF-06). Mientras el equipo no decida, ninguno de los dos documentos debe darlo por hecho.
 
 ### 4.2 Componentes
 
@@ -898,6 +946,8 @@ flowchart TB
 - **Flutter (iOS/Android)**: aplicación para clientes, empresas cliente, técnicos/aliados en campo y proveedores (el rol que administra un equipo de técnicos, RF-16). El proveedor de materiales o repuestos (`SUPPLIER`, sección 7.2) no es un rol del MVP.
 
 Ambos clientes se comunican con el sistema a través de un **API Gateway** único, que enruta cada solicitud al microservicio correspondiente y resuelve autenticación y rate limiting de forma centralizada.
+
+**Prototipos de interfaz.** Las pantallas del incremento del Sprint 3 de los dos clientes están en Figma, en la página "Sprint 3 — Mockups (SCRUM-286)": https://www.figma.com/design/8rVY8a5b6LMpHcDUjBcgIU/QUICKPATCH?node-id=112-2. Separan el panel web de administración de la app móvil de los usuarios operativos, y cada pantalla traza a su historia de usuario, a su contrato en `quickpatch-api-gateway` y al archivo de código que la implementa. Son un artefacto de diseño de interfaz independiente del DD (SCRUM-286, SCRUM-302, SCRUM-332).
 
 #### 4.2.2 Microservicios
 
@@ -1202,3 +1252,6 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.20|6 oct 2026|Trade-offs (SCRUM-281). La sección 6.1 consolida en una matriz qué atributo favorece (+) y cuál sacrifica (−) cada ADR, con el efecto arquitectónico y el costo aceptado; la 6.2 agrega los puntos de sensibilidad y de trade-off (intervalo del Outbox, vida del token, límites de memoria, pools de conexión, retraso de las réplicas) con los escenarios que se deben repetir si cambian, y los riesgos aceptados. La justificación de ADR-007 cita D4 y AC9-E5, y la de ADR-015 cita D8 y AC7-E6. La síntesis de la sección 6 se precisa: AC9 solo aparece como escenario en la justificación de ADR-007.|
 |2.21|6 oct 2026|Multirepo de 12 repositorios (SCRUM-333). Se agrega ADR-021, que modifica a ADR-013 por la revisión del profesor: el multirepo tiene un repositorio por componente de la solución (Flutter, Angular, API Gateway, los 8 microservicios y Apache Kafka) más el repositorio principal. Los contratos REST pasan a `quickpatch-api-gateway`, los de eventos a `quickpatch-kafka` y cada repositorio tiene su propio CI. Se actualizan la tabla y la síntesis de la sección 6 y la matriz 6.1.|
 |2.22|6 oct 2026|Redistribución de las 7 VMs (SCRUM-334, SCRUM-341). Se agrega ADR-022, que modifica a ADR-015 por la revisión del profesor: VM1 pasa a ser la VM de herramientas y la única entrada; producción ocupa VM3 (aplicación), VM4 (PostgreSQL y Redis) y VM6 (Kafka y Garage), y QA es una copia en VM2, VM5 y VM7. Se actualizan las secciones 5.1 a 5.3 y 5.5, los escenarios AC2-E5, AC7-E6 y el de disco de AC9, la trazabilidad de D7 y D8, la matriz 6.1 y los riesgos de la 6.2. La implementación está en curso; hasta que termine, la distribución operativa es la de ADR-015. Es el reparto que DevOps implementa en Ansible (`quickpatch-infrastructure`, PRs #20 a #23). La sección 5.2 relaciona los recursos por servicio con el diagrama de alto nivel.|
+|2.23|7 oct 2026|Validación contra los RNF (SCRUM-283). La nueva sección 2.2 sigue los 13 RNF del SRS hasta su escenario, sus decisiones y componentes y la evidencia actual en el código: 4 cubiertos, 8 parciales y 1 sin cobertura (RNF-06). Registra que RNF-02 y RNF-03 no tienen escenario (decisión abierta), las acciones correctivas por rol —la principal: el despliegue a producción no depende hoy de las pruebas de QA (RNF-08)— y un hallazgo de contratos: la app móvil llama a `POST /v1/auth/register/company`, que no está en `identity.v1.yaml`.|
+|2.24|7 oct 2026|Arquitectura de alto nivel en C4 (SCRUM-279). La sección 4.1 reemplaza el diagrama general por uno de contexto C4 horizontal: personas, Flutter Mobile para los usuarios operativos, Angular Web para los administradores, el backend como una caja y los tres sistemas externos del SRS (RIE-01 a RIE-03). Deja como decisión abierta el canal de estado en tiempo real: el diagrama anterior mostraba WebSocket y el SDD lo descarta.|
+|2.25|7 oct 2026|La sección 4.2.1 enlaza los prototipos de interfaz del Sprint 3 en Figma (SCRUM-302, SCRUM-332).|
