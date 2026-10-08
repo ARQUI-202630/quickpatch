@@ -25,7 +25,7 @@ Este directorio contiene los scripts oficiales de pruebas de rendimiento impleme
 
 ### Prerrequisito Obligatorio
 Antes de ejecutar cualquiera de los scripts de k6, **el usuario de prueba debe existir previamente en Identity**:
-* Debe haber sido registrado previamente mediante `POST /api/v1/auth/register` o insertado vía datos semilla en la base de datos de Identity de QA (VM5).
+* Debe haber sido registrado previamente mediante `POST /api/v1/auth/register/client` o insertado vía datos semilla en la base de datos de Identity de QA (VM5).
 * El usuario debe contar con el rol `cliente` y sus credenciales activas.
 * Si el inicio de sesión falla durante la fase `setup()`, el script aborta la ejecución inmediatamente por diseño para garantizar que no se emita tráfico con tokens inválidos o simulados.
 
@@ -44,15 +44,13 @@ Antes de ejecutar cualquiera de los scripts de k6, **el usuario de prueba debe e
 ## 4. Instrucciones de Ejecución
 
 ### Ejecución en el Runner de CI/CD (VM1)
-El flujo `.github/workflows/pruebas-sistema.yml` ejecuta automáticamente los scripts encontrados en este directorio proveyendo las credenciales configuradas en los secretos del repositorio:
+El flujo `.github/workflows/pruebas-sistema.yml` ejecuta automáticamente los scripts encontrados en este directorio con las credenciales de los secretos `QA_CLIENT_EMAIL` y `QA_CLIENT_PASSWORD` del repositorio como variables de entorno del paso (k6 las lee en `__ENV`, sin pasarlas en la línea de comandos):
 
 ```bash
 for s in tests/performance/*.js; do
   nombre=$(basename "$s" .js)
   k6 run --insecure-skip-tls-verify \
     -e BASE_URL="$BASE_URL" \
-    -e QA_CLIENT_EMAIL="$QA_CLIENT_EMAIL" \
-    -e QA_CLIENT_PASSWORD="$QA_CLIENT_PASSWORD" \
     --summary-export "resultados-k6/$nombre.json" "$s"
 done
 ```
@@ -65,14 +63,14 @@ Para ejecutar los scripts individualmente utilizando k6 (asegurar el suministro 
 k6 run --insecure-skip-tls-verify \
   -e BASE_URL="https://qa.quickpatch.internal" \
   -e QA_CLIENT_EMAIL="cliente.qa@quickpatch.internal" \
-  -e QA_CLIENT_PASSWORD="PasswordSeguroQA123*" \
+  -e QA_CLIENT_PASSWORD="<contraseña del cliente de QA>" \
   tests/performance/load-test-50vu.js
 
 # Estrés pico (150 VU)
 k6 run --insecure-skip-tls-verify \
   -e BASE_URL="https://qa.quickpatch.internal" \
   -e QA_CLIENT_EMAIL="cliente.qa@quickpatch.internal" \
-  -e QA_CLIENT_PASSWORD="PasswordSeguroQA123*" \
+  -e QA_CLIENT_PASSWORD="<contraseña del cliente de QA>" \
   tests/performance/stress-test-150vu.js
 ```
 
