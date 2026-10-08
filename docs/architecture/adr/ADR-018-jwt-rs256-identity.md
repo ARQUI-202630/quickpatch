@@ -10,7 +10,7 @@
 
 ## Contexto
 
-Todos los servicios necesitan saber quién hace la petición, de qué tenant es y con qué rol (RBAC, DD 10.5). Si cada servicio consultara a Identity en cada petición, Identity quedaría en el camino crítico de todo el sistema (contra ADR-003). Si se firmara con una clave simétrica (HS256) compartida, cualquier servicio comprometido podría emitir tokens válidos para cualquier tenant y rol.
+Todos los servicios necesitan saber quién hace la petición, de qué tenant es y con qué rol (RBAC, DD 8.2: columna Roles del catálogo de endpoints). Si cada servicio consultara a Identity en cada petición, Identity quedaría en el camino crítico de todo el sistema (contra ADR-003). Si se firmara con una clave simétrica (HS256) compartida, cualquier servicio comprometido podría emitir tokens válidos para cualquier tenant y rol.
 
 ## Decisión
 
