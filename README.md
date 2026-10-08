@@ -40,7 +40,7 @@ quickpatch/                          (este repo)
 │   │   ├── payments/                → quickpatch-payments
 │   │   └── communication/           → quickpatch-communication
 │   └── kafka/                       → quickpatch-kafka (bus de eventos, esquemas y topics)
-├── infrastructure/                  → quickpatch-infrastructure (Ansible y k3s; pasa a ser carpeta de este repo, SCRUM-338)
+├── infrastructure/                  Ansible e inventario de las VMs (antes quickpatch-infrastructure, SCRUM-338)
 ├── tests/                           pruebas del sistema completo
 └── docs/                            SRS, SAD, SDD, DD, Infraestructura, Políticas
 ```

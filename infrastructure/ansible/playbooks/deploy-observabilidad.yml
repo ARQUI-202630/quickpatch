@@ -1,0 +1,54 @@
+# VM1: Prometheus, Loki y Grafana de los dos ambientes (ADR-022, secciones 5.2 y 7).
+# Las 7 VMs mandan aquí sus logs (Promtail, puerto 3100) y Prometheus lee sus métricas (node_exporter, 9100).
+- name: Observabilidad (VM1)
+  hosts: observabilidad
+  vars:
+    dir: "{{ stack_dir }}/observabilidad"
+  tasks:
+    - name: Carpetas
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ dir }}"
+        - "{{ dir }}/grafana-provisioning/datasources"
+        - "{{ dir }}/grafana-provisioning/dashboards"
+        - "{{ dir }}/grafana-provisioning/dashboards-json"
+        - "{{ dir }}/grafana-provisioning/alerting"
+
+    - name: Configuración de Prometheus, Loki y Grafana
+      ansible.builtin.template:
+        src: "../templates/{{ item.src }}"
+        dest: "{{ dir }}/{{ item.dest }}"
+        mode: "{{ item.mode | default('0644') }}"
+      loop:
+        - { src: prometheus.yml.j2, dest: prometheus.yml }
+        - { src: loki.yml.j2, dest: loki.yml }
+        - { src: grafana-datasources.yml.j2, dest: grafana-provisioning/datasources/datasources.yml }
+        - { src: grafana-contactpoints.yml.j2, dest: grafana-provisioning/alerting/contactpoints.yml }
+        - { src: observabilidad.compose.yml.j2, dest: compose.yml, mode: "0600" }
+      notify: Reiniciar observabilidad
+
+    - name: Dashboards y alertas de Grafana (se copian tal cual, sin plantilla)
+      ansible.builtin.copy:
+        src: "../files/grafana/{{ item.src }}"
+        dest: "{{ dir }}/grafana-provisioning/{{ item.dest }}"
+        mode: "0644"
+      loop:
+        - { src: dashboards.yml, dest: dashboards/dashboards.yml }
+        - { src: quickpatch-logs.json, dest: dashboards-json/quickpatch-logs.json }
+        - { src: alerting/rules.yml, dest: alerting/rules.yml }
+        - { src: alerting/policies.yml, dest: alerting/policies.yml }
+      notify: Reiniciar observabilidad
+
+    - name: Levantar Prometheus, Loki y Grafana
+      community.docker.docker_compose_v2:
+        project_src: "{{ dir }}"
+        state: present
+
+  handlers:
+    - name: Reiniciar observabilidad
+      community.docker.docker_compose_v2:
+        project_src: "{{ dir }}"
+        state: restarted

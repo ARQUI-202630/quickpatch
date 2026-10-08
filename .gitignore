@@ -28,3 +28,10 @@ coverage/
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# Infraestructura: secretos y colecciones locales de Ansible (Documento de Infraestructura, sección 8)
+infrastructure/ansible/.secretos/
+infrastructure/ansible/inventory/group_vars/all/vault.yml
+infrastructure/ansible/.vault-pass
+infrastructure/ansible/collections/
+*.retry

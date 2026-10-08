@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Ejecuta ansible-playbook dentro del contenedor. Uso: ./ap playbooks/diagnostico.yml -k -K
+# Monta el repositorio quickpatch completo: los playbooks usan la configuración del gateway (apps/api-gateway/nginx)
+# y el despliegue de Kafka (apps/kafka/deploy), que vienen de sus submódulos (git submodule update --init).
+# Si existe ~/.config/quickpatch/vault-pass, se usa como clave del vault (no está en el repo).
+set -euo pipefail
+cd "$(dirname "$0")"
+RAIZ="$(cd ../.. && pwd)"
+for sub in apps/api-gateway apps/kafka; do
+  [ -e "$RAIZ/$sub/.git" ] || { echo "Falta el submódulo $sub: git submodule update --init $sub" >&2; exit 1; }
+done
+VAULT=()
+[ -f "$HOME/.config/quickpatch/vault-pass" ] && VAULT=(-v "$HOME/.config/quickpatch/vault-pass:/run/vault-pass:ro" -e ANSIBLE_VAULT_PASSWORD_FILE=/run/vault-pass)
+docker run --rm -it --network host \
+  -v "$RAIZ":/quickpatch \
+  -w /quickpatch/infrastructure/ansible \
+  -v "$HOME/.ssh":/root/.ssh:ro \
+  "${VAULT[@]}" \
+  -e ANSIBLE_CONFIG=/quickpatch/infrastructure/ansible/ansible.cfg \
+  quickpatch-ansible "$@"
