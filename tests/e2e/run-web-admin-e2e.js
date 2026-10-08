@@ -16,6 +16,7 @@ const collectionFile = path.join(__dirname, 'scrum-318-web-admin.postman_collect
 function runNewman() {
   console.log(`\n======================================================`);
   console.log(` EJECUTANDO PRUEBAS E2E WEB ADMINISTRATIVO (SCRUM-318)`);
+  console.log(` Modo: ${isRemote ? 'Ejecución Remota contra QA (VM2)' : 'Simulación Local Preparatoria'}`);
   console.log(` Target: ${baseUrl}`);
   console.log(` Colección: ${path.basename(collectionFile)}`);
   console.log(`======================================================\n`);

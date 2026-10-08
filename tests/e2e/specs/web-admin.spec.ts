@@ -16,7 +16,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Web Admin — Autenticación y Perfil (W-01 & W-02)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/iniciar-sesion');
   });
 
   test('[W-01] Renderizado correcto del formulario de login administrativo', async ({ page }) => {
@@ -104,7 +104,7 @@ test.describe('Web Admin — Autenticación y Perfil (W-01 & W-02)', () => {
 });
 
 test.describe('Web Admin — Control de Acceso RBAC y Sidebar (W-03 & W-07)', () => {
-  test('[W-03] Rol admin_tenant al intentar entrar a /admin/tenants recibe pantalla de Acceso Denegado (403)', async ({ page }) => {
+  test('[W-03] Rol admin_tenant al intentar entrar a /admin/tenants es bloqueado por RBAC (403)', async ({ page }) => {
     // Simular sesión iniciada con rol admin_tenant
     await page.addInitScript(() => {
       localStorage.setItem('auth_token', 'mock-tenant-admin-token');
@@ -127,14 +127,18 @@ test.describe('Web Admin — Control de Acceso RBAC y Sidebar (W-03 & W-07)', ()
 
     await page.goto('/admin/tenants');
 
-    // Debe mostrar la vista o alerta de acceso denegado (W-03)
-    const accessDenied = page.locator('.access-denied, .error-403, [data-testid="access-denied"]');
-    await expect(accessDenied).toBeVisible();
-    await expect(accessDenied).toContainText(/no tienes permiso|acceso denegado|403/i);
+    // El guard RBAC de Angular bloquea el acceso: la tabla de gestión de tenants NO debe renderizarse
+    await expect(page.locator('table, [data-testid="tenants-table"]')).toHaveCount(0);
 
-    // Debe incluir botón para regresar al inicio / dashboard
-    const homeBtn = page.locator('a[href="/dashboard"], button:has-text("Volver"), a:has-text("Inicio")');
-    await expect(homeBtn).toBeVisible();
+    // Debe mostrar alerta o toast de acceso denegado o redirigir
+    const alertForbidden = page.locator('.alert-danger, .alert-warning, [role="alert"], .toast-error, .notification');
+    if (await alertForbidden.count() > 0) {
+      await expect(alertForbidden.first()).toBeVisible();
+      await expect(alertForbidden.first()).toContainText(/no tienes permiso|acceso denegado|no autorizado|403/i);
+    } else {
+      // Si el guard redirige, la URL no debe permanecer en /admin/tenants
+      expect(page.url()).not.toContain('/admin/tenants');
+    }
   });
 
   test('[W-07] Navegación del sidebar adapta opciones según el rol autenticado', async ({ page }) => {

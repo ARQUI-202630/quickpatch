@@ -27,6 +27,7 @@ Los diagramas y descripciones del SDD deben mantenerse alineados con las fuentes
 | **Dynamic (sección 8)** | `SRS.md`, `DD.md`, `SAD.md`, escenarios de calidad | Flujos síncronos y asíncronos, productores y consumidores, concurrencia, reintentos y fallos. |
 | **Deployment (sección 9)** | `SAD.md`, documento de Infraestructura, manifiestos y playbooks | VMs, nodos, contenedores desplegados, redes, puertos y ambientes. |
 | **Organización del código (sección 10)** | Repositorios, Working Agreements, `SAD.md` | Carpetas, proyectos, dependencias, convenciones, pruebas y CI/CD. |
+| **Flujos de negocio (sección 11)** | `SRS.md` (RF), `DD.md` (RN) | Participantes, actividades de negocio, decisiones y finales de cada flujo, sin detalles técnicos. |
 | **Diagramas de datos** | `DD.md`, contratos vigentes, migraciones implementadas | Entidades, campos, relaciones físicas, referencias lógicas y propiedad de datos por servicio. |
 
 ## 2.1 Regla de actualización
@@ -305,10 +306,10 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 
 | Componente | Carpeta | Responsabilidad | HU |
 |---|---|---|---|
-| Shell y rutas | `app.routes.ts`, `app.ts` | Rutas, layout del panel y redirección a login o a acceso denegado. | SCRUM-25 |
+| Shell y rutas | `app.routes.ts`, `app.ts` | Rutas, layout del panel y redirección a login o al inicio del rol. | SCRUM-25 |
 | Sesión | `core/sesion.ts` | Conserva el token y expone usuario y rol como signals. | SCRUM-23, SCRUM-25 |
-| Interceptor HTTP | `core/http.ts` | Adjunta el JWT y `X-Correlation-Id`; traduce 401 y 403 en estados de la UI. | SCRUM-25 |
-| Guards de rol | `core/guards.ts` | Permiten cada ruta según el rol: `admin_plataforma` ve la gestión de tenants y `admin_tenant` no (RN-U6). | SCRUM-25 / SCRUM-64 |
+| Interceptor HTTP | `core/http.ts` | Adjunta el JWT y `X-Correlation-Id`; ante un 401 cierra la sesión y vuelve al login. | SCRUM-25 |
+| Guards de rol | `core/guards.ts` | Permiten cada ruta según el rol y envían al inicio del rol cuando no corresponde: `admin_plataforma` ve la gestión de tenants y `admin_tenant` no (RN-U6). | SCRUM-25 / SCRUM-64 |
 | Inicio de sesión | `features/autenticacion` | Formulario de acceso con validaciones y errores. | SCRUM-23 |
 | Inicio | `features/inicio` | Menú según el rol del administrador. | SCRUM-25 |
 | Gestión de tenants | `features/tenants/tenants.ts` | Lista los tenants y los activa o desactiva con confirmación. | SCRUM-41 / SCRUM-112 |
@@ -325,7 +326,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Configuración del ambiente | `core/config` | URL base, `Host` del gateway y huella SHA-256 del certificado de QA. | SCRUM-27 |
 | Cliente HTTP | `core/network` | Adjunta el JWT y `X-Correlation-Id`, fija el certificado y traduce `problem+json` en errores de la app. | SCRUM-27 |
 | Sesión | `core/session` | Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol. | SCRUM-23 |
-| Autenticación | `features/autenticacion` | Login y registro de cliente, técnico y empresa. | SCRUM-23 |
+| Autenticación | `features/autenticacion` | Login y registro de cliente hogar. El registro de empresa está oculto (`registroEmpresaHabilitado = false`) hasta SCRUM-26. | SCRUM-23 |
 | Inicio por rol | `features/inicio` | Opciones habilitadas según el rol. | SCRUM-27 |
 | Solicitudes | `features/solicitudes` | Nueva solicitud en un solo formulario (RNF-11) y detalle con su estado. | SCRUM-27 / SCRUM-71 |
 | Ubicación del dispositivo | `features/solicitudes/data` | Permiso y lectura del GPS, con respaldo en `LocationManager` y límite de 15 s. | SCRUM-27 / SCRUM-71 |
@@ -335,7 +336,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 Reglas comunes a las dos aplicaciones:
 
 - **Tenant:** ninguna app envía `tenant_id` (RN-U3 del DD). En el login y el registro todavía no hay JWT, así que el tenant sale del canal por el que llega la petición (RN-U5); en las peticiones autenticadas sale del token que propaga el API Gateway (DD, sección 10.3).
-- **Errores:** un 401 lleva al login y un 403 a la pantalla de acceso denegado; el resto de errores se muestran en la pantalla que los produjo, sin perder los datos ingresados.
+- **Errores:** un 401 cierra la sesión y lleva al login. Las apps no tienen pantalla de acceso denegado: en el panel, los guards envían al inicio del rol; un 403 de la API, como el resto de errores, se muestra en la pantalla que lo produjo, sin perder los datos ingresados.
 - **Contratos:** Mobile consume `identity.v1.yaml`, `catalog.v1.yaml` y `service-request.v1.yaml`; Web consume `identity.v1.yaml` (inicio de sesión y `/v1/platform/tenants`). Mobile llama además a `POST /v1/auth/register/company`, que todavía no está en `identity.v1.yaml` (SAD 2.2).
 - **Pendiente:** el contrato v1 de creación de solicitudes solo admite el rol `cliente` y responde 403 a los demás, mientras que el SRS (F2.1) incluye a la empresa cliente. Se debe resolver antes de cerrar SCRUM-27.
 
@@ -1812,7 +1813,135 @@ Los diagramas de esta sección no deben representar como implementada una carpet
 
 ---
 
-# 11. Trazabilidad entre diagramas
+# 11. Flujos de negocio (BPMN, complemento de C4)
+
+Los diagramas C4 describen cómo está construido el sistema; estos BPMN describen **qué hace el negocio**. Sus carriles son los participantes: las personas, **Quickpatch** como un solo participante y la **Pasarela de pagos** como socio externo. No aparecen microservicios, eventos, bases de datos ni el inicio de sesión, que es un mecanismo técnico. Cómo implementa el sistema cada flujo está en los diagramas dinámicos (sección 8).
+
+**Fuente.** Cada flujo se escribe como texto para BPMN Sketch Miner en `diagrams/bpmn/<flujo>.txt`, y su imagen se exporta a `diagrams/bpmn/<flujo>.png` con el mismo nombre. Cada caso alternativo es una historia del archivo; Sketch Miner las une y crea las compuertas. Para cambiar un flujo se edita el `.txt` y se vuelve a exportar. Las reglas citadas son las del DD (RN-*) y los requisitos, los del SRS (RF-*).
+
+## 11.1 Flujo de punta a punta
+
+Vista general del negocio: el cliente solicita, Quickpatch busca un técnico cercano, el técnico cotiza, realiza el servicio con evidencia, el cliente paga por la pasarela, recibe el comprobante y califica. Incluye los dos finales anticipados: sin técnicos disponibles y cotización rechazada. *Requisitos y reglas:* RF-07, RF-09, RF-34, RF-15, RF-22, RF-12.
+
+![Flujo de punta a punta](diagrams/bpmn/00-flujo-punta-a-punta.png)
+
+**Figura 38. Flujo de punta a punta (BPMN). Fuente `00-flujo-punta-a-punta.txt`.**
+
+## 11.2 Registro de cliente
+
+Alta de un cliente hogar y rechazo de uno ya registrado. El inicio de sesión no se modela: es un mecanismo técnico, no una actividad del negocio. *Requisitos y reglas:* RF-01, RN-U1.
+
+![Registro de cliente](diagrams/bpmn/01-registro-de-cliente.png)
+
+**Figura 39. Registro de cliente (BPMN). Fuente `01-registro-de-cliente.txt`.**
+
+## 11.3 Registro y verificación de técnicos
+
+El técnico se registra con documentos y queda pendiente hasta que el administrador del tenant lo aprueba o lo rechaza. El administrador también puede suspender a un técnico con incumplimientos. *Requisitos y reglas:* RF-02, RF-19, RF-20.
+
+![Registro y verificación de técnicos](diagrams/bpmn/02-registro-y-verificacion-de-tecnicos.png)
+
+**Figura 40. Registro y verificación de técnicos (BPMN). Fuente `02-registro-y-verificacion-de-tecnicos.txt`.**
+
+## 11.4 Registro de empresa cliente
+
+Alta de una cuenta corporativa con NIT y contacto. **Pendiente:** SCRUM-26; la opción está oculta en la app hasta que el contrato lo incluya. *Requisitos y reglas:* RF-06, DEP-13.
+
+![Registro de empresa cliente](diagrams/bpmn/03-registro-de-empresa-cliente.png)
+
+**Figura 41. Registro de empresa cliente (BPMN). Fuente `03-registro-de-empresa-cliente.txt`.**
+
+## 11.5 Gestión de empresas oferentes
+
+El administrador de plataforma activa o desactiva una empresa oferente con confirmación, y queda constancia del cambio. La empresa de la plataforma no se puede desactivar. *Requisitos y reglas:* RF-21, RN-U6.
+
+![Gestión de empresas oferentes](diagrams/bpmn/04-gestion-de-tenants.png)
+
+**Figura 42. Gestión de empresas oferentes (BPMN). Fuente `04-gestion-de-tenants.txt`.**
+
+## 11.6 Gestión del catálogo
+
+El administrador del tenant crea o edita categorías de servicio; un nombre repetido se rechaza. *Requisitos y reglas:* RN-SR10.
+
+![Gestión del catálogo](diagrams/bpmn/05-gestion-del-catalogo.png)
+
+**Figura 43. Gestión del catálogo (BPMN). Fuente `05-gestion-del-catalogo.txt`.**
+
+## 11.7 Disponibilidad y cobertura del técnico
+
+El técnico define especialidades, horario y zona, y se marca disponible o no disponible; solo los disponibles reciben servicios. *Requisitos y reglas:* RF-13, RN-M6.
+
+![Disponibilidad y cobertura del técnico](diagrams/bpmn/06-disponibilidad-y-cobertura-del-tecnico.png)
+
+**Figura 44. Disponibilidad y cobertura del técnico (BPMN). Fuente `06-disponibilidad-y-cobertura-del-tecnico.txt`.**
+
+## 11.8 Creación de solicitud
+
+El cliente elige el servicio y describe el problema, la dirección y la ubicación. Quickpatch rechaza las solicitudes fuera de Bogotá o de servicios no disponibles. *Requisitos y reglas:* RF-07, RN-SR1, RN-SR9 a RN-SR11.
+
+![Creación de solicitud](diagrams/bpmn/07-creacion-de-solicitud.png)
+
+**Figura 45. Creación de solicitud (BPMN). Fuente `07-creacion-de-solicitud.txt`.**
+
+## 11.9 Asignación de técnico
+
+Quickpatch ofrece el servicio al técnico disponible más cercano; si lo rechaza o no responde a tiempo, al siguiente. Sin técnicos, la solicitud queda en espera. *Requisitos y reglas:* RF-09, RF-10, RN-M1 a RN-M7.
+
+![Asignación de técnico](diagrams/bpmn/08-asignacion-de-tecnico.png)
+
+**Figura 46. Asignación de técnico (BPMN). Fuente `08-asignacion-de-tecnico.txt`.**
+
+## 11.10 Cotización
+
+El técnico cotiza y el cliente acepta o rechaza dentro del plazo. Tras tres cotizaciones rechazadas, o una sin respuesta, la solicitud se cancela. *Requisitos y reglas:* RF-34, RF-35, RN-Q1 a RN-Q7.
+
+![Cotización](diagrams/bpmn/09-cotizacion.png)
+
+**Figura 47. Cotización (BPMN). Fuente `09-cotizacion.txt`.**
+
+## 11.11 Ejecución del servicio
+
+El técnico inicia, realiza el trabajo y registra evidencia fotográfica; sin evidencia no puede cerrar el servicio. *Requisitos y reglas:* RF-14, RF-15, RN-SR3, RN-SR6, RN-E1 a RN-E3.
+
+![Ejecución del servicio](diagrams/bpmn/10-ejecucion-del-servicio.png)
+
+**Figura 48. Ejecución del servicio (BPMN). Fuente `10-ejecucion-del-servicio.txt`.**
+
+## 11.12 Pago y facturación
+
+El cliente paga con tarjeta el valor de la cotización por la pasarela de pagos. Si el cobro se aprueba, Quickpatch registra el pago y emite el comprobante a nombre de la plataforma; si se rechaza, el cliente puede reintentar. *Requisitos y reglas:* RF-22, RF-24, RN-P1 a RN-P5, RN-SR4, RN-SR5.
+
+![Pago y facturación](diagrams/bpmn/11-pago-y-facturacion.png)
+
+**Figura 49. Pago y facturación (BPMN). Fuente `11-pago-y-facturacion.txt`.**
+
+## 11.13 Calificación y reputación
+
+El cliente califica al técnico una sola vez, y Quickpatch actualiza la reputación del técnico. *Requisitos y reglas:* RF-12, RN-R1 a RN-R3.
+
+![Calificación y reputación](diagrams/bpmn/12-calificacion-y-reputacion.png)
+
+**Figura 50. Calificación y reputación (BPMN). Fuente `12-calificacion-y-reputacion.txt`.**
+
+## 11.14 Cancelación de solicitud
+
+El cliente o el administrador del tenant cancelan con motivo mientras el servicio no haya iniciado; Quickpatch libera al técnico y le avisa. *Requisitos y reglas:* RF-36, RN-SR7, RN-SR8, RN-Q5, RN-M5.
+
+![Cancelación de solicitud](diagrams/bpmn/13-cancelacion-de-solicitud.png)
+
+**Figura 51. Cancelación de solicitud (BPMN). Fuente `13-cancelacion-de-solicitud.txt`.**
+
+## 11.15 Gestión del equipo del proveedor
+
+El proveedor registra técnicos de su equipo, que pasan por la misma verificación, y consulta los servicios y pagos de su equipo. *Requisitos y reglas:* RF-16, RF-25.
+
+![Gestión del equipo del proveedor](diagrams/bpmn/14-gestion-del-equipo-del-proveedor.png)
+
+**Figura 52. Gestión del equipo del proveedor (BPMN). Fuente `14-gestion-del-equipo-del-proveedor.txt`.**
+
+---
+
+# 12. Trazabilidad entre diagramas
 
 Antes de consolidar una versión final del SDD se debe verificar:
 
@@ -1829,7 +1958,7 @@ Antes de consolidar una versión final del SDD se debe verificar:
 
 ---
 
-# 12. Estado actual del documento
+# 13. Estado actual del documento
 
 | Sección | Corresponde a | Estado |
 |---|---|---|
@@ -1838,6 +1967,7 @@ Antes de consolidar una versión final del SDD se debe verificar:
 | Dynamic (8) | Backend + QA | **Desarrollada - lista para revisión** |
 | Deployment (9) | DevOps | **Desarrollada - lista para revisión** |
 | Organización del código (10) | Backend + Frontend | **Desarrollada - lista para revisión** |
+| Flujos de negocio (11) | Arquitectura | **Desarrollada - 15 BPMN** |
 | Escenarios de validación (8.13) | Equipo | Pendiente de completar la matriz |
 | Revisión cruzada | Todo el equipo | Pendiente (SCRUM-301) |
 

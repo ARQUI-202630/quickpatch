@@ -1,3 +1,11 @@
+======================================================================
+EVIDENCIA DE PRUEBAS E2E — WEB ADMINISTRATIVO (SCRUM-318)
+Modo: Simulación Local Preparatoria (Pre-QA)
+Ambiente Objetivo: Local Mock Gateway (Node.js :8080)
+Nota Metodológica: Validación preparatoria de contratos y flujos W-01 a W-07.
+La ejecución formal contra QA queda programada para el despliegue en VM2.
+======================================================================
+
 newman
 
 QUICKPATCH — Web Administrativo y Gestión de Tenants (SCRUM-318)
