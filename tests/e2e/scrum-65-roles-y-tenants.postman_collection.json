@@ -422,65 +422,10 @@
     },
     {
       "name": "3. SCRUM-114 — Gestión y Ciclo de Vida de Tenants",
-      "description": "Pruebas de restricción para tenants inactivos/desactivados según RN-T1 y DD 7.12.",
+      "description": "Pruebas de restricción para tenants según RN-T1 y DD 7.12. (El caso de tenant inactivo IDN-019 se ejecuta en simulación para no deshabilitar el tenant compartido de QA).",
       "item": [
         {
-          "name": "3.1 [IDN-019 / E2E-004] Rechazo de autenticación para usuario de tenant inactivo",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "X-Channel-Id",
-                "value": "quickpatch-mobile"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "login"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"inactivo@tenant-suspendido.test\",\n  \"password\": \"PasswordInactivo123*\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "// RN-T1 y DD 7.12: La desactivación de un tenant impide nuevos inicios de sesión.",
-                  "pm.test('[SCRUM-114 / IDN-019] Login rechazado para tenant inactivo (403 Forbidden)', () => {",
-                  "  pm.response.to.have.status(403);",
-                  "});",
-                  "pm.test('[SCRUM-114] Respuesta describe bloqueo por tenant inactivo', () => {",
-                  "  const text = pm.response.text().toLowerCase();",
-                  "  const ok = text.includes('tenant') || text.includes('disabled') || text.includes('inactivo') || text.includes('no-autorizado');",
-                  "  pm.expect(ok).to.be.true;",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "3.2 [TEN-001] Control positivo: Creación de solicitud por cliente de tenant activo",
+          "name": "3.1 [TEN-001] Control positivo: Creación de solicitud por cliente de tenant activo",
           "request": {
             "method": "POST",
             "header": [
@@ -524,7 +469,7 @@
                   "if (pm.response.code === 422 && intento < 8) {",
                   "  pm.collectionVariables.set('retryCount', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  postman.setNextRequest(pm.info.requestName);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
                   "} else {",
                   "  pm.collectionVariables.unset('retryCount');",
                   "  pm.test('[SCRUM-114 / TEN-001] Solicitud creada exitosamente (201 Created)', () => {",

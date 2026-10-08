@@ -94,8 +94,8 @@ Esta suite complementa la verificación de seguridad del release validando espec
   - `IDN-001` a `IDN-003`: Autenticación RS256 contra `/api/v1/auth/login` y registro legítimo de cliente.
   - `IDN-012` & `CAT-010`: Rechazo de creación de solicitud por `admin_tenant` (403) y creación de categoría administrativa por `cliente` (403), verificando RFC 9457 `problems/no-autorizado`.
   - `IDN-017`: Rechazo inmediato de peticiones anónimas sin token (401), retornando `problems/no-autenticado`.
-  - `IDN-019` & `E2E-004`: Validación estricta de la regla **RN-T1** (bloqueo y rechazo de inicio de sesión para credenciales pertenecientes a un tenant inactivo/suspendido).
   - `TEN-001`: Control positivo de procesamiento de solicitudes para tenants activos (`buscando_tecnico`).
+  *(Nota: El caso de tenant inactivo IDN-019 se ejecuta en la suite de simulación para no deshabilitar ni depender de usuarios sintéticos en el tenant compartido de QA).*
 
 ### Ejecución
 
@@ -122,9 +122,9 @@ npx --yes newman run tests/e2e/scrum-65-roles-y-tenants.postman_collection.json 
 
 ## Flujo Web Administrativo y Gestión de Tenants (SCRUM-318)
 
-Pruebas de sistema de extremo a extremo que validan el flujo de administración web en Angular, los contratos REST de Identity/Plataforma y el control de acceso RBAC según los mockups de diseño W-01 a W-07 y DD 7.12:
+Pruebas de sistema de extremo a extremo que validan el flujo de administración web en Angular, los contratos REST de Identity/Plataforma y el control de acceso RBAC según los mockups de diseño W-01 a W-07 y DD 7.12. Se mantiene como archivo de simulación `scrum-318-web-admin.simulacion.json` para desacoplarlo del runner de CI (`*.postman_collection.json`) de QA:
 
-1. **Autenticación administrativa (W-01):** inicio de sesión en `/iniciar-sesion` para `admin_plataforma` y `admin_tenant` verificando claims de JWT y ausencia de selector manual de tenant en la interfaz.
+1. **Autenticación administrativa (W-01):** inicio de sesión en `/iniciar-sesion` para `admin_plataforma` (usando `{{platformAdminEmail}}` y `{{platformAdminPassword}}`) y `admin_tenant` verificando claims de JWT y ausencia de selector manual de tenant en la interfaz.
 2. **Manejo de errores de acceso (W-02):** rechazo de credenciales inválidas (401) y detección de cuenta bloqueada tras múltiples intentos fallidos (423 Locked bajo RN-U4).
 3. **Control de acceso por roles RBAC (W-03):** intentos de acceso de `admin_tenant` a la gestión de empresas devuelven 403 Forbidden (`/problems/no-autorizado`), interceptados por el guard de Angular con notificación toast y bloqueo de acceso.
 4. **Consulta y filtros de empresas (W-04):** listado de tenants por `admin_plataforma`, filtros por estado activo/inactivo y presencia de atributos requeridos (nombre, NIT, estado).
@@ -139,7 +139,7 @@ Para correr las pruebas localmente con el servidor mock del gateway:
 ```bash
 node tests/e2e/run-web-admin-e2e.js
 ```
-*Nota:* Ejecución preparatoria en desarrollo. La corrida formal contra el panel web desplegado en k3s (VM2) queda agendada para el pipeline de release.
+*Nota:* Ejecución preparatoria en desarrollo contra `scrum-318-web-admin.simulacion.json`. La corrida formal contra el panel web desplegado en k3s (VM2) queda agendada para el pipeline de release.
 
 #### Ejecución contra el Ambiente de QA en VM2
 ```bash
@@ -150,5 +150,5 @@ node tests/e2e/run-web-admin-e2e.js --remote
 La especificación de pruebas de interfaz en navegador se encuentra definida en `specs/web-admin.spec.ts`, modelando la sesión en `sessionStorage` con la clave `quickpatch.sesion` conforme a la arquitectura real de `apps/web/src/app/core/sesion.ts`. Su ejecución contra el navegador queda agendada para el entorno desplegado de QA una vez el panel web esté publicado en VM2. Para evitar que el runner de CI de `release/*` intente levantar un navegador headless sin el panel desplegado, el paquete se mantiene desacoplado del root de `tests/e2e/`.
 
 ### Evidencia de Validación de Contratos (Newman)
-`evidencias/scrum-318-web-admin-2026-10-07.txt`: corrida local preparatoria ejecutada con **Newman** sobre la colección `scrum-318-web-admin.postman_collection.json` contra el simulador de API del panel administrativo (`mock-admin-gateway.js`), con un resultado de **11 peticiones y 31 aserciones aprobadas sin fallos (100% Pass)**.
+`evidencias/scrum-318-web-admin-2026-10-07.txt`: corrida local preparatoria ejecutada con **Newman** sobre la suite `scrum-318-web-admin.simulacion.json` contra el simulador de API del panel administrativo (`mock-admin-gateway.js`), con un resultado de **11 peticiones y 31 aserciones aprobadas sin fallos (100% Pass)**.
 

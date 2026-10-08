@@ -11,7 +11,7 @@ const server = require('./mock-admin-gateway');
 
 const isRemote = process.argv.includes('--remote');
 const baseUrl = isRemote ? 'https://qa.quickpatch.internal' : 'http://localhost:8080';
-const collectionFile = path.join(__dirname, 'scrum-318-web-admin.postman_collection.json');
+const collectionFile = path.join(__dirname, 'scrum-318-web-admin.simulacion.json');
 
 function runNewman() {
   console.log(`\n======================================================`);
@@ -30,6 +30,8 @@ function runNewman() {
     '--env-var', `baseUrl=${baseUrl}`,
     '--env-var', `adminEmail=admin@quickpatch.internal`,
     '--env-var', `adminPassword=PasswordAdmin123*`,
+    '--env-var', `platformAdminEmail=platform-admin@quickpatch.internal`,
+    '--env-var', `platformAdminPassword=PasswordPlatformAdmin123*`,
     '--insecure',
     '--reporters', 'cli'
   ];

@@ -18,6 +18,14 @@
       "value": ""
     },
     {
+      "key": "platformAdminEmail",
+      "value": "platform-admin@quickpatch.internal"
+    },
+    {
+      "key": "platformAdminPassword",
+      "value": "PasswordPlatformAdmin123*"
+    },
+    {
       "key": "sufijo",
       "value": ""
     }
@@ -59,7 +67,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"platform-admin@quickpatch.internal\",\n  \"password\": \"{{adminPassword}}\"\n}"
+              "raw": "{\n  \"email\": \"{{platformAdminEmail}}\",\n  \"password\": \"{{platformAdminPassword}}\"\n}"
             }
           },
           "event": [
@@ -285,14 +293,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/tenants",
+              "raw": "{{baseUrl}}/api/v1/platform/tenants",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "admin",
+                "platform",
                 "tenants"
               ]
             }
@@ -331,14 +339,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/tenants",
+              "raw": "{{baseUrl}}/api/v1/platform/tenants",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "admin",
+                "platform",
                 "tenants"
               ]
             }
@@ -384,14 +392,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/tenants",
+              "raw": "{{baseUrl}}/api/v1/platform/tenants",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "admin",
+                "platform",
                 "tenants"
               ]
             }
@@ -436,14 +444,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/tenants?status=activo",
+              "raw": "{{baseUrl}}/api/v1/platform/tenants?status=activo",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "admin",
+                "platform",
                 "tenants?status=activo"
               ]
             }
@@ -493,17 +501,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/tenants/{{targetTenantId}}/status",
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{targetTenantId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "admin",
+                "platform",
                 "tenants",
-                "{{targetTenantId}}",
-                "status"
+                "{{targetTenantId}}"
               ]
             },
             "body": {
@@ -547,17 +554,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/tenants/{{targetTenantId}}/status",
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{targetTenantId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "admin",
+                "platform",
                 "tenants",
-                "{{targetTenantId}}",
-                "status"
+                "{{targetTenantId}}"
               ]
             },
             "body": {

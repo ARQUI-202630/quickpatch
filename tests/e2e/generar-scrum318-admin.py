@@ -74,6 +74,8 @@ coleccion = {
         {"key": "baseUrl", "value": "https://qa.quickpatch.internal"},
         {"key": "adminEmail", "value": ""},
         {"key": "adminPassword", "value": ""},
+        {"key": "platformAdminEmail", "value": "platform-admin@quickpatch.internal"},
+        {"key": "platformAdminPassword", "value": "PasswordPlatformAdmin123*"},
         {"key": "sufijo", "value": ""}
     ],
     "item": [
@@ -86,7 +88,7 @@ coleccion = {
                     "POST",
                     "/v1/auth/login",
                     [JSON_HDR, CORR_HDR, CHANNEL_HDR],
-                    {"email": "platform-admin@quickpatch.internal", "password": "{{adminPassword}}"},
+                    {"email": "{{platformAdminEmail}}", "password": "{{platformAdminPassword}}"},
                     pruebas=[
                         "pm.test('[W-01] Autenticación exitosa (200 OK)', () => {",
                         "  pm.response.to.have.status(200);",
@@ -167,7 +169,7 @@ coleccion = {
                 crear_req(
                     "3.1 [W-03 / SCRUM-64] admin_tenant intentando listar tenants → 403 Forbidden",
                     "GET",
-                    "/v1/admin/tenants",
+                    "/v1/platform/tenants",
                     [CORR_HDR, auth_hdr("tenantAdminToken")],
                     pruebas=[
                         "pm.test('[W-03] Código 403 Forbidden para rol admin_tenant', () => {",
@@ -181,7 +183,7 @@ coleccion = {
                 crear_req(
                     "3.2 [W-03 / IDN-017] Petición anónima a gestión de tenants → 401 Unauthorized",
                     "GET",
-                    "/v1/admin/tenants",
+                    "/v1/platform/tenants",
                     [CORR_HDR],
                     pruebas=[
                         "pm.test('[W-03] Código 401 Unauthorized sin credenciales', () => {",
@@ -198,7 +200,7 @@ coleccion = {
                 crear_req(
                     "4.1 [W-04] Consulta de tenants por admin_plataforma (200 OK)",
                     "GET",
-                    "/v1/admin/tenants",
+                    "/v1/platform/tenants",
                     [CORR_HDR, auth_hdr("platformAdminToken")],
                     pruebas=[
                         "pm.test('[W-04] Listado retornado exitosamente (200 OK)', () => {",
@@ -220,7 +222,7 @@ coleccion = {
                 crear_req(
                     "4.2 [W-04] Filtrado de tenants por estado 'activo'",
                     "GET",
-                    "/v1/admin/tenants?status=activo",
+                    "/v1/platform/tenants?status=activo",
                     [CORR_HDR, auth_hdr("platformAdminToken")],
                     pruebas=[
                         "pm.test('[W-04] Filtro activo responde 200 OK', () => {",
@@ -243,7 +245,7 @@ coleccion = {
                 crear_req(
                     "5.1 [W-05 / SCRUM-113] Desactivar tenant → 200 OK",
                     "PATCH",
-                    "/v1/admin/tenants/{{targetTenantId}}/status",
+                    "/v1/platform/tenants/{{targetTenantId}}",
                     [JSON_HDR, CORR_HDR, auth_hdr("platformAdminToken")],
                     {"status": "inactivo", "reason": "Suspensión administrativa por revisión de cumplimiento"},
                     pruebas=[
@@ -258,7 +260,7 @@ coleccion = {
                 crear_req(
                     "5.2 [W-06] Intento de actualización con versión obsoleta → 409 Conflict",
                     "PATCH",
-                    "/v1/admin/tenants/{{targetTenantId}}/status",
+                    "/v1/platform/tenants/{{targetTenantId}}",
                     [JSON_HDR, CORR_HDR, auth_hdr("platformAdminToken")],
                     {"status": "inactivo", "version": 0},
                     pruebas=[
@@ -291,6 +293,6 @@ coleccion = {
     ]
 }
 
-destino = pathlib.Path("tests/e2e/scrum-318-web-admin.postman_collection.json")
+destino = pathlib.Path("tests/e2e/scrum-318-web-admin.simulacion.json")
 destino.write_text(json.dumps(coleccion, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(f"Colección generada exitosamente en {destino}")
