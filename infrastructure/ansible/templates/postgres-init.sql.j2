@@ -1,0 +1,12 @@
+-- Se ejecuta solo la primera vez que se crea el volumen de datos: crea las bases y PostGIS.
+-- Los roles y los dueños de las bases los pone 02-roles.sql, que también se puede repetir (DD 10.2).
+REVOKE CONNECT ON DATABASE postgres FROM PUBLIC;
+{% for db in postgres_databases %}
+CREATE DATABASE db_{{ db }};
+REVOKE CONNECT ON DATABASE db_{{ db }} FROM PUBLIC;
+{% if db in postgis_databases %}
+\connect db_{{ db }}
+CREATE EXTENSION IF NOT EXISTS postgis;
+\connect postgres
+{% endif %}
+{% endfor %}

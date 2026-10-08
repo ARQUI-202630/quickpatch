@@ -1447,7 +1447,7 @@ tests/
 ├── performance/
 └── security/
 
-infrastructure/          → quickpatch-infrastructure (pasa a ser carpeta de este repositorio, SCRUM-338)
+infrastructure/          (Ansible e inventario de las VMs; antes quickpatch-infrastructure, SCRUM-338)
 
 docs/
 ├── requirements/
@@ -1457,7 +1457,7 @@ docs/
 └── governance/
 ```
 
-Cada repositorio de servicio contiene su código, sus pruebas unitarias y de integración, su `Dockerfile`, su pipeline de CI propio y los contratos como submódulos fijados en una versión: `contracts/api-gateway/` (REST) y `contracts/kafka/` (eventos). Web y mobile incluyen solo `contracts/api-gateway/`.
+Cada repositorio de servicio contiene su código, sus pruebas unitarias y de integración, su `Dockerfile`, sus manifiestos de k3s (`deploy/k8s/`), su pipeline de CI/CD propio y los contratos como submódulos fijados en una versión: `contracts/api-gateway/` (REST) y `contracts/kafka/` (eventos). Web y mobile incluyen solo `contracts/api-gateway/`.
 
 `apps/` concentra el código productivo; `tests/` contiene las pruebas transversales; `infrastructure/` contiene los artefactos asociados al despliegue; y los repositorios `quickpatch-api-gateway` y `quickpatch-kafka` mantienen las fronteras versionadas utilizadas por las aplicaciones y microservicios.
 
@@ -1465,7 +1465,7 @@ Cada repositorio de servicio contiene su código, sus pruebas unitarias y de int
 
 **Figura 34. Estructura del repositorio principal de QUICKPATCH.**
 
-La Figura 34 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones, contratos e infraestructura son submódulos. La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
+La Figura 34 representa la organización por carpetas, que se conserva en el repositorio principal; desde el ADR-013, las carpetas de aplicaciones y contratos son submódulos, e `infrastructure/` es una carpeta del propio repositorio (SCRUM-338). La organización interna detallada del código dentro de algunas aplicaciones todavía se incorporará conforme avance la implementación.
 
 ### 10.1.1 Responsabilidades por repositorio
 
@@ -1473,16 +1473,15 @@ Las historias no se asignan por especialidad fija (Working Agreements, «Distrib
 
 | Repositorio | Ruta en `quickpatch` | Responsabilidad | Rol propietario | Contratos que consume (fijados por tag) |
 |---|---|---|---|---|
-| `quickpatch` | raíz | Documentación (SRS, SAD, SDD, DD), contexto de agentes, pruebas del sistema completo (`tests/`) y punteros de los submódulos | Arquitectura (transversal) | — |
+| `quickpatch` | raíz | Documentación (SRS, SAD, SDD, DD), contexto de agentes, pruebas del sistema completo (`tests/`), punteros de los submódulos y aprovisionamiento de las VMs (`infrastructure/`, rol DevOps) | Arquitectura (transversal); DevOps (`infrastructure/`) | — |
 | `quickpatch-mobile` | `apps/mobile/` | App Flutter de clientes, empresas, técnicos y proveedores | Frontend | `contracts/api-gateway/` |
 | `quickpatch-web` | `apps/web/` | Panel Angular de `admin_tenant` y `admin_plataforma` | Frontend | `contracts/api-gateway/` |
 | `quickpatch-api-gateway` | `apps/api-gateway/` | Contratos REST (`openapi/`) y configuración de Nginx (`nginx/`) | Backend (contratos); DevOps (despliegue de Nginx) | — (es la fuente) |
 | `quickpatch-kafka` | `apps/kafka/` | Esquemas de eventos (`events/`), topics (`topics/topics.yaml`) y despliegue del broker (`deploy/`) | Backend (contratos); DevOps (despliegue) | — (es la fuente) |
 | `quickpatch-identity`, `-actors`, `-catalog`, `-service-request`, `-ranking`, `-payments`, `-communication` | `apps/backend/services/<servicio>/` | Un microservicio ASP.NET Core con su base de datos, migraciones, pruebas, `Dockerfile` y manifiestos k3s | Backend | `contracts/api-gateway/` y `contracts/kafka/` |
 | `quickpatch-matching` | `apps/backend/services/matching/` | Microservicio Java + Spring Boot de asignación de técnicos | Backend | `contracts/api-gateway/` y `contracts/kafka/` |
-| `quickpatch-infrastructure` | `infrastructure/` | Inventario y playbooks de Ansible, plantillas reutilizables de CI/CD | DevOps | — |
 
-`quickpatch-infrastructure` sigue como submódulo mientras los pipelines de despliegue dependan de sus plantillas; ADR-021 lo integra como carpeta del repositorio principal (SCRUM-338).
+`quickpatch-infrastructure` se archivó (ADR-021, SCRUM-338): Ansible pasó a `infrastructure/`, la configuración de Nginx a `quickpatch-api-gateway/nginx/`, el despliegue de Kafka a `quickpatch-kafka/deploy/`, y la imagen y el despliegue de cada componente a su propio `ci-cd.yml`.
 
 La solicitud SCRUM-288 nombra `quickpatch-contracts` como fuente contractual. Ese repositorio quedó reemplazado por ADR-021: los contratos REST viven en `quickpatch-api-gateway` y los de eventos en `quickpatch-kafka`, cada uno junto al componente que los expone.
 
