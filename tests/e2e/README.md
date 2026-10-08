@@ -1,4 +1,4 @@
-# e2e
+# Pruebas E2E y de Sistema (API) — QUICKPATCH
 
 Pruebas de sistema de QUICKPATCH contra el ambiente de QA. Las corre `.github/workflows/pruebas-sistema.yml` desde el runner de VM1 en cada `release/*` (compuerta 2 del Documento de Pruebas).
 
@@ -80,3 +80,38 @@ node tests/e2e/validar-diagnostico-error-qa.js --remote
 ### Documentación y Evidencia
 - Guía detallada: `docs/testing/diagnostico-error-qa.md`.
 - Evidencia de simulación: `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`.
+
+---
+
+## Suite E2E de Roles, Permisos y Aislamiento de Tenants (SCRUM-65, SCRUM-114)
+
+Esta suite complementa la verificación de seguridad del release validando específicamente el control de acceso por roles (RBAC), el aislamiento multi-tenant y la regla de ciclo de vida de tenants (RN-T1) según SAD, DD y el Documento de Pruebas (TD V1.4):
+
+- **Colección:** `scrum-65-roles-y-tenants.postman_collection.json`
+- **Casos cubiertos:**
+  - `IDN-001` a `IDN-003`: Autenticación RS256 contra `/api/v1/auth/login` y registro legítimo de cliente.
+  - `IDN-012` & `CAT-010`: Rechazo de creación de solicitud por `admin_tenant` (403) y creación de categoría administrativa por `cliente` (403), verificando RFC 9457 `problems/no-autorizado`.
+  - `IDN-017`: Rechazo inmediato de peticiones anónimas sin token (401), retornando `problems/no-autenticado`.
+  - `IDN-019` & `E2E-004`: Validación estricta de la regla **RN-T1** (bloqueo y rechazo de inicio de sesión para credenciales pertenecientes a un tenant inactivo/suspendido).
+  - `TEN-001`: Control positivo de procesamiento de solicitudes para tenants activos (`buscando_tecnico`).
+
+### Ejecución
+
+#### Simulación Local Preparatoria
+Para validar la suite en entorno local de desarrollo antes del despliegue en QA:
+```bash
+node tests/e2e/run-e2e.js
+```
+*Nota:* Ejecuta una simulación preparatoria con el mock local (`mock-gateway-qa.js`) que valida el 100% de contratos y aserciones. La ejecución formal contra el clúster de QA queda programada para ejecutarse una vez finalice el despliegue de VM2.
+
+#### Ejecución contra el Entorno de QA (VM2)
+```bash
+node tests/e2e/run-e2e.js --remote
+```
+O directamente con Newman:
+```bash
+npx --yes newman run tests/e2e/scrum-65-roles-y-tenants.postman_collection.json \
+  --env-var "baseUrl=https://qa.quickpatch.internal" \
+  --insecure \
+  --reporters cli
+```
