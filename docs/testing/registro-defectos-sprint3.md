@@ -56,7 +56,7 @@ Durante los ciclos de revisión de arquitectura, pruebas locales y simulación p
 | ID | Resumen del Defecto | HU Afectada | Severidad | Prioridad | Componente | Evidencia en Repositorio | Estado Final |
 |---|---|:---:|:---:|:---:|---|---|:---:|
 | **BUG-001** | Fallo en geolocalización por dependencia forzada de Google Location Services | SCRUM-27 (RF-07) | Alta | P1 | Mobile Flutter (`quickpatch-mobile#7`) | `tests/e2e/evidencias/movil/` (capturas 2 y 3) | **Verificado (Local)** |
-| **BUG-002** | Colisión de rango CIDR de k3s (`10.43.0.0/16`) con la subred física del laboratorio | SCRUM-334 (INF-010) | Crítica | P1 | Infraestructura (`deploy-k3s.yml`, INFRA §5.2) | `docs/infrastructure/INFRASTRUCTURE.md` v1.2 | **Verificado (Inspección)** |
+| **BUG-002** | Colisión de rango CIDR de k3s (`10.43.0.0/16`) con la subred física del laboratorio | Revisión de Infraestructura v1.2 (INF-010) | Crítica | P1 | Infraestructura (`deploy-k3s.yml`, INFRA §5.2) | `docs/infrastructure/INFRASTRUCTURE.md` v1.2 | **Verificado (Inspección)** |
 | **BUG-003** | Aserción permisiva y divergencia en validación de RN-T1 en suites de prueba | SCRUM-65 / 114 (RN-T1) | Media | P2 | E2E Postman Suite | `tests/e2e/scrum-65-roles-y-tenants.postman_collection.json` | **Corregido (Simulación)** |
 | **BUG-004** | Discrepancia de tipo Problem Details RFC 9457 en rechazo por cobertura geográfica | SCRUM-325 (RN-SR9) | Media | P2 | ServiceRequest / Diagnóstico | `tests/e2e/validar-diagnostico-error-qa.js` | **Corregido (Simulación)** |
 
@@ -82,7 +82,7 @@ Durante los ciclos de revisión de arquitectura, pruebas locales y simulación p
 ---
 
 ### BUG-002: Riesgo de colisión de rango CIDR de k3s con la red del laboratorio
-- **HU Afectada:** `SCRUM-334` (Redistribución de VMs) / `INF-010` (TD.md) / `INF-012`.
+- **HU Afectada:** revisión del Documento de Infraestructura v1.2, antes de instalar k3s / caso `INF-010` (TD.md).
 - **Severidad:** Crítica | **Prioridad:** P1.
 - **Ambiente:** Especificación de despliegue k3s (VM2 QA `10.43.98.15` y VM3 Prod `10.43.98.205`).
 - **Precondiciones:** Revisión crítica del diseño de infraestructura y playbooks de Ansible previo a la instalación del clúster k3s en las 7 VMs.
@@ -101,7 +101,7 @@ Durante los ciclos de revisión de arquitectura, pruebas locales y simulación p
 - **HU Afectada:** `SCRUM-65` / `SCRUM-114` (Roles y ciclo de vida de Tenants — RN-T1).
 - **Severidad:** Media | **Prioridad:** P2.
 - **Ambiente:** Suite de Pruebas de Roles y Permisos (Newman / API Gateway).
-- **Precondiciones:** Tenant desactivado administrativamente mediante `PATCH /api/v1/platform/tenants/{id}/status`.
+- **Precondiciones:** Tenant desactivado administrativamente mediante `PATCH /api/v1/platform/tenants/{id}` con `{ "status": "inactivo" }`.
 - **Pasos de Reproducción:**
   1. Ejecutar caso de prueba `IDN-019` intentando autenticación con usuario del tenant inactivo.
   2. Evaluar aserción de código HTTP en el script de prueba.
