@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "QUICKPATCH — MVP Sprint 3 (flujo de punta a punta)",
-    "description": "Administrador crea una categoría (Catalog publica catalog.category-changed) → cliente se registra e inicia sesión (Identity) → crea una solicitud (ServiceRequest valida la categoría en su réplica y publica service-request.created, que consume Matching) → consulta el detalle. Incluye casos negativos de autenticación, rol y cobertura, y la gestión de tenants del administrador de la plataforma (SCRUM-112). Variables: baseUrl (https://qa.quickpatch.internal), adminEmail, adminPassword, platformAdminEmail y platformAdminPassword (secretos de QA, nunca en el repositorio). Contratos: quickpatch-api-gateway/openapi.",
+    "description": "Administrador crea una categoría (Catalog publica catalog.category-changed) → cliente se registra e inicia sesión (Identity) → crea una solicitud (ServiceRequest valida la categoría en su réplica y publica service-request.created, que consume Matching) → consulta el detalle. Incluye casos negativos de autenticación, rol y cobertura, la gestión de tenants del administrador de la plataforma (SCRUM-112) y los casos de SCRUM-287: perfil, correo y documento repetidos, login fallido y bloqueo, solicitud de otro cliente, desactivación de categoría y registro de técnico. Variables: baseUrl (https://qa.quickpatch.internal), adminEmail, adminPassword, platformAdminEmail y platformAdminPassword (secretos de QA, nunca en el repositorio). Contratos: quickpatch-api-gateway/openapi.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -292,6 +292,104 @@
                   "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
                   "});",
                   "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Perfil del cliente (GET /v1/users/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con su propio usuario', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const u = pm.response.json();",
+                  "  pm.expect(u.email).to.eql('cliente.' + pm.collectionVariables.get('sufijo') + '@quickpatch.test');",
+                  "  pm.expect(u.role).to.eql('cliente');",
+                  "  pm.expect(u.verificationStatus).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Correo repetido → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Cliente repetido\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo correo-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/correo-registrado$/));"
                 ]
               }
             }
@@ -693,6 +791,353 @@
               }
             }
           ]
+        },
+        {
+          "name": "Contraseña incorrecta → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Incorrecta123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo credenciales-invalidas', () => pm.expect(pm.response.json().type).to.match(/\\/credenciales-invalidas$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro de un cliente para el bloqueo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"bloqueo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Cliente bloqueo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 registrado', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos fallidos hasta el bloqueo → 423",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"bloqueo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Incorrecta123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// RN-U4: al 5.º intento fallido la cuenta queda bloqueada 15 minutos (LockoutPolicy.Default).",
+                  "const n = Number(pm.collectionVariables.get('fallidos') || 0) + 1;",
+                  "if (pm.response.code === 401 && n < 10) {",
+                  "  pm.collectionVariables.set('fallidos', n);",
+                  "  postman.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('fallidos');",
+                  "  pm.test('423 al llegar al máximo de intentos', () => pm.response.to.have.status(423));",
+                  "  pm.test('bloqueo al 5.º intento', () => pm.expect(n).to.eql(5));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Contraseña correcta durante el bloqueo → 423",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"bloqueo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('423', () => pm.response.to.have.status(423));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo cuenta-bloqueada', () => pm.expect(pm.response.json().type).to.match(/\\/cuenta-bloqueada$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro de un segundo cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"otro.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Otro cliente\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 registrado', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del segundo cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"otro.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('otroToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Solicitud de otro cliente → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{otroToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitudId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404, sin revelar que existe', () => pm.response.to.have.status(404));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -1086,6 +1531,471 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Catálogo: desactivar una categoría (SCRUM-287)",
+      "item": [
+        {
+          "name": "Crear una categoría para desactivar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/admin/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "admin",
+                "categories"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cerrajería {{sufijo}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('categoriaInactivaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar la categoría",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/admin/categories/{{categoriaInactivaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "admin",
+                "categories",
+                "{{categoriaInactivaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 inactiva y con updatedAt', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().active).to.eql(false);",
+                  "  pm.expect(pm.response.json().updatedAt).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El cliente ya no la ve",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "categories"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 sin la categoría inactiva', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().map(c => c.id)).to.not.include(pm.collectionVariables.get('categoriaInactivaId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Categoría inexistente → 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/admin/categories/{{$guid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "admin",
+                "categories",
+                "{{$guid}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo no-encontrado', () => pm.expect(pm.response.json().type).to.match(/\\/no-encontrado$/));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Técnico (SCRUM-287)",
+      "item": [
+        {
+          "name": "Registro de técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/technician",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Técnico de prueba\",\n  \"phone\": \"3007654321\",\n  \"documentId\": \"{{documento}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('documento', String(Date.now()).slice(-10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 pendiente de verificación', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().role).to.eql('tecnico');",
+                  "  pm.expect(pm.response.json().verificationStatus).to.eql('pendiente');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Documento repetido → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/technician",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico2.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Técnico repetido\",\n  \"phone\": \"3007654321\",\n  \"documentId\": \"{{documento}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo documento-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/documento-registrado$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol tecnico', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('tecnico');",
+                  "});",
+                  "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Perfil del técnico muestra la verificación",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con verificationStatus pendiente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().verificationStatus).to.eql('pendiente');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico no crea solicitudes → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Fuga de agua debajo del lavaplatos\",\n  \"location\": {\n    \"latitude\": 4.6533,\n    \"longitude\": -74.0836\n  },\n  \"addressText\": \"Calle 45 # 13-20\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
                   "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
                   "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
