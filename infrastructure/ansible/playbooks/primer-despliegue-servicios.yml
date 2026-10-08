@@ -1,0 +1,80 @@
+# Primer despliegue de los servicios en el k3s de un ambiente: sus Secret (desde Ansible Vault) y sus manifiestos.
+# Corre en VM1, que tiene kubectl y los kubeconfig de los dos ambientes (deploy-runner.yml).
+#
+#   ./ap playbooks/primer-despliegue-servicios.yml -e ambiente=qa
+#   ./ap playbooks/primer-despliegue-servicios.yml -e ambiente=produccion
+#   -e servicios='["identity"]'     solo algunos
+#   -e ref=<rama o etiqueta>        versión de los manifiestos (por defecto develop)
+#
+# Los Deployment quedan esperando su imagen (:pendiente) hasta que el pipeline de cada servicio la publique con un push
+# a release/*; el init container aplica entonces las migraciones. Después hay que correr aplicar-roles-db.yml.
+# Se puede repetir sin riesgo: si el Deployment ya corre una imagen publicada, se conserva (no vuelve a :pendiente).
+- name: Secret y manifiestos de los servicios en k3s
+  hosts: gateway
+  gather_facts: false
+  become: true
+  become_user: "{{ deploy_user }}"
+  vars:
+    ambiente: qa
+    ref: develop
+    servicios: [identity, catalog, service_request, matching]
+    amb:
+      qa: { kubeconfig: config-qa, datos: "{{ ip.vm5 }}", kafka: "{{ ip.vm7 }}", pw: "{{ vault_qa_db_roles_passwords }}" }
+      produccion: { kubeconfig: config-produccion, datos: "{{ ip.vm4 }}", kafka: "{{ ip.vm6 }}", pw: "{{ vault_db_roles_passwords }}" }
+    e: "{{ amb[ambiente] }}"
+    jwt: "{{ vault_jwt_keys[ambiente] }}"
+    admins: "{{ vault_identity_admins[ambiente] }}"
+    kubectl: "kubectl --kubeconfig /home/{{ deploy_user }}/.kube/{{ e.kubeconfig }} -n quickpatch"
+  tasks:
+    - name: Exigir un ambiente conocido
+      ansible.builtin.assert:
+        that: ambiente in amb
+        fail_msg: "-e ambiente=qa o -e ambiente=produccion"
+
+    - name: Secret de cada servicio
+      ansible.builtin.command: "{{ kubectl }} apply -f -"
+      args:
+        stdin: "{{ lookup('ansible.builtin.template', playbook_dir ~ '/../templates/secreto-servicio.yaml.j2') }}"
+      loop: "{{ servicios }}"
+      loop_control: { label: "{{ item | replace('_', '-') }}-secretos" }
+      register: secretos
+      changed_when: "'created' in secretos.stdout or 'configured' in secretos.stdout"
+      no_log: true
+
+    # Los manifiestos traen la imagen `:pendiente`. Si el Deployment ya corre otra (el pipeline la fijó), aplicar el manifiesto
+    # tal cual la devolvería a `:pendiente` y rompería el servicio. Por eso se conserva la imagen que corre hoy.
+    - name: Imagen que corre hoy, si el Deployment ya existe
+      ansible.builtin.command: >-
+        {{ kubectl }} get deployment {{ item | replace('_', '-') }}
+        -o jsonpath={.spec.template.spec.containers[0].image}
+      loop: "{{ servicios }}"
+      register: imagen_actual
+      changed_when: false
+      failed_when: false
+
+    # El manifiesto viene del repositorio de cada servicio; solo cambian las IPs del ambiente (Kafka y, en Matching, la base).
+    - name: Manifiestos de cada servicio
+      ansible.builtin.command: "{{ kubectl }} apply -f -"
+      args:
+        stdin: >-
+          {{ lookup('ansible.builtin.url', url_manifiesto, split_lines=false)
+          | replace('<vm-mensajeria>', e.kafka) | replace('<vm-datos>', e.datos)
+          | replace(imagen_pendiente, imagen_vigente) }}
+      vars:
+        repo: "quickpatch-{{ item | replace('_', '-') }}"
+        url_manifiesto: "https://raw.githubusercontent.com/ARQUI-202630/{{ repo }}/{{ ref }}/deploy/k8s/{{ item | replace('_', '-') }}.yaml"
+        imagen_pendiente: "ghcr.io/arqui-202630/{{ repo }}:pendiente"
+        actual: "{{ imagen_actual.results[idx] }}"
+        imagen_vigente: "{{ actual.stdout if actual.rc == 0 and actual.stdout else imagen_pendiente }}"
+      loop: "{{ servicios }}"
+      loop_control: { label: "{{ item | replace('_', '-') }}", index_var: idx }
+      register: manifiestos
+      changed_when: "'created' in manifiestos.stdout or 'configured' in manifiestos.stdout"
+
+    - name: Estado de los Deployment
+      ansible.builtin.command: "{{ kubectl }} get deployment,pods"
+      register: estado
+      changed_when: false
+
+    - name: Mostrar
+      ansible.builtin.debug: { msg: "{{ estado.stdout_lines }}" }

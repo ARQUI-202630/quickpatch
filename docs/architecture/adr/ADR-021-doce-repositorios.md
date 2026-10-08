@@ -5,7 +5,7 @@
 - **Decisión:** La solución tiene 12 repositorios —Flutter, Angular, API Gateway, los 8 microservicios y Apache Kafka—, unidos por el repositorio principal `quickpatch`. Los contratos REST viven en el repositorio del API Gateway y los de eventos en el de Kafka; cada repositorio tiene su propio pipeline de CI
 - **Atributo priorizado:** AC7 Maintainability (Modularity: cada pieza desplegable o compartida tiene un dueño, un historial y un pipeline propios)
 - **Atributo sacrificado:** costo de coordinación (los servicios dependen de dos repositorios de contratos; el CI se repite por stack en cada repositorio)
-- **Implementación:** SCRUM-333 (SCRUM-335, 336 y 337); `quickpatch` PR #40
+- **Implementación:** SCRUM-333 (SCRUM-335, 336, 337 y 338); `quickpatch` PR #40
 
 ## Contexto
 
@@ -30,7 +30,7 @@ Había además una dependencia que la nueva composición no podía conservar: to
 - **Contratos:** cada servicio incluye `contracts/api-gateway/` y `contracts/kafka/` como submódulos fijados en un tag; web y mobile solo `contracts/api-gateway/`. El dueño de cada contrato sigue siendo el servicio que lo provee o produce; el repositorio solo lo aloja y valida su compatibilidad.
 - **CI por repositorio:** cada repositorio tiene su workflow de CI completo según su stack, sin llamar a workflows de otro repositorio. La cobertura se mide con un script dentro del mismo repositorio.
 - **Recursos por servicio:** cada servicio tiene su base de datos (ADR-014) y, si los necesita, su caché en Redis y sus buckets en Garage, con credenciales propias. Esa configuración se documenta en el repositorio del servicio.
-- `quickpatch-contracts` quedó archivado, con su historial, y `quickpatch-infrastructure` se archivará cuando termine SCRUM-338.
+- `quickpatch-contracts` y `quickpatch-infrastructure` quedaron archivados, con su historial (SCRUM-338).
 
 Las reglas de trabajo de ADR-013 (orden de publicación, submódulos sin rama, versión del sistema como tag del principal) siguen vigentes.
 
@@ -59,10 +59,10 @@ Las reglas de trabajo de ADR-013 (orden de publicación, submódulos sin rama, v
 - `quickpatch-api-gateway` y `quickpatch-kafka` creados con tag `v0.2.0`, que contiene los mismos contratos que `quickpatch-contracts@develop`.
 - Los 8 servicios, web y mobile pasaron a los contratos nuevos y a su CI propio, con CI en verde en el PR y en `develop` (incluye pruebas de integración).
 - `tools/validate-composition.sh` comprueba los 12 submódulos y los contratos de cada consumidor en un tag.
+- SCRUM-338: Ansible pasó a `infrastructure/`; la configuración de Nginx a `quickpatch-api-gateway/nginx/` y el despliegue de Kafka, con la creación de los topics, a `quickpatch-kafka/deploy/`, que Ansible usa desde los submódulos. La imagen y el despliegue a QA y producción están en el `ci-cd.yml` de cada componente, sin workflows de otros repositorios.
 
 ## Pendientes
 
-- SCRUM-338 (DevOps): trasladar Ansible a `infrastructure/`, el despliegue de Kafka a `quickpatch-kafka/deploy/` y la configuración del gateway a `quickpatch-api-gateway/nginx/`; despliegue (CD) en cada repositorio; archivar `quickpatch-infrastructure`.
 - SCRUM-339: configuración de base de datos, Redis y Garage por servicio.
 - Figuras 08 y 09 del SDD: todavía muestran `contracts/openapi/` y `contracts/events/` como rutas; la figura 07 ya se regeneró con su fuente en `diagrams/sdd/src/`.
 

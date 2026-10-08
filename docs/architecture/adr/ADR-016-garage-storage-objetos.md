@@ -6,7 +6,7 @@
 - **Atributos priorizados:** AC6 Security (un solo puerto expuesto, llaves separadas por uso) y uso de recursos de VM7 (AC2)
 - **Atributos sacrificados:** funciones avanzadas de S3 (versionado, bloqueo de objetos) y consola web
 - **Driver y restricciones:** D7 (evidencia fotográfica), R5, R10
-- **Implementación:** `quickpatch-infrastructure` (Ansible, llaves en Ansible Vault)
+- **Implementación:** `infrastructure/ansible` del repositorio principal (antes `quickpatch-infrastructure`; llaves en Ansible Vault)
 
 ## Contexto
 
