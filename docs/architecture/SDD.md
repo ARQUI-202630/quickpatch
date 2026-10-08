@@ -2,7 +2,7 @@
 
 **Proyecto:** QUICKPATCH - Plataforma multi-tenant de servicios técnicos  
 **Documento:** Descripción de Diseño de Software (SDD)  
-**Estado:** Borrador integrable - organizado según el modelo C4 (sección 2.2)  
+**Estado:** V2 aprobada en revisión funcional (SCRUM-301, sección 13.1) - organizada según el modelo C4 (sección 2.2)  
 **Fecha:** Octubre de 2026
 
 ---
@@ -457,16 +457,19 @@ Cada cambio de categoría se guarda junto con el evento `catalog.category-change
 | `Rating` | Entidad | Registra la evaluación posterior al servicio. |
 | `ServiceRequestStatus` | Value Object / Enum conceptual | Estado válido de la solicitud. |
 
-**Estados actuales:**
+**Estados (máquina completa en DD 7.4):**
 
 ```text
-buscando_tecnico
-    -> en_espera
-    -> asignado
-    -> en_progreso
-    -> completado
-    -> pagado
+buscando_tecnico -> asignado | en_espera | cancelado
+en_espera        -> buscando_tecnico | cancelado
+asignado         -> cotizado | cancelado
+cotizado         -> cotizacion_aceptada | asignado (rechazo, máximo 3, RN-Q7) | cancelado
+cotizacion_aceptada -> en_progreso | cancelado
+en_progreso      -> completado (con evidencia)
+completado       -> pagado (payment.rejected no cambia el estado, RN-SR5)
 ```
+
+El código ya define los nueve estados (`ServiceRequestStatus`), pero hoy solo la creación usa uno (`buscando_tecnico`, contrato `service-request.v1.yaml` 1.0.0); las transiciones llegan con sus historias (RF-10, RF-34, RF-35, RF-36, RF-14 y RF-22).
 
 **Datos documentados:** `service_requests`, `service_request_categories` (réplica), `outbox_events`, `processed_events` y `ratings` (planeado). `service_categories` es de Catalog Service (DD 5.4); la réplica es la tabla 5.20.
 
@@ -480,6 +483,8 @@ buscando_tecnico
 - consume `matching.no-technician-available`;
 - consume `payment.approved`;
 - consume `payment.rejected` cuando corresponda al flujo.
+
+Los demás eventos de la solicitud (cotización, inicio, cancelación y calificación) y sus consumidores están en el DD 8.4.
 
 **Componentes (C4).**
 
@@ -722,7 +727,7 @@ La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máqui
 | **Servicio de Cache y Colas Cortas** | Redis | VM4 (`10.43.98.209`) | Cache en memoria y coordinación temporal; un usuario por servicio restringido a sus claves. |
 | **Bus de Eventos (Broker)** | Apache Kafka + Kafka UI (`quickpatch-kafka`) | VM6 (`10.43.99.12`) | Mensajería distribuida asíncrona entre microservicios. |
 | **Storage de Evidencias Fotográficas** | Garage (S3-compatible) | VM6 (`10.43.99.12`) | Repositorio de objetos para evidencias fotográficas (D7) y respaldos de PostgreSQL. |
-| **Stack de Observabilidad** | Prometheus + Loki + Grafana | VM1 (`10.43.100.168`, herramientas) | Métricas, logs estructurados y dashboards de los dos ambientes. |
+| **Stack de Observabilidad** | Prometheus + Loki + Grafana | VM1 (`10.43.100.168`, herramientas) | Métricas, logs estructurados con `correlationId` y alertas de caída de servicio de los dos ambientes (RF-28). |
 
 ## 8.2 Flujos síncronos y asíncronos
 
@@ -1298,7 +1303,7 @@ Los diagramas de despliegue de C4 muestran dónde se ejecuta cada contenedor: la
 
 ## 9.1 Producción y QA
 
-El diagrama muestra la distribución aprobada en ADR-022: VM1 de herramientas y entrada, producción en VM3, VM4 y VM6, y QA con la misma forma en VM2, VM5 y VM7. La implementación está en curso (SCRUM-334); hasta que termine, la distribución operativa es la del Documento de Infraestructura, sección 3.2.
+El diagrama muestra la distribución aprobada en ADR-022: VM1 de herramientas y entrada, producción en VM3, VM4 y VM6, y QA con la misma forma en VM2, VM5 y VM7. La distribución está aplicada en las VMs (SCRUM-334); el detalle operativo está en el Documento de Infraestructura, sección 3.
 
 ![Despliegue de producción (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-Produccion.png)
 
@@ -1322,7 +1327,7 @@ flowchart TB
     P["Producción<br/>VM3, VM4 y VM6<br/>persistente, siempre activo"]
 
     L -->|"push a feature/*"| D
-    D -->|"merge a develop"| Q
+    D -->|"rama release/*"| Q
     Q -->|"merge a main"| P
 
     style L fill:#EBEBEB,stroke:#555555,stroke-width:1.5px
@@ -1968,7 +1973,29 @@ Antes de consolidar una versión final del SDD se debe verificar:
 | Organización del código (10) | Backend + Frontend | **Desarrollada - lista para revisión** |
 | Flujos de negocio (11) | Arquitectura | **Desarrollada - 15 BPMN** |
 | Escenarios de validación (8.13) | Equipo | Pendiente de completar la matriz |
-| Revisión cruzada | Todo el equipo | Pendiente (SCRUM-301) |
+| Revisión funcional | Product Owner | **Realizada - V2 aprobada** (SCRUM-301, sección 13.1) |
+
+## 13.1 Revisión funcional del SDD V2 (SCRUM-301)
+
+Revisión del 8 de octubre de 2026 con los criterios de SCRUM-301: que el documento sea comprensible para el Product Owner, consistente con el SRS, que no invente alcance y que C4 reemplace a 4+1.
+
+|Criterio|Cómo se verificó|Resultado|
+|---|---|---|
+|C4 reemplaza a 4+1|Búsqueda de "4+1" y de los nombres de sus vistas (lógica, procesos, física, escenarios)|Sin restos. Las secciones 3 a 9 usan los nombres de C4 y la 2.2 explica el modelo y el inventario de vistas.|
+|Consistencia con el SRS|Todos los RF, RNF y RN citados existen en el SRS V4 y el DD v3.1|Todos existen. Faltaba trazar RF-28 (logs centralizados, correlación y alertas): se agrega en la sección 8.1.|
+|No inventa alcance|Contenedores, componentes y eventos comparados con el SRS, el DD y los contratos publicados|Sin alcance nuevo. Lo que todavía no está implementado está marcado como planeado (estilo punteado en C4) o como pendiente de decisión (canal en tiempo real, DD 8.5).|
+|Comprensible para el PO|Lectura de las secciones 1 a 5 y 11 sin conocimiento técnico previo|Se entiende: el System Context y los BPMN de la sección 11 describen el negocio sin detalles técnicos, y cada figura tiene un texto que la explica.|
+|Aplicaciones cliente explícitas|Sección 6.2|Panel Web para `admin_tenant` y `admin_plataforma`; app móvil para cliente, empresa, técnico y proveedor.|
+|Despliegue|Sección 9|Producción como vista principal; QA aparece porque tiene la misma forma (ADR-022) y el detalle operativo queda en el Documento de Infraestructura.|
+
+**Observaciones corregidas en esta revisión:**
+
+1. La sección 6.7 listaba seis estados de la solicitud; faltaban `cotizado`, `cotizacion_aceptada` y `cancelado` (RF-34 a RF-36, DD 7.4). Se reemplazó por la máquina completa y se indica qué está implementado.
+2. La figura 32 decía que QA se despliega al fusionar en `develop`; según ADR-015 y la sección 6.2 del Documento de Infraestructura se despliega desde `release/*`.
+3. La sección 9.1 presentaba la redistribución de VMs como en curso; SCRUM-334 está terminada.
+4. RF-28 no aparecía en el documento; se traza en el stack de observabilidad (sección 8.1).
+
+**Observaciones para el SDD V3 (SCRUM-424):** la matriz de escenarios de validación (8.13) sigue incompleta, y la lista de verificación de la sección 12 debe revisarse contra el incremento del Sprint 4.
 
 ---
 
