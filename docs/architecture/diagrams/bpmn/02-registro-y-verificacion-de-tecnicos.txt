@@ -1,0 +1,20 @@
+Técnico: (Quiere prestar servicios)
+Técnico: Registrarse con datos y documentos
+Quickpatch: Dejar al técnico pendiente de verificación
+Admin del tenant: Revisar documentos del técnico
+Admin del tenant: Aprobar técnico
+Quickpatch: Habilitar al técnico y avisarle
+Técnico: (Habilitado para recibir servicios)
+
+Técnico: (Quiere prestar servicios)
+Técnico: Registrarse con datos y documentos
+Quickpatch: Dejar al técnico pendiente de verificación
+Admin del tenant: Revisar documentos del técnico
+Admin del tenant: Rechazar técnico
+Quickpatch: Avisar el rechazo al técnico
+Técnico: (Registro rechazado)
+
+Admin del tenant: (Técnico con incumplimientos)
+Admin del tenant: Suspender técnico
+Quickpatch: Dejar de ofrecerle servicios y avisarle
+Técnico: (Técnico suspendido)
