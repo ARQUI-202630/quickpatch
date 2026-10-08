@@ -1983,7 +1983,7 @@ _Cuadro 10: Contenido de `data` por evento_
 
 ### 8.5 Canal en tiempo real
 
-RF-11 y RNF-06 exigen que el cliente vea los cambios de estado en menos de un minuto, y el driver D2 del SAD pide entregarlos sin que el cliente consulte por su cuenta. El SAD (sección 4.1) prevé WebSocket entre las aplicaciones y el API Gateway.
+RF-11 y RNF-06 exigen que el cliente vea los cambios de estado en menos de un minuto, y el driver D2 del SAD pide entregarlos sin que el cliente consulte por su cuenta. El canal está **pendiente de decisión** (SAD 4.1; SDD, sección 5.1): WebSocket entre las aplicaciones y el API Gateway, como se describe a continuación, o notificaciones push más consulta del estado por REST. Esta sección es la propuesta para la opción WebSocket y no se implementa hasta que el equipo decida; mientras tanto, la app consulta el estado con `GET /v1/service-requests/{id}`.
 
 - La aplicación abre `wss://<gateway>/v1/realtime` con el token de acceso como parámetro de la primera trama (no en la URL, para que no quede en los logs del Gateway).
 - Communication Service consume los eventos de la sección 8.4 y envía a cada usuario conectado los que le corresponden: al cliente, los de sus solicitudes; al técnico, sus ofertas y los cambios de las solicitudes que tiene asignadas; al `admin_tenant`, los cambios de conteo del panel.
