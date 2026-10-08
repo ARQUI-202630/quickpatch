@@ -164,6 +164,11 @@ jobs:
 
       # PRF-001 a PRF-007: los umbrales (thresholds) de cada script deciden si la prueba pasa.
       - name: k6 contra QA
+        env:
+          # Cliente de QA con el que los scripts inician sesión en su setup (sin él, k6 aborta); secretos, nunca en el repo.
+          # k6 run expone las variables de entorno del sistema en __ENV, así que no van en la línea de comandos.
+          QA_CLIENT_EMAIL: ${{ secrets.QA_CLIENT_EMAIL }}
+          QA_CLIENT_PASSWORD: ${{ secrets.QA_CLIENT_PASSWORD }}
         run: |
           shopt -s nullglob
           scripts=(tests/performance/*.js)
