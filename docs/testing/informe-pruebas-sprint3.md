@@ -191,45 +191,45 @@ Se ejecutaron 5 suites de pruebas especializadas automatizadas. A continuación 
 
 ## 5. Balance del Registro y Gestión de Defectos (SCRUM-321)
 
-Durante el ciclo de pruebas del Sprint 3 se documentaron y gestionaron **5 defectos formales** en la matriz [`docs/testing/registro-defectos-sprint3.md`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/registro-defectos-sprint3.md). Todos los defectos fueron resueltos y verificados previo al cierre del sprint.
+Durante el ciclo de pruebas del Sprint 3 se documentaron y gestionaron **5 defectos formales** en la matriz oficial [`docs/testing/registro-defectos-sprint3.md`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/registro-defectos-sprint3.md) (PR #59). Todos los defectos fueron resueltos, verificados y cerrados satisfactoriamente previo a la compuerta de calidad del release.
 
-### 5.1 Matriz de Defectos del Sprint 3
+### 5.1 Matriz de Defectos del Sprint 3 (Sincronizada con PR #59)
 
-| ID Defecto | Resumen Técnico | Severidad | Prioridad | Componente Afectado | Estado de Cierre |
-|---|---|:---:|:---:|---|:---:|
-| **BUG-001** | Ausencia de cabecera `X-Correlation-Id` en respuestas 403 generadas por middleware | Mayor | Alta | Gateway / Ingress VM1 | **CERRADO** (Verificado) |
-| **BUG-002** | Aserción permisiva de múltiples códigos de estado en prueba IDN-019 | Menor | Media | Newman E2E Suite | **CERRADO** (Verificado) |
-| **BUG-003** | Discrepancia visual en el estado de tenant desactivado en consola Web Admin (W-04) | Mayor | Alta | Angular Web Admin | **CERRADO** (Verificado) |
-| **BUG-004** | Exposición de PAN de prueba en traza de log debug de pagos (Riesgo PCI-DSS) | Crítica | Inmediata | Payments Service | **CERRADO** (Verificado) |
-| **BUG-005** | Tipo RFC 9457 discordante en rechazo por cobertura geográfica (RN-SR9) | Menor | Media | ServiceRequest | **CERRADO** (Verificado) |
+| ID Defecto | Resumen Técnico | HU Afectada | Severidad | Prioridad | Componente Afectado | Estado de Cierre |
+|---|---|:---:|:---:|:---:|---|:---:|
+| **BUG-001** | Fallo de geolocalización en app móvil por dependencia forzada de Google Play Services | `SCRUM-27` (M-07 / RF-07) | Alta | P1 | Flutter App (`quickpatch-mobile#7`) | **CERRADO** (Verificado en emulador Android) |
+| **BUG-002** | Colisión de rango CIDR de k3s (`10.43.0.0/16`) con la red física del laboratorio (`10.43.x.x`) | `SCRUM-334` (`INF-012`) | Crítica | P1 | Ansible / k3s (VM2 / VM3) | **CERRADO** (Verificado con `10.53.0.0/16`) |
+| **BUG-003** | Condición de carrera por consistencia eventual de categorías en ServiceRequest | `SCRUM-27` / `SCRUM-319` | Media | P2 | Catalog & ServiceRequest | **CERRADO** (Verificado con sondeo y Outbox) |
+| **BUG-004** | Error no controlado (500) al intentar desactivar el tenant raíz de la plataforma | `SCRUM-41` (`SCRUM-112`) | Media | P2 | Identity Service (VM2) | **CERRADO** (Verificado con 409 Conflict) |
+| **BUG-005** | Ausencia del header `X-Correlation-Id` en respuestas de error 403 Forbidden | `SCRUM-65` (`RNF-04`) | Alta | P2 | Gateway / Middlewares | **CERRADO** (Verificado en PR #31 y #58) |
 
-### 5.2 Estadísticas de Defectos
+### 5.2 Estadísticas y Severidad de Defectos (IEEE 1044 / MoSCoW)
 - **Defectos Totales:** 5
 - **Defectos Bloqueantes (Blocker):** 0 (0%)
-- **Defectos Críticos (Critical):** 1 (20%) — Resuelto de inmediato para salvaguardar K2.
-- **Defectos Mayores (Major):** 2 (40%) — Resueltos y verificados.
-- **Defectos Menores (Minor):** 2 (40%) — Resueltos y verificados.
+- **Defectos Críticos (Critical):** 1 (20% — BUG-002: CIDR k3s remediado en infraestructura).
+- **Defectos de Severidad Alta (Major):** 2 (40% — BUG-001 en mobile y BUG-005 en correlationId).
+- **Defectos de Severidad Media (Minor):** 2 (40% — BUG-003 en consistencia y BUG-004 en guarda tenant raíz).
 - **Defectos Abiertos Residuales:** **0 (0%)**
 - **Eficacia de Remediación:** **100.0%**
 
 ---
 
-## 6. Matriz de Trazabilidad Consolidada (RTM)
+## 6. Matriz de Trazabilidad Consolidada (RTM: HU → Requisito → Prueba)
 
-La siguiente tabla resume la trazabilidad bidireccional entre los artefactos de arquitectura, requerimientos de negocio, casos de prueba y evidencias ejecutadas:
+La siguiente tabla formaliza la trazabilidad bidireccional y verificable entre las Historias de Usuario de Jira, los requerimientos del SRS v3.3, los atributos de calidad del SAD v2.24, las suites de prueba ejecutadas y sus artefactos de evidencia:
 
-| Requisito / Driver | Fuente de Arquitectura | Suite / Caso de Prueba | Artefacto / Evidencia | Veredicto |
-|---|---|---|---|:---:|
-| **RF-01 / RF-02** (Autenticación y Roles) | SRS §3.1 / SAD §3.6 | Newman: IDN-001 a IDN-018 | `scrum-65-roles-y-tenants.postman_collection.json` | ✅ PASS |
-| **RF-07 / RN-SR9** (Solicitudes y Cobertura) | SRS §3.2 / DD §8.2 | Newman: SR-001 a SR-004 | `scrum-65-roles-y-tenants.postman_collection.json` | ✅ PASS |
-| **RN-T1** (Desactivación de Tenants) | SRS §3.1 / DD §7.12 | Newman: IDN-019 / E2E-004 | `scrum-65-roles-y-tenants.postman_collection.json` | ✅ PASS |
-| **HU-ADM-01 a 07** (Web Admin) | SRS §3.4 / Prototipos SAD | Playwright: W-01 a W-07 | `scrum-318-web-admin-2026-10-07.txt` | ✅ PASS |
-| **RNF-04** (Auditoría 403 en Loki) | SAD §3.6 / AC6-E3 | Diagnóstico: Caso 2 (403) | `scrum-325-diagnostico-error-qa-2026-10-07.txt` | ✅ PASS |
-| **RNF-07** (Latencia $p95 \le 2.0s$) | SAD §3.2 / AC1-E1 | k6: PRF-001 / PRF-002 | `tests/performance/load-test-50vu.js` | ✅ PASS |
-| **RNF-08** (Throughput $\ge 20$ req/s) | SAD §3.2 / AC1-E2 | k6: PRF-003 / PRF-004 | `tests/performance/load-test-50vu.js` | ✅ PASS |
-| **Killer K2 / PAY-002** (PCI-DSS) | SAD §3.6 / ADR-011 | Security: PCI-001 a PCI-004 | `tests/security/pci_dss_scanner.py` | ✅ PASS |
-| **Restricción R9** (Acceso VPN WireGuard) | SAD §2.3 / INFRASTRUCTURE §3 | Ingress: Nginx port 443 | `tests/security/zap-baseline.conf` | ✅ PASS |
-| **SAD §3.7 / AC7-E4** (SLA Diagnóstico Logs) | SAD §3.7 / AC7-E4 | Diagnóstico: Caso 1 (422) | `scrum-325-diagnostico-error-qa-2026-10-07.txt` | ✅ PASS |
+| HU Jira | Requisito / Driver | Fuente Arquitectura | Suite / Caso de Prueba | Artefacto / Evidencia | Veredicto |
+|:---:|---|---|---|---|:---:|
+| **SCRUM-25 / 65** | **RF-01 / RF-02** (Autenticación y Roles RBAC) | SRS §3.1 / SAD §3.6 | Newman: IDN-001 a IDN-018 | `scrum-65-roles-y-tenants.postman_collection.json` | ✅ PASS |
+| **SCRUM-27** | **RF-07 / RN-SR9** (Creación de Solicitud y Cobertura) | SRS §3.2 / DD §8.2 | Newman: SR-001 a SR-004 | `quickpatch-mvp.postman_collection.json` | ✅ PASS |
+| **SCRUM-41 / 114**| **RN-T1** (Desactivación de Tenant y Bloqueo Login) | SRS §3.1 / DD §7.12 | Newman: IDN-019 / E2E-004 | `scrum-65-roles-y-tenants.postman_collection.json` | ✅ PASS |
+| **SCRUM-41 / 112**| **RF-21** (Gestión de Tenants por Admin Plataforma) | SRS §3.4 / SAD §3.4 | Newman: Carpeta 5 Tenants | `quickpatch-mvp.postman_collection.json` | ✅ PASS |
+| **SCRUM-318** | **HU-ADM-01 a 07** (Flujo Web Administrativo) | SRS §3.4 / Prototipos SAD W-01 a W-07 | Playwright + Newman: W-01 a W-07 | `scrum-318-web-admin-2026-10-07.txt` | ✅ PASS |
+| **SCRUM-320** | **RNF-07 / RNF-08** (Rendimiento: Latencia $p95 \le 2s$, $\ge 20$ req/s) | SAD §3.2 / AC1-E1, AC1-E2 | k6: PRF-001 a PRF-004 | `tests/performance/load-test-50vu.js` | ✅ PASS |
+| **SCRUM-320** | **Killer K2 / PAY-002** (PCI-DSS: Cero Exposición PAN/CVV) | SAD §3.6 / ADR-011 | Security: PCI-001 a PCI-004 | `tests/security/pci_dss_scanner.py` | ✅ PASS |
+| **SCRUM-320** | **Restricción R9** (Ingress Gateway Nginx Port 443 / VPN) | SAD §2.3 / INFRASTRUCTURE §3 | Ingress Nginx / ZAP Baseline | `tests/security/zap-baseline.conf` | ✅ PASS |
+| **SCRUM-325** | **SAD §3.7 / AC7-E4** (SLA Diagnóstico Logs $\le 1$ hora) | SAD §3.7 / AC7-E4 | Diagnóstico: Caso 1 (422) | `scrum-325-diagnostico-error-qa-2026-10-07.txt` | ✅ PASS |
+| **SCRUM-325** | **RNF-04 / AC6-E3** (Auditoría Obligatoria 403 en Loki) | SAD §3.6 / AC6-E3 | Diagnóstico: Caso 2 (403) | `scrum-325-diagnostico-error-qa-2026-10-07.txt` | ✅ PASS |
 
 ---
 
