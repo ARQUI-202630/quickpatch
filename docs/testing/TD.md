@@ -145,7 +145,7 @@ Las 7 máquinas virtuales del laboratorio operan en red cerrada privada (`10.43.
 
 | VM | IP | Software Principal | Rol en la Ejecución de Pruebas |
 |---|---|---|---|
-| **VM1** | `10.43.100.168` | Nginx :443 (Gateway) + Panel Angular + Self-hosted Runner + Observabilidad (Prometheus, Loki, Grafana :3000) | **Herramientas y Observabilidad.** Punto de entrada único HTTPS (puerto 443) desde la VPN de la universidad (R9). Enruta tráfico por Virtual Hosts (`quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal`). Aloja el runner de GitHub Actions que ejecuta las pruebas de sistema y k6 hacia QA, y centraliza Prometheus, Loki y Grafana monitoreando las 7 VMs. |
+| **VM1** | `10.43.100.168` | Nginx :443 (proxy de entrada hacia el gateway de cada ambiente) + Self-hosted Runner + Observabilidad (Prometheus, Loki, Grafana :3000). El panel Angular corre en el k3s de VM3 y VM2 | **Herramientas y Observabilidad.** Punto de entrada único HTTPS (puerto 443) desde la VPN de la universidad (R9). Enruta tráfico por Virtual Hosts (`quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal`). Aloja el runner de GitHub Actions que ejecuta las pruebas de sistema y k6 hacia QA, y centraliza Prometheus, Loki y Grafana monitoreando las 7 VMs. |
 | **VM2** | `10.43.98.15` | QA - Aplicación (ADR-015, ADR-022): k3s (nodo único), Traefik :30080 y servicios de QA | **Sujeto de las pruebas de sistema y carga (Aplicación QA).** Aloja los microservicios de QA en k3s de forma independiente. Recibe las pruebas de Playwright, Newman, ZAP Baseline y las pruebas de estrés de k6 (150 VU) protegiendo el clúster de producción (VM3). |
 | **VM3** | `10.43.98.205` | Producción - Aplicación: k3s (nodo único), Traefik :30080 con 8 microservicios de Producción | **Entorno de Producción (Aplicación).** Comparte 4 vCPU y 11 GiB de RAM. Matching opera con QoS *Guaranteed* (1 vCPU / 1 GiB). Protegido contra sobrecarga de pruebas de estrés al ejecutarse la carga destructiva exclusivamente en el ambiente de QA (VM2/VM5/VM7); VM3 no recibe estrés rutinario y solo se observa operativamente. |
 | **VM4** | `10.43.98.209` | Producción - Datos: PostgreSQL 16 + PostGIS (puerto 5432, una base por servicio) y Redis 7 (puerto 6379) | **Base de datos de Producción.** Ejecuta las consultas espaciales (`ST_DWithin`) y valida las políticas RLS en producción. Cuenta con respaldo diario automático hacia Garage en VM6. Permanece 100% aislada e intacta durante las pruebas de QA. |
@@ -208,13 +208,13 @@ echo "[QA] Pruebas aprobadas."
 
 ### 7.1 Matriz de Trazabilidad de Requisitos (RTM)
 
-La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 3.2), los escenarios de calidad del SAD (versión vigente 2.13) y el catálogo de 187 casos de prueba automatizados.
+La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 4.0), los escenarios de calidad del SAD (versión vigente 2.25) y el catálogo de 187 casos de prueba automatizados.
 
 #### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS (v3.2)
-El SRS v3.2 establece un total de **32 Requisitos Funcionales activos** organizados en 23 Features y 7 Épicas. 
+El SRS V4 establece un total de **32 Requisitos Funcionales activos** organizados en 23 Features y 7 Épicas. 
 
 > [!NOTE]
-> **Aclaración sobre la numeración histórica:** En concordancia con la sección 5.2 (línea 371) del SRS v3.2, la numeración salta de RF-29 a RF-34 porque los antiguos RF-30 a RF-33 (definidos en las versiones 2.x para control de cambios) fueron retirados en la versión 3.0 al ser reemplazados por el requisito no funcional **RNF-13 (Gestión Documental y Control de Cambios)**. Sus identificadores numéricos no se reutilizan para no romper la trazabilidad histórica de Jira. Por consiguiente, los 32 requisitos listados a continuación representan el **100% de los requisitos funcionales vigentes** del proyecto.
+> **Aclaración sobre la numeración histórica:** En concordancia con la sección 5.2 del SRS V4, la numeración salta de RF-29 a RF-34 porque los antiguos RF-30 a RF-33 (definidos en las versiones 2.x para control de cambios) fueron retirados en la versión 3.0 al ser reemplazados por el requisito no funcional **RNF-13 (Gestión Documental y Control de Cambios)**. Sus identificadores numéricos no se reutilizan para no romper la trazabilidad histórica de Jira. Por consiguiente, los 32 requisitos listados a continuación representan el **100% de los requisitos funcionales vigentes** del proyecto.
 
 | ID RF | Nombre y Descripción Resumida | Módulo / Servicio Propietario | Casos de Prueba Automatizados Asociados |
 |---|---|---|---|
@@ -717,7 +717,7 @@ En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad 
    - Estrategia de rollback automático (`kubectl rollout undo`) y alerta diseñada formalmente ante fallos de despliegue, saturación crítica o caídas de pods en k3s.
 
 ### 10.3 Evidencias Preparadas para la Presentación y Sustentación
-1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 3.3), escenarios del SAD (versión vigente 2.24) e Historias de Usuario de Jira (Sprint 3 — SCRUM-317) hasta las aserciones de código de prueba.
+1. **Matriz RTM Completa:** Trazabilidad bidireccional desde los requisitos del SRS (versión vigente 4.0), escenarios del SAD (versión vigente 2.25) e Historias de Usuario de Jira (Sprint 3 — SCRUM-317) hasta las aserciones de código de prueba.
 2. **Defensa de la Topología en las 7 VMs:** Justificación técnica demostrando cómo se protege producción aislando las pruebas de sistema y estrés en el ambiente de QA (VM2, VM5 y VM7 según ADR-015 y ADR-022).
 3. **Cuadro Comparativo de Herramientas:** Sustentación académica y técnica de la selección de Playwright, k6, Testcontainers y Spectral frente a herramientas legadas.
 
