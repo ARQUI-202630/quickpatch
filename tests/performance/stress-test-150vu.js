@@ -35,38 +35,80 @@ export const options = {
 };
 
 const BASE_URL = __ENV.BASE_URL || 'https://qa.quickpatch.internal';
-const TENANT_ID = 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee'; // tenant_qa_loadtest
 
 /**
- * Fase de inicialización de k6: obtiene token JWT RS256 legítimo mediante
- * inicio de sesión real contra Identity con credenciales parametrizadas de QA.
+ * Fase de inicialización de k6:
+ * - Autenticación real contra Identity con credenciales de QA (sin contraseña hardcodeada).
+ * - Envío obligatorio del encabezado X-Channel-Id.
+ * - Aborta inmediatamente si el inicio de sesión falla (no usa tokens falsos).
+ * - Obtiene dinámicamente un categoryId existente de Catalog para evitar 422.
  */
 export function setup() {
     const loginUrl = `${BASE_URL}/api/v1/auth/login`;
     const email = __ENV.QA_CLIENT_EMAIL || 'cliente.qa@quickpatch.internal';
-    const password = __ENV.QA_CLIENT_PASSWORD || 'PasswordQA123*';
+    const password = __ENV.QA_CLIENT_PASSWORD;
 
-    const res = http.post(loginUrl, JSON.stringify({ email, password }), {
-        headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (res.status === 200) {
-        try {
-            const body = JSON.parse(res.body);
-            return { token: body.accessToken || body.token };
-        } catch (e) {
-            console.warn('[Setup QA] Error al parsear respuesta de login:', e);
-        }
-    } else {
-        console.warn(`[Setup QA] Inicio de sesión retornó HTTP ${res.status}. Modo preparatorio sin clúster activo.`);
+    if (!password) {
+        throw new Error('[Setup QA] Variable QA_CLIENT_PASSWORD es requerida para autenticación en QA');
     }
 
-    return { token: 'token-preparatorio-local' };
+    const loginPayload = JSON.stringify({ email, password });
+    const loginHeaders = {
+        'Content-Type': 'application/json',
+        'X-Channel-Id': __ENV.CHANNEL_ID || 'quickpatch-web',
+        'X-Correlation-Id': `k6-setup-login-${Date.now()}`
+    };
+
+    const resLogin = http.post(loginUrl, loginPayload, { headers: loginHeaders });
+    if (resLogin.status !== 200) {
+        throw new Error(`[Setup QA] Inicio de sesión en QA falló con HTTP ${resLogin.status}: ${resLogin.body}`);
+    }
+
+    let token = null;
+    try {
+        const body = JSON.parse(resLogin.body);
+        token = body.accessToken || body.token;
+    } catch (e) {
+        throw new Error(`[Setup QA] Error al parsear respuesta JSON de login: ${e.message}`);
+    }
+
+    if (!token) {
+        throw new Error('[Setup QA] Respuesta de login no contiene accessToken');
+    }
+
+    // Obtener categoría válida del catálogo para evitar error 422
+    let categoryId = __ENV.QA_CATEGORY_ID;
+    if (!categoryId) {
+        const catRes = http.get(`${BASE_URL}/api/v1/catalog/categories`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-Correlation-Id': `k6-setup-cat-${Date.now()}`
+            }
+        });
+
+        if (catRes.status === 200) {
+            try {
+                const cats = JSON.parse(catRes.body);
+                if (Array.isArray(cats) && cats.length > 0) {
+                    categoryId = cats[0].id;
+                }
+            } catch (e) {
+                console.warn('[Setup QA] Error al parsear categorías del catálogo:', e);
+            }
+        }
+    }
+
+    if (!categoryId) {
+        throw new Error('[Setup QA] No se pudo obtener una categoría válida de /api/v1/catalog/categories para la prueba');
+    }
+
+    return { token, categoryId };
 }
 
 export default function (data) {
     const correlationId = `k6-150vu-${__VU}-${__ITER}-${Date.now()}`;
-    const token = data && data.token ? data.token : 'token-preparatorio-local';
+    const token = data.token;
+    const categoryId = data.categoryId;
     const headers = {
         'Content-Type': 'application/json',
         'X-Correlation-Id': correlationId,
@@ -78,7 +120,7 @@ export default function (data) {
     const lon = -74.0600 - (Math.random() * 0.05);
 
     const payload = JSON.stringify({
-        categoryId: '3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01',
+        categoryId: categoryId,
         description: `Estrés pico 150 VU - matching simultáneo VU-${__VU}`,
         location: {
             latitude: parseFloat(lat.toFixed(6)),
