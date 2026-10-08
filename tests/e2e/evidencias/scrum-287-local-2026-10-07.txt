@@ -1,0 +1,256 @@
+SCRUM-287 — corrida local de la colección del MVP con los casos nuevos (PR #35, commit 7c83f54)
+7 de octubre de 2026. Servicios reales: Identity, Catalog, ServiceRequest y Matching, con PostgreSQL+PostGIS, Kafka y Nginx con las rutas del gateway.
+
+newman
+
+QUICKPATCH — MVP Sprint 3 (flujo de punta a punta)
+
+❏ 1. Administrador del tenant
+↳ Login del administrador
+  POST http://host.docker.internal:18080/api/v1/auth/login [200 OK, 1.2kB, 428ms]
+  ✓  200 con token
+  ✓  rol admin_tenant
+
+↳ Crear categoría
+  POST http://host.docker.internal:18080/api/v1/catalog/admin/categories [201 Created, 418B, 389ms]
+  ✓  201 creada y activa
+
+↳ Categoría con nombre repetido → 409
+  POST http://host.docker.internal:18080/api/v1/catalog/admin/categories [409 Conflict, 486B, 39ms]
+  ✓  409 categoría registrada
+  ✓  Problem Details (RFC 9457) con correlationId
+
+❏ 2. Cliente
+↳ Registro de cliente
+  POST http://host.docker.internal:18080/api/v1/auth/register/client [201 Created, 421B, 275ms]
+  ✓  201 registrado
+
+↳ Login del cliente
+  POST http://host.docker.internal:18080/api/v1/auth/login [200 OK, 1.2kB, 268ms]
+  ✓  200 con rol cliente
+
+↳ Perfil del cliente (GET /v1/users/me)
+  GET http://host.docker.internal:18080/api/v1/users/me [200 OK, 416B, 59ms]
+  ✓  200 con su propio usuario
+
+↳ Correo repetido → 409
+  POST http://host.docker.internal:18080/api/v1/auth/register/client [409 Conflict, 473B, 30ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo correo-registrado
+
+↳ Categorías del tenant incluyen la nueva
+  GET http://host.docker.internal:18080/api/v1/catalog/categories [200 OK, 353B, 43ms]
+  ✓  200 y la categoría está activa
+
+❏ 3. Solicitud de servicio
+↳ Crear solicitud (espera la réplica de la categoría)
+  POST http://host.docker.internal:18080/api/v1/service-requests [422 Unprocessable Entity, 563B, 218ms]
+  ┌
+  │ 'Using "postman.setNextRequest" is deprecated. Use "pm
+  │ .execution.setNextRequest()" instead.'
+  └
+
+Attempting to set next request to Crear solicitud (espera la réplica de la categoría)
+
+↳ Crear solicitud (espera la réplica de la categoría)
+  POST http://host.docker.internal:18080/api/v1/service-requests [201 Created, 646B, 105ms]
+  ✓  201 en buscando_tecnico
+  ✓  responde con X-Correlation-Id
+
+↳ Consultar la solicitud
+  GET http://host.docker.internal:18080/api/v1/service-requests/01a11960-bb38-7f61-9ac2-2ecd6a71b187 [200 OK, 571B, 44ms]
+  ✓  200 con la misma solicitud
+
+❏ 4. Casos negativos
+↳ Sin token → 401
+  POST http://host.docker.internal:18080/api/v1/service-requests [401 Unauthorized, 483B, 14ms]
+  ✓  401
+
+↳ Administrador no crea solicitudes → 403
+  POST http://host.docker.internal:18080/api/v1/service-requests [403 Forbidden, 450B, 21ms]
+  ✓  403
+
+↳ Cliente no administra categorías → 403
+  POST http://host.docker.internal:18080/api/v1/catalog/admin/categories [403 Forbidden, 450B, 18ms]
+  ✓  403
+
+↳ Fuera de Bogotá → 422
+  POST http://host.docker.internal:18080/api/v1/service-requests [422 Unprocessable Entity, 565B, 12ms]
+  ✓  422 fuera de cobertura
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ Descripción corta → 400 por campo
+  POST http://host.docker.internal:18080/api/v1/service-requests [400 Bad Request, 559B, 11ms]
+  ✓  400 con error en description
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ Contraseña incorrecta → 401
+  POST http://host.docker.internal:18080/api/v1/auth/login [401 Unauthorized, 485B, 282ms]
+  ✓  401
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo credenciales-invalidas
+
+↳ Registro de un cliente para el bloqueo
+  POST http://host.docker.internal:18080/api/v1/auth/register/client [201 Created, 411B, 274ms]
+  ✓  201 registrado
+
+↳ Intentos fallidos hasta el bloqueo → 423
+  POST http://host.docker.internal:18080/api/v1/auth/login [401 Unauthorized, 485B, 269ms]
+  ┌
+  │ 'Using "postman.setNextRequest" is deprecated. Use "pm
+  │ .execution.setNextRequest()" instead.'
+  └
+
+Attempting to set next request to Intentos fallidos hasta el bloqueo → 423
+
+↳ Intentos fallidos hasta el bloqueo → 423
+  POST http://host.docker.internal:18080/api/v1/auth/login [401 Unauthorized, 485B, 264ms]
+  ┌
+  │ 'Using "postman.setNextRequest" is deprecated. Use "pm
+  │ .execution.setNextRequest()" instead.'
+  └
+
+Attempting to set next request to Intentos fallidos hasta el bloqueo → 423
+
+↳ Intentos fallidos hasta el bloqueo → 423
+  POST http://host.docker.internal:18080/api/v1/auth/login [401 Unauthorized, 485B, 263ms]
+  ┌
+  │ 'Using "postman.setNextRequest" is deprecated. Use "pm
+  │ .execution.setNextRequest()" instead.'
+  └
+
+Attempting to set next request to Intentos fallidos hasta el bloqueo → 423
+
+↳ Intentos fallidos hasta el bloqueo → 423
+  POST http://host.docker.internal:18080/api/v1/auth/login [401 Unauthorized, 485B, 269ms]
+  ┌
+  │ 'Using "postman.setNextRequest" is deprecated. Use "pm
+  │ .execution.setNextRequest()" instead.'
+  └
+
+Attempting to set next request to Intentos fallidos hasta el bloqueo → 423
+
+↳ Intentos fallidos hasta el bloqueo → 423
+  POST http://host.docker.internal:18080/api/v1/auth/login [423 Locked, 568B, 277ms]
+  ✓  423 al llegar al máximo de intentos
+  ✓  bloqueo al 5.º intento
+
+↳ Contraseña correcta durante el bloqueo → 423
+  POST http://host.docker.internal:18080/api/v1/auth/login [423 Locked, 568B, 15ms]
+  ✓  423
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo cuenta-bloqueada
+
+↳ Registro de un segundo cliente
+  POST http://host.docker.internal:18080/api/v1/auth/register/client [201 Created, 405B, 266ms]
+  ✓  201 registrado
+
+↳ Login del segundo cliente
+  POST http://host.docker.internal:18080/api/v1/auth/login [200 OK, 1.19kB, 273ms]
+  ✓  200
+
+↳ Solicitud de otro cliente → 404
+  GET http://host.docker.internal:18080/api/v1/service-requests/01a11960-bb38-7f61-9ac2-2ecd6a71b187 [404 Not Found, 464B, 11ms]
+  ✓  404, sin revelar que existe
+  ✓  Problem Details (RFC 9457) con correlationId
+
+❏ 5. Administrador de la plataforma (SCRUM-112)
+↳ Login del administrador de la plataforma
+  POST http://host.docker.internal:18080/api/v1/auth/login [200 OK, 1.22kB, 264ms]
+  ✓  200 con rol admin_plataforma
+
+↳ Listar tenants
+  GET http://host.docker.internal:18080/api/v1/platform/tenants [200 OK, 402B, 30ms]
+  ✓  200 con al menos el tenant del canal
+  ✓  el tenant propio está en la lista
+
+↳ Administrador del tenant no lista tenants → 403
+  GET http://host.docker.internal:18080/api/v1/platform/tenants [403 Forbidden, 450B, 15ms]
+  ✓  403
+
+↳ Cliente no cambia el estado de un tenant → 403
+  PATCH http://host.docker.internal:18080/api/v1/platform/tenants/00000000-0000-0000-0000-000000000001 [403 Forbidden, 450B, 9ms]
+  ✓  403
+
+↳ Desactivar el tenant de la plataforma → 409
+  PATCH http://host.docker.internal:18080/api/v1/platform/tenants/00000000-0000-0000-0000-000000000001 [409 Conflict, 493B, 11ms]
+  ✓  409 tenant de la plataforma
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ Activar el tenant propio es idempotente → 200
+  PATCH http://host.docker.internal:18080/api/v1/platform/tenants/00000000-0000-0000-0000-000000000001 [200 OK, 400B, 31ms]
+  ✓  200 y sigue activo
+
+↳ Estado fuera del contrato → 400 por campo
+  PATCH http://host.docker.internal:18080/api/v1/platform/tenants/00000000-0000-0000-0000-000000000001 [400 Bad Request, 537B, 12ms]
+  ✓  400 con error en status
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ Tenant inexistente → 404
+  PATCH http://host.docker.internal:18080/api/v1/platform/tenants/f02ebf46-44ec-448d-a5d1-931ffa9dc348 [404 Not Found, 460B, 11ms]
+  ✓  404
+  ✓  Problem Details (RFC 9457) con correlationId
+
+❏ 6. Catálogo: desactivar una categoría (SCRUM-287)
+↳ Crear una categoría para desactivar
+  POST http://host.docker.internal:18080/api/v1/catalog/admin/categories [201 Created, 394B, 17ms]
+  ✓  201
+
+↳ Desactivar la categoría
+  PATCH http://host.docker.internal:18080/api/v1/catalog/admin/categories/01a11960-c8f7-724d-96f7-655507e78dc7 [200 OK, 389B, 31ms]
+  ✓  200 inactiva y con updatedAt
+
+↳ El cliente ya no la ve
+  GET http://host.docker.internal:18080/api/v1/catalog/categories [200 OK, 353B, 12ms]
+  ✓  200 sin la categoría inactiva
+
+↳ Categoría inexistente → 404
+  PATCH http://host.docker.internal:18080/api/v1/catalog/admin/categories/0f37b6f7-2ce6-49d8-ba15-fb73769bf425 [404 Not Found, 465B, 11ms]
+  ✓  404
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo no-encontrado
+
+❏ 7. Técnico (SCRUM-287)
+↳ Registro de técnico
+  POST http://host.docker.internal:18080/api/v1/auth/register/technician [201 Created, 429B, 311ms]
+  ✓  201 pendiente de verificación
+
+↳ Documento repetido → 409
+  POST http://host.docker.internal:18080/api/v1/auth/register/technician [409 Conflict, 479B, 13ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo documento-registrado
+
+↳ Login del técnico
+  POST http://host.docker.internal:18080/api/v1/auth/login [200 OK, 1.2kB, 262ms]
+  ✓  200 con rol tecnico
+
+↳ Perfil del técnico muestra la verificación
+  GET http://host.docker.internal:18080/api/v1/users/me [200 OK, 424B, 18ms]
+  ✓  200 con verificationStatus pendiente
+
+↳ El técnico no crea solicitudes → 403
+  POST http://host.docker.internal:18080/api/v1/service-requests [403 Forbidden, 450B, 8ms]
+  ✓  403
+  ✓  Problem Details (RFC 9457) con correlationId
+
+┌─────────────────────────┬────────────────────┬───────────────────┐
+│                         │           executed │            failed │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│              iterations │                  1 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│                requests │                 44 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│            test-scripts │                 44 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│      prerequest-scripts │                  2 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│              assertions │                 61 │                 0 │
+├─────────────────────────┴────────────────────┴───────────────────┤
+│ total run duration: 8.2s                                         │
+├──────────────────────────────────────────────────────────────────┤
+│ total data received: 13.84kB (approx)                            │
+├──────────────────────────────────────────────────────────────────┤
+│ average response time: 125ms [min: 8ms, max: 428ms, s.d.: 131ms] │
+└──────────────────────────────────────────────────────────────────┘
