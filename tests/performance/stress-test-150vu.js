@@ -37,45 +37,40 @@ export const options = {
 const BASE_URL = __ENV.BASE_URL || 'https://qa.quickpatch.internal';
 const TENANT_ID = 'a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee'; // tenant_qa_loadtest
 
-function buildAuthHeader() {
-    const payload = {
-        sub: `vu-stress-${__VU}`,
-        role: 'cliente',
-        tenant_id: TENANT_ID,
-        exp: Math.floor(Date.now() / 1000) + 3600
-    };
-    const header = { alg: 'HS256', typ: 'JWT' };
-    const b64Header = Utilities.base64encode(JSON.stringify(header));
-    const b64Payload = Utilities.base64encode(JSON.stringify(payload));
-    return `Bearer ${b64Header}.${b64Payload}.signature-qa-stress`;
+/**
+ * Fase de inicialización de k6: obtiene token JWT RS256 legítimo mediante
+ * inicio de sesión real contra Identity con credenciales parametrizadas de QA.
+ */
+export function setup() {
+    const loginUrl = `${BASE_URL}/api/v1/auth/login`;
+    const email = __ENV.QA_CLIENT_EMAIL || 'cliente.qa@quickpatch.internal';
+    const password = __ENV.QA_CLIENT_PASSWORD || 'PasswordQA123*';
+
+    const res = http.post(loginUrl, JSON.stringify({ email, password }), {
+        headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (res.status === 200) {
+        try {
+            const body = JSON.parse(res.body);
+            return { token: body.accessToken || body.token };
+        } catch (e) {
+            console.warn('[Setup QA] Error al parsear respuesta de login:', e);
+        }
+    } else {
+        console.warn(`[Setup QA] Inicio de sesión retornó HTTP ${res.status}. Modo preparatorio sin clúster activo.`);
+    }
+
+    return { token: 'token-preparatorio-local' };
 }
 
-const Utilities = {
-    base64encode: function (str) {
-        return Utilities._btoa(str).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
-    },
-    _btoa: function(str) {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-        let output = '';
-        for (let block = 0, charCode, idx = 0, map = chars;
-             str.charAt(idx | 0) || (map = '=', idx % 1);
-             output += map.charAt(63 & block >> 8 - idx % 1 * 8)) {
-            charCode = str.charCodeAt(idx += 3/4);
-            if (charCode > 0xFF) {
-                throw new Error("btoa failed: The string contains characters outside of the Latin1 range.");
-            }
-            block = block << 8 | charCode;
-        }
-        return output;
-    }
-};
-
-export default function () {
+export default function (data) {
     const correlationId = `k6-150vu-${__VU}-${__ITER}-${Date.now()}`;
+    const token = data && data.token ? data.token : 'token-preparatorio-local';
     const headers = {
         'Content-Type': 'application/json',
         'X-Correlation-Id': correlationId,
-        'Authorization': buildAuthHeader(),
+        'Authorization': `Bearer ${token}`,
     };
 
     // Coordenadas válidas en Bogotá
