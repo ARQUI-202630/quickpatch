@@ -146,11 +146,9 @@ node tests/e2e/run-web-admin-e2e.js
 node tests/e2e/run-web-admin-e2e.js --remote
 ```
 
-### Ejecución de Playwright
-Las pruebas de componentes e interfaz web se definen en `specs/web-admin.spec.ts` y corren con:
-```bash
-npx playwright test specs/web-admin.spec.ts
-```
+### Ejecución de Pruebas de Interfaz (Playwright)
+La especificación de pruebas de interfaz en navegador se encuentra definida en `specs/web-admin.spec.ts`, modelando la sesión en `sessionStorage` con la clave `quickpatch.sesion` conforme a la arquitectura real de `apps/web/src/app/core/sesion.ts`. Su ejecución contra el navegador queda agendada para el entorno desplegado de QA una vez el panel web esté publicado en VM2. Para evitar que el runner de CI de `release/*` intente levantar un navegador headless sin el panel desplegado, el paquete se mantiene desacoplado del root de `tests/e2e/`.
 
-### Evidencia de Simulación Local
-`evidencias/scrum-318-web-admin-2026-10-07.txt`: corrida local preparatoria con 11 peticiones y 31 aserciones aprobadas sin fallos.
+### Evidencia de Validación de Contratos (Newman)
+`evidencias/scrum-318-web-admin-2026-10-07.txt`: corrida local preparatoria ejecutada con **Newman** sobre la colección `scrum-318-web-admin.postman_collection.json` contra el simulador de API del panel administrativo (`mock-admin-gateway.js`), con un resultado de **11 peticiones y 31 aserciones aprobadas sin fallos (100% Pass)**.
+

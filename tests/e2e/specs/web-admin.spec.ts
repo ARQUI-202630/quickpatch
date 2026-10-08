@@ -137,17 +137,25 @@ test.describe('Web Admin — Autenticación y Login (W-01 & W-02)', () => {
 
 test.describe('Web Admin — Guards de Navegación y RBAC (W-03 & W-07)', () => {
   test('[W-03] Usuario sin autenticar intentando entrar a /tenants es redirigido a /iniciar-sesion', async ({ page }) => {
-    // Sin sesión en localStorage
+    // Sin sesión en sessionStorage
     await page.goto('/tenants');
     // El guard requiereRol('admin_plataforma') redirige al inicio de sesión
     await expect(page).toHaveURL(/.*\/iniciar-sesion/);
   });
 
   test('[W-03] Rol admin_tenant al intentar entrar a /tenants es redirigido a /inicio por guard', async ({ page }) => {
-    // Simular sesión iniciada con rol admin_tenant
+    // Simular sesión iniciada en sessionStorage según apps/web/src/app/core/sesion.ts
     await page.addInitScript(() => {
-      localStorage.setItem('auth_token', 'mock-tenant-admin-token');
-      localStorage.setItem('user_role', 'admin_tenant');
+      sessionStorage.setItem('quickpatch.sesion', JSON.stringify({
+        token: 'mock-tenant-admin-token',
+        venceEn: Date.now() + 3600000,
+        usuario: {
+          id: 'usr-tenant-01',
+          email: 'admin.taller@quickpatch.internal',
+          fullName: 'Admin Taller',
+          role: 'admin_tenant'
+        }
+      }));
     });
 
     await page.goto('/tenants');
@@ -159,10 +167,18 @@ test.describe('Web Admin — Guards de Navegación y RBAC (W-03 & W-07)', () => 
   });
 
   test('[W-07] Redirección inicial en la raíz (/) según el rol autenticado', async ({ page }) => {
-    // Con rol admin_plataforma, redirigirPorRol lleva a /tenants
+    // Con rol admin_plataforma en sessionStorage, redirigirPorRol lleva a /tenants
     await page.addInitScript(() => {
-      localStorage.setItem('auth_token', 'mock-platform-admin-token');
-      localStorage.setItem('user_role', 'admin_plataforma');
+      sessionStorage.setItem('quickpatch.sesion', JSON.stringify({
+        token: 'mock-platform-admin-token',
+        venceEn: Date.now() + 3600000,
+        usuario: {
+          id: 'usr-plat-01',
+          email: 'admin.plataforma@quickpatch.internal',
+          fullName: 'Admin Plataforma',
+          role: 'admin_plataforma'
+        }
+      }));
     });
 
     await page.goto('/');
@@ -172,9 +188,18 @@ test.describe('Web Admin — Guards de Navegación y RBAC (W-03 & W-07)', () => 
 
 test.describe('Web Admin — Gestión de Tenants (W-04, W-05 & W-06)', () => {
   test.beforeEach(async ({ page }) => {
+    // Sesión de admin_plataforma en sessionStorage requerida para vistas administrativas
     await page.addInitScript(() => {
-      localStorage.setItem('auth_token', 'mock-platform-admin-token');
-      localStorage.setItem('user_role', 'admin_plataforma');
+      sessionStorage.setItem('quickpatch.sesion', JSON.stringify({
+        token: 'mock-platform-admin-token',
+        venceEn: Date.now() + 3600000,
+        usuario: {
+          id: 'usr-plat-01',
+          email: 'admin.plataforma@quickpatch.internal',
+          fullName: 'Admin Plataforma',
+          role: 'admin_plataforma'
+        }
+      }));
     });
   });
 
