@@ -152,8 +152,8 @@ const server = http.createServer((req, res) => {
       }));
     }
 
-    // 2. Consulta y Listado de Tenants (W-03, W-04)
-    if (pathname === '/api/v1/admin/tenants' && req.method === 'GET') {
+    // 2. Consulta y Listado de Tenants (W-03, W-04: /api/v1/platform/tenants)
+    if ((pathname === '/api/v1/platform/tenants' || pathname === '/v1/platform/tenants' || pathname === '/api/v1/admin/tenants') && req.method === 'GET') {
       // W-03: Petición anónima
       if (!user) {
         return sendProblemDetails(
@@ -183,8 +183,8 @@ const server = http.createServer((req, res) => {
       return res.end(JSON.stringify(result));
     }
 
-    // 3. Modificación de Estado de Tenant (W-05, W-06)
-    const matchStatus = pathname.match(/^\/api\/v1\/admin\/tenants\/([^/]+)\/status$/);
+    // 3. Modificación de Estado de Tenant (W-05, W-06: PATCH /api/v1/platform/tenants/:id)
+    const matchStatus = pathname.match(/^\/(?:api\/)?v1\/(?:platform|admin)\/tenants\/([^/]+)(?:\/status)?$/);
     if (matchStatus && req.method === 'PATCH') {
       const tenantId = matchStatus[1];
 
@@ -223,7 +223,7 @@ const server = http.createServer((req, res) => {
       }));
     }
 
-    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.writeHead(404, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
     res.end(JSON.stringify({ error: "Ruta no encontrada" }));
   });
 });

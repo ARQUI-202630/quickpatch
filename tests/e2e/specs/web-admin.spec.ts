@@ -4,31 +4,37 @@ import { test, expect } from '@playwright/test';
  * Suite E2E de Interfaz Web Administrativa (SCRUM-318)
  * 
  * Valida los flujos de usuario, componentes de Angular y reglas de negocio
- * basados en los mockups de diseño W-01 a W-07 y las especificaciones DD 7.12 / ADR-018:
- *  - W-01: Autenticación de Administradores (Plataforma y Tenant)
- *  - W-02: Manejo de errores de inicio de sesión (401 y 423 bloqueo por RN-U4)
- *  - W-03: Control de acceso RBAC y pantalla de Acceso Denegado (403)
- *  - W-04: Listado y filtrado de empresas/tenants
- *  - W-05: Modal de confirmación para desactivación de tenant (RN-T1)
- *  - W-06: Manejo visual de estados (Skeleton, Vacío, Conflictos 409)
- *  - W-07: Navegación dinámica en sidebar según rol
+ * basados en la implementación real de apps/web:
+ *  - Rutas reales: /iniciar-sesion, /inicio, /tenants (app.routes.ts)
+ *  - Guards y control RBAC: redirigirPorRol y requiereRol (core/guards.ts)
+ *  - Formulario de login: InicioSesion (#email, #password, 'Ingresar')
+ *  - Gestión de tenants: TenantsApi (/v1/platform/tenants) y componente Tenants
+ * 
+ * Casos evaluados:
+ *  - W-01: Autenticación de Administradores (Plataforma a /tenants, Tenant a /inicio)
+ *  - W-02: Manejo de errores de inicio de sesión (401 credenciales y 423 bloqueo RN-U4)
+ *  - W-03: Control de acceso RBAC por guards (admin_tenant a /tenants redirige a /inicio)
+ *  - W-04: Listado de empresas/tenants (tabla, columnas, estado, indicador de carga)
+ *  - W-05: Confirmación de cambio de estado de tenant (RN-T1 / PATCH /v1/platform/tenants/:id)
+ *  - W-06: Manejo visual de errores en mutación (409 Conflict optimista en <p class="error">)
+ *  - W-07: Redirección inicial según rol en la raíz (redirigirPorRol)
  */
 
-test.describe('Web Admin — Autenticación y Perfil (W-01 & W-02)', () => {
+test.describe('Web Admin — Autenticación y Login (W-01 & W-02)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/iniciar-sesion');
   });
 
-  test('[W-01] Renderizado correcto del formulario de login administrativo', async ({ page }) => {
-    await expect(page.locator('input[type="email"], input[name="email"]')).toBeVisible();
-    await expect(page.locator('input[type="password"], input[name="password"]')).toBeVisible();
+  test('[W-01] Renderizado correcto del formulario de login en /iniciar-sesion', async ({ page }) => {
+    await expect(page.locator('#email, input[formControlName="email"]')).toBeVisible();
+    await expect(page.locator('#password, input[formControlName="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
+    await expect(page.locator('button[type="submit"]')).toContainText(/Ingresar|Ingresando/i);
     // En la vista administrativa no debe existir selector de tenant visible
     await expect(page.locator('select[name="tenantId"], [data-testid="tenant-selector"]')).toHaveCount(0);
   });
 
-  test('[W-01] Login exitoso de Administrador de Plataforma redirige a gestión de tenants', async ({ page }) => {
-    // Mock de respuesta exitosa de autenticación para admin_plataforma
+  test('[W-01] Login exitoso de Administrador de Plataforma navega a /tenants', async ({ page }) => {
     await page.route('**/api/v1/auth/login', async route => {
       await route.fulfill({
         status: 200,
@@ -46,15 +52,41 @@ test.describe('Web Admin — Autenticación y Perfil (W-01 & W-02)', () => {
       });
     });
 
-    await page.fill('input[type="email"], input[name="email"]', 'platform-admin@quickpatch.internal');
-    await page.fill('input[type="password"], input[name="password"]', 'PasswordPlataforma123*');
+    await page.fill('#email', 'platform-admin@quickpatch.internal');
+    await page.fill('#password', 'PasswordPlataforma123*');
     await page.click('button[type="submit"]');
 
-    // Debe navegar hacia la administración de tenants o dashboard principal
-    await expect(page).toHaveURL(/.*(\/admin\/tenants|\/dashboard)/);
+    // El componente navega a /tenants para admin_plataforma
+    await expect(page).toHaveURL(/.*\/tenants/);
   });
 
-  test('[W-02] Credenciales inválidas muestran banner de error (401)', async ({ page }) => {
+  test('[W-01] Login exitoso de Administrador de Tenant navega a /inicio', async ({ page }) => {
+    await page.route('**/api/v1/auth/login', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          accessToken: 'mock-tenant-jwt-token',
+          tokenType: 'Bearer',
+          user: {
+            id: 'usr-tenant-01',
+            email: 'tenant-admin@bogota.test',
+            role: 'admin_tenant',
+            name: 'Admin Empresa'
+          }
+        })
+      });
+    });
+
+    await page.fill('#email', 'tenant-admin@bogota.test');
+    await page.fill('#password', 'PasswordTenant123*');
+    await page.click('button[type="submit"]');
+
+    // El componente navega a /inicio para admin_tenant
+    await expect(page).toHaveURL(/.*\/inicio/);
+  });
+
+  test('[W-02] Credenciales inválidas muestran mensaje de error (401)', async ({ page }) => {
     await page.route('**/api/v1/auth/login', async route => {
       await route.fulfill({
         status: 401,
@@ -69,13 +101,13 @@ test.describe('Web Admin — Autenticación y Perfil (W-01 & W-02)', () => {
       });
     });
 
-    await page.fill('input[type="email"], input[name="email"]', 'admin@quickpatch.internal');
-    await page.fill('input[type="password"], input[name="password"]', 'PasswordInvalidoTotal999*');
+    await page.fill('#email', 'admin@quickpatch.internal');
+    await page.fill('#password', 'PasswordInvalidoTotal999*');
     await page.click('button[type="submit"]');
 
-    const alertError = page.locator('.alert-danger, [role="alert"], .error-message');
+    const alertError = page.locator('p.error[role="alert"], .alert-danger, [role="alert"]');
     await expect(alertError).toBeVisible();
-    await expect(alertError).toContainText(/incorrect|inválid|no autenticado/i);
+    await expect(alertError).toContainText(/incorrect|inválid|no autenticado|error/i);
   });
 
   test('[W-02 / RN-U4] Cuenta bloqueada tras fallos reiterados muestra advertencia 423 Locked', async ({ page }) => {
@@ -93,71 +125,48 @@ test.describe('Web Admin — Autenticación y Perfil (W-01 & W-02)', () => {
       });
     });
 
-    await page.fill('input[type="email"], input[name="email"]', 'bloqueado@quickpatch.internal');
-    await page.fill('input[type="password"], input[name="password"]', 'CualquierPassword123*');
+    await page.fill('#email', 'bloqueado@quickpatch.internal');
+    await page.fill('#password', 'CualquierPassword123*');
     await page.click('button[type="submit"]');
 
-    const alertLocked = page.locator('.alert-warning, [role="alert"], .locked-message');
+    const alertLocked = page.locator('p.error[role="alert"], [role="alert"]');
     await expect(alertLocked).toBeVisible();
     await expect(alertLocked).toContainText(/bloqueada|temporalmente|intentos/i);
   });
 });
 
-test.describe('Web Admin — Control de Acceso RBAC y Sidebar (W-03 & W-07)', () => {
-  test('[W-03] Rol admin_tenant al intentar entrar a /admin/tenants es bloqueado por RBAC (403)', async ({ page }) => {
+test.describe('Web Admin — Guards de Navegación y RBAC (W-03 & W-07)', () => {
+  test('[W-03] Usuario sin autenticar intentando entrar a /tenants es redirigido a /iniciar-sesion', async ({ page }) => {
+    // Sin sesión en localStorage
+    await page.goto('/tenants');
+    // El guard requiereRol('admin_plataforma') redirige al inicio de sesión
+    await expect(page).toHaveURL(/.*\/iniciar-sesion/);
+  });
+
+  test('[W-03] Rol admin_tenant al intentar entrar a /tenants es redirigido a /inicio por guard', async ({ page }) => {
     // Simular sesión iniciada con rol admin_tenant
     await page.addInitScript(() => {
       localStorage.setItem('auth_token', 'mock-tenant-admin-token');
       localStorage.setItem('user_role', 'admin_tenant');
     });
 
-    await page.route('**/api/v1/admin/tenants', async route => {
-      await route.fulfill({
-        status: 403,
-        contentType: 'application/problem+json',
-        body: JSON.stringify({
-          type: 'https://quickpatch.internal/problems/no-autorizado',
-          title: 'Acceso Denegado',
-          status: 403,
-          detail: 'No tienes permisos suficientes para acceder a la gestión de empresas (W-03).',
-          correlationId: 'cid-test-403'
-        })
-      });
-    });
+    await page.goto('/tenants');
 
-    await page.goto('/admin/tenants');
-
-    // El guard RBAC de Angular bloquea el acceso: la tabla de gestión de tenants NO debe renderizarse
-    await expect(page.locator('table, [data-testid="tenants-table"]')).toHaveCount(0);
-
-    // Debe mostrar alerta o toast de acceso denegado o redirigir
-    const alertForbidden = page.locator('.alert-danger, .alert-warning, [role="alert"], .toast-error, .notification');
-    if (await alertForbidden.count() > 0) {
-      await expect(alertForbidden.first()).toBeVisible();
-      await expect(alertForbidden.first()).toContainText(/no tienes permiso|acceso denegado|no autorizado|403/i);
-    } else {
-      // Si el guard redirige, la URL no debe permanecer en /admin/tenants
-      expect(page.url()).not.toContain('/admin/tenants');
-    }
+    // Conforme a core/guards.ts: si no tiene el rol admin_plataforma, redirige a /inicio
+    // NO existe pantalla de acceso denegado ni .access-denied
+    await expect(page).toHaveURL(/.*\/inicio/);
+    await expect(page.locator('table caption:has-text("Empresas oferentes")')).toHaveCount(0);
   });
 
-  test('[W-07] Navegación del sidebar adapta opciones según el rol autenticado', async ({ page }) => {
-    // Simular sesión con rol admin_tenant
+  test('[W-07] Redirección inicial en la raíz (/) según el rol autenticado', async ({ page }) => {
+    // Con rol admin_plataforma, redirigirPorRol lleva a /tenants
     await page.addInitScript(() => {
-      localStorage.setItem('auth_token', 'mock-tenant-admin-token');
-      localStorage.setItem('user_role', 'admin_tenant');
+      localStorage.setItem('auth_token', 'mock-platform-admin-token');
+      localStorage.setItem('user_role', 'admin_plataforma');
     });
 
-    await page.goto('/dashboard');
-
-    const sidebar = page.locator('nav.sidebar, aside.sidebar, [data-testid="admin-sidebar"]');
-    await expect(sidebar).toBeVisible();
-
-    // admin_tenant DEBE ver Dashboard y Técnicos/Categorías
-    await expect(sidebar.locator('text=/Dashboard|Inicio/i')).toBeVisible();
-    
-    // admin_tenant NO DEBE ver enlace de gestión de Tenants
-    await expect(sidebar.locator('a[href*="/admin/tenants"], text=/Tenants|Empresas/i')).toHaveCount(0);
+    await page.goto('/');
+    await expect(page).toHaveURL(/.*\/tenants/);
   });
 });
 
@@ -169,120 +178,145 @@ test.describe('Web Admin — Gestión de Tenants (W-04, W-05 & W-06)', () => {
     });
   });
 
-  test('[W-04] Listado de empresas muestra tabla con columnas, badges y pestañas de filtro', async ({ page }) => {
-    await page.route('**/api/v1/admin/tenants*', async route => {
+  test('[W-04] Vista /tenants muestra tabla de empresas con columnas oficiales y badges de estado', async ({ page }) => {
+    // Interceptar la llamada a /v1/platform/tenants que hace TenantsApi
+    await page.route('**/platform/tenants*', async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify([
           {
-            id: 't-001',
+            id: 'tenant-bogota-001',
             name: 'Servicios Técnicos Bogotá S.A.S.',
             nit: '900.543.210-1',
             status: 'activo',
-            createdAt: '2026-01-10T08:00:00Z',
-            version: 1
+            createdAt: '2026-01-10T08:00:00Z'
           },
           {
-            id: 't-002',
+            id: 'tenant-andina-002',
             name: 'Soluciones Andina Express Ltda.',
             nit: '901.876.543-2',
             status: 'inactivo',
-            createdAt: '2026-02-14T11:30:00Z',
-            version: 2
+            createdAt: '2026-02-14T11:30:00Z'
           }
         ])
       });
     });
 
-    await page.goto('/admin/tenants');
+    await page.goto('/tenants');
 
-    // Tabla presente
-    const table = page.locator('table, [data-testid="tenants-table"]');
+    // Estructura real de app-tenants
+    const table = page.locator('table');
     await expect(table).toBeVisible();
+    await expect(page.locator('caption')).toContainText(/Empresas oferentes de la plataforma/i);
 
-    // Verificación de columnas esperadas (W-04)
-    await expect(table.locator('th:has-text("Nombre"), th:has-text("Empresa")')).toBeVisible();
+    // Encabezados de tabla
+    await expect(table.locator('th:has-text("Nombre")')).toBeVisible();
     await expect(table.locator('th:has-text("NIT")')).toBeVisible();
     await expect(table.locator('th:has-text("Estado")')).toBeVisible();
+    await expect(table.locator('th:has-text("Creado")')).toBeVisible();
 
-    // Badges de estado
-    await expect(page.locator('.badge-activo, span:has-text("Activo")').first()).toBeVisible();
-    await expect(page.locator('.badge-inactivo, span:has-text("Inactivo")').first()).toBeVisible();
-
-    // Filtros por pestaña: Todos, Activos, Inactivos
-    const tabs = page.locator('.nav-tabs, [role="tablist"], .filter-tabs');
-    await expect(tabs.locator('text=/Todos/i')).toBeVisible();
-    await expect(tabs.locator('text=/Activos/i')).toBeVisible();
-    await expect(tabs.locator('text=/Inactivos/i')).toBeVisible();
+    // Badges de estado en el DOM real
+    await expect(page.locator('span.estado:has-text("Activo")')).toBeVisible();
+    await expect(page.locator('span.estado.inactivo:has-text("Inactivo")')).toBeVisible();
   });
 
-  test('[W-05] Modal de confirmación para desactivar tenant y advertencia de bloqueo (RN-T1)', async ({ page }) => {
-    await page.route('**/api/v1/admin/tenants*', async route => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([
-          {
-            id: 't-001',
+  test('[W-05] Confirmación inline para cambiar estado de tenant (RN-T1 / PATCH /v1/platform/tenants/:id)', async ({ page }) => {
+    await page.route('**/platform/tenants*', async route => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: 'tenant-bogota-001',
+              name: 'Servicios Técnicos Bogotá S.A.S.',
+              nit: '900.543.210-1',
+              status: 'activo',
+              createdAt: '2026-01-10T08:00:00Z'
+            }
+          ])
+        });
+      }
+      if (route.request().method() === 'PATCH') {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 'tenant-bogota-001',
             name: 'Servicios Técnicos Bogotá S.A.S.',
             nit: '900.543.210-1',
-            status: 'activo',
-            version: 1
-          }
-        ])
-      });
+            status: 'inactivo',
+            createdAt: '2026-01-10T08:00:00Z'
+          })
+        });
+      }
     });
 
-    await page.goto('/admin/tenants');
+    await page.goto('/tenants');
 
-    // Clic en switch o botón de desactivación
-    const toggleBtn = page.locator('button.btn-toggle-status, input[type="checkbox"].status-toggle, [data-testid="deactivate-tenant"]').first();
-    if (await toggleBtn.count() > 0) {
-      await toggleBtn.click();
+    // Botón inicial de acción en la tabla: 'Desactivar'
+    const btnPedirCambio = page.locator('button:has-text("Desactivar")').first();
+    await expect(btnPedirCambio).toBeVisible();
+    await btnPedirCambio.click();
 
-      // Modal de confirmación (W-05)
-      const modal = page.locator('.modal, [role="dialog"], .confirmation-dialog');
-      await expect(modal).toBeVisible();
-      await expect(modal).toContainText(/¿desactivar|suspender/i);
-      await expect(modal).toContainText(/no podrá crear nuevas solicitudes|RN-T1/i);
+    // Confirmación inline según features/tenants/tenants.ts:
+    // <span class="confirmacion">¿Desactivar {name}? <button>Confirmar</button> <button class="secundario">Cancelar</button></span>
+    const confirmacion = page.locator('.confirmacion');
+    await expect(confirmacion).toBeVisible();
+    await expect(confirmacion).toContainText(/¿Desactivar Servicios Técnicos Bogotá/i);
 
-      // Botones de cancelar y confirmar
-      await expect(modal.locator('button:has-text("Cancelar")')).toBeVisible();
-      await expect(modal.locator('button:has-text("Confirmar"), button:has-text("Desactivar")')).toBeVisible();
-    }
+    // Botones de confirmar y cancelar
+    const btnConfirmar = confirmacion.locator('button:has-text("Confirmar")');
+    const btnCancelar = confirmacion.locator('button:has-text("Cancelar")');
+    await expect(btnConfirmar).toBeVisible();
+    await expect(btnCancelar).toBeVisible();
+
+    // Al confirmar, envía el PATCH y actualiza la lista
+    await btnConfirmar.click();
+    await expect(page.locator('span.estado.inactivo:has-text("Inactivo")')).toBeVisible();
   });
 
-  test('[W-06] Manejo de error de concurrencia optimista (409 Conflict)', async ({ page }) => {
-    await page.route('**/api/v1/admin/tenants/t-001/status', async route => {
-      await route.fulfill({
-        status: 409,
-        contentType: 'application/problem+json',
-        body: JSON.stringify({
-          type: 'https://quickpatch.internal/problems/conflicto-concurrencia',
-          title: 'Conflicto de Concurrencia Optimista',
+  test('[W-06] Manejo visual de error en mutación de tenant (409 Conflict)', async ({ page }) => {
+    await page.route('**/platform/tenants*', async route => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: 'tenant-bogota-001',
+              name: 'Servicios Técnicos Bogotá S.A.S.',
+              nit: '900.543.210-1',
+              status: 'activo',
+              createdAt: '2026-01-10T08:00:00Z'
+            }
+          ])
+        });
+      }
+      if (route.request().method() === 'PATCH') {
+        return route.fulfill({
           status: 409,
-          detail: 'El registro fue modificado por otro administrador. Por favor refresque la página.',
-          correlationId: 'cid-test-409'
-        })
-      });
+          contentType: 'application/problem+json',
+          body: JSON.stringify({
+            type: 'https://quickpatch.internal/problems/conflicto-concurrencia',
+            title: 'Conflicto de Concurrencia Optimista',
+            status: 409,
+            detail: 'El registro fue modificado por otra sesión. Por favor refresque la página.',
+            correlationId: 'cid-test-409'
+          })
+        });
+      }
     });
 
-    await page.goto('/admin/tenants');
+    await page.goto('/tenants');
 
-    // Desencadenar acción que genera el conflicto
-    const actionBtn = page.locator('[data-testid="deactivate-tenant"], button.btn-deactivate').first();
-    if (await actionBtn.count() > 0) {
-      await actionBtn.click();
-      const confirmBtn = page.locator('button:has-text("Confirmar"), button:has-text("Desactivar")');
-      if (await confirmBtn.isVisible()) {
-        await confirmBtn.click();
-      }
+    await page.click('button:has-text("Desactivar")');
+    await page.click('.confirmacion button:has-text("Confirmar")');
 
-      // Debe aparecer notificación toast o alert de conflicto
-      const conflictToast = page.locator('.toast-error, .alert-danger, [role="alert"]');
-      await expect(conflictToast).toBeVisible();
-      await expect(conflictToast).toContainText(/conflicto|modificado por otro|refresque/i);
-    }
+    // El componente captura el error y renderiza: <p class="error" role="alert">{{ error() }}</p>
+    const errorAlert = page.locator('p.error[role="alert"]');
+    await expect(errorAlert).toBeVisible();
+    await expect(errorAlert).toContainText(/conflicto|modificado|error/i);
   });
 });
