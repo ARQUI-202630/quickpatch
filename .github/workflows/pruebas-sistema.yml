@@ -1,4 +1,4 @@
-# Pruebas del sistema completo contra el ambiente de QA (VM2).
+# Pruebas del sistema completo contra el ambiente de QA (VM2, VM5 y VM7; se entra por el gateway de VM1, ADR-022).
 # Son las compuertas 2 y 3 del Documento de Pruebas (E2E, seguridad y carga), ejecutadas
 # contra QA en lugar de un staging efímero o de producción (ADR-015).
 #
@@ -27,9 +27,9 @@ concurrency:
 
 env:
   QA_HOST: qa.quickpatch.internal
-  QA_IP: 10.43.98.15
+  QA_IP: 10.43.100.168   # VM1: el gateway recibe qa.quickpatch.internal y lo reenvía al k3s de QA (VM2)
   BASE_URL: https://qa.quickpatch.internal
-  LOKI: http://10.43.99.8:3100
+  LOKI: http://10.43.100.168:3100   # Loki está en VM1 desde el ADR-022 (VM7 es ahora Kafka y Garage de QA)
 
 jobs:
   e2e:
