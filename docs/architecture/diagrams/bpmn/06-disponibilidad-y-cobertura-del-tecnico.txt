@@ -1,0 +1,10 @@
+Técnico: (Quiere recibir servicios)
+Técnico: Definir especialidades, horario y zona de cobertura
+Técnico: Marcarse disponible
+Quickpatch: Tener en cuenta al técnico al asignar servicios
+Técnico: (Disponible)
+
+Técnico: (Termina su jornada)
+Técnico: Marcarse no disponible
+Quickpatch: Dejar de asignarle servicios
+Técnico: (No disponible)

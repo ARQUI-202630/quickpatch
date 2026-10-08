@@ -1,0 +1,19 @@
+Cliente: (Ya no necesita el servicio)
+Cliente: Cancelar la solicitud con motivo
+Quickpatch: Verificar que el servicio no haya iniciado
+Quickpatch: Cancelar la solicitud y liberar al técnico
+Quickpatch: Avisar al técnico
+Cliente: (Solicitud cancelada)
+
+Admin del tenant: (Solicitud con problemas)
+Admin del tenant: Cancelar la solicitud con motivo
+Quickpatch: Verificar que el servicio no haya iniciado
+Quickpatch: Cancelar la solicitud y liberar al técnico
+Quickpatch: Avisar al técnico
+Admin del tenant: (Solicitud cancelada)
+
+Cliente: (Ya no necesita el servicio)
+Cliente: Cancelar la solicitud con motivo
+Quickpatch: Verificar que el servicio no haya iniciado
+Quickpatch: Rechazar la cancelación de un servicio en curso
+Cliente: (Cancelación rechazada)
