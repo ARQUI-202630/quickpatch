@@ -57,7 +57,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     mobConfig = component "Configuración del ambiente" "URL base, Host del gateway y huella SHA-256 del certificado de QA (pinning)." "Dart · core/config"
                     mobHttp = component "Cliente HTTP" "Adjunta JWT y X-Correlation-Id, valida el certificado y traduce problem+json en errores de la app." "Dio · core/network"
                     mobSesion = component "Sesión" "Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol." "flutter_secure_storage · core/session"
-                    mobAuth = component "Autenticación" "Login y registro de cliente, técnico y empresa." "Riverpod · features/autenticacion"
+                    mobAuth = component "Autenticación" "Login y registro de cliente hogar; el registro de empresa está oculto hasta SCRUM-26." "Riverpod · features/autenticacion"
                     mobInicio = component "Inicio por rol" "Opciones habilitadas según el rol del usuario." "Flutter · features/inicio"
                     mobSolicitudes = component "Solicitudes" "Nueva solicitud en un formulario (RNF-11) y detalle con su estado." "Riverpod · features/solicitudes"
                     mobUbicacion = component "Ubicación del dispositivo" "Permiso y lectura del GPS con respaldo en LocationManager y límite de 15 s." "geolocator · features/solicitudes/data"
@@ -65,10 +65,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     mobTiempoReal = component "Estado en tiempo real" "Recibe cambios de estado de la solicitud (RF-11, RNF-06). Canal por decidir (SAD 4.1)." "Dart · core/realtime" "Planeado"
                 }
                 web = container "Angular Web" "Panel de administración del tenant y de la plataforma." "Angular 22 + TypeScript" "Web Browser" {
-                    webShell = component "Shell y rutas" "Rutas, layout del panel y redirección a login o acceso denegado." "Angular Router · app.routes"
+                    webShell = component "Shell y rutas" "Rutas, layout del panel y redirección a login o al inicio del rol." "Angular Router · app.routes"
                     webSesion = component "Sesión" "Conserva el token y expone usuario y rol como signals." "Angular Service · core/sesion"
-                    webInterceptor = component "Interceptor HTTP" "Adjunta JWT y X-Correlation-Id; traduce 401 y 403 en estados de la UI." "Interceptor funcional · core/http"
-                    webGuards = component "Guards de rol" "Permiten cada ruta según el rol (RN-U6)." "Guard funcional · core/guards"
+                    webInterceptor = component "Interceptor HTTP" "Adjunta JWT y X-Correlation-Id; ante un 401 cierra la sesión y vuelve al login." "Interceptor funcional · core/http"
+                    webGuards = component "Guards de rol" "Permiten cada ruta según el rol y envían al inicio del rol si no corresponde (RN-U6)." "Guard funcional · core/guards"
                     webLogin = component "Inicio de sesión" "Formulario de acceso con validaciones y errores." "Angular Component · features/autenticacion"
                     webInicio = component "Inicio" "Menú según el rol del administrador." "Angular Component · features/inicio"
                     webTenants = component "Gestión de tenants" "Lista los tenants y los activa o desactiva con confirmación (SCRUM-41)." "Angular Component · features/tenants"
