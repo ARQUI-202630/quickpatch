@@ -51,7 +51,7 @@ Estado: Abierto | En Corrección | Resuelto | Verificado en QA
 
 ## 3. Matriz Consolidada de Defectos Identificados en Sprint 3
 
-Durante los ciclos de pruebas automatizadas y manuales contra el incremento de Sprint 3 se identificaron, reportaron y gestionaron los siguientes 5 defectos formales:
+Durante los ciclos de pruebas automatizadas y manuales contra el incremento de Sprint 3 se identificaron, reportaron y gestionaron los siguientes 4 defectos formales verificados con evidencias reales en el repositorio:
 
 | ID | Resumen del Defecto | HU Afectada | Severidad | Prioridad | Componente | Evidencia en Repositorio | Estado Final |
 |---|---|:---:|:---:|:---:|---|---|:---:|
@@ -59,7 +59,6 @@ Durante los ciclos de pruebas automatizadas y manuales contra el incremento de S
 | **BUG-002** | Colisión de rango CIDR de k3s (`10.43.0.0/16`) con la subred física del laboratorio | SCRUM-334 (INFRA-012) | Crítica | P1 | Infraestructura (`deploy-k3s.yml`) | `infrastructure/ansible/playbooks/deploy-k3s.yml` | **Verificado** |
 | **BUG-003** | Aserción permisiva y divergencia en validación de RN-T1 en suites de prueba | SCRUM-65 / 114 (RN-T1) | Media | P2 | E2E Postman Suite | `tests/e2e/scrum-65-roles-y-tenants.postman_collection.json` | **Verificado** |
 | **BUG-004** | Discrepancia de tipo Problem Details RFC 9457 en rechazo por cobertura geográfica | SCRUM-325 (RN-SR9) | Media | P2 | ServiceRequest / Diagnóstico | `tests/e2e/validar-diagnostico-error-qa.js` | **Verificado** |
-| **BUG-005** | Ausencia del header `X-Correlation-Id` en respuestas de error 403 Forbidden | SCRUM-65 (RNF-04) | Alta | P2 | API Gateway / Middlewares | `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt` | **Verificado** |
 
 ---
 
@@ -126,34 +125,22 @@ Durante los ciclos de pruebas automatizadas y manuales contra el incremento de S
 
 ---
 
-### BUG-005: Ausencia del header `X-Correlation-Id` en respuestas de error 403 Forbidden
-- **HU Afectada:** `SCRUM-65` (Roles y permisos / RNF-04).
-- **Severidad:** Alta | **Prioridad:** P2.
-- **Ambiente:** QA (Nginx Gateway VM1 y servicios Identity/Catalog).
-- **Precondiciones:** Petición con token carente de roles administrativos.
-- **Pasos de Reproducción:**
-  1. Enviar `GET /api/v1/platform/tenants` con token de rol `cliente`.
-- **Resultado Obtenido:** Código 403 Forbidden devuelto con mensaje estándar, pero sin el encabezado HTTP `X-Correlation-Id` en la respuesta.
-- **Resultado Esperado:** Toda respuesta de error (4xx y 5xx) debe retornar `X-Correlation-Id` en cabeceras y en el cuerpo RFC 9457 para permitir su rastreo en Loki.
-- **Causa Raíz:** El middleware de autorización denegaba el acceso antes del paso por el filtro de correlación de ASP.NET Core.
-- **Solución y Evidencia:** Reordenamiento en el pipeline de middlewares de los servicios, garantizando que el middleware de correlación se ejecute antes del middleware de autorización. Evidencia en la suite E2E de roles (`scrum-65-roles-y-tenants.postman_collection.json`) y en el registro estructurado de Loki en `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`.
-
----
-
 ## 5. Resumen Ejecutivo y Decisión de Compuerta de Calidad
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │              ESTADÍSTICAS DEL SPRINT 3                      │
 ├─────────────────────────────────────────┬───────────────────┤
-│ Total de Defectos Registrados           │                 5 │
-│ Defectos Resueltos y Verificados en QA  │                 5 │
+│ Total de Defectos Registrados           │                 4 │
+│ Defectos Resueltos y Verificados en QA  │                 4 │
 │ Defectos Abiertos Pendientes            │                 0 │
 ├─────────────────────────────────────────┼───────────────────┤
-│ Defectos Críticos (Blocker) Abiertos    │                 0 │
-│ Defectos de Severidad Alta Abiertos     │                 0 │
+│ Defectos Críticos (Blocker)             │       1 (BUG-002) │
+│ Defectos de Severidad Alta (Major)      │       1 (BUG-001) │
+│ Defectos de Severidad Media (Minor)     │ 2 (BUG-003, 004)  │
+│ Defectos Abiertos Residuales            │                 0 │
 └─────────────────────────────────────────┴───────────────────┘
 ```
 
 **Conclusión de Calidad:**  
-Al existir **0 defectos críticos y 0 defectos de severidad alta abiertos**, el incremento cumple satisfactoriamente el criterio de aceptación de la **Compuerta 2 (Pruebas de Sistema y UAT)** definido en el Documento de Pruebas `TD.md`, habilitando el corte formal de release hacia la revisión docente.
+Al existir **0 defectos críticos y 0 defectos de severidad alta abiertos** (100% de los defectos verificados y cerrados), el incremento cumple satisfactoriamente el criterio de aceptación de la compuerta de calidad de defectos, garantizando la estabilidad y consistencia de las entregas de QA para el Sprint 3.
