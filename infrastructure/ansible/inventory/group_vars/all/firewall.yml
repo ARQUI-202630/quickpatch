@@ -1,0 +1,34 @@
+# Reglas de firewall (Documento de Infraestructura, sección 10.2).
+# Política: denegar todo lo entrante; solo se abren estos pares origen-puerto.
+# Los contenedores usan red de host para que ufw sí controle su tráfico
+# (con puertos publicados, Docker se salta las reglas de ufw).
+all_vms: "{{ ip.values() | list }}"
+
+firewall_common:
+  - { port: 9100, from: ["{{ ip.vm1 }}"], comment: "Prometheus (VM1) -> node_exporter" }
+  - { port: 3389, from: "{{ team_networks }}", comment: "Escritorio remoto (xrdp) del equipo" }
+  - { port: 10050, from: "{{ lab_networks }}", comment: "Agente Zabbix del laboratorio" }
+
+firewall_by_host:
+  vm1:
+    - { port: 443, from: [any], comment: "HTTPS publico (unico punto de entrada)" }
+    - { port: 3100, from: "{{ all_vms }}", comment: "Promtail -> Loki (observabilidad en VM1, ADR-022)" }
+  vm2:   # QA, aplicación (ADR-022): k3s de QA. Producción no acepta conexiones desde QA ni al revés.
+    - { port: 30080, from: ["{{ ip.vm1 }}"], comment: "Proxy de VM1 -> Traefik de QA (HTTP)" }
+    - { port: 6443, from: ["{{ ip.vm1 }}"], comment: "Runner -> API de k3s de QA" }
+  vm3:
+    - { port: 30080, from: ["{{ ip.vm1 }}"], comment: "Gateway -> Traefik (HTTP)" }
+    - { port: 30443, from: ["{{ ip.vm1 }}"], comment: "Gateway -> Traefik (HTTPS)" }
+    - { port: 6443, from: ["{{ ip.vm1 }}"], comment: "Runner -> API de k3s" }
+  vm4:   # Producción, datos (ADR-022): PostgreSQL y Redis
+    - { port: 5432, from: ["{{ ip.vm3 }}"], comment: "Microservicios -> PostgreSQL" }
+    - { port: 6379, from: ["{{ ip.vm3 }}"], comment: "Microservicios -> Redis" }
+  vm6:   # Producción, mensajería y almacenamiento (ADR-022). Kafka UI (8080) no se abre: se entra por túnel SSH.
+    - { port: 9092, from: ["{{ ip.vm3 }}"], comment: "Microservicios -> Kafka" }
+    - { port: 9000, from: ["{{ ip.vm3 }}", "{{ ip.vm4 }}"], comment: "Evidencias (VM3) y respaldo (VM4) -> Garage (S3)" }
+  vm5:   # QA, datos (ADR-022): solo el k3s de QA (VM2) puede entrar
+    - { port: 5432, from: ["{{ ip.vm2 }}"], comment: "Servicios de QA -> PostgreSQL" }
+    - { port: 6379, from: ["{{ ip.vm2 }}"], comment: "Servicios de QA -> Redis" }
+  vm7:   # QA, mensajería y almacenamiento (ADR-022): solo el k3s de QA (VM2) puede entrar
+    - { port: 9092, from: ["{{ ip.vm2 }}"], comment: "Servicios de QA -> Kafka" }
+    - { port: 9000, from: ["{{ ip.vm2 }}"], comment: "Evidencias de QA -> Garage (S3)" }
