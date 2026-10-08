@@ -38,10 +38,6 @@
 	path = apps/backend/services/communication
 	url = https://github.com/ARQUI-202630/quickpatch-communication.git
 	branch = develop
-[submodule "infrastructure"]
-	path = infrastructure
-	url = https://github.com/ARQUI-202630/quickpatch-infrastructure.git
-	branch = develop
 [submodule "apps/api-gateway"]
 	path = apps/api-gateway
 	url = https://github.com/ARQUI-202630/quickpatch-api-gateway.git

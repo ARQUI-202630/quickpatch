@@ -183,7 +183,7 @@ curl -k -X POST "https://qa.quickpatch.internal/api/v1/catalog/admin/categories"
 
 ## 5. Automatización y Evidencia
 
-El script ejecutable [`tests/e2e/validar-diagnostico-error-qa.js`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/validar-diagnostico-error-qa.js) permite reproducir ambos flujos:
+El script ejecutable `tests/e2e/validar-diagnostico-error-qa.js` permite reproducir ambos flujos:
 
 ### Simulación Local Preparatoria
 ```bash
@@ -199,7 +199,7 @@ node tests/e2e/validar-diagnostico-error-qa.js --remote
 ```
 
 ### Evidencia Registrada
-El archivo [`tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt) contiene el registro de la simulación local validando el 100% de los contratos y aserciones.
+El archivo `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt` contiene el registro de la simulación local validando el 100% de los contratos y aserciones.
 
 ---
 

@@ -6,7 +6,7 @@
 - **Atributo priorizado:** AC5 Reliability (rolling updates sin downtime y auto-healing de contenedores)
 - **Atributo sacrificado:** costo y simplicidad operativa (curva de aprendizaje y administración de un clúster)
 - **Restricciones:** R5 (sin presupuesto), R7 (sin operación 24/7), R10 (7 VMs fijas), R11 (un solo administrador de infraestructura)
-- **Implementación:** `quickpatch-infrastructure` (playbooks de Ansible y manifiestos de k3s)
+- **Implementación:** `infrastructure/ansible` del repositorio principal (antes `quickpatch-infrastructure`) y `deploy/k8s/` de cada servicio
 
 ## Contexto
 
