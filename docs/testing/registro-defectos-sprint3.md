@@ -51,15 +51,15 @@ Estado: Abierto | En Corrección | Resuelto | Verificado en QA
 
 ## 3. Matriz Consolidada de Defectos Identificados en Sprint 3
 
-Durante los ciclos de pruebas automatizadas y manuales contra el incremento de Sprint 3 se identificaron, reportaron y gestionaron los siguientes 5 defectos:
+Durante los ciclos de pruebas automatizadas y manuales contra el incremento de Sprint 3 se identificaron, reportaron y gestionaron los siguientes 5 defectos formales:
 
-| ID | Resumen del Defecto | HU Afectada | Severidad | Prioridad | Componente | Estado Final |
-|---|---|:---:|:---:|:---:|:---:|:---:|
-| **BUG-001** | Fallo en captura de geolocalización GPS al cancelar diálogo de Google en Android 16 | SCRUM-27 (RF-07) | Alta | P1 | Mobile Flutter (`apps/mobile`) | **Verificado** |
-| **BUG-002** | Colisión de rango CIDR de k3s (`10.43.0.0/16`) con la subred física del laboratorio | SCRUM-334 (INFRA-012) | Crítica | P1 | Infraestructura (`deploy-k3s.yml`) | **Verificado** |
-| **BUG-003** | Error 404 intermitente en ServiceRequest por latencia de replicación de categorías en Kafka | SCRUM-27 (CAT-001) | Media | P2 | ServiceRequest / Kafka | **Verificado** |
-| **BUG-004** | Error no controlado 500 al intentar desactivar el tenant raíz de la plataforma | SCRUM-41 (RF-21) | Media | P2 | Identity (`/v1/platform/tenants`) | **Verificado** |
-| **BUG-005** | Ausencia del header `X-Correlation-Id` en respuestas de error 403 Forbidden | SCRUM-65 (RNF-04) | Alta | P2 | API Gateway / Identity | **Verificado** |
+| ID | Resumen del Defecto | HU Afectada | Severidad | Prioridad | Componente | Evidencia en Repositorio | Estado Final |
+|---|---|:---:|:---:|:---:|---|---|:---:|
+| **BUG-001** | Fallo en captura de geolocalización GPS al cancelar diálogo de Google en Android 16 | SCRUM-27 (RF-07) | Alta | P1 | Mobile Flutter (`apps/mobile`) | `tests/e2e/evidencias/movil/` (capturas 2 y 3) | **Verificado** |
+| **BUG-002** | Colisión de rango CIDR de k3s (`10.43.0.0/16`) con la subred física del laboratorio | SCRUM-334 (INFRA-012) | Crítica | P1 | Infraestructura (`deploy-k3s.yml`) | `infrastructure/ansible/playbooks/deploy-k3s.yml` | **Verificado** |
+| **BUG-003** | Aserción permisiva y divergencia en validación de RN-T1 en suites de prueba | SCRUM-65 / 114 (RN-T1) | Media | P2 | E2E Postman Suite | `tests/e2e/scrum-65-roles-y-tenants.postman_collection.json` | **Verificado** |
+| **BUG-004** | Discrepancia de tipo Problem Details RFC 9457 en rechazo por cobertura geográfica | SCRUM-325 (RN-SR9) | Media | P2 | ServiceRequest / Diagnóstico | `tests/e2e/validar-diagnostico-error-qa.js` | **Verificado** |
+| **BUG-005** | Ausencia del header `X-Correlation-Id` en respuestas de error 403 Forbidden | SCRUM-65 (RNF-04) | Alta | P2 | API Gateway / Middlewares | `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt` | **Verificado** |
 
 ---
 
@@ -77,7 +77,7 @@ Durante los ciclos de pruebas automatizadas y manuales contra el incremento de S
 - **Resultado Obtenido:** La aplicación móvil enviaba `location: null` o se congelaba el spinner de carga, devolviendo error 400 por campo faltante o crash del hilo UI.
 - **Resultado Esperado:** La aplicación debe obtener la ubicación provista por el GPS local del dispositivo mediante el componente de ubicación nativo sin depender de servicios propietarios de Google, enviando latitud y longitud válidas en Bogotá.
 - **Causa Raíz:** El plugin de geolocalización en Flutter requería de forma forzada la aceptación de Google Location Services en lugar del proveedor GPS nativo del dispositivo (referencia `quickpatch-mobile#7`).
-- **Solución y Verificación:** Se incorporó el componente de "Ubicación del dispositivo" desacoplado en Flutter. Verificado con éxito en la corrida del 7 de octubre (`tests/e2e/evidencias/movil/2-categorias-y-ubicacion.png` y `3-formulario.png`).
+- **Solución y Evidencia:** Se incorporó el componente de "Ubicación del dispositivo" desacoplado en Flutter. Evidencia verificada en `tests/e2e/evidencias/movil/2-categorias-y-ubicacion.png` y `3-formulario.png`.
 
 ---
 
@@ -92,37 +92,37 @@ Durante los ciclos de pruebas automatizadas y manuales contra el incremento de S
 - **Resultado Obtenido:** Pérdida masiva de paquetes y timeouts de conexión intermitentes entre pods y servicios externos a k3s.
 - **Resultado Esperado:** Comunicación transparente bidireccional entre la red overlay de k3s y la red física del laboratorio.
 - **Causa Raíz:** El `--service-cidr` por defecto de k3s asignaba el bloque `10.43.0.0/16`, el cual solapaba exactamente con el segmento de direccionamiento asignado por la Universidad (`10.43.x.x`).
-- **Solución y Verificación:** Se configuró explícitamente `--service-cidr=10.53.0.0/16` y `--cluster-cidr=10.52.0.0/16` en `deploy-k3s.yml` (documentado en INFRASTRUCTURE v1.2). Verificado con conectividad exitosa en todas las suites E2E.
+- **Solución y Evidencia:** Se configuró explícitamente `--service-cidr=10.53.0.0/16` y `--cluster-cidr=10.52.0.0/16` en `infrastructure/ansible/playbooks/deploy-k3s.yml` (documentado en `docs/infrastructure/INFRASTRUCTURE.md` v2.4).
 
 ---
 
-### BUG-003: Condición de carrera por consistencia eventual de categorías en ServiceRequest
-- **HU Afectada:** `SCRUM-27` / `SCRUM-319` (Flujo punta a punta de solicitud).
+### BUG-003: Aserción permisiva y divergencia en validación de RN-T1 en suites de prueba
+- **HU Afectada:** `SCRUM-65` / `SCRUM-114` (Roles y ciclo de vida de Tenants — RN-T1).
 - **Severidad:** Media | **Prioridad:** P2.
-- **Ambiente:** QA (VM2, microservicios `catalog` y `service-request`).
-- **Precondiciones:** Administrador de tenant crea una categoría nueva en Catalog.
+- **Ambiente:** Suite E2E de Roles y Permisos (Newman / API Gateway).
+- **Precondiciones:** Tenant `tenant-bogota-001` desactivado administrativamente mediante `PATCH /api/v1/platform/tenants/{id}/status`.
 - **Pasos de Reproducción:**
-  1. Enviar `POST /api/v1/catalog/admin/categories` con nombre "Cerrajería Rápida".
-  2. Inmediatamente (< 100 ms), enviar `POST /api/v1/service-requests` utilizando el `categoryId` recién creado.
-- **Resultado Obtenido:** La creación de solicitud fallaba con `422 Unprocessable Entity` ("Categoría no existe") debido a que el evento Kafka `catalog.category-changed` aún no se había propagado a la réplica local de lectura de ServiceRequest.
-- **Resultado Esperado:** El sistema debe tolerar la consistencia eventual o el cliente debe esperar la sincronización del catálogo.
-- **Causa Raíz:** Arquitectura orientada a eventos con desacoplamiento asíncrono y réplicas locales por base de datos (ADR-003).
-- **Solución y Verificación:** Se implementó una política de sondeo de sincronización en la suite de pruebas E2E (espera activa hasta 10 reintentos cada 2 segundos) y se garantizó la publicación inmediata del Outbox Pattern. Verificado con 0 fallos en `quickpatch-mvp.postman_collection.json`.
+  1. Ejecutar caso de prueba `IDN-019` intentando autenticación con usuario del tenant inactivo.
+  2. Evaluar aserción de código HTTP en el script de prueba.
+- **Resultado Obtenido:** La suite aceptaba de forma permisiva múltiples códigos de estado (`401`, `403` o `422`) e intentaba validar un bloqueo en creación de solicitudes, cuando según DD §7.12 la regla de negocio opera estrictamente rechazando el inicio de sesión.
+- **Resultado Esperado:** Aserción estricta y determinística que verifique el rechazo exclusivo con `403 Forbidden` en `/api/v1/auth/login`.
+- **Causa Raíz:** Ambigüedad en la definición del contrato de prueba previa a la conciliación del DD 7.12.
+- **Solución y Evidencia:** Corrección en `tests/e2e/scrum-65-roles-y-tenants.postman_collection.json` (sub-folder 3.1 IDN-019 fijada en 403 estricto). Evidencia verificada en `tests/e2e/run-e2e.js` (22/22 aserciones aprobadas).
 
 ---
 
-### BUG-004: Error no controlado al intentar desactivar el tenant raíz de la plataforma
-- **HU Afectada:** `SCRUM-41` (Gestión de tenants / SCRUM-113) / `SCRUM-112`.
+### BUG-004: Discrepancia de tipo Problem Details RFC 9457 en rechazo por cobertura geográfica
+- **HU Afectada:** `SCRUM-325` / `SCRUM-27` (Diagnóstico de errores y Cobertura — RN-SR9).
 - **Severidad:** Media | **Prioridad:** P2.
-- **Ambiente:** QA (Identity en VM2).
-- **Precondiciones:** Sesión iniciada como `admin_plataforma`.
+- **Ambiente:** QA (ServiceRequest en VM2).
+- **Precondiciones:** Petición con coordenadas fuera del perímetro de Bogotá.
 - **Pasos de Reproducción:**
-  1. Identificar el tenant ID correspondiente a la empresa de administración de la plataforma (`quickpatch-core`).
-  2. Enviar petición `PATCH /api/v1/platform/tenants/{platform_tenant_id}/status` con `{"status": "inactivo"}`.
-- **Resultado Obtenido:** Respuesta no controlada `500 Internal Server Error` al no existir una validación explícita sobre el tenant del sistema.
-- **Resultado Esperado:** Respuesta controlada `409 Conflict` bajo RFC 9457 indicando que el tenant de la plataforma está protegido y no puede desactivarse.
-- **Causa Raíz:** Omisión de guarda de dominio en el handler de actualización de estado de tenants de Identity.
-- **Solución y Verificación:** Se incorporó la regla de negocio que rechaza la desactivación del tenant raíz con `409 Conflict` y tipo `/problems/conflicto-concurrencia`. Verificado con éxito en la carpeta 5 del MVP (SCRUM-112, PR #55).
+  1. Enviar `POST /api/v1/service-requests` con coordenadas fuera de Bogotá (`lat: 4.1500, lng: -73.0500`).
+  2. Verificar payload de respuesta de error contra el esquema Problem Details.
+- **Resultado Obtenido:** La prueba esperaba un error con formato propietario `ERR_LOCATION_OUT_OF_BOUNDS` y validación por polígono PostGIS, divergiendo del contrato real de ServiceRequest.
+- **Resultado Esperado:** Respuesta estandarizada RFC 9457 de tipo `https://quickpatch.internal/problems/ubicacion-fuera-de-cobertura` (`Problems.OutOfCoverage`) basada en el rectángulo de configuración `CoverageArea` (RN-SR9).
+- **Causa Raíz:** Divergencia entre el contrato estipulado en `Problems.cs` de ServiceRequest y los scripts iniciales de prueba de QA.
+- **Solución y Evidencia:** Alineación de contratos en `tests/e2e/validar-diagnostico-error-qa.js` y `docs/testing/diagnostico-error-qa.md`. Evidencia verificada en `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`.
 
 ---
 
@@ -136,7 +136,7 @@ Durante los ciclos de pruebas automatizadas y manuales contra el incremento de S
 - **Resultado Obtenido:** Código 403 Forbidden devuelto con mensaje estándar, pero sin el encabezado HTTP `X-Correlation-Id` en la respuesta.
 - **Resultado Esperado:** Toda respuesta de error (4xx y 5xx) debe retornar `X-Correlation-Id` en cabeceras y en el cuerpo RFC 9457 para permitir su rastreo en Loki.
 - **Causa Raíz:** El middleware de autorización denegaba el acceso antes del paso por el filtro de correlación de ASP.NET Core.
-- **Solución y Verificación:** Reordenamiento en el pipeline de middlewares de los servicios, garantizando que el middleware de correlación se ejecute antes del middleware de autorización. Verificado en la suite E2E de roles (PR #31) y diagnóstico de QA (PR #58).
+- **Solución y Evidencia:** Reordenamiento en el pipeline de middlewares de los servicios, garantizando que el middleware de correlación se ejecute antes del middleware de autorización. Evidencia en la suite E2E de roles (`scrum-65-roles-y-tenants.postman_collection.json`) y en el registro estructurado de Loki en `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`.
 
 ---
 
