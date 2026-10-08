@@ -55,3 +55,28 @@ En la base: la solicitud quedó en `buscando_tecnico` con su punto, el Outbox pu
 6. Panel web: el administrador de la plataforma entra en `https://qa.quickpatch.internal`, ve los tenants y los activa o desactiva (SCRUM-41).
 7. Rama `release/*` en este repositorio: corre esta colección contra QA.
 8. App móvil: `config/qa.json` con la huella del certificado de VM1 (`quickpatch-mobile`, README).
+
+## Validación y Diagnóstico de Errores (SCRUM-325)
+
+Procedimiento automatizado que demuestra la trazabilidad de errores y la capacidad de diagnóstico en los logs centralizados de Loki (VM1) sin acceso interactivo por SSH (SAD §3.7 / AC7-E4 y SAD §3.6 / RNF-04 / AC6-E3):
+
+1. **Provocación de errores controlados:**
+   - **422 Unprocessable Entity:** Creación de solicitud con coordenadas fuera del área de cobertura (`POST /api/v1/service-requests`), retornando RFC 9457 Problem Details (`Problems.OutOfCoverage`, RN-SR9) y `X-Correlation-Id`.
+   - **403 Forbidden:** Intento de acceso no autorizado a endpoint administrativo de catálogo (`POST /api/v1/catalog/admin/categories`) por rol cliente, validando la auditoría de seguridad RNF-04.
+2. **Diagnóstico en Loki:**
+   - Búsqueda en Grafana (`https://grafana.quickpatch.internal`) mediante LogQL con etiquetas Promtail:
+     `{job="k3s", vm="vm2"} |= "<correlationId>"`
+   - Extracción de la traza estructurada con causa raíz (`CoverageArea` o regla de autorización) en segundos.
+
+### Ejecución
+```bash
+node tests/e2e/validar-diagnostico-error-qa.js
+```
+O contra el entorno real de QA en VM2:
+```bash
+node tests/e2e/validar-diagnostico-error-qa.js --remote
+```
+
+### Documentación y Evidencia
+- Guía detallada: `docs/testing/diagnostico-error-qa.md`.
+- Evidencia de simulación: `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`.
