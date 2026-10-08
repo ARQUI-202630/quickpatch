@@ -56,17 +56,17 @@ El alcance de pruebas de sistema ejecutado cubrió los requerimientos funcionale
 ```
 
 ### 2.1 Requerimientos Funcionales y de Negocio
-- **SCRUM-41 / SCRUM-112 / SCRUM-114 (Gestión de Tenants):** Aprovisionamiento, listado, actualización y suspensión de inquilinos por el Administrador de Plataforma (`admin_plataforma`) mediante los contratos `/api/v1/platform/tenants` y `PATCH /api/v1/platform/tenants/{id}` (DD 10.4). Verificación estricta de la regla de negocio **RN-T1** (el tenant inactivo ve rechazado su inicio de sesión en `/api/v1/auth/login` con código `403 Forbidden`).
+- **SCRUM-41 / SCRUM-112 / SCRUM-114 (Gestión de Tenants):** Aprovisionamiento, listado, actualización y suspensión de inquilinos por el Administrador de Plataforma (`admin_plataforma`) mediante los contratos `/api/v1/platform/tenants` y `PATCH /api/v1/platform/tenants/{id}` (DD 10.4). Regla de negocio **RN-T1** (el tenant inactivo ve rechazado su inicio de sesión en `/api/v1/auth/login` con código `403 Forbidden`): validada a nivel de especificación en la suite de Postman contra el simulador local; su verificación formal sobre microservicios desplegados permanece como **Pendiente de QA**.
 - **SCRUM-65 (Roles y Permisos):** Validación de la matriz de autorización para los cuatro roles del sistema (`cliente`, `tecnico`, `admin_tenant`, `admin_plataforma`). Aislamiento de datos en catálogos y solicitudes entre inquilinos distintos.
 - **RF-07 / RN-SR9 (Solicitudes y Cobertura Geográfica):** Validación del rectángulo de cobertura geográfica `CoverageArea` para solicitudes de servicio, retornando `Problems.OutOfCoverage` (422) con trazabilidad `X-Correlation-Id`.
-- **SCRUM-318 (Flujo Web Administrativo):** Pruebas end-to-end de la aplicación web Angular para la gestión de la plataforma (casos W-01 a W-07), ruta de acceso real `/iniciar-sesion`, navegación hacia `/tenants` e `/inicio`, guards de activación (`core/guards.ts`), y manipulación de estado de inquilinos con confirmación inline.
+- **SCRUM-318 (Flujo Web Administrativo):** Pruebas de la aplicación web Angular para la gestión de la plataforma (casos W-01 a W-07), ruta de acceso real `/iniciar-sesion`, navegación hacia `/tenants` e `/inicio`, guards de activación (`core/guards.ts`), y manipulación de estado de inquilinos con confirmación inline.
 
 ### 2.2 Requerimientos No Funcionales y Restricciones de Arquitectura
 - **RNF-04 / SAD §3.6 (Auditoría de Seguridad):** Registro estructurado en Loki de todo intento de acceso denegado (403) con método, ruta, usuario y rol.
 - **RNF-07 / SAD §3.2 (Latencia Bajo Carga):** Tiempo de respuesta $p95 \le 2.0\text{ segundos}$ en creación y consulta de servicios bajo carga sostenida.
 - **RNF-08 / SAD §3.2 (Throughput Mínimo):** Capacidad de procesamiento $\ge 20\text{ req/s}$ sin degradación del servicio ni aumento en la tasa de error 5xx.
-- **Killer K2 / PAY-002 (Seguridad PCI-DSS):** Cero almacenamiento, transmisión o registro de datos primarios de tarjeta (PAN) o códigos de seguridad (CVV) en microservicios, bases de datos o logs.
-- **Restricción R9 (Seguridad de Red VPN):** Acceso a servicios internos y observabilidad restringido a través de la red privada WireGuard, exponiendo únicamente el puerto 443 en VM1.
+- **Killer K2 / PAY-002 (Seguridad PCI-DSS):** Cero almacenamiento, transmisión o registro de datos primarios de tarjeta (PAN) o códigos de seguridad (CVV) en microservicios, bases de datos o logs (ADR-009).
+- **Restricción R9 (Red Privada del Laboratorio):** Acceso a servicios internos y observabilidad restringido a la red privada física del laboratorio de la universidad, permitiendo únicamente el puerto HTTPS 443 de VM1 desde la VPN institucional (SAD §1.2 e INFRASTRUCTURE §3).
 - **Restricción R10 (Broker Kafka):** Procesamiento desacoplado de eventos de integración entre microservicios.
 - **SAD §3.7 / AC7-E4 (Diagnóstico Centralizado):** Aislamiento de causa raíz de incidentes en menos de 1 hora mediante `X-Correlation-Id` y consultas LogQL en Grafana/Loki sin acceso interactivo por terminal SSH.
 
@@ -93,7 +93,7 @@ VM3 (k3s Producción) │ VM4 (PostgreSQL 16 Producción) │ VM6 (Garage S3 y K
 ### 3.1 Garantías de Aislamiento
 1. **Aislamiento de Persistencia (ADR-015 / ADR-022):** Las pruebas interactúan únicamente con las bases de datos de VM5. Ninguna conexión, script de prueba o procedimiento de purga (teardown) apunta a la base de datos de producción en VM4 (`10.43.98.209`).
 2. **Aislamiento de Almacenamiento S3 y Mensajería:** Los eventos generados por las pruebas se publican en el cluster de Kafka en VM7 y las evidencias se almacenan en el Garage de VM7, preservando el Garage de producción (VM6) intacto.
-3. **Observabilidad Unificada:** La pila Prometheus + Loki en VM1 recolecta telemetría de las 7 VMs mediante Promtail y Node Exporter. El acceso de los ingenieros de QA a las trazas se realiza exclusivamente mediante la UI de Grafana (`https://grafana.quickpatch.internal`) a través de la VPN WireGuard (R9).
+3. **Observabilidad Unificada:** La pila Prometheus + Loki en VM1 recolecta telemetría de las 7 VMs mediante Promtail y Node Exporter. El acceso de los ingenieros de QA a las trazas se realiza exclusivamente mediante la UI de Grafana (`https://grafana.quickpatch.internal`) a través de la red privada del laboratorio alcanzable por la VPN (R9).
 
 ---
 
@@ -107,7 +107,7 @@ A continuación se presentan las métricas de ejecución y el estado de validaci
 │ Suite de Pruebas             │ Total Aserciones │ Aserciones Pass │ Fallos    │ Estado / Evidencia           │
 ├──────────────────────────────┼──────────────────┼─────────────────┼───────────┼──────────────────────────────┤
 │ 1. Flujo E2E MVP (Servicios) │        61        │        61       │     0     │ ✅ 100% Pass (Servicios docker)│
-│ 2. Playwright Web Admin UI   │        31        │        31       │     0     │ ⏳ Pendiente QA (Simulac. ok) │
+│ 2. Consola Web Admin (Newman)│        31        │        31       │     0     │ ⏳ Pendiente QA (Simulac. ok) │
 │ 3. Carga k6 (RNF-07 / 08)    │        -         │        -        │     -     │ ⏳ Pendiente QA (VM2/VM5)     │
 │ 4. Auditoría PCI-DSS (K2)    │        -         │        -        │     0     │ ⏳ Pendiente QA (Estático ok) │
 │ 5. DAST ZAP (OWASP)          │        -         │        -        │     -     │ ⏳ Pendiente QA (En VM1)      │
@@ -134,8 +134,8 @@ A continuación se presentan las métricas de ejecución y el estado de validaci
 ---
 
 ### 4.2 Suite 2: Consola Web Administrativa Angular (SCRUM-318)
-- **Herramienta:** Playwright (`tests/e2e/specs/web-admin.spec.ts`) & Newman (`tests/e2e/scrum-318-web-admin.postman_collection.json`; runner `tests/e2e/run-web-admin-e2e.js`)  
-- **Estado de la Compuerta:** **Pendiente de QA** (Validada preliminarmente en simulación local con 31/31 aserciones). La corrida formal queda agendada para ejecutarse contra el contenedor del panel desplegado en el cluster k3s de QA (VM2).  
+- **Herramienta:** Newman (`tests/e2e/scrum-318-web-admin.postman_collection.json` contra `mock-admin-gateway.js`) & Especificación Playwright (`tests/e2e/specs/web-admin.spec.ts`)  
+- **Estado de la Compuerta:** **Pendiente de QA** (Validada preliminarmente en simulación local de contratos con Newman arrojando 31/31 aserciones aprobadas; la especificación E2E de Playwright modela la sesión en `sessionStorage` con `quickpatch.sesion` y queda desacoplada para ejecutarse contra el contenedor del panel desplegado en el clúster k3s de QA en VM2).  
 - **Alineación con la Aplicación Real (`apps/web`):**
   - **W-01 (Login Administrativo):** Acceso a través de la ruta `/iniciar-sesion` con inputs `#email`, `#password` y botón 'Ingresar'. Redirección a `/tenants` para `admin_plataforma` y a `/inicio` para `admin_tenant`.
   - **W-02 (Manejo de Errores en Login):** Visualización de errores mediante `<p class="error" role="alert">` ante credenciales inválidas (401) y cuenta bloqueada por intentos reiterados (423 Locked / RN-U4).
@@ -162,8 +162,8 @@ A continuación se presentan las métricas de ejecución y el estado de validaci
 - **Herramientas:** OWASP ZAP Scanner (`tests/security/zap-baseline.conf`) & Verificador PCI-DSS (`tests/security/pci_dss_scanner.py`)  
 - **Estado de la Compuerta:** **Pendiente de QA**.
 - **Seguridad DAST (OWASP Top 10):** Reglas baseline configuradas para ser ejecutadas contra el Ingress Nginx en VM1 (`https://qa.quickpatch.internal`) tras el despliegue del release.
-- **Cumplimiento PCI-DSS (Killer K2 / Regla PAY-002):**
-  - Inspección estática preliminar completada sobre esquemas, payloads y contratos del microservicio `Payments` y API Gateway.
+- **Cumplimiento PCI-DSS (Killer K2 / Regla PAY-002 / ADR-009):**
+  - Inspección estática preliminar completada sobre esquemas, payloads y contratos del microservicio `Payments` y API Gateway conforme a la estrategia de tokenización del **ADR-009**.
   - Verificación: Cero números de tarjeta de crédito (PAN) de 16 dígitos o códigos CVV transmitidos en claro o persistidos. Uso exclusivo de tokens efímeros (`tok_test_424242...`), manteniendo la arquitectura fuera del alcance de certificación SAQ-D.
 
 ---
@@ -171,34 +171,32 @@ A continuación se presentan las métricas de ejecución y el estado de validaci
 ### 4.5 Suite 5: Protocolo de Diagnóstico y Observabilidad en Logs (SCRUM-325)
 - **Herramientas:** Script de prueba de observabilidad (`tests/e2e/validar-diagnostico-error-qa.js`) & Grafana LogQL  
 - **Estado de la Compuerta:** **Pendiente de QA**.
-- **Escenarios Validados en Prueba:**
-  1. **Error 422 (Fuera de Cobertura - RN-SR9):** Petición enviada con coordenadas fuera del área de Bogotá (`lat: 4.1500, lng: -73.0500`). El servicio retornó `Problems.OutOfCoverage` con `X-Correlation-Id: cid-diag-geo-muykxnks`.
-  2. **Error 403 (Acceso Denegado - RNF-04):** Petición no autorizada retornando Problem Details con `X-Correlation-Id`.
+- **Escenarios Validados en Simulación Preparatoria:**
+  1. **Error 422 (Fuera de Cobertura - RN-SR9):** Validación de contrato enviada con coordenadas fuera del área de Bogotá (`lat: 4.1500, lng: -73.0500`). En la simulación preparatoria local (`mock-gateway-qa.js`), el simulador retornó `Problems.OutOfCoverage` con identificador de correlación simulado (`X-Correlation-Id: cid-diag-geo-muykmsz8`). La respuesta de los microservicios reales desplegados en QA queda agendada para ejecutarse en VM2.
+  2. **Error 403 (Acceso Denegado - RNF-04):** Petición no autorizada evaluada en el simulador local retornando Problem Details con correlación simulada (`X-Correlation-Id: cid-diag-sec-muykmszd`).
 - **Diagnóstico en Loki:**
-  - Consulta LogQL: `{job="k3s", vm="vm2"} |= "<correlationId>"`.
+  - Consulta LogQL definida: `{job="k3s", vm="vm2"} |= "<correlationId>"`.
   - La verificación formal en el Loki centralizado de VM1 queda programada para llevarse a cabo en cuanto se active la agregación de logs de los pods de QA.
 
 ---
 
 ## 5. Balance del Registro y Gestión de Defectos (SCRUM-321)
 
-Durante el ciclo de pruebas del Sprint 3 se documentaron y gestionaron **4 defectos formales** en la matriz oficial [registro-defectos-sprint3.md](registro-defectos-sprint3.md) (PR #59). Todos los defectos cuentan con trazabilidad, evidencia concreta y resolución verificada:
+Durante el ciclo de pruebas del Sprint 3 se documentaron y gestionaron **4 defectos formales** en la matriz oficial [registro-defectos-sprint3.md](registro-defectos-sprint3.md) (PR #59). Todos los defectos cuentan con trazabilidad, resolución y verificación:
 
 ### 5.1 Matriz de Defectos del Sprint 3 (Sincronizada con PR #59)
 
 | ID Defecto | Resumen Técnico | HU Afectada | Severidad | Prioridad | Componente Afectado | Estado de Cierre y Evidencia |
 |---|---|:---:|:---:|:---:|---|:---:|
-| **BUG-001** | Fallo de geolocalización en app móvil por dependencia forzada de Google Play Services | `SCRUM-27` (M-07 / RF-07) | Alta | P1 | Flutter App (`quickpatch-mobile#7`) | **CERRADO** (Evidencia: `tests/e2e/evidencias/movil/2-categorias-y-ubicacion.png`) |
-| **BUG-002** | Colisión de rango CIDR de k3s (`10.43.0.0/16`) con la red física del laboratorio (`10.43.x.x`) | `SCRUM-334` (`INF-012`) | Crítica | P1 | Ansible / k3s (VM2 / VM3) | **CERRADO** (Evidencia: `infrastructure/ansible/playbooks/deploy-k3s.yml`) |
-| **BUG-003** | Aserción permisiva y divergencia en validación de RN-T1 en suites de prueba | `SCRUM-65` / `SCRUM-114` | Media | P2 | Newman / Postman | **CERRADO** (Evidencia: `tests/e2e/scrum-65-roles-y-tenants.postman_collection.json`) |
-| **BUG-004** | Discrepancia de tipo Problem Details RFC 9457 en rechazo por cobertura geográfica (`Problems.OutOfCoverage`) | `SCRUM-325` / `SCRUM-27` | Media | P2 | ServiceRequest / QA | **CERRADO** (Evidencia: `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`) |
+| **BUG-001** | Fallo en geolocalización por dependencia forzada de Google Location Services | `SCRUM-27` (M-07 / RF-07) | Alta | P1 | Mobile Flutter (`quickpatch-mobile#7`) | **VERIFICADO EN LOCAL** (Evidencia: `tests/e2e/evidencias/movil/`) |
+| **BUG-002** | Colisión de rango CIDR de k3s (`10.43.0.0/16`) con la subred física del laboratorio | `SCRUM-334` (`INF-010`) | Crítica | P1 | Ansible / k3s (VM2 / VM3) | **VERIFICADO EN INSPECCIÓN** (`deploy-k3s.yml`, INFRA §5.2) |
+| **BUG-003** | Aserción permisiva y divergencia en validación de RN-T1 en suites de prueba | `SCRUM-65` / `SCRUM-114` | Media | P2 | Newman / Postman | **CORREGIDO EN SIMULACIÓN** (`scrum-65-roles-y-tenants.postman_collection.json`) |
+| **BUG-004** | Discrepancia de tipo Problem Details RFC 9457 en rechazo por cobertura geográfica | `SCRUM-325` / `SCRUM-27` | Media | P2 | ServiceRequest / Diagnóstico | **CORREGIDO EN SIMULACIÓN** (`scrum-325-diagnostico-error-qa-2026-10-07.txt`) |
 
 ### 5.2 Estadísticas y Severidad de Defectos (IEEE 1044 / MoSCoW)
 - **Defectos Totales:** 4
-- **Defectos Bloqueantes (Blocker):** 0 (0%)
-- **Defectos Críticos (Critical):** 1 (25% — BUG-002: CIDR k3s remediado en infraestructura).
-- **Defectos de Severidad Alta (Major):** 1 (25% — BUG-001 en mobile).
-- **Defectos de Severidad Media (Minor):** 2 (50% — BUG-003 en contrato RN-T1 y BUG-004 en Problem Details de cobertura).
+- **Defectos Verificados en Local / Inspección:** 2 (50% — BUG-001 en emulador local y BUG-002 por inspección técnica de infraestructura).
+- **Defectos Corregidos en Simulación Preparatoria:** 2 (50% — BUG-003 en aserción RN-T1 y BUG-004 en Problem Details de cobertura).
 - **Defectos Abiertos Residuales:** **0 (0%)**
 - **Eficacia de Remediación:** **100.0%**
 
@@ -212,12 +210,12 @@ La siguiente tabla formaliza la trazabilidad bidireccional entre las Historias d
 |:---:|---|---|---|---|:---:|
 | **SCRUM-25 / 65** | **RF-01 / RF-02** (Autenticación y Roles RBAC) | SRS §5.1 / SAD §3.6 | Newman MVP: Casos 1 y 2 | `tests/e2e/evidencias/scrum-287-local-2026-10-07.txt` | ✅ PASS |
 | **SCRUM-27** | **RF-07 / RN-SR9** (Creación de Solicitud y Cobertura) | SRS §5.2 / DD §8.2 | Newman MVP: Caso 3 (Solicitud) | `tests/e2e/evidencias/scrum-287-local-2026-10-07.txt` | ✅ PASS |
-| **SCRUM-41 / 114**| **RN-T1** (Desactivación de Tenant y Bloqueo Login) | SRS §5.1 / DD §7.12 | Newman: Sub-folder 3.1 IDN-019 | `tests/e2e/scrum-65-roles-y-tenants.postman_collection.json` | ✅ PASS |
+| **SCRUM-41 / 114**| **RN-T1** (Desactivación de Tenant y Bloqueo Login) | SRS §5.1 / DD §7.12 | Newman: Sub-folder 3.1 IDN-019 | `tests/e2e/scrum-65-roles-y-tenants.postman_collection.json` | ⏳ Pendiente QA (Simulación local) |
 | **SCRUM-41 / 112**| **RF-21** (Gestión de Tenants por Admin Plataforma) | SRS §5.4 / SAD §3.4 | Newman: `/api/v1/platform/tenants` | `tests/e2e/quickpatch-mvp.postman_collection.json` | ✅ PASS |
-| **SCRUM-318** | **HU-ADM-01 a 07** (Flujo Web Administrativo) | SRS §5.4 / Prototipos SAD W-01 a W-07 | Playwright + Newman: W-01 a W-07 | `tests/e2e/evidencias/scrum-318-web-admin-2026-10-07.txt` | ⏳ Pendiente QA |
+| **SCRUM-318** | **HU-ADM-01 a 07** (Flujo Web Administrativo) | SRS §5.4 / Prototipos SAD W-01 a W-07 | Newman (Simulación API Web): W-01 a W-07 | `tests/e2e/evidencias/scrum-318-web-admin-2026-10-07.txt` | ⏳ Pendiente QA |
 | **SCRUM-320** | **RNF-07 / RNF-08** (Rendimiento: Latencia $p95 \le 2s$, $\ge 20$ req/s) | SAD §3.2 / AC1-E1, AC1-E2 | k6: PRF-001 a PRF-004 | `tests/performance/load-test-50vu.js` | ⏳ Pendiente QA |
-| **SCRUM-320** | **Killer K2 / PAY-002** (PCI-DSS: Cero Exposición PAN/CVV) | SAD §1.2 / ADR-011 | Security: PCI-001 a PCI-004 | `tests/security/pci_dss_scanner.py` | ⏳ Pendiente QA |
-| **SCRUM-320** | **Restricción R9** (Ingress Gateway Nginx Port 443 / VPN) & DAST | SAD §1.2 / INFRASTRUCTURE §3 | Ingress Nginx / ZAP Baseline | `tests/security/zap-baseline.conf` | ⏳ Pendiente QA |
+| **SCRUM-320** | **Killer K2 / PAY-002** (PCI-DSS: Cero Exposición PAN/CVV) | SAD §1.2 / ADR-009 | Security: PCI-001 a PCI-004 | `tests/security/pci_dss_scanner.py` | ⏳ Pendiente QA |
+| **SCRUM-320** | **Restricción R9** (Red Privada Lab - Ingress Nginx Port 443 / VPN) & DAST | SAD §1.2 / INFRASTRUCTURE §3 | Ingress Nginx / ZAP Baseline | `tests/security/zap-baseline.conf` | ⏳ Pendiente QA |
 | **SCRUM-325** | **SAD §3.7 / AC7-E4** (SLA Diagnóstico Logs $\le 1$ hora) | SAD §3.7 / AC7-E4 | Diagnóstico: Caso 1 (422) | `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt` | ⏳ Pendiente QA |
 | **SCRUM-325** | **RNF-04 / AC6-E3** (Auditoría Obligatoria 403 en Loki) | SAD §3.6 / AC6-E3 | Diagnóstico: Caso 2 (403) | `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt` | ⏳ Pendiente QA |
 
