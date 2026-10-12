@@ -21,7 +21,7 @@ Todos los PR exigen el check `quality-gate`, que reúne los jobs del pipeline de
 |---|---|---|---|
 | PR a `develop` | Lint, pruebas unitarias, cobertura y dependency review | Lint, pruebas, cobertura, build y dependency review | Formato, análisis, pruebas, cobertura y dependency review |
 | Push a `develop` | Además, pruebas de integración (Testcontainers) | Lo mismo | Lo mismo |
-| Push a `release/*` | Además, imagen en GHCR y **despliegue en QA** (k3s de VM2) | Además, **publica el panel en QA** (VM2) | Además, APK de release |
+| Push a `release/*` | Además, imagen en GHCR y **despliegue en QA** (k3s de VM2) | Además, **publica el panel en QA** (VM1, carpeta `panel-qa`) | Además, APK de release |
 | Push a `main` | **Despliegue en producción** (k3s de VM3) con la misma imagen de QA | **Publica el panel en producción** (VM1) | APK de release |
 
 QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a `develop`.
@@ -31,14 +31,14 @@ QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a 
 - **`imagen`** construye y publica `ghcr.io/arqui-202630/<repo>`. La etiqueta es el hash del contenido (`t-<árbol>`), no el del commit: cuando `release/x.y.z` se fusiona en `main` sin otros cambios, la imagen ya existe y producción despliega exactamente la que se probó en QA. Si `main` trae algo que no pasó por `release/*`, construye una imagen nueva y deja un aviso.
 - **`desplegar`** corre en el runner de VM1: `kubectl set image` sobre el Deployment del servicio, espera el rolling update y, si falla, hace `kubectl rollout undo`. El ambiente sale de la rama (`release/*` → `qa`, `main` → `produccion`).
 
-El panel tiene un único job `desplegar`, que copia el build en VM1 (producción) o en VM2 por SSH (QA).
+El panel tiene un único job `desplegar`, que copia el build en VM1: en `panel` (producción) o en `panel-qa` (QA). Los dos los sirve el Nginx de VM1; no hay SSH ni imagen. Decisión del 12 de octubre (SCRUM-446) en `docs/infrastructure/INFRASTRUCTURE.md`, sección 3.2.
 
 ## Dónde corre cada cosa
 
 - **Runners de GitHub** (`ubuntu-latest`): lint, pruebas, build y publicación de imágenes.
 - **Runner self-hosted de VM1** (etiquetas `self-hosted`, `vm1`, `red-laboratorio`): todo lo que tiene que llegar a la red del laboratorio, es decir los despliegues y las pruebas de sistema contra QA. Los runners de GitHub no alcanzan `10.43.x.x`.
 
-El runner usa los kubeconfig de `~quickpatch/.kube/config-qa` y `config-produccion` que deja `deploy-runner.yml`, así que no hay credenciales de Kubernetes en GitHub. Para el panel de QA usa una llave SSH de VM1 a VM2 que también deja ese playbook.
+El runner usa los kubeconfig de `~quickpatch/.kube/config-qa` y `config-produccion` que deja `deploy-runner.yml`, así que no hay credenciales de Kubernetes en GitHub.
 
 ## CI de este repositorio
 
@@ -78,4 +78,4 @@ Los repositorios son públicos, así que un PR desde un fork no debe ejecutar c�
 - Prueba de humo después de desplegar en producción.
 - Pruebas de contrato con Pact entre servicios (el Documento de Pruebas las menciona en CAT-011 y ACT-013).
 - Limpieza de los datos del tenant de prueba después de k6 (PRF-006).
-- Publicar el panel de QA en VM1 en lugar de VM2 (hoy `location /` de QA va al Traefik de VM2).
+- Mover el panel (QA y producción) al k3s cuando tenga imagen; hoy lo sirve el Nginx de VM1.
