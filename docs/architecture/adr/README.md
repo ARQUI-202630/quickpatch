@@ -23,6 +23,7 @@ Cada decisión de arquitectura tiene su propio archivo en esta carpeta, con cont
 | [ADR-020](ADR-020-codigo-transversal-compartido.md) | Código transversal compartido (.NET) | AC7 | Propuesto |
 | [ADR-021](ADR-021-doce-repositorios.md) | Doce repositorios por componente de la solución | AC7 | Aceptado |
 | [ADR-022](ADR-022-redistribucion-vms.md) | 7 VMs: 3 de producción, 3 de QA y 1 de herramientas | AC7 | Aceptado; implementación en curso |
+| [ADR-023](ADR-023-canal-tiempo-real-websocket.md) | Canal de estado en tiempo real por WebSocket hacia Communication Service, con respaldo por REST | AC4, AC2 | Propuesto |
 
 **Números sin asignar.** ADR-001 y ADR-010 nunca se usaron. ADR-008 aparecía en versiones anteriores del SAD como referencia a una decisión que no existía y se retiró en la versión 2.0. No se reutilizan, para no confundir referencias históricas.
 
