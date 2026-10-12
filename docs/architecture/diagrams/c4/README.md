@@ -55,6 +55,7 @@ En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el 
 | `C4-07-Codigo-OutboxIdempotencia` | Code (PlantUML) | 7.1 |
 | `C4-07-Codigo-AislamientoTenant` | Code (PlantUML) | 7.2 |
 | `C4-05-Dinamico-CrearSolicitud` | Dynamic | 8.3 |
+| `C4-05-Dinamico-AsignacionTecnico` | Dynamic | 8.3.1 |
 | `C4-05-Dinamico-Pago` | Dynamic | 8.4 |
 | `C4-05-Dinamico-InicioSesion` | Dynamic | 8.5 |
 | `C4-05-Dinamico-ReplicaCategorias` | Dynamic | 8.5 |
