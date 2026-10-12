@@ -134,7 +134,7 @@ Para que las capas se lean (personas, apps, gateway, servicios y almacenes), est
 
 El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 9.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): Flutter Mobile es el canal de clientes, empresas cliente, técnicos y proveedores, y Angular Web es el panel de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 6.5), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que enruta por REST a los 8 microservicios.
 
-Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Identity y Actors solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación (Flutter Mobile; la cercanía entre la solicitud y los técnicos se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication), que entrega las notificaciones push en la app móvil. El seguimiento en tiempo real de la solicitud (RF-11) se resuelve con esas notificaciones y la consulta del estado por REST (secciones 8.3 y 8.12.1); el canal de estado en tiempo real sigue siendo una decisión abierta (SAD 4.1). Los proveedores concretos no están definidos.
+Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Identity y Actors solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación (Flutter Mobile; la cercanía entre la solicitud y los técnicos se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication), que entrega las notificaciones push en la app móvil. El seguimiento en tiempo real de la solicitud (RF-11) usa un WebSocket desde las apps hasta Communication Service a través del API Gateway (`/v1/realtime`, ADR-023), con consulta del estado por REST cada 30 segundos como respaldo; las notificaciones push del proveedor externo avisan fuera de la app y no forman parte de ese canal. Los proveedores concretos no están definidos.
 
 ## 5.2 Vista por capas (complementaria)
 
@@ -331,7 +331,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Solicitudes | `features/solicitudes` | Nueva solicitud en un solo formulario (RNF-11) y detalle con su estado. | SCRUM-27 / SCRUM-71 |
 | Ubicación del dispositivo | `features/solicitudes/data` | Permiso y lectura del GPS, con respaldo en `LocationManager` y límite de 15 s. | SCRUM-27 / SCRUM-71 |
 | Geocodificación de la dirección *(planeado)* | — | Convierte la dirección escrita en coordenadas cuando el cliente no comparte la ubicación (RIE-02). | — |
-| Estado en tiempo real *(planeado)* | `core/realtime` | Cambios de estado de la solicitud (RF-11, RNF-06); canal por decidir (SAD 4.1). | — |
+| Estado en tiempo real *(planeado)* | `core/realtime` | Cambios de estado de la solicitud (RF-11, RNF-06) por WebSocket (`/v1/realtime`, ADR-023), con consulta cada 30 s si el canal no está disponible. | SCRUM-412 |
 
 Reglas comunes a las dos aplicaciones:
 
@@ -607,7 +607,8 @@ Todos los componentes están planeados. El servicio nunca recibe PAN ni CVV: la 
 
 - reaccionar a eventos del ciclo de servicio;
 - generar notificaciones para clientes y técnicos;
-- ejecutar comunicaciones que no deben bloquear operaciones síncronas.
+- ejecutar comunicaciones que no deben bloquear operaciones síncronas;
+- mantener el canal de estado en tiempo real (`/v1/realtime`, ADR-023): valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant, de los cambios que le corresponden.
 
 Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean incorporadas por un Sprint y requisito explícito.
 
@@ -1142,7 +1143,7 @@ Para cada escenario se documenta: actor, precondiciones, flujo principal, flujos
 | **Datos involucrados** | `service_requests`. |
 | **Eventos / Endpoints** | `POST /v1/service-requests/{id}/start`, `POST /v1/service-requests/{id}/complete` · produce `service-request.completed`. |
 | **Relación con Container y Component** | ServiceRequest Service — módulo *Service Lifecycle* y *State Validation* (Sección 6.7). |
-| **Relación con Dynamic (sección 8)** | **Resuelto:** Ver **Sección 8.3** (Notificación push asíncrona) y **Sección 8.12.1** (SLA de actualización de estado < 60s). |
+| **Relación con Dynamic (sección 8)** | **Resuelto:** el cambio llega por el canal de estado en tiempo real (ADR-023; consulta cada 30 s como respaldo) dentro del SLA de la **Sección 8.12.1** (< 60 s); la **Sección 8.3** muestra la notificación asíncrona. |
 | **Requisitos (SRS)** | RF-11, RF-13, RF-14, RF-15 · RNF-06 (reflejo de estado en menos de 1 minuto) |
 
 #### Escenario 5 — El cliente realiza el pago

@@ -1,6 +1,6 @@
 # ADR-023 — Canal de estado en tiempo real: WebSocket hacia Communication Service con respaldo por REST
 
-- **Estado:** Propuesto (SCRUM-412, SAD V4). Pendiente de validación del equipo; resuelve la decisión abierta del SAD (sección 4.1), del DD (8.5) y del SDD (5.1)
+- **Estado:** Aceptado el 12 de octubre de 2026 por el equipo (SCRUM-412, SAD V4). Resuelve la decisión abierta del SAD (sección 4.1), del DD (8.5) y del SDD (5.1)
 - **Fecha:** 12 de octubre de 2026
 - **Decisión:** Las apps reciben los cambios de estado por un WebSocket (`/v1/realtime`) que termina en Communication Service, a través de VM1 y del gateway del ambiente. El mensaje solo avisa del cambio; el detalle se sigue pidiendo por REST. Si el WebSocket no está disponible, la app consulta el detalle cada 30 segundos. Las notificaciones push quedan fuera del canal de estado
 - **Atributos priorizados:** AC4 Interaction Capability (la interfaz se actualiza sola, D2) y AC2 Performance Efficiency (el aviso llega en segundos y sin consultas repetidas, AC2-E3)
@@ -57,8 +57,8 @@ Dos restricciones pesan sobre la elección:
 ## Trabajo que se desprende
 
 - **Contratos (DD V4, SCRUM-418):** publicar el formato de la primera trama (autenticación), los tipos de aviso y los códigos de cierre de `/v1/realtime` en `quickpatch-api-gateway`; el DD 8.5 deja de estar "pendiente de decisión".
-- **SDD V3 (SCRUM-424):** reemplazar en la sección 5.1 la resolución por notificaciones push y marcar el componente `core/realtime` como canal WebSocket.
-- **SAD V4 (SCRUM-411):** quitar la decisión abierta de la sección 4.1 cuando el equipo apruebe este ADR y actualizar RNF-06 en la sección 2.2.
+- **SDD:** el texto de las secciones 5.1, 6.2, 6.11 y del caso de uso de inicio y cierre del servicio ya cita este ADR. El modelo de Structurizr (`quickpatch.dsl`: componente del canal en Communication Service y relación de `core/realtime` con el gateway) y sus PNG se actualizan en SCRUM-425.
+- **SAD (hecho en la versión 2.26):** la sección 4.1 deja de tener la decisión abierta y RNF-06 (sección 2.2) cita este ADR. La evidencia de RNF-06 se actualiza en el SAD V4 (SCRUM-411) cuando el canal esté implementado y medido en QA.
 - **Implementación:** Communication Service (servidor del WebSocket), el gateway de VM1 (`proxy_read_timeout`) y las apps (conexión, respaldo y suscripción de la pantalla de detalle).
 
 ## Trazabilidad
