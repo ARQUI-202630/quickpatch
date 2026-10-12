@@ -134,7 +134,7 @@ Para que las capas se lean (personas, apps, gateway, servicios y almacenes), est
 
 El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 9.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): Flutter Mobile es el canal de clientes, empresas cliente, técnicos y proveedores, y Angular Web es el panel de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 6.5), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que enruta por REST a los 8 microservicios.
 
-Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Identity y Actors solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación (Flutter Mobile; la cercanía entre la solicitud y los técnicos se calcula con PostGIS, sin servicio externo) y el proveedor de notificaciones por correo y push (Communication), que entrega las notificaciones push en la app móvil. El seguimiento en tiempo real de la solicitud (RF-11) se resuelve con esas notificaciones y la consulta del estado por REST (secciones 8.3 y 8.12.1); el canal de estado en tiempo real sigue siendo una decisión abierta (SAD 4.1). Los proveedores concretos no están definidos.
+Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Identity y Actors solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación, y el proveedor de notificaciones. Con ADR-024 solo la pasarela es externa en el MVP: la geocodificación la hace ServiceRequest con un Nominatim propio (mapa de Bogotá, en la VM de datos de cada ambiente) y las notificaciones se entregan dentro de la app (canal de ADR-023 y buzón en Communication); correo y push quedan fuera del MVP. La cercanía entre la solicitud y los técnicos se calcula con PostGIS. El seguimiento en tiempo real de la solicitud (RF-11) usa un WebSocket desde las apps hasta Communication Service a través del API Gateway (`/v1/realtime`, ADR-023), con consulta del estado por REST cada 30 segundos como respaldo. El proveedor concreto de la pasarela de pagos no está definido.
 
 ## 5.2 Vista por capas (complementaria)
 
@@ -306,7 +306,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 
 | Componente | Carpeta | Responsabilidad | HU |
 |---|---|---|---|
-| Shell y rutas | `app.routes.ts`, `app.ts` | Rutas, layout del panel y redirección a login o al inicio del rol. | SCRUM-25 |
+| Shell y rutas | `app.routes.ts`, `app.ts` | Rutas, layout con barra lateral y encabezado, y redirección a login o al inicio del rol. | SCRUM-25 / SCRUM-435 |
 | Sesión | `core/sesion.ts` | Conserva el token y expone usuario y rol como signals. | SCRUM-23, SCRUM-25 |
 | Interceptor HTTP | `core/http.ts` | Adjunta el JWT y `X-Correlation-Id`; ante un 401 cierra la sesión y vuelve al login. | SCRUM-25 |
 | Guards de rol | `core/guards.ts` | Permiten cada ruta según el rol y envían al inicio del rol cuando no corresponde: `admin_plataforma` ve la gestión de tenants y `admin_tenant` no (RN-U6). | SCRUM-25 / SCRUM-64 |
@@ -314,6 +314,8 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Inicio | `features/inicio` | Menú según el rol del administrador. | SCRUM-25 |
 | Gestión de tenants | `features/tenants/tenants.ts` | Lista los tenants y los activa o desactiva con confirmación. | SCRUM-41 / SCRUM-112 |
 | Cliente API de tenants | `features/tenants/tenants-api.ts` | `GET` y `PATCH /v1/platform/tenants`. | SCRUM-41 / SCRUM-112 |
+| Sistema de diseño | `styles/`, `shared/` | Tokens azules, fuente autoalojada y componentes reutilizables (búsqueda, diálogo de confirmación, insignia, estado de verificación, tarjeta de detalle); el CI verifica el contraste WCAG AA y corre axe-core. | SCRUM-433 (434 a 438) |
+| Aprobación de técnicos *(planeado)* | `features/tecnicos` | Aprueba, rechaza y suspende técnicos del tenant (RF-19, RF-20). | SCRUM-39 / SCRUM-40 |
 | Aprobación de técnicos *(planeado)* | — | Aprueba y suspende técnicos del tenant (RF-19, RF-20). | — |
 
 ![Componentes de Flutter Mobile](diagrams/c4/C4-04-Componentes-Mobile.png)
@@ -322,16 +324,18 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 
 | Componente | Carpeta | Responsabilidad | HU |
 |---|---|---|---|
-| Navegación | `app/router` | Rutas protegidas por sesión y por rol. | SCRUM-27 |
+| Navegación | `app/router`, `app/shell` | Rutas protegidas por sesión y por rol, y barra inferior según el rol: Inicio, la pestaña de trabajo (Solicitudes, Ofertas o Equipo) y Cuenta. | SCRUM-27 / SCRUM-441 |
 | Configuración del ambiente | `core/config` | URL base, `Host` del gateway y huella SHA-256 del certificado de QA. | SCRUM-27 |
 | Cliente HTTP | `core/network` | Adjunta el JWT y `X-Correlation-Id`, fija el certificado y traduce `problem+json` en errores de la app. | SCRUM-27 |
 | Sesión | `core/session` | Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol. | SCRUM-23 |
 | Autenticación | `features/autenticacion` | Login y registro de cliente hogar. El registro de empresa está oculto (`registroEmpresaHabilitado = false`) hasta SCRUM-26. | SCRUM-23 |
-| Inicio por rol | `features/inicio` | Opciones habilitadas según el rol. | SCRUM-27 |
-| Solicitudes | `features/solicitudes` | Nueva solicitud en un solo formulario (RNF-11) y detalle con su estado. | SCRUM-27 / SCRUM-71 |
+| Inicio por rol | `features/inicio` | Para el cliente, acceso a la nueva solicitud y categorías de Catalog; para técnico y proveedor, sus opciones y el aviso de verificación. | SCRUM-27 / SCRUM-441 |
+| Cuenta | `features/inicio` | Datos de la sesión, licencias y cierre de sesión. | SCRUM-441 |
+| Sistema de diseño | `app/theme`, `shared/widgets`, `features/solicitudes/presentation/widgets` | Tema azul con tokens y tipografía, y componentes para las pantallas del cliente y del técnico (tarjeta de solicitud, chip de estado, selector de categoría, botones y estados vacío, de error y de carga); contraste WCAG AA y texto al 200 % probados. | SCRUM-439 (440 a 444) |
+| Solicitudes | `features/solicitudes` | Nueva solicitud en tres pasos en un solo formulario (RNF-11) y detalle con su estado. | SCRUM-27 / SCRUM-71 / SCRUM-442 |
 | Ubicación del dispositivo | `features/solicitudes/data` | Permiso y lectura del GPS, con respaldo en `LocationManager` y límite de 15 s. | SCRUM-27 / SCRUM-71 |
-| Geocodificación de la dirección *(planeado)* | — | Convierte la dirección escrita en coordenadas cuando el cliente no comparte la ubicación (RIE-02). | — |
-| Estado en tiempo real *(planeado)* | `core/realtime` | Cambios de estado de la solicitud (RF-11, RNF-06); canal por decidir (SAD 4.1). | — |
+| Estado en tiempo real *(planeado)* | `core/realtime` | Cambios de estado de la solicitud (RF-11, RNF-06) por WebSocket (`/v1/realtime`, ADR-023), con consulta cada 30 s si el canal no está disponible. | SCRUM-412 |
+| Buzón de notificaciones *(planeado)* | — | Lista las notificaciones del usuario (RIE-03, ADR-024). La geocodificación de la dirección ya no está en la app: la hace ServiceRequest (ADR-024). | SCRUM-413 |
 
 Reglas comunes a las dos aplicaciones:
 
@@ -607,7 +611,8 @@ Todos los componentes están planeados. El servicio nunca recibe PAN ni CVV: la 
 
 - reaccionar a eventos del ciclo de servicio;
 - generar notificaciones para clientes y técnicos;
-- ejecutar comunicaciones que no deben bloquear operaciones síncronas.
+- ejecutar comunicaciones que no deben bloquear operaciones síncronas;
+- mantener el canal de estado en tiempo real (`/v1/realtime`, ADR-023): valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant, de los cambios que le corresponden.
 
 Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean incorporadas por un Sprint y requisito explícito.
 
@@ -617,7 +622,7 @@ Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean inco
 
 **Figura 18. Componentes de Communication Service (C4 · Component; diseño). Vista `C4-04-Componentes-Communication`.**
 
-Todos los componentes están planeados: consumidores de los eventos del ciclo de servicio, plantillas de notificación y el adaptador del proveedor externo (RIE-03).
+Todos los componentes están planeados: consumidores de los eventos del ciclo de servicio, plantillas de notificación, el canal en tiempo real (`/v1/realtime`, ADR-023) y el buzón de notificaciones (ADR-024). No hay adaptador de un proveedor externo: el correo y el push quedan fuera del MVP (R5).
 
 ## 6.12 Reglas transversales del backend
 
@@ -1142,7 +1147,7 @@ Para cada escenario se documenta: actor, precondiciones, flujo principal, flujos
 | **Datos involucrados** | `service_requests`. |
 | **Eventos / Endpoints** | `POST /v1/service-requests/{id}/start`, `POST /v1/service-requests/{id}/complete` · produce `service-request.completed`. |
 | **Relación con Container y Component** | ServiceRequest Service — módulo *Service Lifecycle* y *State Validation* (Sección 6.7). |
-| **Relación con Dynamic (sección 8)** | **Resuelto:** Ver **Sección 8.3** (Notificación push asíncrona) y **Sección 8.12.1** (SLA de actualización de estado < 60s). |
+| **Relación con Dynamic (sección 8)** | **Resuelto:** el cambio llega por el canal de estado en tiempo real (ADR-023; consulta cada 30 s como respaldo) dentro del SLA de la **Sección 8.12.1** (< 60 s); la **Sección 8.3** muestra la notificación asíncrona. |
 | **Requisitos (SRS)** | RF-11, RF-13, RF-14, RF-15 · RNF-06 (reflejo de estado en menos de 1 minuto) |
 
 #### Escenario 5 — El cliente realiza el pago
