@@ -1,0 +1,14 @@
+Proveedor: (Administra un equipo de técnicos)
+Proveedor: Registrar un técnico de su equipo
+Quickpatch: Dejar al técnico pendiente de verificación
+Admin del tenant: Aprobar técnico
+Quickpatch: Habilitar al técnico
+Proveedor: Consultar servicios y pagos de su equipo
+Proveedor: (Equipo operando)
+
+Proveedor: (Administra un equipo de técnicos)
+Proveedor: Registrar un técnico de su equipo
+Quickpatch: Dejar al técnico pendiente de verificación
+Admin del tenant: Rechazar técnico
+Quickpatch: Avisar el rechazo al proveedor
+Proveedor: (Técnico no habilitado)

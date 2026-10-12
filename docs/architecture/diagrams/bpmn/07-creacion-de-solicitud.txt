@@ -1,0 +1,22 @@
+Cliente: (Tiene un problema técnico)
+Cliente: Elegir el tipo de servicio
+Cliente: Describir el problema, la dirección y la ubicación
+Quickpatch: Verificar que la ubicación esté en Bogotá
+Quickpatch: Verificar que el tipo de servicio esté disponible
+Quickpatch: Registrar la solicitud y confirmarla al cliente
+Cliente: (Solicitud registrada)
+
+Cliente: (Tiene un problema técnico)
+Cliente: Elegir el tipo de servicio
+Cliente: Describir el problema, la dirección y la ubicación
+Quickpatch: Verificar que la ubicación esté en Bogotá
+Quickpatch: Rechazar la solicitud fuera de cobertura
+Cliente: (Solicitud rechazada)
+
+Cliente: (Tiene un problema técnico)
+Cliente: Elegir el tipo de servicio
+Cliente: Describir el problema, la dirección y la ubicación
+Quickpatch: Verificar que la ubicación esté en Bogotá
+Quickpatch: Verificar que el tipo de servicio esté disponible
+Quickpatch: Rechazar la solicitud por servicio no disponible
+Cliente: (Solicitud rechazada)

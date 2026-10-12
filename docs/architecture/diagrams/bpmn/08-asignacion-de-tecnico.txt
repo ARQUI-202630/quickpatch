@@ -1,0 +1,20 @@
+Cliente: (Solicitud registrada)
+Quickpatch: Buscar técnicos disponibles de la especialidad en la zona
+Quickpatch: Ofrecer el servicio al técnico más cercano
+Técnico: Aceptar el servicio a tiempo
+Quickpatch: Asignar el técnico y avisar a ambos
+Cliente: (Técnico asignado)
+
+Cliente: (Solicitud registrada)
+Quickpatch: Buscar técnicos disponibles de la especialidad en la zona
+Quickpatch: Ofrecer el servicio al técnico más cercano
+Técnico: Rechazar el servicio o no responder a tiempo
+Quickpatch: Ofrecer el servicio al siguiente técnico
+Técnico: Aceptar el servicio a tiempo
+Quickpatch: Asignar el técnico y avisar a ambos
+Cliente: (Técnico asignado)
+
+Cliente: (Solicitud registrada)
+Quickpatch: Buscar técnicos disponibles de la especialidad en la zona
+Quickpatch: Informar que no hay técnicos disponibles
+Cliente: (Solicitud en espera)

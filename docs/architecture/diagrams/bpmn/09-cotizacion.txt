@@ -1,0 +1,32 @@
+Técnico: (Servicio asignado)
+Técnico: Revisar el detalle de la solicitud
+Técnico: Cotizar mano de obra y materiales
+Quickpatch: Enviar la cotización al cliente con plazo de respuesta
+Cliente: Aceptar cotización
+Técnico: (Puede iniciar el servicio)
+
+Técnico: (Servicio asignado)
+Técnico: Revisar el detalle de la solicitud
+Técnico: Cotizar mano de obra y materiales
+Quickpatch: Enviar la cotización al cliente con plazo de respuesta
+Cliente: Rechazar cotización
+Quickpatch: Pedir una nueva cotización
+Técnico: Cotizar mano de obra y materiales
+Quickpatch: Enviar la cotización al cliente con plazo de respuesta
+Cliente: Aceptar cotización
+Técnico: (Puede iniciar el servicio)
+
+Técnico: (Servicio asignado)
+Técnico: Revisar el detalle de la solicitud
+Técnico: Cotizar mano de obra y materiales
+Quickpatch: Enviar la cotización al cliente con plazo de respuesta
+Cliente: Rechazar cotización
+Quickpatch: Cancelar la solicitud tras tres cotizaciones rechazadas
+Cliente: (Solicitud cancelada)
+
+Técnico: (Servicio asignado)
+Técnico: Revisar el detalle de la solicitud
+Técnico: Cotizar mano de obra y materiales
+Quickpatch: Enviar la cotización al cliente con plazo de respuesta
+Quickpatch: Cancelar la solicitud porque la cotización venció sin respuesta
+Cliente: (Solicitud cancelada)

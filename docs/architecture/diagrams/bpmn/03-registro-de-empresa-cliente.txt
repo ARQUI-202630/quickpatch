@@ -1,0 +1,11 @@
+Empresa cliente: (Quiere contratar servicios para sus sedes)
+Empresa cliente: Registrar cuenta corporativa con NIT y contacto
+Quickpatch: Verificar que la empresa no esté registrada
+Quickpatch: Crear la cuenta corporativa
+Empresa cliente: (Cuenta corporativa activa)
+
+Empresa cliente: (Quiere contratar servicios para sus sedes)
+Empresa cliente: Registrar cuenta corporativa con NIT y contacto
+Quickpatch: Verificar que la empresa no esté registrada
+Quickpatch: Rechazar el registro por datos repetidos
+Empresa cliente: (Registro rechazado)

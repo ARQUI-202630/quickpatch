@@ -19,7 +19,7 @@ Este archivo resume decisiones vigentes; no reemplaza SRS, SAD, SDD ni DD.
 - Acceso a datos .NET: EF Core + Npgsql.
 - Matching: Spring Data/JPA.
 - Cache: Redis.
-- Evidencias/objetos: MinIO.
+- Evidencias/objetos: Garage.
 - Gateway: Nginx.
 - Backend en VM3: k3s.
 - Aprovisionamiento: Ansible.

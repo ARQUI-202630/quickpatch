@@ -1,0 +1,11 @@
+Admin del tenant: (Ofrece una nueva especialidad)
+Admin del tenant: Crear o editar categoría de servicio
+Quickpatch: Verificar que el nombre no esté repetido
+Quickpatch: Publicar la categoría para los clientes
+Admin del tenant: (Categoría disponible)
+
+Admin del tenant: (Ofrece una nueva especialidad)
+Admin del tenant: Crear o editar categoría de servicio
+Quickpatch: Verificar que el nombre no esté repetido
+Quickpatch: Rechazar la categoría repetida
+Admin del tenant: (Categoría no creada)

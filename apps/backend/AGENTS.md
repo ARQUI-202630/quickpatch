@@ -22,10 +22,10 @@ Matching usa Java + Spring Boot.
 
 ## Contratos
 
-Repo `quickpatch-contracts`, como submódulo `contracts/` dentro de cada servicio:
+Submódulos dentro de cada servicio, fijados en una versión:
 
-- REST: `contracts/openapi/`
-- Kafka: `contracts/events/`
+- REST: `contracts/api-gateway/openapi/` (repo `quickpatch-api-gateway`)
+- Kafka: `contracts/kafka/events/` (repo `quickpatch-kafka`)
 
 No inventes endpoints, eventos o tablas. No escribas directamente en datos de otro servicio.
 

@@ -1,0 +1,22 @@
+Técnico: (Cotización aceptada)
+Técnico: Iniciar el servicio
+Quickpatch: Avisar al cliente que el servicio inició
+Técnico: Realizar el trabajo
+Técnico: Registrar evidencia fotográfica
+Técnico: Dar por terminado el servicio
+Quickpatch: Verificar que haya evidencia
+Quickpatch: Pedir el pago al cliente
+Cliente: (Servicio listo para pagar)
+
+Técnico: (Cotización aceptada)
+Técnico: Iniciar el servicio
+Quickpatch: Avisar al cliente que el servicio inició
+Técnico: Realizar el trabajo
+Técnico: Dar por terminado el servicio
+Quickpatch: Verificar que haya evidencia
+Quickpatch: Exigir evidencia antes de cerrar
+Técnico: Registrar evidencia fotográfica
+Técnico: Dar por terminado el servicio
+Quickpatch: Verificar que haya evidencia
+Quickpatch: Pedir el pago al cliente
+Cliente: (Servicio listo para pagar)

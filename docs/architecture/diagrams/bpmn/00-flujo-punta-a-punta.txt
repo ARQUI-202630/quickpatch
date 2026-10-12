@@ -1,0 +1,30 @@
+Cliente: (Necesita un servicio técnico)
+Cliente: Solicitar servicio
+Quickpatch: Buscar técnico disponible y cercano
+Técnico: Aceptar el servicio
+Técnico: Cotizar mano de obra y materiales
+Cliente: Aceptar cotización
+Técnico: Realizar el servicio
+Técnico: Registrar evidencia fotográfica
+Técnico: Dar por terminado el servicio
+Cliente: Pagar el servicio
+Pasarela de pagos: Aprobar el cobro
+Quickpatch: Emitir comprobante
+Cliente: Calificar al técnico
+Quickpatch: Actualizar la reputación del técnico
+Cliente: (Servicio cerrado)
+
+Cliente: (Necesita un servicio técnico)
+Cliente: Solicitar servicio
+Quickpatch: Buscar técnico disponible y cercano
+Quickpatch: Informar que no hay técnicos disponibles
+Cliente: (Solicitud en espera)
+
+Cliente: (Necesita un servicio técnico)
+Cliente: Solicitar servicio
+Quickpatch: Buscar técnico disponible y cercano
+Técnico: Aceptar el servicio
+Técnico: Cotizar mano de obra y materiales
+Cliente: Rechazar cotización
+Quickpatch: Cancelar la solicitud
+Cliente: (Solicitud cancelada)

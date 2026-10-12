@@ -1,0 +1,137 @@
+SCRUM-112 — corrida local del 7 de octubre de 2026
+Servicios reales: Identity, Catalog, ServiceRequest y Matching, con PostgreSQL+PostGIS, Kafka y Nginx con las rutas del gateway (incluida /api/v1/platform/).
+
+== Newman: colección completa (carpetas 1 a 5)
+newman
+
+QUICKPATCH — MVP Sprint 3 (flujo de punta a punta)
+
+❏ 1. Administrador del tenant
+↳ Login del administrador
+  POST http://host.docker.internal:18080/api/v1/auth/login [200 OK, 1.2kB, 468ms]
+  ✓  200 con token
+  ✓  rol admin_tenant
+
+↳ Crear categoría
+  POST http://host.docker.internal:18080/api/v1/catalog/admin/categories [201 Created, 418B, 83ms]
+  ✓  201 creada y activa
+
+↳ Categoría con nombre repetido → 409
+  POST http://host.docker.internal:18080/api/v1/catalog/admin/categories [409 Conflict, 486B, 29ms]
+  ✓  409 categoría registrada
+  ✓  Problem Details (RFC 9457) con correlationId
+
+❏ 2. Cliente
+↳ Registro de cliente
+  POST http://host.docker.internal:18080/api/v1/auth/register/client [201 Created, 421B, 321ms]
+  ✓  201 registrado
+
+↳ Login del cliente
+  POST http://host.docker.internal:18080/api/v1/auth/login [200 OK, 1.2kB, 345ms]
+  ✓  200 con rol cliente
+
+↳ Categorías del tenant incluyen la nueva
+  GET http://host.docker.internal:18080/api/v1/catalog/categories [200 OK, 472B, 19ms]
+  ✓  200 y la categoría está activa
+
+❏ 3. Solicitud de servicio
+↳ Crear solicitud (espera la réplica de la categoría)
+  POST http://host.docker.internal:18080/api/v1/service-requests [201 Created, 646B, 23ms]
+  ✓  201 en buscando_tecnico
+  ✓  responde con X-Correlation-Id
+
+↳ Consultar la solicitud
+  GET http://host.docker.internal:18080/api/v1/service-requests/01a1176f-e23a-789b-bcd8-aca98d6606e3 [200 OK, 571B, 24ms]
+  ✓  200 con la misma solicitud
+
+❏ 4. Casos negativos
+↳ Sin token → 401
+  POST http://host.docker.internal:18080/api/v1/service-requests [401 Unauthorized, 483B, 12ms]
+  ✓  401
+
+↳ Administrador no crea solicitudes → 403
+  POST http://host.docker.internal:18080/api/v1/service-requests [403 Forbidden, 450B, 13ms]
+  ✓  403
+
+↳ Cliente no administra categorías → 403
+  POST http://host.docker.internal:18080/api/v1/catalog/admin/categories [403 Forbidden, 450B, 18ms]
+  ✓  403
+
+↳ Fuera de Bogotá → 422
+  POST http://host.docker.internal:18080/api/v1/service-requests [422 Unprocessable Entity, 565B, 17ms]
+  ✓  422 fuera de cobertura
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ Descripción corta → 400 por campo
+  POST http://host.docker.internal:18080/api/v1/service-requests [400 Bad Request, 559B, 10ms]
+  ✓  400 con error en description
+  ✓  Problem Details (RFC 9457) con correlationId
+
+❏ 5. Administrador de la plataforma (SCRUM-112)
+↳ Login del administrador de la plataforma
+  POST http://host.docker.internal:18080/api/v1/auth/login [200 OK, 1.22kB, 360ms]
+  ✓  200 con rol admin_plataforma
+
+↳ Listar tenants
+  GET http://host.docker.internal:18080/api/v1/platform/tenants [200 OK, 402B, 29ms]
+  ✓  200 con al menos el tenant del canal
+  ✓  el tenant propio está en la lista
+
+↳ Administrador del tenant no lista tenants → 403
+  GET http://host.docker.internal:18080/api/v1/platform/tenants [403 Forbidden, 450B, 15ms]
+  ✓  403
+
+↳ Cliente no cambia el estado de un tenant → 403
+  PATCH http://host.docker.internal:18080/api/v1/platform/tenants/00000000-0000-0000-0000-000000000001 [403 Forbidden, 450B, 16ms]
+  ✓  403
+
+↳ Desactivar el tenant de la plataforma → 409
+  PATCH http://host.docker.internal:18080/api/v1/platform/tenants/00000000-0000-0000-0000-000000000001 [409 Conflict, 493B, 17ms]
+  ✓  409 tenant de la plataforma
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ Activar el tenant propio es idempotente → 200
+  PATCH http://host.docker.internal:18080/api/v1/platform/tenants/00000000-0000-0000-0000-000000000001 [200 OK, 400B, 24ms]
+  ✓  200 y sigue activo
+
+↳ Estado fuera del contrato → 400 por campo
+  PATCH http://host.docker.internal:18080/api/v1/platform/tenants/00000000-0000-0000-0000-000000000001 [400 Bad Request, 537B, 20ms]
+  ✓  400 con error en status
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ Tenant inexistente → 404
+  PATCH http://host.docker.internal:18080/api/v1/platform/tenants/def3c063-d1c4-425f-b603-1bc91a2eadd5 [404 Not Found, 460B, 19ms]
+  ✓  404
+  ✓  Problem Details (RFC 9457) con correlationId
+
+┌─────────────────────────┬────────────────────┬───────────────────┐
+│                         │           executed │            failed │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│              iterations │                  1 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│                requests │                 21 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│            test-scripts │                 21 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│      prerequest-scripts │                  1 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│              assertions │                 30 │                 0 │
+├─────────────────────────┴────────────────────┴───────────────────┤
+│ total run duration: 2.5s                                         │
+├──────────────────────────────────────────────────────────────────┤
+│ total data received: 7.32kB (approx)                             │
+├──────────────────────────────────────────────────────────────────┤
+│ average response time: 89ms [min: 10ms, max: 468ms, s.d.: 140ms] │
+└──────────────────────────────────────────────────────────────────┘
+
+== Cambio de estado real sobre un segundo tenant de prueba (Empresa B) y su auditoría
+Login admin_plataforma: 200
+Desactivar Empresa B: 200 inactivo
+Listado: 200 [('Empresa B de prueba', 'inactivo'), ('Empresa oferente de ejemplo', 'activo')]
+Reactivar Empresa B: 200 activo
+      action       |              target_id               |                                               metadata                                               |          created_at           
+-------------------+--------------------------------------+------------------------------------------------------------------------------------------------------+-------------------------------
+ desactivar_tenant | 00000000-0000-0000-0000-0000000000b2 | {"nuevo": "inactivo", "anterior": "activo", "correlationId": "9210d6b9-f106-4d78-baf2-0d792d758a45"} | 2026-10-07 17:36:33.862126+00
+ activar_tenant    | 00000000-0000-0000-0000-0000000000b2 | {"nuevo": "activo", "anterior": "inactivo", "correlationId": "9c1270d8-90aa-4b26-8cb5-e8c881cc7503"} | 2026-10-07 17:36:33.960715+00
+(2 rows)
+

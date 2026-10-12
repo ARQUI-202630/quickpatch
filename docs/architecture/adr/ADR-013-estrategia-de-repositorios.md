@@ -1,6 +1,6 @@
 # ADR-013 — Estrategia de repositorios: un repositorio por componente, unidos con submódulos
 
-- **Estado:** Aceptado
+- **Estado:** Aceptado; modificado por ADR-021 (12 repositorios: entran `quickpatch-api-gateway` y `quickpatch-kafka`, salen `quickpatch-contracts` y `quickpatch-infrastructure`)
 - **Fecha:** 2026-10-01
 - **Decisión:** Multirepo por componente, con un repositorio principal que referencia a los demás como submódulos de Git
 - **Implementación:** PR #9 de `quickpatch` (organización `ARQUI-202630`)
@@ -26,9 +26,9 @@ Cada componente que se construye y se despliega por separado tiene su propio rep
 | `quickpatch-contracts` | OpenAPI y esquemas de eventos Kafka, versionados con tags SemVer | OpenAPI, JSON Schema |
 | `quickpatch-infrastructure` | Playbooks de Ansible y manifiestos de k3s | Ansible, k3s |
 
-El repositorio principal, `quickpatch`, contiene la documentación, las pruebas del sistema completo (E2E, carga y seguridad) y los `docker-compose` de desarrollo local y de QA. Referencia a los 12 repositorios anteriores como submódulos, en las mismas rutas que tenían en el monorepo; los contratos pasan de `docs/contracts/` a `contracts/`.
+El repositorio principal, `quickpatch`, contiene la documentación, la composición versionada y las pruebas del sistema completo (E2E, carga y seguridad). Los artefactos operativos de Docker Compose, Ansible y k3s pertenecen a `quickpatch-infrastructure`. El superproyecto referencia a los 12 repositorios componentes como submódulos; los contratos viven en `contracts/` mediante `quickpatch-contracts`.
 
-Cada repositorio de servicio incluye a su vez `quickpatch-contracts` como submódulo en `contracts/`, fijado en un tag. Así cada servicio declara la versión exacta de los contratos con la que se construye.
+Cada repositorio que consume contratos —los ocho servicios, Web y Mobile— incluye `quickpatch-contracts` como submódulo en `contracts/`, fijando el commit correspondiente a una versión SemVer. Así cada componente declara exactamente contra qué contratos se construye.
 
 ## Reglas de trabajo
 
@@ -37,7 +37,7 @@ Cada repositorio de servicio incluye a su vez `quickpatch-contracts` como submó
 3. Dentro de un submódulo hay que cambiarse a una rama antes de trabajar, porque Git deja los submódulos sin rama por defecto.
 4. Cambiar la versión de contratos de un servicio es un commit explícito en ese servicio.
 5. Una versión del sistema completo es un tag del repositorio principal (por ejemplo `v0.3.0`), que fija qué commit de cada componente forma parte de la entrega.
-6. Configuración recomendada en cada computador: `submodule.recurse=true` y `push.recurseSubmodules=check`.
+6. En el superproyecto se recomienda `submodule.recurse=false`, `fetch.recurseSubmodules=false` y `push.recurseSubmodules=check`. La composición se sincroniza explícitamente con `git submodule update --init --recursive`, evitando que un `pull` avance accidentalmente los submódulos anidados de contratos.
 
 ## Consecuencias
 
@@ -53,7 +53,7 @@ Cada repositorio de servicio incluye a su vez `quickpatch-contracts` como submó
 - Un cambio que afecta a varios componentes, por ejemplo un contrato, requiere varios Pull Requests coordinados.
 - El equipo debe aprender el flujo de submódulos y respetar el orden de publicación.
 - Son 13 repositorios para configurar: ramas, CI, permisos y enlaces con Jira.
-- El desarrollo local del sistema completo depende del `docker-compose` del repositorio principal.
+- El desarrollo e integración del sistema completo utilizan los artefactos de entorno mantenidos en `quickpatch-infrastructure`, fijados por el submódulo `infrastructure/`.
 
 ## Decisiones descartadas
 
@@ -71,7 +71,7 @@ Se descartó porque cada servicio necesita los contratos para construirse en su 
 
 ### Publicar los contratos como paquetes (NuGet y Maven)
 
-Se descartó por ahora porque exige mantener dos registros de paquetes, y una sola persona administra la infraestructura (K11).
+Se descartó por ahora porque exige mantener dos registros de paquetes, y una sola persona administra la infraestructura (R11).
 
 ### `git subtree` en lugar de submódulos
 
@@ -82,7 +82,7 @@ Se descartó porque copia el código de cada componente dentro del principal y v
 - Crear los teams de la organización y asignar el acceso por repositorio.
 - Mover a cada servicio las pruebas de integración y de contrato que hoy están en `tests/integration/` y `tests/contract/` del repositorio principal.
 - Ajustar el Documento de Infraestructura (sección 6, un pipeline por repositorio) y el documento de Políticas (GitFlow por repositorio y responsable de actualizar los punteros).
-- Regenerar la Figura 7 del SDD, que todavía dibuja `contracts/` dentro de `docs/`.
+- ~~Regenerar la figura de la estructura del repositorio en el SDD (hoy Figura 14), que dibujaba `contracts/` dentro de `docs/`.~~ Hecho: muestra `contracts/api-gateway/` y `contracts/kafka/` (ADR-021).
 
 ## Trazabilidad
 

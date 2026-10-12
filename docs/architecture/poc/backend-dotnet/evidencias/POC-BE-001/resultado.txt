@@ -1,0 +1,26 @@
+== Preparación: categoría publicada por Catalog (catalog.category-changed) ==
+réplica de la categoría creada en ServiceRequest
+
+== C1 Interoperabilidad, tenant y correlationId ==
+POST /v1/service-requests -> 201, id=01a113ed-acfd-7f1e-9ccd-5e24e2736119
+eventId (outbox ServiceRequest) = 01a113ed-acfd-7f7d-adb1-ff499a7d47c6
+processed_events en Matching: 01a113ed-acfd-7f7d-adb1-ff499a7d47c6 tenant=8a49c50f-753d-4daf-b57a-a8b0f4f7c482 tipo=service-request.created
+tenant del token = 8a49c50f-753d-4daf-b57a-a8b0f4f7c482
+latencia POST -> registrado en Matching: 723 ms
+log de Matching con el mismo correlationId: 2 línea(s)
+
+== C3 Duplicado por eventId ==
+processed_events con 01a113ed-acfd-7f7d-adb1-ff499a7d47c6: 1
+Matching registró DUPLICATE: 1
+
+== C6 Contrato inválido ==
+mensajes descartados por Matching: 2
+
+== C4/C5 Kafka caído y recuperación ==
+Kafka detenido
+POST con Kafka caído -> 201, id=01a113ed-eac5-7393-a528-936607d18a97
+outbox con Kafka caído: published_at=NULL attempts=0
+Kafka iniciado de nuevo
+outbox después: published_at=2026-10-07 01:15:37.696637+00 attempts=0
+Matching registró 01a113ed-eac5-7790-b8bb-dcba20edc993: 1 (recuperación en 8 s desde que Kafka volvió)
+eventos perdidos: 0

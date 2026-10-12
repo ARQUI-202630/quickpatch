@@ -1,0 +1,19 @@
+Cliente: (Servicio listo para pagar)
+Cliente: Pagar con tarjeta el valor de la cotización
+Pasarela de pagos: Procesar el cobro
+Pasarela de pagos: Aprobar el cobro
+Quickpatch: Registrar el pago
+Quickpatch: Emitir comprobante a nombre de la plataforma
+Cliente: (Servicio pagado)
+
+Cliente: (Servicio listo para pagar)
+Cliente: Pagar con tarjeta el valor de la cotización
+Pasarela de pagos: Procesar el cobro
+Pasarela de pagos: Rechazar el cobro
+Quickpatch: Avisar al cliente que puede reintentar
+Cliente: Pagar con tarjeta el valor de la cotización
+Pasarela de pagos: Procesar el cobro
+Pasarela de pagos: Aprobar el cobro
+Quickpatch: Registrar el pago
+Quickpatch: Emitir comprobante a nombre de la plataforma
+Cliente: (Servicio pagado)

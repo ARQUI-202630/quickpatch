@@ -1,0 +1,11 @@
+Cliente: (Servicio pagado)
+Cliente: Calificar al técnico de 1 a 5
+Quickpatch: Verificar que el servicio no haya sido calificado
+Quickpatch: Actualizar la reputación del técnico
+Cliente: (Servicio calificado)
+
+Cliente: (Servicio pagado)
+Cliente: Calificar al técnico de 1 a 5
+Quickpatch: Verificar que el servicio no haya sido calificado
+Quickpatch: Rechazar una segunda calificación
+Cliente: (Calificación rechazada)

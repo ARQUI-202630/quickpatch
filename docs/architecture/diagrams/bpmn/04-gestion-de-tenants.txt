@@ -1,0 +1,13 @@
+Admin de plataforma: (Revisa las empresas oferentes)
+Admin de plataforma: Consultar empresas oferentes
+Admin de plataforma: Activar o desactivar una empresa oferente
+Admin de plataforma: Confirmar el cambio
+Quickpatch: Aplicar el cambio y dejar constancia
+Admin de plataforma: (Estado actualizado)
+
+Admin de plataforma: (Revisa las empresas oferentes)
+Admin de plataforma: Consultar empresas oferentes
+Admin de plataforma: Activar o desactivar una empresa oferente
+Admin de plataforma: Confirmar el cambio
+Quickpatch: Impedir desactivar la empresa de la plataforma
+Admin de plataforma: (Cambio rechazado)

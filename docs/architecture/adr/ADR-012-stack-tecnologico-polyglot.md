@@ -34,7 +34,7 @@ Se adopta el siguiente stack vigente:
 | Acceso a datos .NET | EF Core + Npgsql |
 | Acceso a datos Matching | Spring Data/JPA + PostgreSQL/PostGIS |
 | Cache | Redis |
-| Evidencias/objetos | MinIO |
+| Evidencias/objetos | Garage |
 | Gateway | Nginx |
 | Orquestación de microservicios | k3s |
 | Aprovisionamiento | Ansible |
@@ -59,11 +59,11 @@ REST se utiliza cuando el consumidor necesita una respuesta síncrona inmediata.
 
 Kafka se utiliza para hechos de dominio y procesos desacoplados/asíncronos. La adopción de EDA no implica reemplazar toda interacción síncrona por eventos.
 
-Los contratos REST se versionan en `contracts/openapi/` del repo `quickpatch-contracts`.
+Los contratos REST se versionan en `openapi/` del repo `quickpatch-api-gateway` (ADR-021).
 
-Los contratos de eventos se versionan en `contracts/events/` del repo `quickpatch-contracts`.
+Los contratos de eventos se versionan en `events/` del repo `quickpatch-kafka` (ADR-021).
 
-> Actualización: desde el ADR-013 los contratos viven en su propio repositorio (`quickpatch-contracts`), en lugar de `docs/contracts/`. La decisión de este ADR no cambia.
+> Actualización: con el ADR-013 los contratos pasaron del repositorio principal a `quickpatch-contracts`, y con el ADR-021 se repartieron entre `quickpatch-api-gateway` (REST) y `quickpatch-kafka` (eventos). La decisión de este ADR no cambia.
 
 La interoperabilidad entre .NET y Java depende de contratos, no de compartir código de dominio.
 
