@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.26 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.27 — QUICKPATCH
 
 ---
 
@@ -899,13 +899,12 @@ flowchart LR
         MOB["Flutter Mobile<br/>[Contenedor: iOS y Android]<br/>Usuarios operativos"]
         WEB["Angular Web<br/>[Contenedor]<br/>Administración"]
         CORE["Backend QUICKPATCH<br/>[API Gateway + 8 microservicios<br/>+ Apache Kafka]<br/>Solicitudes, matching, pagos,<br/>reputación y notificaciones"]
+        GEO["Geocodificador<br/>[Contenedor: Nominatim,<br/>mapa de Bogotá, ADR-024]"]
     end
 
     subgraph EXT[" "]
         direction TB
         PAY["Pasarela de pagos PCI-DSS<br/>[Sistema externo, RIE-01]"]
-        MAPS["Servicio de geocodificación<br/>[Sistema externo, RIE-02]"]
-        NOTI["Proveedor de notificaciones<br/>[Sistema externo, RIE-03]<br/>Correo y push"]
     end
 
     P1 -->|"usa"| MOB
@@ -915,17 +914,16 @@ flowchart LR
     MOB -->|"HTTPS y WebSocket<br/>(estado, ADR-023)"| CORE
     WEB -->|"HTTPS y WebSocket<br/>(estado, ADR-023)"| CORE
     CORE -->|"tokeniza y cobra"| PAY
-    MOB -->|"convierte la dirección<br/>del cliente en coordenadas"| MAPS
-    CORE -->|"envía avisos por correo<br/>y push a las personas"| NOTI
+    CORE -->|"convierte la dirección del cliente<br/>en coordenadas (RIE-02)"| GEO
 
     classDef persona fill:#08427b,stroke:#052e56,color:#ffffff
     classDef contenedor fill:#438dd5,stroke:#2e6295,color:#ffffff
     classDef sistema fill:#1168bd,stroke:#0b4884,color:#ffffff
     classDef externo fill:#999999,stroke:#6b6b6b,color:#ffffff
     class P1,P2,P3,P4 persona
-    class MOB,WEB contenedor
+    class MOB,WEB,GEO contenedor
     class CORE sistema
-    class PAY,MAPS,NOTI externo
+    class PAY externo
     style PER fill:#ffffff,stroke:#ffffff
     style EXT fill:#ffffff,stroke:#ffffff
     style SIS fill:#ffffff,stroke:#444444,stroke-dasharray:6 4
@@ -935,7 +933,7 @@ flowchart LR
 
 - **Personas y canal.** Los usuarios operativos (cliente, empresa cliente, técnico y proveedor) solo entran por la app móvil; los dos administradores, solo por el panel web (SRS 2.1 y 2.2, RN-U6). El proveedor es el rol que administra un equipo de técnicos (RF-16), no el proveedor de materiales (`SUPPLIER`, sección 7.2).
 - **Frontera del sistema.** Todo el tráfico de las apps entra por el API Gateway, que es la única entrada (ADR-022). Los microservicios no se llaman entre sí para cumplir su función: se integran por eventos en Kafka (sección 4.3).
-- **Sistemas externos.** Son los tres del SRS (RIE-01 a RIE-03). Los proveedores concretos no están definidos.
+- **Sistemas externos.** En el MVP solo la pasarela de pagos (RIE-01) es externa, como exige R5; su proveedor concreto no está definido. La geocodificación (RIE-02) corre dentro de la infraestructura con un Nominatim propio que solo tiene el mapa de Bogotá, y las notificaciones (RIE-03) se entregan dentro de la app; el correo y el push con la app cerrada quedan fuera del MVP (ADR-024).
 - **Canal de estado en tiempo real (ADR-023).** Las apps abren un WebSocket hacia Communication Service a través del API Gateway (`/v1/realtime`); el aviso solo dice qué cambió y la app pide el detalle por REST. Si el canal no está disponible, la app consulta el estado cada 30 segundos (RNF-06). Las notificaciones push del proveedor externo (RIE-03) no forman parte de este canal: dependen de la decisión sobre R5 (SCRUM-413). La implementación está pendiente (sección 2.2).
 
 ### 4.2 Componentes
@@ -1043,6 +1041,7 @@ El detalle operativo de esta sección (playbooks de Ansible, manifiestos de Kube
 |ADR-014|Una sola instancia de PostgreSQL + PostGIS en VM4 (y otra en VM5 para QA, ADR-022), con una base de datos y credenciales propias por microservicio|AC7 Maintainability (Modularity: cada servicio es dueño de sus datos y el motor impide JOINs entre bases)|AC5 Reliability: la instancia es un punto único de falla y sus recursos se comparten entre los 8 servicios|R10 y R11: un servidor por servicio no cabe en 7 VMs ni lo puede mantener una sola persona. Detalle en `docs/architecture/adr/ADR-014-postgresql-instancia-unica.md`|
 |ADR-015|(Modificado por ADR-022.) VM2 como ambiente de QA permanente, con k3s, PostgreSQL, Redis y Kafka propios. El panel Angular pasa a VM1, que es la única entrada desde la VPN y elige el destino por nombre (producción, QA o Grafana)|AC7 Maintainability (Testability: el despliegue y la prueba de carga se ejecutan en QA antes de producción)|AC5 Reliability: si VM1 cae, se pierde a la vez el acceso a producción, QA y Grafana. También suma una VM más que mantener (R11)|D8 (AC7-E6: todo despliegue y toda prueba de carga pasan antes por QA). R10: no hay una octava VM, y VM2 solo servía archivos estáticos. R9: desde la VPN, el perímetro de la universidad solo deja pasar el 443 de VM1. Detalle, opciones descartadas y riesgos en `docs/architecture/adr/ADR-015-ambiente-qa-en-vm2.md`|
 |ADR-016|Garage, compatible con S3, como almacenamiento de objetos para evidencias y respaldos de PostgreSQL en VM6 (y una instancia propia en VM7 para QA, ADR-022), en lugar de MinIO|AC6 Security (un solo puerto expuesto, llaves separadas por uso) y uso de recursos de VM7 (AC2)|Funciones avanzadas de S3 (versionado, bloqueo de objetos) y consola web|D7 y R5: MinIO dejó de distribuir su edición comunitaria; en la prueba de concepto Garage cumplió lo mismo que SeaweedFS con unas 20 veces menos memoria. Detalle, prueba de concepto y opciones descartadas en `docs/architecture/adr/ADR-016-garage-storage-objetos.md`|
+|ADR-024|R5 sin cambios. Geocodificación (RIE-02) con Nominatim propio en la VM de datos de cada ambiente (VM4 y VM5), solo con el mapa de Bogotá y accesible solo desde el k3s del ambiente; ServiceRequest geocodifica cuando la solicitud llega sin coordenadas. Notificaciones (RIE-03) dentro de la app (canal de ADR-023 y buzón en Communication); correo y push fuera del MVP. Nominatim trae su propio PostgreSQL: excepción a ADR-014|AC6 Security (ningún dato personal sale de las 7 VMs, K12), AC5 Reliability (sin terceros en el camino salvo el pago)|AC7 Maintainability (un componente más por ambiente, R11), AC2 Performance Efficiency (RAM y disco de la VM de datos) y AC4 Interaction Capability (sin avisos con la app cerrada)|R5, R6, K12: un geocodificador o un proveedor de correo en la nube recibiría direcciones y correos de los clientes, y el push solo existe por Firebase o APNs. Detalle en `docs/architecture/adr/ADR-024-dependencias-externas-r5.md`|
 |ADR-022|Siete VMs en 3 de producción (VM3 aplicación, VM4 datos, VM6 mensajería y almacenamiento), 3 de QA con la misma forma (VM2, VM5, VM7) y 1 de herramientas (VM1: entrada única, CI, k6 y observabilidad)|AC7 Maintainability (Testability: QA reproduce la topología y la red de producción) y AC5 en QA (las pruebas no compiten por una sola VM)|AC5 Reliability en producción (de 6 VMs a 3: PostgreSQL con Redis y Kafka con Garage comparten VM) y AC2 por esa misma convivencia|Revisión del profesor (3 + 3 + 1). R9: VM1 sigue siendo la única entrada desde la VPN, por eso es la VM de herramientas y no de un ambiente. Detalle y plan de migración en `docs/architecture/adr/ADR-022-redistribucion-vms.md`|
 
 > **Nota:** se descartó un clúster de Kubernetes multi-nodo (vía `kubeadm` completo) por requerir VMs adicionales dedicadas al control plane, lo cual viola R10. k3s resuelve esto al ser una distribución de Kubernetes completa pero liviana, capaz de correr en un solo nodo (VM3) sin sacrificar la API estándar de Kubernetes ni los manifiestos de Deployment/Service. El resto de las VMs (base de datos, cache, mensajería, storage) se mantiene en Docker Compose simple, ya que no alojan múltiples servicios independientes que se beneficien de orquestación.
@@ -1102,6 +1101,7 @@ Vista consolidada de las tablas de las secciones 5.5 y 6: **+** indica el atribu
 |ADR-018| | | | | |+|−| | |Validación local del token; nadie más puede emitirlo|Un token vale hasta que expira; rotación de llaves|
 |ADR-021| | | | | | |+| | |El gateway y Kafka tienen repositorio; CI independiente por repositorio|Dos repositorios de contratos por servicio; CI repetido por stack|
 |ADR-023| |+| |+|−| |−| | |La interfaz recibe el cambio de estado sin consultar|Communication con conexiones abiertas; respaldo de 30 s si el canal cae|
+|ADR-024| |−| |−|+|+|−| | |Ningún dato personal sale de las 7 VMs para geocodificar ni notificar|Nominatim en cada VM de datos; sin avisos con la app cerrada|
 
 **Lectura.** AC7 es a la vez el atributo más favorecido (8 decisiones) y el más sacrificado (8): lo favorecen las decisiones sobre cómo se organiza y se construye el código (repositorios, stack, esquema compartido) y lo pagan las de distribución (microservicios, Kafka, Outbox, réplicas). Le sigue AC5, favorecido por 5 decisiones, lo que es consistente con un sistema distribuido construido por un equipo pequeño: se paga en complejidad lo que se gana en tolerancia a fallos. Ninguna decisión prioriza ni sacrifica AC1, AC3, AC4 ni AC9: sus escenarios se atienden dentro de cada servicio, no con decisiones de estructura.
 
@@ -1257,4 +1257,5 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.23|7 oct 2026|Validación contra los RNF (SCRUM-283). La nueva sección 2.2 sigue los 13 RNF del SRS hasta su escenario, sus decisiones y componentes y la evidencia actual en el código: 4 cubiertos, 8 parciales y 1 sin cobertura (RNF-06). Registra que RNF-02 y RNF-03 no tienen escenario (decisión abierta), las acciones correctivas por rol —la principal: el despliegue a producción no depende hoy de las pruebas de QA (RNF-08)— y un hallazgo de contratos: la app móvil llama a `POST /v1/auth/register/company`, que no está en `identity.v1.yaml`.|
 |2.24|7 oct 2026|Arquitectura de alto nivel en C4 (SCRUM-279). La sección 4.1 reemplaza el diagrama general por uno de contexto C4 horizontal: personas, Flutter Mobile para los usuarios operativos, Angular Web para los administradores, el backend como una caja y los tres sistemas externos del SRS (RIE-01 a RIE-03). Deja como decisión abierta el canal de estado en tiempo real: el diagrama anterior mostraba WebSocket y el SDD lo descarta.|
 |2.25|7 oct 2026|La sección 4.2.1 enlaza los prototipos de interfaz del Sprint 3 en Figma (SCRUM-302, SCRUM-332).|
+|2.27|12 oct 2026|Dependencias externas frente a R5 (SCRUM-413 y SCRUM-405). Se acepta ADR-024: R5 no cambia; la geocodificación (RIE-02) corre con un Nominatim propio con el mapa de Bogotá en VM4 y VM5, usado por ServiceRequest cuando la solicitud llega sin coordenadas, y las notificaciones (RIE-03) del MVP se entregan dentro de la app (canal de ADR-023 y buzón en Communication). El diagrama de contexto (4.1) pasa el geocodificador adentro del sistema y retira el proveedor de correo y push, y la nota de sistemas externos lo explica. ADR-024 entra a la tabla 5.5 y a la matriz 6.1 como excepción a ADR-014.|
 |2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|
