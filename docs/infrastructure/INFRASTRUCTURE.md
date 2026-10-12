@@ -109,6 +109,7 @@ flowchart TB
 ```
 
 - **Una sola entrada.** Desde la VPN, el firewall de la universidad solo deja pasar el 443 de VM1 (sección 10.2). El Nginx de VM1 reenvía según el nombre: `quickpatch.internal` a producción (el panel, servido en la misma VM1, y `/api/` al Traefik de VM3), `qa.quickpatch.internal` al Traefik de VM2 y `grafana.quickpatch.internal` a Grafana, en VM1.
+- **Canal en tiempo real (SCRUM-451, ADR-023).** El WebSocket de seguimiento entra por `https://<ambiente>/api/v1/realtime`: el Nginx de VM1 lo reenvía al Ingress `/v1/realtime` de Communication en el k3s del ambiente (quita `/api`, como el resto de la API). La `location` fija `proxy_read_timeout` y `proxy_send_timeout` en 75 s, porque Communication envía un ping cada 30 s (`Realtime__KeepAliveSeconds`) y el valor por defecto de Nginx (60 s) cortaría una conexión inactiva, y desactiva `proxy_buffering` para que las tramas lleguen de inmediato. `Upgrade` y `Connection` los hereda del bloque `http`. Communication corre con una réplica.
 - **Producción** son VM3, VM4 y VM6. Los microservicios corren en el k3s de VM3 (hoy Identity, Catalog, ServiceRequest y Matching) y usan PostgreSQL y Redis (VM4), y Kafka y Garage (VM6).
 - **QA** son VM2, VM5 y VM7, con la misma forma que producción y datos y secretos propios. No puede conectarse a los servicios de producción.
 - **El runner de VM1** despliega en los dos k3s y corre las pruebas de sistema contra QA. Se conecta hacia GitHub para recibir trabajos; GitHub nunca entra a la red del laboratorio.
