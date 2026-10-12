@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 3.2 |
+| **Versión** | 3.3 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
