@@ -1,10 +1,18 @@
-Técnico: (Quiere recibir servicios)
-Técnico: Definir especialidades, horario y zona de cobertura
+Técnico: (Aprobado por el admin del tenant)
+Técnico: Elegir las localidades de Bogotá que cubre
 Técnico: Marcarse disponible
-Quickpatch: Tener en cuenta al técnico al asignar servicios
+Quickpatch: Tener en cuenta al técnico al ofrecer servicios
+Quickpatch: Reanudar las solicitudes en espera que ahora puede atender
 Técnico: (Disponible)
 
 Técnico: (Termina su jornada)
 Técnico: Marcarse no disponible
-Quickpatch: Dejar de asignarle servicios
+Quickpatch: Dejar de ofrecerle servicios
 Técnico: (No disponible)
+
+Técnico: (Acepta una oferta)
+Quickpatch: Marcar al técnico ocupado
+Quickpatch: Dejar de ofrecerle servicios
+Técnico: Terminar o cancelar el servicio
+Quickpatch: Marcar al técnico disponible
+Técnico: (Disponible)

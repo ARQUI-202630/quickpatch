@@ -86,6 +86,7 @@ Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estruc
 | `C4-07-Codigo-OutboxIdempotencia` | Code (PlantUML) | 19 |
 | `C4-07-Codigo-AislamientoTenant` | Code (PlantUML) | 20 |
 | `C4-05-Dinamico-CrearSolicitud` | Dynamic | 22 |
+| `C4-05-Dinamico-AsignacionTecnico` | Dynamic | 22b |
 | `C4-05-Dinamico-Pago` | Dynamic | 24 |
 | `C4-05-Dinamico-InicioSesion` | Dynamic | 25 |
 | `C4-05-Dinamico-ReplicaCategorias` | Dynamic | 26 |
@@ -757,18 +758,14 @@ Toda coordinación, cálculo derivado y propagación de estado entre microservic
 
 ## 8.3 Secuencia de creación de solicitud y matching
 
-Este flujo describe el ciclo desde la creación de la necesidad por parte del cliente hasta la asignación confirmada del técnico (RF-07, RF-09, RF-10, D1, AC1-E1, AC2-E3):
+Este flujo va desde la solicitud del cliente hasta que un técnico acepta la oferta (RF-07, RF-09, RF-10, D1, AC1-E1, AC2-E3). Sigue las reglas de matching del DD V4 (RN-M1 a RN-M10) y los contratos `service-request.v1.yaml` 1.1.0, `matching.v1.yaml` 1.0.0 y `asyncapi/realtime.v1.yaml` 1.0.0 de `quickpatch-api-gateway` v0.5.0. El aviso a cada persona llega por el canal de estado en tiempo real (ADR-023).
 
-1. **Recepción:** El cliente envía `POST /v1/service-requests` al API Gateway indicando categoría (`category_id`), descripción, dirección de texto y coordenadas geográficas (`location`).
-2. **Validación e Ingesta:** El Gateway valida el JWT, inyecta `tenant_id` y `user_id` en los headers y enruta a `ServiceRequest Service`.
-3. **Persistencia y Outbox:** `ServiceRequest Service` persiste la solicitud en estado `buscando_tecnico` y, dentro de la misma transacción atómica en PostgreSQL, inserta el evento `service-request.created` en la tabla `outbox_events`. Devuelve respuesta `201 Created` al cliente de inmediato.
-4. **Publicación:** El worker de Outbox lee el registro pendiente y lo publica en el tópico Kafka `service-request.created`.
-5. **Consumo y Búsqueda Geoespacial:** `Matching Service` (Spring Boot) consume el evento. Ejecuta una consulta con PostGIS (`ST_DWithin` / polígonos de `coverage_zones`) contra `technician_availability` con `status = 'disponible'` y filtrando estrictamente por la especialidad (`specialty_id`, AC1-E1).
-6. **Resolución:**
-   - *Caso con candidatos:* Selecciona al técnico óptimo por distancia y ranking. Registra el intento en `matching_attempts` (con marca `expires_at`) y publica `matching.technician-assigned`.
-   - *Caso sin candidatos (Fail Safe, AC9-E4):* Si no hay técnicos que cumplan todos los filtros, el sistema no relaja las reglas; publica `matching.no-technician-available` y la solicitud pasa a estado `en_espera`.
-7. **Notificación y Asignación:** `ServiceRequest Service` actualiza el estado a `asignado`. Simultáneamente, `Communication Service` consume el evento y dispara la notificación push al técnico y al cliente en menos de 7 segundos (AC2-E3).
-8. **Respuesta del Técnico:** El técnico dispone de un tiempo límite para aceptar (`POST /v1/matching/{id}/accept`) o rechazar (`POST /v1/matching/{id}/reject`). Si rechaza o el tiempo expira, el Matching Service inicia la reasignación automática hacia el siguiente candidato disponible (RF-10).
+1. **Recepción:** el cliente envía `POST /v1/service-requests` con la categoría, la descripción, la dirección y la ubicación. El API Gateway quita `/api` y enruta a ServiceRequest Service, que valida el JWT y toma el tenant y el usuario del token (ADR-018); el gateway no valida el token.
+2. **Persistencia y Outbox:** ServiceRequest valida la categoría en su réplica (ADR-017), guarda la solicitud en `buscando_tecnico` y, en la misma transacción, el evento `service-request.created` en `outbox_events` (ADR-007). El publicador lo envía a Kafka.
+3. **Búsqueda:** Matching Service consume el evento una vez por `eventId` y busca candidatos con PostGIS: técnicos **aprobados**, **disponibles**, de la **especialidad** de la solicitud, con una **localidad de cobertura** que contiene la ubicación, **sin otra oferta pendiente** y a los que no se les haya ofrecido ya esta solicitud (RN-M9). La especialidad y la verificación vienen de su proyección de `technician.*` (P-01).
+4. **Oferta:** al candidato más cercano le registra una oferta en `matching_attempts` que vence a los **3 minutos** (RN-M8) y publica `matching.offer-created`. Una solicitud tiene una sola oferta pendiente a la vez (RN-M1). Communication avisa al técnico por su WebSocket.
+5. **Respuesta del técnico** (sección 8.3.1): si **acepta** antes de que venza, el técnico pasa a `ocupado` y Matching publica `matching.technician-assigned` (RN-M2, RN-M4, RN-M6, RN-M7); ServiceRequest pasa la solicitud a `asignado` y Communication avisa al cliente. Si **rechaza o deja vencer** la oferta, Matching se la ofrece al siguiente candidato (RN-M3).
+6. **Sin candidatos (AC9-E4):** si no hay técnicos que cumplan todos los filtros, Matching no relaja las reglas: publica `matching.no-technician-available` y la solicitud pasa a `en_espera`. Cuando aparece un técnico que podría atenderla (se marca disponible, cambia su cobertura, es aprobado o termina otro servicio), Matching publica `matching.search-resumed`, empezando por la solicitud más antigua, y la búsqueda vuelve al paso 3 (RN-M10).
 
 ```mermaid
 sequenceDiagram
@@ -776,48 +773,59 @@ sequenceDiagram
     actor C as Cliente
     participant GW as API Gateway
     participant SR as ServiceRequest Service
-    participant DB as PostgreSQL (Outbox)
-    participant K as Kafka Broker
+    participant K as Kafka
     participant M as Matching Service
     participant COM as Communication Service
     actor T as Técnico
 
-    C->>GW: POST /v1/service-requests (Categoría, Ubicación)
-    GW->>SR: Enruta con tenant_id y user_id
-    SR->>DB: BEGIN Transaction
-    SR->>DB: Guarda solicitud (Estado: buscando_tecnico)
-    SR->>DB: Inserta evento en outbox_events
-    DB-->>SR: COMMIT Transaction
-    SR-->>C: 201 Created (ID de solicitud)
-    
-    DB->>K: Outbox Worker publica: service-request.created
-    
-    K-->>M: Consume evento
-    M->>DB: PostGIS: Busca técnico (disponible, cobertura, especialidad)
-    M->>K: Publica: matching.technician-assigned (con ID del candidato)
-    
-    par Actualización de Estado
-        K-->>SR: Consume evento
-        SR->>DB: Actualiza solicitud (Estado: asignado)
-    and Notificación
-        K-->>COM: Consume evento
-        COM-->>T: Envía Notificación Push (Nueva Asignación)
-        COM-->>C: Envía Notificación Push (Técnico Encontrado)
+    C->>GW: POST /v1/service-requests (categoría, ubicación, dirección)
+    GW->>SR: Enruta (SR valida el JWT; tenant y usuario del token)
+    SR->>SR: Guarda la solicitud (buscando_tecnico) y el outbox en una transacción
+    SR-->>C: 201 Created
+    SR->>K: Publicador del outbox: service-request.created
+    K-->>M: Consume (una vez por eventId)
+    M->>M: Candidatos RN-M9 (PostGIS) y oferta con vencimiento a 3 min
+    M->>K: matching.offer-created
+    K-->>COM: Consume la oferta
+    COM-->>T: Aviso por WebSocket (ADR-023)
+
+    alt El técnico acepta antes de que venza
+        T->>GW: POST /v1/matching/offers/{attemptId}/accept
+        GW->>M: Enruta (Matching valida el JWT del técnico)
+        M->>M: Oferta aceptada; técnico ocupado (RN-M2, RN-M6, RN-M7)
+        M->>K: matching.technician-assigned
+        par Estado
+            K-->>SR: Consume: la solicitud pasa a asignado
+        and Aviso
+            K-->>COM: Consume la asignación
+            COM-->>C: Aviso por WebSocket; la app pide el detalle
+        end
+    else Rechaza o la oferta vence
+        M->>M: Oferta al siguiente candidato (RN-M3)
+    else No quedan candidatos
+        M->>K: matching.no-technician-available
+        K-->>SR: Consume: la solicitud pasa a en_espera
+        Note over M: Cuando aparece un técnico que puede atenderla, matching.search-resumed (RN-M10)
     end
-    
-    T->>GW: POST /v1/matching/{id}/accept
-    GW->>M: Técnico acepta la solicitud
 ```
 
-**Figura 21. Flujo asíncrono de creación de solicitud, matching con PostGIS y notificación.**
+**Figura 21. Creación de solicitud, oferta al técnico y respuesta (secuencia; DD V4).**
 
 ---
 
-**Vista C4.** El diagrama dinámico muestra el mismo flujo a nivel de contenedores, numerado; la secuencia anterior da el detalle de cada mensaje.
+**Vista C4.** Los diagramas dinámicos muestran el flujo a nivel de contenedores y numerado: la Figura 22 va de la solicitud a la oferta, y la Figura 22b, de la aceptación al aviso al cliente.
 
 ![Creación de solicitud y matching (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-CrearSolicitud.png)
 
-**Figura 22. Creación de una solicitud y matching (C4 · Dynamic). Vista `C4-05-Dinamico-CrearSolicitud`.**
+**Figura 22. Creación de una solicitud, búsqueda del técnico y oferta (C4 · Dynamic). Vista `C4-05-Dinamico-CrearSolicitud`.**
+
+### 8.3.1 Aceptación de la oferta por el técnico (SCRUM-30)
+
+El técnico ve sus ofertas pendientes con la localidad y la distancia, pero no la dirección, que solo recibe al quedar asignado (RN-SR13; `GET /v1/matching/offers?status=pendiente`). Al aceptar (`POST /v1/matching/offers/{attemptId}/accept`), Matching Service verifica en una sola transacción que la oferta siga `pendiente`, sea de ese técnico y no haya vencido, y que el técnico siga `disponible`. Si no, responde `409 oferta-no-disponible` o `409 tecnico-no-disponible`. Si todo se cumple, marca al técnico `ocupado` y publica `matching.technician-assigned` por el Outbox. ServiceRequest pasa la solicitud a `asignado`, y Communication guarda la notificación en el buzón y avisa al cliente por su WebSocket.
+
+![Aceptación del técnico (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-AsignacionTecnico.png)
+
+**Figura 22b. Aceptación de la oferta por el técnico y aviso al cliente (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-AsignacionTecnico`.**
 
 ## 8.4 Secuencia de pago y facturación
 
@@ -1878,7 +1886,7 @@ El administrador del tenant crea o edita categorías de servicio; un nombre repe
 
 ## 11.7 Disponibilidad y cobertura del técnico
 
-El técnico define especialidades, horario y zona, y se marca disponible o no disponible; solo los disponibles reciben servicios. *Requisitos y reglas:* RF-13, RN-M6.
+El técnico aprobado elige las localidades de Bogotá que cubre y se marca disponible o no disponible; mientras atiende un servicio queda ocupado y solo los disponibles reciben ofertas. Cuando vuelve a estar disponible, Quickpatch reanuda las solicitudes en espera que puede atender. Su especialidad se elige al registrarse. *Requisitos y reglas:* RF-13, RN-M6, RN-M9, RN-M10.
 
 ![Disponibilidad y cobertura del técnico](diagrams/bpmn/06-disponibilidad-y-cobertura-del-tecnico.png)
 
@@ -1894,7 +1902,7 @@ El cliente elige el servicio y describe el problema, la dirección y la ubicaci�
 
 ## 11.9 Asignación de técnico
 
-Quickpatch ofrece el servicio al técnico disponible más cercano; si lo rechaza o no responde a tiempo, al siguiente. Sin técnicos, la solicitud queda en espera. *Requisitos y reglas:* RF-09, RF-10, RN-M1 a RN-M7.
+Quickpatch ofrece el servicio al técnico aprobado y disponible más cercano de la especialidad y la zona, y la oferta dura 3 minutos. Si el técnico la rechaza o la deja vencer, se ofrece al siguiente. Sin técnicos, la solicitud queda en espera y se reanuda, primero la más antigua, cuando aparece un técnico que puede atenderla. *Requisitos y reglas:* RF-09, RF-10, RN-M1 a RN-M10 (DD V4).
 
 ![Asignación de técnico](diagrams/bpmn/08-asignacion-de-tecnico.png)
 

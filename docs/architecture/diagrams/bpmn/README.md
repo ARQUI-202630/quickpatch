@@ -19,9 +19,9 @@ Fuentes de texto para https://www.bpmn-sketch-miner.ai: se pega el contenido de 
 | `03-registro-de-empresa-cliente` | Cuenta corporativa | RF-06, DEP-13. **Pendiente:** SCRUM-26; aún no está en el contrato de la API |
 | `04-gestion-de-tenants` | Activar o desactivar tenants con auditoría | RF-21, RN-U6 |
 | `05-gestion-del-catalogo` | Categorías de servicio del tenant | RN-SR10 |
-| `06-disponibilidad-y-cobertura-del-tecnico` | Disponibilidad y zona de cobertura | RF-13, RN-M6 |
+| `06-disponibilidad-y-cobertura-del-tecnico` | Localidades de cobertura, disponible, no disponible y ocupado mientras atiende un servicio | RF-13, RN-M6, RN-M10 |
 | `07-creacion-de-solicitud` | Solicitud con validación de cobertura y tipo de servicio | RF-07, RN-SR1, RN-SR9 a RN-SR11 |
-| `08-asignacion-de-tecnico` | Ofrecer el servicio al técnico más cercano, rechazo o falta de respuesta y sin técnicos | RF-09, RF-10, RN-M1 a RN-M7 |
+| `08-asignacion-de-tecnico` | Oferta al técnico más cercano por 3 minutos, aceptación, rechazo o vencimiento, sin técnicos y reanudación de la solicitud en espera (DD V4) | RF-09, RF-10, RN-M1 a RN-M10 |
 | `09-cotizacion` | Aceptación, rechazo, tercera cotización rechazada y vencimiento | RF-34, RF-35, RN-Q1 a RN-Q7 |
 | `10-ejecucion-del-servicio` | Inicio, evidencia fotográfica y cierre | RF-14, RF-15, RN-SR3, RN-SR6, RN-E1 a RN-E3 |
 | `11-pago-y-facturacion` | Pago con tarjeta, rechazo con reintento y comprobante | RF-22, RF-24, RN-P1 a RN-P5, RN-SR4, RN-SR5 |
