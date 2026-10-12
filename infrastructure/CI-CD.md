@@ -90,3 +90,7 @@ Los repositorios son públicos, así que un PR desde un fork no debe ejecutar c�
 - Pruebas de contrato con Pact entre servicios (el Documento de Pruebas las menciona en CAT-011 y ACT-013).
 - Limpieza de los datos del tenant de prueba después de k6 (PRF-006).
 - Mover el panel (QA y producción) al k3s cuando tenga imagen; hoy lo sirve el Nginx de VM1.
+
+## Ruta del canal en tiempo real (SCRUM-451)
+
+`/api/v1/realtime` (WebSocket) va por el Nginx de VM1 al Ingress `/v1/realtime` de Communication, con `proxy_read_timeout` y `proxy_send_timeout` de 75 s (ping del servidor cada 30 s) y `proxy_buffering off`. Cambiar esos tiempos exige reaplicar `deploy-gateway.yml`; ver `docs/infrastructure/INFRASTRUCTURE.md`, sección 2.
