@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.25 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.26 — QUICKPATCH
 
 ---
 
@@ -77,7 +77,7 @@ Cada driver se sigue desde los requisitos que lo originan hasta los escenarios d
 |Driver|Requisitos (SRS)|Escenarios de calidad|Decisiones de arquitectura|
 |---|---|---|---|
 |D1 Asignación automática|RF-09, RF-10, RF-13, RNF-05, RIE-02|AC1-E1, AC2-E1, AC2-E3, AC2-E4, AC9-E4|ADR-004 (PostgreSQL + PostGIS), ADR-006 (Kafka)|
-|D2 Seguimiento en tiempo real|RF-11, RNF-06, RIE-03|AC2-E3, AC4-E9|ADR-006 (Kafka), ADR-007 (Outbox)|
+|D2 Seguimiento en tiempo real|RF-11, RNF-06, RIE-03|AC2-E3, AC4-E9|ADR-006 (Kafka), ADR-007 (Outbox), ADR-023 (canal WebSocket)|
 |D3 Reputación del técnico|RF-12, RF-19, RF-20|AC4-E6, AC9-E2|ADR-003 (Ranking Service independiente)|
 |D4 Comprobante a nombre de la plataforma|RF-22, RF-23, RF-24, RIE-01|AC3-E1, AC9-E5|ADR-006 (Kafka), ADR-007 (Outbox e idempotencia), ADR-009 (tokenización de pagos)|
 |D5 Multi-tenancy|RF-04, RF-06, RF-21, RNF-09, RNF-10|AC6-E2, AC8-E1|ADR-005 (shared-schema con RLS)|
@@ -152,7 +152,7 @@ Cada requisito no funcional del SRS (sección 5) se sigue hasta el escenario que
 |RNF-03 Contraseñas con *hashing* seguro|Ninguno|Identity Service|`BCryptPasswordHasher` con factor de trabajo configurable; una prueba de integración verifica que el registro guarda un hash BCrypt|Parcial|
 |RNF-04 Log de todo acceso denegado (403)|AC6-E3, AC6-E8|Identity, Catalog y ServiceRequest; Loki (ADR-016)|Manejador de autorización que registra método, ruta, usuario y rol en cada 403, en los tres servicios con endpoints protegidos|Cubierto|
 |RNF-05 Matching inicia en menos de 60 s|AC2-E3 (7 s, más exigente)|ADR-006 (Kafka), ADR-007 (Outbox); ServiceRequest → `service-request.created` → Matching|Prueba local del 7 de octubre: la solicitud llega a Matching por el Outbox (`tests/e2e/evidencias/mvp-local-2026-10-07.txt`); sin medición en QA|Parcial|
-|RNF-06 Cambio de estado visible en menos de 1 minuto|AC2-E3, AC4-E9|ADR-006; Communication Service; canal en tiempo real de la app|La app tiene el modelo del mensaje en tiempo real, pero la pantalla de detalle solo se actualiza al deslizar; Communication Service no emite notificaciones|Sin cobertura|
+|RNF-06 Cambio de estado visible en menos de 1 minuto|AC2-E3, AC4-E9|ADR-023 (WebSocket hacia Communication Service con respaldo por consulta cada 30 s); ADR-006; Communication Service|El canal está decidido (ADR-023) pero no implementado: la app tiene el modelo del mensaje y la pantalla de detalle solo se actualiza al deslizar; Communication Service no emite avisos|Sin cobertura|
 |RNF-07 Ambiente de QA permanente|AC7-E6|ADR-015 y ADR-022 (QA en VM2, VM5 y VM7)|El `ci-cd.yml` de cada servicio despliega `release/**` en QA (job `desplegar`, SCRUM-338); el despliegue real depende de los secretos y las VMs de DevOps|Parcial|
 |RNF-08 Un fallo en QA bloquea producción|AC7-E6, AC9-E7|ADR-015; pipelines por repositorio; `pruebas-sistema.yml`|Las pruebas del sistema corren al hacer *push* a `release/**`, pero el job `produccion` de cada servicio solo depende de la imagen: nada impide desplegar en producción si fallaron|Parcial|
 |RNF-09 Nuevos tenants sin afectar a los existentes|AC8-E1|ADR-005 (RLS); Identity (`tenants`, administradores iniciales)|Listado y activación de tenants (`/v1/platform/tenants`, SCRUM-112); el alta de un tenant es por datos semilla, no por la API|Parcial|
@@ -168,7 +168,7 @@ Cada requisito no funcional del SRS (sección 5) se sigue hasta el escenario que
 |RNF|Acción|Responsable|
 |---|---|---|
 |RNF-08|Hacer que el despliegue a producción dependa del resultado de `pruebas-sistema.yml` sobre la misma versión, o un ambiente protegido con aprobación en GitHub|DevOps|
-|RNF-06|Implementar el canal de estado en Communication Service y suscribir la pantalla de detalle; mientras tanto, consultar el estado cada 30 segundos|Backend y Frontend|
+|RNF-06|Implementar el canal de ADR-023: el contrato de `/v1/realtime` (DD V4), el WebSocket en Communication Service, el tiempo de espera del gateway de VM1 y la suscripción de la pantalla de detalle con su respaldo de 30 segundos|Backend, Frontend y DevOps|
 |RNF-05, RNF-07|Medir en QA el tiempo desde `POST /v1/service-requests` hasta el consumo en Matching, cuando el ambiente esté desplegado|QA|
 |RNF-09|Exponer el alta de tenants en la API de plataforma y medir AC8-E1 (tenant funcional en menos de 1 hora)|Backend|
 |RNF-12|Agregar pruebas de diseño por tamaño de pantalla (widget tests en Flutter, viewport en Angular)|Frontend|
@@ -912,8 +912,8 @@ flowchart LR
     P2 -->|"usa"| MOB
     P3 -->|"usa"| WEB
     P4 -->|"usa"| WEB
-    MOB -->|"HTTPS"| CORE
-    WEB -->|"HTTPS"| CORE
+    MOB -->|"HTTPS y WebSocket<br/>(estado, ADR-023)"| CORE
+    WEB -->|"HTTPS y WebSocket<br/>(estado, ADR-023)"| CORE
     CORE -->|"tokeniza y cobra"| PAY
     MOB -->|"convierte la dirección<br/>del cliente en coordenadas"| MAPS
     CORE -->|"envía avisos por correo<br/>y push a las personas"| NOTI
@@ -936,7 +936,7 @@ flowchart LR
 - **Personas y canal.** Los usuarios operativos (cliente, empresa cliente, técnico y proveedor) solo entran por la app móvil; los dos administradores, solo por el panel web (SRS 2.1 y 2.2, RN-U6). El proveedor es el rol que administra un equipo de técnicos (RF-16), no el proveedor de materiales (`SUPPLIER`, sección 7.2).
 - **Frontera del sistema.** Todo el tráfico de las apps entra por el API Gateway, que es la única entrada (ADR-022). Los microservicios no se llaman entre sí para cumplir su función: se integran por eventos en Kafka (sección 4.3).
 - **Sistemas externos.** Son los tres del SRS (RIE-01 a RIE-03). Los proveedores concretos no están definidos.
-- **Decisión abierta: canal de estado en tiempo real.** Este diagrama pone solo HTTPS entre las apps y el backend. La versión anterior de este diagrama mostraba WebSocket hacia el gateway, mientras que el SDD (5.1) descarta un canal WebSocket y resuelve RF-11 con notificaciones push y consulta por REST. La implementación todavía no tiene ninguno de los dos (sección 2.2, RNF-06). Mientras el equipo no decida, ninguno de los dos documentos debe darlo por hecho.
+- **Canal de estado en tiempo real (ADR-023).** Las apps abren un WebSocket hacia Communication Service a través del API Gateway (`/v1/realtime`); el aviso solo dice qué cambió y la app pide el detalle por REST. Si el canal no está disponible, la app consulta el estado cada 30 segundos (RNF-06). Las notificaciones push del proveedor externo (RIE-03) no forman parte de este canal: dependen de la decisión sobre R5 (SCRUM-413). La implementación está pendiente (sección 2.2).
 
 ### 4.2 Componentes
 
@@ -1071,8 +1071,9 @@ Cada ADR (Architecture Decision Record) documenta una decisión de arquitectura 
 |ADR-017|Réplicas locales de solo lectura alimentadas por eventos con el estado completo de la entidad (event-carried state transfer); por ejemplo, ServiceRequest valida la categoría contra su réplica de `catalog.category-changed`|AC5 Reliability (crear una solicitud no depende de que Catalog esté arriba), AC2 Performance Efficiency (validación local)|Consistencia inmediata (la réplica va segundos atrás) y AC7 Maintainability (una tabla y un consumidor por réplica)|D1, ADR-003: ningún servicio llama a otro de forma síncrona para cumplir su función ni lee su base (ADR-014); RN-SR10|
 |ADR-018|Tokens JWT firmados con RS256: solo Identity tiene la llave privada; los demás servicios validan con la llave pública y toman el tenant del claim `tenant_id`|AC6 Security (Authenticity: un servicio comprometido no puede emitir tokens)|AC7 Maintainability (gestión y rotación de llaves) y revocación inmediata (un token vale hasta que expira)|D5, K12: el tenant y el rol de cada operación deben salir de una fuente que el cliente no puede alterar, sin poner a Identity en el camino de cada petición (AC6-E2)|
 |ADR-021|Doce repositorios, uno por componente de la solución (Flutter, Angular, API Gateway, 8 microservicios y Apache Kafka), más el repositorio principal. Los contratos REST viven en `quickpatch-api-gateway` y los de eventos con sus topics en `quickpatch-kafka`; cada repositorio tiene su propio CI|AC7 Maintainability (Modularity: el gateway y el bus de eventos tienen dueño, historial y pipeline; un cambio en un repositorio no altera el CI de los demás)|Costo de coordinación: los servicios dependen de dos repositorios de contratos y el CI se repite por stack en cada repositorio|Revisión del profesor: el multirepo debe reflejar los componentes de la solución (SAD, sección 4), no los artefactos de apoyo. Detalle en `docs/architecture/adr/ADR-021-doce-repositorios.md`|
+|ADR-023|Canal de estado en tiempo real: WebSocket (`/v1/realtime`) desde las apps hasta Communication Service a través de VM1 y el gateway del ambiente; el aviso no lleva el detalle y, sin canal, la app consulta cada 30 s|AC4 Interaction Capability (la interfaz se actualiza sola), AC2 Performance Efficiency (aviso en segundos, sin consultas repetidas)|AC7 Maintainability (conexiones con estado en Communication, reconexión en las apps) y AC5 Reliability del canal (cubierta por el respaldo de 30 s)|D2, RNF-06, R5: push con Firebase Cloud Messaging o APNs sería una dependencia externa de producción que R5 no admite; solo consultar periódicamente contradice D2 y AC2-E3. Detalle en `docs/architecture/adr/ADR-023-canal-tiempo-real-websocket.md`|
 
-**Síntesis:** AC7 (Maintainability) es el atributo que más veces se sacrifica en los ADRs de esta tabla (7 de 12), aunque no de forma exclusiva — también aparece priorizado en ADR-002, ADR-005, ADR-012, ADR-013 y ADR-021, cuando la simplicidad de una sola base de código, de un solo esquema compartido, de un stack principal o de un repositorio por componente es en sí misma la forma más mantenible de resolver el problema. Cuatro atributos no aparecen priorizados ni sacrificados en ningún ADR: AC1 (Functional Suitability) y AC9 (Safety) se reestructuraron en las versiones 2.1 y 2.7, y AC9 solo aparece como escenario que sustenta la justificación de ADR-007 (AC9-E5); AC3 (Compatibility) y AC4 (Interaction Capability) en cambio existen desde la v2.0 y llevan una versión entera sin que ninguna decisión de arquitectura los haya priorizado o sacrificado — vale la pena que el equipo lo tenga presente al sustentar el documento.
+**Síntesis:** AC7 (Maintainability) es el atributo que más veces se sacrifica en los ADRs de esta tabla (8 de 13), aunque no de forma exclusiva — también aparece priorizado en ADR-002, ADR-005, ADR-012, ADR-013 y ADR-021, cuando la simplicidad de una sola base de código, de un solo esquema compartido, de un stack principal o de un repositorio por componente es en sí misma la forma más mantenible de resolver el problema. Cuatro atributos no aparecen priorizados ni sacrificados en ningún ADR: AC1 (Functional Suitability) y AC9 (Safety) se reestructuraron en las versiones 2.1 y 2.7, y AC9 solo aparece como escenario que sustenta la justificación de ADR-007 (AC9-E5); AC3 (Compatibility) existe desde la v2.0 y sigue sin una decisión de arquitectura que lo priorice o lo sacrifique — vale la pena que el equipo lo tenga presente al sustentar el documento. AC4 (Interaction Capability) estuvo en la misma situación hasta la versión 2.26, cuando ADR-023 lo prioriza con el canal de estado en tiempo real.
 
 **ADR propuestos (pendientes de decisión, no incluidos en la tabla):** ADR-019 (roles de base de datos separados por responsabilidad, según el DD 10.2; la infraestructura hoy crea un solo rol por servicio) y ADR-020 (código transversal compartido entre los servicios .NET, relacionado con AC7-E5). Su detalle está en `docs/architecture/adr/`.
 
@@ -1100,6 +1101,7 @@ Vista consolidada de las tablas de las secciones 5.5 y 6: **+** indica el atribu
 |ADR-017| |+| | |+| |−| | |Validar sin llamar al dueño de los datos|La réplica va segundos atrás|
 |ADR-018| | | | | |+|−| | |Validación local del token; nadie más puede emitirlo|Un token vale hasta que expira; rotación de llaves|
 |ADR-021| | | | | | |+| | |El gateway y Kafka tienen repositorio; CI independiente por repositorio|Dos repositorios de contratos por servicio; CI repetido por stack|
+|ADR-023| |+| |+|−| |−| | |La interfaz recibe el cambio de estado sin consultar|Communication con conexiones abiertas; respaldo de 30 s si el canal cae|
 
 **Lectura.** AC7 es a la vez el atributo más favorecido (8 decisiones) y el más sacrificado (8): lo favorecen las decisiones sobre cómo se organiza y se construye el código (repositorios, stack, esquema compartido) y lo pagan las de distribución (microservicios, Kafka, Outbox, réplicas). Le sigue AC5, favorecido por 5 decisiones, lo que es consistente con un sistema distribuido construido por un equipo pequeño: se paga en complejidad lo que se gana en tolerancia a fallos. Ninguna decisión prioriza ni sacrifica AC1, AC3, AC4 ni AC9: sus escenarios se atienden dentro de cada servicio, no con decisiones de estructura.
 
@@ -1255,3 +1257,4 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.23|7 oct 2026|Validación contra los RNF (SCRUM-283). La nueva sección 2.2 sigue los 13 RNF del SRS hasta su escenario, sus decisiones y componentes y la evidencia actual en el código: 4 cubiertos, 8 parciales y 1 sin cobertura (RNF-06). Registra que RNF-02 y RNF-03 no tienen escenario (decisión abierta), las acciones correctivas por rol —la principal: el despliegue a producción no depende hoy de las pruebas de QA (RNF-08)— y un hallazgo de contratos: la app móvil llama a `POST /v1/auth/register/company`, que no está en `identity.v1.yaml`.|
 |2.24|7 oct 2026|Arquitectura de alto nivel en C4 (SCRUM-279). La sección 4.1 reemplaza el diagrama general por uno de contexto C4 horizontal: personas, Flutter Mobile para los usuarios operativos, Angular Web para los administradores, el backend como una caja y los tres sistemas externos del SRS (RIE-01 a RIE-03). Deja como decisión abierta el canal de estado en tiempo real: el diagrama anterior mostraba WebSocket y el SDD lo descarta.|
 |2.25|7 oct 2026|La sección 4.2.1 enlaza los prototipos de interfaz del Sprint 3 en Figma (SCRUM-302, SCRUM-332).|
+|2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|
