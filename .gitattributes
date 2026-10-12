@@ -1,0 +1,3 @@
+# Los scripts corren en las VMs Linux (Ansible los copia tal cual): siempre con fin de línea LF, aunque el
+# repositorio se clone en Windows.
+*.sh text eol=lf

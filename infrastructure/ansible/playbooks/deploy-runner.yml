@@ -85,6 +85,14 @@
         extra_opts: [--strip-components=1, --wildcards, "*/k6"]
         creates: /usr/local/bin/k6
 
+    # Compuerta de producción (RNF-08, SCRUM-415): el job `desplegar` de cada repositorio la llama antes de
+    # tocar producción. Exige que la versión esté en QA y que las pruebas de sistema hayan pasado después.
+    - name: Compuerta de producción compuerta-qa
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../files/compuerta-qa.sh"
+        dest: /usr/local/bin/compuerta-qa
+        mode: "0755"
+
     - name: Carpeta del runner
       ansible.builtin.file:
         path: "{{ runner_dir }}"
