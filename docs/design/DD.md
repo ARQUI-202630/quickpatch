@@ -2070,7 +2070,7 @@ _Cuadro 12: Contenido de `data` por evento_
 
 |Tipo|Destinatarios|Origen en Kafka|La app pide|
 |---|---|---|---|
-|`service-request.status-changed` (`serviceRequestId`, `status`, `occurredAt`)|Cliente dueño (`clientId`) y técnico asignado (`technicianId`)|`matching.technician-assigned` (`asignado`), `matching.no-technician-available` (`en_espera`), `matching.search-resumed` (`buscando_tecnico`); los demás eventos de la solicitud cuando se publiquen sus esquemas|`GET /v1/service-requests/{id}`|
+|`service-request.status-changed` (`serviceRequestId`, `status`, `occurredAt`)|Cliente dueño (`clientId`) y técnico asignado (`technicianId`)|`service-request.created` (`buscando_tecnico`), `matching.technician-assigned` (`asignado`), `matching.no-technician-available` (`en_espera`), `matching.search-resumed` (`buscando_tecnico`); los demás eventos de la solicitud cuando se publiquen sus esquemas|`GET /v1/service-requests/{id}`|
 |`offer.created` (`attemptId`, `serviceRequestId`, `expiresAt`, `occurredAt`)|Técnico de la oferta|`matching.offer-created`|`GET /v1/matching/offers`|
 |`service-request.counts-changed` (`occurredAt`)|`admin_tenant` del tenant|Cada `service-request.status-changed` del tenant|`GET /v1/admin/service-requests/summary` (sin contrato todavía)|
 
