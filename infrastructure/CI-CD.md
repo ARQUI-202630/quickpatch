@@ -29,7 +29,18 @@ QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a 
 ### Jobs de despliegue de cada servicio
 
 - **`imagen`** construye y publica `ghcr.io/arqui-202630/<repo>`. La etiqueta es el hash del contenido (`t-<árbol>`), no el del commit: cuando `release/x.y.z` se fusiona en `main` sin otros cambios, la imagen ya existe y producción despliega exactamente la que se probó en QA. Si `main` trae algo que no pasó por `release/*`, construye una imagen nueva y deja un aviso.
-- **`desplegar`** corre en el runner de VM1: `kubectl set image` sobre el Deployment del servicio, espera el rolling update y, si falla, hace `kubectl rollout undo`. El ambiente sale de la rama (`release/*` → `qa`, `main` → `produccion`).
+- **`desplegar`** corre en el runner de VM1: `kubectl set image` sobre el Deployment del servicio, espera el rolling update y, si falla, hace `kubectl rollout undo`. El ambiente sale de la rama (`release/*` → `qa`, `main` → `produccion`). En producción, antes de cambiar la imagen, pasa la **compuerta RNF-08**.
+
+### Compuerta RNF-08 (SCRUM-415)
+
+Producción solo recibe una versión que **corre hoy en QA** y que **pasó las pruebas de sistema después de llegar a QA**. El job `desplegar` de cada repositorio llama, solo en producción, a `compuerta-qa` (script de `infrastructure/ansible/files/compuerta-qa.sh`, que `deploy-runner.yml` instala en `/usr/local/bin` de VM1):
+
+- **Servicios:** `compuerta-qa servicio <deployment> <imagen>` compara la imagen con la del Deployment en el k3s de QA y toma la fecha del ReplicaSet de su revisión actual.
+- **Panel:** `compuerta-qa panel <build>` compara la huella del build con la carpeta `panel-qa` de VM1 y toma la fecha de su último archivo.
+- En los dos casos, la última ejecución de `pruebas-sistema.yml` del repositorio `quickpatch` debe terminar en éxito y haber empezado después de esa fecha. Si no, el despliegue se detiene con el motivo.
+- **Excepción:** la variable del repositorio `COMPUERTA_RNF08_EXCEPCION` (Settings → Variables), con el motivo y la fecha, deja pasar con un aviso en la ejecución. Se borra al terminar el despliegue; así quedó registrada la excepción de la release 0.2.0.
+
+La aprobación del ambiente `produccion` sigue existiendo: es una segunda compuerta, manual, encima de la automática.
 
 El panel tiene un único job `desplegar`, que copia el build en VM1: en `panel` (producción) o en `panel-qa` (QA). Los dos los sirve el Nginx de VM1; no hay SSH ni imagen. Decisión del 12 de octubre (SCRUM-446) en `docs/infrastructure/INFRASTRUCTURE.md`, sección 3.2.
 
@@ -71,7 +82,7 @@ Los repositorios son públicos, así que un PR desde un fork no debe ejecutar c�
 - Los jobs que corren en el runner solo se disparan con `push` (o `workflow_dispatch`), nunca con `pull_request`.
 - Organización → Settings → Actions → General → "Fork pull request workflows": exigir aprobación para todos los colaboradores externos.
 - El grupo del runner tiene activado "Allow public repositories" para que los repositorios públicos lo usen.
-- **Aprobación para producción:** en cada repo, Settings → Environments → `produccion` → Required reviewers.
+- **Aprobación para producción:** en cada repo, Settings → Environments → `produccion` → Required reviewers. Se suma a la compuerta automática RNF-08 (`compuerta-qa`).
 
 ## Pendiente
 
