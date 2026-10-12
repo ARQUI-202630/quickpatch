@@ -10,7 +10,7 @@
  *                                       API Gateway, Kafka, PostgreSQL, Redis y Garage no
  *                                       tienen componentes propios que diseñar (son
  *                                       configuración de productos), por eso no tienen vista.
- *   C4-05  Dynamic                 (6)  un diagrama por flujo crítico, no por sistema
+ *   C4-05  Dynamic                 (7)  un diagrama por flujo crítico, no por sistema
  *   C4-06  Deployment              (2)  uno por ambiente: producción y QA (ADR-022)
  *   C4-07  Code                         fuera de Structurizr: ver los .puml de esta carpeta
  *
@@ -131,8 +131,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     maHandler = component "Manejador del evento" "En una transacción por tenant registra el evento y, si es nuevo, inicia el matching (APPLIED o DUPLICATE)." "application/events"
                     maProcesados = component "Registro de eventos procesados" "INSERT ... ON CONFLICT (event_id) DO NOTHING en processed_events." "JDBC · infrastructure/persistence"
                     maTransaccion = component "Transacción por tenant" "set_config app.current_tenant antes de cada trabajo (RLS)." "JDBC · infrastructure/persistence"
-                    maBusqueda = component "Búsqueda de candidatos" "Filtra por especialidad, disponibilidad y cobertura con PostGIS y ordena (RN-M1 a RN-M7)." "PostGIS" "Planeado"
-                    maAsignacion = component "Asignación y resultado" "Registra el intento y publica matching.technician-assigned o matching.no-technician-available." "Outbox" "Planeado"
+                    maBusqueda = component "Búsqueda de candidatos" "Técnicos aprobados, disponibles, de la especialidad, con cobertura en la ubicación y sin otra oferta pendiente; los ordena por distancia (RN-M9, PostGIS)." "PostGIS" "Planeado"
+                    maOfertas = component "Ofertas y asignación" "Registra la oferta con vencimiento a 3 min (RN-M1, RN-M8) y publica matching.offer-created; al aceptar, el técnico pasa a ocupado y publica matching.technician-assigned (RN-M2, RN-M4, RN-M6, RN-M7); si rechaza o vence, ofrece al siguiente (RN-M3); sin candidatos publica matching.no-technician-available." "Outbox" "Planeado"
+                    maApi = component "API de técnicos y ofertas" "Localidades; disponibilidad y cobertura del técnico; ofertas pendientes, aceptar y rechazar (matching.v1.yaml 1.0.0)." "Spring MVC" "Planeado"
+                    maProyeccion = component "Proyección del técnico" "Consume technician.registered y technician.verification-changed y guarda especialidad y verificación (P-01, ADR-017); reanuda solicitudes en espera (RN-M10)." "@KafkaListener" "Planeado"
                 }
                 ranking = container "Ranking Service" "Reputación de técnicos." "ASP.NET Core (.NET 10)" {
                     raConsumidor = component "Consumidor de service-request.evaluated" "Recibe cada calificación, una vez por eventId." "Kafka consumer" "Planeado"
@@ -236,6 +238,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         gateway -> acApi "Enruta /api/v1/actors" "HTTP" "Planeado"
         gateway -> raApi "Enruta /api/v1/ranking" "HTTP" "Planeado"
         gateway -> paApi "Enruta /api/v1/payments" "HTTP" "Planeado"
+        gateway -> maApi "Enruta /api/v1/matching, /api/v1/technicians y /api/v1/localities" "HTTP" "Planeado"
         gateway -> coCanal "Enruta /api/v1/realtime" "WebSocket" "Planeado"
         gateway -> coBuzon "Enruta /api/v1/notifications" "HTTP" "Planeado"
 
@@ -299,9 +302,15 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         maHandler -> maTransaccion "Abre la transacción del tenant con"
         maHandler -> maProcesados "Registra el eventId en"
         maHandler -> maBusqueda "Inicia el matching con" "" "Planeado"
-        maBusqueda -> maAsignacion "Entrega el mejor candidato a" "" "Planeado"
+        maBusqueda -> maOfertas "Entrega el candidato más cercano a" "" "Planeado"
         maBusqueda -> redis "Cachea disponibilidad en" "RESP" "Planeado"
-        maAsignacion -> kafka "Publica matching.technician-assigned o matching.no-technician-available" "Kafka" "Planeado"
+        maOfertas -> kafka "Publica matching.offer-created, .technician-assigned, .no-technician-available y .search-resumed" "Kafka" "Planeado"
+        maOfertas -> dbMatching "Registra el intento y su respuesta en matching_attempts (RLS)" "SQL" "Planeado"
+        maApi -> maOfertas "Acepta o rechaza la oferta con" "" "Planeado"
+        maApi -> dbMatching "Lee y cambia disponibilidad y cobertura (RLS)" "SQL" "Planeado"
+        maProyeccion -> kafka "Consume technician.registered y technician.verification-changed" "Kafka" "Planeado"
+        maProyeccion -> dbMatching "Actualiza la proyección en technician_availability" "SQL" "Planeado"
+        maProyeccion -> maBusqueda "Reanuda las solicitudes en espera con (RN-M10)" "" "Planeado"
         maProcesados -> dbMatching "INSERT en processed_events" "SQL"
         maTransaccion -> dbMatching "set_config app.current_tenant" "SQL"
         maBusqueda -> dbMatching "Consulta disponibilidad y cobertura (PostGIS)" "SQL" "Planeado"
@@ -528,7 +537,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-CrearSolicitud" "Creación de una solicitud, matching y aviso dentro de la app (RF-07, RF-09, ADR-007, ADR-023)." {
+        dynamic quickpatch "C4-05-Dinamico-CrearSolicitud" "Creación de una solicitud, búsqueda del técnico y oferta (RF-07, RF-09, RN-M9, ADR-007, ADR-023). La aceptación está en C4-05-Dinamico-AsignacionTecnico." {
             mobile -> gateway "Abre el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
             gateway -> communication "Enruta el WebSocket; Communication valida el token"
             mobile -> gateway "POST /api/v1/service-requests" "HTTPS/JSON"
@@ -536,13 +545,33 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             serviceRequest -> dbServiceRequest "Valida la categoría en la réplica y guarda solicitud y outbox (una transacción)"
             serviceRequest -> kafka "El publicador envía service-request.created"
             matching -> kafka "Consume service-request.created"
-            matching -> dbMatching "Registra el eventId y busca candidatos (PostGIS)"
-            matching -> kafka "Publica matching.technician-assigned o matching.no-technician-available"
-            serviceRequest -> kafka "Consume el resultado y cambia el estado"
-            communication -> kafka "Consume el resultado"
-            communication -> dbCommunication "Guarda la notificación en el buzón de cada usuario"
-            communication -> gateway "Avisa por el WebSocket abierto (ADR-023)"
+            matching -> dbMatching "Registra el eventId, busca candidatos (RN-M9, PostGIS) y registra la oferta con vencimiento a 3 min"
+            matching -> kafka "Publica matching.offer-created o, sin candidatos, matching.no-technician-available"
+            serviceRequest -> kafka "Sin candidatos, consume el resultado y pasa la solicitud a en_espera"
+            communication -> kafka "Consume la oferta o el resultado"
+            communication -> dbCommunication "Guarda la notificación en el buzón del destinatario"
+            communication -> gateway "Avisa por el WebSocket abierto: al técnico, la oferta (ADR-023)"
             gateway -> mobile "Entrega el aviso; la app pide el detalle por REST" "WebSocket (wss)"
+            autoLayout lr 200 100
+            properties {
+                "structurizr.groups" false
+            }
+        }
+
+        dynamic quickpatch "C4-05-Dinamico-AsignacionTecnico" "Aceptación de la oferta por el técnico y aviso al cliente (RF-10, RN-M2, RN-M4, RN-M6, RN-M7; SCRUM-30, SCRUM-427)." {
+            mobile -> gateway "El técnico abre el WebSocket /api/v1/realtime" "WebSocket (wss)"
+            gateway -> communication "Enruta el WebSocket; Communication valida el token"
+            mobile -> gateway "GET /api/v1/matching/offers?status=pendiente: localidad y distancia, sin la dirección (RN-SR13)" "HTTPS/JSON"
+            gateway -> matching "Enruta con el JWT del técnico"
+            mobile -> gateway "POST /api/v1/matching/offers/{attemptId}/accept" "HTTPS/JSON"
+            gateway -> matching "Enruta con el JWT del técnico"
+            matching -> dbMatching "Acepta solo si la oferta sigue pendiente, es del técnico y no venció; el técnico pasa a ocupado (una transacción)"
+            matching -> kafka "Publica matching.technician-assigned"
+            serviceRequest -> kafka "Consume la asignación y pasa la solicitud a asignado"
+            communication -> kafka "Consume la asignación"
+            communication -> dbCommunication "Guarda la notificación del cliente y del técnico"
+            communication -> gateway "Avisa al cliente por su WebSocket"
+            gateway -> mobile "Entrega el aviso; la app del cliente pide el detalle con el técnico asignado" "WebSocket (wss)"
             autoLayout lr 200 100
             properties {
                 "structurizr.groups" false
