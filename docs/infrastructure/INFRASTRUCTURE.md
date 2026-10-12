@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 3.1 |
+| **Versión** | 3.2 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -390,7 +390,7 @@ Estado al 8 de octubre de 2026:
 Orden para llevar un servicio nuevo a un ambiente:
 
 1. `deploy-db.yml`: crea los roles `<servicio>_migrator` y `<servicio>_app` de su base.
-2. `primer-despliegue-servicios.yml -e ambiente=qa|produccion`: `Secret` y manifiestos. En Kafka, los topics se crean antes con `deploy-kafka.yml`, porque la creación automática está desactivada.
+2. `primer-despliegue-servicios.yml -e ambiente=qa|produccion`: `Secret` y manifiestos. En Kafka, los topics se crean antes con `deploy-kafka.yml`, porque la creación automática está desactivada. Communication (SCRUM-388) se despliega con este mismo playbook: su `Secret` `communication-secretos` solo lleva la llave pública de Identity (`jwt-public-key`), porque no tiene base de datos (ADR-023). Los topics del incremento del técnico (`technician.*` y `matching.*`) los trae `quickpatch-kafka` v0.3.0, que el submódulo `apps/kafka` fija desde el 12 de octubre.
 3. Push a `release/*` (QA) o `main` (producción): imagen, migraciones y despliegue.
 4. `aplicar-roles-db.yml --limit <ambiente> -e servicio=<servicio>`: permisos sobre las tablas que crearon las migraciones (sección 5.8).
 5. Alta del tenant del MVP en la base de Identity y `kubectl rollout restart` de Identity, que crea los administradores iniciales al arrancar con tenant y permisos.
@@ -1034,4 +1034,5 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 2.6 | 7 oct 2026 | Traslado del aprovisionamiento (SCRUM-338): Ansible pasa a `infrastructure/` del repositorio principal, la configuración del gateway a `quickpatch-api-gateway/nginx/` y el despliegue de Kafka, con la creación de los topics de `topics.yaml`, a `quickpatch-kafka/deploy/`. El CD vive en el `ci-cd.yml` de cada repositorio (sección 6.1) y `quickpatch-infrastructure` se archiva. Secciones 5, 5.5, 6.1 y Anexo A. |
 | 3.0 | 12 oct 2026 | Infraestructura con los servicios desplegados (SCRUM-420, SCRUM-421, SCRUM-422 y SCRUM-423). Identity, Catalog, ServiceRequest y Matching corren en QA (VM2) y en producción (VM3) desde el 8 de octubre. Se agregan las versiones instaladas por componente y el consumo medido (sección 3.2), el estado del primer despliegue, el orden para un servicio nuevo y las lecciones aprendidas (5.3), los recursos reales de los manifiestos y la suma de límites frente al umbral de 6,5 GiB (5.6), las probes y la estrategia de actualización (5.8), el hallazgo de la prueba de carga con 150 usuarios (5.7), la compuerta del ambiente `produccion` y la excepción al RNF-08 (6.2), el estado de los logs de los servicios (7.1 y 7.3), los secretos de Kubernetes (8.3) y nuevas limitaciones (13). Se agrega el playbook `primer-despliegue-servicios.yml` (5.2). |
 | 3.1 | 12 oct 2026 | El panel de QA se sirve desde el Nginx de VM1 (SCRUM-446): decisión y alternativa descartada en la sección 3.2, carpeta `panel-qa` en `deploy-gateway.yml` y publicación local en el workflow de `quickpatch-web`. |
+| 3.2 | 12 oct 2026 | Despliegue del incremento del Sprint 4 en QA (SCRUM-388): `primer-despliegue-servicios.yml` incluye Communication y su `Secret`, `apps/kafka` avanza a v0.3.0 con los topics del incremento y el gateway agrega el WebSocket `/api/v1/realtime` (SCRUM-451). |
 | 3.2 | 12 oct 2026 | Compuerta automática de producción (RNF-08, SCRUM-415): `compuerta-qa` en el runner de VM1, llamada por el job `desplegar` de cada repositorio antes de producción; excepción con la variable `COMPUERTA_RNF08_EXCEPCION`. |
