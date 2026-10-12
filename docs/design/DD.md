@@ -173,6 +173,7 @@ Contratos publicados para el Sprint 4 (SCRUM-418). Todos son cambios compatibles
 |`technician.registered`, `technician.verification-changed`|v1|`quickpatch-kafka`|Identity|Matching, Communication|
 |`matching.offer-created`|v1|`quickpatch-kafka`|Matching|Communication|
 |`matching.technician-assigned`, `matching.no-technician-available`, `matching.search-resumed`|v1|`quickpatch-kafka`|Matching|ServiceRequest, Communication|
+|`asyncapi/realtime.v1.yaml` (WebSocket `/v1/realtime`)|1.0.0 (nuevo)|`quickpatch-api-gateway`|Communication|App móvil y panel web|
 
 _Cuadro 5: Contratos del incremento del técnico_
 
@@ -184,6 +185,8 @@ Decisiones de esta versión:
 - **Detalle de la solicitud para el técnico:** el técnico asignado lo consulta entre `asignado` y `completado`; fuera de ese rango responde `403` (SCRUM-34, criterio 2) y otro técnico recibe `404` (sección 8.1). La respuesta agrega `assignedAt`, `technician` y `client` como campos opcionales, sin cambiar lo que recibe el cliente.
 - **Paginación** `?page&size` con `{ items, page, size, totalItems }` en las listas nuevas (sección 8.1).
 - **DEP-18 resuelta:** SCRUM-30 (criterio 1) ya pide localidad y distancia en la oferta y la dirección solo para el técnico asignado.
+
+**Canal en tiempo real (ADR-023):** el contrato y sus decisiones están en la sección 8.5.
 
 Fuera de este incremento: el contrato de la consulta interna por lote de ServiceRequest a Identity (nombres y teléfono del detalle, sección 8.3.4), los consumidores de Communication y el consumo de `catalog.category-changed` en Matching.
 
@@ -1142,6 +1145,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |---|---|---|---|---|
 |service_request_id|UUID|No|PK (ref. lógica)|Solicitud de ServiceRequest Service.|
 |tenant_id|UUID|No|Ref. lógica|Tenant de la solicitud; llega en `tenantId` del evento.|
+|client_id|UUID|No|Ref. lógica|**Nuevo v4.** Cliente dueño de la solicitud (`data.clientId` de `service-request.created`). Viaja en los eventos de matching para que Communication avise al cliente (sección 8.5).|
 |category_id|UUID|No|Ref. lógica|Categoría solicitada (Catalog Service).|
 |location|geometry(POINT,4326)|No|—|Ubicación del servicio.|
 |status|VARCHAR(15)|No|—|Estado de la búsqueda.|
@@ -1652,7 +1656,7 @@ Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la sol
 
 |Método|Endpoint|Roles|RF|v3|Descripción|
 |---|---|---|---|---|---|
-|GET|`/v1/realtime` (WebSocket)|Todos|RF-11, RNF-06|Nuevo|Canal de actualizaciones en tiempo real (sección 8.5).|
+|GET|`/v1/realtime` (WebSocket)|`cliente`, `empresa_contacto`, `tecnico`, `admin_tenant`|RF-11, RNF-06|Contrato AsyncAPI 1.0.0|Canal de avisos en tiempo real (ADR-023, sección 8.5). Se describe en `asyncapi/realtime.v1.yaml`, no en OpenAPI.|
 
 
 ### 8.3 Especificación de los endpoints principales
@@ -2035,9 +2039,9 @@ Todos los campos son obligatorios salvo que se indique "opcional". Los eventos n
 |`technician.verification-changed`|`technicianId`, `specialtyId`, `previousStatus`, `verificationStatus`, `updatedAt`; `reason` (opcional). En v4 `newStatus` pasa a llamarse `verificationStatus` y se agregan `specialtyId` y `updatedAt` (ADR-017).|
 |`service-request.created`|`serviceRequestId`, `clientId`, `categoryId`, `description`, `location` (`latitude`, `longitude`), `createdAt` (contrato v1). `clientType` y `companyId` se agregarán como campos opcionales cuando se implemente RF-08.|
 |`matching.offer-created`|`serviceRequestId`, `attemptId`, `technicianId`, `expiresAt`|
-|`matching.technician-assigned`|`serviceRequestId`, `attemptId`, `technicianId`, `assignedAt`|
-|`matching.no-technician-available`|`serviceRequestId`, `attemptsCount`|
-|`matching.search-resumed`|`serviceRequestId`, `trigger` (`disponibilidad`, `cobertura`, `aprobacion`, `liberacion` o `barrido`)|
+|`matching.technician-assigned`|`serviceRequestId`, `clientId`, `attemptId`, `technicianId`, `assignedAt`. `clientId` es nuevo en v4 (sección 8.5).|
+|`matching.no-technician-available`|`serviceRequestId`, `clientId`, `attemptsCount`. `clientId` es nuevo en v4.|
+|`matching.search-resumed`|`serviceRequestId`, `clientId`, `trigger` (`disponibilidad`, `cobertura`, `aprobacion`, `liberacion` o `barrido`). `clientId` es nuevo en v4.|
 |`service-request.quoted`|`serviceRequestId`, `quoteId`, `clientId`, `technicianId`, `totalAmount`, `expiresAt`|
 |`service-request.quote-accepted`|`serviceRequestId`, `quoteId`, `technicianId`, `totalAmount`|
 |`service-request.quote-rejected`|`serviceRequestId`, `quoteId`, `technicianId`, `remainingQuotes`|
@@ -2058,23 +2062,25 @@ _Cuadro 12: Contenido de `data` por evento_
 
 ### 8.5 Canal en tiempo real
 
-RF-11 y RNF-06 exigen que el cliente vea los cambios de estado en menos de un minuto, y el driver D2 del SAD pide entregarlos sin que el cliente consulte por su cuenta. El canal está **pendiente de decisión** (SAD 4.1; SDD, sección 5.1): WebSocket entre las aplicaciones y el API Gateway, como se describe a continuación, o notificaciones push más consulta del estado por REST. Esta sección es la propuesta para la opción WebSocket y no se implementa hasta que el equipo decida; mientras tanto, la app consulta el estado con `GET /v1/service-requests/{id}`.
+**Decidido en ADR-023 (12 de octubre de 2026); contrato publicado en v4.** RF-11 y RNF-06 exigen que el cliente vea los cambios de estado en menos de un minuto, y el driver D2 del SAD pide entregarlos sin que el cliente consulte por su cuenta. Las apps abren un WebSocket hacia Communication Service y reciben un aviso corto por cada cambio que les corresponde. El contrato es [`asyncapi/realtime.v1.yaml`](https://github.com/ARQUI-202630/quickpatch-api-gateway/blob/develop/asyncapi/realtime.v1.yaml) 1.0.0, en `quickpatch-api-gateway` (AsyncAPI 3.0, porque OpenAPI no describe bien un WebSocket). Las notificaciones con la app cerrada (correo y push) quedan fuera del MVP (ADR-024).
 
-- La aplicación abre `wss://<gateway>/v1/realtime` con el token de acceso como parámetro de la primera trama (no en la URL, para que no quede en los logs del Gateway).
-- Communication Service consume los eventos de la sección 8.4 y envía a cada usuario conectado los que le corresponden: al cliente, los de sus solicitudes; al técnico, sus ofertas y los cambios de las solicitudes que tiene asignadas; al `admin_tenant`, los cambios de conteo del panel.
-- Mensaje enviado al cliente:
+- **Conexión:** `wss://<ambiente>/api/v1/realtime`. La URL no lleva el token ni datos del usuario.
+- **Autenticación:** la primera trama, en los primeros 10 segundos y de máximo 8 KB, es `{ "type": "auth", "token": "<jwt>" }`. Communication valida el JWT con la llave pública (ADR-018) y toma el usuario de `sub`, el tenant de `tenant_id` y el rol de `role`; nunca de un campo del cliente (RN-U3). Responde `{ "type": "auth.accepted", "expiresAt": "..." }`. El token no se guarda ni se registra en logs.
+- **Avisos** (ninguno lleva detalle):
 
-```json
-{
-  "type": "service-request.status-changed",
-  "serviceRequestId": "9a7b6c5d-1e2f-4a3b-8c7d-6e5f4a3b2c1d",
-  "status": "en_progreso",
-  "occurredAt": "2026-10-03T16:10:00Z"
-}
-```
+|Tipo|Destinatarios|Origen en Kafka|La app pide|
+|---|---|---|---|
+|`service-request.status-changed` (`serviceRequestId`, `status`, `occurredAt`)|Cliente dueño (`clientId`) y técnico asignado (`technicianId`)|`matching.technician-assigned` (`asignado`), `matching.no-technician-available` (`en_espera`), `matching.search-resumed` (`buscando_tecnico`); los demás eventos de la solicitud cuando se publiquen sus esquemas|`GET /v1/service-requests/{id}`|
+|`offer.created` (`attemptId`, `serviceRequestId`, `expiresAt`, `occurredAt`)|Técnico de la oferta|`matching.offer-created`|`GET /v1/matching/offers`|
+|`service-request.counts-changed` (`occurredAt`)|`admin_tenant` del tenant|Cada `service-request.status-changed` del tenant|`GET /v1/admin/service-requests/summary` (sin contrato todavía)|
 
-- El mensaje solo avisa del cambio: la aplicación vuelve a pedir el detalle con `GET /v1/service-requests/{id}`, para que el canal no duplique las reglas de visibilidad de RN-SR13.
-- Si el WebSocket se cae, la aplicación consulta el detalle cada 30 segundos hasta reconectar, lo que mantiene el cumplimiento de RNF-06.
+_Cuadro 13: Avisos del canal en tiempo real_
+
+- **Enrutamiento sin tablas:** Communication decide a quién avisar solo con el evento. Por eso los tres eventos de matching que avisan al cliente llevan `clientId` (v4), igual que `service-request.started`, `.cancelled` y `.completed`. Communication no guarda réplicas ni conexiones en la base: las conexiones viven en memoria, en una sola réplica (ADR-023, punto 6).
+- **Aislamiento:** un aviso solo se entrega a conexiones con el mismo `tenant_id` que el `tenantId` del evento.
+- **Idempotencia:** Communication descarta los eventos que ya procesó por `eventId` mientras está en ejecución. El aviso es idempotente por naturaleza: si llega repetido, la app vuelve a pedir el mismo detalle. Cuando Communication tenga base de datos (buzón de notificaciones, ADR-024), la deduplicación pasa a `processed_events` (RN-EV1).
+- **Cierres:** `4000` trama inválida, `4001` token inválido, `4002` sin autenticación en 10 segundos, `4003` rol que no usa el canal (`admin_plataforma`, `proveedor`), `4004` token vencido durante la conexión, `1001` reinicio del servidor, `1009` trama de más de 8 KB y `1011` error interno. Con 4000 a 4003 la app no reintenta con el mismo token; con 1001, 1011 y 4004 se reconecta.
+- **Respaldo:** si el WebSocket no conecta o se cae, la aplicación consulta el detalle cada 30 segundos y reintenta con espera creciente (1, 2, 4… hasta 60 segundos), lo que mantiene el cumplimiento de RNF-06.
 
 ### 8.6 Flujo de extremo a extremo
 
@@ -2167,7 +2173,7 @@ La sección 5.6 y los diagramas dinámicos (sección 8) del SDD describen una ve
 |Eventos|6 eventos|17 eventos (Cuadro 11)|Secciones 5.6.2 y 8.6|
 |Sobre del evento|Sin `eventType`|Incluye `eventType`|Sección 5.6.2|
 
-_Cuadro 13: Diferencias entre el SDD y el DD v3 en contratos_
+_Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 
 ### 8.8 Trazabilidad de contratos, implementación y pruebas
 
@@ -2191,7 +2197,8 @@ _Cuadro 13: Diferencias entre el SDD y el DD v3 en contratos_
 |`GET /v1/localities`, `GET` y `PUT /v1/technicians/me/availability` y `/coverage`|`matching.v1.yaml` 1.0.0|Pendiente (SCRUM-88)|—|—|
 |`GET /v1/matching/offers` y `POST /v1/matching/offers/{attemptId}/accept` y `/reject`|`matching.v1.yaml` 1.0.0|Pendiente (SCRUM-79)|—|—|
 |`POST /v1/auth/register/company`, `POST /v1/auth/refresh`, `POST /v1/companies/me/users`, `POST /v1/platform/tenants`, y equipo del proveedor|Sin contrato|Pendiente|—|—|
-|Resto de ServiceRequest (listado, cancelación, cotizaciones, inicio, evidencia, cierre, calificación, historial y resumen), Matching, Payments y `/v1/realtime`|Sin contrato|Pendiente|—|—|
+|WebSocket `/v1/realtime`|`asyncapi/realtime.v1.yaml` 1.0.0|Communication (implementación en curso, ADR-023)|—|—|
+|Resto de ServiceRequest (listado, cancelación, cotizaciones, inicio, evidencia, cierre, calificación, historial y resumen) y Payments|Sin contrato|Pendiente|—|—|
 
 |Evento|Contrato|Productor|Consumidores implementados|Evidencia|
 |---|---|---|---|---|
@@ -2201,7 +2208,7 @@ _Cuadro 13: Diferencias entre el SDD y el DD v3 en contratos_
 |`matching.offer-created`, `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed`|`quickpatch-kafka` v1 (v4; topics de 3 particiones, clave `serviceRequestId`)|Matching: pendiente (SCRUM-29, SCRUM-79)|ServiceRequest: pendiente (SCRUM-91). Communication: pendiente|—|
 |Los 9 eventos restantes del Cuadro 11|Sin esquema|Pendiente|—|—|
 
-_Cuadro 14: Trazabilidad entre el catálogo, los contratos, el código y la colección de Postman_
+_Cuadro 15: Trazabilidad entre el catálogo, los contratos, el código y la colección de Postman_
 
 Al publicar un contrato nuevo se agrega aquí su fila, con el caso de Postman que lo prueba.
 
@@ -2465,10 +2472,10 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |3.0 (ajuste Sprint 3)|SCRUM-259|El DD se limita a Modelos de Datos + Contratos. Las secciones de DFD (9), lógica crítica (10), organización del código (11) e interfaces de usuario (12) se trasladan al SDD V2 y a SCRUM-332 y se reemplazan por la sección 1.7, Artefactos relacionados; las secciones 13 a 17 pasan a ser la 9 a 13. Referencias al SAD actualizadas a v2.13. Las propuestas P-01 a P-06 se redactan como pendientes de validación. La aplicación móvil atiende a cliente, empresa cliente, técnico y proveedor; el panel web, solo a la administración.|
 |3.1|Conciliación (SCRUM-25, SCRUM-27)|Une el v3.0 con las versiones 2.3 y 2.4 de develop. Ver la sección 1.6: renumeración de RN-SR12 y RN-SR13, token RS256 con `sub` y `tenant_id`, errores y ubicación según los contratos v1, endpoint `/v1/catalog/categories`, tabla 5.20 `service_request_categories`, evento `catalog.category-changed`, propuestas P-07 y P-08, y restricciones con prefijo R (SAD 2.16). Además: gestión de tenants con `PATCH /v1/platform/tenants/{id}` (Identity 1.2.0); DEP-11 resuelta por el SRS V4; el DER y la Figura 1 incluyen `service_request_categories`, `service_categories.updated_at` y `matching_attempts.distance_m` (SCRUM-284); estado de implementación del modelo (Cuadro 8) y trazabilidad de contratos, código y Postman (sección 8.8, SCRUM-287).|
 |3.1 (revisión)|SCRUM-259|Atiende la revisión del PR #35: los artefactos relacionados pasan a la sección 1.7 para que Multi-tenancy siga en la 10 (el código y los contratos citan DD 10.2 a 10.4). Se incorporan los cambios de develop: VMs de ADR-022, contratos en `quickpatch-api-gateway` y `quickpatch-kafka` (ADR-021), referencias al SDD organizado por C4 y la geocodificación de RIE-02 fuera de `coverage_zones`. Se corrige la tabla de propuestas y se alinea con SRS V4 y SAD v2.25.|
-|4.0|DD V4 (SCRUM-416, Sprint 4)|Incremento del técnico. **Modelo (SCRUM-417):** `technician_availability.projection_updated_at`; restricciones, índices y RLS de `technician_profiles`, `technician_availability`, `coverage_zones`, `matching_attempts` y `matching_requests`. **Contratos (SCRUM-418):** `matching.v1.yaml` 1.0.0, `identity.v1.yaml` 1.3.0 y `service-request.v1.yaml` 1.1.0 en `quickpatch-api-gateway`; seis eventos v1 con sus topics en `quickpatch-kafka`. P-01, P-03, P-04 y P-05 pasan a decisiones adoptadas y P-01 se alinea con el ADR-017 (sección 1.8). DEP-01 y DEP-18 resueltas. **SCRUM-419:** `pm.execution.setNextRequest` en el generador (PR #68).|
+|4.0|DD V4 (SCRUM-416, Sprint 4)|Incremento del técnico. **Modelo (SCRUM-417):** `technician_availability.projection_updated_at`; restricciones, índices y RLS de `technician_profiles`, `technician_availability`, `coverage_zones`, `matching_attempts` y `matching_requests`. **Contratos (SCRUM-418):** `matching.v1.yaml` 1.0.0, `identity.v1.yaml` 1.3.0 y `service-request.v1.yaml` 1.1.0 en `quickpatch-api-gateway`; seis eventos v1 con sus topics en `quickpatch-kafka`. P-01, P-03, P-04 y P-05 pasan a decisiones adoptadas y P-01 se alinea con el ADR-017 (sección 1.8). DEP-01 y DEP-18 resueltas. **SCRUM-419:** `pm.execution.setNextRequest` en el generador (PR #68). **Canal en tiempo real:** la 8.5 deja de estar pendiente de decisión (ADR-023) y enlaza `asyncapi/realtime.v1.yaml` 1.0.0; `matching_requests.client_id` y `clientId` en los eventos de matching para enrutar los avisos al cliente.|
 |4.1|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas P-01 a P-06 según la validación del equipo.|
 
-_Cuadro 15: Evolución del documento de diseño_
+_Cuadro 16: Evolución del documento de diseño_
 
 ---
 
