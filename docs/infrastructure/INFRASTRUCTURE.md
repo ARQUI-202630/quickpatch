@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 3.0 |
+| **Versión** | 3.1 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -252,6 +252,15 @@ Después de los despliegues del 8 de octubre, VM2 quedó en 32% de la RAM tras l
 Los servicios .NET usan entre 105 y 158 MiB frente al límite de 256 MiB, y Matching 232-251 MiB frente a 1 GiB. Es consumo en reposo, sin carga.
 
 **Pendiente del reparto:** el API Gateway y el panel todavía no corren en el k3s porque aún no tienen imagen. Mientras tanto los sirve el Nginx de VM1; cuando existan, pasan a VM3 (producción) y VM2 (QA) y el proxy de VM1 cambia (paso 4 del ADR-022).
+
+**Decisión del 12 de octubre de 2026 (SCRUM-446): el panel de QA se sirve desde VM1, como el de producción.** El ADR-022 ubica el panel en el k3s de cada ambiente, pero ese destino no existe todavía en ninguno: el panel de producción se publica desde el runner en `/opt/quickpatch/gateway/panel` y lo sirve el Nginx de VM1. El primer despliegue del panel de QA (rama `release/0.3.0` de `quickpatch-web`) falló porque el workflow copiaba el build por SSH a una carpeta de VM2 que nadie sirve, y el bloque de QA del Nginx enviaba `/` al Traefik de VM2, que responde 404.
+
+| Opción | Qué implica | Decisión |
+|---|---|---|
+| A. Panel de QA en el k3s de VM2 | Imagen del panel (Nginx con el build de Angular) en GHCR, `Deployment` e Ingress en VM2, job de `rollout` en el workflow y RAM adicional en una VM de 11 GiB. QA quedaría con una forma distinta a la de producción, que sigue sirviendo desde VM1. | Descartada por ahora |
+| B. Panel de QA servido desde VM1 | Misma técnica que producción con otra carpeta: `panel-qa` montada en el Nginx de VM1 (`location /` del bloque de QA con `try_files`), y el job `Panel en qa` copia el build en local con el runner, sin SSH a VM2. `/api/` sigue yendo al Traefik de VM2. | **Elegida** |
+
+Razones de la B: QA ensaya lo que producción hace de verdad, no requiere imagen ni consume RAM de k3s, el cambio se reduce a la plantilla de Nginx (`quickpatch-api-gateway`), el playbook `deploy-gateway.yml` y el workflow de `quickpatch-web`, y se revierte con una línea. Consecuencias: el panel de QA y el de producción comparten el Nginx de VM1, así que aplicar `deploy-gateway.yml` reinicia la entrada de los dos ambientes (corte de segundos; la configuración se valida con `nginx -t` antes de escribirse); y el panel de QA depende de VM1, no de VM2. Cuando el panel tenga imagen y pase a los k3s, se hace en los dos ambientes a la vez (paso 4 del ADR-022) y esta decisión se reemplaza.
 
 ### 3.3 Conexiones permitidas
 
@@ -537,7 +546,7 @@ QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a 
 
 Los runners de GitHub corren en la nube y no llegan a la red del laboratorio (`10.43.x.x`). Los despliegues y las pruebas de sistema corren en un **runner self-hosted en VM1**: `vm1-despliegue`, versión 2.337.0, registrado en la organización con las etiquetas `self-hosted`, `vm1` y `red-laboratorio`. Corre como servicio del sistema con el usuario `quickpatch` y arranca solo si VM1 se reinicia (`deploy-runner.yml`).
 
-- **Credenciales:** el runner usa los kubeconfig de QA y producción que deja `deploy-runner.yml` en el propio VM1, así que no hay credenciales de Kubernetes guardadas en GitHub. Para publicar el panel de QA usa una llave SSH de VM1 a VM2.
+- **Credenciales:** el runner usa los kubeconfig de QA y producción que deja `deploy-runner.yml` en el propio VM1, así que no hay credenciales de Kubernetes guardadas en GitHub. El panel, tanto el de QA como el de producción, se publica copiando el build en una carpeta local de VM1 (`panel-qa` o `panel`); la llave SSH de VM1 a VM2 que deja `deploy-runner.yml` ya no la usa el panel.
 - **Por qué en VM1:** está dentro de la red del laboratorio y llega a VM2 y VM3 sin túneles; no compite con los microservicios por los recursos de VM3, y está siempre encendido, a diferencia del computador de una persona.
 - **Seguridad:** los repositorios son públicos, y GitHub advierte que un PR desde un fork podría ejecutar código ajeno en un runner self-hosted. Por eso los workflows que usan el runner solo se disparan con `push` o a mano, nunca con `pull_request`. Además, en la organización se exige aprobación para los workflows de colaboradores externos, y el grupo del runner tiene permitidos los repositorios públicos para que los componentes lo puedan usar.
 - **Costo:** mientras corre una prueba de carga, k6 comparte la CPU de VM1 con el gateway de producción (riesgo aceptado en el SAD, ADR-015).
@@ -1024,3 +1033,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 2.5 | 7 oct 2026 | Roles de PostgreSQL del DD 10.2 aplicados en QA y producción: `<servicio>_migrator` y `<servicio>_app` por base, en lugar del único `app_<servicio>`; playbook `aplicar-roles-db.yml` para los permisos que define cada servicio. Se actualizan las secciones 3.4, 5.2 y 8.3. |
 | 2.6 | 7 oct 2026 | Traslado del aprovisionamiento (SCRUM-338): Ansible pasa a `infrastructure/` del repositorio principal, la configuración del gateway a `quickpatch-api-gateway/nginx/` y el despliegue de Kafka, con la creación de los topics de `topics.yaml`, a `quickpatch-kafka/deploy/`. El CD vive en el `ci-cd.yml` de cada repositorio (sección 6.1) y `quickpatch-infrastructure` se archiva. Secciones 5, 5.5, 6.1 y Anexo A. |
 | 3.0 | 12 oct 2026 | Infraestructura con los servicios desplegados (SCRUM-420, SCRUM-421, SCRUM-422 y SCRUM-423). Identity, Catalog, ServiceRequest y Matching corren en QA (VM2) y en producción (VM3) desde el 8 de octubre. Se agregan las versiones instaladas por componente y el consumo medido (sección 3.2), el estado del primer despliegue, el orden para un servicio nuevo y las lecciones aprendidas (5.3), los recursos reales de los manifiestos y la suma de límites frente al umbral de 6,5 GiB (5.6), las probes y la estrategia de actualización (5.8), el hallazgo de la prueba de carga con 150 usuarios (5.7), la compuerta del ambiente `produccion` y la excepción al RNF-08 (6.2), el estado de los logs de los servicios (7.1 y 7.3), los secretos de Kubernetes (8.3) y nuevas limitaciones (13). Se agrega el playbook `primer-despliegue-servicios.yml` (5.2). |
+| 3.1 | 12 oct 2026 | El panel de QA se sirve desde el Nginx de VM1 (SCRUM-446): decisión y alternativa descartada en la sección 3.2, carpeta `panel-qa` en `deploy-gateway.yml` y publicación local en el workflow de `quickpatch-web`. |
