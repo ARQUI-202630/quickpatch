@@ -2171,7 +2171,7 @@ _Cuadro 13: Diferencias entre el SDD y el DD v3 en contratos_
 
 ### 8.8 Trazabilidad de contratos, implementación y pruebas
 
-**Nuevo v3.1 (SCRUM-287).** Cada endpoint y evento del catálogo con su contrato publicado, su implementación en `develop` y el caso de la colección de Postman que lo cubre. Los contratos REST están en `quickpatch-api-gateway/openapi/` (tag `v0.3.0`; los de la versión 4.0, en el próximo tag menor `v0.4.0`) y los de eventos en `quickpatch-kafka/events/` (tag `v0.2.0`; los de la versión 4.0, en `v0.3.0`), según el ADR-021. La colección es `tests/e2e/quickpatch-mvp.postman_collection.json`, que se genera con `tests/e2e/generar-coleccion.py` y corre contra QA en cada `release/*` (workflow `pruebas-sistema.yml`); el número indica la carpeta.
+**Nuevo v3.1 (SCRUM-287).** Cada endpoint y evento del catálogo con su contrato publicado, su implementación en `develop` y el caso de la colección de Postman que lo cubre. Los contratos REST están en `quickpatch-api-gateway/openapi/` (tag `v0.4.0`; los de la versión 4.0, en el próximo tag menor `v0.5.0`) y los de eventos en `quickpatch-kafka/events/` (tag `v0.2.0`; los de la versión 4.0, en `v0.3.0`), según el ADR-021. La colección es `tests/e2e/quickpatch-mvp.postman_collection.json`, que se genera con `tests/e2e/generar-coleccion.py` y corre contra QA en cada `release/*` (workflow `pruebas-sistema.yml`); el número indica la carpeta.
 
 |Endpoint|Contrato|Implementado en `develop`|Postman: éxito|Postman: errores|
 |---|---|---|---|---|
