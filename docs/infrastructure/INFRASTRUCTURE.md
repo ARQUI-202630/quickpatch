@@ -240,6 +240,17 @@ Las 7 VMs corren `node_exporter` y Promtail (unos 40 MiB entre los dos).
 
 Después de los despliegues del 8 de octubre, VM2 quedó en 32% de la RAM tras la prueba de carga completa y VM3, con los cuatro servicios de producción, en 29%, sin reinicios de pods ni `OOMKilled`. **Falta medir VM3 con los 8 servicios**, que es lo que decide el umbral de la sección 5.6.
 
+**Consumo de los pods el 12 de octubre** (`kubectl top pods`, cuatro días después del despliegue, cada `Deployment` con `1/1` disponible):
+
+| Servicio | Producción (VM3): CPU / memoria | QA (VM2): CPU / memoria |
+|---|---|---|
+| identity | 2m / 105 MiB | 2m / 132 MiB |
+| catalog | 7m / 115 MiB | 7m / 135 MiB |
+| service-request | 8m / 119 MiB | 7m / 158 MiB |
+| matching | 4m / 232 MiB | 3m / 251 MiB |
+
+Los servicios .NET usan entre 105 y 158 MiB frente al límite de 256 MiB, y Matching 232-251 MiB frente a 1 GiB. Es consumo en reposo, sin carga.
+
 **Pendiente del reparto:** el API Gateway y el panel todavía no corren en el k3s porque aún no tienen imagen. Mientras tanto los sirve el Nginx de VM1; cuando existan, pasan a VM3 (producción) y VM2 (QA) y el proxy de VM1 cambia (paso 4 del ADR-022).
 
 ### 3.3 Conexiones permitidas
