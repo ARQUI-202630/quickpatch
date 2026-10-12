@@ -1,5 +1,6 @@
 # VM1: Nginx como punto único de entrada (secciones 5.2 y 10.1).
-# También sirve el panel Angular como archivos estáticos (ADR-015: VM2 pasó a ser QA).
+# También sirve el panel Angular como archivos estáticos, el de producción desde panel/ y el de QA desde panel-qa/
+# (ADR-015: VM2 pasó a ser QA; el panel de QA se sirve desde VM1 como el de producción, no desde el k3s de VM2).
 # HTTPS con certificado autofirmado: sin dominio público no hay CA pública (K9).
 - name: Gateway
   hosts: gateway
@@ -15,15 +16,17 @@
       loop:
         - { path: "{{ dir }}", mode: "0755" }
         - { path: "{{ dir }}/certs", mode: "0750" }
-        - { path: "{{ dir }}/panel", mode: "0755", owner: "{{ deploy_user }}" }   # la escribe el runner (deploy-panel.yml)
+        - { path: "{{ dir }}/panel", mode: "0755", owner: "{{ deploy_user }}" }   # panel de producción: lo escribe el runner (quickpatch-web)
+        - { path: "{{ dir }}/panel-qa", mode: "0755", owner: "{{ deploy_user }}" }   # panel de QA: lo escribe el runner (rama release/*)
 
-    - name: Página provisional del panel (hasta el primer build de Angular)
+    - name: Página provisional de cada panel (hasta el primer build de Angular)
       ansible.builtin.copy:
-        dest: "{{ dir }}/panel/index.html"
+        dest: "{{ dir }}/{{ item }}/index.html"
         mode: "0644"
         owner: "{{ deploy_user }}"
         force: false
         content: "<!doctype html><title>QUICKPATCH</title><p>Panel administrativo: pendiente del primer build de Angular.</p>\n"
+      loop: [panel, panel-qa]
 
     - name: Nombres que cubre el certificado actual
       ansible.builtin.command: openssl x509 -noout -ext subjectAltName -in {{ dir }}/certs/quickpatch.crt
@@ -68,6 +71,7 @@
                 - ./nginx.conf:/etc/nginx/nginx.conf:ro
                 - ./certs:/etc/nginx/certs:ro
                 - ./panel:/usr/share/nginx/panel:ro
+                - ./panel-qa:/usr/share/nginx/panel-qa:ro
 
     - name: Levantar el gateway
       community.docker.docker_compose_v2: { project_src: "{{ dir }}", state: present }
