@@ -5,7 +5,10 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 4.1 (MVP) |
+| **Versión del documento** | 5.0 — borrador preliminar (MVP, incremento del Sprint 4) |
+| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406) |
+| **Responsable** | Angy Bautista (Product Owner) |
+| **Estado** | Borrador para revisión del equipo. Pendiente la aprobación del Product Owner (SCRUM-406) y el PR a `develop` |
 | **Estándar de referencia** | IEEE Std 830-1998 |
 
 ---
@@ -27,13 +30,15 @@
 
 ### 1.1 Propósito
 
-El propósito de este documento es especificar de manera clara, completa y verificable los requisitos de software para la **Versión 4 (MVP)** de la plataforma multi-tenant de servicios técnicos para el hogar y empresas. Este documento sigue la estructura general del estándar IEEE 830 y está dirigido a:
+El propósito de este documento es especificar de manera clara, completa y verificable los requisitos de software para la **Versión 5 (MVP, incremento del Sprint 4)** de la plataforma multi-tenant de servicios técnicos para el hogar y empresas. Este documento sigue la estructura general del estándar IEEE 830 y está dirigido a:
 
 - El equipo de desarrollo, como guía para el diseño, la implementación y las pruebas del sistema.
 - El docente y evaluadores del curso de Arquitectura de Software, como soporte académico del proyecto.
 - Futuros integrantes del equipo, como documentación de referencia del alcance funcional del MVP.
 
 Los requisitos de este documento son la entrada del SAD: los drivers, killers, restricciones y escenarios de calidad del SAD (secciones 1 a 3) citan los RF y RNF definidos aquí.
+
+**Novedades de la versión 5.** Los requisitos del flujo del técnico que entran en el incremento (RF-09, RF-10, RF-13 y RF-19) tienen criterios de aceptación verificables, con su historia de Jira, la regla del DD que los sustenta y los casos de prueba que los verifican (sección 5.5, SCRUM-404). La contradicción entre la restricción R5 del SAD y las interfaces RIE-02 y RIE-03 queda resuelta según el ADR-024 del SAD: R5 no cambia, la geocodificación corre dentro de la infraestructura y las notificaciones del MVP se muestran dentro de la app (sección 5.4, SCRUM-405). Los RNF indican el escenario de calidad del SAD que los mide (sección 5.3) y la matriz de trazabilidad enlaza cada requisito con su historia y sus casos de prueba (sección 7.1).
 
 ### 1.2 Definiciones, Acrónimos y Abreviaturas
 
@@ -60,6 +65,24 @@ Los requisitos de este documento son la entrada del SAD: los drivers, killers, r
 | Evidencia fotográfica | Foto del trabajo realizado que el Técnico adjunta a la solicitud antes de marcarla como completada. |
 | BPMN | Business Process Model and Notation — notación para modelar procesos de negocio. |
 | Proveedor | Empresa u organización que agrupa y administra un equipo de técnicos dentro de la plataforma. |
+| Oferta | Propuesta de una solicitud que el motor de matching hace a un único técnico candidato. El técnico la acepta o la rechaza antes de que venza (DD, tabla `matching_attempts`). |
+| Localidad | Cada una de las 20 divisiones administrativas de Bogotá D.C. El técnico define su zona de cobertura como una lista de localidades (DD, tabla `localities`). |
+| Criterio de aceptación | Condición verificable que un requisito debe cumplir para darse por implementado. Cada criterio de la sección 5.5 se puede comprobar con una prueba del Documento de Pruebas (TD). |
+
+### 1.3 Línea base de documentos
+
+Este SRS se alinea con los documentos de `develop` del repositorio `quickpatch` consultados el **10 de octubre de 2026**. La resolución de R5 frente a RIE-02 y RIE-03 incorpora además el SAD 2.27 (ADR-024, 12 de octubre de 2026). Las demás secciones citan los documentos por sección y no por versión, para que una nueva versión de ellos no deje desactualizado el SRS. Si un documento cambia una sección citada, la referencia se revisa en la siguiente versión del SRS.
+
+| Documento | Versión en la línea base | Siguiente versión (Jira) |
+|---|---|---|
+| SAD — Documento de Arquitectura de Software | 2.25 (R5, RIE-02 y RIE-03: 2.27, ADR-024) | SAD V4 (SCRUM-411) |
+| DD — Diccionario de Datos y Contratos | 3.1 | DD V4 (SCRUM-416) |
+| SDD — Documento de Diseño de Software | V2 (modelo C4) | SDD V3 (SCRUM-424) |
+| TD — Documento de Pruebas | 1.4 | TD V2 (SCRUM-399) |
+| Documento de Infraestructura | 2.6 | Infraestructura V3 (SCRUM-420) |
+| Backlog de producto (Jira, proyecto SCRUM) | Consulta del 10 oct 2026 | Backlog V5 (SCRUM-407) |
+
+> SCRUM-403 pide alinear el SRS V5 con el SAD V4 y el DD V4. Cuando se redactó este borrador ninguno estaba completo, así que usa las versiones de la tabla y deja en la sección 7.4 los cambios que el SAD V4 y el DD V4 deben incorporar. El 12 de octubre de 2026 entraron a `develop` el SAD 2.26 y 2.27 (ADR-023 y ADR-024), el DD 4.0 y el Documento de Infraestructura 3.3. De ellos, este borrador solo incorpora el ADR-024. El resto se revisa antes de aprobar la versión (SCRUM-406).
 
 ---
 
@@ -103,7 +126,8 @@ A alto nivel, el MVP debe permitir:
 - La arquitectura debe garantizar **aislamiento lógico** de datos entre tenants.
 - El MVP se limita a la ciudad de **Bogotá D.C.** como zona de cobertura inicial: una solicitud con ubicación fuera de Bogotá se rechaza.
 - El desarrollo debe ajustarse al tiempo y alcance definidos para el curso de Arquitectura de Software.
-- El sistema de producción corre en las 7 máquinas virtuales del laboratorio de la universidad, sin servicios con costo (SAD, restricciones R5 y R10).
+- El sistema corre en las 7 máquinas virtuales del laboratorio de la universidad, sin servicios con costo (SAD, restricciones R5 y R10). Según el ADR-022 del SAD, producción ocupa VM3 (aplicación), VM4 (PostgreSQL y Redis) y VM6 (Kafka y almacenamiento de evidencias); QA es una copia en VM2, VM5 y VM7, y VM1 es la VM de herramientas y observabilidad y la única entrada a los dos ambientes.
+- La única dependencia externa de producción es la pasarela de pagos (SAD, R5). La geocodificación de direcciones (RIE-02) corre dentro de las VMs y las notificaciones del MVP (RIE-03) se entregan dentro de la app, sin proveedores externos (SAD, ADR-024).
 - El sistema debe cumplir la normativa colombiana que aplica al producto: protección de datos personales (Ley 1581 de 2012), protección al consumidor (Ley 1480 de 2011) y facturación electrónica (SAD, killers K12 a K14).
 - El técnico no es subordinado de la plataforma: el sistema no impone turnos, exclusividad ni sanciones por rechazar una solicitud (SAD, restricción R12).
 
@@ -112,6 +136,8 @@ A alto nivel, el MVP debe permitir:
 ### 2.4 Supuestos y Dependencias
 
 - Se asume disponibilidad de un proveedor de pagos externo certificado PCI-DSS (pasarela de pagos) para el procesamiento de transacciones.
+- Se asume que el mapa de OpenStreetMap de Bogotá tiene la mayoría de las direcciones que escriben los Clientes. Cuando el geocodificador no encuentra una dirección, la app pide al Cliente compartir la ubicación de su dispositivo (RIE-02).
+- Se asume que la red del laboratorio permite conexiones salientes desde producción hacia la pasarela de pagos. Lo debe confirmar DevOps (SAD, restricción R9).
 - Se asume conectividad a internet estable por parte de Clientes y Técnicos para el uso de la plataforma.
 - El listado inicial de técnicos y proveedores se registra manualmente para efectos de demostración del MVP.
 
@@ -132,43 +158,15 @@ La plataforma QUICKPATCH está diseñada para seis tipos de usuario, cada uno co
 
 ### 3.1 Flujo principal del Cliente
 
-La Figura 1 modela en notación BPMN el flujo principal de una solicitud de servicio, desde que el Cliente la crea hasta que la califica. Cada tarea indica su participante, y el color equivale al carril de BPMN: rosado para el Cliente, naranja para el Técnico y verde para la plataforma (incluida la pasarela de pagos). Los rombos son compuertas exclusivas (una sola salida) y los círculos, los eventos de inicio y fin. Para mantenerlo conciso, la figura omite el registro y el inicio de sesión (RF-01, RF-03), y la cancelación por parte del Cliente (RF-36), que es posible en cualquier punto anterior al inicio del servicio.
+La Figura 1 modela en notación BPMN el flujo de negocio de QUICKPATCH, desde que el Cliente se registra hasta que califica el servicio. El pool de QUICKPATCH tiene un carril por participante (Cliente, Plataforma QUICKPATCH y Técnico) y se divide en siete fases: registro, solicitud, matching, cotización, servicio, pago y calificación. La pasarela de pagos es una empresa externa, por eso va en un pool aparte y se comunica con QUICKPATCH por flujos de mensaje (líneas punteadas).
 
-**Figura 1: Flujo principal del Cliente (BPMN)**
+El ícono de cada tarea indica quién la hace: 👤 una persona en la app o el panel (tarea de usuario), ⚙️ el sistema por sí solo (tarea de servicio), ✋ un trabajo físico fuera del sistema (tarea manual), y ✉️ o 📩 el envío o la recepción de un aviso. Los rombos son compuertas exclusivas; los relojes pegados al borde de una tarea son temporizadores (la oferta vence a los 3 minutos y la cotización tiene fecha de vencimiento), y el evento condicional del matching representa la espera hasta que haya un técnico disponible. El diagrama incluye los caminos alternos: la solicitud rechazada por ubicación o datos inválidos (RF-07), la espera y la reasignación del matching (RF-09, RF-10), el límite de 3 cotizaciones (RF-35), el reintento de un pago rechazado (RF-22) y, como subproceso de evento, la cancelación por parte del Cliente antes de iniciar el servicio (RF-36).
 
-```mermaid
-flowchart LR
-    S((Inicio)):::evento --> C1["Cliente<br/>Crear solicitud:<br/>categoría, ubicación<br/>y descripción"]:::cliente
-    C1 --> G1{"¿Ubicación en<br/>Bogotá y datos<br/>válidos?"}:::plataforma
-    G1 -- No --> E1((Solicitud<br/>rechazada)):::evento
-    G1 -- Sí --> P1["Plataforma<br/>Buscar técnico<br/>cercano y disponible"]:::plataforma
-    P1 --> G2{"¿Hay técnico<br/>disponible?"}:::plataforma
-    G2 -- No --> P2["Plataforma<br/>Dejar la solicitud<br/>en espera"]:::plataforma
-    P2 -. cambia la<br/>disponibilidad .-> P1
-    G2 -- Sí --> G3{"Técnico<br/>¿Acepta la<br/>solicitud?"}:::tecnico
-    G3 -- "No / sin respuesta" --> P1
-    G3 -- Sí --> T1["Técnico<br/>Emitir cotización:<br/>mano de obra<br/>y materiales"]:::tecnico
-    T1 --> G4{"Cliente<br/>¿Acepta la<br/>cotización?"}:::cliente
-    G4 -- No --> G5{"¿Es la tercera<br/>cotización<br/>rechazada?"}:::plataforma
-    G5 -- No --> T1
-    G5 -- Sí --> E2((Solicitud<br/>cancelada)):::evento
-    G4 -- "Sin respuesta<br/>antes del vencimiento" --> E2
-    G4 -- Sí --> T2["Técnico<br/>Ejecutar el servicio<br/>(el Cliente lo sigue<br/>en tiempo real)"]:::tecnico
-    T2 --> T3["Técnico<br/>Adjuntar evidencia<br/>fotográfica y marcar<br/>completado"]:::tecnico
-    T3 --> C2["Cliente<br/>Pagar con tarjeta"]:::cliente
-    C2 --> G6{"Pasarela PCI-DSS<br/>¿Pago aprobado?"}:::plataforma
-    G6 -- "No: reintentar" --> C2
-    G6 -- Sí --> P3["Plataforma<br/>Generar comprobante"]:::plataforma
-    P3 --> C3["Cliente<br/>Calificar el servicio<br/>de 1 a 5"]:::cliente
-    C3 --> E3((Servicio<br/>calificado)):::evento
+**Figura 1: Flujo de negocio de QUICKPATCH (BPMN)**
 
-    classDef cliente fill:#fdf0fb,stroke:#b04aa0,color:#222
-    classDef tecnico fill:#fff4e6,stroke:#d9822b,color:#222
-    classDef plataforma fill:#e9f8f6,stroke:#2a9d8f,color:#222
-    classDef evento fill:#ffffff,stroke:#333,stroke-width:2px,color:#222
-```
+![Figura 1: Flujo de negocio de QUICKPATCH en BPMN](diagrams/flujo-negocio.png)
 
-_Requisitos que cubre cada paso: creación (RF-07, RF-08, RNF-11), asignación y reasignación (RF-09, RF-10, RNF-05), cotización (RF-34, RF-35), ejecución y cierre con evidencia (RF-14, RF-15), seguimiento (RF-11, RNF-06), pago y comprobante (RF-22 a RF-24) y calificación (RF-12)._
+_Requisitos que cubre cada fase: registro (RF-01, RF-03), creación (RF-07, RF-08, RNF-11, RIE-02), asignación y reasignación (RF-09, RF-10, RF-13, RNF-05), cotización (RF-34, RF-35), ejecución y cierre con evidencia (RF-14, RF-15), seguimiento (RF-11, RNF-06), pago y comprobante (RF-22 a RF-24), calificación (RF-12) y cancelación (RF-36)._
 
 ---
 
@@ -195,7 +193,7 @@ El sistema se organiza en dos tipos de módulos: los **módulos de dominio**, qu
 | Multi-tenancy | Aísla lógicamente los datos de cada tenant (*tenant_id*) en todas las operaciones de lectura/escritura del sistema. Utilizado por **todos** los módulos de dominio. | SCRUM-7 (F1.2) |
 | Seguridad y Control de Acceso | Autenticación, control de acceso basado en roles (RBAC) y cifrado de datos sensibles en tránsito y en reposo. | SCRUM-7 (F1.3), SCRUM-12 (F6.4) |
 | Integración de Pagos (PCI-DSS) | Capa de integración con la pasarela de pagos externa certificada PCI-DSS, usada por el módulo de Pagos y por cualquier flujo que requiera cobro. | SCRUM-11 (F5.1) |
-| Notificaciones | Envío de confirmaciones y alertas (correo/notificación en app) usadas por Registro, Matching, Seguimiento y Pagos. | Transversal a SCRUM-7, 8, 11 |
+| Notificaciones | Envío de confirmaciones y alertas dentro de la app (canal en tiempo real y buzón de notificaciones; SAD, ADR-023 y ADR-024) usadas por Registro, Matching, Seguimiento y Pagos. | Transversal a SCRUM-7, 8, 11 |
 | Logging y Monitoreo | Registro centralizado de errores y alertas de disponibilidad, usado por todos los módulos del sistema. | SCRUM-12 (F6.3) |
 | Integración y Despliegue Continuo (CI/CD) | Infraestructura de build, pruebas automáticas y despliegue que da soporte al desarrollo de todos los módulos anteriores. | SCRUM-12 (F6.1, F6.2) |
 | Gestión del Proyecto y Documentación | Proceso de gestión de versiones de documentos (SRS, SAD, SDD, DD, etc.), control de cambios en el equipo y seguimiento de entregables. | SCRUM-120 (F7.1) |
@@ -255,7 +253,7 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 |---|---|---|---|
 | F4.1 — Dashboard Operativo | Panel web de solicitudes activas por tenant y por estado. | RF-18 | SCRUM-38 |
 | F4.2 — Gestión de Técnicos/Proveedores | Aprobación, rechazo y suspensión de técnicos y proveedores. | RF-19, RF-20 | SCRUM-39, 40 |
-| F4.3 — Gestión de Tenants | Administración (activar/desactivar) de tenants. | RF-21 | SCRUM-41 |
+| F4.3 — Gestión de Tenants | Administración (activar/desactivar) de tenants. | RF-21 | SCRUM-41, SCRUM-348 |
 
 #### Épica 5 — Procesamiento de Pagos PCI-DSS y Facturación (SCRUM-11)
 
@@ -274,21 +272,22 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 | F6.3 — Monitoreo y Logging | Registro centralizado de errores y alertas básicas de caída de servicio. | RF-28 | SCRUM-48 |
 | F6.4 — Seguridad de Datos | Cifrado de datos sensibles en tránsito y en reposo. | RF-29 | SCRUM-49 |
 
-La Épica 6 tiene además tres historias de infraestructura sin etiqueta de Feature en Jira. No agregan requisitos: implementan los que ya existen.
+La Épica 6 tiene además cuatro historias de infraestructura sin etiqueta de Feature en Jira. No agregan requisitos: implementan los que ya existen.
 
-| Jira | Historia | Requisitos que implementa | Estado (Jira, 7 oct 2026) |
+| Jira | Historia | Requisitos que implementa | Estado (Jira, 10 oct 2026) |
 |---|---|---|---|
-| SCRUM-306 | Despliegue del incremento funcional de Sprint 3 en ambiente QA | RF-26, RNF-07, RNF-08 | Backlog |
-| SCRUM-333 | Reestructuración multirepo: 12 repositorios del profesor + repositorio principal | RF-26 (cada repositorio tiene su propio pipeline de CI) | En desarrollo |
-| SCRUM-334 | Redistribución de VMs: 3 de producción, 3 de QA y 1 de herramientas | RNF-07, RNF-08 | En desarrollo |
+| SCRUM-306 | Despliegue del incremento funcional de Sprint 3 en ambiente QA | RF-26, RNF-07, RNF-08 | ✅ Finalizado |
+| SCRUM-333 | Reestructuración multirepo: 12 repositorios del profesor + repositorio principal | RF-26 (cada repositorio tiene su propio pipeline de CI) | ✅ Finalizado |
+| SCRUM-334 | Redistribución de VMs: 3 de producción, 3 de QA y 1 de herramientas | RNF-07, RNF-08 | ✅ Finalizado |
+| SCRUM-388 | Despliegue del incremento funcional de Sprint 4 en ambiente QA | RF-26, RNF-07, RNF-08 | Backlog |
 
 #### Épica 7 — Gestión del Proyecto y Documentación Transversal (SCRUM-120)
 
 | Feature (Jira label) | Descripción | Requisitos | HU (Jira) |
 |---|---|---|---|
-| F7.1 — Gestión Documental | Creación, revisión y versionado de documentos clave del proyecto (SRS, SAD, SDD, DD, Infraestructura, Calidad y Pruebas, Herramientas), prototipos, gestión de cada sprint y seguimiento de entregas. | RNF-13 | SCRUM-121 a SCRUM-133, SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307, SCRUM-332 |
+| F7.1 — Gestión Documental | Creación, revisión y versionado de documentos clave del proyecto (SRS, SAD, SDD, DD, Infraestructura, Calidad y Pruebas, Herramientas), prototipos, gestión de cada sprint y seguimiento de entregas. | RNF-13 | SCRUM-121 a SCRUM-133, SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307, SCRUM-332 y las 9 historias del Sprint 4 (SCRUM-394 a SCRUM-429) |
 
-**Detalle de los 25 elementos de F7.1 (estado en Jira, consultado el 7 de octubre de 2026):**
+**Detalle de los 34 elementos de F7.1 (estado en Jira, consultado el 10 de octubre de 2026):**
 
 | Jira | Tarea o historia | Responsable | Estado |
 |---|---|---|---|
@@ -306,17 +305,26 @@ La Épica 6 tiene además tres historias de infraestructura sin etiqueta de Feat
 | SCRUM-132 | Documento de Infraestructura V1 | Sebastian Sánchez Olaya | ✅ Finalizado |
 | SCRUM-133 | Documento de diseño SDD V1 | Jorge Fortich | ✅ Finalizado |
 | SCRUM-189 | Organización Repositorio Git | Juan Diego Rojas Vargas | ✅ Finalizado |
-| SCRUM-252 | Documentación de SRS V4 (este documento) | Angy Bautista | Code Review |
+| SCRUM-252 | Documentación de SRS V4 | Angy Bautista | ✅ Finalizado |
 | SCRUM-253 | Documentación de Infraestructura V2 | Sebastian Sánchez Olaya | ✅ Finalizado |
 | SCRUM-254 | Documentación Calidad y Pruebas V1 | kathe | ✅ Finalizado |
-| SCRUM-255 | Gestión del Sprint 3 y presentación | Jorge Fortich | En desarrollo |
-| SCRUM-256 | Documentación SDD V2 — C4 Model | Juan Diego Rojas Vargas | En desarrollo |
+| SCRUM-255 | Gestión del Sprint 3 y presentación | Jorge Fortich | ✅ Finalizado |
+| SCRUM-256 | Documentación SDD V2 — C4 Model | Juan Diego Rojas Vargas | ✅ Finalizado |
 | SCRUM-257 | Configuración de máquinas virtuales (VMs) | Sebastian Sánchez Olaya | ✅ Finalizado |
-| SCRUM-258 | Documentación SAD V3 | Juan Diego Rojas Vargas | En desarrollo |
-| SCRUM-259 | DD V3 — Diccionario de Datos y Contratos | joseval2910 (Jose Eduardo) | En desarrollo |
-| SCRUM-305 | Backlog V4 y métricas de avance del Sprint 3 | Jorge Fortich | Backlog |
-| SCRUM-307 | Informe de pruebas y evidencias del Sprint 3 | kathe | En desarrollo |
-| SCRUM-332 | Actualización de Prototipos Front — Web y Mobile | Miguel Sarmiento | Code Review |
+| SCRUM-258 | Documentación SAD V3 | Juan Diego Rojas Vargas | ✅ Finalizado |
+| SCRUM-259 | DD V3 — Diccionario de Datos y Contratos | joseval2910 (Jose Eduardo) | ✅ Finalizado |
+| SCRUM-305 | Backlog V4 y métricas de avance del Sprint 3 | Jorge Fortich | ✅ Finalizado |
+| SCRUM-307 | Informe de pruebas y evidencias del Sprint 3 | kathe | ✅ Finalizado |
+| SCRUM-332 | Actualización de Prototipos Front — Web y Mobile | Miguel Sarmiento | ✅ Finalizado |
+| SCRUM-394 | Informe de pruebas del Sprint 4 contra QA | kathe | Backlog |
+| SCRUM-399 | Documento de Pruebas TD V2 | kathe | Backlog |
+| SCRUM-403 | Documento de Requerimientos SRS V5 (este documento) | Angy Bautista | Backlog |
+| SCRUM-407 | Backlog V5 y métricas del Sprint 4 | Jorge Fortich | Backlog |
+| SCRUM-411 | Documento de Arquitectura SAD V4 | Juan Diego Rojas Vargas | Backlog |
+| SCRUM-416 | Diccionario de Datos y Contratos DD V4 | joseval2910 (Jose Eduardo) | Backlog |
+| SCRUM-420 | Documento de Infraestructura V3 | Sebastian Sánchez Olaya | Backlog |
+| SCRUM-424 | Documento de Diseño SDD V3 | Juan Diego Rojas Vargas | Backlog |
+| SCRUM-429 | Presentación de la entrega del Sprint 4 | Jorge Fortich | Backlog |
 
 ### 5.2 Requisitos Funcionales
 
@@ -335,10 +343,10 @@ La Épica 6 tiene además tres historias de infraestructura sin etiqueta de Feat
 
 | ID | Descripción | Prior. | Feature | Jira |
 |---|---|---|---|---|
-| RF-07 | El sistema debe permitir a un Cliente crear desde la app móvil una solicitud de servicio indicando una categoría activa del tenant, la ubicación del servicio y una descripción del problema. La ubicación debe estar dentro de Bogotá D.C.; la dirección escrita la complementa (torre, apartamento, indicaciones). | Alta | F2.1 | SCRUM-27 |
+| RF-07 | El sistema debe permitir a un Cliente crear desde la app móvil una solicitud de servicio indicando una categoría activa del tenant, la ubicación del servicio y una descripción del problema. La ubicación se toma del GPS del dispositivo o, si el Cliente no la comparte, de la dirección que escribe, que el sistema convierte en coordenadas (RIE-02). Las coordenadas deben estar dentro de Bogotá D.C. Si el sistema no encuentra la dirección, rechaza la solicitud y le pide al Cliente compartir su ubicación. La dirección escrita complementa la ubicación (torre, apartamento, indicaciones). | Alta | F2.1 | SCRUM-27 |
 | RF-08 | El sistema debe permitir a los usuarios autorizados de una Empresa registrar solicitudes de servicio para sus sedes corporativas, a nombre de la cuenta corporativa. | Alta | F2.1 | SCRUM-28 |
-| RF-09 | El sistema debe asignar automáticamente a cada solicitud un técnico aprobado, disponible, con la especialidad requerida y cercano a la ubicación del servicio (motor de matching). Si no hay técnico disponible, la solicitud queda en espera hasta que alguno lo esté. | Alta | F2.2 | SCRUM-29 |
-| RF-10 | El sistema debe permitir al Técnico aceptar o rechazar una solicitud asignada, sin penalización por rechazarla, reasignando automáticamente en caso de rechazo o falta de respuesta. | Alta | F2.2 | SCRUM-30 |
+| RF-09 | El sistema debe asignar automáticamente cada solicitud a un técnico del mismo tenant que esté aprobado, disponible, tenga la especialidad de la categoría solicitada y cubra la localidad de la ubicación del servicio (motor de matching), ofreciéndola primero al candidato más cercano. Si ningún técnico cumple las condiciones, la solicitud queda en espera y se reintenta cuando aparezca un candidato. Criterios de aceptación: sección 5.5.1. | Alta | F2.2 | SCRUM-29 |
+| RF-10 | El sistema debe ofrecer cada solicitud a un técnico a la vez y permitirle aceptarla o rechazarla desde la app móvil antes de que la oferta venza (3 minutos), sin penalización por rechazarla. Si la rechaza o no responde, el sistema la ofrece al siguiente candidato. Criterios de aceptación: sección 5.5.2. | Alta | F2.2 | SCRUM-30 |
 | RF-11 | El sistema debe mostrar al Cliente el estado actual de su solicitud en tiempo real (mínimo 4 estados). | Alta | F2.3 | SCRUM-31 |
 | RF-12 | El sistema debe permitir al Cliente calificar el servicio (1 a 5, con comentario opcional) una sola vez, después de que se confirme el pago (estado "Pagado"). | Media | F2.4 | SCRUM-32 |
 | RF-35 | El sistema debe permitir al Cliente aceptar o rechazar la cotización de su solicitud. Una solicitud admite como máximo 3 cotizaciones, y una cotización sin respuesta antes de su vencimiento cancela la solicitud. | Alta | F2.1 | Por crear |
@@ -348,7 +356,7 @@ La Épica 6 tiene además tres historias de infraestructura sin etiqueta de Feat
 
 | ID | Descripción | Prior. | Feature | Jira |
 |---|---|---|---|---|
-| RF-13 | El sistema debe permitir al Técnico configurar su disponibilidad y zona de cobertura. | Alta | F3.1 | SCRUM-33 |
+| RF-13 | El sistema debe permitir al Técnico cambiar desde la app móvil su disponibilidad (disponible o no disponible) y su zona de cobertura, como una lista de localidades de Bogotá. El motor de matching usa esos datos desde el siguiente intento de asignación. Criterios de aceptación: sección 5.5.3. | Alta | F3.1 | SCRUM-33 |
 | RF-14 | El sistema debe mostrar al Técnico el detalle completo de una solicitud asignada. | Alta | F3.2 | SCRUM-34 |
 | RF-15 | El sistema debe permitir al Técnico marcar una solicitud como completada únicamente después de adjuntar al menos una evidencia fotográfica del trabajo realizado, habilitando el proceso de pago. | Alta | F3.2 | SCRUM-35 |
 | RF-16 | El sistema debe permitir al Proveedor registrar y administrar su equipo de técnicos. | Media | F3.3 | SCRUM-36 |
@@ -360,9 +368,9 @@ La Épica 6 tiene además tres historias de infraestructura sin etiqueta de Feat
 | ID | Descripción | Prior. | Feature | Jira |
 |---|---|---|---|---|
 | RF-18 | El sistema debe mostrar en el panel web las solicitudes activas por estado: al Admin del tenant, las de su tenant; al Admin de plataforma, las de todos los tenants, filtrables por tenant. | Alta | F4.1 | SCRUM-38 |
-| RF-19 | El sistema debe permitir al Admin del tenant aprobar o rechazar, con motivo, el registro de nuevos técnicos y proveedores de su tenant. | Alta | F4.2 | SCRUM-39 |
+| RF-19 | El sistema debe permitir al Admin del tenant, desde el panel web, aprobar o rechazar con motivo el registro de los técnicos y proveedores de su tenant. Solo los técnicos aprobados pueden recibir ofertas, y cada decisión queda auditada. Criterios de aceptación: sección 5.5.4. | Alta | F4.2 | SCRUM-39 |
 | RF-20 | El sistema debe permitir al Admin del tenant suspender la cuenta de un técnico de su tenant, registrando la fecha y el responsable. | Media | F4.2 | SCRUM-40 |
-| RF-21 | El sistema debe permitir al Admin de plataforma administrar (activar/desactivar) tenants desde el panel web. Un tenant desactivado no puede crear nuevas solicitudes. | Media | F4.3 | SCRUM-41 |
+| RF-21 | El sistema debe permitir al Admin de plataforma activar y desactivar tenants desde el panel web, con confirmación y registro en auditoría. Los usuarios de un tenant desactivado no pueden iniciar sesión. Las sesiones abiertas antes de la desactivación siguen vigentes hasta que vence su token de acceso (DD, RN-T1; la duración del token está en la decisión P9 de la sección 7.4); el rechazo inmediato de nuevas solicitudes de un tenant inactivo, sin esperar ese vencimiento, queda en SCRUM-348. | Media | F4.3 | SCRUM-41 |
 
 #### Épica 5 — Procesamiento de Pagos PCI-DSS y Facturación (SCRUM-11)
 
@@ -384,39 +392,95 @@ La Épica 6 tiene además tres historias de infraestructura sin etiqueta de Feat
 
 ### 5.3 Requisitos No Funcionales
 
-**Seguridad**
-- **RNF-01** El sistema debe cumplir el estándar PCI-DSS en el manejo de información de pagos, delegando el almacenamiento de datos de tarjeta a un proveedor certificado.
-- **RNF-02** Toda comunicación cliente-servidor debe realizarse mediante HTTPS/TLS.
-- **RNF-03** Las contraseñas deben almacenarse utilizando un algoritmo de *hashing* seguro (nunca en texto plano).
-- **RNF-04** El sistema debe registrar en log todo intento de acceso no autorizado (error 403) a recursos restringidos por rol.
-- **RNF-14** El sistema debe tratar los datos personales de clientes y técnicos (nombre, teléfono, dirección, ubicación y fotos de evidencia) conforme a la Ley 1581 de 2012: pedir la autorización del titular al registrarse, usarlos solo para la finalidad informada y permitirle consultarlos, actualizarlos y solicitar su supresión (SAD, killer K12).
+Cada RNF indica el escenario de calidad del SAD que lo mide y el estado de su validación en el SAD (sección 2.2): *Cubierto* (hay escenario, decisión y evidencia), *Parcial* (falta el escenario o la evidencia) o *Sin cobertura* (ningún componente lo implementa todavía).
 
-**Rendimiento**
-- **RNF-05** El motor de matching debe iniciar el proceso de asignación en menos de 60 segundos desde la creación de la solicitud (ambiente de prueba).
-- **RNF-06** Los cambios de estado de una solicitud deben reflejarse en la interfaz del Cliente en menos de 1 minuto.
+| ID | Requisito | Escenario (SAD) | Estado (SAD 2.2) |
+|---|---|---|---|
+| **Seguridad** | | | |
+| RNF-01 | El sistema debe cumplir el estándar PCI-DSS en el manejo de información de pagos, delegando el almacenamiento de datos de tarjeta a un proveedor certificado. | AC6-E1 | Parcial |
+| RNF-02 | Toda comunicación cliente-servidor debe realizarse mediante HTTPS/TLS. | Ninguno (decisión abierta, sección 7.4) | Parcial |
+| RNF-03 | Las contraseñas deben almacenarse utilizando un algoritmo de *hashing* seguro (nunca en texto plano). | Ninguno (decisión abierta, sección 7.4) | Parcial |
+| RNF-04 | El sistema debe registrar en log todo intento de acceso no autorizado (error 403) a recursos restringidos por rol. | AC6-E3, AC6-E8 | Cubierto |
+| RNF-14 | El sistema debe tratar los datos personales de clientes y técnicos (nombre, teléfono, dirección, ubicación y fotos de evidencia) conforme a la Ley 1581 de 2012: pedir la autorización del titular al registrarse, usarlos solo para la finalidad informada y permitirle consultarlos, actualizarlos y solicitar su supresión (SAD, killer K12). Los datos personales no salen de la infraestructura del proyecto para geocodificar ni para notificar (SAD, ADR-024; DR-01). | Ninguno: la validación del SAD no lo incluye | Sin validar |
+| **Rendimiento** | | | |
+| RNF-05 | El motor de matching debe iniciar el proceso de asignación en menos de 60 segundos desde la creación de la solicitud (ambiente de QA). | AC2-E3 (7 s, más exigente) | Parcial |
+| RNF-06 | Los cambios de estado de una solicitud deben reflejarse en la interfaz del Cliente en menos de 1 minuto. | AC2-E3, AC4-E9 | Sin cobertura |
+| **Disponibilidad y Confiabilidad** | | | |
+| RNF-07 | El sistema debe contar con un ambiente de QA permanente separado de producción, copia de su topología (VM2, VM5 y VM7; ADR-022 del SAD), para las pruebas funcionales, de aceptación, de seguridad (E2E, UAT, OWASP ZAP) y de carga y rendimiento (k6). Las pruebas de carga se ejecutan contra un tenant de prueba dedicado en ese ambiente, nunca contra la infraestructura de producción. | AC7-E6 | Parcial |
+| RNF-08 | Un fallo en las pruebas automatizadas funcionales, de aceptación, de seguridad o de carga del flujo crítico, ejecutadas en el ambiente de QA antes del despliegue (ver RNF-07), debe bloquear el despliegue a producción. Si el despliegue en producción falla su verificación de salud, se revierte (`kubectl rollout undo`) antes de habilitar tráfico real. | AC7-E6, AC9-E7 | Parcial |
+| **Escalabilidad y Arquitectura Multi-tenant** | | | |
+| RNF-09 | La arquitectura debe permitir incorporar nuevos tenants (nuevas empresas o zonas geográficas) sin afectar el aislamiento de datos de los tenants existentes. | AC8-E1 | Parcial |
+| RNF-10 | Las consultas a base de datos deben filtrar automáticamente por el *tenant_id* de la sesión activa. | AC6-E2 | Cubierto |
+| **Usabilidad** | | | |
+| RNF-11 | El flujo de creación de una solicitud de servicio (Cliente) debe poder completarse en un máximo de 3 pasos. | AC4-E1 | Cubierto |
+| RNF-12 | La app móvil debe funcionar en teléfonos Android e iOS de distintos tamaños de pantalla, y el panel web debe adaptarse a pantallas de escritorio y portátil (diseño responsivo). | AC4-E2 | Parcial |
+| **Gestión del Proyecto y Documentación** | | | |
+| RNF-13 | El equipo debe mantener un control de versiones de todos los documentos entregables (SRS, SAD, SDD, DD, etc.) y utilizar Jira para el seguimiento de tareas y el control de cambios. | — (requisito de proceso) | Cubierto |
 
-**Disponibilidad y Confiabilidad**
-- **RNF-07** El sistema debe contar con un ambiente de QA permanente separado de producción, copia de su topología (VM2, VM5 y VM7; ADR-022 del SAD), para las pruebas funcionales, de aceptación, de seguridad (E2E, UAT, OWASP ZAP) y de carga y rendimiento (k6). Las pruebas de carga se ejecutan contra un tenant de prueba dedicado en ese ambiente, nunca contra la infraestructura de producción.
-- **RNF-08** Un fallo en las pruebas automatizadas funcionales, de aceptación, de seguridad o de carga del flujo crítico, ejecutadas en el ambiente de QA antes del despliegue (ver RNF-07), debe bloquear el despliegue a producción. Si el despliegue en producción falla su verificación de salud, se revierte (`kubectl rollout undo`) antes de habilitar tráfico real.
-
-**Escalabilidad y Arquitectura Multi-tenant**
-- **RNF-09** La arquitectura debe permitir incorporar nuevos tenants (nuevas empresas o zonas geográficas) sin afectar el aislamiento de datos de los tenants existentes.
-- **RNF-10** Las consultas a base de datos deben filtrar automáticamente por el *tenant_id* de la sesión activa.
-
-**Usabilidad**
-- **RNF-11** El flujo de creación de una solicitud de servicio (Cliente) debe poder completarse en un máximo de 3 pasos.
-- **RNF-12** La app móvil debe funcionar en teléfonos Android e iOS de distintos tamaños de pantalla, y el panel web debe adaptarse a pantallas de escritorio y portátil (diseño responsivo).
-
-**Gestión del Proyecto y Documentación**
-- **RNF-13** El equipo debe mantener un control de versiones de todos los documentos entregables (SRS, SAD, SDD, DD, etc.) y utilizar Jira para el seguimiento de tareas y el control de cambios.
+Las acciones correctivas de los RNF parciales y sin cobertura (por ejemplo, que el despliegue a producción dependa del resultado de las pruebas en QA para RNF-08, o el canal de estado en tiempo real para RNF-06) están en el SAD, sección 2.2, con su responsable.
 
 ### 5.4 Requisitos de Interfaces Externas
 
 - **RIE-01 Pasarela de pagos:** el sistema debe integrarse con un proveedor de pagos externo certificado PCI-DSS mediante una API segura (tokenización de tarjeta).
-- **RIE-02 Servicio de geocodificación:** el sistema debe poder convertir una dirección escrita de Bogotá en coordenadas, para cuando el Cliente no comparte la ubicación de su dispositivo. La geocodificación corre dentro de la infraestructura del proyecto, con un geocodificador propio que solo tiene el mapa de Bogotá (SAD, ADR-024), y la cercanía entre la solicitud y los técnicos la calcula el propio sistema. Ningún servicio externo recibe la dirección del Cliente.
-- **RIE-03 Servicio de notificaciones:** el sistema debe avisar dentro de la app la confirmación del registro, la asignación del técnico, la cotización y los cambios de estado: en vivo por el canal en tiempo real y en un buzón de notificaciones que el usuario consulta al abrir la app (SAD, ADR-023 y ADR-024). El correo electrónico y las notificaciones push con la app cerrada quedan fuera del MVP, porque exigirían un proveedor externo (R5).
+- **RIE-02 Servicio de geocodificación:** el sistema debe poder convertir en coordenadas la dirección de Bogotá que escribe el Cliente cuando no comparte la ubicación de su dispositivo. La geocodificación corre dentro de la infraestructura del proyecto, con un geocodificador propio (Nominatim) que solo tiene el mapa de Bogotá, en la VM de datos de cada ambiente (VM4 en producción y VM5 en QA). La usa ServiceRequest Service cuando la solicitud llega con la dirección y sin coordenadas (SAD, ADR-024). Ningún servicio externo recibe la dirección del Cliente. Las coordenadas del GPS siguen siendo la primera opción. Si la dirección no se encuentra o el geocodificador no responde, el sistema rechaza la solicitud con un error que le pide al Cliente compartir su ubicación. La cercanía entre la solicitud y los técnicos la calcula el propio sistema con PostGIS.
+- **RIE-03 Servicio de notificaciones:** el sistema debe informar al usuario dentro de la app el registro, la oferta y la asignación de técnico, la cotización y los cambios de estado. Los avisos llegan de dos formas: en vivo, por el canal en tiempo real, y en un buzón de notificaciones que Communication Service guarda por usuario y que el usuario consulta al abrir la app (SAD, ADR-023 y ADR-024). Así ve lo que pasó aunque no tuviera la app abierta. El correo electrónico y las notificaciones push con la app cerrada quedan fuera del MVP, porque exigirían un proveedor externo (R5).
 
-> **Resuelto (P1, sección 7.4):** RIE-02 y RIE-03 ya no contradicen la restricción R5 del SAD: la pasarela de pagos sigue siendo la única dependencia externa de producción (ADR-024).
+> **Resuelto (SCRUM-405; SAD, ADR-024):** con la redacción de la versión 4.0, RIE-02 y RIE-03 contradecían la restricción R5 del SAD, que permite como única dependencia externa de producción la pasarela de pagos. El equipo decidió el 12 de octubre de 2026 mantener R5 sin cambios y resolver las dos interfaces dentro de las 7 VMs (decisión DR-01, sección 7.4).
+
+### 5.5 Criterios de aceptación de los RF del incremento
+
+Los RF del flujo del técnico que entran en el incremento del Sprint 4 se precisan con criterios de aceptación verificables (SCRUM-404). Cada criterio indica de dónde sale (criterio de la historia de Jira y regla de negocio del DD) y qué caso del Documento de Pruebas (TD, sección 7) lo verifica. "Falta caso" significa que el TD todavía no tiene un caso para ese criterio y debe agregarlo en el TD V2 (SCRUM-399). Los criterios usan los estados y los códigos de error de los contratos del DD (secciones 7 y 8).
+
+#### 5.5.1 RF-09 — Asignación automática de técnico (SCRUM-29)
+
+| # | Criterio de aceptación | Fuente | Casos (TD) |
+|---|---|---|---|
+| 1 | Dada una solicitud nueva, el motor solo considera técnicos que cumplen todas estas condiciones: son del mismo tenant, están aprobados y disponibles, su especialidad es la categoría de la solicitud, alguna de sus localidades de cobertura contiene la ubicación, no tienen otra oferta pendiente y no recibieron antes una oferta para esa misma solicitud. | SCRUM-29 c1 y c6; DD RN-M9, RN-TP1 | MAT-001, MAT-002, MAT-004, MAT-006, MAT-007 |
+| 2 | Los candidatos se ordenan por distancia a la ubicación de la solicitud y la oferta va primero al más cercano. Un empate se resuelve con la fecha de la última actualización de la disponibilidad, como define el DD. | SCRUM-29 c2; DD 5.6 y 5.8 (`distance_m`) | MAT-008 |
+| 3 | Una solicitud tiene como máximo una oferta pendiente a la vez. | DD RN-M1 | MAT-009 |
+| 4 | Si ningún técnico cumple las condiciones, la solicitud pasa a `en_espera` y el sistema publica `matching.no-technician-available`. El motor no relaja las condiciones para encontrar un candidato. | SCRUM-29 c3; DD RN-M4, RN-M9; SAD AC9-E4 | MAT-013 |
+| 5 | Una solicitud en espera vuelve a buscar técnico cuando aparece un posible candidato: un técnico pasa a disponible, cambia su cobertura, es aprobado o termina otro servicio. Se reintenta primero la solicitud más antigua. | SCRUM-29 c3; DD RN-M10 | Falta caso |
+| 6 | En QA, el primer intento de asignación ocurre en menos de 60 segundos desde la creación de la solicitud. | SCRUM-29 c4; RNF-05; SAD AC2-E3 | PRF-001 |
+| 7 | Procesar dos veces el mismo evento `service-request.created` no crea dos ofertas para la solicitud. | SCRUM-29 c5; DD RN-EV1 | Falta caso |
+
+#### 5.5.2 RF-10 — Aceptación o rechazo de la oferta por el Técnico (SCRUM-30)
+
+| # | Criterio de aceptación | Fuente | Casos (TD) |
+|---|---|---|---|
+| 1 | El técnico recibe un aviso de la oferta en la app (RIE-03) y la ve con la categoría, la descripción, la localidad, la distancia y la hora de vencimiento. La dirección exacta y el teléfono del cliente solo se muestran después de que la acepta. | SCRUM-30 c1; DD 8.3.5, RN-SR13 | Falta caso |
+| 2 | Solo el técnico al que se dirigió la oferta puede verla y responderla. Si otro técnico intenta responderla, el sistema la rechaza con `409 OFFER_NOT_AVAILABLE`. | SCRUM-30 c5 y c6; DD RN-M2 | Falta caso |
+| 3 | Si el técnico acepta antes del vencimiento, queda `ocupado`, la solicitud pasa a `asignado` y el sistema publica `matching.technician-assigned`. | SCRUM-30 c2; DD RN-M4, RN-M6 | MAT-010 |
+| 4 | Si el técnico rechaza, el sistema ofrece la solicitud al siguiente candidato. El rechazo no cambia el estado de verificación ni la disponibilidad del técnico, y solo lo excluye de esa solicitud (sin penalización, SAD R12). | SCRUM-30 c3; DD RN-M3, RN-M9 | MAT-011, E2E-007 |
+| 5 | Si el técnico no responde en 3 minutos, la oferta queda `expirado` y el sistema ofrece la solicitud al siguiente candidato. | SCRUM-30 c4; DD RN-M3, RN-M8 | MAT-009, MAT-012 |
+| 6 | Aceptar una oferta vencida o ya respondida responde `409 OFFER_NOT_AVAILABLE`. Aceptar cuando el técnico ya no está disponible responde `409 TECHNICIAN_NOT_AVAILABLE`. | SCRUM-30 c5; DD 8.3.5, RN-M7 | Falta caso |
+| 7 | Si el cliente cancela la solicitud mientras la oferta está pendiente, la oferta queda `cancelado` y no se ofrece a más técnicos. | DD RN-M5 | Falta caso |
+
+#### 5.5.3 RF-13 — Disponibilidad y zona de cobertura del Técnico (SCRUM-33)
+
+| # | Criterio de aceptación | Fuente | Casos (TD) |
+|---|---|---|---|
+| 1 | Un técnico recién registrado queda `no_disponible` y no recibe ofertas hasta que se marca disponible. | DD 5.6 | Falta caso |
+| 2 | El técnico puede cambiar desde la app su estado entre `disponible` y `no_disponible`. | SCRUM-33 c1; DD 8.3.6 | MAT-003 |
+| 3 | El estado `ocupado` solo lo fija el sistema al aceptar una oferta. Si el técnico está ocupado e intenta cambiar su estado, el sistema responde `409 INVALID_STATE_TRANSITION`. | SCRUM-33 c5; DD RN-M6 | Falta caso |
+| 4 | Mientras está `no_disponible` u `ocupado`, el técnico no recibe ofertas. | SCRUM-33 c2; DD RN-M6 | MAT-004 |
+| 5 | El técnico puede consultar sus localidades de cobertura y reemplazarlas por una lista nueva. Una lista vacía o con un código de localidad que no existe responde `400 VALIDATION_ERROR`. | SCRUM-33 c3; DD 5.7, 8.3.6 | MAT-005 |
+| 6 | Pasar a `disponible` o cambiar la cobertura hace que el sistema reintente las solicitudes en espera que el técnico podría atender. | SCRUM-33 c4; DD RN-M10 | Falta caso |
+| 7 | Un técnico solo ve y modifica su propia disponibilidad y cobertura, y nunca recibe solicitudes de otro tenant. | SCRUM-33 c6; RF-04 | Falta caso |
+| 8 | El sistema no exige un mínimo de horas ni de días disponibles, y estar no disponible no tiene ninguna consecuencia para el técnico. | SAD R12 | Inspección de la app y los contratos |
+
+#### 5.5.4 RF-19 — Aprobación o rechazo de técnicos y proveedores (SCRUM-39)
+
+| # | Criterio de aceptación | Fuente | Casos (TD) |
+|---|---|---|---|
+| 1 | El Admin del tenant ve en el panel web los técnicos y proveedores de su tenant que están pendientes de verificación. | SCRUM-39 c1 | E2E-003 |
+| 2 | El Admin del tenant puede aprobar un registro pendiente. Para rechazarlo debe escribir un motivo, que queda guardado. | SCRUM-39 c2; DD 8.3.13 | ACT-003, ACT-004 |
+| 3 | Las transiciones que el DD no permite (por ejemplo, rechazar a un técnico ya aprobado) responden `409 INVALID_STATE_TRANSITION`. Un técnico rechazado puede aprobarse después, en una nueva revisión. | SCRUM-39 c3; DD 8.3.13 | Falta caso |
+| 4 | Cada decisión queda en el registro de auditoría con el responsable, la fecha y el identificador de correlación, y el sistema publica `technician.verification-changed`. | SCRUM-39 c4; DD 8.3.13, RN-A1 | Falta caso |
+| 5 | Solo los técnicos aprobados son candidatos del matching. Cuando un técnico disponible es aprobado, el sistema reintenta las solicitudes en espera que podría atender. | SCRUM-39 c5; DD RN-TP1, RN-M10 | MAT-002 |
+| 6 | El técnico puede consultar en la app el estado de su verificación y, si fue rechazado, el motivo. | SCRUM-39 c6 | Falta caso |
+| 7 | Un Admin del tenant no puede ver ni verificar técnicos ni proveedores de otro tenant. | SCRUM-39 c7; DD RN-U6; RF-04 | Falta caso |
+
+> **Diferencias con el TD que debe corregir el TD V2 (SCRUM-399):** MAT-003 usa la ruta `PUT /v1/matching/availability`, y el DD define `PUT /v1/technicians/me/availability`. MAT-005 guarda la cobertura como un polígono libre, y el DD la define como una lista de localidades (`MULTIPOLYGON`). MAT-010 y MAT-011 usan los valores `aceptada` y `rechazada`, y el DD usa `aceptado` y `rechazado`. ACT-006 usa `POST .../reactivate`, y el DD reactiva con `approve`. ACT-005 suspende automáticamente a un técnico con calificación menor a 3.0, algo que ningún RF define: RF-20 dice que la suspensión la hace el Admin del tenant (ver la decisión P8 en la sección 7.4).
 
 ---
 
@@ -441,55 +505,108 @@ Con el fin de justificar el enfoque del producto, se comparó QUICKPATCH frente 
 
 ## 7. Apéndices
 
-### 7.1 Matriz de Trazabilidad Épicas — Features — Requisitos
+### 7.1 Matriz de Trazabilidad
+
+#### 7.1.1 Épicas, Features y Requisitos
 
 | Épica (Jira) | Features | Requisitos | Historias de Usuario (Jira) |
 |---|---|---|---|
 | SCRUM-7 — Fundación y Multi-tenant | F1.1 – F1.4 | RF-01 – RF-06 | SCRUM-21 a SCRUM-26 |
 | SCRUM-8 — Matching y Experiencia Cliente | F2.1 – F2.4 | RF-07 – RF-12, RF-35, RF-36 | SCRUM-27 a SCRUM-32 (RF-35 y RF-36: por crear) |
 | SCRUM-9 — Herramientas Técnico/Proveedor | F3.1 – F3.4 | RF-13 – RF-17, RF-34 | SCRUM-33 a SCRUM-37 (RF-34: por crear) |
-| SCRUM-10 — Panel Administrativo | F4.1 – F4.3 | RF-18 – RF-21 | SCRUM-38 a SCRUM-41 |
+| SCRUM-10 — Panel Administrativo | F4.1 – F4.3 | RF-18 – RF-21 | SCRUM-38 a SCRUM-41, SCRUM-348 |
 | SCRUM-11 — Pagos PCI-DSS y Facturación | F5.1 – F5.3 | RF-22 – RF-25 | SCRUM-42 a SCRUM-45 |
-| SCRUM-12 — Infraestructura (DevOps & QA) | F6.1 – F6.4 | RF-26 – RF-29, RNF-07, RNF-08 | SCRUM-46 a SCRUM-49, SCRUM-306, SCRUM-333, SCRUM-334 |
-| SCRUM-120 — Gestión del Proyecto y Documentación Transversal | F7.1 | RNF-13 | SCRUM-121 a SCRUM-133, SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307, SCRUM-332 |
+| SCRUM-12 — Infraestructura (DevOps & QA) | F6.1 – F6.4 | RF-26 – RF-29, RNF-07, RNF-08 | SCRUM-46 a SCRUM-49, SCRUM-306, SCRUM-333, SCRUM-334, SCRUM-388 |
+| SCRUM-120 — Gestión del Proyecto y Documentación Transversal | F7.1 | RNF-13 | SCRUM-121 a SCRUM-133, SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307, SCRUM-332, SCRUM-394, SCRUM-399, SCRUM-403, SCRUM-407, SCRUM-411, SCRUM-416, SCRUM-420, SCRUM-424, SCRUM-429 |
+
+#### 7.1.2 Requisitos, Historias de Usuario y Casos de Prueba
+
+Cada RF se enlaza con su historia de Jira y con los casos del Documento de Pruebas (TD, sección 7.1.1) que lo verifican. Los RF marcados con ★ son los del incremento y tienen criterios de aceptación en la sección 5.5, con el caso de prueba de cada criterio.
+
+| Requisito | Historia (Jira) | Casos de prueba (TD) |
+|---|---|---|
+| RF-01 | SCRUM-21 | IDN-001, IDN-002, IDN-003, E2E-001 |
+| RF-02 | SCRUM-22 | IDN-004, ACT-001, ACT-002 |
+| RF-03 | SCRUM-23 | IDN-005, IDN-006, IDN-007, IDN-008 |
+| RF-04 | SCRUM-24 | IDN-009, IDN-010, CAT-004, SRQ-007, ACT-009, PAY-008, RNK-008 |
+| RF-05 | SCRUM-25 | IDN-011, IDN-012, CAT-010 |
+| RF-06 | SCRUM-26 | IDN-013, IDN-014, E2E-004 |
+| RF-07 | SCRUM-27 | SRQ-001, SRQ-002, SRQ-003, E2E-001, E2E-005 |
+| RF-08 | SCRUM-28 | SRQ-004 |
+| RF-09 ★ | SCRUM-29 | MAT-001, MAT-002, MAT-004, MAT-006, MAT-007, MAT-008, MAT-009, MAT-013, PRF-001 |
+| RF-10 ★ | SCRUM-30 | MAT-009, MAT-010, MAT-011, MAT-012, E2E-007 |
+| RF-11 | SCRUM-31 | SRQ-006, COM-001, COM-002, COM-005 |
+| RF-12 | SCRUM-32 | SRQ-021, SRQ-022, SRQ-023, RNK-001, RNK-002 |
+| RF-13 ★ | SCRUM-33 | MAT-003, MAT-004, MAT-005 |
+| RF-14 | SCRUM-34 | SRQ-005 |
+| RF-15 | SCRUM-35 | SRQ-016, SRQ-017, SRQ-018, E2E-001 |
+| RF-16 | SCRUM-36 | ACT-007, ACT-008, ACT-009 |
+| RF-17 | SCRUM-37 | SRQ-026 |
+| RF-18 | SCRUM-38 | E2E-002 |
+| RF-19 ★ | SCRUM-39 | ACT-003, ACT-004, MAT-002, E2E-003 |
+| RF-20 | SCRUM-40 | ACT-005, ACT-006 |
+| RF-21 | SCRUM-41, SCRUM-348 | IDN-019, E2E-004 |
+| RF-22 | SCRUM-42 | PAY-003, PAY-010, PAY-011, E2E-009 |
+| RF-23 | SCRUM-43 | PAY-006 |
+| RF-24 | SCRUM-44 | PAY-004, PAY-005 |
+| RF-25 | SCRUM-45 | PAY-007 |
+| RF-26 | SCRUM-46 | INF-016 |
+| RF-27 | SCRUM-47 | E2E-001 |
+| RF-28 | SCRUM-48 | INF-011, INF-012, PRF-010 |
+| RF-29 | SCRUM-49 | IDN-015, IDN-021, INF-005 |
+| RF-34 | Por crear | SRQ-008, SRQ-009, SRQ-010 |
+| RF-35 | Por crear | SRQ-011, SRQ-012, SRQ-013, E2E-008 |
+| RF-36 | Por crear | SRQ-019, SRQ-020, E2E-010 |
+
+Los RNF se verifican por medio de su escenario de calidad del SAD (sección 5.3), y el TD (sección 7.1.2) enlaza cada escenario con sus casos de prueba.
 
 ### 7.2 Resumen de Requisitos Funcionales
 
-El presente MVP contempla un total de **32 requisitos funcionales**, agrupados en **23 Features**, organizados en **7 módulos de dominio** y soportados por **7 módulos transversales** (incluyendo la Gestión del Proyecto y Documentación), distribuidos en **7 épicas**. Se definen además **14 requisitos no funcionales** y **3 requisitos de interfaces externas**. Todos los requisitos están priorizados como *Alta* o *Media* por ser esenciales para demostrar el ciclo completo del negocio: registro y autenticación multi-tenant, solicitud de servicio, asignación automática, cotización, ejecución técnica con evidencia fotográfica, pago seguro y calificación. La numeración salta de RF-29 a RF-34 porque RF-30 a RF-33 (versiones 2.x, control de cambios) se retiraron en la versión 3.0 al reemplazarse por RNF-13, y sus números no se reutilizan. Adicionalmente, se incluye un requisito no funcional (RNF-13) para la gestión documental y control de cambios del proyecto. Tres requisitos (RF-34, RF-35 y RF-36) todavía no tienen historia de usuario en Jira.
+El presente MVP contempla un total de **32 requisitos funcionales**, agrupados en **23 Features**, organizados en **7 módulos de dominio** y soportados por **7 módulos transversales** (incluyendo la Gestión del Proyecto y Documentación), distribuidos en **7 épicas**. Se definen además **14 requisitos no funcionales** y **3 requisitos de interfaces externas**. Todos los requisitos están priorizados como *Alta* o *Media* por ser esenciales para demostrar el ciclo completo del negocio: registro y autenticación multi-tenant, solicitud de servicio, asignación automática, cotización, ejecución técnica con evidencia fotográfica, pago seguro y calificación. La numeración salta de RF-29 a RF-34 porque RF-30 a RF-33 (versiones 2.x, control de cambios) se retiraron en la versión 3.0 al reemplazarse por RNF-13, y sus números no se reutilizan. Cuatro RF del incremento (RF-09, RF-10, RF-13 y RF-19) tienen criterios de aceptación detallados en la sección 5.5. Tres requisitos (RF-34, RF-35 y RF-36) todavía no tienen historia de usuario en Jira.
 
-**Estado de avance de la Épica 7 (consultado en Jira el 7 de octubre de 2026):** de sus 25 elementos, 17 figuran como Finalizados: las 13 tareas de las versiones V1 a V3 (SCRUM-121 a SCRUM-133), la organización del repositorio (SCRUM-189), el Documento de Infraestructura V2 (SCRUM-253), el de Calidad y Pruebas V1 (SCRUM-254) y la configuración de las VMs (SCRUM-257). Están en curso los documentos del Sprint 3 (SAD V3, SDD V2, DD V3 y el informe de pruebas), la gestión del Sprint 3 y, en revisión, este SRS V4 (SCRUM-252) y los prototipos web y móvil (SCRUM-332).
+**Estado de avance de la Épica 7 (consultado en Jira el 10 de octubre de 2026):** de sus 34 elementos, 25 figuran como Finalizados: todos los documentos y tareas de las versiones V1 a V4 y del Sprint 3. Los 9 restantes son las historias del Sprint 4 (SRS V5, SAD V4, DD V4, SDD V3, TD V2, Infraestructura V3, Backlog V5, informe de pruebas y presentación), todas en Backlog.
 
 ### 7.3 Historias de Jira por actualizar
 
-Las siguientes historias de usuario tienen criterios de aceptación que no coinciden con la versión 4.0 de este documento. Se deben actualizar en Jira para que los criterios de aceptación y el SRS sean consistentes, y crear las historias de RF-34, RF-35 y RF-36.
+Las siguientes historias de usuario tienen criterios de aceptación que no coinciden con este documento. SCRUM-24, SCRUM-29, SCRUM-30, SCRUM-33, SCRUM-34, SCRUM-39 y SCRUM-40 ya se reescribieron en Jira y salen de la lista de la versión 4.0. Faltan las de esta tabla y crear las historias de RF-34, RF-35 y RF-36.
 
 | Jira | Criterio de aceptación actual | Cambio necesario | Requisito |
 |---|---|---|---|
 | SCRUM-21 | El usuario queda asociado al tenant "Hogar/Bogotá" por defecto. | El Cliente queda en el tenant de la empresa oferente por cuyo canal se registra; no existe un tenant "Hogar". | RF-01, RF-04 |
-| SCRUM-24 | Existe un tenant de prueba tipo "Empresa" y uno tipo "Hogar". | Los tenants de prueba son dos empresas oferentes; hogar y empresa son tipos de usuario dentro de cada una. | RF-04 |
 | SCRUM-26 | La cuenta empresarial queda asociada a un tenant propio. | La cuenta empresarial es una cuenta de usuario dentro del tenant. | RF-06 |
 | SCRUM-32 | La calificación solo se habilita cuando la solicitud está en estado "Completado". | Se habilita cuando la solicitud está en estado "Pagado". | RF-12 |
-| SCRUM-34 | El técnico puede marcar el inicio del servicio ("En progreso"). | Solo después de que el Cliente acepte la cotización. | RF-14, RF-34 |
 | SCRUM-35 | No exige evidencia fotográfica. | Agregar: solo se puede completar con al menos una foto adjunta. | RF-15 |
 | SCRUM-38 | El Admin ve las solicitudes de todos los tenants. | El Admin del tenant ve solo su tenant; el Admin de plataforma ve todos, filtrables por tenant. | RF-18 |
-| SCRUM-39, SCRUM-40 | Actor "Admin". | El actor es el Admin del tenant, sobre los técnicos de su tenant. | RF-19, RF-20 |
+| SCRUM-41 | Criterio 4: "Un tenant desactivado no puede crear nuevas solicitudes." | La historia está finalizada y lo que se implementó es el rechazo del login. El rechazo inmediato de solicitudes pasa a SCRUM-348; conviene anotarlo en SCRUM-41. | RF-21 |
 | SCRUM-46, SCRUM-47 | Ambiente de "staging". | Ambiente de QA (VM2, VM5 y VM7). | RNF-07, RNF-08 |
 | SCRUM-47 | Flujo Cliente → Técnico → Pago → Calificación. | Incluir la cotización y la evidencia fotográfica. | RF-27 |
 | Por crear | — | Historia para la cotización del Técnico. | RF-34 |
 | Por crear | — | Historia para la respuesta del Cliente a la cotización. | RF-35 |
 | Por crear | — | Historia para la cancelación antes de iniciar el servicio. | RF-36 |
 
-### 7.4 Decisiones pendientes
+### 7.4 Decisiones
 
-Contradicciones conocidas entre este documento y el SAD que el equipo debe resolver. Mientras no se decidan, los requisitos afectados se mantienen como están redactados.
+#### 7.4.1 Decisiones tomadas en esta versión
+
+| ID | Decisión | Motivo | Quién debe aplicarla |
+|---|---|---|---|
+| DR-01 (antes P1) | **R5 frente a RIE-02 y RIE-03.** R5 no cambia: la pasarela de pagos es la única dependencia externa de producción. La geocodificación (RIE-02) corre con un Nominatim propio que solo tiene el mapa de Bogotá, en VM4 (producción) y VM5 (QA), y la usa ServiceRequest Service. Las notificaciones del MVP (RIE-03) se entregan dentro de la app, por el canal en tiempo real y en un buzón de notificaciones. El correo y el push con la app cerrada quedan fuera del MVP. | Es la opción (b) de la versión 4.0. El equipo descartó la opción (a), ampliar R5 para admitir servicios externos gratuitos: un geocodificador o un proveedor de correo en la nube recibe datos personales mientras procesa la petición (K12). Con solo el mapa de Bogotá, la importación y la base de Nominatim caben en la VM de datos (R10). Este borrador había propuesto la opción (a), y se ajustó a la decisión del equipo. | Decidida por el equipo el 12 de octubre de 2026 en el ADR-024 del SAD (SAD 2.27; SCRUM-405 y SCRUM-413). Pendientes: DevOps (playbook de Nominatim en VM4 y VM5), DD (coordenadas opcionales en `CreateServiceRequest` y buzón de notificaciones) y SDD (sección 4.1). |
+| DR-02 | **Ubicación de la solicitud (RF-07).** La ubicación sale del GPS del dispositivo o de la dirección que escribe el Cliente. En el segundo caso, ServiceRequest Service la convierte en coordenadas (RIE-02). La dirección escrita se guarda como complemento. | Une lo que se había decidido ("el Cliente escribe una dirección") con los contratos del DD (RN-SR9 y RN-SR11), que trabajan con coordenadas, y con el ADR-024, que hace la geocodificación en el servidor. | Confirmar con el equipo en la revisión de SCRUM-406. DD: las coordenadas pasan a ser opcionales cuando llega la dirección (ADR-024). |
+
+#### 7.4.2 Decisiones pendientes
+
+Contradicciones conocidas entre este documento y los demás documentos que el equipo debe resolver. Mientras no se decidan, los requisitos afectados se mantienen como están redactados.
 
 | ID | Requisito | Contradicción | Opciones |
 |---|---|---|---|
-| P1 | RIE-02, RIE-03 | **Resuelta el 12 de octubre de 2026 (SAD, ADR-024; SCRUM-405 y SCRUM-413).** La restricción R5 del SAD dice que la pasarela de pagos es la única dependencia externa de producción, pero el sistema necesitaba geocodificación y un proveedor de notificaciones. | Se eligió (b): la geocodificación corre dentro de las 7 VMs con un Nominatim propio con el mapa de Bogotá, y las notificaciones del MVP se entregan dentro de la app; correo y push quedan fuera del MVP. R5 no cambia. |
-| P2 | RF-12 | Este documento, el SDD (escenario 7) y el DD (RN-R3) ponen el pago antes de la calificación; el ciclo de vida del SAD (sección 7.4) libera el pago después de la evaluación. | Actualizar la sección 7.4 del SAD al orden de este documento (pago → calificación). |
+| P2 | RF-12 | Este documento, el SDD (escenario 7) y el DD (RN-R3) ponen el pago antes de la calificación; el ciclo de vida del SAD (sección 7.4) todavía libera el pago después de la evaluación (`EVALUATED`). | Actualizar la sección 7.4 del SAD V4 al orden de este documento (pago → calificación). |
 | P3 | RF-24 | Al cobrar a nombre de la plataforma, la factura debe ser electrónica y validada por la DIAN (killer K14), lo que exige conexión a Internet y, en general, un proveedor con costo (R5, R9). | (a) Emitir en el MVP un comprobante de pago sin validez fiscal, rotulado como tal; (b) integrar la solución gratuita de la DIAN. |
 | P4 | — | La Ley 1480 de 2011 (killer K13) exige un mecanismo para recibir reclamos, y el módulo de reclamos está fuera del MVP (SAD, FA3). | (a) Un canal mínimo de reclamos asociado a la solicitud, que requeriría un RF nuevo; (b) un canal externo documentado (correo de soporte). |
 | P5 | RF-11, RF-22 | Los técnicos en campo y la respuesta de la pasarela de pagos deben alcanzar el sistema desde fuera de la red del laboratorio, que no es accesible desde Internet (SAD, R9). | Las del SAD, sección 1.2: demostración en la red del campus, túnel gratuito o IP pública de la universidad. |
+| P6 | RNF-02, RNF-03 | No tienen un escenario de calidad que los mida (SAD, sección 2.2). | (a) Agregarlos como escenarios de AC6 (*Confidentiality*) en el SAD V4; (b) tratarlos como restricciones verificables por inspección. |
+| P7 | RNF-14 | La validación del SAD contra los RNF (sección 2.2) cubre 13 RNF y no incluye RNF-14 (Ley 1581). | Agregar RNF-14 a la validación del SAD V4, con su escenario o como restricción ligada al killer K12. |
+| P8 | RF-19, RF-20 | El DD solo define la verificación para técnicos (`technician_profiles`), aunque RF-19 habla de técnicos y proveedores. Además, el caso ACT-005 del TD suspende automáticamente a un técnico con calificación menor a 3.0, algo que ningún RF define y que habría que revisar frente a R12 (sin sanciones al técnico). | (a) Extender la verificación del DD V4 a los proveedores, o limitar RF-19 a técnicos; (b) retirar ACT-005 o crear un RF para la suspensión automática y validarlo frente a R12. |
+| P9 | RF-21 | El DD (sección 8.3.2) dice que el token de acceso dura 15 minutos; SCRUM-348 dice que la configuración de Identity (`Jwt:Lifetime`) es de 60 minutos. Es el tiempo durante el cual un tenant desactivado puede seguir creando solicitudes. | Alinear la configuración con el DD (15 minutos) o el DD con la configuración, y cerrar la brecha con SCRUM-348. |
 
 ### 7.5 Control de Versiones del Documento
 
@@ -502,8 +619,9 @@ Contradicciones conocidas entre este documento y el SAD que el equipo debe resol
 | 3.1 | 14 sep 2026 | Conversión a Markdown. Se corrige la tabla de la Feature F7.1: se agregan SCRUM-126 y SCRUM-127, que estaban omitidos, completando el rango real de 13 tareas (SCRUM-121 a SCRUM-133) verificado directamente en Jira. Se agrega el detalle de estado y responsable de cada tarea de la Épica 7. |
 | 3.2 | 23 sep 2026 | Se alinea con el SAD v2.11 y el DD v2.2 (dependencia DEP-10 del DD). RF-15 vuelve a exigir al menos una evidencia fotográfica antes de completar el servicio (driver D7 del SAD). Se agregan RF-34 (cotización del técnico), RF-35 (respuesta del cliente a la cotización) y RF-36 (cancelación antes de iniciar el servicio), que el SAD define en el ciclo de vida del servicio (sección 7.4); sus historias en Jira están por crear. RNF-07 y RNF-08 recuperan la redefinición del modelo de staging acordada en las versiones 2.3 y 2.4, alineada con el Documento de Infraestructura. El producto vuelve a llamarse QUICKPATCH en todo el documento: CODEBRIDGE es el nombre del curso, no del producto. Se actualiza el estado de la Épica 7 según Jira (SCRUM-127 corresponde a la presentación del Sprint 2). |
 | 3.3 | 5 oct 2026 | RNF-07 y RNF-08 se alinean con el ADR-015 del SAD (ambiente de QA permanente en VM2): las pruebas de carga y rendimiento (k6) dejan de ejecutarse sobre la infraestructura de producción en una ventana de mantenimiento y pasan al ambiente de QA, junto con las pruebas funcionales, de aceptación y de seguridad; un fallo en cualquiera de ellas bloquea el despliegue a producción. La reversión automática (`kubectl rollout undo`) queda solo para un despliegue en producción que falle su verificación de salud. |
-| 4.1 | *(este documento)* | Resuelve la decisión pendiente P1 (SCRUM-405, SCRUM-413; SAD 2.27, ADR-024): RIE-02 pasa a una geocodificación propia dentro de la infraestructura, solo para Bogotá, y RIE-03 a notificaciones dentro de la app (canal en tiempo real de ADR-023 y buzón); el correo y el push con la app cerrada quedan fuera del MVP. R5 no cambia. |
 | 4.0 | 7 oct 2026 | SRS V4 (SCRUM-252). Se alinea con Jira al 7 de octubre de 2026, el SAD 2.22 y el DD 2.4. **Actores y canales:** el rol Admin se divide en Admin del tenant y Admin de plataforma (DD, RN-U6), con lo que los tipos de usuario pasan de cinco a seis; la app móvil es el canal de Clientes, Empresas, Técnicos y Proveedores, y el panel web es exclusivo de los administradores (SAD 4.2.1; criterio 2 de SCRUM-252). **Modelo de tenant:** el tenant es la empresa oferente y las empresas cliente son cuentas de usuario dentro de él, según la decisión del SAD (sección 7.1) y el DD (RN-T2, DEP-13); cambian la definición de tenant, la tabla de usuarios, F1.4 y RF-06. **Flujo del Cliente:** se agrega la sección 3.1 con el flujo principal en BPMN (Figura 1; criterio 3 de SCRUM-252). **RF:** RF-01 (correo único por tenant, contraseña de 8 caracteres), RF-03 (bloqueo tras 5 intentos), RF-04 (tenant tomado del usuario autenticado), RF-05 (seis roles y control por canal), RF-07 (categoría activa, ubicación dentro de Bogotá, app móvil; SCRUM-27), RF-08, RF-09 (técnico aprobado y con la especialidad; espera si no hay disponibles), RF-10 (rechazo sin penalización, R12), RF-12 (calificación después del pago, como RF-27, el SDD y el DD; DEP-11), RF-18 a RF-21 (alcance de cada administrador; SCRUM-41), RF-22 (cobro de la cotización aceptada y reintento), RF-27 (flujo crítico con cotización) y RF-28 (logs estructurados con identificador de correlación; SCRUM-48). **RNF:** se agrega RNF-14 (protección de datos personales, killer K12); RNF-07 pasa al ambiente de QA de ADR-022 (VM2, VM5 y VM7); RNF-12 distingue la app móvil del panel web. **Interfaces:** RIE-02 se limita a la geocodificación (la cercanía la calcula el sistema y la app envía las coordenadas) y RIE-03 incluye la cotización. **Restricciones (2.3):** se agregan R5, R10, R12 y los killers normativos K12 a K14 del SAD, y el fuera de alcance del MVP. **Jira:** la Épica 6 se llama "Infraestructura y Preparación para Producción (DevOps & QA)" y suma SCRUM-306, SCRUM-333 y SCRUM-334; la Épica 7 pasa a "Gestión del Proyecto y Documentación Transversal" y F7.1 pasa de 13 a 25 elementos (SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307 y SCRUM-332). Las historias de RF-34 a RF-36 siguen por crear. **Apéndices:** se agregan la sección 7.3 (historias de Jira cuyos criterios de aceptación hay que actualizar) y la 7.4 (decisiones pendientes con el SAD, entre ellas R5 frente a RIE-02 y RIE-03). |
+| 4.1 | 12 oct 2026 | Resuelve la decisión pendiente P1 (SCRUM-405, SCRUM-413; SAD 2.27, ADR-024): RIE-02 pasa a una geocodificación propia dentro de la infraestructura, solo para Bogotá, y RIE-03 a notificaciones dentro de la app (canal en tiempo real de ADR-023 y buzón); el correo y el push con la app cerrada quedan fuera del MVP. R5 no cambia. |
+| 5.0 | 12 oct 2026 *(borrador preliminar)* | SRS V5 (SCRUM-403). Se alinea con `develop` al 10 de octubre de 2026 (SAD 2.25, DD 3.1, SDD V2, TD 1.4, Infraestructura 2.6) y con Jira. **Criterios de aceptación (SCRUM-404):** nueva sección 5.5 con los criterios verificables de RF-09, RF-10, RF-13 y RF-19, cada uno con su historia, su regla del DD y su caso de prueba; se reescriben esos cuatro RF y se señalan las diferencias del TD que debe corregir el TD V2. **R5 frente a RIE-02 y RIE-03 (SCRUM-405):** se incorpora la decisión del ADR-024 del SAD (DR-01): R5 no cambia, RIE-02 pasa a un geocodificador propio con el mapa de Bogotá usado por ServiceRequest y RIE-03, a avisos dentro de la app (canal en tiempo real y buzón). El correo y el push quedan fuera del MVP. Se ajustan los supuestos, RF-07 y RNF-14. **Revisión del SRS V4 (Sebastián Sánchez):** RF-21 deja de decir que un tenant desactivado no puede crear solicitudes y describe lo implementado (rechazo del login; sesiones vigentes hasta que vence el token), con el rechazo inmediato en SCRUM-348; la restricción de la sección 2.3 describe el reparto de VMs del ADR-022 en lugar de "producción en las 7 VMs"; las versiones de los demás documentos se concentran en la línea base (nueva sección 1.3) y el resto del documento cita secciones; RF-07 aclara que la ubicación viene del GPS o de la dirección geocodificada (DR-02, por confirmar con el equipo); el diagrama BPMN en Mermaid se reemplaza por un flujo de negocio por carriles y fases (Figura 1, `diagrams/flujo-negocio.png`): incluye el registro, la pasarela de pagos como pool externo, el tipo de cada tarea y los caminos alternos (solicitud rechazada, espera y reasignación del matching, límite de 3 cotizaciones, reintento del pago y cancelación). **RNF:** pasan a tabla con el escenario del SAD que los mide y su estado de validación. **Apéndices:** la matriz de trazabilidad enlaza cada RF con su historia y sus casos de prueba (7.1.2); se actualizan los estados de Jira de las épicas 6 y 7 (Sprint 4: SCRUM-388 y las 9 historias de documentación); la sección 7.3 retira las historias ya reescritas en Jira y agrega SCRUM-41; la 7.4 separa las decisiones tomadas (DR-01, DR-02) de las pendientes y agrega P6 a P9. Pendiente: revisión y aprobación del Product Owner (SCRUM-406) y PR a `develop`. |
 
 ---
 
@@ -511,12 +629,15 @@ Contradicciones conocidas entre este documento y el SAD que el equipo debe resol
 
 1. IEEE Std 830-1998, *IEEE Recommended Practice for Software Requirements Specifications*, Institute of Electrical and Electronics Engineers.
 2. PCI Security Standards Council, *Payment Card Industry Data Security Standard (PCI-DSS)*. Disponible en: [https://www.pcisecuritystandards.org](https://www.pcisecuritystandards.org)
-3. Backlog de producto QUICKPATCH (MVP), proyecto **SCRUM** en Jira (Atlassian), consultado el 7 de octubre de 2026: Épicas SCRUM-7 a SCRUM-12 y SCRUM-120; Historias SCRUM-21 a SCRUM-49, SCRUM-306, SCRUM-333 y SCRUM-334; tareas e historias de la Épica 7 SCRUM-121 a SCRUM-133, SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307 y SCRUM-332.
-9. QUICKPATCH, *Documento de Arquitectura de Software (SAD)*, versión 2.22, `docs/architecture/SAD.md`.
-10. QUICKPATCH, *DD — Documento de Diseño: Modelos de Datos y Contratos*, versión 2.4, `docs/design/DD.md`.
-11. Ley 1581 de 2012 (protección de datos personales) y Ley 1480 de 2011 (Estatuto del Consumidor), República de Colombia.
+3. Backlog de producto QUICKPATCH (MVP), proyecto **SCRUM** en Jira (Atlassian), consultado el 10 de octubre de 2026: Épicas SCRUM-7 a SCRUM-12 y SCRUM-120; Historias SCRUM-21 a SCRUM-49, SCRUM-306, SCRUM-333, SCRUM-334, SCRUM-348 y SCRUM-388; tareas e historias de la Épica 7 SCRUM-121 a SCRUM-133, SCRUM-189, SCRUM-252 a SCRUM-259, SCRUM-305, SCRUM-307, SCRUM-332 y SCRUM-394 a SCRUM-429.
 4. Timbrit — Plataforma colombiana de contratación de profesionales para el hogar. Disponible en: [https://www.timbrit.com.co/](https://www.timbrit.com.co/)
 5. La República, *Conozca las aplicaciones disponibles que le ayudan con todas las tareas del hogar*, 2019. Disponible en: [https://www.larepublica.co/internet-economy/conozca-las-aplicaciones-disponibles-que-le-ayudan-con-todas-las-tareas-del-hogar-2936445](https://www.larepublica.co/internet-economy/conozca-las-aplicaciones-disponibles-que-le-ayudan-con-todas-las-tareas-del-hogar-2936445)
 6. La República, *Conozca cinco aplicaciones que le ayudan a reparar y asear su hogar*. Disponible en: [https://www.larepublica.co/infraestructura/conozca-cinco-aplicaciones-que-le-ayudan-a-reparar-y-asear-su-hogar-2897117](https://www.larepublica.co/infraestructura/conozca-cinco-aplicaciones-que-le-ayudan-a-reparar-y-asear-su-hogar-2897117)
 7. TaskRabbit — Aplicación de reserva de servicios para el hogar (Google Play). Disponible en: [https://play.google.com/store/apps/details?id=com.taskrabbit.droid.consumer](https://play.google.com/store/apps/details?id=com.taskrabbit.droid.consumer)
 8. Google Labs, *Stitch — AI-powered UI design tool*. Disponible en: [https://stitchwith.google.com](https://stitchwith.google.com)
+9. QUICKPATCH, *Documento de Arquitectura de Software (SAD)*, `docs/architecture/SAD.md` (versión de la línea base en la sección 1.3).
+10. QUICKPATCH, *DD — Documento de Diseño: Modelos de Datos y Contratos*, `docs/design/DD.md`.
+11. QUICKPATCH, *Documento de Diseño de Software (SDD)*, `docs/architecture/SDD.md`.
+12. QUICKPATCH, *Documento de Pruebas (TD)*, `docs/testing/TD.md`.
+13. QUICKPATCH, *Documento de Infraestructura*, `docs/infrastructure/INFRASTRUCTURE.md`.
+14. Ley 1581 de 2012 (protección de datos personales) y Ley 1480 de 2011 (Estatuto del Consumidor), República de Colombia.
