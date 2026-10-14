@@ -1,0 +1,62 @@
+Evidencia del despliegue del incremento del Sprint 4 en QA (SCRUM-388, subtareas 391 a 393)
+Fecha: 14 de octubre de 2026. Ambiente: QA (k3s en VM2, PostgreSQL en VM5, Kafka en VM7), entrada por el gateway de VM1.
+
+1. Versiones desplegadas y pipelines (CI/CD en verde: lint o compilación y pruebas, imagen en GHCR, quality-gate y despliegue en qa)
+   servicio          rama               commit    run de GitHub Actions
+   identity          release/0.3.0      bb3e8f6   https://github.com/ARQUI-202630/quickpatch-identity/actions/runs/38605170382
+   service-request   release/0.3.0      ebf8a02   https://github.com/ARQUI-202630/quickpatch-service-request/actions/runs/38606097951
+   communication     release/0.1.0      e9402db   https://github.com/ARQUI-202630/quickpatch-communication/actions/runs/38606102816
+   catalog           release/0.3.0      7102d15   https://github.com/ARQUI-202630/quickpatch-catalog/actions/runs/38607521315
+   matching          release/0.3.0      683f527   https://github.com/ARQUI-202630/quickpatch-matching/actions/runs/38617965475
+
+2. Preparación del ambiente (DevOps)
+   - Tópicos de Kafka (VM7, apps/kafka v0.3.0), 12 de octubre: technician.registered, technician.verification-changed,
+     matching.offer-created, matching.technician-assigned, matching.no-technician-available, matching.search-resumed.
+   - Migraciones: las aplicó el init container de cada Deployment (Identity con efbundle, Matching con Flyway), sin intervención manual.
+   - Permisos: aplicar-roles-db.yml --limit qa para identity, catalog, service_request y matching (failed=0) después de cada despliegue.
+   - Secret y manifiestos con primer-despliegue-servicios.yml (mapa Channel__Tenants__*, jwt-public-key de Matching).
+   - Gateway de VM1 con X-Channel-Id fijado por el Nginx (quickpatch-api-gateway#13, quickpatch#90).
+
+3. Health y readiness
+   Los cinco Deployments en 1/1 y sin reinicios (kubectl get deployment,pods, namespace quickpatch):
+   catalog, communication, identity, matching y service-request.
+   Rutas por el gateway de QA, sin token: GET /v1/localities 200 (20 localidades); GET /v1/catalog/categories 200;
+   /v1/technicians/me/availability, /v1/technicians/me/coverage, /v1/admin/technicians y /v1/providers/me/technicians 401;
+   GET /v1/service-requests 405; /v1/realtime sin upgrade 400.
+
+4. WebSocket /api/v1/realtime por el gateway (SCRUM-451), cliente propio con la biblioteca estándar
+   - Token inválido: handshake 101 y cierre 4001 token-invalido a los 0,2 s.
+   - Con token válido: auth.accepted a los 2,5 s y la conexión inactiva sigue abierta a los 90 s (Nginx: 75 s de espera).
+   - Sin trama auth: el servidor corta a los 10,1 s SIN trama de cierre; el contrato pide 4002 sin-autenticacion. (Pendiente en Communication.)
+
+5. Flujo del técnico de punta a punta, con datos nuevos (python3 incremento-qa.py), salida completa de la corrida:
+   [    2s] OK        Login del admin del tenant de QA  (HTTP 200)
+   [    2s] OK        Catálogo público con la categoría Plomería  (HTTP 200, 6 categorías)
+   [    2s] OK        Localidades de Matching (20) con Chapinero  (HTTP 200, 20 localidades)
+   [    3s] OK        Registro del técnico: queda pendiente de verificación  (HTTP 201)
+   [    4s] OK        Login del técnico  (HTTP 200)
+   [    4s] OK        WebSocket del técnico: auth.accepted
+   [    4s] OK        Cobertura del técnico: Chapinero (PUT /v1/technicians/me/coverage)  (HTTP 200)
+   [    4s] OK        Disponibilidad del técnico: disponible (PUT /v1/technicians/me/availability)  (HTTP 200)
+   [    5s] OK        Registro del cliente  (HTTP 201)
+   [    6s] OK        Login del cliente  (HTTP 200)
+   [    6s] OK        WebSocket del cliente: auth.accepted
+   [    7s] OK        Solicitud del cliente creada (POST /v1/service-requests)  (HTTP 201, estado buscando_tecnico)
+   [   11s] OK        Con el técnico pendiente, la solicitud pasa a en_espera (RN-TP1, RN-M9)  (estado en_espera)
+   [   11s] OK        Aviso en tiempo real al cliente del cambio de estado de su solicitud  (estado buscando_tecnico)
+   [   31s] OK        El técnico pendiente no recibe oferta en 20 s (RN-TP1)
+   [   31s] OK        Admin del tenant aprueba al técnico (POST /v1/admin/technicians/{id}/approve)  (HTTP 200)
+   [   32s] OK        Tras la aprobación, Matching ofrece una solicitud en espera y el aviso offer.created llega al técnico (150 s)
+                      (oferta de una solicitud de una corrida anterior, la más antigua va primero, RN-M10)
+   [   32s] PENDIENTE GET /v1/matching/offers del técnico aprobado  (HTTP 403: Matching no tiene el controlador de ofertas en develop; SCRUM-79, en desarrollo)
+   [   32s] PENDIENTE Aceptar la oferta (POST /v1/matching/offers/{id}/accept) y pasar la solicitud a asignado  (depende de SCRUM-79)
+   [   32s] OK        El cliente no puede ver ofertas (rol)  (HTTP 403)
+   [   32s] OK        Listado del admin: el técnico figura aprobado  (HTTP 200)
+   Resumen: 19 OK, 0 FALLA, 2 PENDIENTE de 21 pasos.
+   La oferta llegó al técnico 1 s después de aprobarlo: Identity (Outbox) -> Kafka -> Matching -> Kafka -> Communication -> WebSocket.
+
+6. Lo que esta evidencia NO cubre
+   - Aceptar o rechazar la oferta por la API y la asignación de ServiceRequest: Matching no tiene aún el controlador de ofertas (SCRUM-79).
+   - El panel web y la app móvil contra QA: el panel espera la release/0.3.0 de quickpatch-web (SCRUM-446).
+   - Las pruebas de sistema del workflow "Pruebas de sistema" (E2E del MVP, ZAP, PCI y k6) contra esta versión: pendientes de ejecutar.
+   - Producción: el incremento no está desplegado allí.
