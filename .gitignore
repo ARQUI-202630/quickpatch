@@ -35,3 +35,8 @@ infrastructure/ansible/inventory/group_vars/all/vault.yml
 infrastructure/ansible/.vault-pass
 infrastructure/ansible/collections/
 *.retry
+
+# Extracto de OpenStreetMap de Bogotá para Nominatim (se genera con tools/nominatim-extracto.sh; no va en Git)
+infrastructure/ansible/files/nominatim/*.pbf
+infrastructure/ansible/files/nominatim/*.sha256
+.cache-nominatim/
