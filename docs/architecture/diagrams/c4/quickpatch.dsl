@@ -56,12 +56,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     mobConfig = component "Configuración del ambiente" "URL base, Host del gateway y huella SHA-256 del certificado de QA (pinning)." "Dart · core/config"
                     mobHttp = component "Cliente HTTP" "Adjunta JWT y X-Correlation-Id, valida el certificado y traduce problem+json en errores de la app." "Dio · core/network"
                     mobSesion = component "Sesión" "Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol." "flutter_secure_storage · core/session"
-                    mobAuth = component "Autenticación" "Login y registro de cliente hogar; el registro de empresa está oculto hasta SCRUM-26." "Riverpod · features/autenticacion"
-                    mobInicio = component "Inicio por rol" "Acceso a la nueva solicitud y categorías de Catalog para el cliente; opciones y aviso de verificación para técnico y proveedor (SCRUM-441)." "Riverpod · features/inicio"
+                    mobAuth = component "Autenticación" "Login, registro de cliente hogar y registro de técnico o proveedor con su especialidad (SCRUM-55); el registro de empresa está oculto hasta SCRUM-26." "Riverpod · features/autenticacion"
+                    mobInicio = component "Inicio por rol" "Acceso a la nueva solicitud y categorías de Catalog para el cliente; opciones (Disponibilidad y cobertura) y aviso de verificación para técnico y proveedor (SCRUM-441)." "Riverpod · features/inicio"
                     mobCuenta = component "Cuenta" "Datos de la sesión, licencias y cierre de sesión (SCRUM-441)." "Flutter · features/inicio"
                     mobDiseno = component "Sistema de diseño" "Tema azul con tokens y tipografía, y componentes compartidos: tarjeta de solicitud, chip de estado, selector de categoría, botones y estados vacío, de error y de carga (SCRUM-439)." "Flutter · app/theme y shared/widgets"
                     mobSolicitudes = component "Solicitudes" "Nueva solicitud en tres pasos en un formulario (RNF-11) y detalle con su estado (SCRUM-442)." "Riverpod · features/solicitudes"
                     mobUbicacion = component "Ubicación del dispositivo" "Permiso y lectura del GPS con respaldo en LocationManager y límite de 15 s." "geolocator · features/solicitudes/data"
+                    mobDisponibilidad = component "Disponibilidad y cobertura" "Interruptor de disponibilidad (bloqueado si está ocupado, RN-M6) y elección de las localidades en el mapa o con chips sincronizados (RF-13, RN-M9; SCRUM-89)." "Riverpod · features/disponibilidad"
+                    mobMapa = component "Mapa de localidades" "Límites de las 20 localidades desde un GeoJSON de IDECA dentro de la app, con los códigos de GET /v1/localities; proyección, encuadre urbano y toque por localidad, sin mapa de fondo (R5, ADR-024)." "CustomPainter · features/disponibilidad"
                     mobTiempoReal = component "Estado en tiempo real" "WebSocket /v1/realtime con el token en la primera trama; si se cae, consulta el detalle cada 30 s (RF-11, RNF-06, ADR-023)." "Dart · core/realtime" "Planeado"
                     mobNotificaciones = component "Buzón de notificaciones" "Lista las notificaciones del usuario (RIE-03, ADR-024)." "Flutter" "Planeado"
                 }
@@ -71,10 +73,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     webInterceptor = component "Interceptor HTTP" "Adjunta JWT y X-Correlation-Id; ante un 401 cierra la sesión y vuelve al login." "Interceptor funcional · core/http"
                     webGuards = component "Guards de rol" "Permiten cada ruta según el rol y envían al inicio del rol si no corresponde (RN-U6)." "Guard funcional · core/guards"
                     webLogin = component "Inicio de sesión" "Formulario de acceso con validaciones y errores." "Angular Component · features/autenticacion"
-                    webInicio = component "Inicio" "Menú según el rol del administrador." "Angular Component · features/inicio"
-                    webTenants = component "Gestión de tenants" "Lista los tenants y los activa o desactiva con confirmación (SCRUM-41)." "Angular Component · features/tenants"
-                    webTenantsApi = component "Cliente API de tenants" "GET y PATCH /v1/platform/tenants." "HttpClient · features/tenants"
-                    webTecnicos = component "Aprobación de técnicos" "Aprueba y suspende técnicos del tenant (RF-19, RF-20)." "Angular Component · features/tecnicos" "Planeado"
+                    webInicio = component "Inicio" "Menú según el rol del administrador; la tarjeta de Técnicos lleva a su pantalla." "Angular Component · features/inicio"
+                    webTenants = component "Gestión de tenants" "Lista y busca los tenants, crea uno con nombre y NIT, y los activa o desactiva con confirmación (SCRUM-41, SCRUM-61)." "Angular Component · features/tenants"
+                    webTenantsApi = component "Cliente API de tenants" "GET, POST y PATCH /v1/platform/tenants." "HttpClient · features/tenants"
+                    webTecnicos = component "Aprobación de técnicos" "Lista técnicos y proveedores del tenant por estado de verificación, con paginación; aprueba, rechaza, suspende y reactiva con confirmación y motivo (RF-19, RF-20; SCRUM-107, SCRUM-110)." "Angular Component · features/tecnicos"
+                    webTecnicosApi = component "Cliente API de técnicos" "GET /v1/admin/technicians y POST approve, reject y suspend (identity.v1.yaml); nombres de especialidad con GET /v1/catalog/categories." "HttpClient · features/tecnicos"
                     webDiseno = component "Sistema de diseño" "Tokens azules, fuente autoalojada y componentes reutilizables del panel; contraste WCAG AA verificado en el CI (SCRUM-433)." "SCSS + Angular · styles y shared"
                 }
             }
@@ -195,10 +198,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         mobNavegacion -> mobInicio "Abre"
         mobNavegacion -> mobSolicitudes "Abre"
         mobNavegacion -> mobCuenta "Abre"
+        mobNavegacion -> mobDisponibilidad "Abre"
         mobNavegacion -> mobNotificaciones "Abre" "" "Planeado"
         mobInicio -> mobHttp "GET categorías con"
         mobInicio -> mobDiseno "Arma las pantallas con"
         mobSolicitudes -> mobDiseno "Arma las pantallas con"
+        mobDisponibilidad -> mobDiseno "Arma la pantalla con"
+        mobDisponibilidad -> mobMapa "Elige las localidades en"
+        mobDisponibilidad -> mobHttp "GET localidades; GET y PUT disponibilidad y cobertura con"
         mobAuth -> mobSesion "Guarda el token en"
         mobAuth -> mobHttp "POST /v1/auth/* con"
         mobSolicitudes -> mobUbicacion "Obtiene las coordenadas con"
@@ -218,15 +225,17 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         webShell -> webLogin "Abre"
         webShell -> webInicio "Abre"
         webShell -> webTenants "Abre"
-        webShell -> webTecnicos "Abre" "" "Planeado"
+        webShell -> webTecnicos "Abre"
         webShell -> webDiseno "Arma el layout con"
         webTenants -> webDiseno "Usa los componentes de"
+        webTecnicos -> webDiseno "Usa los componentes de"
         webGuards -> webSesion "Lee el rol de"
         webLogin -> webSesion "Inicia sesión con"
         webSesion -> webInterceptor "Llama a /v1/auth/login con"
-        webTenants -> webTenantsApi "Lista y cambia el estado con"
+        webTenants -> webTenantsApi "Lista, crea y cambia el estado con"
         webTenantsApi -> webInterceptor "Envía las peticiones por"
-        webTecnicos -> webInterceptor "Envía las peticiones por" "" "Planeado"
+        webTecnicos -> webTecnicosApi "Lista y cambia la verificación con"
+        webTecnicosApi -> webInterceptor "Envía las peticiones por"
         webInterceptor -> webSesion "Lee el token de"
         webInterceptor -> gateway "Llama a la API" "HTTPS/JSON"
 
@@ -476,6 +485,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
         component mobile "C4-04-Componentes-Mobile" "Componentes de Flutter Mobile." {
             include *
+            # La relación existe en el modelo, pero dibujada cruza Ubicación del dispositivo.
+            exclude "mobDisponibilidad -> mobDiseno"
             autoLayout tb 150 80
         }
         component web "C4-04-Componentes-Web" "Componentes de Angular Web." {

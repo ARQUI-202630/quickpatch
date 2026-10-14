@@ -312,12 +312,12 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Interceptor HTTP | `core/http.ts` | Adjunta el JWT y `X-Correlation-Id`; ante un 401 cierra la sesión y vuelve al login. | SCRUM-25 |
 | Guards de rol | `core/guards.ts` | Permiten cada ruta según el rol y envían al inicio del rol cuando no corresponde: `admin_plataforma` ve la gestión de tenants y `admin_tenant` no (RN-U6). | SCRUM-25 / SCRUM-64 |
 | Inicio de sesión | `features/autenticacion` | Formulario de acceso con validaciones y errores. | SCRUM-23 |
-| Inicio | `features/inicio` | Menú según el rol del administrador. | SCRUM-25 |
-| Gestión de tenants | `features/tenants/tenants.ts` | Lista los tenants y los activa o desactiva con confirmación. | SCRUM-41 / SCRUM-112 |
-| Cliente API de tenants | `features/tenants/tenants-api.ts` | `GET` y `PATCH /v1/platform/tenants`. | SCRUM-41 / SCRUM-112 |
+| Inicio | `features/inicio` | Menú según el rol del administrador; la tarjeta de Técnicos lleva a su pantalla. | SCRUM-25 |
+| Gestión de tenants | `features/tenants/tenants.ts` | Lista y busca los tenants, los activa o desactiva con confirmación y crea uno con nombre y NIT: los errores 400 y el NIT repetido (409 `nit-registrado`) se muestran en su campo. | SCRUM-41 / SCRUM-112; SCRUM-24 / SCRUM-61 |
+| Cliente API de tenants | `features/tenants/tenants-api.ts` | `GET`, `POST` y `PATCH /v1/platform/tenants`. | SCRUM-41 / SCRUM-112; SCRUM-24 / SCRUM-61 |
 | Sistema de diseño | `styles/`, `shared/` | Tokens azules, fuente autoalojada y componentes reutilizables (búsqueda, diálogo de confirmación, insignia, estado de verificación, tarjeta de detalle); el CI verifica el contraste WCAG AA y corre axe-core. | SCRUM-433 (434 a 438) |
-| Aprobación de técnicos *(planeado)* | `features/tecnicos` | Aprueba, rechaza y suspende técnicos del tenant (RF-19, RF-20). | SCRUM-39 / SCRUM-40 |
-| Aprobación de técnicos *(planeado)* | — | Aprueba y suspende técnicos del tenant (RF-19, RF-20). | — |
+| Aprobación de técnicos | `features/tecnicos/tecnicos.ts` | Lista técnicos y proveedores del tenant por estado de verificación, con paginación. Aprueba y rechaza (RF-19), suspende y reactiva (RF-20) según las transiciones de DD 8.3.13, con confirmación y un motivo de 5 a 500 caracteres para rechazar y suspender; un 409 `transicion-invalida` recarga la lista. | SCRUM-39 / SCRUM-107; SCRUM-40 / SCRUM-110 |
+| Cliente API de técnicos | `features/tecnicos/tecnicos-api.ts` | `GET /v1/admin/technicians` y `POST .../{userId}/approve`, `/reject` y `/suspend`; los nombres de especialidad salen de `GET /v1/catalog/categories`. | SCRUM-39 / SCRUM-107; SCRUM-40 / SCRUM-110 |
 
 ![Componentes de Flutter Mobile](diagrams/c4/C4-04-Componentes-Mobile.png)
 
@@ -329,12 +329,14 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Configuración del ambiente | `core/config` | URL base, `Host` del gateway y huella SHA-256 del certificado de QA. | SCRUM-27 |
 | Cliente HTTP | `core/network` | Adjunta el JWT y `X-Correlation-Id`, fija el certificado y traduce `problem+json` en errores de la app. | SCRUM-27 |
 | Sesión | `core/session` | Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol. | SCRUM-23 |
-| Autenticación | `features/autenticacion` | Login y registro de cliente hogar. El registro de empresa está oculto (`registroEmpresaHabilitado = false`) hasta SCRUM-26. | SCRUM-23 |
-| Inicio por rol | `features/inicio` | Para el cliente, acceso a la nueva solicitud y categorías de Catalog; para técnico y proveedor, sus opciones y el aviso de verificación. | SCRUM-27 / SCRUM-441 |
+| Autenticación | `features/autenticacion` | Login, registro de cliente hogar y registro de técnico o proveedor con su especialidad. El registro de empresa está oculto (`registroEmpresaHabilitado = false`) hasta SCRUM-26. | SCRUM-23; SCRUM-22 / SCRUM-55 |
+| Inicio por rol | `features/inicio` | Para el cliente, acceso a la nueva solicitud y categorías de Catalog; para técnico y proveedor, sus opciones (Disponibilidad y cobertura) y el aviso de verificación. | SCRUM-27 / SCRUM-441 |
 | Cuenta | `features/inicio` | Datos de la sesión, licencias y cierre de sesión. | SCRUM-441 |
 | Sistema de diseño | `app/theme`, `shared/widgets`, `features/solicitudes/presentation/widgets` | Tema azul con tokens y tipografía, y componentes para las pantallas del cliente y del técnico (tarjeta de solicitud, chip de estado, selector de categoría, botones y estados vacío, de error y de carga); contraste WCAG AA y texto al 200 % probados. | SCRUM-439 (440 a 444) |
 | Solicitudes | `features/solicitudes` | Nueva solicitud en tres pasos en un solo formulario (RNF-11) y detalle con su estado. | SCRUM-27 / SCRUM-71 / SCRUM-442 |
 | Ubicación del dispositivo | `features/solicitudes/data` | Permiso y lectura del GPS, con respaldo en `LocationManager` y límite de 15 s. | SCRUM-27 / SCRUM-71 |
+| Disponibilidad y cobertura | `features/disponibilidad` | Interruptor de disponibilidad, bloqueado mientras el técnico está ocupado (RN-M6), y elección de las localidades que cubre en el mapa o con chips sincronizados (RF-13, RN-M9). `GET /v1/localities` y `GET`/`PUT` de `/v1/technicians/me/availability` y `/coverage`. | SCRUM-33 / SCRUM-89 |
+| Mapa de localidades | `features/disponibilidad` (`assets/geo`) | Límites de las 20 localidades desde un GeoJSON dentro de la app (capa «Localidad» de la SDP publicada por IDECA, CC BY 4.0, con los mismos códigos de `GET /v1/localities`); los proyecta, abre encuadrado en la zona urbana y resuelve qué localidad se tocó. Sin mapa de fondo ni servicios externos (R5, ADR-024). | SCRUM-33 / SCRUM-89 |
 | Estado en tiempo real *(planeado)* | `core/realtime` | Cambios de estado de la solicitud (RF-11, RNF-06) por WebSocket (`/v1/realtime`, ADR-023), con consulta cada 30 s si el canal no está disponible. | SCRUM-412 |
 | Buzón de notificaciones *(planeado)* | — | Lista las notificaciones del usuario (RIE-03, ADR-024). La geocodificación de la dirección ya no está en la app: la hace ServiceRequest (ADR-024). | SCRUM-413 |
 
@@ -342,7 +344,7 @@ Reglas comunes a las dos aplicaciones:
 
 - **Tenant:** ninguna app envía `tenant_id` (RN-U3 del DD). En el login y el registro todavía no hay JWT, así que el tenant sale del canal por el que llega la petición (RN-U5); en las peticiones autenticadas sale del token que propaga el API Gateway (DD, sección 10.3).
 - **Errores:** un 401 cierra la sesión y lleva al login. Las apps no tienen pantalla de acceso denegado: en el panel, los guards envían al inicio del rol; un 403 de la API, como el resto de errores, se muestra en la pantalla que lo produjo, sin perder los datos ingresados.
-- **Contratos:** Mobile consume `identity.v1.yaml`, `catalog.v1.yaml` y `service-request.v1.yaml`; Web consume `identity.v1.yaml` (inicio de sesión y `/v1/platform/tenants`). Mobile llama además a `POST /v1/auth/register/company`, que todavía no está en `identity.v1.yaml` (SAD 2.2).
+- **Contratos:** Mobile consume `identity.v1.yaml`, `catalog.v1.yaml`, `service-request.v1.yaml` y `matching.v1.yaml` (localidades, disponibilidad y cobertura); Web consume `identity.v1.yaml` (inicio de sesión, `/v1/platform/tenants` y `/v1/admin/technicians`) y `catalog.v1.yaml` (nombres de especialidad). Mobile llama además a `POST /v1/auth/register/company`, que todavía no está en `identity.v1.yaml` (SAD 2.2).
 - **Pendiente:** el contrato v1 de creación de solicitudes solo admite el rol `cliente` y responde 403 a los demás, mientras que el SRS (F2.1) incluye a la empresa cliente. Se debe resolver antes de cerrar SCRUM-27.
 
 ## 6.3 API Gateway
