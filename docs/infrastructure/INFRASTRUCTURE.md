@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 3.3 |
+| **Versión** | 3.4 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -110,6 +110,7 @@ flowchart TB
 
 - **Una sola entrada.** Desde la VPN, el firewall de la universidad solo deja pasar el 443 de VM1 (sección 10.2). El Nginx de VM1 reenvía según el nombre: `quickpatch.internal` a producción (el panel, servido en la misma VM1, y `/api/` al Traefik de VM3), `qa.quickpatch.internal` al Traefik de VM2 y `grafana.quickpatch.internal` a Grafana, en VM1.
 - **Canal en tiempo real (SCRUM-451, ADR-023).** El WebSocket de seguimiento entra por `https://<ambiente>/api/v1/realtime`: el Nginx de VM1 lo reenvía al Ingress `/v1/realtime` de Communication en el k3s del ambiente (quita `/api`, como el resto de la API). La `location` fija `proxy_read_timeout` y `proxy_send_timeout` en 75 s, porque Communication envía un ping cada 30 s (`Realtime__KeepAliveSeconds`) y el valor por defecto de Nginx (60 s) cortaría una conexión inactiva, y desactiva `proxy_buffering` para que las tramas lleguen de inmediato. `Upgrade` y `Connection` los hereda del bloque `http`. Communication corre con una réplica.
+- **Canal del cliente (`X-Channel-Id`, DD 10.3, SCRUM-388).** El Nginx de VM1 fija `X-Channel-Id` en cada petición y descarta el que mande el cliente. Un `map` sobre `Origin` y `Referer` da `quickpatch-web` cuando vienen del panel de producción o de QA, y `quickpatch-mobile` en cualquier otro caso. Cada servicio traduce el canal a tenant con `Channel__Tenants__*` en su ConfigMap (Identity y Catalog). Límite: un cliente que no sea navegador puede escribir `Origin` y `Referer`; con un solo tenant los dos canales dan el mismo tenant, y con más de uno hace falta DEP-09 (DD 14.3).
 - **Producción** son VM3, VM4 y VM6. Los microservicios corren en el k3s de VM3 (hoy Identity, Catalog, ServiceRequest y Matching) y usan PostgreSQL y Redis (VM4), y Kafka y Garage (VM6).
 - **QA** son VM2, VM5 y VM7, con la misma forma que producción y datos y secretos propios. No puede conectarse a los servicios de producción.
 - **El runner de VM1** despliega en los dos k3s y corre las pruebas de sistema contra QA. Se conecta hacia GitHub para recibir trabajos; GitHub nunca entra a la red del laboratorio.
@@ -391,7 +392,7 @@ Estado al 8 de octubre de 2026:
 Orden para llevar un servicio nuevo a un ambiente:
 
 1. `deploy-db.yml`: crea los roles `<servicio>_migrator` y `<servicio>_app` de su base.
-2. `primer-despliegue-servicios.yml -e ambiente=qa|produccion`: `Secret` y manifiestos. En Kafka, los topics se crean antes con `deploy-kafka.yml`, porque la creación automática está desactivada. Communication (SCRUM-388) se despliega con este mismo playbook: su `Secret` `communication-secretos` solo lleva la llave pública de Identity (`jwt-public-key`), porque no tiene base de datos (ADR-023). Los topics del incremento del técnico (`technician.*` y `matching.*`) los trae `quickpatch-kafka` v0.3.0, que el submódulo `apps/kafka` fija desde el 12 de octubre.
+2. `primer-despliegue-servicios.yml -e ambiente=qa|produccion`: `Secret` y manifiestos. En Kafka, los topics se crean antes con `deploy-kafka.yml`, porque la creación automática está desactivada. Communication (SCRUM-388) se despliega con este mismo playbook: su `Secret` `communication-secretos` solo lleva la llave pública de Identity (`jwt-public-key`), porque no tiene base de datos (ADR-023). Matching también recibe `jwt-public-key` en su `Secret` (desde la versión 3.4): sin ella, sus endpoints con token responden 401. Los topics del incremento del técnico (`technician.*` y `matching.*`) los trae `quickpatch-kafka` v0.3.0, que el submódulo `apps/kafka` fija desde el 12 de octubre.
 3. Push a `release/*` (QA) o `main` (producción): imagen, migraciones y despliegue.
 4. `aplicar-roles-db.yml --limit <ambiente> -e servicio=<servicio>`: permisos sobre las tablas que crearon las migraciones (sección 5.8).
 5. Alta del tenant del MVP en la base de Identity y `kubectl rollout restart` de Identity, que crea los administradores iniciales al arrancar con tenant y permisos.
@@ -1037,3 +1038,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 3.1 | 12 oct 2026 | El panel de QA se sirve desde el Nginx de VM1 (SCRUM-446): decisión y alternativa descartada en la sección 3.2, carpeta `panel-qa` en `deploy-gateway.yml` y publicación local en el workflow de `quickpatch-web`. |
 | 3.2 | 12 oct 2026 | Compuerta automática de producción (RNF-08, SCRUM-415): `compuerta-qa` en el runner de VM1, llamada por el job `desplegar` de cada repositorio antes de producción; excepción con la variable `COMPUERTA_RNF08_EXCEPCION`. |
 | 3.3 | 12 oct 2026 | Despliegue del incremento del Sprint 4 en QA (SCRUM-388): `primer-despliegue-servicios.yml` incluye Communication y su `Secret`, `apps/kafka` avanza a v0.3.0 con los topics del incremento; el WebSocket `/api/v1/realtime` del gateway queda para SCRUM-451. |
+| 3.4 | 14 oct 2026 | `X-Channel-Id` fijado por el gateway (el Nginx descarta el del cliente y lo calcula con `Origin` y `Referer`, DD 10.3) y `jwt-public-key` en el `Secret` de Matching (SCRUM-388). |
