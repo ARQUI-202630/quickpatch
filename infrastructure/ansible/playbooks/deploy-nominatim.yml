@@ -69,9 +69,13 @@
     - name: Borrar la base para reimportar
       ansible.builtin.command: docker compose -f {{ dir }}/compose.yml down -v
       when: reimportar | bool
+      changed_when: true
 
     - name: Levantar Nominatim y el proxy
-      community.docker.docker_compose_v2: { project_src: "{{ dir }}", state: present, recreate: "{{ 'always' if (compose.changed or proxy.changed) else 'auto' }}" }
+      community.docker.docker_compose_v2:
+        project_src: "{{ dir }}"
+        state: present
+        recreate: "{{ 'always' if (compose.changed or proxy.changed) else 'auto' }}"
 
     - name: Esperar a que termine la importación y responda /status (hasta 30 min)
       ansible.builtin.uri:
