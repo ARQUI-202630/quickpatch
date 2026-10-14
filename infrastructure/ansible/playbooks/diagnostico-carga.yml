@@ -20,8 +20,9 @@
 
     - name: Errores y fallos del registro de PostgreSQL en la ventana (número de cada mensaje con N)
       ansible.builtin.shell: |
+        set -o pipefail
         docker compose -f {{ dir }}/compose.yml logs --since '{{ desde }}' --until '{{ hasta }}' --no-color postgres 2>&1 \
-          | grep -E 'FATAL|ERROR' | sed -E 's/[0-9]+/N/g' | cut -c1-210 | sort | uniq -c | sort -rn | head -12
+          | grep -E 'FATAL|ERROR' | sed -E 's/[0-9]+/N/g' | cut -c1-210 | sort | uniq -c | sort -rn | head -12 || true
       args: { executable: /bin/bash }
       register: pg_log
       changed_when: false
@@ -51,22 +52,27 @@
   tasks:
     - name: Códigos de respuesta del Nginx de VM1 en la ventana (producción y QA juntos), por ruta y código
       ansible.builtin.shell: |
+        set -o pipefail
         docker compose -f {{ stack_dir }}/gateway/compose.yml logs --since '{{ desde }}' --until '{{ hasta }}' --no-color nginx 2>&1 \
           | grep -E '"(GET|POST|PUT|PATCH|DELETE) ' \
           | sed -E 's/.*"(GET|POST|PUT|PATCH|DELETE) (\/[^ ?]*)[^"]*" ([0-9]{3}) .*/\1 \2 \3/' \
-          | sed -E 's/[0-9a-f]{8}-[0-9a-f-]{27}/{id}/g' | sort | uniq -c | sort -rn | head -25
+          | sed -E 's/[0-9a-f]{8}-[0-9a-f-]{27}/{id}/g' | sort | uniq -c | sort -rn | head -25 || true
       args: { executable: /bin/bash }
       register: nginx_codigos
       changed_when: false
 
     - name: Pods de QA, reinicios y edad
       ansible.builtin.command: "{{ kubectl }} get pods"
+      become: true
       become_user: "{{ deploy_user }}"
       register: pods
       changed_when: false
 
     - name: Eventos de advertencia de Kubernetes (se conservan cerca de 1 h)
-      ansible.builtin.shell: "{{ kubectl }} get events --sort-by=.lastTimestamp | grep -E 'Warning|Unhealthy|BackOff|Killing|OOM' | tail -20 || true"
+      ansible.builtin.shell: |
+        set -o pipefail
+        {{ kubectl }} get events --sort-by=.lastTimestamp | grep -E 'Warning|Unhealthy|BackOff|Killing|OOM' | tail -20 || true
+      become: true
       become_user: "{{ deploy_user }}"
       args: { executable: /bin/bash }
       register: eventos
@@ -74,10 +80,12 @@
 
     - name: Errores en el registro de cada servicio en la ventana (número de cada mensaje con N)
       ansible.builtin.shell: |
+        set -o pipefail
         {{ kubectl }} logs deploy/{{ item }} --since-time='{{ desde }}' --timestamps --all-containers=false 2>&1 \
           | awk -v h='{{ hasta }}' '$1 < h' \
           | grep -i -E 'unhealthy|error|exception|fail|fatal|too many|timeout' \
           | sed -E 's/^[^ ]+ //; s/[0-9]+/N/g' | cut -c1-200 | sort | uniq -c | sort -rn | head -6 || true
+      become: true
       become_user: "{{ deploy_user }}"
       args: { executable: /bin/bash }
       loop: "{{ servicios }}"
