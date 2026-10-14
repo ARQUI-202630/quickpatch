@@ -1,0 +1,107 @@
+# Solo lectura: reúne la evidencia de una ventana de tiempo de QA (por ejemplo, una prueba de estrés de k6) para saber
+# qué falló y en qué capa, sin repetir la prueba. No cambia nada.
+#
+#   ./ap playbooks/diagnostico-carga.yml -e desde=2026-10-14T20:03:00Z -e hasta=2026-10-14T20:10:00Z
+#
+# Las horas van en UTC. Muestra: (1) los errores del registro de PostgreSQL de QA (VM5) y las conexiones por rol;
+# (2) los códigos de respuesta que vio el Nginx de VM1; (3) los eventos y los fallos de health de los pods de QA
+# y los errores de sus registros. Los eventos de Kubernetes se conservan cerca de una hora: conviene correrlo pronto.
+- name: PostgreSQL de QA (VM5)
+  hosts: qa_datos
+  gather_facts: false
+  become: true
+  vars:
+    dir: "{{ stack_dir }}/postgres"
+  tasks:
+    - name: Exigir la ventana
+      ansible.builtin.assert:
+        that: [desde is defined, hasta is defined]
+        fail_msg: "-e desde=AAAA-MM-DDThh:mm:ssZ -e hasta=AAAA-MM-DDThh:mm:ssZ (UTC)"
+
+    - name: Errores y fallos del registro de PostgreSQL en la ventana (número de cada mensaje con N)
+      ansible.builtin.shell: |
+        set -o pipefail
+        docker compose -f {{ dir }}/compose.yml logs --since '{{ desde }}' --until '{{ hasta }}' --no-color postgres 2>&1 \
+          | grep -E 'FATAL|ERROR' | sed -E 's/[0-9]+/N/g' | cut -c1-210 | sort | uniq -c | sort -rn | head -12 || true
+      args: { executable: /bin/bash }
+      register: pg_log
+      changed_when: false
+
+    - name: Conexiones abiertas ahora, por rol, y max_connections
+      ansible.builtin.shell: >-
+        docker compose -f {{ dir }}/compose.yml exec -T -u postgres postgres
+        psql -At -F ' ' -c "show max_connections" -c "select coalesce(usename,'(sistema)'), count(*) from pg_stat_activity group by 1 order by 2 desc"
+      register: pg_con
+      changed_when: false
+
+    - name: Resultado de PostgreSQL
+      ansible.builtin.debug:
+        msg:
+          - "Registro de PostgreSQL entre {{ desde }} y {{ hasta }} (veces, mensaje):"
+          - "{{ pg_log.stdout_lines if pg_log.stdout_lines | length > 0 else ['(sin FATAL ni ERROR en la ventana)'] }}"
+          - "max_connections y conexiones ahora por rol:"
+          - "{{ pg_con.stdout_lines }}"
+
+- name: Gateway (VM1) y pods de QA
+  hosts: gateway
+  gather_facts: false
+  become: true
+  vars:
+    kubectl: "kubectl --kubeconfig /home/{{ deploy_user }}/.kube/config-qa -n quickpatch"
+    servicios: [identity, catalog, service-request, matching, communication]
+  tasks:
+    - name: Códigos de respuesta del Nginx de VM1 en la ventana (producción y QA juntos), por ruta y código
+      ansible.builtin.shell: |
+        set -o pipefail
+        docker compose -f {{ stack_dir }}/gateway/compose.yml logs --since '{{ desde }}' --until '{{ hasta }}' --no-color nginx 2>&1 \
+          | grep -E '"(GET|POST|PUT|PATCH|DELETE) ' \
+          | sed -E 's/.*"(GET|POST|PUT|PATCH|DELETE) (\/[^ ?]*)[^"]*" ([0-9]{3}) .*/\1 \2 \3/' \
+          | sed -E 's/[0-9a-f]{8}-[0-9a-f-]{27}/{id}/g' | sort | uniq -c | sort -rn | head -25 || true
+      args: { executable: /bin/bash }
+      register: nginx_codigos
+      changed_when: false
+
+    - name: Pods de QA, reinicios y edad
+      ansible.builtin.command: "{{ kubectl }} get pods"
+      become: true
+      become_user: "{{ deploy_user }}"
+      register: pods
+      changed_when: false
+
+    - name: Eventos de advertencia de Kubernetes (se conservan cerca de 1 h)
+      ansible.builtin.shell: |
+        set -o pipefail
+        {{ kubectl }} get events --sort-by=.lastTimestamp | grep -E 'Warning|Unhealthy|BackOff|Killing|OOM' | tail -20 || true
+      become: true
+      become_user: "{{ deploy_user }}"
+      args: { executable: /bin/bash }
+      register: eventos
+      changed_when: false
+
+    - name: Errores en el registro de cada servicio en la ventana (número de cada mensaje con N)
+      ansible.builtin.shell: |
+        set -o pipefail
+        {{ kubectl }} logs deploy/{{ item }} --since-time='{{ desde }}' --timestamps --all-containers=false 2>&1 \
+          | awk -v h='{{ hasta }}' '$1 < h' \
+          | grep -i -E 'unhealthy|error|exception|fail|fatal|too many|timeout' \
+          | sed -E 's/^[^ ]+ //; s/[0-9]+/N/g' | cut -c1-200 | sort | uniq -c | sort -rn | head -6 || true
+      become: true
+      become_user: "{{ deploy_user }}"
+      args: { executable: /bin/bash }
+      loop: "{{ servicios }}"
+      register: logs_servicios
+      changed_when: false
+
+    - name: Resultado del Nginx, los pods y los eventos
+      ansible.builtin.debug:
+        msg: >-
+          {{ ['Respuestas del Nginx entre ' ~ desde ~ ' y ' ~ hasta ~ ' (veces, método, ruta, código):']
+             + (nginx_codigos.stdout_lines if nginx_codigos.stdout_lines | length > 0 else ['(sin peticiones en la ventana)'])
+             + ['', 'Pods de QA:'] + pods.stdout_lines
+             + ['', 'Eventos de advertencia:'] + (eventos.stdout_lines if eventos.stdout_lines | length > 0 else ['(ninguno)']) }}
+
+    - name: Errores en el registro de cada servicio en la ventana
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines if item.stdout_lines | length > 0 else ['(sin errores en la ventana)'] }}"
+      loop: "{{ logs_servicios.results }}"
+      loop_control: { label: "{{ item.item }}" }

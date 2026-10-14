@@ -74,6 +74,7 @@ Primero solo lectura, después en modo simulación y al final de verdad:
 | `aplicar-roles-db.yml` | VM4 y VM5 (QA) | Aplica el `db/roles.sql` de cada servicio; va después de sus migraciones |
 | `primer-despliegue-servicios.yml` | VM1 (hacia el k3s de un ambiente) | Secret de cada servicio desde el vault y sus manifiestos, con la IP de Kafka del ambiente (`-e ambiente=qa` o `produccion`); los manifiestos salen de `develop` en QA y de `main` en producción (`-e ref=` lo cambia) |
 | `reiniciar-servicio.yml` | VM1 (hacia el k3s de un ambiente) | `rollout restart` de un servicio y espera a que el pod nuevo esté listo, para que lea un Secret o ConfigMap que cambió (`-e ambiente=qa -e servicio=matching`) |
+| `diagnostico-carga.yml` | VM5 y VM1 (solo lectura) | Reúne la evidencia de una ventana de QA (`-e desde=... -e hasta=...`, UTC): errores del registro de PostgreSQL, conexiones por rol, códigos de respuesta del Nginx de VM1, eventos y errores de los pods |
 | `deploy-cache.yml` | VM4 | Redis con un usuario ACL por servicio, restringido a sus claves (tope de memoria `redis_maxmemory`) |
 | `deploy-kafka.yml` | VM6 y VM7 | Kafka en modo KRaft, Kafka UI y topics (playbook de `quickpatch-kafka`) |
 | `deploy-k3s.yml` | VM3 | k3s de producción (la instalación compartida está en `tasks/k3s.yml`) |
