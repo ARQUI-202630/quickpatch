@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 3.4 |
+| **Versión** | 3.5 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -463,6 +463,8 @@ pie title Presupuesto de RAM en VM3 (11 GiB)
 VM4 mantiene PostgreSQL como almacén común de infraestructura con ownership lógico por servicio. Los siete servicios ASP.NET Core utilizan EF Core + Npgsql, cuyo pool de conexiones debe configurarse explícitamente; Matching utiliza el pool HikariCP de Spring. Los tamaños definitivos de ambos pools se establecerán mediante pruebas de integración/carga y deberán mantener margen sobre `max_connections`, incluyendo escenarios de rolling update y escalado del Matching. No se conserva como supuesto el cálculo previo basado en Prisma porque corresponde al stack descartado.
 
 **Hallazgo de la prueba de carga (8 de octubre).** Los servicios todavía no tienen tope de pool y PostgreSQL de QA tiene `max_connections` = 100. Con 50 usuarios concurrentes en k6 se cumplen todos los umbrales (catálogo p95 de 24 ms frente a 200 ms; crear solicitud p95 de 37 ms frente a 2 s; 0% de errores). Con 150 usuarios no: PostgreSQL rechazó conexiones 501 veces (`remaining connection slots are reserved`), el registro de Nginx muestra 534 respuestas 500 en esa ventana, y `errores_5xx` llegó a 1,87% y `http_req_failed` a 27%. No hubo reinicios de pods ni `OOMKilled`. El equipo decidió no ajustar nada para que pase y dejarlo como mejora: agregar `Maximum Pool Size` a las cadenas de conexión (unos 25 en ServiceRequest, 10 en Catalog, 10 más 2 de plataforma en Identity y 10 en el Hikari de Matching) para sumar menos de 70 de las 100 conexiones, reaplicar los `Secret`, reiniciar y repetir k6. Producción se desplegó con una excepción escrita al RNF-08 mientras tanto (sección 6.2).
+
+**Repetición del 14 de octubre y tope aplicado.** La repetición del estrés con el incremento desplegado dio `errores_5xx` de 0,16% (63 de 37.770) y `http_req_failed` de 0,16%, y seguía sin cumplir `errores_5xx` igual a 0. El diagnóstico de la ventana (`diagnostico-carga.yml`) muestra la misma causa: el registro de PostgreSQL tiene 63 `FATAL: remaining connection slots are reserved` y 20 `sorry, too many clients already`, y el Nginx de VM1 registra exactamente 63 respuestas 500 a `POST /api/v1/service-requests`; no hubo 404 ni reinicios de pods. Se aplica el tope de pool en el `Secret` de cada servicio .NET (`Maximum Pool Size`, variable `pool_conexiones`: ServiceRequest 25, Catalog 15, Identity 12; Matching sigue en 10 de HikariCP): suma 62 de las 97 conexiones útiles. Con más de una réplica, el tope se multiplica por las réplicas. El resultado de repetir k6 con el tope se agrega aquí cuando se corra.
 
 ### 5.8 Cómo se despliega o actualiza un microservicio
 
@@ -1040,3 +1042,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 3.2 | 12 oct 2026 | Compuerta automática de producción (RNF-08, SCRUM-415): `compuerta-qa` en el runner de VM1, llamada por el job `desplegar` de cada repositorio antes de producción; excepción con la variable `COMPUERTA_RNF08_EXCEPCION`. |
 | 3.3 | 12 oct 2026 | Despliegue del incremento del Sprint 4 en QA (SCRUM-388): `primer-despliegue-servicios.yml` incluye Communication y su `Secret`, `apps/kafka` avanza a v0.3.0 con los topics del incremento; el WebSocket `/api/v1/realtime` del gateway queda para SCRUM-451. |
 | 3.4 | 14 oct 2026 | `X-Channel-Id` fijado por el gateway (el Nginx descarta el del cliente y lo calcula con `Origin` y `Referer`, DD 10.3) y `jwt-public-key` en el `Secret` de Matching (SCRUM-388). |
+| 3.5 | 14 oct 2026 | Tope del pool de conexiones por servicio (`Maximum Pool Size` en el `Secret`) tras la repetición del estrés de 150 usuarios, y playbook de solo lectura `diagnostico-carga.yml` (SCRUM-388). |
