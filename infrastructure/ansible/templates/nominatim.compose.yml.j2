@@ -1,0 +1,35 @@
+# Nominatim de {{ 'producción en VM4' if entorno == 'produccion' else 'QA en VM5' }} (ADR-024): geocodificador de OpenStreetMap solo con Bogotá.
+# El contenedor trae su propio PostgreSQL 16 (excepción a ADR-014: solo guarda el mapa público) y no publica el 5432. Su API (8080)
+# se publica solo en 127.0.0.1:{{ nominatim_puerto_interno }}, así que Docker no la abre a la red; el `proxy` (Nginx en la red del host) la expone en
+# {{ ansible_host }}:{{ nominatim_puerto }} y ufw o firewalld solo dejan entrar a {{ app_ip }}.
+services:
+  nominatim:
+    image: {{ images.nominatim }}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:{{ nominatim_puerto_interno }}:8080"
+    shm_size: 1g
+    mem_limit: {{ nominatim_memoria }}
+{% if ansible_os_family == 'RedHat' %}    security_opt: [label=disable]   # SELinux: leer el extracto montado
+{% endif %}    environment:
+      PBF_PATH: /pbf/bogota.osm.pbf
+      THREADS: "{{ nominatim_threads }}"
+      IMPORT_STYLE: address
+    env_file: ./nominatim.env       # NOMINATIM_PASSWORD (contraseña interna del PostgreSQL del contenedor)
+    volumes:
+      - nominatim-data:/var/lib/postgresql/16/main
+      - ./data:/pbf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20m             # la primera importación tarda minutos
+  proxy:
+    image: {{ images.nginx }}
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+volumes:
+  nominatim-data:
