@@ -60,3 +60,24 @@ Fecha: 14 de octubre de 2026. Ambiente: QA (k3s en VM2, PostgreSQL en VM5, Kafka
    - El panel web y la app móvil contra QA: el panel espera la release/0.3.0 de quickpatch-web (SCRUM-446).
    - Las pruebas de sistema del workflow "Pruebas de sistema" (E2E del MVP, ZAP, PCI y k6) contra esta versión: pendientes de ejecutar.
    - Producción: el incremento no está desplegado allí.
+
+8. Repetición de las pruebas de sistema con el tope de pool (14 de octubre, 21:17 a 21:25 UTC), run 38639068866
+   https://github.com/ARQUI-202630/quickpatch/actions/runs/38639068866
+   Entre la sección 7 y esta corrida solo cambió el tope del pool de conexiones por servicio (Maximum Pool Size: service-request 25,
+   catalog 15, identity 12; Matching sigue en 10), aplicado en el Secret de QA con reinicio de esos tres pods (quickpatch#92).
+   Resultado del run: PASA (E2E, Seguridad y Carga en success).
+   E2E: Newman igual que en la sección 7 (43 requests y 61 assertions, 9 requests y 23 assertions; 0 fallidas); Playwright sigue omitido.
+   Seguridad: ZAP 0 FAIL, 3 WARN, 56 PASS; escáner PCI sobre Loki, 5000 líneas, 0 hallazgos.
+   Carga (k6):
+     - load-test-50vu.js: pasa. 5862 peticiones, http_req_failed 0,00%, p95 de 41 ms.
+     - stress-test-150vu.js: PASA TODOS SUS UMBRALES. errores_5xx 0,00% (0 de 42705; umbral == 0), http_req_failed 0,00% (0 de 42707),
+       http_req_duration p95 295 ms (umbral < 5 s), 177 peticiones por segundo con 150 usuarios.
+   Comparación con la sección 7 (misma prueba, antes del tope): errores_5xx 0,16% (63 de 37770), 157 peticiones por segundo, p95 de 397 ms.
+   Diagnóstico de la ventana (playbooks/diagnostico-carga.yml, solo lectura):
+     - Registro de PostgreSQL de QA: sin FATAL ni ERROR en la ventana (antes: 63 'remaining connection slots' y 20 'too many clients').
+     - Nginx de VM1: 45635 POST /api/v1/service-requests con 201, 2932 GET /api/v1/catalog/categories con 200, ninguna respuesta de error.
+     - Conexiones al terminar, por rol: service_request_app 25 (el tope), matching_app 10, catalog_app 2, identity_app 1.
+     - Pods de QA sin reinicios; un solo evento de readiness fallida de service-request (timeout) sin llegar a sacarlo de servicio ni dar 404.
+   Matices: es una sola corrida; los tres pods se reiniciaron al aplicar el tope, así que el efecto del reinicio no se separa del todo.
+   Estado de la excepción al RNF-08: este resultado es de QA. Producción conserva la excepción hasta aplicar el mismo tope allí y medir.
+
