@@ -58,5 +58,27 @@ Fecha: 14 de octubre de 2026. Ambiente: QA (k3s en VM2, PostgreSQL en VM5, Kafka
 6. Lo que esta evidencia NO cubre
    - Aceptar o rechazar la oferta por la API y la asignación de ServiceRequest: Matching no tiene aún el controlador de ofertas (SCRUM-79).
    - El panel web y la app móvil contra QA: el panel espera la release/0.3.0 de quickpatch-web (SCRUM-446).
-   - Las pruebas de sistema del workflow "Pruebas de sistema" (E2E del MVP, ZAP, PCI y k6) contra esta versión: pendientes de ejecutar.
+   - Aceptar la oferta y la asignación quedan fuera de la sección 7 también: las pruebas de sistema no las cubren (no hay colección del flujo del técnico).
    - Producción: el incremento no está desplegado allí.
+
+7. Pruebas de sistema contra QA: workflow "Pruebas de sistema", ejecución manual sobre develop, run 38628415213 (14 de octubre, 20:00 a 20:09 UTC)
+   https://github.com/ARQUI-202630/quickpatch/actions/runs/38628415213
+   Resultado del run: FALLA (por el job de carga, ver más abajo). E2E y Seguridad terminaron en success.
+   E2E (Playwright y Newman): success
+     - Playwright: OMITIDO, no hay tests/e2e/package.json (el job lo avisa y sigue; el success no significa que haya corrido).
+     - Newman, quickpatch-mvp.postman_collection.json: 43 requests, 61 assertions, 0 fallidas.
+     - Newman, scrum-65-roles-y-tenants.postman_collection.json: 9 requests, 23 assertions, 0 fallidas.
+     - Un caso omitido a propósito: [SCRUM-114 / IDN-019] login rechazado para tenant inactivo, pendiente de SCRUM-41 (un solo tenant).
+   Seguridad (OWASP ZAP y PCI-DSS): success
+     - ZAP, escaneo base contra QA: FAIL-NEW 0, WARN-NEW 3, PASS 56. Advertencias: Re-examine Cache-control Directives (10015),
+       X-Content-Type-Options Header Missing (10021) y Strict-Transport-Security Header Not Set (10035), cada una en 3 URL.
+     - Escáner PCI-DSS sobre los logs de QA en Loki: 5000 líneas revisadas, 0 hallazgos.
+   Carga (k6): FALLA
+     - load-test-50vu.js: PASA todos sus umbrales. 5798 peticiones, http_req_failed 0,00%; p95 del catálogo 25,82 ms y de crear_solicitud 67,58 ms.
+     - stress-test-150vu.js: NO PASA. errores_5xx 0,16% (63 de 37770) contra el umbral errores_5xx == 0.
+       http_req_failed 0,16% (umbral < 5%: pasa), http_req_duration p95 396,61 ms (umbral < 5 s: pasa), 156,8 peticiones por segundo con 150 usuarios.
+     - Comparación con la medición del 8 de octubre (proyectos/arqui/hallazgos-carga-qa): errores_5xx 1,87% (534 de 28549) y http_req_failed 27,2%
+       (7767 de 28551). No es una comparación controlada: desde entonces cambiaron las versiones de los servicios y los datos de QA.
+       No se investigó la causa de las 63 respuestas 5xx (los logs de QA en Loki no son accesibles desde fuera de VM1).
+     - La excepción escrita al RNF-08 (estrés de 150 usuarios) sigue vigente: el criterio exacto (0 errores 5xx) sigue sin cumplirse.
+   Efecto colateral en QA: la colección del MVP dejó dos categorías de prueba en el catálogo (Plomería QA mv8jc4jo y Plomería mv8jbnuh).
