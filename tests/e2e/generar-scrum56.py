@@ -1,8 +1,15 @@
-"""Generador de la Colección E2E para SCRUM-56 y SCRUM-62.
-- SCRUM-56: Pruebas de Registro de Técnico / Proveedor (Identity).
-- SCRUM-62: Pruebas de Aislamiento Lógico de Datos por Tenant (Multi-tenant RLS).
+"""Generador de la Colección E2E para SCRUM-56: Registro y Perfil de Técnico / Proveedor (Identity).
 
-Uso: python tests/e2e/generar-scrum56-62.py
+Diseñada para ejecutarse de forma segura tanto en simulación local como contra el ambiente
+real de QA en VM1 (vía .github/workflows/pruebas-sistema.yml en cada release/*):
+- Semilla dinámica: obtiene specialtyId desde GET /v1/catalog/categories.
+- Datos únicos por corrida: documento y correo generados dinámicamente con timestamp.
+- Duplicados reales: reintenta el registro con el mismo documento y el mismo correo de 1.1 (esperando 409).
+- Validación de contrato: payload con clave corta o sin documento (esperando 400).
+- Login y perfil: autenticación del técnico recién registrado y consulta de /v1/users/me (verificationStatus: pendiente).
+- Control RBAC: técnico intentando crear solicitud de servicio (esperando 403).
+
+Uso: python tests/e2e/generar-scrum56.py
 """
 import json
 import pathlib
@@ -53,28 +60,59 @@ def tipo(nombre):
 
 coleccion = {
     "info": {
-        "name": "QUICKPATCH — Registro de Técnico (SCRUM-56) y Aislamiento por Tenant (SCRUM-62)",
+        "name": "QUICKPATCH — Registro y Perfil de Técnico (SCRUM-56)",
         "description": (
-            "Suite automatizada de pruebas del Sprint 4 para verificar:\n"
-            "1. SCRUM-56: Registro legítimo de técnico, validación de unicidad de documento (409) y correo (409), "
-            "validación de esquema (400), consulta de perfil propio (/v1/users/me con verificationStatus: pendiente) "
-            "y restricción RBAC para creación de solicitudes (403).\n"
-            "2. SCRUM-62: Aislamiento estricto multi-tenant (RLS) en lectura de solicitudes cruzadas (404 Not Found), "
-            "aislamiento de catálogo entre Tenant Alfa y Tenant Beta, y acceso positivo para el tenant propietario.\n"
-            "Variables: baseUrl (https://qa.quickpatch.internal o http://localhost:8080 en local)."
+            "Suite automatizada de pruebas de sistema (E2E) para SCRUM-56 (Identity Service):\n"
+            "Valida el flujo completo de registro de técnicos y proveedores bajo contratos OpenAPI identity.v1.yaml.\n"
+            "Compatible con ejecución en QA real y en simulador local.\n"
+            "Variables: baseUrl (https://qa.quickpatch.internal o http://localhost:8080), adminEmail, adminPassword."
         ),
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
         {"key": "baseUrl", "value": "http://localhost:8080", "type": "string"},
-        {"key": "documento", "value": "CC-1020304050", "type": "string"},
-        {"key": "correoTecnico", "value": "tecnico.qa@quickpatch.test", "type": "string"},
-        {"key": "tecnicoToken", "value": "", "type": "string"},
-        {"key": "tokenAlfa", "value": "", "type": "string"},
-        {"key": "tokenBeta", "value": "", "type": "string"},
-        {"key": "solicitudAlfaId", "value": "sr-qa-001", "type": "string"}
+        {"key": "adminEmail", "value": "admin@quickpatch.test", "type": "string"},
+        {"key": "adminPassword", "value": "PasswordAdmin123*", "type": "string"},
+        {"key": "adminToken", "value": "", "type": "string"},
+        {"key": "specialtyId", "value": "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01", "type": "string"},
+        {"key": "documentoTecnico", "value": "", "type": "string"},
+        {"key": "correoTecnico", "value": "", "type": "string"},
+        {"key": "tecnicoToken", "value": "", "type": "string"}
     ],
     "item": [
+        {
+            "name": "0. Semillas y Datos de Referencia",
+            "item": [
+                req(
+                    "0.1 Login Administrador de Tenant (Obtener token para catálogo)",
+                    "POST",
+                    "/v1/auth/login",
+                    [JSON, CORR, CANAL],
+                    {
+                        "email": "{{adminEmail}}",
+                        "password": "{{adminPassword}}"
+                    },
+                    pruebas=[
+                        "pm.test('[Auth] Login de administrador exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                        "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
+                    ]
+                ),
+                req(
+                    "0.2 Obtener Especialidad Real de Catálogo",
+                    "GET",
+                    "/v1/catalog/categories",
+                    [CORR, auth("adminToken")],
+                    pruebas=[
+                        "pm.test('[Catalog] 200 OK en consulta de categorías activas', () => pm.response.to.have.status(200));",
+                        "const categories = pm.response.json();",
+                        "pm.test('[Catalog] Existe al menos una categoría en el tenant', () => pm.expect(categories.length).to.be.above(0));",
+                        "if (categories && categories.length > 0) {",
+                        "  pm.collectionVariables.set('specialtyId', categories[0].id);",
+                        "}"
+                    ]
+                )
+            ]
+        },
         {
             "name": "1. SCRUM-56 — Registro y Perfil de Técnico (Identity)",
             "item": [
@@ -86,16 +124,17 @@ coleccion = {
                     {
                         "email": "{{correoTecnico}}",
                         "password": "PasswordTecnico123*",
-                        "fullName": "Carlos Alberto Técnico",
+                        "fullName": "Carlos Alberto Técnico QA",
                         "phone": "3109876543",
-                        "documentId": "{{documento}}",
-                        "specialtyId": "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
+                        "documentId": "{{documentoTecnico}}",
+                        "specialtyId": "{{specialtyId}}",
                         "role": "tecnico"
                     },
                     previo=[
                         "const ts = Date.now();",
-                        "pm.collectionVariables.set('documento', 'CC-' + String(ts).slice(-8));",
-                        "pm.collectionVariables.set('correoTecnico', 'tecnico.qa.' + ts + '@quickpatch.test');"
+                        "const doc = String(ts).slice(-8);",
+                        "pm.collectionVariables.set('documentoTecnico', doc);",
+                        "pm.collectionVariables.set('correoTecnico', 'tecnico.' + ts + '@quickpatch.test');"
                     ],
                     pruebas=[
                         "pm.test('[SCRUM-56] 201 Created para registro legítimo', () => pm.response.to.have.status(201));",
@@ -110,13 +149,17 @@ coleccion = {
                     "/v1/auth/register/technician",
                     [JSON, CORR, CANAL],
                     {
-                        "email": "otro.correo.repetido@quickpatch.test",
+                        "email": "{{otroCorreo}}",
                         "password": "PasswordTecnico123*",
                         "fullName": "Intento Duplicado Documento",
                         "phone": "3112223344",
-                        "documentId": "{{documento}}_repetido",
+                        "documentId": "{{documentoTecnico}}",
+                        "specialtyId": "{{specialtyId}}",
                         "role": "tecnico"
                     },
+                    previo=[
+                        "pm.collectionVariables.set('otroCorreo', 'otro.' + Date.now() + '@quickpatch.test');"
+                    ],
                     pruebas=[
                         "pm.test('[SCRUM-56] 409 Conflict ante documento repetido', () => pm.response.to.have.status(409));"
                     ] + problem + tipo("documento-registrado")
@@ -127,13 +170,17 @@ coleccion = {
                     "/v1/auth/register/technician",
                     [JSON, CORR, CANAL],
                     {
-                        "email": "{{correoTecnico}}_repetido",
+                        "email": "{{correoTecnico}}",
                         "password": "PasswordTecnico123*",
                         "fullName": "Intento Duplicado Correo",
                         "phone": "3119998877",
-                        "documentId": "CC-99887766",
+                        "documentId": "{{otroDocumento}}",
+                        "specialtyId": "{{specialtyId}}",
                         "role": "tecnico"
                     },
+                    previo=[
+                        "pm.collectionVariables.set('otroDocumento', String(Date.now() + 1).slice(-8));"
+                    ],
                     pruebas=[
                         "pm.test('[SCRUM-56] 409 Conflict ante correo repetido', () => pm.response.to.have.status(409));"
                     ] + problem + tipo("correo-registrado")
@@ -159,11 +206,11 @@ coleccion = {
                     "/v1/auth/login",
                     [JSON, CORR, CANAL],
                     {
-                        "email": "tecnico@quickpatch.test",
+                        "email": "{{correoTecnico}}",
                         "password": "PasswordTecnico123*"
                     },
                     pruebas=[
-                        "pm.test('[Auth] Login de técnico exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                        "pm.test('[Auth] Login de técnico registrado exitoso (200 OK)', () => pm.response.to.have.status(200));",
                         "pm.test('[RBAC] Rol del usuario es tecnico', () => pm.expect(pm.response.json().user.role).to.eql('tecnico'));",
                         "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);"
                     ]
@@ -185,7 +232,7 @@ coleccion = {
                     "/v1/service-requests",
                     [JSON, CORR, auth("tecnicoToken")],
                     {
-                        "categoryId": "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
+                        "categoryId": "{{specialtyId}}",
                         "description": "Fuga de agua intentada por técnico",
                         "location": {"latitude": 4.6533, "longitude": -74.0836},
                         "addressText": "Calle 45 # 13-20"
@@ -195,96 +242,10 @@ coleccion = {
                     ] + problem + tipo("no-autorizado")
                 )
             ]
-        },
-        {
-            "name": "2. SCRUM-62 — Aislamiento Lógico de Datos por Tenant (Multi-tenant RLS)",
-            "item": [
-                req(
-                    "2.1 Login de Cliente en Tenant Alfa",
-                    "POST",
-                    "/v1/auth/login",
-                    [JSON, CORR, CANAL],
-                    {
-                        "email": "cliente.alfa@quickpatch.test",
-                        "password": "PasswordCliente123*"
-                    },
-                    pruebas=[
-                        "pm.test('[Tenant Alfa] Login exitoso', () => pm.response.to.have.status(200));",
-                        "pm.collectionVariables.set('tokenAlfa', pm.response.json().accessToken);"
-                    ]
-                ),
-                req(
-                    "2.2 Creación de Solicitud de Servicio en Tenant Alfa",
-                    "POST",
-                    "/v1/service-requests",
-                    [JSON, CORR, auth("tokenAlfa")],
-                    {
-                        "categoryId": "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
-                        "description": "Fuga de tubería principal exclusiva Tenant Alfa",
-                        "location": {"latitude": 4.6533, "longitude": -74.0836},
-                        "addressText": "Carrera 7 # 72-10"
-                    },
-                    pruebas=[
-                        "pm.test('[Tenant Alfa] Solicitud creada con éxito (201 Created)', () => pm.response.to.have.status(201));",
-                        "pm.collectionVariables.set('solicitudAlfaId', pm.response.json().id);"
-                    ]
-                ),
-                req(
-                    "2.3 Login de Cliente en Tenant Beta",
-                    "POST",
-                    "/v1/auth/login",
-                    [JSON, CORR, CANAL],
-                    {
-                        "email": "cliente.beta@quickpatch.test",
-                        "password": "PasswordCliente123*"
-                    },
-                    pruebas=[
-                        "pm.test('[Tenant Beta] Login exitoso con credenciales de Tenant Beta', () => pm.response.to.have.status(200));",
-                        "pm.collectionVariables.set('tokenBeta', pm.response.json().accessToken);"
-                    ]
-                ),
-                req(
-                    "2.4 Verificación de Fuga Cross-Tenant (Tenant Beta consulta solicitud de Tenant Alfa) → 404 Not Found",
-                    "GET",
-                    "/v1/service-requests/{{solicitudAlfaId}}",
-                    [CORR, auth("tokenBeta")],
-                    pruebas=[
-                        "pm.test('[SCRUM-62 / RLS] Código 404 Not Found (cero fuga de datos cross-tenant)', () => pm.response.to.have.status(404));",
-                        "pm.test('[Seguridad] Cuerpo no expone datos de la orden de Tenant Alfa', () => {",
-                        "  pm.expect(pm.response.text()).to.not.include('exclusiva Tenant Alfa');",
-                        "});"
-                    ] + problem + tipo("no-encontrado")
-                ),
-                req(
-                    "2.5 Aislamiento en Catálogo: Tenant Beta no ve categorías de Tenant Alfa",
-                    "GET",
-                    "/v1/catalog/categories",
-                    [CORR, auth("tokenBeta")],
-                    pruebas=[
-                        "pm.test('[SCRUM-62] Catálogo responde 200 OK para Tenant Beta', () => pm.response.to.have.status(200));",
-                        "pm.test('[Aislamiento Catálogo] Categoría exclusiva de Alfa no es visible en Beta', () => {",
-                        "  const nombres = pm.response.json().map(c => c.name);",
-                        "  pm.expect(nombres).to.not.include('Plomería Exclusiva Alfa');",
-                        "});"
-                    ]
-                ),
-                req(
-                    "2.6 Control Positivo: Propietario en Tenant Alfa sí consulta su solicitud",
-                    "GET",
-                    "/v1/service-requests/{{solicitudAlfaId}}",
-                    [CORR, auth("tokenAlfa")],
-                    pruebas=[
-                        "pm.test('[Tenant Alfa] 200 OK para el cliente propietario en su mismo tenant', () => pm.response.to.have.status(200));",
-                        "pm.test('[Consistencia] Retorna la misma solicitud creada en el paso 2.2', () => {",
-                        "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('solicitudAlfaId'));",
-                        "});"
-                    ]
-                )
-            ]
         }
     ]
 }
 
-destino = pathlib.Path(__file__).with_name("scrum-56-62-registro-y-aislamiento.postman_collection.json")
+destino = pathlib.Path(__file__).with_name("scrum-56-registro-tecnico.postman_collection.json")
 destino.write_text(json.dumps(coleccion, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(f"Colección generada exitosamente en {destino}")

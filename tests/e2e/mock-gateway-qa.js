@@ -50,6 +50,9 @@ function makeToken(sub, role, tenantId) {
     return `${header}.${payload}.mock-signature-rs256`;
 }
 
+const registeredDocuments = new Set(["CC-1020304050"]);
+const registeredEmails = new Set(["tecnico.existente@quickpatch.test"]);
+
 const server = http.createServer((req, res) => {
     const correlationId = req.headers['x-correlation-id'] || `cid-${Date.now()}`;
     const user = parseJwt(req.headers['authorization']);
@@ -74,15 +77,20 @@ const server = http.createServer((req, res) => {
             try { body = JSON.parse(rawBody || '{}'); } catch {}
 
             // Validaciones de contrato (RFC 9457)
-            if (!body.documentId || !body.password || body.password.length < 8) {
-                return sendProblemDetails(res, 400, 'validacion-solicitud', 'Datos de registro inválidos', 'El documento y una contraseña de al menos 8 caracteres son obligatorios.', correlationId);
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!body.documentId || !body.password || body.password.length < 8 || !body.email || !emailRegex.test(body.email)) {
+                return sendProblemDetails(res, 400, 'validacion-solicitud', 'Datos de registro inválidos', 'El documento, correo válido y contraseña de al menos 8 caracteres son obligatorios.', correlationId);
             }
-            if (body.documentId && String(body.documentId).includes('repetido')) {
+            if (registeredDocuments.has(String(body.documentId))) {
                 return sendProblemDetails(res, 409, 'documento-registrado', 'El documento ya está registrado', 'El documento ya se encuentra asociado a un perfil técnico.', correlationId);
             }
-            if (body.email && body.email.includes('repetido')) {
+            if (registeredEmails.has(body.email)) {
                 return sendProblemDetails(res, 409, 'correo-registrado', 'El correo ya está registrado', 'El correo ya está en uso en el tenant.', correlationId);
             }
+
+            // Registrar en memoria para que duplicados posteriores en la misma corrida respondan 409
+            registeredDocuments.add(String(body.documentId));
+            registeredEmails.add(body.email);
 
             res.writeHead(201, {
                 'Content-Type': 'application/json',
@@ -109,24 +117,11 @@ const server = http.createServer((req, res) => {
                 return sendProblemDetails(res, 401, 'credenciales-invalidas', 'Correo o contraseña incorrectos', 'Correo o contraseña incorrectos.', correlationId);
             }
 
-            // Detección de tenant (Tenant Alfa por defecto, Tenant Beta si se especifica)
             const tenantId = (body.email && body.email.includes('beta'))
                 ? "22222222-2222-2222-2222-222222222222"
                 : "11111111-1111-1111-1111-111111111111";
 
-            // Técnico (SCRUM-56)
-            if (body.email && body.email.includes('tecnico')) {
-                const token = makeToken("usr-tec-01", "tecnico", tenantId);
-                res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
-                return res.end(JSON.stringify({
-                    accessToken: token,
-                    tokenType: "Bearer",
-                    expiresIn: 7200,
-                    user: { id: "usr-tec-01", email: body.email, role: "tecnico", verificationStatus: "pendiente" }
-                }));
-            }
-
-            // Administrador de tenant
+            // Administrador de tenant (evaluar antes de tecnico para evitar colisiones)
             if (body.email && body.email.includes('admin')) {
                 const token = makeToken("usr-admin-01", "admin_tenant", tenantId);
                 res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
@@ -135,6 +130,18 @@ const server = http.createServer((req, res) => {
                     tokenType: "Bearer",
                     expiresIn: 7200,
                     user: { id: "usr-admin-01", email: body.email, role: "admin_tenant" }
+                }));
+            }
+
+            // Técnico (SCRUM-56)
+            if (body.email && (body.email.includes('tecnico') || registeredEmails.has(body.email))) {
+                const token = makeToken("usr-tec-01", "tecnico", tenantId);
+                res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+                return res.end(JSON.stringify({
+                    accessToken: token,
+                    tokenType: "Bearer",
+                    expiresIn: 7200,
+                    user: { id: "usr-tec-01", email: body.email, role: "tecnico", verificationStatus: "pendiente" }
                 }));
             }
 

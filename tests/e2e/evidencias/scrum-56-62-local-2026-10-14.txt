@@ -1,29 +1,51 @@
 SCRUM-56 y SCRUM-62 — corrida local del 14 de octubre de 2026
-Servicios objetivo: Identity (registro técnico y perfil), ServiceRequest (aislamiento RLS y control RBAC) y Catalog (aislamiento por tenant).
-Target: http://localhost:8080 (Mock Gateway local según contratos OpenAPI /api/v1/*)
-Colección: tests/e2e/scrum-56-62-registro-y-aislamiento.postman_collection.json
+
+1. SCRUM-56: Colección E2E contra QA Real (Identity Service)
+   - Archivo: tests/e2e/scrum-56-registro-tecnico.postman_collection.json
+   - Semilla dinámica: toma specialtyId desde GET /v1/catalog/categories
+   - Datos dinámicos por corrida: documento y correo únicos vía timestamp
+   - Validación de duplicados reales: 409 documento-registrado y 409 correo-registrado
+   - Validación de formato: 400 validacion-solicitud ante documento ausente o clave corta
+   - Login y perfil: 200 OK en /v1/users/me con verificationStatus pendiente
+   - Control RBAC: 403 Forbidden para rol técnico creando solicitud de servicio
+
+2. SCRUM-62: Suite de Simulación RLS (*.simulacion.json)
+   - Archivo: tests/e2e/scrum-62-aislamiento-tenant.simulacion.json
+   - Nota: Ejecutada localmente contra mock-gateway-qa.js para verificar el diseño de aislamiento de contratos.
+   - En el despliegue de QA real, el aislamiento se cubre mediante los tests de integración con PostgreSQL real
+     (IDN-009, IDN-010, CAT-004, SRQ-007) mientras se habilita el multi-tenant público (SCRUM-41).
 
 ======================================================
- EJECUTANDO PRUEBAS DE SISTEMA (SCRUM-56 & SCRUM-62)
+ EJECUTANDO: SCRUM-56 (Registro y Perfil de Técnico)
  Modo: Simulación Local Preparatoria
  Target: http://localhost:8080
- Colección: scrum-56-62-registro-y-aislamiento.postman_collection.json
+ Archivo: scrum-56-registro-tecnico.postman_collection.json
 ======================================================
 
 newman
 
-QUICKPATCH — Registro de Técnico (SCRUM-56) y Aislamiento por Tenant (SCRUM-62)
+QUICKPATCH — Registro y Perfil de Técnico (SCRUM-56)
+
+□ 0. Semillas y Datos de Referencia
+└ 0.1 Login Administrador de Tenant (Obtener token para catálogo)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 566B, 61ms]
+  √  [Auth] Login de administrador exitoso (200 OK)
+
+└ 0.2 Obtener Especialidad Real de Catálogo
+  GET http://localhost:8080/api/v1/catalog/categories [200 OK, 301B, 4ms]
+  √  [Catalog] 200 OK en consulta de categorías activas
+  √  [Catalog] Existe al menos una categoría en el tenant
 
 □ 1. SCRUM-56 — Registro y Perfil de Técnico (Identity)
 └ 1.1 Registro exitoso de técnico (verificationStatus: pendiente)
-  POST http://localhost:8080/api/v1/auth/register/technician [201 Created, 409B, 33ms]
+  POST http://localhost:8080/api/v1/auth/register/technician [201 Created, 409B, 4ms]
   √  [SCRUM-56] 201 Created para registro legítimo
   √  [SCRUM-56] Rol verificado como tecnico
   √  [SCRUM-56 / RN-U1] verificationStatus inicial es pendiente
   √  [Auditoría] Correlation ID presente en cabecera
 
 └ 1.2 Rechazo por documento de identidad repetido → 409 Conflict
-  POST http://localhost:8080/api/v1/auth/register/technician [409 Conflict, 504B, 7ms]
+  POST http://localhost:8080/api/v1/auth/register/technician [409 Conflict, 504B, 3ms]
   √  [SCRUM-56] 409 Conflict ante documento repetido
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error documento-registrado
@@ -35,14 +57,14 @@ QUICKPATCH — Registro de Técnico (SCRUM-56) y Aislamiento por Tenant (SCRUM-6
   √  [Contrato] Tipo de error correo-registrado
 
 └ 1.4 Rechazo por documento ausente / clave corta → 400 Bad Request
-  POST http://localhost:8080/api/v1/auth/register/technician [400 Bad Request, 517B, 4ms]
+  POST http://localhost:8080/api/v1/auth/register/technician [400 Bad Request, 532B, 3ms]
   √  [SCRUM-56] 400 Bad Request por fallo de validación de contrato
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error validacion-solicitud
 
 └ 1.5 Login de técnico registrado y obtención de JWT
   POST http://localhost:8080/api/v1/auth/login [200 OK, 584B, 3ms]
-  √  [Auth] Login de técnico exitoso (200 OK)
+  √  [Auth] Login de técnico registrado exitoso (200 OK)
   √  [RBAC] Rol del usuario es tecnico
 
 └ 1.6 Consulta de perfil propio (/v1/users/me) con verificationStatus
@@ -52,59 +74,90 @@ QUICKPATCH — Registro de Técnico (SCRUM-56) y Aislamiento por Tenant (SCRUM-6
   √  [SCRUM-56] Rol verificado como tecnico
 
 └ 1.7 Control RBAC: Técnico no puede crear solicitudes de cliente → 403 Forbidden
-  POST http://localhost:8080/api/v1/service-requests [403 Forbidden, 497B, 3ms]
+  POST http://localhost:8080/api/v1/service-requests [403 Forbidden, 497B, 4ms]
   √  [RBAC / IDN-012] 403 Forbidden para rol tecnico creando solicitud
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error no-autorizado
 
-□ 2. SCRUM-62 — Aislamiento Lógico de Datos por Tenant (Multi-tenant RLS)
-└ 2.1 Login de Cliente en Tenant Alfa
-  POST http://localhost:8080/api/v1/auth/login [200 OK, 563B, 3ms]
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │                9 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │                9 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │                3 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               24 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 844ms                                     │
+├───────────────────────────────────────────────────────────────┤
+│ total data received: 2.31kB (approx)                          │
+├───────────────────────────────────────────────────────────────┤
+│ average response time: 10ms [min: 3ms, max: 61ms, s.d.: 18ms] │
+└───────────────────────────────────────────────────────────────┘
+
+======================================================
+ EJECUTANDO: SCRUM-62 (Simulación de Aislamiento RLS)
+ Modo: Simulación Local Preparatoria
+ Target: http://localhost:8080
+ Archivo: scrum-62-aislamiento-tenant.simulacion.json
+======================================================
+
+newman
+
+QUICKPATCH — Aislamiento por Tenant (SCRUM-62 / Simulación RLS)
+
+□ SCRUM-62 — Aislamiento Lógico de Datos por Tenant (Simulación RLS)
+└ 1. Login de Cliente en Tenant Alfa
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 563B, 36ms]
   √  [Tenant Alfa] Login exitoso
 
-└ 2.2 Creación de Solicitud de Servicio en Tenant Alfa
-  POST http://localhost:8080/api/v1/service-requests [201 Created, 457B, 3ms]
+└ 2. Creación de Solicitud de Servicio en Tenant Alfa
+  POST http://localhost:8080/api/v1/service-requests [201 Created, 457B, 4ms]
   √  [Tenant Alfa] Solicitud creada con éxito (201 Created)
 
-└ 2.3 Login de Cliente en Tenant Beta
+└ 3. Login de Cliente en Tenant Beta
   POST http://localhost:8080/api/v1/auth/login [200 OK, 563B, 3ms]
   √  [Tenant Beta] Login exitoso con credenciales de Tenant Beta
 
-└ 2.4 Verificación de Fuga Cross-Tenant (Tenant Beta consulta solicitud de Tenant Alfa) → 404 Not Found
+└ 4. Verificación de Fuga Cross-Tenant (Tenant Beta consulta solicitud de Tenant Alfa) → 404 Not Found
   GET http://localhost:8080/api/v1/service-requests/sr-qa-001 [404 Not Found, 494B, 2ms]
   √  [SCRUM-62 / RLS] Código 404 Not Found (cero fuga de datos cross-tenant)
   √  [Seguridad] Cuerpo no expone datos de la orden de Tenant Alfa
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error no-encontrado
 
-└ 2.5 Aislamiento en Catálogo: Tenant Beta no ve categorías de Tenant Alfa
+└ 5. Aislamiento en Catálogo: Tenant Beta no ve categorías de Tenant Alfa
   GET http://localhost:8080/api/v1/catalog/categories [200 OK, 301B, 2ms]
   √  [SCRUM-62] Catálogo responde 200 OK para Tenant Beta
   √  [Aislamiento Catálogo] Categoría exclusiva de Alfa no es visible en Beta
 
-└ 2.6 Control Positivo: Propietario en Tenant Alfa sí consulta su solicitud
+└ 6. Control Positivo: Propietario en Tenant Alfa sí consulta su solicitud
   GET http://localhost:8080/api/v1/service-requests/sr-qa-001 [200 OK, 367B, 2ms]
   √  [Tenant Alfa] 200 OK para el cliente propietario en su mismo tenant
-  √  [Consistencia] Retorna la misma solicitud creada en el paso 2.2
+  √  [Consistencia] Retorna la misma solicitud creada en el paso 2
 
-┌─────────────────────────┬─────────────────┬─────────────────┐
-│                         │        executed │          failed │
-├─────────────────────────┼─────────────────┼─────────────────┤
-│              iterations │               1 │               0 │
-├─────────────────────────┼─────────────────┼─────────────────┤
-│                requests │              13 │               0 │
-├─────────────────────────┼─────────────────┼─────────────────┤
-│            test-scripts │              13 │               0 │
-├─────────────────────────┼─────────────────┼─────────────────┤
-│      prerequest-scripts │               1 │               0 │
-├─────────────────────────┼─────────────────┼─────────────────┤
-│              assertions │              32 │               0 │
-├─────────────────────────┴─────────────────┴─────────────────┤
-│ total run duration: 1115ms                                  │
-├─────────────────────────────────────────────────────────────┤
-│ total data received: 3.08kB (approx)                        │
-├─────────────────────────────────────────────────────────────┤
-│ average response time: 5ms [min: 2ms, max: 33ms, s.d.: 8ms] │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────┬──────────────────┬─────────────────┐
+│                         │         executed │          failed │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│              iterations │                1 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│                requests │                6 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│            test-scripts │                6 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│      prerequest-scripts │                0 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│              assertions │               11 │               0 │
+├─────────────────────────┴──────────────────┴─────────────────┤
+│ total run duration: 597ms                                    │
+├──────────────────────────────────────────────────────────────┤
+│ total data received: 1.37kB (approx)                         │
+├──────────────────────────────────────────────────────────────┤
+│ average response time: 8ms [min: 2ms, max: 36ms, s.d.: 12ms] │
+└──────────────────────────────────────────────────────────────┘
 
 [QA Mock Gateway] Servidor local cerrado.

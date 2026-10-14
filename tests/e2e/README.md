@@ -173,3 +173,32 @@ La especificación de pruebas de interfaz en navegador se encuentra definida en 
 ### Evidencia de Validación de Contratos (Newman)
 `evidencias/scrum-318-web-admin-2026-10-07.txt`: corrida local preparatoria ejecutada con **Newman** sobre la suite `scrum-318-web-admin.simulacion.json` contra el simulador de API del panel administrativo (`mock-admin-gateway.js`), con un resultado de **11 peticiones y 31 aserciones aprobadas sin fallos (100% Pass)**.
 
+---
+
+## Suite de Registro de Técnicos y Aislamiento Multi-Tenant (SCRUM-56, SCRUM-62)
+
+Pruebas de sistema preparatorias y de release para el registro y gestión de técnicos (SCRUM-56) y la verificación del aislamiento multi-tenant lógico (SCRUM-62):
+
+1. **SCRUM-56 (Registro y Perfil de Técnico):**
+   - **Colección:** `scrum-56-registro-tecnico.postman_collection.json` (ejecutada en CI por `.github/workflows/pruebas-sistema.yml`).
+   - Semilla dinámica: consulta `GET /api/v1/catalog/categories` para usar un `specialtyId` existente en el catálogo del tenant sin IDs quemados.
+   - Generación dinámica de documento (`CC-{{timestamp}}`) y correo (`tecnico-{{timestamp}}@quickpatch.test`).
+   - Verificación de rechazo con 409 Conflict ante duplicación real de documento (`documento-registrado`) y correo (`correo-registrado`).
+   - Validación de formato: 400 Bad Request ante payload incompleto o clave corta.
+   - Autenticación y consulta de `/api/v1/users/me` verificando rol `tecnico` y `verificationStatus: "pendiente"` (RN-U1).
+   - Control RBAC: rechazo con 403 Forbidden cuando el técnico intenta crear solicitudes de servicio.
+
+2. **SCRUM-62 (Aislamiento Multi-Tenant Lógico):**
+   - **Archivo:** `scrum-62-aislamiento-tenant.simulacion.json` (sufijo `.simulacion.json` para no ejecutarse en el runner de CI de QA mientras se opera en monotenant `quickpatch-api-gateway#13`).
+   - Valida el rechazo de acceso cruzado entre tenants (Tenant Alfa vs Tenant Beta) en usuarios, solicitudes y catálogo.
+
+### Ejecución Local
+
+```bash
+node tests/e2e/run-scrum-56-62.js
+```
+
+### Evidencia
+- `evidencias/scrum-56-62-local-2026-10-14.txt`: 24/24 aserciones aprobadas en SCRUM-56 y 11/11 en SCRUM-62 (100% Pass).
+
+
