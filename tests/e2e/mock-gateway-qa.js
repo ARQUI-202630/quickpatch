@@ -68,6 +68,36 @@ const server = http.createServer((req, res) => {
             return res.end(JSON.stringify({ message: "Usuario cliente registrado exitosamente" }));
         }
 
+        // 1.1 Registro de técnico / proveedor (Identity - SCRUM-56)
+        if (url === '/api/v1/auth/register/technician' && req.method === 'POST') {
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            // Validaciones de contrato (RFC 9457)
+            if (!body.documentId || !body.password || body.password.length < 8) {
+                return sendProblemDetails(res, 400, 'validacion-solicitud', 'Datos de registro inválidos', 'El documento y una contraseña de al menos 8 caracteres son obligatorios.', correlationId);
+            }
+            if (body.documentId && String(body.documentId).includes('repetido')) {
+                return sendProblemDetails(res, 409, 'documento-registrado', 'El documento ya está registrado', 'El documento ya se encuentra asociado a un perfil técnico.', correlationId);
+            }
+            if (body.email && body.email.includes('repetido')) {
+                return sendProblemDetails(res, 409, 'correo-registrado', 'El correo ya está registrado', 'El correo ya está en uso en el tenant.', correlationId);
+            }
+
+            res.writeHead(201, {
+                'Content-Type': 'application/json',
+                'X-Correlation-Id': correlationId
+            });
+            return res.end(JSON.stringify({
+                id: `tec-${Date.now()}`,
+                email: body.email,
+                fullName: body.fullName || "Técnico QA",
+                role: body.role || "tecnico",
+                phone: body.phone || "3001234567",
+                verificationStatus: "pendiente"
+            }));
+        }
+
         // 2. Login de usuarios (Identity)
         if (url === '/api/v1/auth/login' && req.method === 'POST') {
             let body = {};
@@ -79,24 +109,57 @@ const server = http.createServer((req, res) => {
                 return sendProblemDetails(res, 401, 'credenciales-invalidas', 'Correo o contraseña incorrectos', 'Correo o contraseña incorrectos.', correlationId);
             }
 
-            // Administrador de tenant
-            if (body.email && body.email.includes('admin')) {
-                const token = makeToken("usr-admin-01", "admin_tenant");
+            // Detección de tenant (Tenant Alfa por defecto, Tenant Beta si se especifica)
+            const tenantId = (body.email && body.email.includes('beta'))
+                ? "22222222-2222-2222-2222-222222222222"
+                : "11111111-1111-1111-1111-111111111111";
+
+            // Técnico (SCRUM-56)
+            if (body.email && body.email.includes('tecnico')) {
+                const token = makeToken("usr-tec-01", "tecnico", tenantId);
                 res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
                 return res.end(JSON.stringify({
                     accessToken: token,
                     tokenType: "Bearer",
+                    expiresIn: 7200,
+                    user: { id: "usr-tec-01", email: body.email, role: "tecnico", verificationStatus: "pendiente" }
+                }));
+            }
+
+            // Administrador de tenant
+            if (body.email && body.email.includes('admin')) {
+                const token = makeToken("usr-admin-01", "admin_tenant", tenantId);
+                res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+                return res.end(JSON.stringify({
+                    accessToken: token,
+                    tokenType: "Bearer",
+                    expiresIn: 7200,
                     user: { id: "usr-admin-01", email: body.email, role: "admin_tenant" }
                 }));
             }
 
             // Cliente
-            const token = makeToken("usr-client-01", "cliente");
+            const token = makeToken("usr-client-01", "cliente", tenantId);
             res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
             return res.end(JSON.stringify({
                 accessToken: token,
                 tokenType: "Bearer",
+                expiresIn: 7200,
                 user: { id: "usr-client-01", email: body.email, role: "cliente" }
+            }));
+        }
+
+        // 2.1 Perfil del usuario autenticado (Identity - SCRUM-56)
+        if (url === '/api/v1/users/me' && req.method === 'GET') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente o inválido (IDN-017)', correlationId);
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+            return res.end(JSON.stringify({
+                id: user.sub,
+                email: user.email || (user.role === 'tecnico' ? 'tecnico@quickpatch.test' : 'cliente@quickpatch.test'),
+                role: user.role,
+                verificationStatus: user.role === 'tecnico' ? 'pendiente' : null
             }));
         }
 
@@ -115,12 +178,29 @@ const server = http.createServer((req, res) => {
             return res.end(JSON.stringify({
                 id: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
                 name: "Plomería QA",
-                active: true
+                active: true,
+                tenantId: user.tenant_id
             }));
         }
 
+        // 3.1 Consulta pública de catálogo con aislamiento tenant (Catalog - SCRUM-62)
+        if (url === '/api/v1/catalog/categories' && req.method === 'GET') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente', correlationId);
+            }
+            // Aislamiento RLS: Categoría de Tenant Alfa no es visible para Tenant Beta
+            const categories = [
+                { id: "cat-global-01", name: "Cerrajería Global", active: true, tenantId: null }
+            ];
+            if (user.tenant_id === "11111111-1111-1111-1111-111111111111") {
+                categories.push({ id: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01", name: "Plomería Exclusiva Alfa", active: true, tenantId: user.tenant_id });
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+            return res.end(JSON.stringify(categories));
+        }
+
         // 4. Creación de solicitudes de servicio (ServiceRequest - solo rol cliente)
-        if (url === '/api/v1/service-requests') {
+        if (url === '/api/v1/service-requests' && req.method === 'POST') {
             if (!user) {
                 return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente en la petición (IDN-017)', correlationId);
             }
@@ -136,7 +216,28 @@ const server = http.createServer((req, res) => {
                 id: "sr-qa-001",
                 status: "buscando_tecnico",
                 categoryId: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
+                tenantId: user.tenant_id,
                 createdAt: new Date().toISOString()
+            }));
+        }
+
+        // 4.1 Consulta de solicitud por ID con aislamiento multi-tenant (ServiceRequest - SCRUM-62 / RLS)
+        if (url.startsWith('/api/v1/service-requests/') && req.method === 'GET') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
+            }
+            const reqId = url.split('/').pop();
+            // Solicitud sr-qa-001 pertenece a Tenant Alfa ("11111111-1111-1111-1111-111111111111")
+            // Si el usuario es de Tenant Beta ("22222222-2222-2222-2222-222222222222"), RLS oculta la fila -> 404 Not Found
+            if (user.tenant_id !== "11111111-1111-1111-1111-111111111111") {
+                return sendProblemDetails(res, 404, 'no-encontrado', 'Solicitud no encontrada', 'La solicitud no existe en el tenant especificado (RLS Isolation)', correlationId);
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+            return res.end(JSON.stringify({
+                id: reqId,
+                status: "buscando_tecnico",
+                categoryId: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
+                tenantId: user.tenant_id
             }));
         }
 
