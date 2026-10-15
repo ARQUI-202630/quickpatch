@@ -1,0 +1,43 @@
+# Reinicia un servicio en el k3s de un ambiente (rollout restart) y espera a que el nuevo pod quede listo.
+# Sirve para que un servicio lea un Secret o un ConfigMap que cambió (los pods los leen al arrancar). Corre en VM1.
+#
+#   ./ap playbooks/reiniciar-servicio.yml -e ambiente=qa -e servicio=matching
+#   ./ap playbooks/reiniciar-servicio.yml -e ambiente=produccion -e servicio=identity
+#
+# El rolling update del Deployment (maxUnavailable: 0) mantiene un pod atendiendo mientras arranca el nuevo.
+- name: Reiniciar un servicio en k3s
+  hosts: gateway
+  gather_facts: false
+  become: true
+  become_user: "{{ deploy_user }}"
+  vars:
+    ambiente: qa
+    servicios_validos: [identity, catalog, service-request, matching, communication]
+    kubeconfig: "{{ 'config-produccion' if ambiente == 'produccion' else 'config-qa' }}"
+    kubectl: "kubectl --kubeconfig /home/{{ deploy_user }}/.kube/{{ kubeconfig }} -n quickpatch"
+  tasks:
+    - name: Exigir ambiente y servicio conocidos
+      ansible.builtin.assert:
+        that:
+          - ambiente in ['qa', 'produccion']
+          - servicio is defined
+          - servicio in servicios_validos
+        fail_msg: "-e ambiente=qa|produccion -e servicio=<identity|catalog|service-request|matching|communication>"
+
+    - name: Reiniciar el Deployment
+      ansible.builtin.command: "{{ kubectl }} rollout restart deployment/{{ servicio }}"
+      register: reinicio
+      changed_when: "'restarted' in reinicio.stdout"
+
+    - name: Esperar a que el nuevo pod esté listo
+      ansible.builtin.command: "{{ kubectl }} rollout status deployment/{{ servicio }} --timeout=240s"
+      register: estado_rollout
+      changed_when: false
+
+    - name: Pods del servicio
+      ansible.builtin.command: "{{ kubectl }} get pods -l app={{ servicio }}"
+      register: pods
+      changed_when: false
+
+    - name: Mostrar
+      ansible.builtin.debug: { msg: "{{ estado_rollout.stdout_lines + pods.stdout_lines }}" }

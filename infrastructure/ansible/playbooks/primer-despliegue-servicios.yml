@@ -4,7 +4,8 @@
 #   ./ap playbooks/primer-despliegue-servicios.yml -e ambiente=qa
 #   ./ap playbooks/primer-despliegue-servicios.yml -e ambiente=produccion
 #   -e servicios='["identity"]'     solo algunos
-#   -e ref=<rama o etiqueta>        versión de los manifiestos (por defecto develop)
+#   -e ref=<rama o etiqueta>        versión de los manifiestos: por defecto develop en QA y main en producción, para no
+#                                   publicar en producción la configuración y el Ingress de develop sobre una imagen de main
 #
 # Los Deployment quedan esperando su imagen (:pendiente) hasta que el pipeline de cada servicio la publique con un push
 # a release/*; el init container aplica entonces las migraciones. Después hay que correr aplicar-roles-db.yml.
@@ -16,7 +17,7 @@
   become_user: "{{ deploy_user }}"
   vars:
     ambiente: qa
-    ref: develop
+    ref: "{{ 'main' if ambiente == 'produccion' else 'develop' }}"
     servicios: [identity, catalog, service_request, matching, communication]
     amb:
       qa: { kubeconfig: config-qa, datos: "{{ ip.vm5 }}", kafka: "{{ ip.vm7 }}", pw: "{{ vault_qa_db_roles_passwords }}" }

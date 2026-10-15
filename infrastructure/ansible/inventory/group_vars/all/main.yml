@@ -63,6 +63,7 @@ images:
   node_exporter: prom/node-exporter:v1.8.2
   promtail: grafana/promtail:3.3.2
   nginx: nginx:1.27-alpine
+  nominatim: mediagis/nominatim:5.3.2-2026-06-23T09-03   # PostgreSQL 16 propio dentro del contenedor (ADR-024)
 k3s_version: v1.31.4+k3s1
 
 # Almacenamiento de objetos (evidencias y respaldos): Garage, compatible con S3 (ADR-016).
@@ -75,6 +76,13 @@ k3s_service_cidr: 10.44.0.0/16
 k3s_cluster_cidr: 10.42.0.0/16
 k3s_cluster_dns: 10.44.0.10
 
+# --- Nominatim (geocodificación de Bogotá, ADR-024) ------------------------------------------
+# Corre en la VM de datos de cada ambiente (VM4 y VM5). El contenedor publica solo en 127.0.0.1:{{ nominatim_puerto_interno }}; un Nginx en la red
+# del host escucha en la IP de la VM, puerto {{ nominatim_puerto }}, y solo deja entrar a la VM del k3s de ese ambiente (VM3 a VM4, VM2 a VM5).
+nominatim_puerto: 8088
+nominatim_puerto_interno: 8081
+nominatim_memoria: 3g        # tope del contenedor (importación y servicio); se mide en QA antes de fijarlo en producción
+nominatim_threads: 2         # hilos de la importación
 # --- PostgreSQL ----------------------------------------------------------------
 # Una base por servicio, según la propuesta de base de datos por servicio
 # (pendiente de aprobación del equipo como ADR-014). Si no se aprueba, dejar una sola.
@@ -87,6 +95,10 @@ postgres_databases:
   - ranking
   - payments
   - communication
+# Tope del pool de conexiones de cada servicio .NET (`Maximum Pool Size` de Npgsql, en el Secret app-connection). Sin tope el
+# driver abre hasta 100 por servicio y, con max_connections = 100, la base rechaza conexiones bajo estrés (hallazgo del 8 y el 14 de
+# octubre). Con Matching en 10 (HikariCP), la suma es 62 de las 97 conexiones útiles. Cada réplica abre su propio pool.
+pool_conexiones: { identity: 12, catalog: 15, service_request: 25 }
 postgis_databases: [matching, service_request]   # service_request guarda la ubicación de la solicitud: geometry(Point, 4326)
 
 # Los valores que cambian entre ambientes (secretos, memoria de Redis y Kafka, retención, capacidad de Garage)

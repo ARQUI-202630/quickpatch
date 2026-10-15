@@ -23,12 +23,14 @@ firewall_by_host:
   vm4:   # Producción, datos (ADR-022): PostgreSQL y Redis
     - { port: 5432, from: ["{{ ip.vm3 }}"], comment: "Microservicios -> PostgreSQL" }
     - { port: 6379, from: ["{{ ip.vm3 }}"], comment: "Microservicios -> Redis" }
+    - { port: 8088, from: ["{{ ip.vm3 }}"], comment: "Microservicios -> Nominatim (geocodificación, ADR-024)" }
   vm6:   # Producción, mensajería y almacenamiento (ADR-022). Kafka UI (8080) no se abre: se entra por túnel SSH.
     - { port: 9092, from: ["{{ ip.vm3 }}"], comment: "Microservicios -> Kafka" }
     - { port: 9000, from: ["{{ ip.vm3 }}", "{{ ip.vm4 }}"], comment: "Evidencias (VM3) y respaldo (VM4) -> Garage (S3)" }
   vm5:   # QA, datos (ADR-022): solo el k3s de QA (VM2) puede entrar
     - { port: 5432, from: ["{{ ip.vm2 }}"], comment: "Servicios de QA -> PostgreSQL" }
     - { port: 6379, from: ["{{ ip.vm2 }}"], comment: "Servicios de QA -> Redis" }
+    - { port: 8088, from: ["{{ ip.vm2 }}"], comment: "Servicios de QA -> Nominatim (geocodificación, ADR-024)" }
   vm7:   # QA, mensajería y almacenamiento (ADR-022): solo el k3s de QA (VM2) puede entrar
     - { port: 9092, from: ["{{ ip.vm2 }}"], comment: "Servicios de QA -> Kafka" }
     - { port: 9000, from: ["{{ ip.vm2 }}"], comment: "Evidencias de QA -> Garage (S3)" }

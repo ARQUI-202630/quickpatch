@@ -73,3 +73,10 @@ Desde ADR-023, los cambios de estado ya llegan a la app por un canal propio (Web
 - SRS: RIE-02, RIE-03, RF-07, RF-11; sección 7.4 (P1, resuelta).
 - SAD: R5, R6, R9, R10, R11, K12; D1, D2; secciones 1.2, 4.1 y 5.5.
 - Relacionados: ADR-004 (PostGIS), ADR-011 (Docker Compose fuera del k3s), ADR-014 (excepción), ADR-022 (VMs de datos y aislamiento entre ambientes), ADR-023 (canal en tiempo real).
+
+## Implementación en QA (14 de octubre de 2026, SCRUM-454)
+
+Desplegado en VM5 con `deploy-nominatim.yml` (detalle y mediciones en el Documento de Infraestructura, sección 5.9). Dos precisiones frente a lo decidido arriba:
+
+- **Red.** El contenedor de Nominatim no usa la red del host (su PostgreSQL interno choca con el 5432 de la VM): publica su API solo en `127.0.0.1:8081` y un Nginx en la red del host la expone en el puerto 8088, con la regla de firewall de la VM (VM2 hacia VM5) y el mismo `allow` en el Nginx. Producción (VM4, desde VM3) queda pendiente.
+- **Límite de la geocodificación.** El mapa resuelve nombres de vía y lugares, pero **no el número de casa ni la calle transversal** de la nomenclatura de Bogotá ("Carrera 7 # 72-41" devolvió una Carrera 7 en otra localidad). Con la dirección escrita la coordenada puede quedar en otra localidad; el GPS sigue siendo la primera opción y conviene que la app muestre el punto encontrado para que el Cliente lo confirme. Pendiente de decisión del equipo de ServiceRequest y de la app.

@@ -1,0 +1,107 @@
+# Nominatim con el mapa de Bogotá en la VM de datos de cada ambiente (ADR-024, SCRUM-454): VM4 en producción y VM5 en QA.
+# Lo usa ServiceRequest para convertir en coordenadas la dirección de Bogotá que escribe el Cliente (RIE-02).
+#
+#   ./ap playbooks/deploy-nominatim.yml --limit qa_datos            primero QA
+#   ./ap playbooks/deploy-nominatim.yml --limit database            después producción (VM4)
+#   -e reimportar=true                                              borra la base de Nominatim y vuelve a importar el extracto
+#
+# Antes: generar el extracto con tools/nominatim-extracto.sh y dejar bogota.osm.pbf en infrastructure/ansible/files/nominatim/
+# (no va en Git). La primera importación tarda unos minutos y usa hasta nominatim_memoria de RAM: el playbook exige memoria y disco libres.
+# Para actualizar el mapa (manual, por ejemplo una vez por sprint): regenerar el extracto y correr con -e reimportar=true.
+- name: Nominatim (geocodificación de Bogotá)
+  hosts: database:qa_datos
+  gather_facts: true
+  become: true
+  vars:
+    dir: "{{ stack_dir }}/nominatim"
+    app_ip: "{{ ip.vm3 if inventory_hostname == 'vm4' else ip.vm2 }}"
+    extracto: "{{ playbook_dir }}/../files/nominatim/bogota.osm.pbf"
+    reimportar: false
+  tasks:
+    - name: El extracto de Bogotá debe existir en el controlador
+      ansible.builtin.stat: { path: "{{ extracto }}" }
+      register: pbf
+      delegate_to: localhost
+      become: false
+
+    - name: Exigir el extracto, memoria y disco libres
+      ansible.builtin.assert:
+        that:
+          - pbf.stat.exists
+          - ansible_memory_mb.nocache.free >= 5000
+          - (ansible_mounts | selectattr('mount', 'equalto', '/') | first).size_available >= 15 * 1024**3
+        fail_msg: >-
+          Falta files/nominatim/bogota.osm.pbf (tools/nominatim-extracto.sh), o la VM tiene menos de 5 GB de RAM disponible
+          ({{ ansible_memory_mb.nocache.free }} MB, sin contar la caché) o menos de 15 GB de disco libre.
+
+    - name: Carpetas
+      ansible.builtin.file: { path: "{{ item.path }}", state: directory, mode: "{{ item.mode }}" }
+      loop:
+        - { path: "{{ dir }}", mode: "0750" }
+        # El usuario `nominatim` del contenedor lee el extracto montado: la carpeta debe poder recorrerse (0755); el archivo no es secreto.
+        - { path: "{{ dir }}/data", mode: "0755" }
+
+    - name: Extracto de Bogotá
+      ansible.builtin.copy:
+        src: "{{ extracto }}"
+        dest: "{{ dir }}/data/bogota.osm.pbf"
+        mode: "0644"
+
+    # Contraseña interna del PostgreSQL del contenedor (no se publica el 5432). Se genera una sola vez y no cambia al repetir el playbook.
+    - name: Contraseña interna de Nominatim
+      ansible.builtin.shell: umask 077 && printf 'NOMINATIM_PASSWORD=%s\n' "$(openssl rand -hex 16)" > {{ dir }}/nominatim.env
+      args: { creates: "{{ dir }}/nominatim.env" }
+
+    - name: Compose de Nominatim
+      ansible.builtin.template:
+        src: ../templates/nominatim.compose.yml.j2
+        dest: "{{ dir }}/compose.yml"
+        mode: "0640"
+      register: compose
+
+    - name: Nginx del proxy
+      ansible.builtin.template:
+        src: ../templates/nominatim-nginx.conf.j2
+        dest: "{{ dir }}/nginx.conf"
+        mode: "0644"
+      register: proxy
+
+    - name: Borrar la base para reimportar
+      ansible.builtin.command: docker compose -f {{ dir }}/compose.yml down -v
+      when: reimportar | bool
+      changed_when: true
+
+    - name: Levantar Nominatim y el proxy
+      community.docker.docker_compose_v2:
+        project_src: "{{ dir }}"
+        state: present
+        recreate: "{{ 'always' if (compose.changed or proxy.changed) else 'auto' }}"
+
+    - name: Esperar a que termine la importación y responda /status (hasta 30 min)
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ nominatim_puerto_interno }}/status"
+        return_content: true
+      register: estado
+      until: estado.status == 200
+      retries: 90
+      delay: 20
+
+    - name: Búsqueda de prueba por el proxy (dirección y lugar de Bogotá)
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:{{ nominatim_puerto }}/search?format=jsonv2&limit=1&countrycodes=co&q={{ item | urlencode }}"
+        return_content: true
+      loop:
+        - Plaza de Bolívar, Bogotá
+        - Carrera 7 con Calle 72, Bogotá
+        - Avenida Caracas con Calle 26, Bogotá
+      register: busquedas
+
+    - name: Resultado de cada búsqueda
+      ansible.builtin.debug:
+        msg: "{{ item.item }} -> {{ item.json | length }} resultado(s): {{ (item.json | first).display_name if item.json | length > 0 else 'sin resultado' }}"
+      loop: "{{ busquedas.results }}"
+      loop_control: { label: "{{ item.item }}" }
+
+    - name: Estado
+      ansible.builtin.debug:
+        msg: "/status: {{ estado.content | trim }}"

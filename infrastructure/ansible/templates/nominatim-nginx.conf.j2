@@ -1,0 +1,17 @@
+# Proxy de Nominatim en la red del host de {{ inventory_hostname }}: escucha en la IP de la VM y reenvía al contenedor (127.0.0.1).
+# Defensa en profundidad: el firewall de la VM ya limita el puerto a {{ app_ip }}.
+events {}
+http {
+  server_tokens off;
+  server {
+    listen {{ ansible_host }}:{{ nominatim_puerto }};
+    allow {{ app_ip }};
+    allow 127.0.0.1;
+    allow {{ ansible_host }};
+    deny all;
+    location / {
+      proxy_pass http://127.0.0.1:{{ nominatim_puerto_interno }};
+      proxy_read_timeout 15s;
+    }
+  }
+}

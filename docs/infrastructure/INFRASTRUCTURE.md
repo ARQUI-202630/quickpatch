@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 3.3 |
+| **Versión** | 3.7 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -69,6 +69,7 @@ flowchart TB
             end
             PG[("VM4 · PostgreSQL + PostGIS :5432<br/>una base por servicio")]
             RD[("VM4 · Redis :6379")]
+            NOM[("VM4 · Nominatim :8088<br/>mapa de Bogotá (pendiente)")]
             subgraph VM6["VM6 · Mensajería y almacenamiento"]
                 direction LR
                 KF["Kafka :9092"]
@@ -81,6 +82,7 @@ flowchart TB
                 TRFQ["Traefik :30080"] --> MSQ["Microservicios<br/>(4 de 8 desplegados)"]
             end
             PGQ[("VM5 · PostgreSQL + Redis")]
+            NOMQ[("VM5 · Nominatim :8088<br/>mapa de Bogotá (ADR-024)")]
             subgraph VM7["VM7 · Mensajería y almacenamiento"]
                 direction LR
                 KFQ["Kafka :9092"]
@@ -101,6 +103,8 @@ flowchart TB
     PG -.->|"respaldo diario"| GAR
     MSQ --> PGQ
     MSQ --> KFQ
+    MSQ -->|"geocodificación :8088"| NOMQ
+    MS -.->|"geocodificación (pendiente)"| NOM
     MSQ -->|"evidencias"| GARQ
     RUN -->|"despliegue :6443"| TRF
     RUN -->|"despliegue :6443 y pruebas"| TRFQ
@@ -110,6 +114,7 @@ flowchart TB
 
 - **Una sola entrada.** Desde la VPN, el firewall de la universidad solo deja pasar el 443 de VM1 (sección 10.2). El Nginx de VM1 reenvía según el nombre: `quickpatch.internal` a producción (el panel, servido en la misma VM1, y `/api/` al Traefik de VM3), `qa.quickpatch.internal` al Traefik de VM2 y `grafana.quickpatch.internal` a Grafana, en VM1.
 - **Canal en tiempo real (SCRUM-451, ADR-023).** El WebSocket de seguimiento entra por `https://<ambiente>/api/v1/realtime`: el Nginx de VM1 lo reenvía al Ingress `/v1/realtime` de Communication en el k3s del ambiente (quita `/api`, como el resto de la API). La `location` fija `proxy_read_timeout` y `proxy_send_timeout` en 75 s, porque Communication envía un ping cada 30 s (`Realtime__KeepAliveSeconds`) y el valor por defecto de Nginx (60 s) cortaría una conexión inactiva, y desactiva `proxy_buffering` para que las tramas lleguen de inmediato. `Upgrade` y `Connection` los hereda del bloque `http`. Communication corre con una réplica.
+- **Canal del cliente (`X-Channel-Id`, DD 10.3, SCRUM-388).** El Nginx de VM1 fija `X-Channel-Id` en cada petición y descarta el que mande el cliente. Un `map` sobre `Origin` y `Referer` da `quickpatch-web` cuando vienen del panel de producción o de QA, y `quickpatch-mobile` en cualquier otro caso. Cada servicio traduce el canal a tenant con `Channel__Tenants__*` en su ConfigMap (Identity y Catalog). Límite: un cliente que no sea navegador puede escribir `Origin` y `Referer`; con un solo tenant los dos canales dan el mismo tenant, y con más de uno hace falta DEP-09 (DD 14.3).
 - **Producción** son VM3, VM4 y VM6. Los microservicios corren en el k3s de VM3 (hoy Identity, Catalog, ServiceRequest y Matching) y usan PostgreSQL y Redis (VM4), y Kafka y Garage (VM6).
 - **QA** son VM2, VM5 y VM7, con la misma forma que producción y datos y secretos propios. No puede conectarse a los servicios de producción.
 - **El runner de VM1** despliega en los dos k3s y corre las pruebas de sistema contra QA. Se conecta hacia GitHub para recibir trabajos; GitHub nunca entra a la red del laboratorio.
@@ -271,10 +276,10 @@ Las reglas exactas están en `firewall.yml` (sección 10.3). Ninguna VM de QA ac
 |---|---|---|---|
 | VPN de la universidad | VM1 | 443 | Única entrada (R9) |
 | VM1 | VM3 y VM2 | 30080, 6443 | Proxy hacia el Traefik de cada ambiente; despliegue con kubectl |
-| VM3 | VM4 | 5432, 6379 | Servicios de producción → PostgreSQL y Redis |
+| VM3 | VM4 | 5432, 6379, 8088 | Servicios de producción → PostgreSQL, Redis y Nominatim (el 8088, pendiente de desplegar) |
 | VM3 | VM6 | 9092, 9000 | Servicios de producción → Kafka y Garage (evidencias) |
 | VM4 | VM6 | 9000 | Respaldo diario de PostgreSQL a Garage |
-| VM2 | VM5 | 5432, 6379 | Servicios de QA → PostgreSQL y Redis |
+| VM2 | VM5 | 5432, 6379, 8088 | Servicios de QA → PostgreSQL, Redis y Nominatim |
 | VM2 | VM7 | 9092, 9000 | Servicios de QA → Kafka y Garage |
 | Las demás VMs | VM1 | 3100 | Logs (Promtail → Loki) |
 | VM1 | Las 7 VMs | 9100 | Métricas (Prometheus → `node_exporter`) |
@@ -359,11 +364,13 @@ Los grupos `produccion` (VM3, VM4 y VM6) y `qa` (VM2, VM5 y VM7) reúnen los de 
 | `deploy-db.yml` | VM4 y VM5 | PostgreSQL + PostGIS, una base por servicio con sus roles `_migrator` y `_app` (DD 10.2); en VM4, el respaldo diario a Garage |
 | `aplicar-roles-db.yml` | VM4 y VM5 | Aplica el `db/roles.sql` de cada servicio (permisos de `_app`, `_outbox`, `identity_platform`); va después de las migraciones del servicio |
 | `deploy-cache.yml` | VM4 y VM5 | Redis con un usuario ACL por servicio, restringido a su prefijo |
+| `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá (ADR-024): contenedor con su propio PostgreSQL, proxy en la red del host en el 8088 y extracto copiado desde el controlador; solo QA por ahora |
 | `deploy-kafka.yml` | VM6 y VM7 | Kafka en modo KRaft; en VM6, también Kafka UI |
 | `deploy-k3s.yml` | VM3 y VM2 | k3s de un nodo con los rangos de red de abajo, Traefik en la red del host (puertos 30080 y 30443), namespace `quickpatch` y kubeconfig para el runner |
 | `deploy-gateway.yml` | VM1 | Nginx con los tres nombres (sección 11), el panel Angular y el certificado |
 | `deploy-runner.yml` | VM1 | kubectl, k6, kubeconfig de QA y producción, llave SSH hacia VM2, la compuerta de producción `compuerta-qa` (RNF-08) y el runner de GitHub como servicio |
-| `primer-despliegue-servicios.yml` | VM1, hacia el k3s de VM2 y VM3 | Crea el `Secret` de cada servicio desde el vault y aplica su `deploy/k8s/<servicio>.yaml` con la IP de Kafka del ambiente; se puede repetir sin cambiar la imagen que corre. No forma parte de `site.yml` |
+| `primer-despliegue-servicios.yml` | VM1, hacia el k3s de VM2 y VM3 | Crea el `Secret` de cada servicio desde el vault y aplica su `deploy/k8s/<servicio>.yaml` con la IP de Kafka del ambiente (los manifiestos salen de `develop` en QA y de `main` en producción, para no publicar en producción la configuración de `develop` sobre una imagen de `main`; `-e ref=` lo cambia); se puede repetir sin cambiar la imagen que corre. No forma parte de `site.yml` |
+| `reiniciar-servicio.yml` | VM1, hacia el k3s de VM2 y VM3 | `rollout restart` de un servicio y espera a que el pod nuevo esté listo; sirve para que lea un `Secret` o un `ConfigMap` que cambió. No forma parte de `site.yml` |
 | `migrar-adr-022.yml` | VM1 a VM7 | Pasa un ambiente del reparto anterior al del ADR-022, por fases con etiquetas; solo borra lo viejo con `-e confirmar_borrado=true` |
 | `site.yml` | Todas | Aplica los de despliegue en orden (Anexo A) |
 
@@ -391,7 +398,7 @@ Estado al 8 de octubre de 2026:
 Orden para llevar un servicio nuevo a un ambiente:
 
 1. `deploy-db.yml`: crea los roles `<servicio>_migrator` y `<servicio>_app` de su base.
-2. `primer-despliegue-servicios.yml -e ambiente=qa|produccion`: `Secret` y manifiestos. En Kafka, los topics se crean antes con `deploy-kafka.yml`, porque la creación automática está desactivada. Communication (SCRUM-388) se despliega con este mismo playbook: su `Secret` `communication-secretos` solo lleva la llave pública de Identity (`jwt-public-key`), porque no tiene base de datos (ADR-023). Los topics del incremento del técnico (`technician.*` y `matching.*`) los trae `quickpatch-kafka` v0.3.0, que el submódulo `apps/kafka` fija desde el 12 de octubre.
+2. `primer-despliegue-servicios.yml -e ambiente=qa|produccion`: `Secret` y manifiestos. En Kafka, los topics se crean antes con `deploy-kafka.yml`, porque la creación automática está desactivada. Communication (SCRUM-388) se despliega con este mismo playbook: su `Secret` `communication-secretos` solo lleva la llave pública de Identity (`jwt-public-key`), porque no tiene base de datos (ADR-023). Matching también recibe `jwt-public-key` en su `Secret` (desde el 14 de octubre de 2026, SCRUM-388): sin ella, sus endpoints con token responden 401, y el pod la lee al arrancar, así que después de aplicar el `Secret` se reinicia con `reiniciar-servicio.yml`. Los topics del incremento del técnico (`technician.*` y `matching.*`) los trae `quickpatch-kafka` v0.3.0, que el submódulo `apps/kafka` fija desde el 12 de octubre.
 3. Push a `release/*` (QA) o `main` (producción): imagen, migraciones y despliegue.
 4. `aplicar-roles-db.yml --limit <ambiente> -e servicio=<servicio>`: permisos sobre las tablas que crearon las migraciones (sección 5.8).
 5. Alta del tenant del MVP en la base de Identity y `kubectl rollout restart` de Identity, que crea los administradores iniciales al arrancar con tenant y permisos.
@@ -462,6 +469,8 @@ VM4 mantiene PostgreSQL como almacén común de infraestructura con ownership l�
 
 **Hallazgo de la prueba de carga (8 de octubre).** Los servicios todavía no tienen tope de pool y PostgreSQL de QA tiene `max_connections` = 100. Con 50 usuarios concurrentes en k6 se cumplen todos los umbrales (catálogo p95 de 24 ms frente a 200 ms; crear solicitud p95 de 37 ms frente a 2 s; 0% de errores). Con 150 usuarios no: PostgreSQL rechazó conexiones 501 veces (`remaining connection slots are reserved`), el registro de Nginx muestra 534 respuestas 500 en esa ventana, y `errores_5xx` llegó a 1,87% y `http_req_failed` a 27%. No hubo reinicios de pods ni `OOMKilled`. El equipo decidió no ajustar nada para que pase y dejarlo como mejora: agregar `Maximum Pool Size` a las cadenas de conexión (unos 25 en ServiceRequest, 10 en Catalog, 10 más 2 de plataforma en Identity y 10 en el Hikari de Matching) para sumar menos de 70 de las 100 conexiones, reaplicar los `Secret`, reiniciar y repetir k6. Producción se desplegó con una excepción escrita al RNF-08 mientras tanto (sección 6.2).
 
+**Repetición del 14 de octubre y tope aplicado.** La repetición del estrés con el incremento desplegado dio `errores_5xx` de 0,16% (63 de 37.770) y `http_req_failed` de 0,16%, y seguía sin cumplir `errores_5xx` igual a 0. El diagnóstico de la ventana (`diagnostico-carga.yml`) muestra la misma causa: el registro de PostgreSQL tiene 63 `FATAL: remaining connection slots are reserved` y 20 `sorry, too many clients already`, y el Nginx de VM1 registra exactamente 63 respuestas 500 a `POST /api/v1/service-requests`; no hubo 404 ni reinicios de pods. Se aplica el tope de pool en el `Secret` de cada servicio .NET (`Maximum Pool Size`, variable `pool_conexiones`: ServiceRequest 25, Catalog 15, Identity 12; Matching sigue en 10 de HikariCP): suma 62 de las 97 conexiones útiles. Con más de una réplica, el tope se multiplica por las réplicas. **Resultado de repetir k6 con el tope (14 de octubre, run 38639068866 de `pruebas-sistema`, una sola variable cambiada: el tope).** El estrés de 150 usuarios **pasa todos sus umbrales**: `errores_5xx` 0,00% (0 de 42.705), `http_req_failed` 0,00% (0 de 42.707), p95 de 295 ms y 177 peticiones por segundo (la corrida anterior con los mismos 150 usuarios: 0,16% de 5xx, 37.770 peticiones y 157 por segundo). El diagnóstico de la ventana confirma la causa: el registro de PostgreSQL no tiene ningún `FATAL` ni `ERROR`, el Nginx registra 45.635 `201` y ningún error a `POST /api/v1/service-requests`, y al terminar `service_request_app` mantiene 25 conexiones, el tope. El 50 usuarios sigue pasando (5.862 peticiones, 0,00% fallidas, p95 de 41 ms); E2E y seguridad también pasan. Matices: es una sola corrida; los tres pods se reiniciaron al aplicar el tope, así que no se separa del todo el efecto del reinicio; hubo un solo fallo de `readiness` de service-request durante la carga (timeout), que no llegó a sacar al pod ni produjo 404.
+
 ### 5.8 Cómo se despliega o actualiza un microservicio
 
 1. Se construye la imagen Docker del servicio modificado y se sube a **GitHub Container Registry (`ghcr.io`)** — gratuito e integrado con el repositorio del proyecto, sin credenciales adicionales que gestionar. Los paquetes son públicos, así que k3s descarga las imágenes sin `imagePullSecret`.
@@ -475,6 +484,17 @@ VM4 mantiene PostgreSQL como almacén común de infraestructura con ownership l�
 **Probes y estrategia de actualización.** Cada `Deployment` tiene una réplica y estrategia `RollingUpdate` con `maxUnavailable: 0` y `maxSurge: 1`. Los servicios .NET definen `readinessProbe` en `/health/ready` (cada 10 s) y `livenessProbe` en `/health/live` (cada 20 s, tras 10 s de espera); Matching espera 15 s antes de la primera y 30 s antes de la segunda, por el arranque de la JVM. No hay `startupProbe` y los umbrales de fallos son los valores por defecto de Kubernetes. **Pendiente:** ajustar tiempos y reintentos con arranques medidos bajo carga.
 
 ---
+
+### 5.9 Nominatim: geocodificación de Bogotá (ADR-024, SCRUM-454)
+
+Nominatim convierte en coordenadas la dirección que escribe el Cliente cuando no comparte su ubicación (RIE-02); lo llamará ServiceRequest. Corre en la VM de datos de cada ambiente: **VM5 en QA (desplegado el 14 de octubre de 2026)** y VM4 en producción (pendiente).
+
+- **Cómo corre.** `deploy-nominatim.yml` levanta dos contenedores con Docker Compose en `/opt/quickpatch/nominatim`: `nominatim` (imagen `mediagis/nominatim` con versión fija, PostgreSQL 16 propio dentro del contenedor, excepción a ADR-014 porque solo guarda el mapa público) y `proxy` (Nginx en la red del host). El contenedor de Nominatim **no usa la red del host**, porque su PostgreSQL interno choca con el 5432 de la base de los servicios; publica su API solo en `127.0.0.1:8081` y no publica el 5432. El proxy escucha en la IP de la VM, puerto 8088, y solo acepta a la VM del k3s de ese ambiente (VM2 en QA, VM3 en producción): la regla está en el firewall de la VM (`firewall.yml`) y se repite en el `allow` del Nginx. Así se mantiene la convención de que ufw o firewalld controlen el acceso, sin depender de la cadena `DOCKER-USER`.
+- **Extracto.** El mapa se genera con `tools/nominatim-extracto.sh`: baja Colombia de Geofabrik y lo recorta con osmium al rectángulo de cobertura del MVP (RN-SR9 del DD: latitud 4,45 a 4,85 y longitud −74,25 a −73,98). Resultado: 20 MB. El archivo no va en Git: se deja en `infrastructure/ansible/files/nominatim/` y el playbook lo copia a la VM. La importación usa el estilo `address` y 2 hilos.
+- **Medición en QA (VM5, 4 vCPU y 11,4 GiB).** Importación de unos 7 minutos con el contenedor limitado a 3 GiB. En servicio usa unos 374 MiB de RAM, el volumen ocupa 1,42 GB y la VM mantiene unos 8,5 GiB de RAM disponible y 62 GB de disco libre. El playbook exige 5 GB de RAM y 15 GB de disco libres antes de importar.
+- **Acceso comprobado.** Desde VM2 y desde un pod del k3s de QA, `GET /status` y `/search` responden 200. Desde VM1 y VM7 la conexión al 8088 no responde (la rechaza el firewall).
+- **Cómo se actualiza el mapa.** Manual y poco frecuente: se regenera el extracto y se corre `deploy-nominatim.yml -e reimportar=true`, que borra la base de Nominatim y vuelve a importar (unos 7 minutos sin servicio de geocodificación).
+- **Calidad de la geocodificación (hallazgo del 14 de octubre).** Con 14 direcciones de prueba, Nominatim resuelve bien nombres de vía y lugares (Calle 63, Calle 26, Calle 72, Calle 100, Diagonal 40, Avenida Carrera 68, Plaza de Bolívar y la localidad Chapinero), pero **no usa el número de casa ni la calle transversal de la nomenclatura de Bogotá**: "Carrera 7 # 72-41" devuelve una calle llamada Carrera 7 en la localidad de San Cristóbal, no el cruce con la Calle 72 en Chapinero; "Transversal 93 # 53-32" y "Parque de la 93" devuelven puntos en otras localidades, y "Avenida Caracas # 26-50" no devuelve nada. La coordenada puede quedar a kilómetros de la dirección y caer en otra localidad, lo que cambia qué técnicos cubren la solicitud. Por eso conviene que el GPS siga siendo la primera opción (ADR-024) y que, cuando se use la dirección, la app muestre al Cliente el punto encontrado para confirmarlo. Es una decisión del equipo de ServiceRequest y de la app, no de DevOps.
 
 ## 6. CI/CD
 
@@ -535,7 +555,7 @@ QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a 
 
 **Compuerta a producción.** El job `desplegar` usa el ambiente de GitHub `produccion` en los repositorios de servicios: exige la aprobación de un revisor (el responsable de DevOps), solo admite la rama `main` y los administradores no pueden saltársela. Esa aprobación es la compuerta manual. Desde el 12 de octubre hay además una **compuerta automática (RNF-08, SCRUM-415)**: antes de cambiar la imagen en producción, el job `desplegar` corre `compuerta-qa` en VM1, que exige que la misma imagen (o el mismo build del panel) corra en QA y que la última ejecución de `pruebas-sistema.yml` haya pasado después de que llegó a QA; una excepción solo se admite con la variable `COMPUERTA_RNF08_EXCEPCION` del repositorio (detalle en `infrastructure/CI-CD.md`). La rama `main` de los repositorios sigue sin protección.
 
-**Excepción al RNF-08 (8 de octubre).** La prueba de estrés de 150 usuarios no pasa en QA por las conexiones agotadas de PostgreSQL (sección 5.7); la de 50 usuarios sí. El responsable de DevOps decidió desplegar a producción igualmente, con una excepción escrita que se cita en la descripción de los cuatro pull requests de `release/0.2.0` a `main` y que la aprobación del ambiente `produccion` acepta. Producción corre desde ese día con las mismas imágenes probadas en QA (Identity, Catalog, ServiceRequest y Matching); el límite de carga conocido queda como hallazgo para la próxima iteración, sin ajustar los resultados.
+**Excepción al RNF-08 (8 de octubre).** La prueba de estrés de 150 usuarios no pasa en QA por las conexiones agotadas de PostgreSQL (sección 5.7); la de 50 usuarios sí. El responsable de DevOps decidió desplegar a producción igualmente, con una excepción escrita que se cita en la descripción de los cuatro pull requests de `release/0.2.0` a `main` y que la aprobación del ambiente `produccion` acepta. Producción corre desde ese día con las mismas imágenes probadas en QA (Identity, Catalog, ServiceRequest y Matching); el límite de carga conocido queda como hallazgo para la próxima iteración, sin ajustar los resultados. **Actualización del 14 de octubre:** con el tope de pool el estrés de 150 usuarios pasa en QA (sección 5.7). La excepción sigue vigente para producción hasta aplicar el mismo tope en el `Secret` de producción y medir allí; después se levanta por escrito.
 
 **Producción despliega exactamente la imagen probada en QA.** El job `imagen` de cada repositorio etiqueta cada imagen con el hash del contenido del repositorio, no con el del commit. Al fusionar `release/x.y.z` en `main` sin otros cambios, el contenido es el mismo, la imagen ya existe y no se vuelve a construir. Si `main` trae algo que no pasó por `release/*`, el workflow construye una imagen nueva y deja un aviso.
 
@@ -783,8 +803,8 @@ Las reglas están en `ansible/inventory/group_vars/all/firewall.yml`. "Equipo" e
 | VM2 | 6443 | VM1 | API de k3s de QA, para los despliegues del runner |
 | VM3 | 30080 y 30443 | VM1 | Traefik de producción (entrada a los servicios) |
 | VM3 | 6443 | VM1 | API de k3s de producción, para los despliegues del runner |
-| VM4 | 5432 y 6379 | VM3 | PostgreSQL y Redis de producción |
-| VM5 | 5432 y 6379 | VM2 | PostgreSQL y Redis de QA |
+| VM4 | 5432, 6379 y 8088 | VM3 | PostgreSQL, Redis y Nominatim de producción (el 8088, pendiente de desplegar) |
+| VM5 | 5432, 6379 y 8088 | VM2 | PostgreSQL, Redis y Nominatim de QA |
 | VM6 | 9092 | VM3 | Kafka de producción |
 | VM6 | 9000 | VM3 y VM4 | Garage de producción (S3): evidencias de los servicios y respaldo de PostgreSQL |
 | VM7 | 9092 y 9000 | VM2 | Kafka y Garage de QA |
@@ -971,6 +991,7 @@ La primera vez conviene simular la base en una VM, aplicarla ahí, comprobar que
 | 3 | `deploy-garage.yml` | VM6 y VM7 | Garage, buckets y llaves de cada ambiente | El respaldo de VM4 escribe en Garage |
 | 4 | `deploy-db.yml` | VM4 y VM5 | PostgreSQL + PostGIS y una base por servicio; el respaldo diario solo en producción | |
 | 5 | `deploy-cache.yml` | VM4 y VM5 | Redis con un usuario por servicio | |
+| 5b | `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá | Antes hay que generar el extracto con `tools/nominatim-extracto.sh`; hoy solo en QA |
 | 6 | `deploy-kafka.yml` | VM6 y VM7 | Kafka (en VM6, también Kafka UI) | |
 | 7 | `deploy-k3s.yml` | VM3 y VM2 | k3s de producción y de QA, y sus kubeconfig | El runner los necesita |
 | 8 | `deploy-gateway.yml` | VM1 | Nginx con los tres nombres, el panel y el certificado | |
@@ -1037,3 +1058,7 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 3.1 | 12 oct 2026 | El panel de QA se sirve desde el Nginx de VM1 (SCRUM-446): decisión y alternativa descartada en la sección 3.2, carpeta `panel-qa` en `deploy-gateway.yml` y publicación local en el workflow de `quickpatch-web`. |
 | 3.2 | 12 oct 2026 | Compuerta automática de producción (RNF-08, SCRUM-415): `compuerta-qa` en el runner de VM1, llamada por el job `desplegar` de cada repositorio antes de producción; excepción con la variable `COMPUERTA_RNF08_EXCEPCION`. |
 | 3.3 | 12 oct 2026 | Despliegue del incremento del Sprint 4 en QA (SCRUM-388): `primer-despliegue-servicios.yml` incluye Communication y su `Secret`, `apps/kafka` avanza a v0.3.0 con los topics del incremento; el WebSocket `/api/v1/realtime` del gateway queda para SCRUM-451. |
+| 3.4 | 14 oct 2026 | `X-Channel-Id` fijado por el gateway (el Nginx descarta el del cliente y lo calcula con `Origin` y `Referer`, DD 10.3) y `jwt-public-key` en el `Secret` de Matching (SCRUM-388). |
+| 3.5 | 14 oct 2026 | Tope del pool de conexiones por servicio (`Maximum Pool Size` en el `Secret`) tras la repetición del estrés de 150 usuarios, y playbook de solo lectura `diagnostico-carga.yml` (SCRUM-388). |
+| 3.6 | 14 oct 2026 | Nominatim con el mapa de Bogotá (ADR-024, SCRUM-454): sección 5.9, playbook `deploy-nominatim.yml`, regla de firewall del 8088 y desplegado en QA (VM5); producción pendiente. Incluye la medición de recursos y el hallazgo sobre la calidad de la geocodificación. |
+| 3.7 | 14 oct 2026 | Resultado de repetir la prueba de estrés con el tope de pool: pasa todos sus umbrales en QA (0 de 42.705 respuestas 5xx). La excepción al RNF-08 sigue en producción hasta aplicar el tope allí. |
