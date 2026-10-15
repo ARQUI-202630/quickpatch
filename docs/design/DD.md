@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.0|
+|**Versión**|5.1|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; SCRUM-456 (implementación, versión 5.1); antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -117,7 +117,7 @@ Algunos elementos de esta versión resuelven dependencias que el DD v2.2 dejaba 
 |P-06|Las tareas programadas que recorren filas de todos los tenants usan un rol `<servicio>_scheduler` que solo puede leer identificadores y aplica cada cambio con el rol `_app` y el tenant de la fila.|RN-M3, RN-Q6|Documento de Infraestructura, sección 5.7|
 |P-07|Agregar `code` a Problem Details con el catálogo del Cuadro 10.|Errores homogéneos para el frontend|Contratos OpenAPI (cambio compatible)|
 |P-08|Aceptar `Idempotency-Key` en la creación de solicitudes y en el pago.|AC5-E5|Contratos OpenAPI (cambio compatible)|
-|P-09|**Nueva v5.** ServiceRequest guarda una copia de solo lectura del catálogo `localities` para responder la localidad en la vista previa de la geocodificación (sección 8.3.3).|Vista previa de ADR-024 sin llamada síncrona a Matching (RN-M9)|DD (sección 5) y migración de ServiceRequest (SCRUM-456)|
+|P-09|**Nueva v5. Decidida en 5.1.** ServiceRequest guarda una copia de solo lectura del catálogo `localities` para responder la localidad en la vista previa de la geocodificación (sección 8.3.3). Condiciones: la carga una migración desde la misma capa IDECA que la `V3` de Matching, sin `tenant_id` ni RLS y con solo `SELECT` para `service_request_app`; si la capa cambia, se actualizan las dos migraciones (sección 5.18).|Vista previa de ADR-024 sin llamada síncrona a Matching (RN-M9)|DD (secciones 5.18 y 10.1) y migración `LocalidadesBogota` de ServiceRequest (SCRUM-456)|
 
 _Cuadro 3: Propuestas de diseño pendientes de validación del equipo_
 
@@ -629,9 +629,9 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 |---|---|---|
 |Identity|`tenants`, `users`, `technician_profiles` (con `provider_id`), `password_setup_tokens`, `audit_logs`, `outbox_events`|`users.company_id` y `client_companies` (RF-06)|
 |Catalog|`service_categories` (con `updated_at`), `outbox_events`|—|
-|ServiceRequest|`service_requests` (con `matching_updated_at`), `service_request_categories`, `outbox_events`, `processed_events`|`company_id` y `client_type` (RF-08), `cancelled_by` y `cancelled_by_type` (RF-36); `quotes`, `ratings` y `service_evidence`|
+|ServiceRequest|`service_requests` (con `matching_updated_at`), `service_request_categories`, `outbox_events`, `processed_events`; copia de `localities` (P-09, en revisión: SCRUM-456)|`company_id` y `client_type` (RF-08), `cancelled_by` y `cancelled_by_type` (RF-36); `quotes`, `ratings` y `service_evidence`|
 |Matching|`technician_availability`, `coverage_zones`, `localities`, `matching_requests`, `matching_attempts`, `outbox_events`, `processed_events`|—|
-|Communication|—|`notifications` en `db_communication` (SCRUM-456); hoy solo el canal en tiempo real, sin base|
+|Communication|`notifications` en `db_communication` (en revisión: SCRUM-456)|—|
 |Payments|—|`payments` e `invoices`|
 |Actors y Ranking|—|Sin tablas en esta versión|
 
@@ -1213,6 +1213,8 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Nota:** no tiene `tenant_id` ni RLS. El rol `_app` de Matching Service solo tiene `SELECT` sobre esta tabla (sección 10.1).
 
+**Copia en ServiceRequest (v5.1, P-09, SCRUM-456).** ServiceRequest tiene su propia tabla `localities`, con las mismas columnas, para responder la localidad en la vista previa de la geocodificación (sección 8.3.3) sin llamar a Matching. La carga la migración `LocalidadesBogota` con el mismo `INSERT` de la migración `V3` de Matching (capa oficial IDECA, generalizada a 0,0002°). No tiene `tenant_id` ni RLS, y `service_request_app` solo tiene `SELECT`. **Si la capa cambia, se actualizan las dos migraciones a la vez**: las dos copias deben dar siempre la misma localidad para un punto, porque la de ServiceRequest es la que ve el cliente y la de Matching es la que decide qué técnicos cubren la solicitud (RN-M9).
+
 ### 5.19 Tabla `client_companies`
 
 **Nuevo v3.**
@@ -1750,6 +1752,8 @@ Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la sol
 
 El "registro confirmado" del cliente que menciona RIE-03 no tiene evento (Identity no publica nada al registrar un cliente), y la cotización llega cuando se publiquen sus esquemas (DEP-20).
 
+**Implementación (SCRUM-456).** Communication consume estos eventos con un grupo de consumidores propio del buzón, distinto del canal en tiempo real: lee desde el principio y confirma el offset solo después de guardar, porque el buzón no puede perder eventos. `tecnico-asignado` y `solicitud-asignada` se arman con una sola regla que recibe la solicitud, el cliente y el técnico, sin depender del evento: cuando SCRUM-466 mueva el aviso de la asignación a un evento de ServiceRequest, solo cambia qué evento la dispara. Si en la transición se publicaran los dos eventos para la misma asignación, el buzón tendría dos notificaciones, porque la unicidad es por evento (`UNIQUE (source_event_id, user_id)`).
+
 
 ### 8.3 Especificación de los endpoints principales
 
@@ -1847,7 +1851,9 @@ El token de acceso dura 15 minutos y el de renovación 7 días (SDD V2, antes DD
 
 **Configuración de ServiceRequest:** `Geocoding__NominatimUrl` (por ejemplo `http://10.43.98.29:8088` en QA: el Nginx de VM5 que solo deja entrar a VM2, playbook `deploy-nominatim.yml`) y `Geocoding__Timeout`. Vacía, la geocodificación responde `422 direccion-no-encontrada`.
 
-**Localidad del punto (propuesta P-09).** Las 20 localidades son de Matching Service (`localities`, sección 5.18). Para responder la vista previa sin llamar a Matching, ServiceRequest tendría una copia de solo lectura del mismo catálogo de referencia, cargada por migración desde la misma capa oficial que la migración `V3` de Matching (IDECA, generalizada a 0,0002°), sin `tenant_id` ni RLS. Como es un catálogo estático y oficial, las dos copias dan la misma localidad; si cambia, se actualizan las dos migraciones. La alternativa es una consulta interna a Matching, que agrega una llamada síncrona entre servicios.
+**Localidad del punto (P-09, decidida en 5.1).** Las 20 localidades son de Matching Service (`localities`, sección 5.18). Para responder la vista previa sin llamar a Matching, ServiceRequest tiene una copia de solo lectura del mismo catálogo, cargada por migración desde la misma capa oficial que la `V3` de Matching, sin `tenant_id` ni RLS y con solo `SELECT` para `service_request_app` (sección 5.18). La localidad es la que cubre el punto (`ST_Covers`, igual que Matching). Si el punto cae dentro del rectángulo de RN-SR9 pero fuera de las 20 localidades (por ejemplo, en La Calera), la vista previa responde `422 ubicacion-fuera-de-cobertura`. Se descartó la consulta interna a Matching, que agregaba una llamada síncrona entre servicios.
+
+**Implementación (SCRUM-456).** La consulta a Nominatim se acota al rectángulo de cobertura (`viewbox` con `bounded=1`) y pide un solo resultado. Si la dirección completa no da resultado, ServiceRequest reintenta una vez con la vía sola (lo que va antes de `#` o de la primera coma), dentro del mismo `Geocoding__Timeout` (3 segundos). La dirección no se registra en los logs (K12). Antes de geocodificar al crear, valida los demás campos, para no consultar Nominatim con una solicitud que se rechazaría igual.
 
 **Errores (contrato v1):** `400 validacion`; `422 ubicacion-fuera-de-cobertura` si la ubicación está fuera del área de cobertura (RN-SR9); `422 categoria-no-disponible` si la categoría no existe o no está activa en el tenant (RN-SR10); **v5:** `422 direccion-no-encontrada` si llega sin `location` y la dirección no se pudo geocodificar. **Pendiente:** `422 tenant-inactivo` (RN-T1) exige que ServiceRequest conozca el estado del tenant; hoy solo lo rechaza el login.
 
@@ -2297,7 +2303,7 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`GET /v1/catalog/categories`|`catalog.v1.yaml` 1.1.0|Catalog|2, 6 (sin la categoría inactiva)|—|
 |`POST /v1/catalog/admin/categories`|`catalog.v1.yaml` 1.1.0|Catalog|1, 6|1: nombre repetido (409); 4: rol sin permiso (403)|
 |`PATCH /v1/catalog/admin/categories/{id}`|`catalog.v1.yaml` 1.1.0|Catalog|6 (desactivar)|6: inexistente (404)|
-|`POST /v1/service-requests`|`service-request.v1.yaml` 1.0.0+ (sin `location` desde 1.3.0: pendiente, SCRUM-456)|ServiceRequest|3|4: sin token (401), rol sin permiso (403), fuera de Bogotá (422), descripción corta (400); 7: técnico (403)|
+|`POST /v1/service-requests`|`service-request.v1.yaml` 1.0.0+ (sin `location` desde 1.3.0: en revisión, SCRUM-456)|ServiceRequest|3|4: sin token (401), rol sin permiso (403), fuera de Bogotá (422), descripción corta (400); 7: técnico (403)|
 |`GET /v1/service-requests/{id}`|`service-request.v1.yaml` 1.0.0+|ServiceRequest|3|4: solicitud de otro cliente (404)|
 |`GET /v1/service-requests/{id}` como técnico asignado|`service-request.v1.yaml` 1.1.0 e `identity-internal.v1.yaml` 1.0.0|ServiceRequest e Identity (SCRUM-91)|—|—|
 |`GET /v1/technicians/me/service-requests`|`service-request.v1.yaml` 1.2.0|ServiceRequest (SCRUM-464)|—|—|
@@ -2306,7 +2312,8 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`GET /v1/matching/offers` y `POST /v1/matching/offers/{attemptId}/accept` y `/reject`|`matching.v1.yaml` 1.0.0|En revisión (SCRUM-79): aceptar, rechazar y vencer (RN-M8)|—|—|
 |`POST /v1/platform/tenants`|`identity.v1.yaml` 1.5.0|Identity (SCRUM-462)|—|—|
 |Equipo del proveedor, invitación y `POST /v1/auth/password/setup`|`identity.v1.yaml` 1.7.0|Identity (SCRUM-97, SCRUM-461)|—|—|
-|`GET /v1/notifications` y `POST /v1/notifications/{id}/read`|`communication.v1.yaml` 1.0.0|Pendiente (SCRUM-456)|—|—|
+|`POST /v1/service-requests/location-preview`|`service-request.v1.yaml` 1.3.0|En revisión (SCRUM-456)|—|—|
+|`GET /v1/notifications` y `POST /v1/notifications/{id}/read`|`communication.v1.yaml` 1.0.0|En revisión (SCRUM-456)|—|—|
 |`POST /v1/auth/register/company`, `POST /v1/auth/refresh` y `POST /v1/companies/me/users`|Sin contrato|Pendiente|—|—|
 |WebSocket `/v1/realtime`|`asyncapi/realtime.v1.yaml` 1.0.0|Communication (ADR-023)|—|—|
 |Resto de ServiceRequest (listado, cancelación, cotizaciones, inicio, evidencia, cierre, calificación, historial y resumen) y Payments|Sin contrato|Pendiente|—|—|
@@ -2315,8 +2322,8 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |---|---|---|---|---|
 |`service-request.created`|`service-request.created.v1.json` (`quickpatch-kafka` `v0.2.0`; topic de 3 particiones)|ServiceRequest, con Transactional Outbox|Matching (`ServiceRequestCreatedConsumerIT`). Communication: pendiente|Postman 3 (la solicitud se crea en `buscando_tecnico`)|
 |`catalog.category-changed`|`catalog.category-changed.v1.json` (`quickpatch-kafka` `v0.2.0`; topic de 1 partición, clave `categoryId`)|Catalog, con Transactional Outbox|ServiceRequest (réplica `service_request_categories`). Matching: pendiente|Postman 3 (reintenta hasta que la réplica tiene la categoría) y 6|
-|`technician.registered` y `technician.verification-changed`|`quickpatch-kafka` v1 (v4; topics de 1 partición, clave `technicianId`)|Identity, con Transactional Outbox|Matching (proyección del técnico, SCRUM-88). Communication: pendiente (buzón, SCRUM-456)|—|
-|`matching.offer-created`, `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed`|`quickpatch-kafka` v1 (v4; topics de 3 particiones, clave `serviceRequestId`)|Matching (SCRUM-76: ofertas, espera y reanudación; aceptación pendiente, SCRUM-79)|ServiceRequest (espera y reanudación, SCRUM-460; asignación, SCRUM-91). Communication (canal en tiempo real; buzón pendiente, SCRUM-456)|—|
+|`technician.registered` y `technician.verification-changed`|`quickpatch-kafka` v1 (v4; topics de 1 partición, clave `technicianId`)|Identity, con Transactional Outbox|Matching (proyección del técnico, SCRUM-88). Communication (buzón, en revisión: SCRUM-456)|—|
+|`matching.offer-created`, `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed`|`quickpatch-kafka` v1 (v4; topics de 3 particiones, clave `serviceRequestId`)|Matching (SCRUM-76: ofertas, espera y reanudación; aceptación pendiente, SCRUM-79)|ServiceRequest (espera y reanudación, SCRUM-460; asignación, SCRUM-91). Communication (canal en tiempo real; buzón en revisión, SCRUM-456)|—|
 |Los 9 eventos restantes del Cuadro 11|Sin esquema|Pendiente|—|—|
 
 _Cuadro 15: Trazabilidad entre el catálogo, los contratos, el código y la colección de Postman_
@@ -2446,7 +2453,7 @@ El aislamiento entre tenants sigue ADR-005 (shared-schema con `tenant_id` + Row 
 |`service_request_categories`|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant; solo la escribe el consumidor de `catalog.category-changed`.|
 |`processed_events`|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant.|
 |`outbox_events`|NOT NULL, con el tenant de la sesión por defecto|Política de inserción por tenant; la lectura para publicar la hace el rol del publicador (sección 10.2).|
-|`localities`|No aplica: catálogo de referencia común a todos los tenants (sección 5.18)|Sin RLS. El rol `matching_app` solo tiene `SELECT`; la carga la hace el rol de migraciones.|
+|`localities`|No aplica: catálogo de referencia común a todos los tenants (sección 5.18)|Sin RLS. El rol `matching_app` solo tiene `SELECT`; la carga la hace el rol de migraciones. **v5.1 (P-09):** lo mismo para la copia de ServiceRequest con `service_request_app`.|
 |`audit_logs`|Admite nulos: los eventos de plataforma no pertenecen a un tenant|Política de aislamiento para filas con tenant; las filas sin tenant solo las escribe `identity_platform`. Ningún rol de aplicación puede modificar ni borrar filas (RN-A1).|
 
 ### 10.2 Roles de base de datos y permisos
@@ -2588,7 +2595,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |3.1 (revisión)|SCRUM-259|Atiende la revisión del PR #35: los artefactos relacionados pasan a la sección 1.7 para que Multi-tenancy siga en la 10 (el código y los contratos citan DD 10.2 a 10.4). Se incorporan los cambios de develop: VMs de ADR-022, contratos en `quickpatch-api-gateway` y `quickpatch-kafka` (ADR-021), referencias al SDD organizado por C4 y la geocodificación de RIE-02 fuera de `coverage_zones`. Se corrige la tabla de propuestas y se alinea con SRS V4 y SAD v2.25.|
 |4.0|DD V4 (SCRUM-416, Sprint 4)|Incremento del técnico. **Modelo (SCRUM-417):** `technician_availability.projection_updated_at`; restricciones, índices y RLS de `technician_profiles`, `technician_availability`, `coverage_zones`, `matching_attempts` y `matching_requests`. **Contratos (SCRUM-418):** `matching.v1.yaml` 1.0.0, `identity.v1.yaml` 1.3.0 y `service-request.v1.yaml` 1.1.0 en `quickpatch-api-gateway`; seis eventos v1 con sus topics en `quickpatch-kafka`. P-01, P-03, P-04 y P-05 pasan a decisiones adoptadas y P-01 se alinea con el ADR-017 (sección 1.8). DEP-01 y DEP-18 resueltas. **SCRUM-419:** `pm.execution.setNextRequest` en el generador (PR #68). **Canal en tiempo real:** la 8.5 deja de estar pendiente de decisión (ADR-023) y enlaza `asyncapi/realtime.v1.yaml` 1.0.0; `matching_requests.client_id` y `clientId` en los eventos de matching para enrutar los avisos al cliente.|
 |5.0|DD V5 (SCRUM-455)|**ADR-024:** geocodificación propia (RIE-02) con `location` opcional y `422 direccion-no-encontrada` en `POST /v1/service-requests` (contrato 1.3.0), y buzón de notificaciones (RIE-03) con la tabla `notifications` en `db_communication` y `communication.v1.yaml` 1.0.0. **Consulta interna por lote:** `identity-internal.v1.yaml` 1.0.0 (SCRUM-91). **Cambios ya implementados que faltaban:** `service_requests.matching_updated_at` (SCRUM-460) y `matching_requests.description` (SCRUM-79); sección 8.3.14 con `specialtyId`, sin `availability` y con el enlace de invitación en lugar del correo de Communication (SCRUM-97, SCRUM-461); tabla `password_setup_tokens`; `crear_tenant` en `audit_logs` y `POST /v1/platform/tenants` (SCRUM-462); `X-Channel-Id` (SCRUM-60). Vista previa de la geocodificación (`POST /v1/service-requests/location-preview`, `Geocoding__NominatimUrl`) y propuesta P-09. DEP-09 pasa a parcial (el Gateway ya fija `X-Channel-Id`), DEP-19 se decide para el MVP y se agrega DEP-20. La trazabilidad (8.8) se actualiza con lo implementado.|
-|5.1|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.1|SCRUM-456|**P-09 decidida:** copia de solo lectura de `localities` en ServiceRequest, con las condiciones de la sección 5.18 (misma capa IDECA, sin `tenant_id` ni RLS, solo `SELECT` para `service_request_app`, y las dos migraciones se actualizan juntas). Detalle de la implementación de la geocodificación (sección 8.3.3) y del buzón (sección 8.2.6), con la regla de la asignación independiente del evento por SCRUM-466. Estado de implementación (sección 5) y trazabilidad (8.8): SCRUM-456 en revisión.|
+|5.2|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
