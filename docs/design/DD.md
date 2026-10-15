@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|4.0|
+|**Versión**|5.0|
 |**Fecha**|Octubre de 2026|
-|**Alineado con**|SRS V4, SAD v2.26 (ADR-017 y ADR-023), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-416 — Diccionario de Datos y Contratos DD V4 (antes SCRUM-259, DD V3)|
+|**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
+|**Historia en Jira**|SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -117,6 +117,7 @@ Algunos elementos de esta versión resuelven dependencias que el DD v2.2 dejaba 
 |P-06|Las tareas programadas que recorren filas de todos los tenants usan un rol `<servicio>_scheduler` que solo puede leer identificadores y aplica cada cambio con el rol `_app` y el tenant de la fila.|RN-M3, RN-Q6|Documento de Infraestructura, sección 5.7|
 |P-07|Agregar `code` a Problem Details con el catálogo del Cuadro 10.|Errores homogéneos para el frontend|Contratos OpenAPI (cambio compatible)|
 |P-08|Aceptar `Idempotency-Key` en la creación de solicitudes y en el pago.|AC5-E5|Contratos OpenAPI (cambio compatible)|
+|P-09|**Nueva v5.** ServiceRequest guarda una copia de solo lectura del catálogo `localities` para responder la localidad en la vista previa de la geocodificación (sección 8.3.3).|Vista previa de ADR-024 sin llamada síncrona a Matching (RN-M9)|DD (sección 5) y migración de ServiceRequest (SCRUM-456)|
 
 _Cuadro 3: Propuestas de diseño pendientes de validación del equipo_
 
@@ -188,7 +189,24 @@ Decisiones de esta versión:
 
 **Canal en tiempo real (ADR-023):** el contrato y sus decisiones están en la sección 8.5.
 
-Fuera de este incremento: el contrato de la consulta interna por lote de ServiceRequest a Identity (nombres y teléfono del detalle, sección 8.3.4), los consumidores de Communication y el consumo de `catalog.category-changed` en Matching.
+Fuera de este incremento: el consumo de `catalog.category-changed` en Matching. La consulta interna por lote de ServiceRequest a Identity y el buzón de Communication llegan en la versión 5.0 (sección 1.9).
+
+### 1.9 Dependencias externas, equipo del proveedor y canal (versión 5.0)
+
+**ADR-024 (SCRUM-455).** R5 no cambia: la geocodificación (RIE-02) y las notificaciones (RIE-03) se resuelven dentro de las 7 VMs.
+
+- **Geocodificación (RIE-02):** `POST /v1/service-requests` acepta la solicitud sin `location` si llega `addressText`. ServiceRequest la geocodifica con un Nominatim propio que solo tiene el mapa de Bogotá; si no la encuentra, responde `422 direccion-no-encontrada`. Como Nominatim no usa el número de casa, `POST /v1/service-requests/location-preview` devuelve antes el punto y la localidad para que el cliente los confirme (sección 8.3.3; `service-request.v1.yaml` 1.3.0).
+- **Notificaciones (RIE-03):** canal en tiempo real (sección 8.5) y buzón en Communication Service: tabla `notifications` en `db_communication` (sección 5.22) y `communication.v1.yaml` 1.0.0 (sección 8.2.6). El correo y el push con la app cerrada quedan fuera del MVP.
+- **Consulta interna por lote:** `identity-internal.v1.yaml` 1.0.0 (sección 8.3.4, SCRUM-91).
+
+**Cambios ya implementados que esta versión documenta:**
+
+- `service_requests.matching_updated_at` (SCRUM-460): versión del último evento de Matching aplicado (sección 5.5).
+- Equipo del proveedor (SCRUM-97 y SCRUM-461): la sección 8.3.14 pasa a `specialtyId`, sin `availability`, y con un enlace de invitación en lugar del correo de Communication. Tabla `password_setup_tokens` (sección 5.21).
+- Creación de tenants (SCRUM-462): `POST /v1/platform/tenants` y la acción `crear_tenant` en `audit_logs` (sección 5.14).
+- Canal (SCRUM-60): Identity resuelve el tenant del registro y el login con la cabecera `X-Channel-Id` (secciones 8.1 y 10.3).
+
+Los contratos de esta versión se publican juntos en el tag `v0.6.0` de `quickpatch-api-gateway`: `identity.v1.yaml` 1.5.0 a 1.7.0, `identity-internal.v1.yaml` 1.0.0, `service-request.v1.yaml` 1.3.0 y `communication.v1.yaml` 1.0.0.
 
 ---
 
@@ -222,14 +240,14 @@ QUICKPATCH se descompone en 8 microservicios de dominio (SAD, sección 4.2.2), d
 
 |Servicio|Entidades persistentes en esta versión|
 |---|---|
-|Identity Service|`tenants`, `users`, `technician_profiles`. El equipo de un proveedor se representa con `technician_profiles.provider_id` (P-02).|
+|Identity Service|`tenants`, `users`, `technician_profiles` y `password_setup_tokens` (v5). El equipo de un proveedor se representa con `technician_profiles.provider_id` (P-02).|
 |Actors Service|Ninguna todavía. `Supplier`, `Ally` y `Client` son conceptos evolutivos (SDD, sección 6.14).|
 |Catalog Service|`service_categories`|
 |Matching Service|`technician_availability` (incluye la proyección de especialidad y verificación, P-01), `coverage_zones`, `matching_attempts`, `matching_requests` (P-05) y el catálogo de referencia `localities` (P-04).|
 |ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence` y la réplica de lectura `service_request_categories`|
 |Ranking Service|Ninguna todavía. Consume el evento `service-request.rated`; su persistencia es evolutiva (SDD, sección 6.14).|
 |Payments Service|`payments`, `invoices`|
-|Communication Service|Ninguna todavía. Consume eventos para notificar; `Notification`, `Conversation` y `Complaint` son evolutivos.|
+|Communication Service|`notifications` (v5, buzón de ADR-024) en `db_communication`. `Conversation` y `Complaint` son evolutivos.|
 |Transversal (en cada servicio)|`audit_logs`, `outbox_events`, `processed_events`|
 
 _Cuadro 7: Propiedad de las entidades por microservicio_
@@ -605,16 +623,17 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 ## 5. Diccionario de Datos
 
-**Estado de implementación (`develop`, 7 de octubre de 2026).** El diccionario describe el modelo completo de esta versión; no todas sus tablas existen todavía en el código. Este cuadro resume qué tablas ya tienen migración en cada servicio y qué falta. Las columnas pendientes se marcan en su tabla con **Pendiente de implementar**.
+**Estado de implementación (`develop`, 14 de octubre de 2026).** El diccionario describe el modelo completo de esta versión; no todas sus tablas existen todavía en el código. Este cuadro resume qué tablas ya tienen migración en cada servicio y qué falta. Las columnas pendientes se marcan en su tabla con **Pendiente de implementar**.
 
 |Servicio|Tablas implementadas|Pendiente|
 |---|---|---|
-|Identity|`tenants`, `users`, `technician_profiles`, `audit_logs`|`users.company_id` y `client_companies` (RF-06)|
+|Identity|`tenants`, `users`, `technician_profiles` (con `provider_id`), `password_setup_tokens`, `audit_logs`, `outbox_events`|`users.company_id` y `client_companies` (RF-06)|
 |Catalog|`service_categories` (con `updated_at`), `outbox_events`|—|
-|ServiceRequest|`service_requests`, `service_request_categories`, `outbox_events`, `processed_events`|`company_id` y `client_type` (RF-08), `cancelled_by` y `cancelled_by_type` (RF-36); `quotes`, `ratings` y `service_evidence`|
-|Matching|`processed_events`|`technician_availability`, `coverage_zones` y `localities` (SCRUM-88); `matching_attempts` y `matching_requests` (SCRUM-29, SCRUM-79). Contratos publicados en la versión 4.0|
+|ServiceRequest|`service_requests` (con `matching_updated_at`), `service_request_categories`, `outbox_events`, `processed_events`|`company_id` y `client_type` (RF-08), `cancelled_by` y `cancelled_by_type` (RF-36); `quotes`, `ratings` y `service_evidence`|
+|Matching|`technician_availability`, `coverage_zones`, `localities`, `matching_requests`, `matching_attempts`, `outbox_events`, `processed_events`|—|
+|Communication|—|`notifications` en `db_communication` (SCRUM-456); hoy solo el canal en tiempo real, sin base|
 |Payments|—|`payments` e `invoices`|
-|Actors, Ranking, Communication|—|Sin tablas en esta versión|
+|Actors y Ranking|—|Sin tablas en esta versión|
 
 _Cuadro 8: Estado de implementación del modelo de datos_
 
@@ -771,10 +790,11 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |company_id|UUID|Sí|Ref. lógica|**Nuevo v3. Pendiente de implementar (RF-08).** Empresa cliente (`client_companies.id`) cuando la crea un `empresa_contacto`; sale del token (RN-SR12).|
 |client_type|VARCHAR(10)|No|CHECK|**Nuevo v3. Pendiente de implementar (RF-08).** `hogar` o `empresa`. Se fija a partir del rol del creador: `empresa_contacto` produce `empresa` (RF-08, SCRUM-28).|
 |description|TEXT|No|—|Descripción del problema.|
-|location|geometry(POINT,4326)|No|—|Ubicación geográfica del servicio.|
+|location|geometry(POINT,4326)|No|—|Ubicación geográfica del servicio. Viene del GPS del teléfono o, si la solicitud llega sin coordenadas, de geocodificar `address_text` con el Nominatim propio (**v5**, ADR-024, sección 8.3.3).|
 |address_text|VARCHAR(255)|No|—|Dirección escrita.|
 |status|VARCHAR(30)|No|—|Estado actual de la solicitud.|
-|assigned_at|TIMESTAMPTZ|Sí|—|Momento de asignación.|
+|assigned_at|TIMESTAMPTZ|Sí|—|Momento de asignación (`data.assignedAt` de `matching.technician-assigned`, SCRUM-91).|
+|matching_updated_at|TIMESTAMPTZ|Sí|—|**Nuevo v5 (SCRUM-460).** `occurredAt` del último evento de Matching aplicado. Los eventos de Matching llegan por topics distintos y Kafka no los ordena entre sí: uno más viejo que este valor se descarta (ADR-017). Un evento reciente que el estado no admite (por ejemplo, la solicitud ya se canceló) no cambia el estado, pero sí este valor.|
 |started_at|TIMESTAMPTZ|Sí|—|Inicio del servicio.|
 |completed_at|TIMESTAMPTZ|Sí|—|Finalización del servicio.|
 |cancelled_at|TIMESTAMPTZ|Sí|—|Momento de la cancelación, si la hubo.|
@@ -1091,6 +1111,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 - `suspender_tecnico`
 - `acceso_denegado`
 - `alta_tecnico_proveedor` (**nuevo v3**, RF-16)
+- `crear_tenant` (**nuevo v5**, RF-21, SCRUM-462): `tenant_id` nulo, `target_id` el tenant creado y `metadata` con el nombre, el NIT y el `correlationId`
 - `activar_tenant` y `desactivar_tenant` (**nuevo v3**, RF-21)
 - `cancelar_solicitud_admin` (**nuevo v3**, cancelación por `admin_tenant`, RF-36)
 - `evento_descartado` (**nuevo v3**, consumidor que recibe un evento de una fila inexistente en su tenant, sección 10.3)
@@ -1148,6 +1169,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |client_id|UUID|No|Ref. lógica|**Nuevo v4.** Cliente dueño de la solicitud (`data.clientId` de `service-request.created`). Viaja en los eventos de matching para que Communication avise al cliente (sección 8.5).|
 |category_id|UUID|No|Ref. lógica|Categoría solicitada (Catalog Service).|
 |location|geometry(POINT,4326)|No|—|Ubicación del servicio.|
+|description|TEXT|Sí|CHECK|**Nuevo v5 (SCRUM-79).** Descripción del problema (`data.description` de `service-request.created`), que el técnico ve en la oferta antes de aceptar (esquema `Offer`). Entre 10 y 1000 caracteres; nula en las solicitudes guardadas antes de la migración `V5`.|
 |status|VARCHAR(15)|No|—|Estado de la búsqueda.|
 |created_at|TIMESTAMPTZ|No|—|Momento en que llegó `service-request.created`.|
 |updated_at|TIMESTAMPTZ|No|—|Último cambio de estado.|
@@ -1236,6 +1258,55 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |updated_at|TIMESTAMPTZ|No|—|Momento del cambio en Catalog (`data.updatedAt` del evento). Un evento con un `updatedAt` anterior al guardado se descarta.|
 
 **Reglas de negocio:** RN-SR10 (sección 7.4) y RN-EV1 (sección 7.11).
+
+### 5.21 Tabla `password_setup_tokens`
+
+**Nueva v5 (SCRUM-461).** **Servicio propietario:** Identity Service.
+
+**Propósito:** Invitaciones para que el técnico del equipo de un proveedor defina su contraseña (sección 8.3.14). El técnico se crea sin contraseña utilizable y el proveedor le comparte el enlace por el medio que use; no hay correo en el MVP (ADR-024).
+
+**Requisitos relacionados:** RF-16.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|id|UUID|No|PK|Identificador de la invitación.|
+|tenant_id|UUID|No|FK → `tenants`|Tenant del técnico.|
+|user_id|UUID|No|FK → `users`|Técnico invitado. Índice `ix_password_setup_tokens_user`.|
+|token_hash|CHAR(64)|No|UNIQUE|SHA-256 del token en hexadecimal. El token en claro (256 bits en base64url) se entrega una sola vez al proveedor y no se guarda.|
+|expires_at|TIMESTAMPTZ|No|—|Vence a las 72 horas. Al generar una invitación nueva, las anteriores sin usar se anulan llevando este valor al momento actual.|
+|used_at|TIMESTAMPTZ|Sí|—|Cuándo se definió la contraseña con esta invitación; nulo mientras no se use.|
+|created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
+
+**Reglas:** la invitación sirve una sola vez y solo antes de `expires_at`. Un token usado, vencido, anulado o de otro tenant responde igual (`400 enlace-invalido`), para no revelar cuál fue el caso. RLS por tenant como `users`; `identity_app` tiene `SELECT`, `INSERT` y `UPDATE`.
+
+### 5.22 Tabla `notifications`
+
+**Nueva v5 (ADR-024, SCRUM-455).** **Servicio propietario:** Communication Service, en su base `db_communication`.
+
+**Propósito:** Buzón de notificaciones dentro de la app (RIE-03). Communication crea una fila por destinatario al consumir cada evento de la tabla de tipos de la sección 8.2.6, y la app la lista y la marca como leída con `communication.v1.yaml` 1.0.0.
+
+**Requisitos relacionados:** RIE-03, RF-11, RNF-06.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|id|UUID|No|PK|Identificador de la notificación.|
+|tenant_id|UUID|No|—|`tenantId` del evento.|
+|user_id|UUID|No|Ref. lógica|Destinatario (`users.id` en Identity, claim `sub`).|
+|type|VARCHAR(40)|No|CHECK|Tipo de notificación (sección 8.2.6), por ejemplo `tecnico-asignado`.|
+|title|VARCHAR(100)|No|—|Título corto, en español.|
+|message|VARCHAR(500)|No|—|Texto para el usuario. Sin dirección ni teléfono (RN-SR13).|
+|service_request_id|UUID|Sí|Ref. lógica|Solicitud relacionada; nulo en los tipos de registro y verificación.|
+|source_event_id|UUID|No|—|`eventId` del evento que la originó.|
+|created_at|TIMESTAMPTZ|No|—|`occurredAt` del evento.|
+|read_at|TIMESTAMPTZ|Sí|—|Cuándo el usuario la marcó como leída.|
+
+**Restricciones e índices:**
+
+- `UNIQUE (source_event_id, user_id)`: un evento crea a lo sumo una notificación por destinatario, así que un evento repetido no la duplica (RN-EV1) sin necesidad de `processed_events`.
+- Índice `(tenant_id, user_id, created_at DESC)` para la lista, e índice parcial `(tenant_id, user_id) WHERE read_at IS NULL` para `unreadCount`.
+- RLS por tenant como el resto de las tablas (sección 10.1). El rol `communication_app` tiene `SELECT` e `INSERT`, y `UPDATE` solo sobre `read_at`.
+
+**Retención:** el MVP no borra notificaciones. Una política de retención (por ejemplo, 90 días) queda como evolución.
 
 ---
 
@@ -1521,7 +1592,7 @@ Esta sección define los contratos REST y de eventos de QUICKPATCH. Siguen el pr
 |Ubicación|`{ "latitude": 4.6486, "longitude": -74.0628 }` en WGS 84 (SRID 4326), como en los contratos v1.|
 |Autenticación|`Authorization: Bearer <accessToken>`. JWT firmado con **RS256** por Identity Service, que es el único con la llave privada; los demás servicios lo validan con la llave pública. Claims: `sub` (userId), `tenant_id` (tenantId), `role`, `iss`, `aud`, `exp` y `jti`; para `empresa_contacto`, también `company_id` (sección 10.3).|
 |Cabeceras internas|El API Gateway valida el token y agrega `X-User-Id`, `X-Tenant-Id`, `X-User-Role` y `X-Correlation-Id` (SDD, sección 8.3). El Gateway elimina esas cabeceras si llegan desde fuera, así que un cliente no puede fijarlas. Además, cada servicio valida el token por su cuenta y toma el usuario, el tenant y el rol de los claims, no de esas cabeceras (defensa en profundidad).|
-|Canal|Las peticiones sin token (registro, login y catálogos públicos) llevan `X-Channel-Id`, que el Gateway traduce al tenant (RN-U5, DEP-09). En el MVP opera un solo tenant y la instancia de Identity lo tiene configurado (`Channel__TenantId`); el Gateway debe sobrescribir `X-Channel-Id` y no aceptarlo del cliente.|
+|Canal|Las peticiones sin token (registro, login, definición de contraseña y catálogos públicos) llevan `X-Channel-Id` (por ejemplo `quickpatch-mobile` o `quickpatch-web`). **v5 (SCRUM-60, `identity.v1.yaml` 1.6.0):** Identity traduce el canal al tenant con su configuración (`Channel__Tenants__<canal>`); sin cabecera usa el tenant de la instancia (`Channel__TenantId`); con el mapa configurado, un canal que no está en él responde `503 canal-sin-tenant` en lugar de caer en el tenant por defecto (RN-U5, DEP-09). El Gateway fija `X-Channel-Id` y descarta la que mande el cliente (`quickpatch-api-gateway` #13): `quickpatch-web` si el `Origin` o el `Referer` es el panel, y `quickpatch-mobile` en otro caso. Un cliente que no sea navegador puede escribir esas cabeceras; con un solo tenant los dos canales dan el mismo tenant, y con más de uno hace falta DEP-09.|
 |Correlación|Si el cliente envía `X-Correlation-Id`, se conserva; si no, el Gateway lo genera. Viaja en los logs y en `correlationId` de los eventos (AC7-E4).|
 |Idempotencia|**Propuesta P-08.** `POST /v1/service-requests` y `POST /v1/service-requests/{id}/payment` aceptarán la cabecera `Idempotency-Key` (UUID generado por el cliente). Una petición repetida con la misma clave dentro de 24 horas devuelve la respuesta original sin repetir el efecto. El pago además está protegido por RN-P5.|
 |Paginación|`?page=1&size=20` (máximo 100). La respuesta es `{ "items": [...], "page": 1, "size": 20, "totalItems": 57 }`.|
@@ -1593,10 +1664,13 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |POST|`/v1/admin/technicians/{userId}/approve`|`admin_tenant`|RF-19|Contrato v1.3.0|Aprobar.|
 |POST|`/v1/admin/technicians/{userId}/reject`|`admin_tenant`|RF-19|Contrato v1.3.0|Rechazar con motivo.|
 |POST|`/v1/admin/technicians/{userId}/suspend`|`admin_tenant`|RF-20|Contrato v1.3.0|Suspender con motivo.|
-|POST|`/v1/providers/me/technicians`|`proveedor`|RF-16|Nuevo|Dar de alta un técnico del equipo (RN-TP3).|
-|GET|`/v1/providers/me/technicians?status=`|`proveedor`|RF-16|Nuevo|Listar el equipo; `status` es `activo` (aprobado) o `inactivo` (pendiente, rechazado o suspendido).|
+|POST|`/v1/providers/me/technicians`|`proveedor`|RF-16|Contrato v1.7.0|Dar de alta un técnico del equipo (RN-TP3) con su invitación (sección 8.3.14).|
+|GET|`/v1/providers/me/technicians?status=`|`proveedor`|RF-16|Contrato v1.7.0|Listar el equipo; `status` es `activo` (aprobado) o `inactivo` (pendiente, rechazado o suspendido).|
+|POST|`/v1/providers/me/technicians/{userId}/invitation`|`proveedor`|RF-16|Contrato v1.7.0|Generar un enlace nuevo y anular los anteriores sin usar.|
+|POST|`/v1/auth/password/setup`|Público, con el token de la invitación|RF-16|Contrato v1.7.0|El técnico del equipo define su contraseña.|
+|GET|`/internal/v1/users?ids=`|Interno: ServiceRequest con el JWT del usuario|RF-14|Contrato interno v1.0.0|Nombre y teléfono por lote (sección 8.3.4). No pasa por el Gateway.|
 |GET|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.2.0|Listar todos los tenants, activos e inactivos, ordenados por nombre.|
-|POST|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Nuevo|Crear un tenant (empresa oferente). Sin contrato todavía.|
+|POST|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.5.0|Crear un tenant (empresa oferente) en `activo`; NIT único en la plataforma (`409`). Queda en `audit_logs` (`crear_tenant`). No crea usuarios ni el canal.|
 |PATCH|`/v1/platform/tenants/{id}`|`admin_plataforma`|RF-21|Contrato v1.2.0|Activar o desactivar con `{ "status": "activo" \| "inactivo" }` (RN-T1). Repetir el estado no es error; desactivar el tenant de la plataforma responde `409 tenant-plataforma`. Queda en `audit_logs`.|
 
 #### 8.2.2 Catalog Service
@@ -1624,7 +1698,8 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 
 |Método|Endpoint|Roles|RF|v3|Descripción|
 |---|---|---|---|---|---|
-|POST|`/v1/service-requests`|`cliente`, `empresa_contacto`|RF-07, RF-08||Crear solicitud.|
+|POST|`/v1/service-requests`|`cliente`, `empresa_contacto`|RF-07, RF-08|Contrato v1.3.0 (ubicación opcional)|Crear solicitud; sin `location`, se geocodifica `addressText` (sección 8.3.3).|
+|POST|`/v1/service-requests/location-preview`|`cliente`, `empresa_contacto`|RF-07|Contrato v1.3.0|Vista previa de la geocodificación: punto, localidad y dirección reconocida, sin crear nada (sección 8.3.3).|
 |GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Nuevo|Listar: el cliente ve las suyas; el `admin_tenant`, todas las de su tenant.|
 |GET|`/v1/service-requests/{id}`|Cliente dueño, técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato.|
 |POST|`/v1/service-requests/{id}/cancel`|Cliente dueño, `admin_tenant`|RF-36||Cancelar con motivo.|
@@ -1638,7 +1713,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |GET|`/v1/service-requests/{id}/evidence/{evidenceId}/file`|Cliente dueño, técnico asignado, `admin_tenant`|RF-15|Nuevo|Descargar archivo de evidencia; el servicio lo recupera del almacenamiento y lo devuelve con su `Content-Type`.|
 |POST|`/v1/service-requests/{id}/complete`|Técnico asignado|RF-15||Completar servicio.|
 |POST|`/v1/service-requests/{id}/rating`|Cliente dueño|RF-12||Calificar.|
-|GET|`/v1/technicians/me/service-requests?status=&page=&size=`|`tecnico`|RF-17|Nuevo|Historial del técnico, sin datos de contacto (RN-SR13).|
+|GET|`/v1/technicians/me/service-requests?status=&page=&size=`|`tecnico`|RF-17|Contrato v1.2.0|Solicitudes asignadas al técnico, de la asignación más reciente a la más antigua, sin dirección, ubicación ni cliente (RN-SR13; SCRUM-464).|
 |GET|`/v1/admin/service-requests/summary`|`admin_tenant`|RF-18|Nuevo|Conteo de solicitudes por estado (DEP-15).|
 
 #### 8.2.5 Payments Service
@@ -1657,6 +1732,23 @@ Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la sol
 |Método|Endpoint|Roles|RF|v3|Descripción|
 |---|---|---|---|---|---|
 |GET|`/v1/realtime` (WebSocket)|`cliente`, `empresa_contacto`, `tecnico`, `admin_tenant`|RF-11, RNF-06|Contrato AsyncAPI 1.0.0|Canal de avisos en tiempo real (ADR-023, sección 8.5). Se describe en `asyncapi/realtime.v1.yaml`, no en OpenAPI.|
+|GET|`/v1/notifications?unread=&page=&size=`|`cliente`, `empresa_contacto`, `tecnico`, `admin_tenant`|RIE-03|Contrato v1.0.0|Buzón del usuario del token, del más reciente al más antiguo, con `unreadCount` (ADR-024, sección 5.22).|
+|POST|`/v1/notifications/{id}/read`|Los mismos|RIE-03|Contrato v1.0.0|Marcar como leída; idempotente. Una notificación de otro usuario o tenant responde `404`.|
+
+**Tipos de notificación (`communication.v1.yaml` 1.0.0).** Cada uno nace de un evento que ya existe:
+
+|`type`|Evento|Destinatario|
+|---|---|---|
+|`solicitud-creada`|`service-request.created`|Cliente dueño|
+|`tecnico-asignado`|`matching.technician-assigned`|Cliente dueño|
+|`solicitud-asignada`|`matching.technician-assigned`|Técnico asignado|
+|`sin-tecnico-disponible`|`matching.no-technician-available`|Cliente dueño|
+|`busqueda-reanudada`|`matching.search-resumed`|Cliente dueño|
+|`oferta-recibida`|`matching.offer-created`|Técnico de la oferta|
+|`registro-recibido`|`technician.registered`|Técnico o proveedor|
+|`verificacion-actualizada`|`technician.verification-changed`|Técnico o proveedor|
+
+El "registro confirmado" del cliente que menciona RIE-03 no tiene evento (Identity no publica nada al registrar un cliente), y la cotización llega cuando se publiquen sus esquemas (DEP-20).
 
 
 ### 8.3 Especificación de los endpoints principales
@@ -1745,7 +1837,19 @@ El token de acceso dura 15 minutos y el de renovación 7 días (SDD V2, antes DD
 }
 ```
 
-**Errores (contrato v1):** `400 validacion`; `422 ubicacion-fuera-de-cobertura` si la ubicación está fuera del área de cobertura (RN-SR9); `422 categoria-no-disponible` si la categoría no existe o no está activa en el tenant (RN-SR10). **Pendiente:** `422 tenant-inactivo` (RN-T1) exige que ServiceRequest conozca el estado del tenant; hoy solo lo rechaza el login.
+**Ubicación (v5, ADR-024, RIE-02; contrato 1.3.0).** Las coordenadas del GPS son la primera opción. Si la solicitud llega sin `location`, ServiceRequest geocodifica `addressText` antes de guardarla:
+
+1. Llama al Nominatim propio de la VM de datos de su ambiente (VM4 en producción, VM5 en QA), que solo tiene el mapa de Bogotá. La llamada sale del k3s por la red interna, con un tiempo de espera corto, y no pasa por VM1. La dirección no sale de la infraestructura del laboratorio (K12).
+2. Si Nominatim devuelve un punto, se aplica RN-SR9 igual que a las coordenadas del GPS, y la solicitud sigue el flujo normal.
+3. Si no encuentra la dirección o no responde a tiempo, responde `422 direccion-no-encontrada` y no guarda nada: la app le pide al cliente compartir su ubicación y reintenta.
+
+**Vista previa (`POST /v1/service-requests/location-preview`).** Nominatim no usa el número de casa: ubica la calle o el barrio, así que el punto puede caer en otra localidad y cambiar qué técnicos cubren la solicitud (RN-M9). Por eso la app, sin GPS, primero pide la vista previa con `addressText`; ServiceRequest geocodifica igual que arriba y responde `location`, `locality` (`code` y `name`, los mismos de `GET /v1/localities`) y `matchedAddress` (lo que reconoció Nominatim), sin crear nada. El cliente confirma o mueve el pin y la solicitud se crea **con** `location`. Es `POST` para que la dirección no quede en la URL ni en los logs (K12).
+
+**Configuración de ServiceRequest:** `Geocoding__NominatimUrl` (por ejemplo `http://10.43.98.29:8088` en QA: el Nginx de VM5 que solo deja entrar a VM2, playbook `deploy-nominatim.yml`) y `Geocoding__Timeout`. Vacía, la geocodificación responde `422 direccion-no-encontrada`.
+
+**Localidad del punto (propuesta P-09).** Las 20 localidades son de Matching Service (`localities`, sección 5.18). Para responder la vista previa sin llamar a Matching, ServiceRequest tendría una copia de solo lectura del mismo catálogo de referencia, cargada por migración desde la misma capa oficial que la migración `V3` de Matching (IDECA, generalizada a 0,0002°), sin `tenant_id` ni RLS. Como es un catálogo estático y oficial, las dos copias dan la misma localidad; si cambia, se actualizan las dos migraciones. La alternativa es una consulta interna a Matching, que agrega una llamada síncrona entre servicios.
+
+**Errores (contrato v1):** `400 validacion`; `422 ubicacion-fuera-de-cobertura` si la ubicación está fuera del área de cobertura (RN-SR9); `422 categoria-no-disponible` si la categoría no existe o no está activa en el tenant (RN-SR10); **v5:** `422 direccion-no-encontrada` si llega sin `location` y la dirección no se pudo geocodificar. **Pendiente:** `422 tenant-inactivo` (RN-T1) exige que ServiceRequest conozca el estado del tenant; hoy solo lo rechaza el login.
 
 **Efecto:** inserta en `service_requests` y publica `service-request.created` en la misma transacción (ADR-007).
 
@@ -1785,7 +1889,7 @@ La respuesta tiene la misma estructura para todos los roles, pero algunos bloque
 
 **Contrato v1.1.0 (v4).** El contrato publicado conserva los campos de la versión 1.0.0 (`categoryId` en lugar del bloque `category`) y agrega `assignedAt`, `technician` (`id`, `fullName`) y `client` (`id`, `fullName`, `phone`) como campos opcionales y nulables. El técnico asignado consulta el detalle solo entre `asignado` y `completado`: fuera de ese rango responde `403 no-autorizado` (SCRUM-34, criterio 2), y un técnico que no es el asignado recibe `404` (sección 8.1). La vista del `admin_tenant`, el bloque `category`, `timeline` y `cancellation` quedan para cuando tengan historia.
 
-ServiceRequest Service no guarda el nombre del técnico ni del cliente: los obtiene de Identity Service con una consulta interna por lote, que es una de las excepciones de lectura permitidas por el principio del SAD (sección 4.3) porque el usuario necesita la respuesta de inmediato. Si Identity no responde, los bloques `technician` y `client` llegan con `fullName` y `phone` en `null`. **Pendiente (SCRUM-91):** esa consulta interna entre servicios no tiene contrato todavía.
+ServiceRequest Service no guarda el nombre del técnico ni del cliente: los obtiene de Identity Service con una consulta interna por lote, que es una de las excepciones de lectura permitidas por el principio del SAD (sección 4.3) porque el usuario necesita la respuesta de inmediato. Si Identity no responde, los bloques `technician` y `client` llegan con `fullName` y `phone` en `null`. **Contrato v5 (SCRUM-91):** `identity-internal.v1.yaml` 1.0.0, `GET /internal/v1/users?ids=` con hasta 20 ids. No pasa por el Gateway: ServiceRequest llama al Service de Kubernetes de Identity (el Ingress no publica `/internal`) y reenvía el JWT del usuario que pidió el detalle, así que el tenant sale del token y no hace falta una credencial nueva entre servicios. Los ids de otro tenant o inexistentes se omiten sin error. ServiceRequest espera como máximo 2 segundos.
 
 #### 8.3.5 Ofertas del técnico
 
@@ -1967,9 +2071,12 @@ Al rechazar la tercera, `serviceRequestStatus` es `cancelado` y `remainingQuotes
 
 #### 8.3.14 Equipo del proveedor — `POST /v1/providers/me/technicians`
 
-Mismo cuerpo que el registro de técnico (sección 8.3.1) sin `password` ni `role`. Identity Service crea el usuario con rol `tecnico`, `provider_id` igual al proveedor y el tenant del proveedor (RN-TP3), y envía al técnico un enlace para definir su contraseña mediante Communication Service. **Respuesta `201 Created`** con el mismo formato de 8.3.1.
+**Contrato `identity.v1.yaml` 1.7.0 (v5, SCRUM-97 y SCRUM-461).** Cuerpo: `email`, `fullName`, `phone`, `documentId` y `specialtyId` (el registro de técnico sin `password` ni `role`). Identity Service crea el usuario con rol `tecnico`, `provider_id` igual al proveedor del token, el tenant del proveedor (RN-TP3) y el perfil en `pendiente`; publica `technician.registered` con `providerId`. Como cualquier técnico, solo recibe ofertas cuando el `admin_tenant` lo aprueba (RN-TP1).
 
-`GET /v1/providers/me/technicians?status=activo` devuelve `items` con `userId`, `fullName`, `specialty`, `verificationStatus` y `availability`. La disponibilidad no está en Identity Service: la aplicación la consulta a Matching Service o se omite en el MVP (DEP-19).
+El técnico se crea **sin contraseña utilizable**. En lugar del correo de Communication Service (fuera del MVP, ADR-024), la **respuesta `201 Created`** trae el perfil y una `invitation` con `link`, `token` y `expiresAt`. El token va después de `#` en el enlace para que no quede en los registros de los servidores web; es de un solo uso, vence a las 72 horas y Identity solo guarda su hash (sección 5.21). El proveedor comparte el enlace por el medio que use con su técnico, y el técnico define la contraseña con `POST /v1/auth/password/setup` (`token`, `password`); después entra con el login normal.
+
+- `POST /v1/providers/me/technicians/{userId}/invitation` genera un enlace nuevo y anula los anteriores sin usar. Un técnico de otro proveedor o de otro tenant responde `404`; si ya definió su contraseña, `409`.
+- `GET /v1/providers/me/technicians?status=activo|inactivo&page=&size=` devuelve `items` con `userId`, `fullName`, `specialtyId` y `verificationStatus`, solo del equipo del proveedor del token (RN-TP4). **Sin `availability`:** la disponibilidad vive en Matching Service y no se muestra en el MVP (DEP-19).
 
 #### 8.3.15 Panel operativo — `GET /v1/admin/service-requests/summary`
 
@@ -2177,7 +2284,7 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 
 ### 8.8 Trazabilidad de contratos, implementación y pruebas
 
-**Nuevo v3.1 (SCRUM-287).** Cada endpoint y evento del catálogo con su contrato publicado, su implementación en `develop` y el caso de la colección de Postman que lo cubre. Los contratos REST están en `quickpatch-api-gateway/openapi/` (tag `v0.4.0`; los de la versión 4.0, en el próximo tag menor `v0.5.0`) y los de eventos en `quickpatch-kafka/events/` (tag `v0.2.0`; los de la versión 4.0, en `v0.3.0`), según el ADR-021. La colección es `tests/e2e/quickpatch-mvp.postman_collection.json`, que se genera con `tests/e2e/generar-coleccion.py` y corre contra QA en cada `release/*` (workflow `pruebas-sistema.yml`); el número indica la carpeta.
+**Nuevo v3.1 (SCRUM-287).** Cada endpoint y evento del catálogo con su contrato publicado, su implementación en `develop` y el caso de la colección de Postman que lo cubre. Los contratos REST están en `quickpatch-api-gateway/openapi/` (tag `v0.5.0`; los de la versión 5.0, en `v0.6.0`) y los de eventos en `quickpatch-kafka/events/` (tag `v0.3.0`), según el ADR-021. La colección es `tests/e2e/quickpatch-mvp.postman_collection.json`, que se genera con `tests/e2e/generar-coleccion.py` y corre contra QA en cada `release/*` (workflow `pruebas-sistema.yml`); el número indica la carpeta.
 
 |Endpoint|Contrato|Implementado en `develop`|Postman: éxito|Postman: errores|
 |---|---|---|---|---|
@@ -2190,22 +2297,26 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`GET /v1/catalog/categories`|`catalog.v1.yaml` 1.1.0|Catalog|2, 6 (sin la categoría inactiva)|—|
 |`POST /v1/catalog/admin/categories`|`catalog.v1.yaml` 1.1.0|Catalog|1, 6|1: nombre repetido (409); 4: rol sin permiso (403)|
 |`PATCH /v1/catalog/admin/categories/{id}`|`catalog.v1.yaml` 1.1.0|Catalog|6 (desactivar)|6: inexistente (404)|
-|`POST /v1/service-requests`|`service-request.v1.yaml` 1.0.0+|ServiceRequest|3|4: sin token (401), rol sin permiso (403), fuera de Bogotá (422), descripción corta (400); 7: técnico (403)|
+|`POST /v1/service-requests`|`service-request.v1.yaml` 1.0.0+ (sin `location` desde 1.3.0: pendiente, SCRUM-456)|ServiceRequest|3|4: sin token (401), rol sin permiso (403), fuera de Bogotá (422), descripción corta (400); 7: técnico (403)|
 |`GET /v1/service-requests/{id}`|`service-request.v1.yaml` 1.0.0+|ServiceRequest|3|4: solicitud de otro cliente (404)|
-|`GET /v1/service-requests/{id}` como técnico asignado|`service-request.v1.yaml` 1.1.0|Pendiente (SCRUM-91)|—|—|
-|`GET /v1/admin/technicians` y `POST /v1/admin/technicians/{userId}/approve`, `/reject` y `/suspend`|`identity.v1.yaml` 1.3.0|Pendiente (SCRUM-39, SCRUM-40)|—|—|
-|`GET /v1/localities`, `GET` y `PUT /v1/technicians/me/availability` y `/coverage`|`matching.v1.yaml` 1.0.0|Pendiente (SCRUM-88)|—|—|
-|`GET /v1/matching/offers` y `POST /v1/matching/offers/{attemptId}/accept` y `/reject`|`matching.v1.yaml` 1.0.0|Pendiente (SCRUM-79)|—|—|
-|`POST /v1/auth/register/company`, `POST /v1/auth/refresh`, `POST /v1/companies/me/users`, `POST /v1/platform/tenants`, y equipo del proveedor|Sin contrato|Pendiente|—|—|
-|WebSocket `/v1/realtime`|`asyncapi/realtime.v1.yaml` 1.0.0|Communication (implementación en curso, ADR-023)|—|—|
+|`GET /v1/service-requests/{id}` como técnico asignado|`service-request.v1.yaml` 1.1.0 e `identity-internal.v1.yaml` 1.0.0|ServiceRequest e Identity (SCRUM-91)|—|—|
+|`GET /v1/technicians/me/service-requests`|`service-request.v1.yaml` 1.2.0|ServiceRequest (SCRUM-464)|—|—|
+|`GET /v1/admin/technicians` y `POST /v1/admin/technicians/{userId}/approve`, `/reject` y `/suspend`|`identity.v1.yaml` 1.3.0|Identity (SCRUM-106)|—|—|
+|`GET /v1/localities`, `GET` y `PUT /v1/technicians/me/availability` y `/coverage`|`matching.v1.yaml` 1.0.0|Matching (SCRUM-88)|—|—|
+|`GET /v1/matching/offers` y `POST /v1/matching/offers/{attemptId}/accept` y `/reject`|`matching.v1.yaml` 1.0.0|En revisión (SCRUM-79): aceptar, rechazar y vencer (RN-M8)|—|—|
+|`POST /v1/platform/tenants`|`identity.v1.yaml` 1.5.0|Identity (SCRUM-462)|—|—|
+|Equipo del proveedor, invitación y `POST /v1/auth/password/setup`|`identity.v1.yaml` 1.7.0|Identity (SCRUM-97, SCRUM-461)|—|—|
+|`GET /v1/notifications` y `POST /v1/notifications/{id}/read`|`communication.v1.yaml` 1.0.0|Pendiente (SCRUM-456)|—|—|
+|`POST /v1/auth/register/company`, `POST /v1/auth/refresh` y `POST /v1/companies/me/users`|Sin contrato|Pendiente|—|—|
+|WebSocket `/v1/realtime`|`asyncapi/realtime.v1.yaml` 1.0.0|Communication (ADR-023)|—|—|
 |Resto de ServiceRequest (listado, cancelación, cotizaciones, inicio, evidencia, cierre, calificación, historial y resumen) y Payments|Sin contrato|Pendiente|—|—|
 
 |Evento|Contrato|Productor|Consumidores implementados|Evidencia|
 |---|---|---|---|---|
 |`service-request.created`|`service-request.created.v1.json` (`quickpatch-kafka` `v0.2.0`; topic de 3 particiones)|ServiceRequest, con Transactional Outbox|Matching (`ServiceRequestCreatedConsumerIT`). Communication: pendiente|Postman 3 (la solicitud se crea en `buscando_tecnico`)|
 |`catalog.category-changed`|`catalog.category-changed.v1.json` (`quickpatch-kafka` `v0.2.0`; topic de 1 partición, clave `categoryId`)|Catalog, con Transactional Outbox|ServiceRequest (réplica `service_request_categories`). Matching: pendiente|Postman 3 (reintenta hasta que la réplica tiene la categoría) y 6|
-|`technician.registered` y `technician.verification-changed`|`quickpatch-kafka` v1 (v4; topics de 1 partición, clave `technicianId`)|Identity: pendiente (SCRUM-22, SCRUM-39)|Matching: pendiente (SCRUM-88). Communication: pendiente|—|
-|`matching.offer-created`, `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed`|`quickpatch-kafka` v1 (v4; topics de 3 particiones, clave `serviceRequestId`)|Matching: pendiente (SCRUM-29, SCRUM-79)|ServiceRequest: pendiente (SCRUM-91). Communication: pendiente|—|
+|`technician.registered` y `technician.verification-changed`|`quickpatch-kafka` v1 (v4; topics de 1 partición, clave `technicianId`)|Identity, con Transactional Outbox|Matching (proyección del técnico, SCRUM-88). Communication: pendiente (buzón, SCRUM-456)|—|
+|`matching.offer-created`, `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed`|`quickpatch-kafka` v1 (v4; topics de 3 particiones, clave `serviceRequestId`)|Matching (SCRUM-76: ofertas, espera y reanudación; aceptación pendiente, SCRUM-79)|ServiceRequest (espera y reanudación, SCRUM-460; asignación, SCRUM-91). Communication (canal en tiempo real; buzón pendiente, SCRUM-456)|—|
 |Los 9 eventos restantes del Cuadro 11|Sin esquema|Pendiente|—|—|
 
 _Cuadro 15: Trazabilidad entre el catálogo, los contratos, el código y la colección de Postman_
@@ -2329,7 +2440,9 @@ El aislamiento entre tenants sigue ADR-005 (shared-schema con `tenant_id` + Row 
 |---|---|---|
 |`tenants`|No aplica: es la tabla raíz|Política sobre `id`; el rol `_app` solo puede consultarla.|
 |`users`, `technician_profiles`, `client_companies`|NOT NULL, FK física|Política de aislamiento por tenant.|
+|`password_setup_tokens` (v5)|NOT NULL, FK física|Política de aislamiento por tenant, como `users`.|
 |`service_categories`, `service_requests`, `quotes`, `ratings`, `service_evidence`, `technician_availability`, `coverage_zones`, `matching_attempts`, `matching_requests`, `payments`, `invoices`|NOT NULL, referencia lógica|Política de aislamiento por tenant.|
+|`notifications` (v5)|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant; solo la escriben los consumidores de Communication.|
 |`service_request_categories`|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant; solo la escribe el consumidor de `catalog.category-changed`.|
 |`processed_events`|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant.|
 |`outbox_events`|NOT NULL, con el tenant de la sesión por defecto|Política de inserción por tenant; la lectura para publicar la hace el rol del publicador (sección 10.2).|
@@ -2394,7 +2507,7 @@ Cómo se comporta:
 |Consumo de un evento|De `tenantId` en el sobre del evento.|
 |Publicación de un evento|De `outbox_events.tenant_id`, que fijó la base de datos con el tenant de la sesión que escribió el evento.|
 
-**Canal.** Cada aplicación y panel de un tenant se identifica ante el API Gateway, que traduce ese canal al `tenant_id` correspondiente. El cuerpo de la petición nunca trae `tenant_id`. En el MVP opera un solo tenant (SAD, sección 7.1), por lo que todos los canales apuntan a él; la identificación del canal cuando opere más de un tenant depende de DEP-09.
+**Canal.** Cada aplicación y panel de un tenant se identifica ante el API Gateway, que traduce ese canal al `tenant_id` correspondiente. El cuerpo de la petición nunca trae `tenant_id`. En el MVP opera un solo tenant (SAD, sección 7.1), por lo que todos los canales apuntan a él. **v5 (SCRUM-60):** el canal viaja en la cabecera `X-Channel-Id` y Identity lo traduce al tenant con un mapa de configuración (sección 8.1); el Gateway fija la cabecera según el origen de la petición y descarta la del cliente (DEP-09).
 
 **Login.** `POST /v1/auth/login` recibe el correo y la contraseña. Identity Service fija el tenant del canal con `SET LOCAL` y busca al usuario con el rol `_app`, por lo que la búsqueda queda sujeta a RLS y solo puede encontrar usuarios de ese tenant. Verifica la contraseña, comprueba que el tenant esté activo, actualiza el contador de intentos (RN-U4) y emite el token con `userId`, `tenantId`, `role` y, para los usuarios `empresa_contacto`, `companyId` (SDD V2, antes DD §10.12). Como el correo es único por tenant (RN-U1), un intento de login o de registro no revela si el mismo correo existe en otro tenant.
 
@@ -2431,7 +2544,7 @@ El modelo de esta versión depende de las siguientes decisiones de diseño, que 
 |DEP-06|Contratos de la sección 8|Incorporación en el SDD de los endpoints de ofertas, cotización y cancelación, de los eventos nuevos y de la propiedad de `service_categories` por Catalog Service.|SDD, secciones 6.7 y 5.6|Abierta. La sección 8.7 lista exactamente qué corregir en el SDD.|
 |DEP-07|Sección 13|ADR de adopción de la capa analítica, con evaluación de capacidad frente a R5 y R10.|SAD, sección 6|Abierta.|
 |DEP-08|`payments`|Mecanismo de recepción de la respuesta del PSP dentro de la red del laboratorio.|R9; SAD, sección 1.2|Parcial: el SDD V2 (antes DD §10.9) resuelve el resultado del cobro por consulta (conciliación), sin *webhooks*. Falta la decisión de R9 sobre el acceso externo.|
-|DEP-09|Sección 14.3|Identificación del canal de registro de cada tenant cuando opere más de uno.|RNF-09|Abierta. La cabecera `X-Channel-Id` queda definida (sección 8.1).|
+|DEP-09|Sección 14.3|Identificación del canal de registro de cada tenant cuando opere más de uno.|RNF-09|Parcial (v5): Identity resuelve el tenant con `X-Channel-Id` y un mapa canal → tenant (SCRUM-60), y el Gateway fija la cabecera por `Origin` o `Referer`. Falta un identificador del canal que no dependa de cabeceras que el cliente puede escribir, para cuando opere más de un tenant.|
 |DEP-10|`quotes`, estado `cancelado`, `service_evidence`|Requisitos en el SRS para la cotización, la cancelación y la evidencia fotográfica obligatoria, que el SAD define y el SRS v3.1 no incluye.|SAD, sección 7.4 y D7|**Resuelta** con el SRS v3.2 (RF-15, RF-34, RF-35 y RF-36).|
 |DEP-11|RN-R3|Orden entre evaluación y pago. El SRS (RF-12) permite calificar desde `completado` y el SAD (sección 7.4) libera el pago después de la evaluación, mientras que el SDD (escenario 7) y RF-27 ponen el pago antes de la calificación. Este documento sigue al SDD y a RF-27.|RF-12, RF-27; SDD, escenario 7|**Resuelta** con el SRS V4: RF-12 habilita la calificación cuando la solicitud está en `pagado`, igual que RN-R3. Falta actualizar el ciclo de vida del SAD (sección 7.4), como registra el SRS (P2), y el criterio de SCRUM-32.|
 |DEP-12|Sección 14.2|Resuelto mediante ADR-012: Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication usan ASP.NET Core / .NET 10; Matching usa Java 25 + Spring Boot 4.1.1. Para persistencia se adopta EF Core + Npgsql en .NET y Spring Data/JPA en Matching.|ADR-012; Infraestructura 5.6 y 5.7|Resuelta (ADR-012).|
@@ -2441,7 +2554,8 @@ El modelo de esta versión depende de las siguientes decisiones de diseño, que 
 |DEP-16|RN-Q8, `QUOTE_TTL`|Tiempo que tiene el cliente para responder una cotización. Se propone 24 horas.|RF-35|**Nueva v3.** Abierta.|
 |DEP-17|Registro de técnico y SCRUM-332 (antes DD §12)|Qué documentos de soporte debe subir el técnico (SCRUM-22) y cómo se guardan; y qué pantallas nuevas del artefacto SCRUM-332 (antes DD §12.2) ya están en los Mockups V1 (SCRUM-126).|RF-02; SCRUM-126|**Nueva v3.** Abierta.|
 |DEP-18|`GET /v1/matching/offers`|SCRUM-30 pide que el técnico vea la dirección antes de aceptar; este documento propone mostrar la localidad y la distancia, y entregar la dirección solo al técnico asignado (RN-SR13), para no exponer la dirección del cliente a quienes rechazan.|SCRUM-30; Ley 1581 de 2012 (R6)|**Resuelta en v4:** SCRUM-30 (criterio 1) pide localidad y distancia en la oferta y la dirección solo para el técnico asignado (RN-SR13).|
-|DEP-19|`GET /v1/providers/me/technicians`|Cómo muestra el proveedor la disponibilidad de su equipo, que vive en Matching Service.|RF-16|**Nueva v3.** Abierta.|
+|DEP-19|`GET /v1/providers/me/technicians`|Cómo muestra el proveedor la disponibilidad de su equipo, que vive en Matching Service.|RF-16|Decidida para el MVP (v5): no se muestra; el contrato 1.7.0 no incluye `availability`.|
+|DEP-20|`notifications`, RIE-03|El "registro confirmado" del cliente no tiene evento (Identity no publica nada al registrar un cliente), y la cotización no tiene esquemas publicados. Sin ellos, el buzón no puede notificarlos.|RIE-03, RF-34|**Nueva v5.** Abierta.|
 
 **Modelos que podrían aparecer en versiones futuras:**
 
@@ -2473,7 +2587,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |3.1|Conciliación (SCRUM-25, SCRUM-27)|Une el v3.0 con las versiones 2.3 y 2.4 de develop. Ver la sección 1.6: renumeración de RN-SR12 y RN-SR13, token RS256 con `sub` y `tenant_id`, errores y ubicación según los contratos v1, endpoint `/v1/catalog/categories`, tabla 5.20 `service_request_categories`, evento `catalog.category-changed`, propuestas P-07 y P-08, y restricciones con prefijo R (SAD 2.16). Además: gestión de tenants con `PATCH /v1/platform/tenants/{id}` (Identity 1.2.0); DEP-11 resuelta por el SRS V4; el DER y la Figura 1 incluyen `service_request_categories`, `service_categories.updated_at` y `matching_attempts.distance_m` (SCRUM-284); estado de implementación del modelo (Cuadro 8) y trazabilidad de contratos, código y Postman (sección 8.8, SCRUM-287).|
 |3.1 (revisión)|SCRUM-259|Atiende la revisión del PR #35: los artefactos relacionados pasan a la sección 1.7 para que Multi-tenancy siga en la 10 (el código y los contratos citan DD 10.2 a 10.4). Se incorporan los cambios de develop: VMs de ADR-022, contratos en `quickpatch-api-gateway` y `quickpatch-kafka` (ADR-021), referencias al SDD organizado por C4 y la geocodificación de RIE-02 fuera de `coverage_zones`. Se corrige la tabla de propuestas y se alinea con SRS V4 y SAD v2.25.|
 |4.0|DD V4 (SCRUM-416, Sprint 4)|Incremento del técnico. **Modelo (SCRUM-417):** `technician_availability.projection_updated_at`; restricciones, índices y RLS de `technician_profiles`, `technician_availability`, `coverage_zones`, `matching_attempts` y `matching_requests`. **Contratos (SCRUM-418):** `matching.v1.yaml` 1.0.0, `identity.v1.yaml` 1.3.0 y `service-request.v1.yaml` 1.1.0 en `quickpatch-api-gateway`; seis eventos v1 con sus topics en `quickpatch-kafka`. P-01, P-03, P-04 y P-05 pasan a decisiones adoptadas y P-01 se alinea con el ADR-017 (sección 1.8). DEP-01 y DEP-18 resueltas. **SCRUM-419:** `pm.execution.setNextRequest` en el generador (PR #68). **Canal en tiempo real:** la 8.5 deja de estar pendiente de decisión (ADR-023) y enlaza `asyncapi/realtime.v1.yaml` 1.0.0; `matching_requests.client_id` y `clientId` en los eventos de matching para enrutar los avisos al cliente.|
-|4.1|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas P-01 a P-06 según la validación del equipo.|
+|5.0|DD V5 (SCRUM-455)|**ADR-024:** geocodificación propia (RIE-02) con `location` opcional y `422 direccion-no-encontrada` en `POST /v1/service-requests` (contrato 1.3.0), y buzón de notificaciones (RIE-03) con la tabla `notifications` en `db_communication` y `communication.v1.yaml` 1.0.0. **Consulta interna por lote:** `identity-internal.v1.yaml` 1.0.0 (SCRUM-91). **Cambios ya implementados que faltaban:** `service_requests.matching_updated_at` (SCRUM-460) y `matching_requests.description` (SCRUM-79); sección 8.3.14 con `specialtyId`, sin `availability` y con el enlace de invitación en lugar del correo de Communication (SCRUM-97, SCRUM-461); tabla `password_setup_tokens`; `crear_tenant` en `audit_logs` y `POST /v1/platform/tenants` (SCRUM-462); `X-Channel-Id` (SCRUM-60). Vista previa de la geocodificación (`POST /v1/service-requests/location-preview`, `Geocoding__NominatimUrl`) y propuesta P-09. DEP-09 pasa a parcial (el Gateway ya fija `X-Channel-Id`), DEP-19 se decide para el MVP y se agrega DEP-20. La trazabilidad (8.8) se actualiza con lo implementado.|
+|5.1|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
