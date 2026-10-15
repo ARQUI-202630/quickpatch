@@ -1,0 +1,57 @@
+# Solo lectura: comprueba en la base de QA (VM5) el aislamiento por tenant de cada servicio (DD 10, ADR-005).
+#
+#   ./ap playbooks/verificar-rls.yml
+#
+# Por cada base db_<servicio> muestra: (1) las tablas con tenant_id y si tienen RLS habilitado y forzado, con su número de
+# políticas; (2) los roles del servicio y si tienen BYPASSRLS o son superusuario; (3) por tabla, cuántas filas existen y cuántas
+# ve el rol del servicio sin fijar app.current_tenant y con un tenant inventado (deben ser 0); y (4) cuántos tenants distintos
+# hay en los datos. No cambia nada: las consultas con el rol del servicio van en una transacción que se revierte.
+- name: Aislamiento por tenant en QA (VM5)
+  hosts: qa_datos
+  gather_facts: false
+  become: true
+  vars:
+    dir: "{{ stack_dir }}/postgres"
+    servicios:
+      - { base: db_identity, prefijo: identity, rol: identity_app }
+      - { base: db_catalog, prefijo: catalog, rol: catalog_app }
+      - { base: db_service_request, prefijo: service_request, rol: service_request_app }
+      - { base: db_matching, prefijo: matching, rol: matching_app }
+  tasks:
+    - name: Tablas con tenant_id, RLS, roles y filas visibles para el rol del servicio
+      ansible.builtin.shell: |
+        set -o pipefail
+        psql_db() { docker compose -f {{ dir }}/compose.yml exec -T -u postgres postgres psql -X -q -At -F ' | ' -d {{ item.base }} "$@"; }
+        echo "== TABLAS CON tenant_id (tabla | rls_habilitado | rls_forzado | politicas | tenants_distintos)"
+        tablas_sql="SELECT c.relname FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = 'public'
+          WHERE c.relkind = 'r' AND EXISTS (
+            SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid AND a.attname = 'tenant_id' AND NOT a.attisdropped)
+          ORDER BY 1"
+        for t in $(psql_db -c "$tablas_sql"); do
+          psql_db -c "SELECT '$t', c.relrowsecurity, c.relforcerowsecurity,
+            (SELECT count(*) FROM pg_policies p WHERE p.schemaname = 'public' AND p.tablename = '$t'),
+            (SELECT count(DISTINCT tenant_id) FROM $t)
+            FROM pg_class c WHERE c.oid = 'public.$t'::regclass"
+        done
+        echo "== ROLES (rol | login | superuser | bypassrls)"
+        psql_db -c "SELECT rolname, rolcanlogin, rolsuper, rolbypassrls FROM pg_roles WHERE rolname LIKE '{{ item.prefijo }}%' ORDER BY 1"
+        echo "== FILAS DE {{ item.rol }} (tabla | total | sin_tenant | tenant_inventado)"
+        for t in $(psql_db -c "$tablas_sql"); do
+          total=$(psql_db -c "SELECT count(*) FROM $t")
+          visto=$(psql_db -c "BEGIN; SET LOCAL ROLE {{ item.rol }}; SELECT count(*) FROM $t;
+            SELECT set_config('app.current_tenant', gen_random_uuid()::text, true); SELECT count(*) FROM $t; ROLLBACK;" 2>&1 \
+            | grep -E '^[0-9]+$|ERROR|permission' | paste -sd'|' | sed 's/|/ | /g')
+          echo "$t | $total | $visto"
+        done
+      args: { executable: /bin/bash }
+      register: rls
+      changed_when: false
+      loop: "{{ servicios }}"
+      loop_control: { label: "{{ item.base }}" }
+
+    - name: Resultado
+      ansible.builtin.debug:
+        msg: "{{ ['=== ' ~ item.item.base] + item.stdout_lines }}"
+      loop: "{{ rls.results }}"
+      loop_control: { label: "{{ item.item.base }}" }
