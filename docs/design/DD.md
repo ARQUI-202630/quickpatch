@@ -1712,7 +1712,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |GET|`/v1/service-requests/{id}/evidence/{evidenceId}/file`|Cliente dueño, técnico asignado, `admin_tenant`|RF-15|Nuevo|Descargar archivo de evidencia; el servicio lo recupera del almacenamiento y lo devuelve con su `Content-Type`.|
 |POST|`/v1/service-requests/{id}/complete`|Técnico asignado|RF-15||Completar servicio.|
 |POST|`/v1/service-requests/{id}/rating`|Cliente dueño|RF-12||Calificar.|
-|GET|`/v1/technicians/me/service-requests?status=&page=&size=`|`tecnico`|RF-17|Nuevo|Historial del técnico, sin datos de contacto (RN-SR13).|
+|GET|`/v1/technicians/me/service-requests?status=&page=&size=`|`tecnico`|RF-17|Contrato v1.2.0|Solicitudes asignadas al técnico, de la asignación más reciente a la más antigua, sin dirección, ubicación ni cliente (RN-SR13; SCRUM-464).|
 |GET|`/v1/admin/service-requests/summary`|`admin_tenant`|RF-18|Nuevo|Conteo de solicitudes por estado (DEP-15).|
 
 #### 8.2.5 Payments Service
@@ -2298,7 +2298,8 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`PATCH /v1/catalog/admin/categories/{id}`|`catalog.v1.yaml` 1.1.0|Catalog|6 (desactivar)|6: inexistente (404)|
 |`POST /v1/service-requests`|`service-request.v1.yaml` 1.0.0+ (sin `location` desde 1.3.0: pendiente, SCRUM-456)|ServiceRequest|3|4: sin token (401), rol sin permiso (403), fuera de Bogotá (422), descripción corta (400); 7: técnico (403)|
 |`GET /v1/service-requests/{id}`|`service-request.v1.yaml` 1.0.0+|ServiceRequest|3|4: solicitud de otro cliente (404)|
-|`GET /v1/service-requests/{id}` como técnico asignado|`service-request.v1.yaml` 1.1.0 e `identity-internal.v1.yaml` 1.0.0|En revisión (SCRUM-91)|—|—|
+|`GET /v1/service-requests/{id}` como técnico asignado|`service-request.v1.yaml` 1.1.0 e `identity-internal.v1.yaml` 1.0.0|ServiceRequest e Identity (SCRUM-91)|—|—|
+|`GET /v1/technicians/me/service-requests`|`service-request.v1.yaml` 1.2.0|ServiceRequest (SCRUM-464)|—|—|
 |`GET /v1/admin/technicians` y `POST /v1/admin/technicians/{userId}/approve`, `/reject` y `/suspend`|`identity.v1.yaml` 1.3.0|Identity (SCRUM-106)|—|—|
 |`GET /v1/localities`, `GET` y `PUT /v1/technicians/me/availability` y `/coverage`|`matching.v1.yaml` 1.0.0|Matching (SCRUM-88)|—|—|
 |`GET /v1/matching/offers` y `POST /v1/matching/offers/{attemptId}/accept` y `/reject`|`matching.v1.yaml` 1.0.0|Pendiente (SCRUM-79)|—|—|
@@ -2314,7 +2315,7 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`service-request.created`|`service-request.created.v1.json` (`quickpatch-kafka` `v0.2.0`; topic de 3 particiones)|ServiceRequest, con Transactional Outbox|Matching (`ServiceRequestCreatedConsumerIT`). Communication: pendiente|Postman 3 (la solicitud se crea en `buscando_tecnico`)|
 |`catalog.category-changed`|`catalog.category-changed.v1.json` (`quickpatch-kafka` `v0.2.0`; topic de 1 partición, clave `categoryId`)|Catalog, con Transactional Outbox|ServiceRequest (réplica `service_request_categories`). Matching: pendiente|Postman 3 (reintenta hasta que la réplica tiene la categoría) y 6|
 |`technician.registered` y `technician.verification-changed`|`quickpatch-kafka` v1 (v4; topics de 1 partición, clave `technicianId`)|Identity, con Transactional Outbox|Matching (proyección del técnico, SCRUM-88). Communication: pendiente (buzón, SCRUM-456)|—|
-|`matching.offer-created`, `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed`|`quickpatch-kafka` v1 (v4; topics de 3 particiones, clave `serviceRequestId`)|Matching (SCRUM-76: ofertas, espera y reanudación; aceptación pendiente, SCRUM-79)|ServiceRequest (espera y reanudación, SCRUM-460; asignación en revisión, SCRUM-91). Communication (canal en tiempo real; buzón pendiente, SCRUM-456)|—|
+|`matching.offer-created`, `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed`|`quickpatch-kafka` v1 (v4; topics de 3 particiones, clave `serviceRequestId`)|Matching (SCRUM-76: ofertas, espera y reanudación; aceptación pendiente, SCRUM-79)|ServiceRequest (espera y reanudación, SCRUM-460; asignación, SCRUM-91). Communication (canal en tiempo real; buzón pendiente, SCRUM-456)|—|
 |Los 9 eventos restantes del Cuadro 11|Sin esquema|Pendiente|—|—|
 
 _Cuadro 15: Trazabilidad entre el catálogo, los contratos, el código y la colección de Postman_
