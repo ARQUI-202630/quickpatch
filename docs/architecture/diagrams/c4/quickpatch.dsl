@@ -67,18 +67,18 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     mobTiempoReal = component "Estado en tiempo real" "WebSocket /v1/realtime con el token en la primera trama; si se cae, consulta el detalle cada 30 s (RF-11, RNF-06, ADR-023)." "Dart · core/realtime" "Planeado"
                     mobNotificaciones = component "Buzón de notificaciones" "Lista las notificaciones del usuario (RIE-03, ADR-024)." "Flutter" "Planeado"
                 }
-                web = container "Angular Web" "Panel de administración del tenant y de la plataforma." "Angular 22 + TypeScript" "Web Browser" {
-                    webShell = component "Shell y rutas" "Rutas, layout con barra lateral y encabezado, y redirección a login o al inicio del rol (SCRUM-435)." "Angular Router · app.routes y layout"
-                    webSesion = component "Sesión" "Conserva el token y expone usuario y rol como signals." "Angular Service · core/sesion"
+                web = container "Panel web" "Panel de administración del tenant y de la plataforma." "SPA web + TypeScript" "Web Browser" {
+                    webShell = component "Shell y rutas" "Rutas, layout con barra lateral y encabezado, y redirección a login o al inicio del rol (SCRUM-435)." "Enrutador web · app.routes y layout"
+                    webSesion = component "Sesión" "Conserva el token y expone usuario y rol como signals." "Servicio web · core/sesion"
                     webInterceptor = component "Interceptor HTTP" "Adjunta JWT y X-Correlation-Id; ante un 401 cierra la sesión y vuelve al login." "Interceptor funcional · core/http"
                     webGuards = component "Guards de rol" "Permiten cada ruta según el rol y envían al inicio del rol si no corresponde (RN-U6)." "Guard funcional · core/guards"
-                    webLogin = component "Inicio de sesión" "Formulario de acceso con validaciones y errores." "Angular Component · features/autenticacion"
-                    webInicio = component "Inicio" "Menú según el rol del administrador; la tarjeta de Técnicos lleva a su pantalla." "Angular Component · features/inicio"
-                    webTenants = component "Gestión de tenants" "Lista y busca los tenants, crea uno con nombre y NIT, y los activa o desactiva con confirmación (SCRUM-41, SCRUM-61)." "Angular Component · features/tenants"
+                    webLogin = component "Inicio de sesión" "Formulario de acceso con validaciones y errores." "Componente web · features/autenticacion"
+                    webInicio = component "Inicio" "Menú según el rol del administrador; la tarjeta de Técnicos lleva a su pantalla." "Componente web · features/inicio"
+                    webTenants = component "Gestión de tenants" "Lista y busca los tenants, crea uno con nombre y NIT, y los activa o desactiva con confirmación (SCRUM-41, SCRUM-61)." "Componente web · features/tenants"
                     webTenantsApi = component "Cliente API de tenants" "GET, POST y PATCH /v1/platform/tenants." "HttpClient · features/tenants"
-                    webTecnicos = component "Aprobación de técnicos" "Lista técnicos y proveedores del tenant por estado de verificación, con paginación; aprueba, rechaza, suspende y reactiva con confirmación y motivo (RF-19, RF-20; SCRUM-107, SCRUM-110)." "Angular Component · features/tecnicos"
+                    webTecnicos = component "Aprobación de técnicos" "Lista técnicos y proveedores del tenant por estado de verificación, con paginación; aprueba, rechaza, suspende y reactiva con confirmación y motivo (RF-19, RF-20; SCRUM-107, SCRUM-110)." "Componente web · features/tecnicos"
                     webTecnicosApi = component "Cliente API de técnicos" "GET /v1/admin/technicians y POST approve, reject y suspend (identity.v1.yaml); nombres de especialidad con GET /v1/catalog/categories." "HttpClient · features/tecnicos"
-                    webDiseno = component "Sistema de diseño" "Tokens azules, fuente autoalojada y componentes reutilizables del panel; contraste WCAG AA verificado en el CI (SCRUM-433)." "SCSS + Angular · styles y shared"
+                    webDiseno = component "Sistema de diseño" "Tokens azules, fuente autoalojada y componentes reutilizables del panel; contraste WCAG AA verificado en el CI (SCRUM-433)." "SCSS · styles y shared"
                 }
             }
 
@@ -220,7 +220,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         mobile -> gateway "Abre /api/v1/realtime" "WebSocket (wss)" "Planeado"
         mobTiempoReal -> gateway "Abre /api/v1/realtime" "WebSocket (wss)" "Planeado"
 
-        # Angular Web
+        # Panel web
         webShell -> webGuards "Protege las rutas con"
         webShell -> webLogin "Abre"
         webShell -> webInicio "Abre"
@@ -359,7 +359,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 mobProd = containerInstance mobile
             }
             deploymentNode "Navegador del administrador" "" "Chrome, Edge o Firefox" {
-                webBrowserProd = infrastructureNode "Navegador" "Ejecuta el panel Angular descargado de VM1." "HTML + JS"
+                webBrowserProd = infrastructureNode "Navegador" "Ejecuta el panel web descargado de VM1." "HTML + JS"
             }
             deploymentNode "Red privada del laboratorio 10.43.x.x" "Solo el 443 de VM1 es alcanzable desde la VPN (R9); firewall default deny incoming." "" {
                 deploymentNode "VM1 · Herramientas · 10.43.100.168" "Entrada única y herramientas compartidas por los dos ambientes." "4 vCPU · 11 GiB RAM · 68 GB" {
@@ -489,7 +489,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             exclude "mobDisponibilidad -> mobDiseno"
             autoLayout tb 150 80
         }
-        component web "C4-04-Componentes-Web" "Componentes de Angular Web." {
+        component web "C4-04-Componentes-Web" "Componentes del Panel web." {
             include *
             autoLayout lr
         }
