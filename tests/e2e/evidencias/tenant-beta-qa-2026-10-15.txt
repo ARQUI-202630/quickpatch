@@ -1,0 +1,22 @@
+Tenant Beta en QA: prueba de humo del canal y del aislamiento (SCRUM-62), 15 de octubre de 2026
+=================================================================================================
+Tenant: "QA Tenant Beta" (NIT 900999001-1), id 01a13e06-b2a8-7e27-aa1c-cb3e70641dd1, creado con POST /v1/platform/tenants.
+Host: beta.qa.quickpatch.internal (VM1, quickpatch-api-gateway#16). El Nginx fija X-Channel-Id = quickpatch-beta por el nombre del host.
+Canal -> tenant: Channel__Tenants__quickpatch-beta en identity-config y catalog-config de QA (playbook habilitar-tenant-beta.yml, quickpatch#98).
+Prueba: por el gateway de VM1 (10.43.100.168) con el encabezado Host de cada nombre; un cliente nuevo con correo y clave aleatorios.
+
+OK    Registro de cliente por el host Beta  (HTTP 201)
+OK    Login por el host Beta  (HTTP 200)
+OK    El token trae el tenant Beta  ({'tenant_id': '01a13e06-b2a8-7e27-aa1c-cb3e70641dd1'})
+OK    GET /users/me por Beta con su token  (HTTP 200)
+OK    La cuenta de Beta NO entra por el canal web de QA  (HTTP 401)
+OK    La cuenta de Beta NO entra por el canal móvil de QA  (HTTP 401)
+OK    Catálogo del tenant principal con datos y el de Beta vacío  (QA 6 categorías, Beta 0)
+OK    Token de Beta por el host de QA: manda el tenant del token (0 categorías)  (HTTP 200, 0 categorías)
+
+8/8 OK. Cliente de prueba: beta-humo-1015223727@example.com (queda en el tenant Beta; la clave no se guardó).
+
+Alcance: prueba el canal y la separación de cuentas y de catálogo entre el tenant principal y Beta. No cubre todavía fugas
+entre tenants en solicitudes, técnicos ni ofertas (eso es la colección de Kathe, quickpatch#89), ni el admin_tenant de Beta
+(Identity no crea el administrador al crear el tenant). El host Beta devuelve 404 en "/" (no sirve el panel); desde fuera de
+la red del equipo el Nginx lo rechaza (allow/deny de team_networks).
