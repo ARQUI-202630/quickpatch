@@ -17,6 +17,7 @@
       - { base: db_catalog, prefijo: catalog, rol: catalog_app }
       - { base: db_service_request, prefijo: service_request, rol: service_request_app }
       - { base: db_matching, prefijo: matching, rol: matching_app }
+      - { base: db_communication, prefijo: communication, rol: communication_app }   # sin tablas hasta SCRUM-456: confirma la base y los roles
   tasks:
     - name: Tablas con tenant_id, RLS, roles y filas visibles para el rol del servicio
       ansible.builtin.shell: |
