@@ -51,21 +51,21 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         quickpatch = softwareSystem "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos. Microservicios con arquitectura orientada a eventos (ADR-003)." {
 
             group "Clientes" {
-                mobile = container "Flutter Mobile" "App de clientes, empresas cliente, técnicos y proveedores." "Flutter + Dart (iOS y Android)" "Mobile App" {
+                mobile = container "App móvil" "App de clientes, empresas cliente, técnicos y proveedores." "App nativa (iOS y Android)" "Mobile App" {
                     mobNavegacion = component "Navegación" "Rutas protegidas por sesión y por rol, y barra inferior según el rol: Inicio, Solicitudes u Ofertas o Equipo, y Cuenta (SCRUM-441)." "go_router · app/router y app/shell"
                     mobConfig = component "Configuración del ambiente" "URL base, Host del gateway y huella SHA-256 del certificado de QA (pinning)." "Dart · core/config"
                     mobHttp = component "Cliente HTTP" "Adjunta JWT y X-Correlation-Id, valida el certificado y traduce problem+json en errores de la app." "Dio · core/network"
-                    mobSesion = component "Sesión" "Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol." "flutter_secure_storage · core/session"
+                    mobSesion = component "Sesión" "Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol." "Almacenamiento seguro del dispositivo · core/session"
                     mobAuth = component "Autenticación" "Login, registro de cliente hogar y registro de técnico o proveedor con su especialidad (SCRUM-55); el registro de empresa está oculto hasta SCRUM-26." "Riverpod · features/autenticacion"
                     mobInicio = component "Inicio por rol" "Acceso a la nueva solicitud y categorías de Catalog para el cliente; opciones (Disponibilidad y cobertura) y aviso de verificación para técnico y proveedor (SCRUM-441)." "Riverpod · features/inicio"
-                    mobCuenta = component "Cuenta" "Datos de la sesión, licencias y cierre de sesión (SCRUM-441)." "Flutter · features/inicio"
-                    mobDiseno = component "Sistema de diseño" "Tema azul con tokens y tipografía, y componentes compartidos: tarjeta de solicitud, chip de estado, selector de categoría, botones y estados vacío, de error y de carga (SCRUM-439)." "Flutter · app/theme y shared/widgets"
+                    mobCuenta = component "Cuenta" "Datos de la sesión, licencias y cierre de sesión (SCRUM-441)." "Pantalla móvil · features/inicio"
+                    mobDiseno = component "Sistema de diseño" "Tema azul con tokens y tipografía, y componentes compartidos: tarjeta de solicitud, chip de estado, selector de categoría, botones y estados vacío, de error y de carga (SCRUM-439)." "Componentes móviles · app/theme y shared/widgets"
                     mobSolicitudes = component "Solicitudes" "Nueva solicitud en tres pasos en un formulario (RNF-11) y detalle con su estado (SCRUM-442)." "Riverpod · features/solicitudes"
                     mobUbicacion = component "Ubicación del dispositivo" "Permiso y lectura del GPS con respaldo en LocationManager y límite de 15 s." "geolocator · features/solicitudes/data"
                     mobDisponibilidad = component "Disponibilidad y cobertura" "Interruptor de disponibilidad (bloqueado si está ocupado, RN-M6) y elección de las localidades en el mapa o con chips sincronizados (RF-13, RN-M9; SCRUM-89)." "Riverpod · features/disponibilidad"
                     mobMapa = component "Mapa de localidades" "Límites de las 20 localidades desde un GeoJSON de IDECA dentro de la app, con los códigos de GET /v1/localities; proyección, encuadre urbano y toque por localidad, sin mapa de fondo (R5, ADR-024)." "CustomPainter · features/disponibilidad"
                     mobTiempoReal = component "Estado en tiempo real" "WebSocket /v1/realtime con el token en la primera trama; si se cae, consulta el detalle cada 30 s (RF-11, RNF-06, ADR-023)." "Dart · core/realtime" "Planeado"
-                    mobNotificaciones = component "Buzón de notificaciones" "Lista las notificaciones del usuario (RIE-03, ADR-024)." "Flutter" "Planeado"
+                    mobNotificaciones = component "Buzón de notificaciones" "Lista las notificaciones del usuario (RIE-03, ADR-024)." "Pantalla móvil" "Planeado"
                 }
                 web = container "Panel web" "Panel de administración del tenant y de la plataforma." "SPA web + TypeScript" "Web Browser" {
                     webShell = component "Shell y rutas" "Rutas, layout con barra lateral y encabezado, y redirección a login o al inicio del rol (SCRUM-435)." "Enrutador web · app.routes y layout"
@@ -192,7 +192,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         equipo -> github "Desarrolla y despliega"
         equipo -> observabilidad "Opera y diagnostica"
 
-        # Flutter Mobile
+        # App móvil
         mobNavegacion -> mobSesion "Consulta usuario y rol en"
         mobNavegacion -> mobAuth "Abre"
         mobNavegacion -> mobInicio "Abre"
@@ -483,7 +483,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        component mobile "C4-04-Componentes-Mobile" "Componentes de Flutter Mobile." {
+        component mobile "C4-04-Componentes-Mobile" "Componentes de la App móvil." {
             include *
             # La relación existe en el modelo, pero dibujada cruza Ubicación del dispositivo.
             exclude "mobDisponibilidad -> mobDiseno"
