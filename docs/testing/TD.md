@@ -744,6 +744,70 @@ quickpatch/tests/evidence/
 | **Seguridad y PCI-DSS (Compuerta 2 - QA)** | 15 | 15 | 15 | Release QA | 0 coincidencias de PAN/CVV en logs y 0 alertas altas en ZAP |
 | **Total Global** | **187** | **187** | **187** | **Incremento QA** | **100% trazabilidad e integridad técnica garantizada** |
 
+### 10.5 Ejecución del Incremento de Sprint 4: Flujo Operativo del Técnico (SCRUM-81, SCRUM-90, SCRUM-93)
+
+En cumplimiento de las Historias de Usuario asignadas a José Eduardo (**SCRUM-30**, **SCRUM-33** y **SCRUM-34**) y las correspondientes compuertas de aseguramiento de calidad (**SCRUM-81**, **SCRUM-90** y **SCRUM-93**), se ejecutó la suite automatizada de pruebas de sistema con Newman contra la implementación de los contratos `matching.v1.yaml` (1.0.0) y `service-request.v1.yaml` (1.1.0).
+
+#### 10.5.1 Catálogo y Resultados de Pruebas Funcionales del Incremento
+
+| ID Caso | HU / Tarea Jira | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **COV-001** | SCRUM-33 / SCRUM-90 | Funcional | `GET /v1/localities` | Consulta pública de catálogo de localidades de Bogotá D.C. | 200 OK con exactamente 20 localidades oficiales (01 a 20) ordenadas por código | **PASS** |
+| **AVA-001** | SCRUM-33 / SCRUM-90 | Funcional | `GET /v1/technicians/me/availability` | Consulta de disponibilidad inicial del técnico registrado | 200 OK con `status: no_disponible`, `available: false`, `busy: false` | **PASS** |
+| **AVA-002** | SCRUM-33 / SCRUM-90 | Integración | `PUT /v1/technicians/me/availability` | Activación de disponibilidad técnica a `disponible` (RF-13, RN-M10) | 200 OK, `status: disponible`, reintento de solicitudes en espera en Matching | **PASS** |
+| **AVA-003** | SCRUM-33 / SCRUM-90 | Regla Negocio | `PUT /v1/technicians/me/availability` | Bloqueo de cambio manual de estado cuando el técnico está ocupado en servicio (RN-M6) | 409 Conflict con RFC 9457 `transicion-invalida` y `correlationId` | **PASS** |
+| **COV-002** | SCRUM-33 / SCRUM-90 | Funcional | `GET /v1/technicians/me/coverage` | Consulta de localidades cubiertas por el técnico autenticado | 200 OK con array `localityCodes` estructurado | **PASS** |
+| **COV-003** | SCRUM-33 / SCRUM-90 | Integración | `PUT /v1/technicians/me/coverage` | Configuración multi-localidad (`01`, `02`, `12`, `13`) con polígonos PostGIS | 200 OK, persistencia en `coverage_zones` con RLS por tenant | **PASS** |
+| **COV-004** | SCRUM-33 / SCRUM-90 | Validación | `PUT /v1/technicians/me/coverage` | Rechazo de códigos inexistentes (`99`) o lista vacía (DD 8.3.6) | 400 Bad Request con `validacion-solicitud` y detalle de campos | **PASS** |
+| **AVA-004** | SCRUM-33 / SCRUM-90 | Seguridad | `GET /v1/technicians/me/availability` | Rechazo de petición sin token de autenticación (IDN-017) | 401 Unauthorized con Problem Details `no-autenticado` | **PASS** |
+| **AVA-005** | SCRUM-33 / SCRUM-90 | RBAC | `PUT /v1/technicians/me/availability` | Intento de configuración de disponibilidad por usuario con rol `cliente` | 403 Forbidden con Problem Details `no-autorizado` | **PASS** |
+| **OFF-001** | SCRUM-30 / SCRUM-81 | Confidencialidad | `GET /v1/matching/offers?status=pendiente` | Consulta de ofertas pendientes sin dirección exacta (RN-SR13) | 200 OK con localidad y distancia; `addressText` y coordenadas exactas ausentes | **PASS** |
+| **OFF-002** | SCRUM-30 / SCRUM-81 | Transaccional | `POST /v1/matching/offers/{id}/accept` | Aceptación atómica de oferta: oferta aceptada, técnico ocupado (RN-M6), emite Outbox | 200 OK, técnico pasa a `ocupado`, solicitud a `asignado`, emite `matching.technician-assigned` | **PASS** |
+| **OFF-003** | SCRUM-30 / SCRUM-81 | Concurrencia | `POST /v1/matching/offers/{id}/accept` | Rechazo de aceptación de oferta ya respondida o intento duplicado | 409 Conflict con Problem Details `oferta-no-disponible` | **PASS** |
+| **OFF-004** | SCRUM-30 / SCRUM-81 | Regla Negocio | `POST /v1/matching/offers/{id}/accept` | Rechazo de oferta vencida por tiempo límite de `OfferExpirer` (RN-M8) | 409 Conflict con Problem Details `oferta-no-disponible` | **PASS** |
+| **OFF-005** | SCRUM-30 / SCRUM-81 | Regla Negocio | `POST /v1/matching/offers/{id}/accept` | Rechazo de oferta si el técnico ya no está disponible / ocupado (RN-M7) | 409 Conflict con Problem Details `tecnico-no-disponible` | **PASS** |
+| **OFF-006** | SCRUM-30 / SCRUM-81 | Regla Negocio | `POST /v1/matching/offers/{id}/reject` | Rechazo de oferta sin penalización para el técnico (RF-10, R12) | 200 OK, reasignación automática con `MatchingEngine.offerNext` (RN-M3) | **PASS** |
+| **OFF-007** | SCRUM-30 / SCRUM-81 | RBAC | `POST /v1/matching/offers/{id}/accept` | Intento de responder oferta por usuario con rol `cliente` | 403 Forbidden con Problem Details `no-autorizado` | **PASS** |
+| **DTL-001** | SCRUM-34 / SCRUM-93 | Funcional | `GET /v1/service-requests/{id}` | Técnico asignado consulta detalle completo con contacto del cliente (RN-SR13) | 200 OK con dirección exacta, `client.fullName: "Ana Gómez"`, `client.phone: "+573009876543"` | **PASS** |
+| **DTL-002** | SCRUM-34 / SCRUM-93 | Regla Negocio | `GET /v1/service-requests/{id}` | Técnico consulta solicitud antes de la asignación (`buscando_tecnico`) | 403 Forbidden con Problem Details `solicitud-no-asignada` | **PASS** |
+| **DTL-003** | SCRUM-34 / SCRUM-93 | Privacidad | `GET /v1/service-requests/{id}` | Técnico no asignado consulta solicitud ajena | 404 Not Found (no revela existencia de la solicitud) | **PASS** |
+| **DTL-004** | SCRUM-34 / SCRUM-93 | Aislamiento | `GET /v1/service-requests/{id}` | Técnico de Tenant Beta consulta solicitud de Tenant Alfa | 404 Not Found garantizado por políticas RLS en base de datos | **PASS** |
+| **DTL-005** | SCRUM-34 / SCRUM-93 | Funcional | `GET /v1/service-requests/{id}` | Cliente dueño consulta su solicitud asignada | 200 OK con bloque `client: null` y bloque `technician` con nombre del técnico | **PASS** |
+
+#### 10.5.2 Resumen Estadístico de Ejecución (Newman CLI)
+
+```text
+┌─────────────────────────┬─────────────────┬─────────────────┐
+│                         │        executed │          failed │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              iterations │               1 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│                requests │              24 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│            test-scripts │              24 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│      prerequest-scripts │               0 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              assertions │              63 │               0 │
+├─────────────────────────┴─────────────────┴─────────────────┤
+│ total run duration: 2.1s                                    │
+│ average response time: 5ms [min: 2ms, max: 49ms]            │
+│ Pass Rate: 100% (63/63 aserciones aprobadas)                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 10.5.3 Verificación de Persistencia e Integridad en Base de Datos
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_matching` | `localities` | `id`, `code`, `name`, `boundary geometry(MultiPolygon, 4326)` | 20 filas oficiales coincidentes con división político-administrativa de Bogotá (IDECA). |
+| `db_matching` | `technician_availability` | `status IN ('disponible', 'ocupado', 'no_disponible')`, `verification_status` | Transición atómica de `disponible` a `ocupado` tras aceptación. RLS activo por `tenant_id`. |
+| `db_matching` | `coverage_zones` | `technician_id`, `tenant_id`, `coverage_area geometry(MultiPolygon, 4326)` | Índice GiST activo. Cobertura persistida mediante unión espacial de polígonos seleccionados. |
+| `db_matching` | `matching_attempts` | `response IN ('pendiente', 'aceptado', 'rechazado', 'expirado')`, `expires_at` | Registro atómico de respuesta y marca temporal `responded_at`. Restricción única de oferta pendiente. |
+| `db_matching` | `outbox_events` | `event_type = 'matching.technician-assigned'`, `payload jsonb` | Evento transaccional registrado en la misma transacción que el cambio a `ocupado` (ADR-007). |
+| `db_service_request` | `service_requests` | `status = 'asignado'`, `technician_id`, `assigned_at`, `matching_updated_at` | Transición de estado consistente. Idempotencia garantizada por `matching_updated_at` (ADR-017). |
+| `db_identity` | `users` / `technician_profiles` | `id`, `full_name`, `phone`, `role`, `verification_status` | Resolución de nombres y teléfonos para endpoint interno sin exponer credenciales ni contraseñas. |
+
 ---
 
 ## 11. Control de Versiones del Documento
@@ -755,4 +819,6 @@ quickpatch/tests/evidence/
 | **1.2** | 5 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Incorporación de observaciones del equipo: (1) Enfoque exclusivo de carga (50 VU) y estrés (150 VU) en QA (VM2 - ADR-015), protegiendo Producción (VM3) de estrés rutinario; (2) Reemplazo de umbral rígido de 6.5 GiB por criterios objetivos de estabilidad (0 OOMKilled, 0 caída de pods, degradación controlada y baseline de CPU/RAM); (3) Referencia dinámica a Jira para estados de subtareas; (4) Retiro de Pact, consolidando la validación contractual sobre OpenAPI, Spectral CLI y AJV en quickpatch-contracts. |
 | **1.3** | 6 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Corrección de aislamiento de base de datos en pruebas de carga (revisión PR #20): eliminación de toda referencia a VM4 en pasos de carga y teardown; la inyección de carga y la purga SQL se direccionan exclusivamente al PostgreSQL propio de QA en VM2, garantizando que la BD de producción en VM4 permanezca 100% aislada. |
 | **1.4** | 7 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Incorporación de observaciones de revisión (PR #20): (1) Alineación con la redistribución de 7 VMs según ADR-022 (QA en VM2, VM5 y VM7; Producción en VM3, VM4 y VM6; Herramientas y observabilidad unificada en VM1); (2) Traslado de la persistencia de QA a PostgreSQL en VM5 para pruebas de carga, conexiones (PRF-009) y scripts de purga post-carga; (3) Mantenimiento del umbral formal de RAM $\le 6.5\text{ GiB}$ en VM3 conforme al escenario AC2-E5 del SAD, registrando la nota de INFRASTRUCTURE §5.6 y SCRUM-347; (4) Clarificación del comportamiento de desactivación de tenants (RN-T1) conforme a DD 7.12 (rechazo de login en IDN-019); (5) Actualización de versiones vigentes a SRS v3.3 y SAD v2.24, y completitud de claves de Jira de QA para el sprint. |
+| **2.0** | 17 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias del incremento de Sprint 4 (SCRUM-81, SCRUM-90, SCRUM-93): Pruebas de disponibilidad y cobertura geográfica en Matching Service (COV-001..004, AVA-001..005), aceptación y rechazo atómico de ofertas de asignación (OFF-001..007) y detalle de solicitud para técnico asignado con consulta interna por lote a Identity (DTL-001..005). Resultados de ejecución con Newman (24 peticiones, 63 aserciones, 100% Pass) y protocolo de verificación de base de datos PostgreSQL/PostGIS (technician_availability, coverage_zones, matching_attempts, outbox_events, service_requests). |
+
 

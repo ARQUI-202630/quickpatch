@@ -201,4 +201,45 @@ node tests/e2e/run-scrum-56-62.js
 ### Evidencia
 - `evidencias/scrum-56-62-local-2026-10-14.txt`: 24/24 aserciones aprobadas en SCRUM-56 y 11/11 en SCRUM-62 (100% Pass).
 
+---
+
+## Suite de Incremento Técnico: Disponibilidad, Ofertas y Detalle Asignado (SCRUM-81, SCRUM-90, SCRUM-93)
+
+Suite automatizada de pruebas de sistema que valida el flujo operativo del técnico en el Sprint 4 bajo los contratos `matching.v1.yaml` (1.0.0) y `service-request.v1.yaml` (1.1.0):
+
+1. **SCRUM-90 (Disponibilidad y Cobertura Geográfica — Matching Service / HU SCRUM-33):**
+   - Catálogo de 20 localidades oficiales de Bogotá (SDP/IDECA) ordenadas por código (COV-001).
+   - Consulta y actualización de disponibilidad entre `disponible` y `no_disponible` (AVA-001, AVA-002), activando `SearchResumer` (RN-M10).
+   - Bloqueo de cambio manual (409 Conflict con Problem Details `transicion-invalida`) cuando el técnico se encuentra en servicio activo (`ocupado`, RN-M6) (AVA-003).
+   - Configuración de cobertura multi-localidad con validación en PostGIS y RLS (COV-002, COV-003).
+   - Rechazo de códigos inexistentes (400 Bad Request) (COV-004), sin token (401) (AVA-004) y acceso cliente denegado (403) (AVA-005).
+
+2. **SCRUM-81 (Aceptación y Rechazo de Ofertas de Asignación — Matching Service / HU SCRUM-30):**
+   - Consulta de ofertas pendientes: expone localidad y distancia estimada, pero oculta la dirección exacta hasta la asignación efectiva (RN-SR13) (OFF-001).
+   - Aceptación atómica: en una sola transacción la oferta pasa a `aceptado`, el técnico a `ocupado` (RN-M6), la solicitud a `asignado` y se publica `matching.technician-assigned` por el Transactional Outbox (OFF-002).
+   - Control de conflictos: 409 Conflict (`oferta-no-disponible`) ante oferta ya respondida (OFF-003) o vencida por tiempo límite de `OfferExpirer` (RN-M8) (OFF-004).
+   - Protección contra doble asignación: 409 Conflict (`tecnico-no-disponible`) si el técnico ya no está disponible al aceptar (RN-M7) (OFF-005).
+   - Rechazo sin penalización: 200 OK (`rechazado`) y reasignación automática al siguiente candidato con `MatchingEngine.offerNext` (RN-M3, R12) (OFF-006).
+   - Control RBAC: rechazo con 403 Forbidden para rol cliente (OFF-007).
+
+3. **SCRUM-93 (Detalle de Solicitud para Técnico Asignado — ServiceRequest Service / HU SCRUM-34):**
+   - Acceso al detalle completo: técnico asignado visualiza dirección exacta y datos de contacto del cliente (nombre y teléfono) resueltos mediante consulta interna por lote a Identity (RN-SR13) (DTL-001).
+   - Restricción de acceso previo: 403 Forbidden (`solicitud-no-asignada`) si el técnico intenta consultar antes de estar asignado (`buscando_tecnico`) (DTL-002).
+   - Confidencialidad: 404 Not Found cuando un técnico no asignado o de otro tenant intenta acceder (DTL-003, DTL-004).
+   - Visibilidad cliente: el cliente dueño ve la solicitud con `client: null` y el bloque `technician` poblado tras la asignación (DTL-005).
+
+### Ejecución
+
+```bash
+# Simulación preparatoria local (Newman + Mock Gateway)
+node tests/e2e/run-scrum-incremento-tecnico.js
+
+# Contra el entorno desplegado de QA (VM2)
+node tests/e2e/run-scrum-incremento-tecnico.js --remote
+```
+
+### Evidencia
+- `evidencias/scrum-81-90-93-local-2026-10-17.txt`: 24 peticiones ejecutadas, 63 aserciones aprobadas sin fallos (100% Pass).
+
+
 
