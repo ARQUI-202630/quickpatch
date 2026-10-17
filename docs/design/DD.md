@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.0|
+|**Versión**|5.1|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -174,6 +174,7 @@ Contratos publicados para el Sprint 4 (SCRUM-418). Todos son cambios compatibles
 |`technician.registered`, `technician.verification-changed`|v1|`quickpatch-kafka`|Identity|Matching, Communication|
 |`matching.offer-created`|v1|`quickpatch-kafka`|Matching|Communication|
 |`matching.technician-assigned`, `matching.no-technician-available`, `matching.search-resumed`|v1|`quickpatch-kafka`|Matching|ServiceRequest, Communication|
+|`service-request.status-changed`|v1 (5.1, SCRUM-466)|`quickpatch-kafka`|ServiceRequest|Communication|
 |`asyncapi/realtime.v1.yaml` (WebSocket `/v1/realtime`)|1.0.0 (nuevo)|`quickpatch-api-gateway`|Communication|App móvil y panel web|
 
 _Cuadro 5: Contratos del incremento del técnico_
@@ -2106,6 +2107,7 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 |`matching.technician-assigned`|Matching|ServiceRequest, Communication|Un técnico aceptó; la solicitud pasa a `asignado`.|Contrato v1 (v4)|
 |`matching.no-technician-available`|Matching|ServiceRequest, Communication|Se agotaron los candidatos; la solicitud pasa a `en_espera`.|Contrato v1 (v4)|
 |`matching.search-resumed`|Matching|ServiceRequest, Communication|Una solicitud en espera vuelve a `buscando_tecnico` (RN-M10).|Contrato v1 (v4)|
+|`service-request.status-changed`|ServiceRequest|Communication|La solicitud cambió de estado. Se publica en la misma transacción del cambio, solo si se aplicó (un evento de Matching viejo, repetido o fuera de estado no lo produce), y no al crear la solicitud. Communication avisa con él al cliente y al técnico (sección 8.5).|Contrato v1 (5.1, SCRUM-466)|
 |`service-request.quoted`|ServiceRequest|Communication|Notificar al cliente que tiene una cotización.||
 |`service-request.quote-accepted`|ServiceRequest|Communication|Notificar al técnico que puede iniciar.||
 |`service-request.quote-rejected`|ServiceRequest|Communication|Notificar al técnico que debe emitir otra cotización.|Nuevo|
@@ -2149,6 +2151,7 @@ Todos los campos son obligatorios salvo que se indique "opcional". Los eventos n
 |`matching.technician-assigned`|`serviceRequestId`, `clientId`, `attemptId`, `technicianId`, `assignedAt`. `clientId` es nuevo en v4 (sección 8.5).|
 |`matching.no-technician-available`|`serviceRequestId`, `clientId`, `attemptsCount`. `clientId` es nuevo en v4.|
 |`matching.search-resumed`|`serviceRequestId`, `clientId`, `trigger` (`disponibilidad`, `cobertura`, `aprobacion`, `liberacion` o `barrido`). `clientId` es nuevo en v4.|
+|`service-request.status-changed`|`serviceRequestId`, `clientId`, `previousStatus`, `status` (estados de la sección 7.4), `changedAt`; `technicianId` (opcional, nulo si la solicitud no tiene técnico).|
 |`service-request.quoted`|`serviceRequestId`, `quoteId`, `clientId`, `technicianId`, `totalAmount`, `expiresAt`|
 |`service-request.quote-accepted`|`serviceRequestId`, `quoteId`, `technicianId`, `totalAmount`|
 |`service-request.quote-rejected`|`serviceRequestId`, `quoteId`, `technicianId`, `remainingQuotes`|
@@ -2177,13 +2180,14 @@ _Cuadro 12: Contenido de `data` por evento_
 
 |Tipo|Destinatarios|Origen en Kafka|La app pide|
 |---|---|---|---|
-|`service-request.status-changed` (`serviceRequestId`, `status`, `occurredAt`)|Cliente dueño (`clientId`) y técnico asignado (`technicianId`)|`service-request.created` (`buscando_tecnico`), `matching.technician-assigned` (`asignado`), `matching.no-technician-available` (`en_espera`), `matching.search-resumed` (`buscando_tecnico`); los demás eventos de la solicitud cuando se publiquen sus esquemas|`GET /v1/service-requests/{id}`|
+|`service-request.status-changed` (`serviceRequestId`, `status`, `occurredAt`)|Cliente dueño (`clientId`) y técnico asignado (`technicianId`), si lo hay|`service-request.created` (`buscando_tecnico`) y el evento de Kafka `service-request.status-changed` (el `status` que trae). Desde 5.1 no sale de los eventos de Matching (SCRUM-466)|`GET /v1/service-requests/{id}`|
 |`offer.created` (`attemptId`, `serviceRequestId`, `expiresAt`, `occurredAt`)|Técnico de la oferta|`matching.offer-created`|`GET /v1/matching/offers`|
 |`service-request.counts-changed` (`occurredAt`)|`admin_tenant` del tenant|Cada `service-request.status-changed` del tenant|`GET /v1/admin/service-requests/summary` (sin contrato todavía)|
 
 _Cuadro 13: Avisos del canal en tiempo real_
 
-- **Enrutamiento sin tablas:** Communication decide a quién avisar solo con el evento. Por eso los tres eventos de matching que avisan al cliente llevan `clientId` (v4), igual que `service-request.started`, `.cancelled` y `.completed`. Communication no guarda réplicas ni conexiones en la base: las conexiones viven en memoria, en una sola réplica (ADR-023, punto 6).
+- **Enrutamiento sin tablas:** Communication decide a quién avisar solo con el evento. Por eso `service-request.status-changed` lleva `clientId` y `technicianId`, igual que `service-request.started`, `.cancelled` y `.completed`, y los eventos de matching que avisan al cliente llevan `clientId` (v4).
+- **Fuente del aviso de estado (5.1, SCRUM-466):** el aviso sale del dueño del estado. ServiceRequest publica `service-request.status-changed` por Outbox en la misma transacción del cambio y solo si lo aplicó. Antes Communication lo armaba de los eventos de Matching, y si ServiceRequest descartaba uno por viejo (`matching_updated_at`, ADR-017) el aviso salía igual: el técnico veía «asignado» y el detalle respondía 404. Además, cuando la app recibe el aviso, el detalle ya tiene el estado nuevo. El buzón (sección 8.2.6) todavía crea sus notificaciones a partir de los eventos de Matching; pasa a este evento cuando se implemente (SCRUM-456). Communication no guarda réplicas ni conexiones en la base: las conexiones viven en memoria, en una sola réplica (ADR-023, punto 6).
 - **Aislamiento:** un aviso solo se entrega a conexiones con el mismo `tenant_id` que el `tenantId` del evento.
 - **Idempotencia:** Communication descarta los eventos que ya procesó por `eventId` mientras está en ejecución. El aviso es idempotente por naturaleza: si llega repetido, la app vuelve a pedir el mismo detalle. Cuando Communication tenga base de datos (buzón de notificaciones, ADR-024), la deduplicación pasa a `processed_events` (RN-EV1).
 - **Cierres:** `4000` trama inválida, `4001` token inválido, `4002` sin autenticación en 10 segundos, `4003` rol que no usa el canal (`admin_plataforma`, `proveedor`), `4004` token vencido durante la conexión, `1001` reinicio del servidor, `1009` trama de más de 8 KB y `1011` error interno. Con 4000 a 4003 la app no reintenta con el mismo token; con 1001, 1011 y 4004 se reconecta.
@@ -2191,7 +2195,7 @@ _Cuadro 13: Avisos del canal en tiempo real_
 
 ### 8.6 Flujo de extremo a extremo
 
-La Figura 4 muestra cómo los contratos anteriores recorren el ciclo completo: creación, oferta y aceptación del técnico, cotización, ejecución con evidencia, y pago aprobado o rechazado. La cancelación, posible antes de `en_progreso`, se describe en la Figura 3. Para no saturar la figura se omiten los eventos que solo consume Communication Service (`matching.offer-created`, `service-request.started`, `service-request.quote-rejected`).
+La Figura 4 muestra cómo los contratos anteriores recorren el ciclo completo: creación, oferta y aceptación del técnico, cotización, ejecución con evidencia, y pago aprobado o rechazado. La cancelación, posible antes de `en_progreso`, se describe en la Figura 3. Para no saturar la figura se omiten los consumidores de los eventos que solo consume Communication Service (`matching.offer-created`, `service-request.status-changed`, `service-request.started`, `service-request.quote-rejected`).
 
 **Figura 4: Secuencia de solicitud, matching con aceptación, cotización, evidencia y pago**
 
@@ -2230,7 +2234,8 @@ sequenceDiagram
     end
     deactivate M
     K-)SR: evento de matching
-    Note over SR: asignado o en_espera
+    Note over SR: asignado o en_espera<br/>si lo aplicó, outbox: service-request.status-changed
+    SR-)K: service-request.status-changed
 
     T->>SR: POST /v1/service-requests/{id}/quotes
     Note over SR: INSERT quotes (pendiente) · cotizado
@@ -2316,7 +2321,8 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`service-request.created`|`service-request.created.v1.json` (`quickpatch-kafka` `v0.2.0`; topic de 3 particiones)|ServiceRequest, con Transactional Outbox|Matching (`ServiceRequestCreatedConsumerIT`). Communication: pendiente|Postman 3 (la solicitud se crea en `buscando_tecnico`)|
 |`catalog.category-changed`|`catalog.category-changed.v1.json` (`quickpatch-kafka` `v0.2.0`; topic de 1 partición, clave `categoryId`)|Catalog, con Transactional Outbox|ServiceRequest (réplica `service_request_categories`). Matching: pendiente|Postman 3 (reintenta hasta que la réplica tiene la categoría) y 6|
 |`technician.registered` y `technician.verification-changed`|`quickpatch-kafka` v1 (v4; topics de 1 partición, clave `technicianId`)|Identity, con Transactional Outbox|Matching (proyección del técnico, SCRUM-88). Communication: pendiente (buzón, SCRUM-456)|—|
-|`matching.offer-created`, `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed`|`quickpatch-kafka` v1 (v4; topics de 3 particiones, clave `serviceRequestId`)|Matching (SCRUM-76: ofertas, espera y reanudación; aceptación pendiente, SCRUM-79)|ServiceRequest (espera y reanudación, SCRUM-460; asignación, SCRUM-91). Communication (canal en tiempo real; buzón pendiente, SCRUM-456)|—|
+|`matching.offer-created`, `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed`|`quickpatch-kafka` v1 (v4; topics de 3 particiones, clave `serviceRequestId`)|Matching (SCRUM-76: ofertas, espera y reanudación; aceptación, SCRUM-79)|ServiceRequest (espera y reanudación, SCRUM-460; asignación, SCRUM-91). Communication: `offer-created` en el canal en tiempo real; buzón pendiente, SCRUM-456|—|
+|`service-request.status-changed`|`service-request.status-changed.v1.json` (`quickpatch-kafka`, 5.1; topic de 3 particiones, clave `serviceRequestId`)|ServiceRequest, con Transactional Outbox, al aplicar un evento de Matching (SCRUM-466)|Communication (aviso de estado en el canal en tiempo real, SCRUM-466)|Pruebas de integración de ServiceRequest (`MatchingStatusFlowTests`: un evento viejo no deja el evento en el Outbox) y de Communication (`KafkaToRealtimeTests`)|
 |Los 9 eventos restantes del Cuadro 11|Sin esquema|Pendiente|—|—|
 
 _Cuadro 15: Trazabilidad entre el catálogo, los contratos, el código y la colección de Postman_
@@ -2588,7 +2594,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |3.1 (revisión)|SCRUM-259|Atiende la revisión del PR #35: los artefactos relacionados pasan a la sección 1.7 para que Multi-tenancy siga en la 10 (el código y los contratos citan DD 10.2 a 10.4). Se incorporan los cambios de develop: VMs de ADR-022, contratos en `quickpatch-api-gateway` y `quickpatch-kafka` (ADR-021), referencias al SDD organizado por C4 y la geocodificación de RIE-02 fuera de `coverage_zones`. Se corrige la tabla de propuestas y se alinea con SRS V4 y SAD v2.25.|
 |4.0|DD V4 (SCRUM-416, Sprint 4)|Incremento del técnico. **Modelo (SCRUM-417):** `technician_availability.projection_updated_at`; restricciones, índices y RLS de `technician_profiles`, `technician_availability`, `coverage_zones`, `matching_attempts` y `matching_requests`. **Contratos (SCRUM-418):** `matching.v1.yaml` 1.0.0, `identity.v1.yaml` 1.3.0 y `service-request.v1.yaml` 1.1.0 en `quickpatch-api-gateway`; seis eventos v1 con sus topics en `quickpatch-kafka`. P-01, P-03, P-04 y P-05 pasan a decisiones adoptadas y P-01 se alinea con el ADR-017 (sección 1.8). DEP-01 y DEP-18 resueltas. **SCRUM-419:** `pm.execution.setNextRequest` en el generador (PR #68). **Canal en tiempo real:** la 8.5 deja de estar pendiente de decisión (ADR-023) y enlaza `asyncapi/realtime.v1.yaml` 1.0.0; `matching_requests.client_id` y `clientId` en los eventos de matching para enrutar los avisos al cliente.|
 |5.0|DD V5 (SCRUM-455)|**ADR-024:** geocodificación propia (RIE-02) con `location` opcional y `422 direccion-no-encontrada` en `POST /v1/service-requests` (contrato 1.3.0), y buzón de notificaciones (RIE-03) con la tabla `notifications` en `db_communication` y `communication.v1.yaml` 1.0.0. **Consulta interna por lote:** `identity-internal.v1.yaml` 1.0.0 (SCRUM-91). **Cambios ya implementados que faltaban:** `service_requests.matching_updated_at` (SCRUM-460) y `matching_requests.description` (SCRUM-79); sección 8.3.14 con `specialtyId`, sin `availability` y con el enlace de invitación en lugar del correo de Communication (SCRUM-97, SCRUM-461); tabla `password_setup_tokens`; `crear_tenant` en `audit_logs` y `POST /v1/platform/tenants` (SCRUM-462); `X-Channel-Id` (SCRUM-60). Vista previa de la geocodificación (`POST /v1/service-requests/location-preview`, `Geocoding__NominatimUrl`) y propuesta P-09. DEP-09 pasa a parcial (el Gateway ya fija `X-Channel-Id`), DEP-19 se decide para el MVP y se agrega DEP-20. La trazabilidad (8.8) se actualiza con lo implementado.|
-|5.1|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.1|SCRUM-466|**Aviso de estado desde ServiceRequest.** Evento nuevo `service-request.status-changed` v1 (Cuadros 5, 11, 12 y 15): ServiceRequest lo publica por Outbox en la misma transacción del cambio de estado y solo si lo aplicó. Communication avisa el cambio de estado con él y deja de derivarlo de los eventos de Matching, que ServiceRequest puede descartar por viejos (sección 8.5). `asyncapi/realtime.v1.yaml` pasa a 1.0.1 (solo cambia el origen del aviso).|
+|5.2|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 

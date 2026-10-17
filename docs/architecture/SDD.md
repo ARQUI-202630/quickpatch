@@ -240,6 +240,7 @@ matching.offer-created
 matching.technician-assigned
 matching.no-technician-available
 matching.search-resumed
+service-request.status-changed
 ```
 
 Los eventos de cotización, ejecución, pago y calificación (`service-request.quoted`, `.started`, `.completed`, `.cancelled`, `.evaluated`, `payment.approved` y `payment.rejected`) están en el DD 8.4 y se publican en `quickpatch-kafka` cuando se implementen sus historias.
@@ -500,6 +501,7 @@ El código ya define los nueve estados (`ServiceRequestStatus`). Hoy se usan los
 **Eventos:**
 
 - produce `service-request.created`;
+- produce `service-request.status-changed` cuando aplica un cambio de estado (SCRUM-466);
 - produce `service-request.completed`;
 - consume `matching.technician-assigned`;
 - consume `matching.no-technician-available`;
@@ -528,7 +530,7 @@ El diagrama reúne las decisiones de diseño que los demás servicios repiten: r
 | Registro en outbox y publicador | Guarda `service-request.created` con la solicitud y lo publica en segundo plano. | ADR-007; sección 8.10.1 |
 | Consumidor de `catalog.category-changed` y réplica | Aplica cada evento una vez por `eventId` y mantiene `service_request_categories`. | RN-EV1; ADR-017 |
 | Directorio de usuarios | Pide a Identity el nombre y el contacto del cliente y del técnico para el detalle (`GET /internal/v1/users`), con un plazo corto: si Identity no responde, el detalle sale sin esos datos. | `identity-internal.v1.yaml`; SCRUM-91 |
-| Consumidor de matching | Aplica `matching.technician-assigned`, `.no-technician-available` y `.search-resumed` al estado, una vez por `eventId` y descartando eventos viejos. | Sección 8.6; SCRUM-29 |
+| Consumidor de matching | Aplica `matching.technician-assigned`, `.no-technician-available` y `.search-resumed` al estado, una vez por `eventId` y descartando eventos viejos. Si aplica el cambio, registra `service-request.status-changed` en el outbox en la misma transacción; si lo descarta, no. | Sección 8.6; SCRUM-29, SCRUM-466 |
 | Consumidor de pagos *(planeado)* | Aplica `payment.approved` y `payment.rejected` al estado. | Sección 8.6 |
 | Geocodificación de la dirección *(planeado)* | Si la solicitud llega sin coordenadas, busca la dirección en el geocodificador (Nominatim con el mapa de Bogotá) y responde `422 direccion-no-encontrada` si no la encuentra; `location-preview` deja confirmar el punto antes de crear. | ADR-024; contrato 1.3.0; SCRUM-456 |
 | Evidencias y calificación *(planeado)* | Fotos en Garage (RF-15) y calificación; publica `service-request.completed` y `.evaluated`. | RF-12, RF-15 |
@@ -652,7 +654,7 @@ Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean inco
 
 **Figura 18. Componentes de Communication Service (C4 · Component; diseño). Vista `C4-04-Componentes-Communication`.**
 
-El canal en tiempo real está implementado (ADR-023): `/v1/realtime` valida el token de la primera trama y cierra con el código del contrato si no llega a tiempo (4002), si es inválido (4001) o cuando vence (4004; corregido con Kestrel en SCRUM-469). Un consumidor de `service-request.created` y de los cuatro eventos `matching.*` decide a quién avisar con los datos del propio evento (`clientId`, `technicianId`) y avisa a cada usuario conectado dentro de su tenant. El aviso no trae datos: la app vuelve a pedir el detalle por REST. Como Communication todavía no tiene base de datos, recuerda en memoria los últimos `eventId` para no repetir un aviso; un aviso repetido tras un reinicio no hace daño, porque la app solo vuelve a pedir el mismo detalle.
+El canal en tiempo real está implementado (ADR-023): `/v1/realtime` valida el token de la primera trama y cierra con el código del contrato si no llega a tiempo (4002), si es inválido (4001) o cuando vence (4004; corregido con Kestrel en SCRUM-469). Un consumidor de `service-request.created`, `service-request.status-changed` y `matching.offer-created` decide a quién avisar con los datos del propio evento (`clientId`, `technicianId`) y avisa a cada usuario conectado dentro de su tenant. El aviso de estado sale de ServiceRequest, que solo publica `status-changed` cuando aplicó el cambio; antes salía de los eventos de Matching, y uno que ServiceRequest descartaba por viejo producía un aviso falso (SCRUM-466). El aviso no trae datos: la app vuelve a pedir el detalle por REST. Como Communication todavía no tiene base de datos, recuerda en memoria los últimos `eventId` para no repetir un aviso; un aviso repetido tras un reinicio no hace daño, porque la app solo vuelve a pedir el mismo detalle.
 
 Está planeado el buzón de notificaciones (ADR-024; SCRUM-456): la tabla `notifications` en `db_communication`, `GET /v1/notifications` y `POST /v1/notifications/{id}/read` (`communication.v1.yaml` 1.0.0), y `processed_events` en lugar de la memoria. También están planeadas las plantillas de los avisos de cotización, ejecución y pago. No hay adaptador de un proveedor externo: el correo y el push quedan fuera del MVP (R5).
 
@@ -958,7 +960,7 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 ## 8.6 Productores y consumidores Kafka
 
-La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 8.4) es la siguiente. Los ocho primeros tienen esquema publicado en `quickpatch-kafka` (`topics/topics.yaml`); los de ejecución, pago y calificación son de diseño hasta que se implementen sus historias.
+La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 8.4) es la siguiente. Los nueve primeros tienen esquema publicado en `quickpatch-kafka` (`topics/topics.yaml`); los de ejecución, pago y calificación son de diseño hasta que se implementen sus historias.
 
 | Tópico / Evento | Microservicio Productor | Microservicios Consumidores | Propósito del Flujo |
 |---|---|---|---|
@@ -970,6 +972,7 @@ La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 
 | `matching.technician-assigned` | `Matching Service` | `ServiceRequest Service`, `Communication Service` | Actualizar estado a `asignado` y notificar al técnico asignado y al cliente. |
 | `matching.no-technician-available` | `Matching Service` | `ServiceRequest Service`, `Communication Service` | Colocar solicitud en `en_espera` y notificar al cliente que no hay técnicos disponibles (AC9-E4). |
 | `matching.search-resumed` | `Matching Service` | `ServiceRequest Service`, `Communication Service` | Volver la solicitud de `en_espera` a `buscando_tecnico` cuando aparece un técnico que puede atenderla (RN-M10) y avisar al cliente. |
+| `service-request.status-changed` | `ServiceRequest Service` | `Communication Service` | Avisar al cliente y al técnico asignado un cambio de estado que ServiceRequest ya aplicó (SCRUM-466). Sale en la misma transacción del cambio y nunca de un evento descartado. |
 | `service-request.completed` | `ServiceRequest Service` | `Payments Service`, `Communication Service` | Habilitar el proceso de pago y notificar al cliente que el servicio finalizó. |
 | `payment.approved` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Cambiar estado de solicitud a `pagado` y enviar comprobante/factura al cliente. |
 | `payment.rejected` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Informar rechazo de cobro y habilitar reintento de pago. |
@@ -2016,7 +2019,7 @@ Antes de consolidar una versión final del SDD se verifica la lista siguiente. R
 |Los diagramas dinámicos usan solo contenedores y relaciones del modelo C4.|✅ Cumple|Las vistas dinámicas se definen en `quickpatch.dsl` sobre los elementos del modelo, y `structurizr validate` no da errores (SCRUM-468).|
 |Los escenarios de validación pueden seguirse en los diagramas de contenedores, componentes, dinámicos y de despliegue.|🟡 Parcial|Matriz 8.13.4: los escenarios 1, 2, 8 y 9 se siguen en todos; el 3 no tiene vista C4 dinámica propia, y del 4 al 7 los diagramas son de diseño.|
 |Los contratos REST coinciden con el DD y con `quickpatch-api-gateway`.|✅ Cumple|La sección 5.6.1 lista los contratos de la etiqueta `v0.6.0`, que son los del DD V5. Los endpoints sin contrato publicado (cotización, ejecución, pago, calificación y registro de empresa) se nombran como diseño.|
-|Los eventos coinciden con el DD y con `quickpatch-kafka`.|✅ Cumple|La sección 5.6.2 y la matriz 8.6 tienen los 8 eventos de `topics/topics.yaml`, con su productor y sus consumidores; los demás se marcan como diseño.|
+|Los eventos coinciden con el DD y con `quickpatch-kafka`.|✅ Cumple|La sección 5.6.2 y la matriz 8.6 tienen los 9 eventos de `topics/topics.yaml` (con `service-request.status-changed`, SCRUM-466), con su productor y sus consumidores; los demás se marcan como diseño.|
 |Los estados de `ServiceRequest` son consistentes con SRS, DD y código.|✅ Cumple|Los nueve estados de la sección 6.7 coinciden con DD 7.4 y con `ServiceRequestStatus`; el código usa hoy los de la búsqueda.|
 |Los nombres de servicios son uniformes en SAD, SDD, repositorios y despliegue.|🟡 Parcial|Los 8 servicios se llaman igual en todos. Los clientes se nombran por su framework en algunos diagramas («Angular Web», «Flutter Mobile»); SCRUM-468 los cambia por «Panel web» y «App móvil».|
 |Ningún servicio modifica directamente datos propiedad de otro dominio.|✅ Cumple|Cada servicio tiene su base (ADR-014). ServiceRequest y Matching guardan réplicas propias alimentadas por eventos (ADR-017), y la consulta interna de Identity (`/internal/v1/users`) es de solo lectura.|
@@ -2063,7 +2066,7 @@ Revisión del 8 de octubre de 2026 con los criterios de SCRUM-301: que el docume
 
 La V3 lleva el documento al incremento del Sprint 4 implementado en `develop` hasta el 17 de octubre de 2026:
 
-- **Contratos (5.6):** los contratos REST de la etiqueta `v0.6.0` de `quickpatch-api-gateway` (Identity 1.7.0 e interno 1.0.0, Catalog 1.2.0, ServiceRequest 1.3.0, Matching 1.0.0, Communication 1.0.0 y el canal en tiempo real) y los 8 eventos de `quickpatch-kafka`. Lo que todavía no tiene contrato se nombra como diseño.
+- **Contratos (5.6):** los contratos REST de la etiqueta `v0.6.0` de `quickpatch-api-gateway` (Identity 1.7.0 e interno 1.0.0, Catalog 1.2.0, ServiceRequest 1.3.0, Matching 1.0.0, Communication 1.0.0 y el canal en tiempo real) y los eventos de `quickpatch-kafka`, con `service-request.status-changed` (SCRUM-466). Lo que todavía no tiene contrato se nombra como diseño.
 - **Aplicaciones cliente (6.2):** en el panel, la activación de la cuenta del técnico de un equipo; en la app, los servicios del técnico, el equipo del proveedor, la activación de cuenta y el canal en tiempo real, que deja de estar planeado. Las ofertas (SCRUM-80) y el buzón (SCRUM-459) siguen planeados.
 - **Identity (6.4):** verificación de técnicos con sus eventos, equipo del proveedor con invitación de un solo uso, creación de tenants auditada y consulta interna de nombres.
 - **ServiceRequest (6.7):** estado por los eventos de Matching, detalle y lista del técnico con los datos de contacto solo para el asignado (RN-SR13), y la geocodificación de ADR-024 como planeada.
