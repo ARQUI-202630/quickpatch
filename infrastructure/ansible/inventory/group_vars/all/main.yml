@@ -42,11 +42,12 @@ stack_dir: /opt/quickpatch
 # VM1:443 es el único puerto que el firewall perimetral de la universidad deja pasar
 # desde la VPN (observado el 2026-10-03: VM7:3000, VM7:9090 y VM2:443 no pasan).
 # Nginx elige el destino por el nombre pedido (ADR-015). No hay DNS: cada persona
-# agrega a su archivo hosts una línea con los tres nombres apuntando a VM1.
+# agrega a su archivo hosts una línea con los nombres apuntando a VM1.
 gateway_domain: quickpatch.internal
 gateway_hosts:
   produccion: "{{ gateway_domain }}"
   qa: "qa.{{ gateway_domain }}"
+  qa_beta: "beta.qa.{{ gateway_domain }}"   # tenant Beta de QA (SCRUM-62): el Nginx fija el canal quickpatch-beta por este nombre
   grafana: "grafana.{{ gateway_domain }}"
 
 # --- Versiones fijadas ---------------------------------------------------------
@@ -97,8 +98,9 @@ postgres_databases:
   - communication
 # Tope del pool de conexiones de cada servicio .NET (`Maximum Pool Size` de Npgsql, en el Secret app-connection). Sin tope el
 # driver abre hasta 100 por servicio y, con max_connections = 100, la base rechaza conexiones bajo estrés (hallazgo del 8 y el 14 de
-# octubre). Con Matching en 10 (HikariCP), la suma es 62 de las 97 conexiones útiles. Cada réplica abre su propio pool.
-pool_conexiones: { identity: 12, catalog: 15, service_request: 25 }
+# octubre). Con Matching en 10 (HikariCP) y Communication en 8 (una réplica, buzón de notificaciones), la suma es 70 de las 97
+# conexiones útiles. Cada réplica abre su propio pool.
+pool_conexiones: { identity: 12, catalog: 15, service_request: 25, communication: 8 }
 postgis_databases: [matching, service_request]   # service_request guarda la ubicación de la solicitud: geometry(Point, 4326)
 
 # Los valores que cambian entre ambientes (secretos, memoria de Redis y Kafka, retención, capacidad de Garage)

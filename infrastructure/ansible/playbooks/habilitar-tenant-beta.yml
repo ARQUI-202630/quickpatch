@@ -1,0 +1,66 @@
+# Habilita en QA el canal quickpatch-beta (tenant Beta, SCRUM-62): agrega Channel__Tenants__quickpatch-beta al ConfigMap de Identity
+# y de Catalog y reinicia los dos para que lo lean. Corre en VM1. Solo QA: el tenant Beta no existe en producción y la clave no va
+# en los manifiestos de los servicios, que son iguales en los dos ambientes.
+#
+# Orden (el id lo genera Identity al crear el tenant, por eso no puede ir en un manifiesto):
+#   1. ./ap playbooks/deploy-gateway.yml                     el Nginx de VM1 fija quickpatch-beta al entrar por gateway_hosts.qa_beta
+#   2. POST /v1/platform/tenants {name, nit}                 con el admin_plataforma de QA; la respuesta trae el id del tenant
+#   3. ./ap playbooks/habilitar-tenant-beta.yml -e tenant_beta_id=<id del tenant>
+#
+# Se puede repetir: kubectl patch no cambia nada si el valor es el mismo (los servicios se reinician igual).
+# primer-despliegue-servicios.yml (kubectl apply) no borra la clave, porque no está en los manifiestos.
+# Para quitarla: kubectl patch configmap <identity-config|catalog-config> --type=json
+#   -p '[{"op":"remove","path":"/data/Channel__Tenants__quickpatch-beta"}]'   y reiniciar el servicio.
+- name: Habilitar el canal del tenant Beta en QA
+  hosts: gateway
+  gather_facts: false
+  become: true
+  become_user: "{{ deploy_user }}"
+  vars:
+    clave: Channel__Tenants__quickpatch-beta
+    destinos:
+      - { configmap: identity-config, deployment: identity }
+      - { configmap: catalog-config, deployment: catalog }
+    kubectl: "kubectl --kubeconfig /home/{{ deploy_user }}/.kube/config-qa -n quickpatch"
+  tasks:
+    - name: Exigir el id del tenant Beta
+      ansible.builtin.assert:
+        that:
+          - tenant_beta_id is defined
+          - tenant_beta_id is match('^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$')
+        fail_msg: "-e tenant_beta_id=<uuid del tenant creado con POST /v1/platform/tenants en QA>"
+
+    - name: Clave del canal en el ConfigMap de cada servicio
+      ansible.builtin.command: >-
+        {{ kubectl }} patch configmap {{ item.configmap }} --type merge
+        -p '{"data": {"{{ clave }}": "{{ tenant_beta_id | lower }}"}}'
+      register: parche
+      changed_when: "'patched' in parche.stdout and 'no change' not in parche.stdout"
+      loop: "{{ destinos }}"
+      loop_control: { label: "{{ item.configmap }}" }
+
+    - name: Reiniciar el servicio para que lea la clave
+      ansible.builtin.command: "{{ kubectl }} rollout restart deployment/{{ item.deployment }}"
+      register: reinicio
+      changed_when: "'restarted' in reinicio.stdout"
+      loop: "{{ destinos }}"
+      loop_control: { label: "{{ item.deployment }}" }
+
+    - name: Esperar a que los pods nuevos estén listos
+      ansible.builtin.command: "{{ kubectl }} rollout status deployment/{{ item.deployment }} --timeout=240s"
+      changed_when: false
+      loop: "{{ destinos }}"
+      loop_control: { label: "{{ item.deployment }}" }
+
+    - name: Clave vigente en cada ConfigMap
+      ansible.builtin.command: "{{ kubectl }} get configmap {{ item.configmap }} -o json"
+      register: vigente
+      changed_when: false
+      loop: "{{ destinos }}"
+      loop_control: { label: "{{ item.configmap }}" }
+
+    - name: Mostrar
+      ansible.builtin.debug:
+        msg: "{{ item.item.configmap }}: {{ clave }} = {{ (item.stdout | from_json).data[clave] }}"
+      loop: "{{ vigente.results }}"
+      loop_control: { label: "{{ item.item.configmap }}" }
