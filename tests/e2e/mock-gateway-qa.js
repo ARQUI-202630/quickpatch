@@ -91,6 +91,18 @@ const adminTechniciansDb = {
             verificationStatus: "aprobado",
             tenantId: "11111111-1111-1111-1111-111111111111",
             role: "tecnico"
+        },
+        "usr-tec-suspended-01": {
+            userId: "usr-tec-suspended-01",
+            fullName: "Raúl Sánchez (Suspendido)",
+            email: "raul.suspendido@quickpatch.test",
+            documentId: "CC-4455667788",
+            phone: "+573151234567",
+            specialty: "Pintura",
+            verificationStatus: "suspendido",
+            suspensionReason: "Reiteradas quejas de clientes por incumplimiento",
+            tenantId: "11111111-1111-1111-1111-111111111111",
+            role: "tecnico"
         }
     },
     "22222222-2222-2222-2222-222222222222": {
@@ -988,6 +1000,57 @@ const server = http.createServer((req, res) => {
                 reason: body.reason,
                 rejectedAt: tech.rejectedAt,
                 rejectedBy: tech.rejectedBy,
+                noticeEmitted: "technician.verification-changed"
+            }));
+        }
+
+        // 9.4 Suspensión de cuenta de técnico con motivo (POST /api/v1/admin/technicians/{userId}/suspend)
+        if ((url.startsWith('/api/v1/admin/technicians/') || url.startsWith('/v1/admin/technicians/')) && url.endsWith('/suspend') && req.method === 'POST') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
+            }
+            if (user.role !== 'admin_tenant' && user.role !== 'admin' && user.role !== 'admin_plataforma') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo administradores pueden suspender perfiles técnicos (RF-20)', correlationId);
+            }
+
+            const parts = url.split('/');
+            const techUserId = parts[parts.length - 2];
+            const tenantTechsMap = adminTechniciansDb[user.tenant_id] || {};
+            const tech = tenantTechsMap[techUserId];
+
+            if (!tech) {
+                return sendProblemDetails(res, 404, 'no-encontrado', 'Técnico no encontrado', 'El técnico no existe en el tenant especificado (Aislamiento RLS)', correlationId);
+            }
+
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            if (!body.reason || body.reason.trim().length < 5) {
+                return sendProblemDetails(res, 400, 'validacion-solicitud', 'Motivo de suspensión inválido', 'El motivo de suspensión es obligatorio y debe tener al menos 5 caracteres (DD §8.3.13).', correlationId);
+            }
+
+            // Transiciones válidas (DD §8.3.13): solo desde 'aprobado'
+            if (tech.verificationStatus !== 'aprobado') {
+                return sendProblemDetails(res, 409, 'transicion-invalida', 'Transición Inválida', `No se permite suspender un técnico en estado ${tech.verificationStatus} (DD §8.3.13)`, correlationId);
+            }
+
+            tech.verificationStatus = 'suspendido';
+            tech.suspensionReason = body.reason;
+            tech.suspendedAt = new Date().toISOString();
+            tech.suspendedBy = user.sub;
+
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'X-Correlation-Id': correlationId
+            });
+            return res.end(JSON.stringify({
+                userId: tech.userId,
+                fullName: tech.fullName,
+                verificationStatus: "suspendido",
+                reason: body.reason,
+                suspendedAt: tech.suspendedAt,
+                suspendedBy: tech.suspendedBy,
+                matchingBlocked: true,
                 noticeEmitted: "technician.verification-changed"
             }));
         }

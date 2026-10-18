@@ -1035,6 +1035,60 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-19** / F3.4) y l
 | `db_identity` | `outbox_events` | `event_type = 'technician.verification-changed'`, `payload jsonb`, `tenant_id` | Publicación transaccional outbox hacia Kafka para habilitar participación en matching al pasar a `aprobado` (RN-TP1, RN-M10, ADR-007). |
 | `db_identity` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` | Bloqueo absoluto de operaciones cruzadas entre administradores y técnicos de distintos tenants (SAD AC6-E2). |
 
+### 10.10 Ejecución de Pruebas: Suspensión de Cuenta de Técnico (SCRUM-111 / HU SCRUM-40)
+
+En cumplimiento de los requerimientos funcionales del SRS (**RF-20** / F3.4) y las reglas de diseño detallado para la exclusión operativa de técnicos (**RN-TP2**, DD §7.3, §8.2.1 y §8.3.13), el equipo de Aseguramiento de Calidad (QA) diseñó y ejecutó la suite automatizada E2E correspondiente a la subtarea **SCRUM-111** (Historia de Usuario **SCRUM-40** - *"Suspensión de cuenta de técnico por parte del Administrador"*).
+
+#### 10.10.1 Catálogo de Casos y Resultados de Pruebas (SCRUM-111)
+
+| ID Caso | Requisito / Regla | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **SUS-001** | RF-20 / RN-TP2 | Transición / Suspensión | `POST /v1/admin/technicians/{id}/suspend` | Admin suspende técnico aprobado con motivo válido (`reason >= 5 car`) | 200 OK con `verificationStatus: "suspendido"`, `matchingBlocked: true` y evento outbox emitido | **PASS** |
+| **SUS-002** | RF-20 / DD §8.3.13 | Consulta / Consistencia | `GET /v1/admin/technicians?verificationStatus=suspendido` | Admin consulta técnicos suspendidos y confirma presencia del perfil suspendido | 200 OK retornando el técnico en la lista de suspendidos con su motivo | **PASS** |
+| **SUS-003** | Reactivación / DD §8.3.13 | Transición / Reactivación | `POST /v1/admin/technicians/{id}/approve` | Admin reactiva técnico suspendido pasándolo nuevamente a estado aprobado | 200 OK con `verificationStatus: "aprobado"` y evento outbox emitido | **PASS** |
+| **SUS-004** | Validación / RFC 9457 | Negativa / Validación | `POST /v1/admin/technicians/{id}/suspend` | Intento de suspender técnico sin motivo o con longitud menor a 5 caracteres | 400 Bad Request con RFC 9457 `type: .../validacion-solicitud` | **PASS** |
+| **SUS-005** | Máquina Estados | Negativa / Transición | `POST /v1/admin/technicians/{id}/suspend` | Intento de suspender a un técnico que ya se encuentra en estado suspendido | 409 Conflict con RFC 9457 `type: .../transicion-invalida` | **PASS** |
+| **SUS-006** | Máquina Estados | Negativa / Transición | `POST /v1/admin/technicians/{id}/suspend` | Intento de suspender a un técnico en estado pendiente (no aprobado) | 409 Conflict con RFC 9457 `type: .../transicion-invalida` | **PASS** |
+| **SUS-007** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/admin/technicians/{id}/suspend` | Cliente intenta suspender la cuenta de un técnico | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **SUS-008** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/admin/technicians/{id}/suspend` | Técnico intenta suspender la cuenta de otro técnico | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **SUS-009** | IDN-017 / Seguridad | Negativa / Auth | `POST /v1/admin/technicians/{id}/suspend` | Solicitud anónima de suspensión sin cabecera Authorization Bearer | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **SUS-010** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `POST /v1/admin/technicians/{id}/suspend` | Admin de Tenant Beta intenta suspender técnico perteneciente a Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
+| **SUS-011** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/admin/technicians?verificationStatus=suspendido` | Admin de Tenant Beta consulta suspendidos sin ver perfiles de Tenant Alfa | 200 OK con `total: 0` (aislamiento estricto por tenant) | **PASS** |
+
+#### 10.10.2 Resumen Estadístico de Ejecución E2E (Newman CLI)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-111 (Suspensión de Cuenta de Técnico) │
+│ Archivo: scrum-111-suspension-tecnico.postman_collection.json │
+│ Suite E2E / Gateway Mock Server (Puerto 8080)                 │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               15 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               15 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               30 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ Duración Total: 1387 ms (Promedio por petición: 6 ms)         │
+│ Tasa de Éxito (Pass Rate): 100.0% (30/30 aserciones exitosas) │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-111-local-2026-10-18.txt          │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.10.3 Verificación de Persistencia y Reglas de Base de Datos (PostgreSQL)
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_identity` | `technician_profiles` | `user_id`, `verification_status = 'suspendido'`, `suspension_reason`, `suspended_at`, `suspended_by` | Persistencia del estado suspendido con marca de tiempo, administrador y motivo obligatorio (RF-20). |
+| `db_identity` | `audit_logs` | `action = 'suspender_tecnico'`, `user_id`, `tenant_id`, `details` | Trazabilidad administrativa inmutable en registro de auditoría con fecha y responsable (SCRUM-40). |
+| `db_identity` | `outbox_events` | `event_type = 'technician.verification-changed'`, `payload jsonb`, `tenant_id` | Publicación hacia Kafka para actualizar `technician_availability` en Matching y bloquear asignaciones (RN-TP2, P-01). |
+| `db_identity` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` | Imposibilidad de suspensión de perfiles fuera del tenant del administrador autenticado (SAD AC6-E2). |
+
 ---
 
 ## 11. Control de Versiones del Documento
@@ -1051,6 +1105,8 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-19** / F3.4) y l
 | **2.2** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31, SCRUM-451, SCRUM-466). Verificación de ciclo completo de 4 estados (buscando_tecnico, asignado, en_progreso, completado), latencia inferior a 1 minuto, visibilidad de técnico (nombre y especialidad), handshake WebSocket en Gateway (ADR-023), eventos outbox (ADR-007), rechazo de saltos inválidos (409 Conflict), control RBAC (403 Forbidden) y aislamiento intra-tenant y multi-tenant RLS (404 Not Found). Resumen estadístico Newman (18 peticiones, 47 aserciones, 100% Pass). |
 | **2.3** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Gestión de Equipo de Técnicos por parte del Proveedor (SCRUM-99 / HU SCRUM-36 / RF-16). Verificación de alta de técnicos en equipo con herencia de tenant y estado inicial pendiente (RN-TP3), filtrado de equipo activo vs inactivo (DD §8.3.14), unicidad de correo y documento (RN-U1), validaciones RFC 9457 (400 Bad Request), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento intra-tenant y multi-tenant RLS (RN-TP4 / SAD AC6-E2). Resumen estadístico Newman (17 peticiones, 34 aserciones, 100% Pass). |
 | **2.4** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Aprobación y Rechazo de Técnicos y Proveedores (SCRUM-108 / HU SCRUM-39 / RF-19). Verificación de listado por estado de verificación, aprobación de perfiles técnicos con activación para matching (RN-TP1), rechazo con motivo obligatorio y validación RFC 9457 (400 Bad Request), máquina de estados y bloqueo de transiciones inválidas (409 Conflict), emisión de evento outbox technician.verification-changed (ADR-007), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento multi-tenant con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (17 peticiones, 32 aserciones, 100% Pass). |
+| **2.5** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Suspensión de Cuenta de Técnico (SCRUM-111 / HU SCRUM-40 / RF-20). Verificación de suspensión con motivo obligatorio >= 5 caracteres (DD §8.3.13), bloqueo de asignaciones en matching (RN-TP2), reactivación de técnico suspendido a aprobado, validación de motivo y RFC 9457 (400 Bad Request), máquina de estados y bloqueo de transiciones inválidas (409 Conflict), emisión de evento outbox technician.verification-changed (ADR-007), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento multi-tenant con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (15 peticiones, 30 aserciones, 100% Pass). |
+
 
 
 
