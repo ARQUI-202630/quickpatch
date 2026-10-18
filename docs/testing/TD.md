@@ -1,10 +1,10 @@
-# Documento de Pruebas (TD V2.7) — QUICKPATCH
+# Documento de Pruebas (TD V2.8) — QUICKPATCH
 ## Sistema Multi-tenant de Servicios Técnicos para el Hogar y las Empresas
 
 | | |
 |---|---|
 | **Tipo de documento** | Documento de Diseño y Definición de Pruebas (Test Document - TD) |
-| **Versión** | 2.7 (Entrega Sprint 4 / Semana 11) |
+| **Versión** | 2.8 (Entrega Sprint 4 / Semana 11) |
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
 | **Rol Responsable** | Katherine Bravo (QA Lead) |
@@ -32,7 +32,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V2.7) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente V5) y los escenarios de calidad del SAD (versión vigente V4 / v2.28) de cara a los entregables del Sprint 4.
+El presente Documento de Pruebas (TD V2.8) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente V5) y los escenarios de calidad del SAD (versión vigente V4 / v2.28) de cara a los entregables del Sprint 4.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -124,6 +124,138 @@ El flujo de promoción asegura que ningún código defectuoso llegue a las máqu
        ├───(Pasa)───> [Versión Operativa y Tráfico Habilitado]
        └───(Falla)──> [kubectl rollout undo automático inmediato]
 ```
+
+### 3.1 Jerarquía y Definición de Compuertas de Calidad
+
+Para dar cumplimiento a los estándares ISO/IEC 25010:2023 e ISO/IEC/IEEE 29119, QUICKPATCH implementa una arquitectura de compuertas de calidad (*Quality Gates*) con barreras progresivas e infranqueables. Cada compuerta actúa como filtro previo a la siguiente fase del ciclo de vida:
+
+| Compuerta | Denominación | Entorno de Ejecución | Herramientas / Automatización | Criterio de Aprobación Obligatorio (Pass Criteria) | Acción en Caso de Falla |
+|---|---|---|---|---|---|
+| **Compuerta 0** | Pre-Push Local | Estación de trabajo del desarrollador | Git Hook (`.githooks/pre-push`), `dotnet test`, `mvn test`, `flutter test`, `vitest` | 100% pruebas unitarias locales aprobadas antes de permitir el envío al servidor remoto. | El hook aborta el comando `git push` con código de salida 1; el código no sale de la máquina local. |
+| **Compuerta 1** | Integración Continua (CI) por Repositorio | GitHub Actions Runners (Cloud) | GitHub Actions, Spectral CLI, AJV Validator, xUnit, JUnit 5, Testcontainers (Postgres/Kafka) | Compilación limpia, 0 errores de linters, cobertura de código $\ge 80\%$, y 100% pruebas de persistencia e integración con Testcontainers aprobadas. | Bloqueo automático del Pull Request en GitHub; merge a `develop` inhabilitado. |
+| **Compuerta 2** | Pruebas de Sistema en Ambiente de QA Desplegado | Infraestructura de QA dedicada (VM1, VM2, VM5, VM7 - ADR-022) | Self-hosted Runner en VM1, Newman CLI, Playwright Headless, k6, OWASP ZAP, Escáner PCI-DSS en Loki | 100% de aserciones E2E aprobadas, 0 coincidencias de PAN/CVV en logs, 0 alertas altas/críticas en ZAP, k6 p95 < 3s a 50 VU y 0 pods caídos a 150 VU. | Rechazo del incremento; generación de defecto P0/P1 en Jira y bloqueo de promoción a Producción. |
+| **Compuerta 3** | Despliegue y Validación en Producción | Infraestructura de Producción (VM1, VM3, VM4, VM6 - ADR-022) | Ansible Playbooks, `kubectl rollout status`, Prometheus, Grafana | Despliegue tipo *Rolling Update* sin indisponibilidad, 0 pods en estado `CrashLoopBackOff`/`OOMKilled`, RAM en VM3 $\le 6.5\text{ GiB}$ (AC2-E5), y Smoke Tests de verificación aprobados. | `kubectl rollout undo` inmediato y automático al estado anterior funcional; notificación urgente en canal del equipo. |
+
+---
+
+### 3.2 Especificación Formal de la Compuerta 2 en el Ambiente de QA Desplegado (ADR-015, ADR-022)
+
+En cumplimiento de los acuerdos arquitectónicos **ADR-015** (Ambiente de pruebas dedicado) y **ADR-022** (Distribución formal sobre 7 Máquinas Virtuales en red `10.43.x.x`), la **Compuerta 2** se evalúa exclusivamente sobre la topología desplegada de QA, garantizando el aislamiento total de la infraestructura de Producción.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ TOPOLOGÍA DE EJECUCIÓN: COMPUERTA 2 (QA DESPLEGADO)                                    │
+├────────────────────────┬───────────────────────────────────────────────────────────────┤
+│ Nodo / VM              │ Componentes Desplegados y Rol en la Compuerta                 │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ VM1 (10.43.100.168)    │ • Punto de entrada HTTPS (:443) con Nginx Proxy y TLS 1.3     │
+│ [Herramientas]         │ • Virtual Host de pruebas: https://qa.quickpatch.internal     │
+│                        │ • GitHub Actions Self-Hosted Runner (inyección de pruebas)     │
+│                        │ • Grafana (:3000) y Loki (:3100) para escaneo de logs PCI-DSS │
+│                        │ • Prometheus (:9090) para métricas de CPU y RAM de pods       │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ VM2 (10.43.98.15)      │ • Clúster k3s dedicado de QA (nodo único)                     │
+│ [Aplicación QA]        │ • Traefik Ingress (:30080)                                    │
+│                        │ • 8 Microservicios de QA en pods independientes                │
+│                        │ • Receptor de tráfico E2E, ZAP DAST y carga destructiva k6    │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ VM5 (10.43.98.29)      │ • PostgreSQL 16 + PostGIS dedicado para QA (:5432)            │
+│ [Persistencia QA]      │ • Redis 7 dedicado para QA (:6379)                            │
+│                        │ • Tablas aisladas con RLS por tenant_id (app.current_tenant)  │
+│                        │ • Almacenamiento de tenant de pruebas: tenant_qa_loadtest      │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ VM7 (10.43.99.8)       │ • Apache Kafka dedicado para QA (:9092)                       │
+│ [Mensajería y S3 QA]   │ • Bus de eventos asíncronos y Outbox Pattern de QA            │
+│                        │ • Garage Object Storage S3 dedicado (:9000)                   │
+│                        │ • Almacenamiento de evidencias fotográficas de QA             │
+└────────────────────────┴───────────────────────────────────────────────────────────────┘
+```
+
+#### 3.2.1 Sub-compuertas y Umbrales de Aceptación (Pass / Fail Criteria)
+
+La Compuerta 2 se divide internamente en 5 sub-compuertas automatizadas que deben ser superadas al 100% para autorizar la promoción del incremento:
+
+```
+                  ┌──────────────────────────────────────────────┐
+                  │ INICIO EVALUACIÓN COMPUERTA 2 (QA REAL)       │
+                  └──────────────────────┬───────────────────────┘
+                                         │
+                 ┌───────────────────────▼───────────────────────┐
+                 │ SUB-COMPUERTA 2.1: Suites Funcionales y E2E   │
+                 │ Colección MVP + Suites de Incremento Newman   │
+                 └───────────────────────┬───────────────────────┘
+                                         │ [Pass: 100% aserciones]
+                 ┌───────────────────────▼───────────────────────┐
+                 │ SUB-COMPUERTA 2.2: Escáner PCI-DSS en Logs    │
+                 │ Consulta LogQL en Loki (VM1:3100)             │
+                 └───────────────────────┬───────────────────────┘
+                                         │ [Pass: 0 PAN / 0 CVV]
+                 ┌───────────────────────▼───────────────────────┐
+                 │ SUB-COMPUERTA 2.3: Rendimiento y Capacidad    │
+                 │ k6: 50 VU Nominal (p95 < 3s) + 150 VU Estrés   │
+                 └───────────────────────┬───────────────────────┘
+                                         │ [Pass: 0 pods caídos / 0 OOMKilled]
+                 ┌───────────────────────▼───────────────────────┐
+                 │ SUB-COMPUERTA 2.4: Seguridad Dinámica (DAST)  │
+                 │ OWASP ZAP Baseline sobre qa.quickpatch.internal│
+                 └───────────────────────┬───────────────────────┘
+                                         │ [Pass: 0 High / 0 Critical]
+                 ┌───────────────────────▼───────────────────────┐
+                 │ SUB-COMPUERTA 2.5: Aislamiento Multi-Tenant   │
+                 │ Validación RLS en PostgreSQL (VM5)            │
+                 └───────────────────────┬───────────────────────┘
+                                         │ [Pass: 0 fugas cross-tenant]
+                  ┌──────────────────────▼───────────────────────┐
+                  │ APROBACIÓN FORMAL: LISTO PARA PRODUCCIÓN      │
+                  └──────────────────────────────────────────────┘
+```
+
+1. **Sub-Compuerta 2.1 — Funcionalidad E2E, Integridad de Contratos y Reglas de Negocio:**
+   - **Herramienta:** Newman CLI ejecutando colecciones Postman automatizadas y Playwright Headless desde VM1.
+   - **Objetivo:** Ejecutar la totalidad de los flujos del MVP y los incrementos de Sprint 4 contra el API Gateway de QA (`https://qa.quickpatch.internal`).
+   - **Criterio de Aprobación:** 100% de peticiones y aserciones en estado PASS.
+   - **Validación Negativa y Exhaustividad:**
+     - Todas las respuestas de error (códigos 400, 401, 403, 404, 409, 422, 423) deben cumplir estrictamente la especificación **RFC 9457** (`application/problem+json`), incorporando los atributos `type`, `title`, `status`, `detail`, `instance` y `correlationId`.
+     - Rechazo estricto (HTTP 400 Bad Request) de campos con emojis o caracteres fuera del conjunto permitido en datos de contacto, nombres o documentos de identidad.
+     - Rechazo estricto (HTTP 400) de contraseñas con longitud menor a 8 caracteres o strings vacíos.
+     - Bloqueo de concurrencia y transiciones de estado ilegítimas con HTTP 409 Conflict.
+     - Bloqueo de accesos no autenticados (HTTP 401) y no autorizados por RBAC (HTTP 403).
+
+2. **Sub-Compuerta 2.2 — Seguridad de Datos y Cumplimiento PCI-DSS en Logs:**
+   - **Herramienta:** Script automatizado de auditoría (`pci_dss_scanner.py`) consultando el API REST de Loki en VM1 (`http://10.43.100.168:3100/loki/api/v1/query_range`).
+   - **Objetivo:** Auditar todos los streams de logs generados por los contenedores de QA durante las pruebas para garantizar el cumplimiento de la restricción K2 y el escenario AC6-E1 del SAD.
+   - **Criterio de Aprobación:** **Exactamente 0 coincidencias** de Números de Cuenta Principal (PAN) válidos por algoritmo de Luhn (13 a 19 dígitos) y **0 coincidencias** de códigos de validación de tarjeta (CVV/CVC de 3 o 4 dígitos) asociados a tokens de pago.
+   - **Criterio de Falla:** Una sola coincidencia de PAN/CVV en logs causa el rechazo inmediato del release.
+
+3. **Sub-Compuerta 2.3 — Rendimiento y Capacidad bajo Concurrencia (k6):**
+   - **Herramienta:** Grafana k6 ejecutado desde el Runner de VM1 apuntando al clúster k3s de VM2 y la base de datos de VM5.
+   - **Escenario Nominal (50 VU concurrentes por 5 minutos):**
+     - Tiempo de respuesta p95 inferior a 3.0 segundos en endpoints críticos (`POST /v1/service-requests`, `POST /v1/matching/offers/{id}/accept`).
+     - Tasa de errores HTTP 5xx inferior al 1.0% (`http_req_failed < 0.01`).
+     - Consumo promedio de CPU en VM2 inferior al 70%.
+   - **Escenario de Estrés (150 VU concurrentes por 3 minutos):**
+     - 0 caídas de pods en el clúster k3s de VM2.
+     - 0 terminaciones por falta de memoria (`OOMKilled` = 0).
+     - Degradación controlada: el sistema responde con HTTP 429 Too Many Requests o encola peticiones sin corromper el estado de la base de datos en VM5.
+     - Retorno a valores base de latencia (< 500 ms) tras el cese del tráfico de estrés.
+
+4. **Sub-Compuerta 2.4 — Seguridad Dinámica y Análisis de Vulnerabilidades (OWASP ZAP):**
+   - **Herramienta:** OWASP ZAP (Zed Attack Proxy) en modo contenedor Docker sobre VM1, ejecutando escaneo Baseline y de API contra `https://qa.quickpatch.internal`.
+   - **Criterio de Aprobación:** **0 vulnerabilidades de severidad Alta (High)** y **0 de severidad Crítica (Critical)**.
+   - **Vulnerabilidades auditadas:** Inyección SQL, Cross-Site Scripting (XSS), cabeceras de seguridad faltantes (`Content-Security-Policy`, `X-Content-Type-Options`, `Strict-Transport-Security`), exposición de trazas de depuración internas en 500 y desbordamientos de búfer en parámetros de consulta.
+
+5. **Sub-Compuerta 2.5 — Aislamiento Multi-Tenant y Protección de Datos (RLS):**
+   - **Herramienta:** Newman CLI y verificación directa en PostgreSQL de VM5.
+   - **Criterio de Aprobación:** **0 fugas de datos entre tenants (Zero Cross-Tenant Leakage)** conforme al escenario **AC6-E2** del SAD.
+   - **Comportamiento exigido:** Las consultas cruzadas entre tenants deben retornar **HTTP 404 Not Found** (sin revelar la existencia del recurso a terceros) o un conjunto vacío de registros (`total: 0`), garantizado por las políticas de Row-Level Security (`app.current_tenant`).
+
+#### 3.2.2 Procedimiento Operativo ante Falla y Protocolo de Rollback
+
+En caso de que cualquiera de las 5 sub-compuertas de la Compuerta 2 resulte en estado **FAIL**:
+1. El pipeline de CI/CD detiene inmediatamente la ejecución y marca el build con estado rojo.
+2. Se genera automáticamente un ticket de defecto en Jira con severidad **P0 (Bloqueante)** si fallan E2E, PCI-DSS o RLS, o **P1 (Crítica)** si falla rendimiento o ZAP.
+3. Se bloquea la sincronización de ramas hacia `main` y queda prohibida cualquier promoción al ambiente de Producción (VM3).
+4. El equipo de desarrollo responsable recibe la traza de logs de Loki, el reporte de Newman o el dump de k6 para corrección inmediata en su rama de feature.
 
 ---
 
@@ -1232,6 +1364,7 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-09** / F2.1, **R
 | **2.5** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Suspensión de Cuenta de Técnico (SCRUM-111 / HU SCRUM-40 / RF-20). Verificación de suspensión con motivo obligatorio >= 5 caracteres (DD §8.3.13), bloqueo de asignaciones en matching (RN-TP2), reactivación de técnico suspendido a aprobado, validación de motivo y RFC 9457 (400 Bad Request), máquina de estados y bloqueo de transiciones inválidas (409 Conflict), emisión de evento outbox technician.verification-changed (ADR-007), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento multi-tenant con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (15 peticiones, 30 aserciones, 100% Pass). |
 | **2.6** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Motor de Matching y Asignación Automática (SCRUM-78 / HU SCRUM-29 / RF-09, RF-10, RNF-05). Verificación de asignación automática a candidato elegible en menos de 60 segundos (AC2-E3), exclusión de candidatos no aprobados, ocupados o fuera de cobertura (RN-M9), transición a estado en_espera ante ausencia de candidatos y reintento (RN-M10), deduplicación e idempotencia en consumo de eventos Kafka vía processed_events (AC5-E5), control de acceso RBAC contra clientes y técnicos (403 Forbidden), seguridad anónima (401 Unauthorized / IDN-017) y aislamiento multi-tenant estricto con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (15 peticiones, 35 aserciones, 100% Pass). |
 | **2.7** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Actualización integral de la Matriz de Trazabilidad de Requisitos (RTM) alineada a SRS V5 (32 RFs, 23 Features, 7 Épicas), incorporación formal de la trazabilidad bidireccional de las Historias de Usuario de Sprint 4 (SCRUM-22, 24, 29, 30, 31, 33, 34, 36, 39, 40, 454/456, 399, 394), y resolución de criterios de aceptación verificables de SRS V5 §5.5 (RF-09, RF-10, RF-13, RF-19) cerrando todos los casos pendientes (SCRUM-401). |
+| **2.8** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Especificación formal de la estrategia de compuertas de calidad (Compuerta 0 a Compuerta 3) y definición operativa de la Compuerta 2 en la infraestructura dedicada de QA sobre 7 VMs (ADR-015, ADR-022: VM1, VM2, VM5, VM7), estableciendo umbrales de aceptación para suites E2E/API, escáner PCI-DSS en Loki, pruebas k6 (50/150 VU), DAST ZAP y aislamiento RLS (SCRUM-402 / SCRUM-399). |
 
 
 
