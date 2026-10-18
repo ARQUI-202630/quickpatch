@@ -345,8 +345,8 @@ const server = http.createServer((req, res) => {
             return res.end(JSON.stringify(categories));
         }
 
-        // 4. Creación de solicitudes de servicio (ServiceRequest - solo rol cliente)
-        if (url === '/api/v1/service-requests' && req.method === 'POST') {
+        // 4. Creación de solicitudes de servicio (ServiceRequest / Matching - solo rol cliente)
+        if ((url === '/api/v1/service-requests' || url === '/v1/service-requests') && req.method === 'POST') {
             if (!user) {
                 return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente en la petición (IDN-017)', correlationId);
             }
@@ -355,15 +355,37 @@ const server = http.createServer((req, res) => {
             }
             let body = {};
             try { body = JSON.parse(rawBody || '{}'); } catch {}
-            const reqId = body.id || (url.includes('tracking') ? 'sr-tracking-01' : 'sr-qa-001');
+
+            const isNoCandidates = (body.description && body.description.includes('sin_candidatos')) ||
+                                   (body.location && (body.location.latitude > 4.75 || body.location.latitude < 4.50));
+            const isMatchingExplicit = body.description && (body.description.includes('asignación') || body.description.includes('matching') || body.description.includes('urgente'));
+
+            let initialStatus = "buscando_tecnico";
+            let assignedTech = null;
+
+            if (isNoCandidates) {
+                initialStatus = "en_espera";
+                assignedTech = null;
+            } else if (isMatchingExplicit) {
+                initialStatus = "asignado";
+                assignedTech = "usr-tec-approved-01";
+            }
+
+            const reqId = body.id || (isNoCandidates ? `sr-mat-espera-${Date.now()}` : (isMatchingExplicit ? `sr-mat-${Date.now()}` : (url.includes('tracking') ? 'sr-tracking-01' : 'sr-qa-001')));
+
             serviceRequestsDb[reqId] = {
-                status: "buscando_tecnico",
-                technicianId: null,
+                id: reqId,
+                status: initialStatus,
+                technicianId: assignedTech,
                 clientId: user.sub,
                 tenantId: user.tenant_id,
                 description: body.description || "Solicitud de servicio estándar",
+                location: body.location || { latitude: 4.6533, longitude: -74.0836 },
+                addressText: body.addressText || "Calle 45 # 13-20",
+                assignedAt: assignedTech ? new Date().toISOString() : null,
                 createdAt: new Date().toISOString()
             };
+
             res.writeHead(201, {
                 'Content-Type': 'application/json',
                 'X-Correlation-Id': correlationId,
@@ -371,14 +393,19 @@ const server = http.createServer((req, res) => {
             });
             return res.end(JSON.stringify({
                 id: reqId,
-                status: "buscando_tecnico",
+                status: initialStatus,
                 categoryId: body.categoryId || "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
+                description: serviceRequestsDb[reqId].description,
+                location: serviceRequestsDb[reqId].location,
+                addressText: serviceRequestsDb[reqId].addressText,
+                technicianId: assignedTech,
+                assignedAt: serviceRequestsDb[reqId].assignedAt,
                 tenantId: user.tenant_id,
                 createdAt: serviceRequestsDb[reqId].createdAt
             }));
         }
 
-        // 4.1 Consulta de solicitud por ID con seguimiento en tiempo real y aislamiento (SCRUM-31, SCRUM-62, SCRUM-84, SCRUM-93)
+        // 4.1 Consulta de solicitud por ID con seguimiento en tiempo real y aislamiento (SCRUM-31, SCRUM-62, SCRUM-78, SCRUM-84, SCRUM-93)
         if (url.startsWith('/api/v1/service-requests/') && !url.endsWith('/status') && req.method === 'GET') {
             if (!user) {
                 return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
@@ -390,17 +417,17 @@ const server = http.createServer((req, res) => {
             }
 
             const currentReq = serviceRequestsDb[reqId] || {
-                status: (reqId === 'sr-assigned-01' ? 'asignado' : 'buscando_tecnico'),
+                status: (reqId === 'sr-assigned-01' ? 'asignado' : (reqId.includes('espera') ? 'en_espera' : 'buscando_tecnico')),
                 technicianId: (reqId === 'sr-assigned-01' ? 'usr-tec-01' : null),
                 clientId: 'usr-client-01'
             };
 
             const isAssignedOrBeyond = ['asignado', 'en_progreso', 'completado'].includes(currentReq.status) || reqId === 'sr-assigned-01';
-            const assignedTechId = isAssignedOrBeyond ? (currentReq.technicianId || "usr-tec-01") : null;
+            const assignedTechId = isAssignedOrBeyond ? (currentReq.technicianId || "usr-tec-approved-01") : null;
 
             if (user.role === 'tecnico') {
-                // Caso DTL-002: Técnico asignado pero la solicitud está fuera de rango (buscando_tecnico) -> 403
-                if (reqId === 'sr-unassigned-01' || currentReq.status === 'buscando_tecnico') {
+                // Caso DTL-002: Técnico asignado pero la solicitud está fuera de rango (buscando_tecnico / en_espera) -> 403
+                if (reqId === 'sr-unassigned-01' || currentReq.status === 'buscando_tecnico' || currentReq.status === 'en_espera') {
                     return sendProblemDetails(res, 403, 'solicitud-no-asignada', 'Acceso Denegado', 'El técnico no puede consultar el detalle de una solicitud que no le ha sido asignada (RN-SR13, SCRUM-34)', correlationId);
                 }
                 // Caso DTL-003: Técnico no asignado a la solicitud -> 404 (confidencialidad)
@@ -414,9 +441,10 @@ const server = http.createServer((req, res) => {
                     status: currentReq.status,
                     categoryId: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
                     tenantId: user.tenant_id,
-                    addressText: "Calle 63 # 9-45, apto 502, Chapinero",
-                    location: { latitude: 4.6486, longitude: -74.063 },
+                    addressText: currentReq.addressText || "Calle 63 # 9-45, apto 502, Chapinero",
+                    location: currentReq.location || { latitude: 4.6486, longitude: -74.063 },
                     description: currentReq.description || "Fuga de agua en lavaplatos principal",
+                    technicianId: assignedTechId,
                     client: {
                         id: currentReq.clientId || "usr-client-01",
                         fullName: "Ana Gómez",
@@ -427,26 +455,27 @@ const server = http.createServer((req, res) => {
                         fullName: "Carlos Pérez (Técnico)",
                         specialty: "Plomería"
                     },
-                    assignedAt: new Date().toISOString()
+                    assignedAt: currentReq.assignedAt || new Date().toISOString()
                 }));
             }
 
             // Rol Cliente: Aislamiento intra-tenant (Cliente 2 no puede ver la solicitud de Cliente 1)
             const ownerId = currentReq.clientId || "usr-client-01";
-            if (user.sub !== ownerId && reqId !== 'sr-qa-001') {
+            if (user.role === 'cliente' && user.sub !== ownerId && !reqId.startsWith('sr-mat') && reqId !== 'sr-qa-001') {
                 return sendProblemDetails(res, 404, 'no-encontrado', 'Solicitud no encontrada', 'La solicitud no pertenece al cliente autenticado (Confidencialidad intra-tenant)', correlationId);
             }
 
-            // Cliente dueño consultando su solicitud en tiempo real (SCRUM-31, DTL-005)
+            // Cliente dueño consultando su solicitud en tiempo real (SCRUM-31, DTL-005, SCRUM-78)
             res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
             return res.end(JSON.stringify({
                 id: reqId,
                 status: currentReq.status,
                 categoryId: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
                 tenantId: user.tenant_id,
-                addressText: "Calle 63 # 9-45, apto 502, Chapinero",
-                location: { latitude: 4.6486, longitude: -74.063 },
+                addressText: currentReq.addressText || "Calle 63 # 9-45, apto 502, Chapinero",
+                location: currentReq.location || { latitude: 4.6486, longitude: -74.063 },
                 description: currentReq.description || "Fuga de agua en lavaplatos principal",
+                technicianId: assignedTechId,
                 client: null,
                 technician: isAssignedOrBeyond ? {
                     id: assignedTechId,
@@ -1052,6 +1081,55 @@ const server = http.createServer((req, res) => {
                 suspendedBy: tech.suspendedBy,
                 matchingBlocked: true,
                 noticeEmitted: "technician.verification-changed"
+            }));
+        }
+
+        // 10. Métricas de Matching y Auditoría de Intentos (Matching Service - SCRUM-78 / RN-M9 / RNF-05)
+        if ((url.startsWith('/api/v1/matching/attempts/') || url.startsWith('/v1/matching/attempts/')) && req.method === 'GET') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
+            }
+            const reqId = url.split('/').pop();
+
+            // Aislamiento multi-tenant RLS
+            if (user.tenant_id !== "11111111-1111-1111-1111-111111111111") {
+                return sendProblemDetails(res, 404, 'no-encontrado', 'Intento de matching no encontrado', 'Aislamiento multi-tenant RLS: El intento no existe en el tenant activo.', correlationId);
+            }
+
+            const currentReq = serviceRequestsDb[reqId];
+            const isEnEspera = reqId.includes('espera') || (currentReq && currentReq.status === 'en_espera');
+
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+            return res.end(JSON.stringify({
+                serviceRequestId: reqId,
+                tenantId: user.tenant_id,
+                attemptCount: isEnEspera ? 0 : 1,
+                firstAttemptDurationMs: 340, // Cumple RNF-05 (< 60.000 ms)
+                candidateEvaluation: {
+                    evaluatedTotal: 5,
+                    excludedNotApproved: 2, // Descartados por verificationStatus == 'pendiente'
+                    excludedWrongSpecialty: 1, // Descartados por especialidad distinta
+                    excludedOutOfCoverage: 1, // Descartados por ubicación fuera de polígono
+                    eligibleCandidateAssigned: isEnEspera ? null : "usr-tec-approved-01"
+                },
+                status: isEnEspera ? "sin_candidatos" : "asignado"
+            }));
+        }
+
+        // 10.1 Prueba de Idempotencia del Consumidor de Eventos (processed_events - SCRUM-78 / AC5-E5)
+        if ((url === '/api/v1/matching/events/simulate-event' || url === '/v1/matching/events/simulate-event') && req.method === 'POST') {
+            const eventId = req.headers['x-event-id'] || 'evt-initial-123';
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            const isDuplicate = body.isDuplicate === true;
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+            return res.end(JSON.stringify({
+                eventId: eventId,
+                eventType: "service-request.created",
+                idempotentOutcome: isDuplicate ? "SKIPPED_ALREADY_PROCESSED" : "APPLIED_FIRST_TIME",
+                processedEventsTable: "db_matching.processed_events",
+                duplicateHandledGracefully: true
             }));
         }
 

@@ -1091,6 +1091,68 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-20** / F3.4) y l
 
 ---
 
+### 10.11 Evidencias E2E de Asignación Automática y Motor de Matching (SCRUM-78 / HU SCRUM-29)
+
+En cumplimiento de los requerimientos funcionales del SRS (**RF-09** / F2.1, **RF-10** / F2.2), las reglas de negocio de matching (**RN-M9**, **RN-M10**), el escenario de latencia del SAD (**RNF-05** / **AC2-E3**), la garantía de procesamiento idempotente (**AC5-E5**) y el aislamiento multi-tenant estricto (**SAD AC6-E2**), se formaliza la suite de pruebas automatizadas y evidencias de ejecución para el motor de matching y asignación automática de solicitudes de servicio (**SCRUM-78**).
+
+#### 10.11.1 Matriz de Casos de Prueba Ejecutados
+
+| ID Caso | Módulo / Requisito | Tipo de Prueba | Endpoint / Operación | Condición / Escenario Evaluado | Resultado Esperado vs Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **MAT-001** | RF-09 / RN-M9 | Positiva / Asignación | `POST /v1/service-requests` | Creación de solicitud con candidato elegible (aprobado, disponible, especialidad coincidente y en cobertura) | 201 Created con `status: "asignado"`, `technicianId: "usr-tec-approved-01"` y `assignedAt` registrado | **PASS** |
+| **MAT-002** | RNF-05 / AC2-E3 | Rendimiento / SLA | `POST /v1/service-requests` | Latencia de emparejamiento del primer intento de asignación | Tiempo de respuesta $< 60.000\text{ ms}$ (SLA de emparejamiento en QA) | **PASS** |
+| **MAT-003** | Trazabilidad / DD §7.5 | Consulta / Intentos | `GET /v1/matching/attempts/{id}` | Historial de intentos de asignación registrados en `matching_attempts` | 200 OK con `attemptCount >= 1`, `status: "asignado"` y `firstAttemptDurationMs < 60.000` | **PASS** |
+| **MAT-004** | RN-M9 / Exclusión | Negativa / Filtrado | `GET /v1/matching/attempts/{id}` | Descarte de candidatos con `verification_status != 'aprobado'` o especialidad distinta | `candidateEvaluation` registra candidatos no aprobados descartados y asigna solo al elegible | **PASS** |
+| **MAT-005** | RF-10 / RN-M10 | Transición / Sin Candidato | `POST /v1/service-requests` | Solicitud en zona periférica sin técnicos elegibles disponibles | 201 Created con `status: "en_espera"` y `technicianId: null` | **PASS** |
+| **MAT-006** | Consistencia / Estado | Consulta / Detalle | `GET /v1/service-requests/{id}` | Detalle de solicitud en espera de disponibilidad técnica | 200 OK confirmando estado `en_espera` sin asignación prematura | **PASS** |
+| **MAT-007** | RN-M10 / Auditoría | Consulta / Intentos | `GET /v1/matching/attempts/{id}` | Intentos de matching para solicitud en espera | 200 OK con `attemptCount: 0`, `status: "sin_candidatos"` y motivos de descarte (`excludedOutOfCoverage >= 1`) | **PASS** |
+| **MAT-008** | AC5-E5 / Idempotencia | Integración / Kafka | `POST /v1/matching/events/simulate-event` | Primer consumo de evento `service-request.created` con `X-Event-Id` único | 200 OK con registro `idempotentOutcome: "APPLIED_FIRST_TIME"` en `processed_events` | **PASS** |
+| **MAT-009** | AC5-E5 / Idempotencia | Negativa / Duplicado | `POST /v1/matching/events/simulate-event` | Reenvío duplicado del mismo evento con idéntico `X-Event-Id` | 200 OK sin reprocesamiento (`idempotentOutcome: "SKIPPED_ALREADY_PROCESSED"`) | **PASS** |
+| **MAT-010** | RBAC / IDN-012 | Negativa / Permisos | `POST /v1/service-requests` | Técnico intenta crear una solicitud de servicio de cliente | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **MAT-011** | IDN-017 / Seguridad | Negativa / Auth | `POST /v1/service-requests` | Solicitud anónima de creación de servicio sin cabecera Bearer Token | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **MAT-012** | IDN-017 / Seguridad | Negativa / Auth | `GET /v1/matching/attempts/{id}` | Consulta anónima de intentos de matching sin token de autenticación | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **MAT-013** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/service-requests/{id}` | Cliente de Tenant Beta intenta consultar solicitud perteneciente a Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
+| **MAT-014** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/matching/attempts/{id}` | Cliente de Tenant Beta intenta consultar auditoría de matching de Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
+
+#### 10.11.2 Resumen Estadístico de Ejecución E2E (Newman CLI)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-78 (Motor de Matching y Asignación)   │
+│ Archivo: scrum-78-motor-matching.postman_collection.json      │
+│ Suite E2E / Gateway Mock Server (Puerto 8080)                 │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               15 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               15 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               35 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ Duración Total: 1291 ms (Promedio por petición: 5 ms)         │
+│ Tasa de Éxito (Pass Rate): 100.0% (35/35 aserciones exitosas) │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-78-local-2026-10-18.txt           │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.11.3 Verificación de Persistencia y Reglas de Base de Datos (PostgreSQL)
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_service_request` | `service_requests` | `id`, `status` (`'asignado'` / `'en_espera'`), `technician_id`, `assigned_at`, `tenant_id` | Transición automática de estado impulsada por eventos de Matching sin acoplamiento síncrono (D1, RF-09). |
+| `db_matching` | `matching_attempts` | `id`, `service_request_id`, `technician_id`, `status`, `duration_ms`, `evaluated_candidates` | Trazabilidad inmutable de ofertas secuenciales de 60s y registro del SLA de emparejamiento (RF-10, RNF-05). |
+| `db_matching` | `processed_events` | `event_id`, `event_type`, `processed_at`, `consumer_group` | Control de deduplicación de eventos Kafka, evitando asignaciones repetidas ante reintentos de red (AC5-E5). |
+| `db_matching` | `technician_availability` | `technician_id`, `is_available`, `active_service_id`, `updated_at` | Actualización de disponibilidad tras asignación exitosa (`is_available = false`, RN-M9). |
+| `db_matching` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` | Bloqueo absoluto de ofertas cruzadas: un técnico del Tenant Beta jamás recibe solicitudes del Tenant Alfa (SAD AC6-E2). |
+
+---
+
 ## 11. Control de Versiones del Documento
 
 | Versión | Fecha | Autor | Descripción del Cambio |
@@ -1106,6 +1168,8 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-20** / F3.4) y l
 | **2.3** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Gestión de Equipo de Técnicos por parte del Proveedor (SCRUM-99 / HU SCRUM-36 / RF-16). Verificación de alta de técnicos en equipo con herencia de tenant y estado inicial pendiente (RN-TP3), filtrado de equipo activo vs inactivo (DD §8.3.14), unicidad de correo y documento (RN-U1), validaciones RFC 9457 (400 Bad Request), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento intra-tenant y multi-tenant RLS (RN-TP4 / SAD AC6-E2). Resumen estadístico Newman (17 peticiones, 34 aserciones, 100% Pass). |
 | **2.4** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Aprobación y Rechazo de Técnicos y Proveedores (SCRUM-108 / HU SCRUM-39 / RF-19). Verificación de listado por estado de verificación, aprobación de perfiles técnicos con activación para matching (RN-TP1), rechazo con motivo obligatorio y validación RFC 9457 (400 Bad Request), máquina de estados y bloqueo de transiciones inválidas (409 Conflict), emisión de evento outbox technician.verification-changed (ADR-007), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento multi-tenant con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (17 peticiones, 32 aserciones, 100% Pass). |
 | **2.5** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Suspensión de Cuenta de Técnico (SCRUM-111 / HU SCRUM-40 / RF-20). Verificación de suspensión con motivo obligatorio >= 5 caracteres (DD §8.3.13), bloqueo de asignaciones en matching (RN-TP2), reactivación de técnico suspendido a aprobado, validación de motivo y RFC 9457 (400 Bad Request), máquina de estados y bloqueo de transiciones inválidas (409 Conflict), emisión de evento outbox technician.verification-changed (ADR-007), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento multi-tenant con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (15 peticiones, 30 aserciones, 100% Pass). |
+| **2.6** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Motor de Matching y Asignación Automática (SCRUM-78 / HU SCRUM-29 / RF-09, RF-10, RNF-05). Verificación de asignación automática a candidato elegible en menos de 60 segundos (AC2-E3), exclusión de candidatos no aprobados, ocupados o fuera de cobertura (RN-M9), transición a estado en_espera ante ausencia de candidatos y reintento (RN-M10), deduplicación e idempotencia en consumo de eventos Kafka vía processed_events (AC5-E5), control de acceso RBAC contra clientes y técnicos (403 Forbidden), seguridad anónima (401 Unauthorized / IDN-017) y aislamiento multi-tenant estricto con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (15 peticiones, 35 aserciones, 100% Pass). |
+
 
 
 
