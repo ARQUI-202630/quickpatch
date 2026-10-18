@@ -57,6 +57,57 @@ const providerTechniciansDb = {
     "11111111-1111-1111-1111-111111111111": []
 };
 
+const adminTechniciansDb = {
+    "11111111-1111-1111-1111-111111111111": {
+        "usr-tec-pending-01": {
+            userId: "usr-tec-pending-01",
+            fullName: "Hernando López",
+            email: "hernando.lopez@quickpatch.test",
+            documentId: "CC-1122334455",
+            phone: "+573104443322",
+            specialty: "Cerrajería",
+            verificationStatus: "pendiente",
+            tenantId: "11111111-1111-1111-1111-111111111111",
+            role: "tecnico"
+        },
+        "usr-tec-pending-02": {
+            userId: "usr-tec-pending-02",
+            fullName: "Gloria Martínez",
+            email: "gloria.martinez@quickpatch.test",
+            documentId: "CC-2233445566",
+            phone: "+573109998877",
+            specialty: "Electricidad",
+            verificationStatus: "pendiente",
+            tenantId: "11111111-1111-1111-1111-111111111111",
+            role: "tecnico"
+        },
+        "usr-tec-approved-01": {
+            userId: "usr-tec-approved-01",
+            fullName: "Carlos Pérez (Aprobado)",
+            email: "carlos.aprobado@quickpatch.test",
+            documentId: "CC-3344556677",
+            phone: "+573001234567",
+            specialty: "Plomería",
+            verificationStatus: "aprobado",
+            tenantId: "11111111-1111-1111-1111-111111111111",
+            role: "tecnico"
+        }
+    },
+    "22222222-2222-2222-2222-222222222222": {
+        "usr-tec-beta-01": {
+            userId: "usr-tec-beta-01",
+            fullName: "Técnico Beta",
+            email: "tecnico.beta@quickpatch.test",
+            documentId: "CC-9988776655",
+            phone: "+573112223344",
+            specialty: "Gasodomésticos",
+            verificationStatus: "pendiente",
+            tenantId: "22222222-2222-2222-2222-222222222222",
+            role: "tecnico"
+        }
+    }
+};
+
 const validLocalityCodes = new Set([
     "01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
     "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"
@@ -814,6 +865,130 @@ const server = http.createServer((req, res) => {
                     providerId: t.providerId
                 })),
                 total: myTechnicians.length
+            }));
+        }
+
+        // =========================================================================
+        // 9. VERIFICACIÓN, APROBACIÓN Y RECHAZO DE TÉCNICOS (Admin - RF-19, SCRUM-39, SCRUM-108)
+        // =========================================================================
+        // 9.1 Listado de técnicos por estado de verificación (GET /api/v1/admin/technicians)
+        if ((url === '/api/v1/admin/technicians' || url === '/v1/admin/technicians') && req.method === 'GET') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente en consulta de verificación (IDN-017)', correlationId);
+            }
+            if (user.role !== 'admin_tenant' && user.role !== 'admin' && user.role !== 'admin_plataforma') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo administradores de tenant pueden consultar técnicos para verificación (RF-19)', correlationId);
+            }
+
+            const tenantTechsMap = adminTechniciansDb[user.tenant_id] || {};
+            let list = Object.values(tenantTechsMap);
+
+            const urlObj = new URL(req.url, 'http://localhost');
+            const statusFilter = urlObj.searchParams.get('verificationStatus');
+            if (statusFilter) {
+                list = list.filter(t => t.verificationStatus === statusFilter);
+            }
+
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'X-Correlation-Id': correlationId
+            });
+            return res.end(JSON.stringify({
+                items: list,
+                total: list.length,
+                page: 1,
+                pageSize: 20
+            }));
+        }
+
+        // 9.2 Aprobación de técnico (POST /api/v1/admin/technicians/{userId}/approve)
+        if ((url.startsWith('/api/v1/admin/technicians/') || url.startsWith('/v1/admin/technicians/')) && url.endsWith('/approve') && req.method === 'POST') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
+            }
+            if (user.role !== 'admin_tenant' && user.role !== 'admin' && user.role !== 'admin_plataforma') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo administradores pueden aprobar perfiles técnicos (RF-19)', correlationId);
+            }
+
+            const parts = url.split('/');
+            const techUserId = parts[parts.length - 2];
+            const tenantTechsMap = adminTechniciansDb[user.tenant_id] || {};
+            const tech = tenantTechsMap[techUserId];
+
+            if (!tech) {
+                return sendProblemDetails(res, 404, 'no-encontrado', 'Técnico no encontrado', 'El técnico no existe en el tenant especificado (Aislamiento RLS)', correlationId);
+            }
+
+            // Transiciones válidas (DD §8.3.13): pendiente -> aprobado, rechazado -> aprobado, suspendido -> aprobado
+            if (tech.verificationStatus === 'aprobado') {
+                return sendProblemDetails(res, 409, 'transicion-invalida', 'Transición Inválida', 'No se permite aprobar un técnico que ya se encuentra en estado aprobado (DD §8.3.13)', correlationId);
+            }
+
+            tech.verificationStatus = 'aprobado';
+            tech.verifiedAt = new Date().toISOString();
+            tech.verifiedBy = user.sub;
+
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'X-Correlation-Id': correlationId
+            });
+            return res.end(JSON.stringify({
+                userId: tech.userId,
+                fullName: tech.fullName,
+                verificationStatus: "aprobado",
+                verifiedAt: tech.verifiedAt,
+                verifiedBy: tech.verifiedBy,
+                noticeEmitted: "technician.verification-changed"
+            }));
+        }
+
+        // 9.3 Rechazo de técnico con motivo (POST /api/v1/admin/technicians/{userId}/reject)
+        if ((url.startsWith('/api/v1/admin/technicians/') || url.startsWith('/v1/admin/technicians/')) && url.endsWith('/reject') && req.method === 'POST') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
+            }
+            if (user.role !== 'admin_tenant' && user.role !== 'admin' && user.role !== 'admin_plataforma') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo administradores pueden rechazar perfiles técnicos (RF-19)', correlationId);
+            }
+
+            const parts = url.split('/');
+            const techUserId = parts[parts.length - 2];
+            const tenantTechsMap = adminTechniciansDb[user.tenant_id] || {};
+            const tech = tenantTechsMap[techUserId];
+
+            if (!tech) {
+                return sendProblemDetails(res, 404, 'no-encontrado', 'Técnico no encontrado', 'El técnico no existe en el tenant especificado (Aislamiento RLS)', correlationId);
+            }
+
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            if (!body.reason || body.reason.trim().length < 5) {
+                return sendProblemDetails(res, 400, 'validacion-solicitud', 'Motivo inválido', 'El motivo de rechazo es obligatorio y debe tener al menos 5 caracteres (DD §8.3.13).', correlationId);
+            }
+
+            // Transiciones válidas (DD §8.3.13): solo desde 'pendiente'
+            if (tech.verificationStatus !== 'pendiente') {
+                return sendProblemDetails(res, 409, 'transicion-invalida', 'Transición Inválida', `No se permite rechazar un técnico en estado ${tech.verificationStatus} (DD §8.3.13)`, correlationId);
+            }
+
+            tech.verificationStatus = 'rechazado';
+            tech.rejectionReason = body.reason;
+            tech.rejectedAt = new Date().toISOString();
+            tech.rejectedBy = user.sub;
+
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'X-Correlation-Id': correlationId
+            });
+            return res.end(JSON.stringify({
+                userId: tech.userId,
+                fullName: tech.fullName,
+                verificationStatus: "rechazado",
+                reason: body.reason,
+                rejectedAt: tech.rejectedAt,
+                rejectedBy: tech.rejectedBy,
+                noticeEmitted: "technician.verification-changed"
             }));
         }
 

@@ -979,6 +979,62 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-16** / F3.3) y l
 | `db_identity` | `outbox_events` | `event_type = 'technician.registered'`, `payload jsonb`, `tenant_id` | Publicación transaccional outbox hacia Kafka para inicializar disponibilidad en Matching y enviar correo de activación con Communication (ADR-007). |
 | `db_identity` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` y `provider_id = current_setting('app.current_user_id')` | Aislamiento lógico multi-tenant y exclusividad de gestión de equipo por proveedor (RN-TP4, SAD AC6-E2). |
 
+### 10.9 Ejecución de Pruebas: Aprobación y Rechazo de Técnicos y Proveedores (SCRUM-108 / HU SCRUM-39)
+
+En cumplimiento de los requerimientos funcionales del SRS (**RF-19** / F3.4) y las reglas de diseño detallado para el ciclo de vida y verificación de perfiles (**RN-TP1**, DD §8.2.1 y §8.3.13), el equipo de Aseguramiento de Calidad (QA) diseñó y ejecutó la suite automatizada E2E correspondiente a la subtarea **SCRUM-108** (Historia de Usuario **SCRUM-39** - *"Aprobación/rechazo de técnicos y proveedores por parte del Administrador"*).
+
+#### 10.9.1 Catálogo de Casos y Resultados de Pruebas (SCRUM-108)
+
+| ID Caso | Requisito / Regla | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **APR-001** | RF-19 / DD §8.2.1 | Consulta / Filtro | `GET /v1/admin/technicians?verificationStatus=pendiente` | Admin lista técnicos pendientes con documento, correo y especialidad | 200 OK retornando técnicos pendientes del tenant actual | **PASS** |
+| **APR-002** | RF-19 / DD §8.2.1 | Consulta / Filtro | `GET /v1/admin/technicians?verificationStatus=aprobado` | Admin lista técnicos que ya han sido aprobados en el tenant | 200 OK con array de técnicos aprobados y datos de verificación | **PASS** |
+| **APR-003** | RF-19 / RN-TP1 | Transición / Aprobación | `POST /v1/admin/technicians/{id}/approve` | Admin aprueba técnico en estado pendiente (`usr-tec-pending-01`) | 200 OK con `verificationStatus: "aprobado"` y evento outbox emitido | **PASS** |
+| **APR-004** | Consistencia / Estado | Verificación | `GET /v1/admin/technicians?verificationStatus=pendiente` | Verificación de que el técnico aprobado no vuelve a figurar en pendientes | 200 OK confirmando remoción inmediata de la bandeja de pendientes | **PASS** |
+| **APR-005** | Máquina Estados | Negativa / Transición | `POST /v1/admin/technicians/{id}/approve` | Intento de aprobar un técnico que ya se encuentra en estado aprobado | 409 Conflict con RFC 9457 `type: .../transicion-invalida` | **PASS** |
+| **APR-006** | RF-19 / DD §8.3.13 | Transición / Rechazo | `POST /v1/admin/technicians/{id}/reject` | Admin rechaza técnico pendiente con motivo obligatorio (`reason >= 5 car`) | 200 OK con `verificationStatus: "rechazado"`, motivo persistido y evento outbox | **PASS** |
+| **APR-007** | Validación / RFC 9457 | Negativa / Validación | `POST /v1/admin/technicians/{id}/reject` | Intento de rechazar técnico sin motivo o con longitud menor a 5 caracteres | 400 Bad Request con RFC 9457 `type: .../validacion-solicitud` | **PASS** |
+| **APR-008** | Máquina Estados | Negativa / Transición | `POST /v1/admin/technicians/{id}/reject` | Intento de rechazar un perfil que ya está aprobado | 409 Conflict con RFC 9457 `type: .../transicion-invalida` | **PASS** |
+| **APR-009** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/admin/technicians/{id}/approve` | Cliente intenta invocar el endpoint administrativo de aprobación | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **APR-010** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/admin/technicians/{id}/approve` | Técnico intenta auto-aprobarse en el sistema | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **APR-011** | IDN-017 / Seguridad | Negativa / Auth | `GET /v1/admin/technicians` | Solicitud anónima sin cabecera Authorization Bearer | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **APR-012** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `POST /v1/admin/technicians/{id}/approve` | Admin de Tenant Beta intenta aprobar técnico perteneciente a Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
+| **APR-013** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/admin/technicians?verificationStatus=pendiente` | Admin de Tenant Beta consulta técnicos pendientes sin ver datos de Alfa | 200 OK retornando exclusivamente técnicos de Tenant Beta | **PASS** |
+
+#### 10.9.2 Resumen Estadístico de Ejecución E2E (Newman CLI)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-108 (Aprobación/Rechazo de Técnicos)  │
+│ Archivo: scrum-108-aprobacion-rechazo.postman_collection.json │
+│ Suite E2E / Gateway Mock Server (Puerto 8080)                 │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               17 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               17 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               32 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ Duración Total: 1593 ms (Promedio por petición: 5 ms)         │
+│ Tasa de Éxito (Pass Rate): 100.0% (32/32 aserciones exitosas) │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-108-local-2026-10-18.txt          │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.9.3 Verificación de Persistencia y Reglas de Base de Datos (PostgreSQL)
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_identity` | `technician_profiles` | `user_id`, `verification_status IN ('pendiente', 'aprobado', 'rechazado', 'suspendido')`, `verified_at`, `verified_by` | Transición atómica de `pendiente` a `aprobado` y a `rechazado`. Registro auditable de responsable (`verified_by`). |
+| `db_identity` | `audit_logs` | `action IN ('aprobar_tecnico', 'rechazar_tecnico')`, `user_id`, `tenant_id`, `details` | Trazabilidad administrativa persistida con fecha, administrador actuante y motivo en caso de rechazo (SCRUM-40). |
+| `db_identity` | `outbox_events` | `event_type = 'technician.verification-changed'`, `payload jsonb`, `tenant_id` | Publicación transaccional outbox hacia Kafka para habilitar participación en matching al pasar a `aprobado` (RN-TP1, RN-M10, ADR-007). |
+| `db_identity` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` | Bloqueo absoluto de operaciones cruzadas entre administradores y técnicos de distintos tenants (SAD AC6-E2). |
+
 ---
 
 ## 11. Control de Versiones del Documento
@@ -994,6 +1050,8 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-16** / F3.3) y l
 | **2.1** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias para Registro de Técnico/Proveedor (SCRUM-56 / HU SCRUM-22), Aislamiento Lógico por Tenant mediante RLS (SCRUM-62 / HU SCRUM-24 / AC6-E2) y cierre formal de casos de prueba del incremento técnico (SCRUM-400 / SCRUM-399). Resumen estadístico Newman (15 peticiones, 35 aserciones, 100% Pass) y matriz de verificación de persistencia multi-tenant en PostgreSQL. |
 | **2.2** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31, SCRUM-451, SCRUM-466). Verificación de ciclo completo de 4 estados (buscando_tecnico, asignado, en_progreso, completado), latencia inferior a 1 minuto, visibilidad de técnico (nombre y especialidad), handshake WebSocket en Gateway (ADR-023), eventos outbox (ADR-007), rechazo de saltos inválidos (409 Conflict), control RBAC (403 Forbidden) y aislamiento intra-tenant y multi-tenant RLS (404 Not Found). Resumen estadístico Newman (18 peticiones, 47 aserciones, 100% Pass). |
 | **2.3** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Gestión de Equipo de Técnicos por parte del Proveedor (SCRUM-99 / HU SCRUM-36 / RF-16). Verificación de alta de técnicos en equipo con herencia de tenant y estado inicial pendiente (RN-TP3), filtrado de equipo activo vs inactivo (DD §8.3.14), unicidad de correo y documento (RN-U1), validaciones RFC 9457 (400 Bad Request), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento intra-tenant y multi-tenant RLS (RN-TP4 / SAD AC6-E2). Resumen estadístico Newman (17 peticiones, 34 aserciones, 100% Pass). |
+| **2.4** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Aprobación y Rechazo de Técnicos y Proveedores (SCRUM-108 / HU SCRUM-39 / RF-19). Verificación de listado por estado de verificación, aprobación de perfiles técnicos con activación para matching (RN-TP1), rechazo con motivo obligatorio y validación RFC 9457 (400 Bad Request), máquina de estados y bloqueo de transiciones inválidas (409 Conflict), emisión de evento outbox technician.verification-changed (ADR-007), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento multi-tenant con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (17 peticiones, 32 aserciones, 100% Pass). |
+
 
 
 

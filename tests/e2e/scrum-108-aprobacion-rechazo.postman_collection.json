@@ -1,0 +1,965 @@
+{
+  "info": {
+    "_postman_id": "scrum-108-aprobacion-rechazo-qa",
+    "name": "QUICKPATCH — Aprobación y Rechazo de Técnicos (SCRUM-108 / HU SCRUM-39)",
+    "description": "Suite E2E para RF-19, RN-TP1 y DD §8.3.13: Verificación, aprobación, rechazo con motivo, máquina de estados, control RBAC y aislamiento multi-tenant con RLS. QA Lead: Katherine Bravo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Autenticación de Actores",
+      "item": [
+        {
+          "name": "0.1 Login Administrador Tenant Alfa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-web-admin"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@quickpatch.test\",\n  \"password\": \"PasswordAdmin123*\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de Admin Tenant Alfa exitoso (200 OK)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('accessToken');",
+                  "  pm.expect(json.user.role).to.eql('admin_tenant');",
+                  "  pm.collectionVariables.set('tokenAdmin', json.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.2 Login Administrador Tenant Beta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-web-admin"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin.beta@quickpatch.test\",\n  \"password\": \"PasswordAdminBeta123*\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de Admin Tenant Beta exitoso (200 OK)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('accessToken');",
+                  "  pm.expect(json.user.role).to.eql('admin_tenant');",
+                  "  pm.collectionVariables.set('tokenAdminBeta', json.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.3 Login Cliente para Control RBAC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-web-admin"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente@quickpatch.test\",\n  \"password\": \"PasswordCliente123*\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de Cliente para RBAC exitoso (200 OK)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('accessToken');",
+                  "  pm.expect(json.user.role).to.eql('cliente');",
+                  "  pm.collectionVariables.set('tokenCliente', json.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.4 Login Técnico para Control RBAC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-web-admin"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico@quickpatch.test\",\n  \"password\": \"PasswordTecnico123*\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de Técnico para RBAC exitoso (200 OK)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('accessToken');",
+                  "  pm.expect(json.user.role).to.eql('tecnico');",
+                  "  pm.collectionVariables.set('tokenTecnico', json.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Consulta y Filtros de Verificación",
+      "item": [
+        {
+          "name": "1.1 Admin lista técnicos pendientes de verificación",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians?verificationStatus=pendiente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians?verificationStatus=pendiente"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[RF-19] 200 OK al listar técnicos pendientes de verificación', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('items');",
+                  "  pm.expect(json.items).to.be.an('array');",
+                  "  pm.expect(json.total).to.be.at.least(2);",
+                  "});",
+                  "pm.test('[RF-19] Técnicos en lista tienen estado pendiente y datos requeridos', () => {",
+                  "  const json = pm.response.json();",
+                  "  const pending1 = json.items.find(t => t.userId === 'usr-tec-pending-01');",
+                  "  pm.expect(pending1).to.exist;",
+                  "  pm.expect(pending1.verificationStatus).to.eql('pendiente');",
+                  "  pm.expect(pending1).to.have.property('documentId');",
+                  "  pm.expect(pending1).to.have.property('specialty');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Admin lista técnicos aprobados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians?verificationStatus=aprobado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians?verificationStatus=aprobado"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Filtro status=aprobado] 200 OK y técnicos aprobados listados', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.items).to.be.an('array');",
+                  "  const app1 = json.items.find(t => t.userId === 'usr-tec-approved-01');",
+                  "  pm.expect(app1).to.exist;",
+                  "  pm.expect(app1.verificationStatus).to.eql('aprobado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Aprobación de Técnico",
+      "item": [
+        {
+          "name": "2.1 Admin aprueba técnico pendiente (usr-tec-pending-01)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-pending-01/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "usr-tec-pending-01",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[RF-19 / RN-TP1] 200 OK al aprobar perfil técnico', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.userId).to.eql('usr-tec-pending-01');",
+                  "  pm.expect(json.verificationStatus).to.eql('aprobado');",
+                  "  pm.expect(json).to.have.property('verifiedAt');",
+                  "  pm.expect(json.verifiedBy).to.eql('usr-admin-01');",
+                  "  pm.expect(json.noticeEmitted).to.eql('technician.verification-changed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Admin verifica que técnico aprobado ya no está en pendientes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians?verificationStatus=pendiente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians?verificationStatus=pendiente"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Consistencia] El técnico aprobado ya no aparece en lista de pendientes', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  const found = json.items.find(t => t.userId === 'usr-tec-pending-01');",
+                  "  pm.expect(found).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Transición Inválida: Intento de aprobar técnico ya aprobado -> 409 Conflict",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-approved-01/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "usr-tec-approved-01",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[RN-TP1 / Transición] 409 Conflict al intentar aprobar técnico ya aprobado', () => {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /transicion-invalida', () => {",
+                  "  pm.expect(pm.response.json().type).to.include('transicion-invalida');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Rechazo de Técnico con Motivo",
+      "item": [
+        {
+          "name": "3.1 Admin rechaza técnico con motivo válido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-pending-02/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "usr-tec-pending-02",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Documento de identidad ilegible y certificado técnico vencido.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[RF-19] 200 OK al rechazar técnico con motivo fundamentado', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.userId).to.eql('usr-tec-pending-02');",
+                  "  pm.expect(json.verificationStatus).to.eql('rechazado');",
+                  "  pm.expect(json.reason).to.include('ilegible');",
+                  "  pm.expect(json).to.have.property('rejectedAt');",
+                  "  pm.expect(json.rejectedBy).to.eql('usr-admin-01');",
+                  "  pm.expect(json.noticeEmitted).to.eql('technician.verification-changed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Validación: Intento de rechazar sin motivo válido -> 400 Bad Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-pending-02/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "usr-tec-pending-02",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"no\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Validación] 400 Bad Request cuando el motivo es menor a 5 caracteres', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /validacion-solicitud', () => {",
+                  "  pm.expect(pm.response.json().type).to.include('validacion-solicitud');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Transición Inválida: Intento de rechazar técnico aprobado -> 409 Conflict",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-approved-01/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "usr-tec-approved-01",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Rechazo posterior no permitido según máquina de estados\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Transición Inválida] 409 Conflict al intentar rechazar un técnico en estado aprobado', () => {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /transicion-invalida', () => {",
+                  "  pm.expect(pm.response.json().type).to.include('transicion-invalida');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Control de Acceso RBAC y Aislamiento Multi-Tenant",
+      "item": [
+        {
+          "name": "4.1 Control RBAC: Cliente intenta aprobar técnico -> 403 Forbidden",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-pending-01/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "usr-tec-pending-01",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[RBAC] 403 Forbidden para cliente intentando aprobar técnicos', () => {",
+                  "  pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /no-autorizado', () => {",
+                  "  pm.expect(pm.response.json().type).to.include('no-autorizado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Control RBAC: Técnico intenta auto-aprobarse -> 403 Forbidden",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTecnico}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-pending-01/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "usr-tec-pending-01",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[RBAC] 403 Forbidden para técnico intentando auto-aprobarse', () => {",
+                  "  pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /no-autorizado', () => {",
+                  "  pm.expect(pm.response.json().type).to.include('no-autorizado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 Seguridad: Consulta anónima sin token -> 401 Unauthorized",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Seguridad] 401 Unauthorized ante solicitud anónima (IDN-017)', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /no-autenticado', () => {",
+                  "  pm.expect(pm.response.json().type).to.include('no-autenticado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 Aislamiento Multi-Tenant (RLS): Admin Beta intenta aprobar técnico de Tenant Alfa -> 404 Not Found",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdminBeta}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-pending-01/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "usr-tec-pending-01",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SAD AC6-E2 / RLS] 404 Not Found para Admin Beta intentando aprobar técnico de Alfa', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /no-encontrado', () => {",
+                  "  pm.expect(pm.response.json().type).to.include('no-encontrado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.5 Aislamiento Multi-Tenant (RLS): Admin Beta lista técnicos pendientes con cero fuga de Alfa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdminBeta}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians?verificationStatus=pendiente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians?verificationStatus=pendiente"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SAD AC6-E2 / RLS] 200 OK para Admin Beta con aislamiento estricto de técnicos', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.total).to.eql(1);",
+                  "  pm.expect(json.items[0].userId).to.eql('usr-tec-beta-01');",
+                  "  const hasAlfa = json.items.some(t => t.tenantId === '11111111-1111-1111-1111-111111111111');",
+                  "  pm.expect(hasAlfa).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "tokenAdminBeta",
+      "value": ""
+    },
+    {
+      "key": "tokenCliente",
+      "value": ""
+    },
+    {
+      "key": "tokenTecnico",
+      "value": ""
+    }
+  ]
+}
