@@ -139,11 +139,11 @@ Cada microservicio tiene su propia base de datos dentro de una única instancia 
 
 ## 5.2 Vista por capas (complementaria)
 
-![Vista lógica general por capas](diagrams/sdd/01_vista_logica_capas.png)
+![Vista lógica general por capas](diagrams/sdd/01_vista_logica_capas.svg)
 
 **Figura 4. Vista lógica general por capas de QUICKPATCH.**
 
-La representación organiza el sistema en capa de cliente, entrada/presentación, servicios de negocio, integración y datos. Los ocho microservicios definidos en la arquitectura de alto nivel aparecen dentro de la capa de negocio y se conectan con los recursos de integración y persistencia correspondientes.
+La representación organiza los contenedores de la Figura 3 en cinco capas, sin nombrar el framework de los clientes. En la **capa de cliente** están la App móvil (clientes, empresas cliente, técnicos y proveedores) y el Panel web (administradores). En la **capa de entrada**, el API Gateway recibe REST en `/api/v1/*` y el canal en tiempo real por WebSocket en `/api/v1/realtime` (ADR-023), quita `/api` y enruta por el contrato; cada servicio valida el JWT (ADR-018). La **capa de servicios de negocio** reúne los ocho microservicios. En la **capa de integración** están Apache Kafka, por donde los servicios publican y consumen eventos de dominio con el patrón Outbox; el Geocodificador (Nominatim con el mapa de Bogotá, ADR-024), que usa ServiceRequest para ubicar la dirección; y la pasarela de pagos PCI-DSS, el único sistema externo, que usa Payments. En la **capa de datos**, PostgreSQL + PostGIS es una sola instancia con una base por servicio (ADR-014), Redis guarda la caché de Matching y Garage (S3) las evidencias y los respaldos (ADR-016). La fuente de la figura es `diagrams/sdd/src/01_vista_logica_capas.puml`.
 
 ## 5.3 Componentes lógicos principales del backend (complementaria)
 
