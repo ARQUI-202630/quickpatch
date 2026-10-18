@@ -808,6 +808,66 @@ En cumplimiento de las Historias de Usuario asignadas a José Eduardo (**SCRUM-3
 | `db_service_request` | `service_requests` | `status = 'asignado'`, `technician_id`, `assigned_at`, `matching_updated_at` | Transición de estado consistente. Idempotencia garantizada por `matching_updated_at` (ADR-017). |
 | `db_identity` | `users` / `technician_profiles` | `id`, `full_name`, `phone`, `role`, `verification_status` | Resolución de nombres y teléfonos para endpoint interno sin exponer credenciales ni contraseñas. |
 
+### 10.6 Ejecución de Pruebas: Registro de Técnico y Aislamiento por Tenant (SCRUM-56, SCRUM-62, SCRUM-400)
+
+En cumplimiento de las Historias de Usuario asignadas a Juan Diego Rojas (**SCRUM-22**), Sebastián Sánchez Olaya (**SCRUM-24**) y la consolidación de los casos de prueba del incremento técnico (**SCRUM-400** / **SCRUM-399**), el equipo de QA ejecutó las suites automatizadas de pruebas de sistema para el registro de técnicos/proveedores (Identity Service) y de aislamiento lógico multi-tenant mediante Row-Level Security (RLS) y contratos OpenAPI (`identity.v1.yaml`, `catalog.v1.yaml`, `service-request.v1.yaml`).
+
+#### 10.6.1 Catálogo y Resultados de Pruebas de Registro de Técnico/Proveedor (SCRUM-56 / HU SCRUM-22)
+
+| ID Caso | HU / Tarea Jira | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **REG-001** | SCRUM-22 / SCRUM-56 | Semilla | `GET /v1/catalog/categories` | Obtención dinámica de categoría activa de catálogo para especialidad | 200 OK con categorías activas existentes en el tenant | **PASS** |
+| **REG-002** | SCRUM-22 / SCRUM-56 | Funcional | `POST /v1/auth/register/technician` | Registro legítimo de técnico con datos obligatorios (RN-U1) | 201 Created con `role: "tecnico"`, `verificationStatus: "pendiente"` y correlationId | **PASS** |
+| **REG-003** | SCRUM-22 / SCRUM-56 | Negativa / Unicidad | `POST /v1/auth/register/technician` | Rechazo por documento de identidad duplicado en base de datos | 409 Conflict con RFC 9457 `type: .../documento-registrado` y `correlationId` | **PASS** |
+| **REG-004** | SCRUM-22 / SCRUM-56 | Negativa / Unicidad | `POST /v1/auth/register/technician` | Rechazo por correo electrónico duplicado en base de datos | 409 Conflict con RFC 9457 `type: .../correo-registrado` y `correlationId` | **PASS** |
+| **REG-005** | SCRUM-22 / SCRUM-56 | Validación | `POST /v1/auth/register/technician` | Rechazo por ausencia de documento o contraseña menor a 8 caracteres | 400 Bad Request con RFC 9457 `type: .../validacion-solicitud` y campos afectados | **PASS** |
+| **REG-006** | SCRUM-22 / SCRUM-56 | Funcional | `GET /v1/users/me` | Autenticación y consulta de perfil propio del técnico recién registrado | 200 OK confirmando estado `pendiente` y rol `tecnico` en sesión JWT | **PASS** |
+| **REG-007** | SCRUM-22 / SCRUM-56 | Seguridad / RBAC | `POST /v1/service-requests` | Bloqueo estricto de técnico intentando emitir solicitudes de cliente (IDN-012) | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+
+#### 10.6.2 Catálogo y Resultados de Pruebas de Aislamiento Lógico por Tenant (SCRUM-62 / HU SCRUM-24 - SAD AC6-E2)
+
+| ID Caso | Requisito / AC | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **RLS-001** | SCRUM-24 / AC6-E2 | Autenticación | `POST /v1/auth/login` | Login exitoso de cliente en Tenant Alfa | 200 OK con JWT firmado para Tenant Alfa | **PASS** |
+| **RLS-002** | SCRUM-24 / AC6-E2 | Creación | `POST /v1/service-requests` | Creación de orden de servicio privada en Tenant Alfa | 201 Created con identificador único persistido (`sr-qa-001`) | **PASS** |
+| **RLS-003** | SCRUM-24 / AC6-E2 | Autenticación | `POST /v1/auth/login` | Login exitoso de cliente en Tenant Beta | 200 OK con JWT firmado para Tenant Beta | **PASS** |
+| **RLS-004** | SCRUM-24 / AC6-E2 | Seguridad RLS | `GET /v1/service-requests/{id}` | Cliente de Tenant Beta intenta consultar la solicitud de Tenant Alfa | 404 Not Found (cero fuga cross-tenant), sin exponer existencia ni metadatos | **PASS** |
+| **RLS-005** | SCRUM-24 / AC6-E2 | Aislamiento | `GET /v1/catalog/categories` | Cliente de Tenant Beta consulta catálogo de categorías | 200 OK excluyendo estrictamente categorías exclusivas de Tenant Alfa | **PASS** |
+| **RLS-006** | SCRUM-24 / AC6-E2 | Control Positivo | `GET /v1/service-requests/{id}` | Cliente de Tenant Alfa consulta su propia solicitud de servicio | 200 OK retornando la orden íntegra en su propio tenant | **PASS** |
+
+#### 10.6.3 Resumen Estadístico de Ejecución (Newman CLI)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN CONJUNTA: SCRUM-56 y SCRUM-62                       │
+│ Archivos: scrum-56-registro-tecnico.postman_collection.json   │
+│           scrum-62-aislamiento-tenant.simulacion.json         │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                2 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               15 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               35 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ Total SCRUM-56: 9 requests, 24 assertions (100% Pass)         │
+│ Total SCRUM-62: 6 requests, 11 assertions (100% Pass)         │
+│ Pass Rate Global: 100% (35/35 aserciones aprobadas)           │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-56-62-local-2026-10-14.txt        │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.6.4 Verificación de Persistencia y Políticas de Base de Datos
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_identity` | `users` | `id`, `email`, `role = 'tecnico'`, `tenant_id` | Restricción de unicidad en `(email, tenant_id)` y `(document_id, tenant_id)`. |
+| `db_identity` | `technician_profiles` | `user_id`, `specialty_id`, `verification_status = 'pendiente'` | Estado inicial pendiente verificado; sin asignación de servicios hasta aprobación. |
+| `db_catalog` | `categories` | `id`, `name`, `tenant_id`, `is_active` | Aislamiento RLS en consultas; categorías privadas filtradas por `app.current_tenant`. |
+| `db_service_request` | `service_requests` | `id`, `tenant_id`, `client_id`, `category_id`, `status` | Acceso denegado con 404 entre tenants distintos; política RLS activa en PostgreSQL. |
+
 ---
 
 ## 11. Control de Versiones del Documento
@@ -820,5 +880,6 @@ En cumplimiento de las Historias de Usuario asignadas a José Eduardo (**SCRUM-3
 | **1.3** | 6 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Corrección de aislamiento de base de datos en pruebas de carga (revisión PR #20): eliminación de toda referencia a VM4 en pasos de carga y teardown; la inyección de carga y la purga SQL se direccionan exclusivamente al PostgreSQL propio de QA en VM2, garantizando que la BD de producción en VM4 permanezca 100% aislada. |
 | **1.4** | 7 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Incorporación de observaciones de revisión (PR #20): (1) Alineación con la redistribución de 7 VMs según ADR-022 (QA en VM2, VM5 y VM7; Producción en VM3, VM4 y VM6; Herramientas y observabilidad unificada en VM1); (2) Traslado de la persistencia de QA a PostgreSQL en VM5 para pruebas de carga, conexiones (PRF-009) y scripts de purga post-carga; (3) Mantenimiento del umbral formal de RAM $\le 6.5\text{ GiB}$ en VM3 conforme al escenario AC2-E5 del SAD, registrando la nota de INFRASTRUCTURE §5.6 y SCRUM-347; (4) Clarificación del comportamiento de desactivación de tenants (RN-T1) conforme a DD 7.12 (rechazo de login en IDN-019); (5) Actualización de versiones vigentes a SRS v3.3 y SAD v2.24, y completitud de claves de Jira de QA para el sprint. |
 | **2.0** | 17 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias del incremento de Sprint 4 (SCRUM-81, SCRUM-90, SCRUM-93): Pruebas de disponibilidad y cobertura geográfica en Matching Service (COV-001..004, AVA-001..005), aceptación y rechazo atómico de ofertas de asignación (OFF-001..007) y detalle de solicitud para técnico asignado con consulta interna por lote a Identity (DTL-001..005). Resultados de ejecución con Newman (24 peticiones, 63 aserciones, 100% Pass) y protocolo de verificación de base de datos PostgreSQL/PostGIS (technician_availability, coverage_zones, matching_attempts, outbox_events, service_requests). |
+| **2.1** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias para Registro de Técnico/Proveedor (SCRUM-56 / HU SCRUM-22), Aislamiento Lógico por Tenant mediante RLS (SCRUM-62 / HU SCRUM-24 / AC6-E2) y cierre formal de casos de prueba del incremento técnico (SCRUM-400 / SCRUM-399). Resumen estadístico Newman (15 peticiones, 35 aserciones, 100% Pass) y matriz de verificación de persistencia multi-tenant en PostgreSQL. |
 
 
