@@ -923,6 +923,62 @@ En cumplimiento de los criterios de aceptación de la Historia de Usuario **SCRU
 | `db_identity` | `users` / `technician_profiles` | `full_name`, `specialty`, `role = 'tecnico'` | Datos públicos del técnico asignado resueltos para visualización del cliente (`fullName`, `specialty`) sin comprometer datos confidenciales. |
 | `gateway` | `/api/v1/realtime` | Handshake WebSocket con validación JWT, `sub_topics: ['service-request.status-changed']` | Conexión autorizada sobre Gateway (VM1), aislamiento de eventos por `tenant_id` y `user_id` (ADR-023 / SCRUM-451). |
 
+### 10.8 Ejecución de Pruebas: Gestión de Equipo de Técnicos - Proveedor (SCRUM-99 / HU SCRUM-36)
+
+En cumplimiento de los requerimientos funcionales del SRS (**RF-16** / F3.3) y las reglas de arquitectura y diseño detallado (**RN-TP3**, **RN-TP4** en DD §7.3 y §8.3.14), el equipo de Aseguramiento de Calidad (QA) diseñó y ejecutó la suite automatizada E2E correspondiente a la subtarea **SCRUM-99** (Historia de Usuario **SCRUM-36** - *"Gestión de equipo de técnicos por parte del Proveedor"*).
+
+#### 10.8.1 Catálogo de Casos y Resultados de Pruebas (SCRUM-99)
+
+| ID Caso | Requisito / Regla | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **PRV-001** | RF-16 / RN-TP3 | Funcional / Registro | `POST /v1/providers/me/technicians` | Proveedor da de alta un técnico en su equipo con datos obligatorios | 201 Created con `role: "tecnico"`, `verificationStatus: "pendiente"` y `providerId` asignado | **PASS** |
+| **PRV-002** | ADR-007 / Outbox | Integración | `POST /v1/providers/me/technicians` | Emisión transaccional del evento outbox `technician.registered` tras alta | 201 Created con aviso `noticeEmitted: "technician.registered"` | **PASS** |
+| **PRV-003** | RN-TP4 / DD §8.3.14 | Consulta / Equipo | `GET /v1/providers/me/technicians` | Proveedor consulta la lista completa de técnicos de su equipo | 200 OK con array de técnicos y datos completos (`fullName`, `specialty`, `phone`) | **PASS** |
+| **PRV-004** | DD §8.3.14 | Filtro / Inactivos | `GET /v1/providers/me/technicians?status=inactivo` | Proveedor filtra técnicos inactivos (pendientes, rechazados o suspendidos) | 200 OK incluyendo al técnico registrado en estado `pendiente` | **PASS** |
+| **PRV-005** | RN-TP1 / DD §8.3.14 | Filtro / Activos | `GET /v1/providers/me/technicians?status=activo` | Proveedor filtra técnicos activos (aprobados por `admin_tenant`) | 200 OK con `total: 0` (técnico pendiente no se lista como activo) | **PASS** |
+| **PRV-006** | Validación / RFC 9457 | Negativa / Validación | `POST /v1/providers/me/technicians` | Proveedor envía solicitud incompleta (omite cédula o correo) | 400 Bad Request con RFC 9457 `type: .../validacion-solicitud` | **PASS** |
+| **PRV-007** | RN-U1 / Unicidad | Negativa / Integridad | `POST /v1/providers/me/technicians` | Intento de registro con cédula/documento de identidad duplicado | 409 Conflict con RFC 9457 `type: .../documento-registrado` | **PASS** |
+| **PRV-008** | RN-U1 / Unicidad | Negativa / Integridad | `POST /v1/providers/me/technicians` | Intento de registro con correo electrónico duplicado en el tenant | 409 Conflict con RFC 9457 `type: .../correo-registrado` | **PASS** |
+| **PRV-009** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/providers/me/technicians` | Cliente intenta dar de alta un técnico en endpoint de proveedores | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **PRV-010** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/providers/me/technicians` | Técnico intenta invocar endpoint de alta de técnicos en equipo | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **PRV-011** | IDN-017 / Seguridad | Negativa / Auth | `GET /v1/providers/me/technicians` | Solicitud anónima sin cabecera Authorization Bearer | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **PRV-012** | RN-TP4 / Privacidad | Aislamiento Intra-Tenant | `GET /v1/providers/me/technicians` | Proveedor 2 consulta su equipo (mismo tenant) sin ver técnicos de Proveedor 1 | 200 OK con `total: 0` (cero fuga de información entre proveedores del tenant) | **PASS** |
+| **PRV-013** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/providers/me/technicians` | Proveedor de Tenant Beta consulta su equipo sin ver técnicos de Tenant Alfa | 200 OK con `total: 0` garantizado por Row-Level Security en PostgreSQL | **PASS** |
+
+#### 10.8.2 Resumen Estadístico de Ejecución E2E (Newman CLI)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-99 (Gestión de Equipo de Técnicos)     │
+│ Archivo: scrum-99-equipo-proveedor.postman_collection.json    │
+│ Suite E2E / Gateway Mock Server (Puerto 8080)                 │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               17 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               17 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               34 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ Duración Total: 1525 ms (Promedio por petición: 5 ms)         │
+│ Tasa de Éxito (Pass Rate): 100.0% (34/34 aserciones exitosas) │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-99-local-2026-10-18.txt           │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.8.3 Verificación de Persistencia y Reglas de Base de Datos (PostgreSQL)
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_identity` | `users` | `id`, `email`, `role = 'tecnico'`, `tenant_id` | Usuario creado con rol técnico y tenant heredado del proveedor autenticado (RN-TP3, RN-U3). Restricción de unicidad en `(email, tenant_id)`. |
+| `db_identity` | `technician_profiles` | `user_id`, `provider_id`, `specialty_id`, `verification_status = 'pendiente'` | `provider_id` enlazado como clave foránea física al usuario proveedor del mismo tenant (RN-TP3, P-02). Estado inicial `pendiente` obligatorio (RN-TP1). |
+| `db_identity` | `outbox_events` | `event_type = 'technician.registered'`, `payload jsonb`, `tenant_id` | Publicación transaccional outbox hacia Kafka para inicializar disponibilidad en Matching y enviar correo de activación con Communication (ADR-007). |
+| `db_identity` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` y `provider_id = current_setting('app.current_user_id')` | Aislamiento lógico multi-tenant y exclusividad de gestión de equipo por proveedor (RN-TP4, SAD AC6-E2). |
+
 ---
 
 ## 11. Control de Versiones del Documento
@@ -937,6 +993,8 @@ En cumplimiento de los criterios de aceptación de la Historia de Usuario **SCRU
 | **2.0** | 17 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias del incremento de Sprint 4 (SCRUM-81, SCRUM-90, SCRUM-93): Pruebas de disponibilidad y cobertura geográfica en Matching Service (COV-001..004, AVA-001..005), aceptación y rechazo atómico de ofertas de asignación (OFF-001..007) y detalle de solicitud para técnico asignado con consulta interna por lote a Identity (DTL-001..005). Resultados de ejecución con Newman (24 peticiones, 63 aserciones, 100% Pass) y protocolo de verificación de base de datos PostgreSQL/PostGIS (technician_availability, coverage_zones, matching_attempts, outbox_events, service_requests). |
 | **2.1** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias para Registro de Técnico/Proveedor (SCRUM-56 / HU SCRUM-22), Aislamiento Lógico por Tenant mediante RLS (SCRUM-62 / HU SCRUM-24 / AC6-E2) y cierre formal de casos de prueba del incremento técnico (SCRUM-400 / SCRUM-399). Resumen estadístico Newman (15 peticiones, 35 aserciones, 100% Pass) y matriz de verificación de persistencia multi-tenant en PostgreSQL. |
 | **2.2** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31, SCRUM-451, SCRUM-466). Verificación de ciclo completo de 4 estados (buscando_tecnico, asignado, en_progreso, completado), latencia inferior a 1 minuto, visibilidad de técnico (nombre y especialidad), handshake WebSocket en Gateway (ADR-023), eventos outbox (ADR-007), rechazo de saltos inválidos (409 Conflict), control RBAC (403 Forbidden) y aislamiento intra-tenant y multi-tenant RLS (404 Not Found). Resumen estadístico Newman (18 peticiones, 47 aserciones, 100% Pass). |
+| **2.3** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Gestión de Equipo de Técnicos por parte del Proveedor (SCRUM-99 / HU SCRUM-36 / RF-16). Verificación de alta de técnicos en equipo con herencia de tenant y estado inicial pendiente (RN-TP3), filtrado de equipo activo vs inactivo (DD §8.3.14), unicidad de correo y documento (RN-U1), validaciones RFC 9457 (400 Bad Request), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento intra-tenant y multi-tenant RLS (RN-TP4 / SAD AC6-E2). Resumen estadístico Newman (17 peticiones, 34 aserciones, 100% Pass). |
+
 
 
 

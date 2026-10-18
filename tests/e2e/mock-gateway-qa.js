@@ -53,6 +53,10 @@ function makeToken(sub, role, tenantId) {
 const registeredDocuments = new Set(["CC-1020304050"]);
 const registeredEmails = new Set(["tecnico.existente@quickpatch.test"]);
 
+const providerTechniciansDb = {
+    "11111111-1111-1111-1111-111111111111": []
+};
+
 const validLocalityCodes = new Set([
     "01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
     "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"
@@ -196,6 +200,21 @@ const server = http.createServer((req, res) => {
                     tokenType: "Bearer",
                     expiresIn: 7200,
                     user: { id: techSub, email: body.email, role: "tecnico", verificationStatus: "pendiente" }
+                }));
+            }
+
+            // Proveedor (SCRUM-36 / SCRUM-99 / RF-16)
+            if (body.email && body.email.includes('proveedor')) {
+                const provSub = (body.email.includes('segundo') || body.email.includes('proveedor2') || body.email.includes('ajeno'))
+                    ? "usr-prov-02"
+                    : "usr-prov-01";
+                const token = makeToken(provSub, "proveedor", tenantId);
+                res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+                return res.end(JSON.stringify({
+                    accessToken: token,
+                    tokenType: "Bearer",
+                    expiresIn: 7200,
+                    user: { id: provSub, email: body.email, role: "proveedor" }
                 }));
             }
 
@@ -691,6 +710,110 @@ const server = http.createServer((req, res) => {
                 attemptId: attemptId,
                 response: "rechazado",
                 nextCandidateNotified: true
+            }));
+        }
+
+        // =========================================================================
+        // 8. GESTIÓN DE EQUIPO DE TÉCNICOS (Proveedor - RF-16, SCRUM-36, SCRUM-99)
+        // =========================================================================
+        // 8.1 Registro de técnico en el equipo del proveedor (POST /api/v1/providers/me/technicians)
+        if ((url === '/api/v1/providers/me/technicians' || url === '/v1/providers/me/technicians') && req.method === 'POST') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente en registro de técnico de equipo (IDN-017)', correlationId);
+            }
+            if (user.role !== 'proveedor') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo usuarios con rol proveedor pueden dar de alta técnicos en su equipo (RN-TP3, SCRUM-36)', correlationId);
+            }
+
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!body.documentId || !body.fullName || !body.email || !emailRegex.test(body.email) || !body.phone || !body.specialtyId) {
+                return sendProblemDetails(res, 400, 'validacion-solicitud', 'Datos de registro de técnico inválidos', 'El documento, nombre completo, correo válido, teléfono y especialidad son campos obligatorios.', correlationId);
+            }
+
+            if (registeredDocuments.has(String(body.documentId))) {
+                return sendProblemDetails(res, 409, 'documento-registrado', 'El documento ya está registrado', 'El documento de identidad ya se encuentra registrado en el tenant.', correlationId);
+            }
+            if (registeredEmails.has(body.email)) {
+                return sendProblemDetails(res, 409, 'correo-registrado', 'El correo ya está registrado', 'El correo electrónico ya se encuentra registrado en el tenant.', correlationId);
+            }
+
+            registeredDocuments.add(String(body.documentId));
+            registeredEmails.add(body.email);
+
+            const tecId = `usr-tec-team-${Date.now()}`;
+            const newTec = {
+                userId: tecId,
+                fullName: body.fullName,
+                email: body.email,
+                documentId: String(body.documentId),
+                phone: body.phone,
+                specialty: body.specialty || "Plomería",
+                specialtyId: body.specialtyId,
+                role: "tecnico",
+                providerId: user.sub,
+                tenantId: user.tenant_id,
+                verificationStatus: "pendiente",
+                createdAt: new Date().toISOString()
+            };
+
+            providerTechniciansDb[user.tenant_id] = providerTechniciansDb[user.tenant_id] || [];
+            providerTechniciansDb[user.tenant_id].push(newTec);
+
+            res.writeHead(201, {
+                'Content-Type': 'application/json',
+                'X-Correlation-Id': correlationId
+            });
+            return res.end(JSON.stringify({
+                userId: tecId,
+                fullName: newTec.fullName,
+                email: newTec.email,
+                role: "tecnico",
+                providerId: user.sub,
+                tenantId: user.tenant_id,
+                verificationStatus: "pendiente",
+                noticeEmitted: "technician.registered",
+                createdAt: newTec.createdAt
+            }));
+        }
+
+        // 8.2 Listado de técnicos del equipo del proveedor (GET /api/v1/providers/me/technicians)
+        if ((url === '/api/v1/providers/me/technicians' || url === '/v1/providers/me/technicians') && req.method === 'GET') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente en consulta de equipo (IDN-017)', correlationId);
+            }
+            if (user.role !== 'proveedor') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo usuarios con rol proveedor pueden consultar su equipo de técnicos (RN-TP4, SCRUM-36)', correlationId);
+            }
+
+            const tenantList = providerTechniciansDb[user.tenant_id] || [];
+            let myTechnicians = tenantList.filter(t => t.providerId === user.sub);
+
+            const urlObj = new URL(req.url, 'http://localhost');
+            const statusFilter = urlObj.searchParams.get('status');
+            if (statusFilter === 'activo') {
+                myTechnicians = myTechnicians.filter(t => t.verificationStatus === 'aprobado');
+            } else if (statusFilter === 'inactivo') {
+                myTechnicians = myTechnicians.filter(t => ['pendiente', 'rechazado', 'suspendido'].includes(t.verificationStatus));
+            }
+
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'X-Correlation-Id': correlationId
+            });
+            return res.end(JSON.stringify({
+                items: myTechnicians.map(t => ({
+                    userId: t.userId,
+                    fullName: t.fullName,
+                    email: t.email,
+                    phone: t.phone,
+                    specialty: t.specialty,
+                    verificationStatus: t.verificationStatus,
+                    providerId: t.providerId
+                })),
+                total: myTechnicians.length
             }));
         }
 
