@@ -199,14 +199,17 @@ const server = http.createServer((req, res) => {
                 }));
             }
 
-            // Cliente
-            const token = makeToken("usr-client-01", "cliente", tenantId);
+            // Cliente (SCRUM-31: Soporte para cliente propietario usr-client-01 y cliente ajeno usr-client-02 en mismo tenant)
+            const clientSub = (body.email && (body.email.includes('cliente2') || body.email.includes('ajeno') || body.email.includes('otrocliente')))
+                ? "usr-client-02"
+                : "usr-client-01";
+            const token = makeToken(clientSub, "cliente", tenantId);
             res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
             return res.end(JSON.stringify({
                 accessToken: token,
                 tokenType: "Bearer",
                 expiresIn: 7200,
-                user: { id: "usr-client-01", email: body.email, role: "cliente" }
+                user: { id: clientSub, email: body.email, role: "cliente" }
             }));
         }
 
@@ -268,22 +271,33 @@ const server = http.createServer((req, res) => {
             if (user.role !== 'cliente') {
                 return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo el rol cliente puede crear solicitudes de servicio (IDN-012, SCRUM-65)', correlationId);
             }
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+            const reqId = body.id || (url.includes('tracking') ? 'sr-tracking-01' : 'sr-qa-001');
+            serviceRequestsDb[reqId] = {
+                status: "buscando_tecnico",
+                technicianId: null,
+                clientId: user.sub,
+                tenantId: user.tenant_id,
+                description: body.description || "Solicitud de servicio estándar",
+                createdAt: new Date().toISOString()
+            };
             res.writeHead(201, {
                 'Content-Type': 'application/json',
                 'X-Correlation-Id': correlationId,
-                'Location': '/api/v1/service-requests/sr-qa-001'
+                'Location': `/api/v1/service-requests/${reqId}`
             });
             return res.end(JSON.stringify({
-                id: "sr-qa-001",
+                id: reqId,
                 status: "buscando_tecnico",
-                categoryId: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
+                categoryId: body.categoryId || "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
                 tenantId: user.tenant_id,
-                createdAt: new Date().toISOString()
+                createdAt: serviceRequestsDb[reqId].createdAt
             }));
         }
 
-        // 4.1 Consulta de solicitud por ID con aislamiento multi-tenant y detalle por rol (SCRUM-62, SCRUM-91, SCRUM-93)
-        if (url.startsWith('/api/v1/service-requests/') && req.method === 'GET') {
+        // 4.1 Consulta de solicitud por ID con seguimiento en tiempo real y aislamiento (SCRUM-31, SCRUM-62, SCRUM-84, SCRUM-93)
+        if (url.startsWith('/api/v1/service-requests/') && !url.endsWith('/status') && req.method === 'GET') {
             if (!user) {
                 return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
             }
@@ -293,16 +307,18 @@ const server = http.createServer((req, res) => {
                 return sendProblemDetails(res, 404, 'no-encontrado', 'Solicitud no encontrada', 'La solicitud no existe en el tenant especificado (RLS Isolation)', correlationId);
             }
 
-            // Simulación de estados de solicitud:
-            // sr-unassigned-01: buscando_tecnico (no asignada)
-            // sr-assigned-01: asignado a usr-tec-01
-            // sr-qa-001: buscando_tecnico
-            const isAssignedTest = reqId === 'sr-assigned-01' || serviceRequestsDb[reqId]?.status === 'asignado';
-            const assignedTechId = isAssignedTest ? (serviceRequestsDb[reqId]?.technicianId || "usr-tec-01") : null;
+            const currentReq = serviceRequestsDb[reqId] || {
+                status: (reqId === 'sr-assigned-01' ? 'asignado' : 'buscando_tecnico'),
+                technicianId: (reqId === 'sr-assigned-01' ? 'usr-tec-01' : null),
+                clientId: 'usr-client-01'
+            };
+
+            const isAssignedOrBeyond = ['asignado', 'en_progreso', 'completado'].includes(currentReq.status) || reqId === 'sr-assigned-01';
+            const assignedTechId = isAssignedOrBeyond ? (currentReq.technicianId || "usr-tec-01") : null;
 
             if (user.role === 'tecnico') {
                 // Caso DTL-002: Técnico asignado pero la solicitud está fuera de rango (buscando_tecnico) -> 403
-                if (reqId === 'sr-unassigned-01') {
+                if (reqId === 'sr-unassigned-01' || currentReq.status === 'buscando_tecnico') {
                     return sendProblemDetails(res, 403, 'solicitud-no-asignada', 'Acceso Denegado', 'El técnico no puede consultar el detalle de una solicitud que no le ha sido asignada (RN-SR13, SCRUM-34)', correlationId);
                 }
                 // Caso DTL-003: Técnico no asignado a la solicitud -> 404 (confidencialidad)
@@ -313,37 +329,132 @@ const server = http.createServer((req, res) => {
                 res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
                 return res.end(JSON.stringify({
                     id: reqId,
-                    status: "asignado",
+                    status: currentReq.status,
                     categoryId: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
                     tenantId: user.tenant_id,
                     addressText: "Calle 63 # 9-45, apto 502, Chapinero",
                     location: { latitude: 4.6486, longitude: -74.063 },
-                    description: "Fuga de agua en lavaplatos principal",
+                    description: currentReq.description || "Fuga de agua en lavaplatos principal",
                     client: {
-                        id: "usr-client-01",
+                        id: currentReq.clientId || "usr-client-01",
                         fullName: "Ana Gómez",
                         phone: "+573009876543"
                     },
                     technician: {
                         id: user.sub,
-                        fullName: "Carlos Pérez (Técnico)"
+                        fullName: "Carlos Pérez (Técnico)",
+                        specialty: "Plomería"
                     },
                     assignedAt: new Date().toISOString()
                 }));
             }
 
-            // Cliente dueño consultando su solicitud (DTL-005)
+            // Rol Cliente: Aislamiento intra-tenant (Cliente 2 no puede ver la solicitud de Cliente 1)
+            const ownerId = currentReq.clientId || "usr-client-01";
+            if (user.sub !== ownerId && reqId !== 'sr-qa-001') {
+                return sendProblemDetails(res, 404, 'no-encontrado', 'Solicitud no encontrada', 'La solicitud no pertenece al cliente autenticado (Confidencialidad intra-tenant)', correlationId);
+            }
+
+            // Cliente dueño consultando su solicitud en tiempo real (SCRUM-31, DTL-005)
             res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
             return res.end(JSON.stringify({
                 id: reqId,
-                status: isAssignedTest ? "asignado" : "buscando_tecnico",
+                status: currentReq.status,
                 categoryId: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
                 tenantId: user.tenant_id,
                 addressText: "Calle 63 # 9-45, apto 502, Chapinero",
                 location: { latitude: 4.6486, longitude: -74.063 },
-                description: "Fuga de agua en lavaplatos principal",
+                description: currentReq.description || "Fuga de agua en lavaplatos principal",
                 client: null,
-                technician: isAssignedTest ? { id: "usr-tec-01", fullName: "Carlos Pérez (Técnico)" } : null
+                technician: isAssignedOrBeyond ? {
+                    id: assignedTechId,
+                    fullName: "Carlos Pérez (Técnico)",
+                    specialty: "Plomería",
+                    phone: "+573109876543"
+                } : null,
+                updatedAt: currentReq.updatedAt || currentReq.createdAt || new Date().toISOString()
+            }));
+        }
+
+        // 4.2 Actualización de estado por técnico (ServiceRequest / SCRUM-31 / SCRUM-84)
+        if (url.startsWith('/api/v1/service-requests/') && url.endsWith('/status') && (req.method === 'PATCH' || req.method === 'PUT')) {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
+            }
+            if (user.role !== 'tecnico') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo el técnico asignado puede actualizar el estado del servicio (SCRUM-31)', correlationId);
+            }
+
+            const parts = url.split('/');
+            const reqId = parts[parts.length - 2];
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            const current = serviceRequestsDb[reqId] || {
+                status: 'asignado',
+                technicianId: 'usr-tec-01',
+                clientId: 'usr-client-01'
+            };
+
+            // Control de asignación de técnico
+            if (current.technicianId && current.technicianId !== user.sub) {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'El técnico no está asignado a esta solicitud', correlationId);
+            }
+
+            const targetStatus = body.status;
+            // Transiciones válidas según máquina de estados:
+            // asignado -> en_progreso
+            // en_progreso -> completado
+            const validTransitions = {
+                'buscando_tecnico': ['asignado'],
+                'asignado': ['en_progreso', 'cancelado'],
+                'en_progreso': ['completado', 'cancelado']
+            };
+
+            const allowed = validTransitions[current.status] || [];
+            if (!allowed.includes(targetStatus)) {
+                return sendProblemDetails(res, 409, 'transicion-invalida', 'Transición Inválida', `No se permite transicionar de ${current.status} a ${targetStatus} (RN-SR6)`, correlationId);
+            }
+
+            const previousStatus = current.status;
+            current.status = targetStatus;
+            current.updatedAt = new Date().toISOString();
+            serviceRequestsDb[reqId] = current;
+
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+            return res.end(JSON.stringify({
+                serviceRequestId: reqId,
+                previousStatus: previousStatus,
+                status: targetStatus,
+                technicianId: user.sub,
+                occurredAt: current.updatedAt,
+                noticeEmitted: "service-request.status-changed"
+            }));
+        }
+
+        // 4.3 Canal en tiempo real (Communication / Gateway - ADR-023, SCRUM-451, SCRUM-84)
+        if (url === '/api/v1/realtime') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente en handshake de tiempo real (IDN-017)', correlationId);
+            }
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'X-Correlation-Id': correlationId,
+                'X-Realtime-Channel': 'active',
+                'X-Transport': 'websocket'
+            });
+            return res.end(JSON.stringify({
+                status: "connected",
+                channel: "realtime",
+                transport: "websocket",
+                tenantId: user.tenant_id,
+                userId: user.sub,
+                subscribedEvents: [
+                    "service-request.status-changed",
+                    "service-request.created",
+                    "matching.offer-created"
+                ],
+                connectedAt: new Date().toISOString()
             }));
         }
 

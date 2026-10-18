@@ -1,0 +1,964 @@
+{
+  "info": {
+    "name": "QUICKPATCH — Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31)",
+    "description": "Suite E2E automatizada para SCRUM-84 (HU SCRUM-31: Seguimiento en tiempo real del estado de la solicitud):\nValida ServiceRequest (máquina de estados), Communication (WebSocket y evento status-changed) y API Gateway (/api/v1/realtime).\nAutora: Katherine Bravo — QA Lead.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "clienteEmail",
+      "value": "cliente@quickpatch.test",
+      "type": "string"
+    },
+    {
+      "key": "tecnicoEmail",
+      "value": "tecnico@quickpatch.test",
+      "type": "string"
+    },
+    {
+      "key": "cliente2Email",
+      "value": "cliente2@quickpatch.test",
+      "type": "string"
+    },
+    {
+      "key": "clienteBetaEmail",
+      "value": "cliente.beta@quickpatch.test",
+      "type": "string"
+    },
+    {
+      "key": "clienteToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tecnicoToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cliente2Token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clienteBetaToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "requestId",
+      "value": "sr-tracking-01",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Autenticación de Actores",
+      "item": [
+        {
+          "name": "0.1 Login Cliente Propietario (usr-client-01)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{clienteEmail}}\",\n  \"password\": \"PasswordCliente123*\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de cliente exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.2 Login Técnico Asignado (usr-tec-01)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{tecnicoEmail}}\",\n  \"password\": \"PasswordTecnico123*\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de técnico exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.3 Login Cliente Ajeno en Mismo Tenant (usr-client-02)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{cliente2Email}}\",\n  \"password\": \"PasswordCliente123*\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de cliente 2 exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('cliente2Token', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.4 Login Cliente en Tenant Beta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{clienteBetaEmail}}\",\n  \"password\": \"PasswordCliente123*\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de cliente Beta exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('clienteBetaToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Canal en Tiempo Real (WebSocket / Gateway)",
+      "item": [
+        {
+          "name": "1.1 Handshake y suscripción a WebSocket (/v1/realtime) con token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/realtime",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "realtime"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[ADR-023 / SCRUM-451] 200 OK en handshake de canal en tiempo real', () => pm.response.to.have.status(200));",
+                  "pm.test('[Gateway] Cabecera de canal activo verificada', () => pm.expect(pm.response.headers.get('X-Realtime-Channel')).to.eql('active'));",
+                  "pm.test('[Tiempo Real] Estado connected y transporte websocket', () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.status).to.eql('connected');",
+                  "  pm.expect(res.transport).to.eql('websocket');",
+                  "});",
+                  "pm.test('[SCRUM-466] Suscripción obligatoria a service-request.status-changed', () => {",
+                  "  pm.expect(pm.response.json().subscribedEvents).to.include('service-request.status-changed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Rechazo de conexión a tiempo real sin token (IDN-017) -> 401 Unauthorized",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/realtime",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "realtime"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Seguridad] 401 Unauthorized para handshake anónimo', () => pm.response.to.have.status(401));",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /no-autenticado', () => {",
+                  "  pm.expect(pm.response.json().type).to.match(/\\/no-autenticado$/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Estado 1: Buscando Técnico",
+      "item": [
+        {
+          "name": "2.1 Creación de solicitud por cliente (estado inicial buscando_tecnico)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"sr-tracking-01\",\n  \"categoryId\": \"3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01\",\n  \"description\": \"Fuga de tubería principal en cocina\",\n  \"location\": {\n    \"latitude\": 4.6533,\n    \"longitude\": -74.0836\n  },\n  \"addressText\": \"Carrera 15 # 85-30, apto 401\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[ServiceRequest] 201 Created para nueva solicitud', () => pm.response.to.have.status(201));",
+                  "pm.test('[SCRUM-31] Estado inicial es buscando_tecnico', () => pm.expect(pm.response.json().status).to.eql('buscando_tecnico'));",
+                  "pm.collectionVariables.set('requestId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Cliente consulta estado inicial de su solicitud",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Seguimiento] 200 OK en consulta de solicitud', () => pm.response.to.have.status(200));",
+                  "pm.test('[Estado 1] Solicitud visible en estado buscando_tecnico', () => pm.expect(pm.response.json().status).to.eql('buscando_tecnico'));",
+                  "pm.test('[Cliente] Técnico es null antes de la asignación', () => pm.expect(pm.response.json().technician).to.be.null);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Estado 2: Asignado",
+      "item": [
+        {
+          "name": "3.1 Actualización a estado 'asignado' tras aceptación de oferta",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"asignado\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Transición] 200 OK en actualización a asignado', () => pm.response.to.have.status(200));",
+                  "const resAsig = pm.response.json();",
+                  "pm.test('[Transición] Estado nuevo es asignado', () => pm.expect(resAsig.status).to.eql('asignado'));",
+                  "pm.test('[SCRUM-466] Evento service-request.status-changed emitido', () => pm.expect(resAsig.noticeEmitted).to.eql('service-request.status-changed'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Cliente consulta estado asignado y visualiza datos del técnico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Seguimiento] 200 OK para cliente consultando asignación', () => pm.response.to.have.status(200));",
+                  "pm.test('[Estado 2] Estado actualizado a asignado', () => pm.expect(pm.response.json().status).to.eql('asignado'));",
+                  "pm.test('[SCRUM-31 / Criterio 3] Nombre del técnico visible para el cliente', () => {",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.technician).to.not.be.null;",
+                  "  pm.expect(res.technician.fullName).to.include('Carlos Pérez');",
+                  "});",
+                  "pm.test('[SCRUM-31 / Criterio 3] Especialidad del técnico visible para el cliente', () => {",
+                  "  pm.expect(pm.response.json().technician.specialty).to.eql('Plomería');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Estado 3: En Progreso",
+      "item": [
+        {
+          "name": "4.1 Técnico inicia el trabajo y pasa solicitud a 'en_progreso'",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"en_progreso\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Transición] 200 OK en actualización a en_progreso', () => pm.response.to.have.status(200));",
+                  "const resProg = pm.response.json();",
+                  "pm.test('[Máquina de Estados] previousStatus: asignado -> status: en_progreso', () => {",
+                  "  pm.expect(resProg.previousStatus).to.eql('asignado');",
+                  "  pm.expect(resProg.status).to.eql('en_progreso');",
+                  "});",
+                  "pm.test('[SCRUM-466] Aviso de estado emitido en la misma transacción', () => pm.expect(resProg.noticeEmitted).to.eql('service-request.status-changed'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Cliente observa estado 'en_progreso' con latencia inmediata (< 1 minuto)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Seguimiento] 200 OK en consulta de estado en progreso', () => pm.response.to.have.status(200));",
+                  "pm.test('[SCRUM-31 / Criterio 2] Latencia de respuesta inferior a 1 minuto (< 60s)', () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(60000);",
+                  "});",
+                  "pm.test('[Estado 3] Estado confirmado como en_progreso', () => pm.expect(pm.response.json().status).to.eql('en_progreso'));",
+                  "pm.test('[Seguimiento] Técnico asignado permanece visible', () => pm.expect(pm.response.json().technician.fullName).to.not.be.empty);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Estado 4: Completado",
+      "item": [
+        {
+          "name": "5.1 Técnico finaliza la reparación y pasa solicitud a 'completado'",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completado\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Transición] 200 OK en finalización de servicio', () => pm.response.to.have.status(200));",
+                  "const resComp = pm.response.json();",
+                  "pm.test('[Máquina de Estados] previousStatus: en_progreso -> status: completado', () => {",
+                  "  pm.expect(resComp.previousStatus).to.eql('en_progreso');",
+                  "  pm.expect(resComp.status).to.eql('completado');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 Cliente consulta estado final 'completado' (ciclo completo 4/4 estados)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Seguimiento] 200 OK en consulta de estado completado', () => pm.response.to.have.status(200));",
+                  "pm.test('[Estado 4] Estado confirmado como completado', () => pm.expect(pm.response.json().status).to.eql('completado'));",
+                  "pm.test('[Criterio 1 Cumplido] 4 estados verificados (buscando_tecnico, asignado, en_progreso, completado)', () => {",
+                  "  pm.expect(['buscando_tecnico', 'asignado', 'en_progreso', 'completado']).to.include(pm.response.json().status);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Filtros Negativos y Aislamiento",
+      "item": [
+        {
+          "name": "6.1 Transición Inválida: Técnico intenta saltar de completado a buscando_tecnico -> 409 Conflict",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"buscando_tecnico\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[RN-SR6] 409 Conflict ante transición de estado inválida', () => pm.response.to.have.status(409));",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /transicion-invalida', () => {",
+                  "  pm.expect(pm.response.json().type).to.match(/\\/transicion-invalida$/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.2 Control RBAC: Cliente intenta modificar el estado técnico de la orden -> 403 Forbidden",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"en_progreso\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[RBAC / SCRUM-31] 403 Forbidden para cliente intentando cambiar estado', () => pm.response.to.have.status(403));",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /no-autorizado', () => {",
+                  "  pm.expect(pm.response.json().type).to.match(/\\/no-autorizado$/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.3 Aislamiento Intra-Tenant: Cliente 2 intenta consultar la solicitud de Cliente 1 -> 404 Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{cliente2Token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Confidencialidad Intra-Tenant] 404 Not Found para cliente ajeno del mismo tenant', () => pm.response.to.have.status(404));",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /no-encontrado', () => {",
+                  "  pm.expect(pm.response.json().type).to.match(/\\/no-encontrado$/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.4 Aislamiento Multi-Tenant: Cliente de Tenant Beta intenta consultar solicitud de Tenant Alfa -> 404 Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteBetaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{requestId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SAD AC6-E2 / RLS] 404 Not Found garantizado por Row-Level Security', () => pm.response.to.have.status(404));",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato RFC 9457] Tipo de error /no-encontrado', () => {",
+                  "  pm.expect(pm.response.json().type).to.match(/\\/no-encontrado$/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

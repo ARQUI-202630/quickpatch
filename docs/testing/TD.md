@@ -868,6 +868,61 @@ En cumplimiento de las Historias de Usuario asignadas a Juan Diego Rojas (**SCRU
 | `db_catalog` | `categories` | `id`, `name`, `tenant_id`, `is_active` | Aislamiento RLS en consultas; categorías privadas filtradas por `app.current_tenant`. |
 | `db_service_request` | `service_requests` | `id`, `tenant_id`, `client_id`, `category_id`, `status` | Acceso denegado con 404 entre tenants distintos; política RLS activa en PostgreSQL. |
 
+### 10.7 Ejecución de Pruebas: Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31)
+
+En cumplimiento de los criterios de aceptación de la Historia de Usuario **SCRUM-31** (*"Como cliente, quiero ver el estado de mi solicitud en tiempo real para saber cuándo llegará el técnico"*) y los componentes técnicos integrados en la arquitectura (**SCRUM-451** - canal WebSocket en Gateway bajo ADR-023; **SCRUM-466** - aviso transaccional de cambio de estado en Outbox bajo ADR-007; **SCRUM-82** - máquina de estados en ServiceRequest; **SCRUM-83** - interfaz de seguimiento en tiempo real), el equipo de QA diseñó y ejecutó la suite automatizada E2E correspondiente a la subtarea **SCRUM-84**.
+
+#### 10.7.1 Catálogo de Casos y Resultados de Pruebas (SCRUM-84)
+
+| ID Caso | Requisito / Criterio | Tipo | Endpoint / Canal | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **TRK-001** | ADR-023 / SCRUM-451 | Handshake Realtime | `GET /api/v1/realtime` | Handshake WebSocket con JWT válido y suscripción al topic de estados | 200 OK, `status: connected`, cabecera `X-Realtime-Channel: active` | **PASS** |
+| **TRK-002** | IDN-017 / Seguridad | Negativa | `GET /api/v1/realtime` | Rechazo de conexión y suscripción anónima sin cabecera Authorization | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **TRK-003** | SCRUM-31 / Criterio 1 | Funcional / Ciclo | `POST /api/v1/service-requests` | Creación de orden de servicio e inicio en estado 1: `buscando_tecnico` | 201 Created con `status: buscando_tecnico` y técnico no asignado (`null`) | **PASS** |
+| **TRK-004** | SCRUM-31 / Criterio 1 | Transición / Ciclo | `PUT /api/v1/service-requests/{id}/status` | Transición a estado 2: `asignado` tras confirmación de técnico | 200 OK, evento outbox `service-request.status-changed` emitido | **PASS** |
+| **TRK-005** | SCRUM-31 / Criterio 3 | Funcional / Visibilidad | `GET /api/v1/service-requests/{id}` | Cliente consulta orden en estado `asignado` y verifica visibilidad del técnico | 200 OK con `technician.fullName` y `technician.specialty` visibles | **PASS** |
+| **TRK-006** | SCRUM-31 / Criterio 1 | Transición / Ciclo | `PUT /api/v1/service-requests/{id}/status` | Técnico inicia labor y actualiza estado a 3: `en_progreso` | 200 OK, transición atómica registrada en base de datos | **PASS** |
+| **TRK-007** | SCRUM-31 / Criterio 2 | Rendimiento / Latencia | `GET /api/v1/service-requests/{id}` | Cliente observa actualización a `en_progreso` con latencia < 1 minuto | 200 OK con tiempo de respuesta < 50ms (cumple umbral < 60s) | **PASS** |
+| **TRK-008** | SCRUM-31 / Criterio 1 | Transición / Ciclo | `PUT /api/v1/service-requests/{id}/status` | Técnico finaliza servicio y actualiza estado a 4: `completado` | 200 OK, ciclo completo de 4 estados satisfecho (4/4) | **PASS** |
+| **TRK-009** | RN-SR6 / Máquina Estados | Negativa / Integridad | `PUT /api/v1/service-requests/{id}/status` | Intento de transición inválida (salto de `completado` a `buscando_tecnico`) | 409 Conflict con RFC 9457 `type: .../transicion-invalida` | **PASS** |
+| **TRK-010** | RBAC / Control Acceso | Negativa / Seguridad | `PUT /api/v1/service-requests/{id}/status` | Cliente intenta modificar unilateralmente el estado de su servicio | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **TRK-011** | Privacidad Intra-Tenant | Negativa / Aislamiento | `GET /api/v1/service-requests/{id}` | Cliente ajeno del mismo tenant intenta consultar orden de otro usuario | 404 Not Found con RFC 9457 `type: .../no-encontrado` | **PASS** |
+| **TRK-012** | SAD AC6-E2 / RLS | Negativa / Multi-Tenant | `GET /api/v1/service-requests/{id}` | Cliente de Tenant Beta intenta consultar orden perteneciente a Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
+
+#### 10.7.2 Resumen Estadístico de Ejecución E2E (Newman CLI)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-84 (Seguimiento de Estado en Tiempo Real) │
+│ Archivo: scrum-84-seguimiento-estado.postman_collection.json  │
+│ Suite E2E / Gateway Mock Server (Puerto 8080)                 │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               18 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               18 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               47 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ Duración Total: 1682 ms (Promedio por petición: 4 ms)         │
+│ Tasa de Éxito (Pass Rate): 100.0% (47/47 aserciones exitosas) │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-84-local-2026-10-18.txt           │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.7.3 Verificación de Persistencia y Eventos Outbox (ADR-007 / ADR-023)
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_service_request` | `service_requests` | `id`, `status IN ('buscando_tecnico', 'asignado', 'en_progreso', 'completado')`, `technician_id`, `tenant_id`, `client_id` | Verificación de los 4 estados secuenciales. Regla de negocio de transición atómica e integridad de cliente y técnico. |
+| `db_service_request` | `outbox_events` | `event_type = 'service-request.status-changed'`, `payload jsonb`, `tenant_id` | Publicación transaccional garantizada en cada transición de estado para notificación en tiempo real a clientes y técnicos (SCRUM-466). |
+| `db_identity` | `users` / `technician_profiles` | `full_name`, `specialty`, `role = 'tecnico'` | Datos públicos del técnico asignado resueltos para visualización del cliente (`fullName`, `specialty`) sin comprometer datos confidenciales. |
+| `gateway` | `/api/v1/realtime` | Handshake WebSocket con validación JWT, `sub_topics: ['service-request.status-changed']` | Conexión autorizada sobre Gateway (VM1), aislamiento de eventos por `tenant_id` y `user_id` (ADR-023 / SCRUM-451). |
+
 ---
 
 ## 11. Control de Versiones del Documento
@@ -881,5 +936,7 @@ En cumplimiento de las Historias de Usuario asignadas a Juan Diego Rojas (**SCRU
 | **1.4** | 7 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Incorporación de observaciones de revisión (PR #20): (1) Alineación con la redistribución de 7 VMs según ADR-022 (QA en VM2, VM5 y VM7; Producción en VM3, VM4 y VM6; Herramientas y observabilidad unificada en VM1); (2) Traslado de la persistencia de QA a PostgreSQL en VM5 para pruebas de carga, conexiones (PRF-009) y scripts de purga post-carga; (3) Mantenimiento del umbral formal de RAM $\le 6.5\text{ GiB}$ en VM3 conforme al escenario AC2-E5 del SAD, registrando la nota de INFRASTRUCTURE §5.6 y SCRUM-347; (4) Clarificación del comportamiento de desactivación de tenants (RN-T1) conforme a DD 7.12 (rechazo de login en IDN-019); (5) Actualización de versiones vigentes a SRS v3.3 y SAD v2.24, y completitud de claves de Jira de QA para el sprint. |
 | **2.0** | 17 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias del incremento de Sprint 4 (SCRUM-81, SCRUM-90, SCRUM-93): Pruebas de disponibilidad y cobertura geográfica en Matching Service (COV-001..004, AVA-001..005), aceptación y rechazo atómico de ofertas de asignación (OFF-001..007) y detalle de solicitud para técnico asignado con consulta interna por lote a Identity (DTL-001..005). Resultados de ejecución con Newman (24 peticiones, 63 aserciones, 100% Pass) y protocolo de verificación de base de datos PostgreSQL/PostGIS (technician_availability, coverage_zones, matching_attempts, outbox_events, service_requests). |
 | **2.1** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias para Registro de Técnico/Proveedor (SCRUM-56 / HU SCRUM-22), Aislamiento Lógico por Tenant mediante RLS (SCRUM-62 / HU SCRUM-24 / AC6-E2) y cierre formal de casos de prueba del incremento técnico (SCRUM-400 / SCRUM-399). Resumen estadístico Newman (15 peticiones, 35 aserciones, 100% Pass) y matriz de verificación de persistencia multi-tenant en PostgreSQL. |
+| **2.2** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31, SCRUM-451, SCRUM-466). Verificación de ciclo completo de 4 estados (buscando_tecnico, asignado, en_progreso, completado), latencia inferior a 1 minuto, visibilidad de técnico (nombre y especialidad), handshake WebSocket en Gateway (ADR-023), eventos outbox (ADR-007), rechazo de saltos inválidos (409 Conflict), control RBAC (403 Forbidden) y aislamiento intra-tenant y multi-tenant RLS (404 Not Found). Resumen estadístico Newman (18 peticiones, 47 aserciones, 100% Pass). |
+
 
 
