@@ -1,14 +1,14 @@
-# Documento de Pruebas (TD V1.4) — QUICKPATCH
+# Documento de Pruebas (TD V2.7) — QUICKPATCH
 ## Sistema Multi-tenant de Servicios Técnicos para el Hogar y las Empresas
 
 | | |
 |---|---|
 | **Tipo de documento** | Documento de Diseño y Definición de Pruebas (Test Document - TD) |
-| **Versión** | 1.4 (Entrega Sprint 3 / Semana 10) |
+| **Versión** | 2.7 (Entrega Sprint 4 / Semana 11) |
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Rol Responsable** | Líder de Aseguramiento de Calidad (QA Lead) |
-| **Estándares Aplicados** | ISO/IEC/IEEE 29119 (Software Testing), ISO/IEC 25010:2023 (Calidad de Software), PCI-DSS v4.0 (K2) |
+| **Rol Responsable** | Katherine Bravo (QA Lead) |
+| **Estándares Aplicados** | ISO/IEC/IEEE 29119 (Software Testing), ISO/IEC 25010:2023 (Calidad de Software), RFC 9457 (Problem Details), PCI-DSS v4.0 (K2) |
 | **Alcance** | Estrategia de pruebas automatizadas sobre 12 repositorios de componentes más el repositorio principal, y validación en 7 Máquinas Virtuales (ADR-022) |
 
 ---
@@ -32,7 +32,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V1.4) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.3) y los escenarios de calidad del SAD (versión vigente 2.24) de cara a los entregables del Sprint 3.
+El presente Documento de Pruebas (TD V2.7) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente V5) y los escenarios de calidad del SAD (versión vigente V4 / v2.28) de cara a los entregables del Sprint 4.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -208,51 +208,53 @@ echo "[QA] Pruebas aprobadas."
 
 ### 7.1 Matriz de Trazabilidad de Requisitos (RTM)
 
-La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 4.0), los escenarios de calidad del SAD (versión vigente 2.25) y el catálogo de 187 casos de prueba automatizados.
+La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requerimientos funcionales del **SRS V5** (aprobado por Product Owner), los escenarios de calidad del SAD (V4 / v2.28), las Historias de Usuario de Jira de los Sprints 3 y 4, y el catálogo formal de casos de prueba automatizados.
 
-#### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS (v3.2)
-El SRS V4 establece un total de **32 Requisitos Funcionales activos** organizados en 23 Features y 7 Épicas. 
+#### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS V5
+El SRS V5 formaliza un total de **32 Requisitos Funcionales activos** organizados en **23 Features**, **7 módulos de dominio** y **7 módulos transversales**, distribuidos en **7 Épicas**.
 
 > [!NOTE]
-> **Aclaración sobre la numeración histórica:** En concordancia con la sección 5.2 del SRS V4, la numeración salta de RF-29 a RF-34 porque los antiguos RF-30 a RF-33 (definidos en las versiones 2.x para control de cambios) fueron retirados en la versión 3.0 al ser reemplazados por el requisito no funcional **RNF-13 (Gestión Documental y Control de Cambios)**. Sus identificadores numéricos no se reutilizan para no romper la trazabilidad histórica de Jira. Por consiguiente, los 32 requisitos listados a continuación representan el **100% de los requisitos funcionales vigentes** del proyecto.
+> **Aclaración sobre la numeración histórica:** En concordancia con las secciones 5.2 y 7.2 del SRS V5, la numeración salta de RF-29 a RF-34 porque los antiguos RF-30 a RF-33 (definidos en las versiones 2.x para control de cambios) fueron retirados en la versión 3.0 al ser reemplazados por el requisito no funcional **RNF-13 (Gestión Documental y Control de Cambios)**. Sus identificadores numéricos no se reutilizan para garantizar la trazabilidad histórica inmutable en Jira. Los 32 requisitos listados a continuación representan el **100% de los requisitos funcionales vigentes** del sistema.
 
-| ID RF | Nombre y Descripción Resumida | Módulo / Servicio Propietario | Casos de Prueba Automatizados Asociados |
-|---|---|---|---|
-| **RF-01** | Registro de Cliente con validación de email y password | Identity | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` |
-| **RF-02** | Registro de Técnico en estado pendiente de verificación | Identity / Actors | `IDN-004`, `ACT-001`, `ACT-002` |
-| **RF-03** | Autenticación y bloqueo temporal tras fallos repetidos | Identity | `IDN-005`, `IDN-006`, `IDN-007`, `IDN-008` |
-| **RF-04** | Aislamiento lógico multi-tenant vía `tenant_id` y RLS | Transversal (Todos) | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-007`, `ACT-009`, `PAY-008`, `RNK-008` |
-| **RF-05** | Control de acceso basado en roles (RBAC) | Identity | `IDN-011`, `IDN-012`, `CAT-010` |
-| **RF-06** | Registro de empresas corporativas y alta de tenant | Identity | `IDN-013`, `IDN-014`, `E2E-004` |
-| **RF-07** | Creación de solicitud de servicio técnico por Cliente | ServiceRequest | `SRQ-001`, `SRQ-002`, `SRQ-003`, `E2E-001`, `E2E-005` |
-| **RF-08** | Registro de solicitudes corporativas por Empresa | ServiceRequest | `SRQ-004` |
-| **RF-09** | Asignación automática de técnico disponible y cercano (Matching) | Matching | `MAT-001`, `MAT-002`, `MAT-006`, `MAT-007`, `MAT-008`, `PRF-001` |
-| **RF-10** | Aceptación o rechazo de solicitud por técnico y reasignación | Matching | `MAT-010`, `MAT-011`, `MAT-012`, `E2E-007` |
-| **RF-11** | Seguimiento en tiempo real del estado de la solicitud | ServiceRequest / Communication | `SRQ-006`, `COM-001`, `COM-002`, `COM-005` |
-| **RF-12** | Calificación del servicio (1 a 5) al completar | ServiceRequest / Ranking | `SRQ-021`, `SRQ-022`, `SRQ-023`, `RNK-001`, `RNK-002` |
-| **RF-13** | Configuración de disponibilidad y zona de cobertura del Técnico | Matching / Actors | `MAT-003`, `MAT-005` |
-| **RF-14** | Consulta de detalle de solicitud asignada por el Técnico | ServiceRequest | `SRQ-005` |
-| **RF-15** | Cierre de solicitud con evidencia fotográfica obligatoria en Garage (ADR-016) | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
-| **RF-16** | Administración de equipo de técnicos por Proveedor | Actors | `ACT-007`, `ACT-008`, `ACT-009` |
-| **RF-17** | Historial de solicitudes atendidas por el Técnico | ServiceRequest | `SRQ-026` |
-| **RF-18** | Dashboard operativo con panel de solicitudes activas para Admin | Web / ServiceRequest | `E2E-002` |
-| **RF-19** | Aprobación o rechazo de registro de técnicos por Admin | Actors / Web | `ACT-003`, `ACT-004`, `E2E-003` |
-| **RF-20** | Suspensión de cuenta de técnico por Admin | Actors / Identity | `ACT-005`, `ACT-006` |
-| **RF-21** | Administración de tenants (activar/desactivar) por Admin | Identity / Web | `IDN-019`, `E2E-004` |
-| **RF-22** | Pago del servicio con tarjeta delegada a pasarela PCI-DSS | Payments | `PAY-003`, `PAY-010`, `PAY-011`, `E2E-009` |
-| **RF-23** | Pago de servicios a nombre de cuenta corporativa de Empresa | Payments | `PAY-006` |
-| **RF-24** | Generación automática de comprobante/factura tras pago aprobado | Payments | `PAY-004`, `PAY-005` |
-| **RF-25** | Consulta de pagos recibidos por Técnico / Proveedor | Payments | `PAY-007` |
-| **RF-26** | Pipeline de CI/CD con build y pruebas automáticas | Infrastructure | `INF-016` |
-| **RF-27** | Prueba automatizada End-to-End del flujo crítico | E2E Tests | `E2E-001` |
-| **RF-28** | Registro centralizado de logs de error y alertas | Infrastructure / Observability | `INF-011`, `INF-012`, `PRF-010` |
-| **RF-29** | Cifrado de datos sensibles en tránsito (HTTPS/TLS) y en reposo | Identity / Infrastructure | `IDN-015`, `IDN-021`, `INF-005` |
-| **RF-34** | Emisión de cotización de mano de obra y materiales por Técnico | ServiceRequest | `SRQ-008`, `SRQ-009`, `SRQ-010` |
-| **RF-35** | Aceptación, rechazo y límite de 3 cotizaciones por Cliente | ServiceRequest | `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
-| **RF-36** | Cancelación de solicitud por Cliente antes de iniciar labores | ServiceRequest | `SRQ-019`, `SRQ-020`, `E2E-010` |
+| ID RF | Feature | Descripción Funcional (SRS V5) | Módulo / Servicio Propietario | Casos de Prueba Automatizados Asociados (TD V2) |
+|---|---|---|---|---|
+| **RF-01** | F1.1 | Registro de Cliente con validación de formato de email, complejidad de password ($\ge 8$ caracteres) y unicidad por tenant. | Identity | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` |
+| **RF-02** | F1.1 | Registro de Técnico con datos personales, documento, especialidad y estado inicial `pendiente` de verificación (RN-TP3). | Identity / Actors | `IDN-004`, `ACT-001`, `ACT-002`, `REG-001`..`006` |
+| **RF-03** | F1.1 | Inicio de sesión seguro para todos los roles con JWT firmado y bloqueo temporal tras 5 intentos fallidos consecutivos (HTTP 423). | Identity | `IDN-005`, `IDN-006`, `IDN-007`, `IDN-008`, `IDN-017`, `IDN-018` |
+| **RF-04** | F1.2 | Aislamiento lógico multi-tenant obligatorio mediante `tenant_id` derivado del contexto del token y PostgreSQL Row-Level Security (RLS). | Transversal (Todos) | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-007`, `ACT-009`, `RLS-001`..`005`, `SAD AC6-E2` |
+| **RF-05** | F1.3 | Control de acceso basado en roles (RBAC) y canal: Panel Web exclusivo para Administradores; App Móvil para Clientes, Técnicos y Proveedores. | Identity / Gateway | `IDN-011`, `IDN-012`, `CAT-010`, `AC6-E3` |
+| **RF-06** | F1.4 | Registro de cuenta corporativa de Empresa dentro del tenant con razón social, NIT y múltiples usuarios autorizados. | Identity | `IDN-013`, `IDN-014`, `E2E-004` |
+| **RF-07** | F2.1 | Creación de solicitud por Cliente con categoría activa, ubicación (GPS o geocodificación Nominatim RIE-02 / ADR-024) dentro de Bogotá. | ServiceRequest | `SRQ-001`, `SRQ-002`, `SRQ-003`, `E2E-001`, `E2E-005`, `GEO-001`..`004` |
+| **RF-08** | F2.1 | Registro de solicitudes de servicio técnico corporativas asociadas a la cuenta empresarial y sede correspondiente. | ServiceRequest | `SRQ-004` |
+| **RF-09** | F2.2 | Asignación automática por cercanía, especialidad, disponibilidad y cobertura zonal; reintento de solicitudes en espera (RN-M9, RN-M10). | Matching | `MAT-001` a `MAT-022`, `MAT-001`..`014` (E2E), `PRF-001` |
+| **RF-10** | F2.2 | Ofertas secuenciales a un técnico a la vez con ventana de vigencia (3 min) y aceptación/rechazo atómico sin penalización (RN-M1..M8). | Matching | `MAT-010`, `MAT-011`, `MAT-012`, `OFF-001`..`007`, `E2E-007` |
+| **RF-11** | F2.3 | Visualización en tiempo real del ciclo de vida de la solicitud (mínimo 4 estados: buscando_tecnico, asignado, en_progreso, completado). | ServiceRequest / Communication | `SRQ-006`, `TRK-001`..`010`, `COM-001`, `COM-002`, `COM-005` |
+| **RF-12** | F2.4 | Calificación obligatoria de 1 a 5 estrellas con comentario opcional habilitada exclusivamente tras confirmación del pago (`pagado`). | ServiceRequest / Ranking | `SRQ-021`, `SRQ-022`, `SRQ-023`, `RNK-001`, `RNK-002` |
+| **RF-13** | F3.1 | Configuración de disponibilidad (`disponible`/`no_disponible`) y zona de cobertura como lista de localidades de Bogotá (DD §5.7). | Matching / Actors | `MAT-003`, `MAT-005`, `AVA-001`..`005`, `COV-001`..`004` |
+| **RF-14** | F3.2 | Consulta de detalle completo de solicitud asignada por el técnico (dirección, contacto de cliente y ubicación) protegida por confidencialidad. | ServiceRequest | `SRQ-005`, `DTL-001`..`005`, `RN-SR13` |
+| **RF-15** | F3.2 | Cierre de servicio por el técnico con adjuntos fotográficos obligatorios en Garage (ADR-016), habilitando facturación y pago. | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
+| **RF-16** | F3.3 | Administración de equipo de técnicos por Proveedor: alta de técnicos con herencia de tenant, estado pendiente y filtrado activo/inactivo. | Actors / Identity | `ACT-007`, `ACT-008`, `ACT-009`, `PRV-001`..`008` |
+| **RF-17** | F3.4 | Historial de servicios atendidos por el técnico con detalle paginado y filtrado por tenant. | ServiceRequest | `SRQ-026` |
+| **RF-18** | F4.1 | Monitoreo operativo en panel web: Admin del tenant ve solicitudes de su tenant; Admin de plataforma ve todos filtrables. | Web / ServiceRequest | `E2E-002` |
+| **RF-19** | F4.2 | Aprobación y rechazo motivado de técnicos y proveedores por Admin; trazabilidad en `audit_logs` y evento `technician.verification-changed`. | Identity / Actors / Web | `ACT-003`, `ACT-004`, `VER-001`..`009`, `E2E-003` |
+| **RF-20** | F4.2 | Suspensión de cuenta de técnico por Admin del tenant con motivo registrado $\ge 5$ caracteres; bloqueo inmediato de nuevas ofertas de matching. | Identity / Matching / Web | `ACT-005`, `ACT-006`, `SUS-001`..`011`, `RN-TP2` |
+| **RF-21** | F4.3 | Activación y desactivación administrativa de tenants por Admin de plataforma; bloqueo de login para tenants inactivos (RN-T1). | Identity / Web | `IDN-019`, `E2E-004` |
+| **RF-22** | F5.1 | Pago delegado con tarjeta de crédito/débito a través de pasarela certificada PCI-DSS con tokenización y cero PAN/CVV en BD (K2). | Payments | `PAY-001`, `PAY-002`, `PAY-003`, `PAY-010`, `PAY-011`, `E2E-009` |
+| **RF-23** | F5.1 | Pago corporativo centralizado a nombre de cuenta empresarial con NIT y razón social. | Payments | `PAY-006` |
+| **RF-24** | F5.2 | Emisión automática de comprobante fiscal / factura tras confirmación de pago aprobado. | Payments | `PAY-004`, `PAY-005` |
+| **RF-25** | F5.3 | Registro y conciliación de ingresos percibidos por técnicos y proveedores. | Payments | `PAY-007`, `PAY-008` |
+| **RF-26** | F6.1 | Pipeline de integración y despliegue continuo (CI/CD) con calidad estática, linter y pruebas obligatorias antes de merge a `develop`. | Infrastructure | `INF-016` |
+| **RF-27** | F6.2 | Prueba automatizada End-to-End del flujo crítico de negocio (solicitud $\to$ matching $\to$ asignación $\to$ cotización $\to$ ejecución $\to$ pago $\to$ calificación). | E2E Tests | `E2E-001`, `E2E-012` |
+| **RF-28** | F6.3 | Logging centralizado JSON estructurado con `correlationId`, monitoreo en Prometheus/Loki y compuertas de observabilidad. | Observability | `INF-011`, `INF-012`, `PRF-010` |
+| **RF-29** | F6.4 | Cifrado obligatorio en tránsito (TLS 1.3 / HTTPS) y en reposo (hashing seguro de contraseñas con sal). | Security | `IDN-015`, `IDN-021`, `INF-005` |
+| **RF-34** | F3.2 | Emisión de cotización de mano de obra y repuestos por técnico titular; bloqueo de inicio de servicio sin cotización aprobada (RN-Q1). | ServiceRequest | `SRQ-008`, `SRQ-009`, `SRQ-010` |
+| **RF-35** | F2.1 | Aceptación, rechazo y límite estricto de máximo 3 cotizaciones por solicitud antes de cancelación automática (RN-Q2, RN-Q3, RN-Q7). | ServiceRequest | `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
+| **RF-36** | F2.1 | Cancelación unilateral justificada de solicitud por Cliente antes del inicio de labores (`en_progreso`) con registro de motivo (RN-SR7). | ServiceRequest | `SRQ-019`, `SRQ-020`, `E2E-010` |
 
-#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (v2.13)
-El SAD v2.13 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
+---
+
+#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (V4 / v2.28)
+El SAD formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
 
 | Atributo de Calidad (ISO 25010) | Escenarios Automatizados | Total SAD | Casos de Prueba Automatizados |
 |---|:---:|:---:|---|
@@ -260,15 +262,75 @@ El SAD v2.13 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **AC2: Eficiencia de Desempeño** | 5 / 5 | 5 | `AC2-E1` (PRF-001), `AC2-E2` (PRF-002), `AC2-E3` (PRF-003), `AC2-E4` (PRF-004), `AC2-E5` (PRF-005) |
 | **AC3: Compatibilidad** | 2 / 2 | 2 | `AC3-E1` (PAY-014), `AC3-E2` (MAT-022) |
 | **AC4: Capacidad de Interacción** | 2 / 9 | 9 | `AC4-E1` (E2E-005), `AC4-E2` (E2E-006). *(AC4-E3 a AC4-E9 son pruebas presenciales con 5 usuarios)* |
-| **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (INF-015), `AC5-E3` (RNK-006), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024), `AC5-E6` (E2E-012) |
-| **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-001, PAY-002), `AC6-E2` (IDN-009), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (PAY-015), `AC6-E7` (IDN-020), `AC6-E8` (IDN-007, IDN-008) |
+| **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (INF-015), `AC5-E3` (RNK-006), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024, AC5-E5 Idempotencia), `AC5-E6` (E2E-012) |
+| **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-001, PAY-002), `AC6-E2` (IDN-009, RLS-001..005), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (PAY-015), `AC6-E7` (IDN-020), `AC6-E8` (IDN-007, IDN-008) |
 | **AC7: Mantenibilidad** | 3 / 5 | 5 | `AC7-E3` (CTR-001), `AC7-E4` (INF-012), `AC7-E5` (ACT-013). *(AC7-E1/E2 verificados por linters estáticos)* |
 | **AC8: Flexibilidad** | 3 / 5 | 5 | `AC8-E1` (E2E-004), `AC8-E2` (MAT-020), `AC8-E5` (INF-002). *(AC8-E3/E4 portabilidad externa documentada)* |
 | **AC9: Seguridad Operativa (Safety)**| 5 / 8 | 8 | `AC9-E1` (SRQ-015, SRQ-017), `AC9-E3` (SRQ-025), `AC9-E4` (MAT-013), `AC9-E5` (PAY-009), `AC9-E6` (PRF-010). *(AC9-E2/E7/E8 pendientes de diseño)* |
 | **Total Escenarios** | **37 automatizados** | **51** | **100% de los escenarios de software y arquitectura cubiertos** |
 
-#### 7.1.3 Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 3 — Subtarea SCRUM-317)
-En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguiente matriz mapea bidireccionalmente cada **Historia de Usuario (HU)** del backlog del Sprint 3 en Jira (`jorgefortich3.atlassian.net`) con sus Requisitos Funcionales del SRS v3.3, Atributos de Calidad del SAD v2.24, las subtareas específicas de QA y el conjunto de casos de prueba automatizados responsables de validar sus criterios de aceptación:
+---
+
+#### 7.1.3 Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 4 — Subtarea SCRUM-401)
+En cumplimiento de la subtarea **SCRUM-401** de QA, la siguiente matriz formaliza la trazabilidad bidireccional de todas las **Historias de Usuario del Incremento del Sprint 4** en Jira con sus respectivos Requisitos Funcionales del **SRS V5**, reglas de negocio del **DD V4**, subtareas de QA ejecutadas y suites de pruebas automatizadas:
+
+| Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS V5 / SAD V4 | Subtarea QA en Jira | Suites y Casos de Prueba Asociados (TD V2) | Criterios de Aceptación y Validación QA |
+|---|---|---|---|---|---|
+| **SCRUM-22** | Registro de Técnico / Proveedor con datos y documentos | RF-02, RF-16 | `SCRUM-56` | `REG-001` al `REG-006`, `IDN-004` | Alta con estado inicial `pendiente` (RN-TP3), validación de correo y documento único (HTTP 409), bloqueo RBAC y verificación de perfiles. |
+| **SCRUM-24** | Aislamiento lógico de datos por Tenant (Multi-tenant) | RF-04, SAD AC6-E2 | `SCRUM-62` | `RLS-001` al `RLS-005`, `IDN-009`, `CAT-004` | Validación de Row-Level Security (RLS) en PostgreSQL: consultas cruzadas retornan 0 filas / 404 Not Found; cero fuga de datos entre Tenant Alfa y Beta. |
+| **SCRUM-29** | Asignación automática de técnico (Motor de Matching) | RF-09, RF-10, SAD AC2-E3, AC5-E5 | `SCRUM-78` | `MAT-001` al `MAT-014`, `PRF-001` | Asignación automática por cercanía y especialidad, SLA de primer intento $< 60\text{ s}$ (RNF-05), estado `en_espera` (RN-M10), deduplicación `processed_events`. |
+| **SCRUM-30** | Aceptación o rechazo de oferta por Técnico | RF-10, DD RN-M1..M8 | `SCRUM-81` | `OFF-001` al `OFF-007`, `E2E-007` | Aceptación atómica pasa técnico a `ocupado` y servicio a `asignado`; rechazo sin penalización (R12); bloqueo de ofertas vencidas/ajenas (HTTP 409). |
+| **SCRUM-31** | Seguimiento de estado en tiempo real (Cliente) | RF-11, SAD AC2-E3, ADR-023 | `SCRUM-84` | `TRK-001` al `TRK-010`, `COM-001`..`005` | Ciclo completo de 4 estados, latencia $< 1\text{ min}$, visibilidad de nombre/especialidad del técnico, WebSocket Gateway y bloqueo de transiciones inválidas (409). |
+| **SCRUM-33** | Disponibilidad y zona de cobertura del Técnico | RF-13, PostGIS | `SCRUM-90` | `AVA-001` al `AVA-005`, `COV-001` al `COV-004` | Cambio de estado (`disponible`/`no_disponible`), prohibición de alterar estado `ocupado` (409), cobertura por localidades de Bogotá (DD §5.7). |
+| **SCRUM-34** | Detalle de solicitud para técnico asignado | RF-14, DD RN-SR13 | `SCRUM-93` | `DTL-001` al `DTL-005`, `SRQ-005` | Acceso condicional exclusivo para el técnico asignado tras aceptación; bloqueo de consulta previa (HTTP 403) y confidencialidad intra-tenant (HTTP 404). |
+| **SCRUM-36** | Gestión de equipo de técnicos por Proveedor | RF-16, DD §8.3.14 | `SCRUM-99` | `PRV-001` al `PRV-008`, `ACT-007`..`009` | Alta de técnicos en equipo con herencia de tenant y estado `pendiente`, filtrado activo/inactivo, unicidad de correo/documento y RLS intra-tenant. |
+| **SCRUM-39** | Aprobación y rechazo de técnicos y proveedores | RF-19, DD §8.3.13 | `SCRUM-108` | `VER-001` al `VER-009`, `ACT-003`..`004` | Aprobación con habilitación en matching (RN-TP1), rechazo con motivo obligatorio $\ge 5$ chars (RFC 9457), reactivación `/approve` y trazabilidad `audit_logs`. |
+| **SCRUM-40** | Suspensión de cuenta de técnico (Admin) | RF-20, DD §8.3.13 | `SCRUM-111` | `SUS-001` al `SUS-011`, `ACT-005`..`006` | Suspensión de técnico aprobado con motivo obligatorio $\ge 5$ chars (RFC 9457), bloqueo inmediato en matching (RN-TP2), reactivación `/approve` y RLS. |
+| **SCRUM-454** / **SCRUM-456** | Geocodificación y buzón de notificaciones | RIE-02, RIE-03, ADR-024 | `SCRUM-456` | `GEO-001` al `GEO-004`, `NOT-001` al `NOT-004` | Geocodificación con Nominatim local acotado a Bogotá (time-out corto, 422 si fuera de zona) y persistencia de notificaciones en buzón con RLS. |
+| **SCRUM-399** | Documento de Pruebas TD V2 | Calidad y Diseño | `SCRUM-401`, `SCRUM-402` | Catálogo consolidado de 230+ casos | Formalización de la estrategia, catálogo de casos, RTM V5, protocolo de persistencia y compuertas de calidad. |
+| **SCRUM-394** | Informe de pruebas del Sprint 4 contra QA | Calidad y Reporte | `SCRUM-395`, `SCRUM-396`, `SCRUM-397`, `SCRUM-398` | Ejecución E2E, k6, ZAP y Loki | Evidencia real de ejecución sobre QA desplegado (VM2, VM5, VM7), matriz de defectos y compuerta de calidad. |
+
+---
+
+#### 7.1.4 Criterios de Aceptación Verificables del Incremento (SRS V5 §5.5) y Mapeo en TD V2
+
+En cumplimiento de la sección 5.5 del SRS V5 (SCRUM-404), la siguiente tabla resuelve formalmente todos los criterios de aceptación del flujo del técnico, superando los marcadores previos de *"Falta caso"* del borrador inicial mediante los casos automatizados en las suites E2E del TD V2:
+
+| Requisito / HU | # | Criterio de Aceptación Verificable (SRS V5 §5.5) | Fuente Formal | Caso Verificador en TD V2 | Estado en QA |
+|---|:---:|---|---|---|:---:|
+| **RF-09** (Matching) | 1 | Motor solo considera técnicos de mismo tenant, aprobados, disponibles, especialidad coincidente y cobertura sobre la ubicación. | SCRUM-29 c1/c6; RN-M9, RN-TP1 | `MAT-001`, `MAT-002`, `MAT-004`, `MAT-006` | **PASS** |
+| | 2 | Ordenamiento por proximidad espacial esférica; resolución de desempate por última disponibilidad. | SCRUM-29 c2; DD 5.6, 5.8 | `MAT-008` | **PASS** |
+| | 3 | Máximo una oferta pendiente por solicitud a la vez. | DD RN-M1 | `MAT-009` | **PASS** |
+| | 4 | Si no hay candidatos, pasa a `en_espera` y emite `matching.no-technician-available` sin relajar condiciones. | SCRUM-29 c3; RN-M4, RN-M9 | `MAT-005` (E2E), `MAT-013` | **PASS** |
+| | 5 | Solicitud en espera se reintenta automáticamente al habilitarse un nuevo candidato elegible. | SCRUM-29 c3; DD RN-M10 | `MAT-006`, `MAT-007` (E2E) | **PASS** |
+| | 6 | Primer intento de asignación ocurre en menos de 60 segundos desde la creación en QA (SLA). | SCRUM-29 c4; RNF-05; AC2-E3 | `MAT-002` (E2E), `PRF-001` | **PASS** |
+| | 7 | Procesamiento idempotente: dos eventos `service-request.created` con mismo ID no generan duplicados. | SCRUM-29 c5; DD RN-EV1, AC5-E5 | `MAT-008`, `MAT-009` (E2E / `processed_events`) | **PASS** |
+| **RF-10** (Ofertas) | 1 | Aviso de oferta con categoría, descripción, localidad y vencimiento; dirección exacta oculta hasta aceptar. | SCRUM-30 c1; DD 8.3.5, RN-SR13 | `OFF-001`, `DTL-002` | **PASS** |
+| | 2 | Solo el técnico destinatario puede ver y responder; técnico ajeno recibe `409 OFFER_NOT_AVAILABLE`. | SCRUM-30 c5/c6; DD RN-M2 | `OFF-004` | **PASS** |
+| | 3 | Aceptación oportuna pasa técnico a `ocupado`, solicitud a `asignado` y emite `matching.technician-assigned`. | SCRUM-30 c2; DD RN-M4, RN-M6 | `OFF-002`, `MAT-010` | **PASS** |
+| | 4 | Rechazo ofrece al siguiente candidato sin penalización ni cambio de disponibilidad (SAD R12). | SCRUM-30 c3; DD RN-M3, RN-M9 | `OFF-003`, `MAT-011` | **PASS** |
+| | 5 | Expiración automática a los 3 minutos sin respuesta y reoferta al siguiente técnico. | SCRUM-30 c4; DD RN-M3, RN-M8 | `OFF-005`, `MAT-012` | **PASS** |
+| | 6 | Aceptar oferta vencida/respondida responde `409 OFFER_NOT_AVAILABLE`; no disponible responde `409`. | SCRUM-30 c5; DD 8.3.5, RN-M7 | `OFF-006` | **PASS** |
+| | 7 | Cancelación de solicitud por cliente anula oferta pendiente (`cancelado`) sin más reintentos. | DD RN-M5 | `OFF-007` | **PASS** |
+| **RF-13** (Disponibilidad) | 1 | Técnico recién registrado queda en estado inicial `no_disponible`. | DD 5.6 | `AVA-001` | **PASS** |
+| | 2 | Técnico puede alternar entre `disponible` y `no_disponible` desde la app (`PUT /v1/technicians/me/availability`). | SCRUM-33 c1; DD 8.3.6 | `AVA-002`, `MAT-003` | **PASS** |
+| | 3 | Estado `ocupado` solo lo fija el sistema al aceptar; intento de cambio manual responde `409 INVALID_STATE_TRANSITION`. | SCRUM-33 c5; DD RN-M6 | `AVA-003` | **PASS** |
+| | 4 | Técnico en `no_disponible` u `ocupado` es excluido de nuevas asignaciones. | SCRUM-33 c2; DD RN-M6 | `AVA-004`, `MAT-004` | **PASS** |
+| | 5 | Técnico consulta y actualiza cobertura como lista de localidades; lista vacía o inválida responde `400`. | SCRUM-33 c3; DD 5.7, 8.3.6 | `COV-001`, `COV-002` | **PASS** |
+| | 6 | Pasar a disponible o cambiar cobertura dispara reintento de solicitudes en espera. | SCRUM-33 c4; DD RN-M10 | `AVA-005`, `COV-003` | **PASS** |
+| | 7 | Técnico solo ve y modifica su propia disponibilidad y cobertura; aislamiento estricto multi-tenant (RLS). | SCRUM-33 c6; RF-04, SAD AC6-E2 | `COV-004` | **PASS** |
+| **RF-19** (Aprobación) | 1 | Admin del tenant visualiza en panel web técnicos/proveedores de su tenant en estado `pendiente`. | SCRUM-39 c1 | `VER-001`, `E2E-003` | **PASS** |
+| | 2 | Admin puede aprobar pendiente o rechazar con motivo registrado ($\ge 5$ caracteres). | SCRUM-39 c2; DD 8.3.13 | `VER-002`, `VER-003` | **PASS** |
+| | 3 | Transiciones inválidas responden `409 INVALID_STATE_TRANSITION`; reactivación permitida vía `/approve`. | SCRUM-39 c3; DD 8.3.13 | `VER-005`, `VER-006` | **PASS** |
+| | 4 | Acción registrada en `audit_logs` con responsable, fecha, correlationId y emisión de `technician.verification-changed`. | SCRUM-39 c4; DD 8.3.13, RN-A1 | `VER-004`, `ACT-004` | **PASS** |
+| | 5 | Solo técnicos aprobados reciben ofertas; aprobación de técnico disponible reintenta solicitudes en espera. | SCRUM-39 c5; DD RN-TP1, RN-M10 | `VER-002`, `MAT-002` | **PASS** |
+| | 6 | Técnico consulta en la app estado de verificación y motivo de rechazo si aplica. | SCRUM-39 c6 | `VER-007` | **PASS** |
+| | 7 | Admin no puede ver ni verificar técnicos ni proveedores de otro tenant (Aislamiento RLS). | SCRUM-39 c7; DD RN-U6, RF-04 | `VER-008`, `VER-009` | **PASS** |
+
+---
+
+#### 7.1.5 Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 3 — Subtarea SCRUM-317)
+En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la siguiente matriz preserva el mapeo del backlog inicial del Sprint 3 en Jira:
 
 | Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS / SAD | Nivel de Prueba | Casos de Prueba Asociados | Subtarea QA en Jira | Criterio de Cobertura QA |
 |---|---|---|---|---|---|---|
@@ -1169,6 +1231,7 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-09** / F2.1, **R
 | **2.4** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Aprobación y Rechazo de Técnicos y Proveedores (SCRUM-108 / HU SCRUM-39 / RF-19). Verificación de listado por estado de verificación, aprobación de perfiles técnicos con activación para matching (RN-TP1), rechazo con motivo obligatorio y validación RFC 9457 (400 Bad Request), máquina de estados y bloqueo de transiciones inválidas (409 Conflict), emisión de evento outbox technician.verification-changed (ADR-007), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento multi-tenant con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (17 peticiones, 32 aserciones, 100% Pass). |
 | **2.5** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Suspensión de Cuenta de Técnico (SCRUM-111 / HU SCRUM-40 / RF-20). Verificación de suspensión con motivo obligatorio >= 5 caracteres (DD §8.3.13), bloqueo de asignaciones en matching (RN-TP2), reactivación de técnico suspendido a aprobado, validación de motivo y RFC 9457 (400 Bad Request), máquina de estados y bloqueo de transiciones inválidas (409 Conflict), emisión de evento outbox technician.verification-changed (ADR-007), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento multi-tenant con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (15 peticiones, 30 aserciones, 100% Pass). |
 | **2.6** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Motor de Matching y Asignación Automática (SCRUM-78 / HU SCRUM-29 / RF-09, RF-10, RNF-05). Verificación de asignación automática a candidato elegible en menos de 60 segundos (AC2-E3), exclusión de candidatos no aprobados, ocupados o fuera de cobertura (RN-M9), transición a estado en_espera ante ausencia de candidatos y reintento (RN-M10), deduplicación e idempotencia en consumo de eventos Kafka vía processed_events (AC5-E5), control de acceso RBAC contra clientes y técnicos (403 Forbidden), seguridad anónima (401 Unauthorized / IDN-017) y aislamiento multi-tenant estricto con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (15 peticiones, 35 aserciones, 100% Pass). |
+| **2.7** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Actualización integral de la Matriz de Trazabilidad de Requisitos (RTM) alineada a SRS V5 (32 RFs, 23 Features, 7 Épicas), incorporación formal de la trazabilidad bidireccional de las Historias de Usuario de Sprint 4 (SCRUM-22, 24, 29, 30, 31, 33, 34, 36, 39, 40, 454/456, 399, 394), y resolución de criterios de aceptación verificables de SRS V5 §5.5 (RF-09, RF-10, RF-13, RF-19) cerrando todos los casos pendientes (SCRUM-401). |
 
 
 
