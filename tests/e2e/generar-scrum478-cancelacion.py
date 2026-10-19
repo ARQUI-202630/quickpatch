@@ -334,7 +334,42 @@ coleccion = {
             ],
         },
         {
-            "name": "3. Limpieza",
+            "name": "3. Release 0.4.0 de ServiceRequest: geocodificación y panel",
+            "item": [
+                req("Vista previa de la ubicación (Nominatim de QA, SCRUM-457)", "POST", "/v1/service-requests/location-preview",
+                    [JSON, CORR, auth("clienteToken")], {"addressText": "Calle 63 # 9-45, Bogotá"},
+                    pruebas=estado(200) + [
+                        "pm.test('punto en Bogotá con localidad', () => {",
+                        "  const r = pm.response.json();",
+                        "  pm.expect(r.location.latitude).to.be.within(4.45, 4.85);",
+                        "  pm.expect(r.location.longitude).to.be.within(-74.25, -73.98);",
+                        "  pm.expect(r.locality.code).to.be.a('string');",
+                        "});",
+                    ]),
+                req("Conteos del tenant para su administrador (SCRUM-103)", "GET", "/v1/admin/service-requests/summary",
+                    [CORR, auth("adminToken")], previo=CON_ADMIN,
+                    pruebas=estado(200) + [
+                        "pm.test('los 9 estados y al menos las 2 canceladas de esta corrida', () => {",
+                        "  const r = pm.response.json();",
+                        "  pm.expect(Object.keys(r.byStatus)).to.have.lengthOf(9);",
+                        "  pm.expect(r.byStatus.cancelado).to.be.at.least(2);",
+                        "});",
+                    ]),
+                req("Conteos por tenant para la plataforma (rol service_request_platform)", "GET",
+                    "/v1/platform/service-requests/summary", [CORR, auth("plataformaToken")], previo=CON_PLATAFORMA,
+                    pruebas=estado(200) + [
+                        "pm.test('incluye el tenant del cliente, sin datos de las solicitudes', () => {",
+                        "  const t = pm.response.json().tenants.find(x => x.tenantId === pm.collectionVariables.get('tenantCliente'));",
+                        "  pm.expect(t).to.be.ok;",
+                        "  pm.expect(Object.keys(t).sort()).to.eql(['byStatus', 'createdToday', 'tenantId']);",
+                        "});",
+                    ]),
+                req("El cliente no ve los conteos del tenant → 403", "GET", "/v1/admin/service-requests/summary",
+                    [CORR, auth("clienteToken")], pruebas=estado(403) + problem),
+            ],
+        },
+        {
+            "name": "4. Limpieza",
             "item": [
                 req("Suspender al técnico de la prueba", "POST", "/v1/admin/technicians/{{tecnicoId}}/suspend",
                     [JSON, CORR, auth("adminToken")], {"reason": "Cuenta de la prueba SCRUM-478."}, previo=CON_ADMIN,
