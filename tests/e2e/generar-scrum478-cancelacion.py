@@ -64,7 +64,8 @@ def reintentar(condicion, pruebas, maximo=15, espera=2000):
         f"if (!({condicion}) && intento < {maximo}) {{",
         "  pm.collectionVariables.set('intentos', intento + 1);",
         f"  setTimeout(() => {{}}, {espera});",
-        "  pm.execution.setNextRequest(pm.info.requestName);",
+        "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+        "  pm.execution.setNextRequest(pm.info.requestId);",
         "} else {",
         "  pm.collectionVariables.unset('intentos');",
         *("  " + linea for linea in pruebas),
@@ -101,8 +102,8 @@ def login(nombre, prefijo, variable, rol, headers=(JSON, CORR, CANAL), previo=()
                ])
 
 
-def crear_solicitud(variable, previo=()):
-    return req("Crear la solicitud (espera la réplica de la categoría)", "POST", "/v1/service-requests",
+def crear_solicitud(variable, nombre, previo=()):
+    return req(f"Crear la {nombre} (espera la réplica de la categoría)", "POST", "/v1/service-requests",
                [JSON, CORR, auth("clienteToken")],
                {"categoryId": "{{categoriaId}}", "description": "Prueba de cancelación de punta a punta (SCRUM-478)",
                 "location": {"latitude": 4.6486, "longitude": -74.063}, "addressText": "Calle 63 # 9-45, apto 201"},
@@ -116,9 +117,9 @@ def crear_solicitud(variable, previo=()):
                ], maximo=10))
 
 
-def oferta_pendiente(solicitud, variable):
+def oferta_pendiente(solicitud, variable, nombre):
     """El técnico ve la oferta de la solicitud: Matching la crea al consumir service-request.created."""
-    return req("El técnico ve la oferta de la solicitud", "GET", "/v1/matching/offers?status=pendiente",
+    return req(f"El técnico ve la oferta de la {nombre}", "GET", "/v1/matching/offers?status=pendiente",
                [CORR, auth("tecnicoToken")], previo=CON_ADMIN,
                pruebas=[
                    f"const oferta = pm.response.code === 200 && pm.response.json().items.find(o => o.serviceRequestId === pm.collectionVariables.get('{solicitud}'));",
@@ -238,8 +239,8 @@ coleccion = {
                         "const ids = pm.response.json().map(c => c.id);",
                         "pm.collectionVariables.set('categoriaId', propia || ids[0]);",
                     ]),
-                crear_solicitud("solicitudId"),
-                oferta_pendiente("solicitudId", "ofertaId"),
+                crear_solicitud("solicitudId", "solicitud 1"),
+                oferta_pendiente("solicitudId", "ofertaId", "solicitud 1"),
                 cancelar("Motivo de 4 caracteres → 400", "solicitudId", "clienteToken", " no ",
                          estado(400) + problem + tipo("validacion") + [
                              "pm.test('error en reason', () => pm.expect(pm.response.json().errors).to.have.property('reason'));",
@@ -294,14 +295,14 @@ coleccion = {
                 req("Aceptar la oferta retirada → 409", "POST", "/v1/matching/offers/{{ofertaId}}/accept",
                     [CORR, auth("tecnicoToken")], previo=CON_ADMIN,
                     pruebas=estado(409) + problem + tipo("oferta-no-disponible")),
-                disponibilidad("disponible", "El técnico sigue disponible"),
+                disponibilidad("disponible", "El técnico sigue disponible después de la solicitud 1"),
             ],
         },
         {
             "name": "2. Administrador del tenant: cancelar con el técnico asignado",
             "item": [
-                crear_solicitud("solicitud2Id", previo=CON_ADMIN),
-                oferta_pendiente("solicitud2Id", "oferta2Id"),
+                crear_solicitud("solicitud2Id", "solicitud 2", previo=CON_ADMIN),
+                oferta_pendiente("solicitud2Id", "oferta2Id", "solicitud 2"),
                 req("El técnico acepta la oferta", "POST", "/v1/matching/offers/{{oferta2Id}}/accept", [CORR, auth("tecnicoToken")],
                     previo=CON_ADMIN,
                     pruebas=estado(200) + ["pm.test('aceptado', () => pm.expect(pm.response.json().response).to.eql('aceptado'));"]),

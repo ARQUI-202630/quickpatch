@@ -426,7 +426,8 @@
                   "if (!(pm.response.code === 200) && intento < 15) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('200', () => pm.response.to.have.status(200));",
@@ -491,7 +492,8 @@
                   "if (!(pm.response.code === 200) && intento < 15) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('200', () => pm.response.to.have.status(200));",
@@ -666,7 +668,7 @@
           ]
         },
         {
-          "name": "Crear la solicitud (espera la réplica de la categoría)",
+          "name": "Crear la solicitud 1 (espera la réplica de la categoría)",
           "request": {
             "method": "POST",
             "header": [
@@ -709,7 +711,8 @@
                   "if (!(pm.response.code !== 422) && intento < 10) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('201 en buscando_tecnico', () => {",
@@ -724,7 +727,7 @@
           ]
         },
         {
-          "name": "El técnico ve la oferta de la solicitud",
+          "name": "El técnico ve la oferta de la solicitud 1",
           "request": {
             "method": "GET",
             "header": [
@@ -776,7 +779,8 @@
                   "if (!(oferta) && intento < 15) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('la oferta está pendiente para el técnico', () => pm.expect(oferta).to.be.ok);",
@@ -1606,7 +1610,8 @@
                   "if (!(!sigue) && intento < 15) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('la oferta se retiró', () => pm.expect(sigue).to.eql(false));",
@@ -1672,7 +1677,7 @@
           ]
         },
         {
-          "name": "El técnico sigue disponible",
+          "name": "El técnico sigue disponible después de la solicitud 1",
           "request": {
             "method": "GET",
             "header": [
@@ -1718,7 +1723,8 @@
                   "if (!(pm.response.code === 200 && pm.response.json().status === 'disponible') && intento < 15) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('técnico disponible', () => pm.expect(pm.response.json().status).to.eql('disponible'));",
@@ -1734,7 +1740,7 @@
       "name": "2. Administrador del tenant: cancelar con el técnico asignado",
       "item": [
         {
-          "name": "Crear la solicitud (espera la réplica de la categoría)",
+          "name": "Crear la solicitud 2 (espera la réplica de la categoría)",
           "request": {
             "method": "POST",
             "header": [
@@ -1786,7 +1792,8 @@
                   "if (!(pm.response.code !== 422) && intento < 10) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('201 en buscando_tecnico', () => {",
@@ -1801,7 +1808,7 @@
           ]
         },
         {
-          "name": "El técnico ve la oferta de la solicitud",
+          "name": "El técnico ve la oferta de la solicitud 2",
           "request": {
             "method": "GET",
             "header": [
@@ -1853,7 +1860,8 @@
                   "if (!(oferta) && intento < 15) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('la oferta está pendiente para el técnico', () => pm.expect(oferta).to.be.ok);",
@@ -1961,7 +1969,8 @@
                   "if (!(pm.response.json().status === 'asignado') && intento < 15) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('asignado al técnico de la prueba', () => {",
@@ -2021,7 +2030,8 @@
                   "if (!(pm.response.code === 200 && pm.response.json().status === 'ocupado') && intento < 15) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('técnico ocupado', () => pm.expect(pm.response.json().status).to.eql('ocupado'));",
@@ -2311,7 +2321,8 @@
                   "if (!(pm.response.code === 200 && pm.response.json().status === 'disponible') && intento < 15) {",
                   "  pm.collectionVariables.set('intentos', intento + 1);",
                   "  setTimeout(() => {}, 2000);",
-                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
                   "} else {",
                   "  pm.collectionVariables.unset('intentos');",
                   "  pm.test('técnico disponible', () => pm.expect(pm.response.json().status).to.eql('disponible'));",
