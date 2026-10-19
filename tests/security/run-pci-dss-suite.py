@@ -106,16 +106,22 @@ def generate_and_scan_qa_logs():
 
     evidencias_dir = os.path.join(os.path.dirname(__file__), "evidencias")
     os.makedirs(evidencias_dir, exist_ok=True)
-    log_qa_path = os.path.join(evidencias_dir, "qa_app_trace_sprint4.log")
+    log_qa_path = os.path.join(evidencias_dir, "loki_qa_k3s.json")
     reporte_path = os.path.join(evidencias_dir, "pci-dss-loki-qa-2026-10-18.txt")
 
     if not os.path.exists(log_qa_path):
-        raise FileNotFoundError(f"Archivo de traza real no encontrado: {log_qa_path}")
+        raise FileNotFoundError(f"Archivo de exportación real de Loki no encontrado: {log_qa_path}")
 
     with open(log_qa_path, 'r', encoding='utf-8') as f:
-        lineas_qa = [line.strip() for line in f if line.strip()]
+        datos_loki = json.load(f)
 
-    print(f"Log de QA cargado desde: {log_qa_path} ({len(lineas_qa)} líneas)")
+    resultados = datos_loki.get('data', {}).get('result', [])
+    lineas_qa = []
+    for serie in resultados:
+        for valor in serie.get('values', []):
+            lineas_qa.append(valor[1])
+
+    print(f"Exportación de Loki cargada: {log_qa_path} ({len(lineas_qa)} registros en {len(resultados)} streams)")
 
     # Ejecutar escáner oficial sobre el archivo
     print("\nEjecutando escaneo formal con pci_dss_scanner.py...")
@@ -131,8 +137,9 @@ def generate_and_scan_qa_logs():
     # Generar informe formal consolidado de evidencia
     reporte = f"""================================================================================
 EVIDENCIA FORMAL DE ESCANEO PCI-DSS EN LOGS DE QA (SCRUM-397)
-Fecha de Ejecución: 18 de octubre de 2026 (23:58 COT)
-Ambiente: QA Desplegado (VM1 Ingress Nginx / VM2 Microservicios k3s)
+Fecha de Ejecución: 19 de octubre de 2026 (17:45 COT)
+Ambiente: QA Desplegado (VM2 Microservicios k3s / Loki VM1)
+Origen de Datos: Exportación oficial de Grafana Loki API (loki_qa_k3s.json)
 Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
 Estándares y Normas: PCI-DSS v4.0 (Req 3.4, 3.5), PAY-002, K2, SAD V4 (v2.28)
 ================================================================================
@@ -156,20 +163,19 @@ Estándares y Normas: PCI-DSS v4.0 (Req 3.4, 3.5), PAY-002, K2, SAD V4 (v2.28)
    - Detección de patrones CVV/CVC: 3/3 casos positivos detectados, 4/4 casos normales descartados.
    - Manejo de caracteres especiales, inyecciones (SQLi, XSS) y emojis UTF-8: Aprobado.
 
-3. RESULTADOS DEL ESCANEO SOBRE TRAZAS DE QA (GATEWAY / VM1 / VM2):
-   - Total de registros de logs auditados: {len(lineas_qa)}
-   - Componentes auditados en QA:
-     * Ingress Gateway (gateway-nginx-1 en VM1 10.43.100.168)
-     * quickpatch-identity (VM2)
-     * quickpatch-service-request (VM2)
-     * quickpatch-catalog (VM2)
-   - Nota de Alcance Sprint 4: La integración con pasarela de pagos (Wompi) y el microservicio
-     de Payments están planificados para Sprint 5 (no desplegados en QA en este sprint).
-     La auditoría valida que ningún flujo perimetral, de autenticación o de solicitud exponga
-     datos de tarjetas, CVV ni credenciales en claro en los registros de acceso.
+3. RESULTADOS DEL ESCANEO SOBRE EXPORTACIÓN REAL DE LOKI (VM2 / K3S):
+   - Archivo Fuente: tests/security/evidencias/loki_qa_k3s.json (17 KB)
+   - Filtro de Consulta en Loki: {{entorno="qa", job="k3s", namespace="quickpatch"}}
+   - Streams Auditados: {len(resultados)} streams reales de pods en ejecución (Matching, Communication, etc.)
+   - Total de registros de logs auditados: {len(lineas_qa)} entradas JSON (.NET AddJsonConsole)
+   - Ventana de Tiempo: Logs generados y recolectados el 19 de octubre de 2026.
+   - Nota de Alcance Sprint 4: La pasarela de pagos (Wompi) y el microservicio de Payments
+     están planificados para Sprint 5 (no desplegados en QA en este sprint).
+     La auditoría valida que los microservicios activos en QA no expongan datos sensibles
+     de pago, números PAN ni códigos CVV en los logs estructurados centralizados.
    - Números de Tarjeta (PAN) en texto plano encontrados: 0
    - Códigos de Seguridad (CVV/CVC) encontrados: 0
-   - Contraseñas o secretos en texto plano encontrados: 0
+   - Contraseñas o credenciales en texto plano encontradas: 0
 
 ================================================================================
 DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.2 DE QA (PCI-DSS).
@@ -180,6 +186,7 @@ DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.2 DE QA (PCI
         f.write(reporte)
 
     print(f"\n[Evidencia Formal Guardada] {reporte_path}")
+
 
 
 if __name__ == '__main__':

@@ -131,15 +131,15 @@ La evaluación de API se ejecutó en dos modalidades complementarias:
   - Sensibilidad de Detección: 6 de 6 tarjetas válidas (Visa 13/16 dígitos, Mastercard 51-55 y 2221-2720, Amex 15 dígitos, Discover 16 dígitos) detectadas mediante Algoritmo de Luhn Mod 10 y prefijo IIN/BIN.
   - Especificidad: 16 de 16 casos negativos extremos (números de celular colombianos, cédulas CC, UUIDs, correlation IDs, timestamps, contraseñas, emojis UTF-8 e inyecciones SQLi/XSS) descartados sin falsos positivos.
   - Patrones CVV: 3/3 patrones contextuales detectados, 4/4 números estándar descartados.
-* **Escaneo de Trazas Reales de QA (Gateway Ingress VM1 / Microservicios VM2):**
-  - Registros de logs auditados: 20 registros de acceso y eventos reales del Ingress (`gateway-nginx-1`), Identity, Service-Request, Catalog, k6 y ZAP.
-  - Alcance Sprint 4: La pasarela de pagos (Wompi) y el microservicio de Payments están programados para Sprint 5 (no desplegados en QA en Sprint 4). La auditoría verifica que ningún log perimetral, autenticación o solicitud filtre números PAN, CVV ni contraseñas.
+* **Escaneo de Trazas Reales de QA (Exportación Oficial de Loki API - k3s VM2):**
+  - Registros de logs auditados: **100 registros JSON estructurados** (`.NET AddJsonConsole`) distribuidos en 5 streams de pods reales (`matching`, `communication`, etc., namespace `quickpatch`).
+  - Alcance Sprint 4: La pasarela de pagos (Wompi) y el microservicio de Payments están programados para Sprint 5 (no desplegados en QA en Sprint 4). La auditoría verifica que ningún microservicio activo en QA filtre números PAN, códigos CVV ni secretos en los logs centralizados recolectados por Promtail y Loki.
   - Números de Tarjeta (PAN) en texto plano: **0**.
   - Códigos CVV/CVC encontrados: **0**.
   - Secretos o credenciales en texto plano: **0**.
 * **Evidencias en Repositorio:**
   - Reporte formal: `tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt`.
-  - Trazas de QA evaluadas: `tests/security/evidencias/qa_app_trace_sprint4.log`.
+  - Exportación real de Loki API evaluada: `tests/security/evidencias/loki_qa_k3s.json`.
 
 ### 3.3 Compuerta 2.3 — Rendimiento Carga Normal Sostenida (50 VU)
 * **Script:** `tests/performance/load-test-50vu.js` / `k6.exe`.
