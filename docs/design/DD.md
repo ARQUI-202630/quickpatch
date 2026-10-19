@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.1|
+|**Versión**|5.2|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -1701,7 +1701,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |---|---|---|---|---|---|
 |POST|`/v1/service-requests`|`cliente`, `empresa_contacto`|RF-07, RF-08|Contrato v1.3.0 (ubicación opcional)|Crear solicitud; sin `location`, se geocodifica `addressText` (sección 8.3.3).|
 |POST|`/v1/service-requests/location-preview`|`cliente`, `empresa_contacto`|RF-07|Contrato v1.3.0|Vista previa de la geocodificación: punto, localidad y dirección reconocida, sin crear nada (sección 8.3.3).|
-|GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Nuevo|Listar: el cliente ve las suyas; el `admin_tenant`, todas las de su tenant.|
+|GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Contrato v1.4.0 (`admin_tenant`); el cliente, pendiente|Listar: el cliente ve las suyas; el `admin_tenant`, todas las de su tenant, sin dirección, ubicación ni contacto (sección 8.3.15).|
 |GET|`/v1/service-requests/{id}`|Cliente dueño, técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato.|
 |POST|`/v1/service-requests/{id}/cancel`|Cliente dueño, `admin_tenant`|RF-36||Cancelar con motivo.|
 |GET|`/v1/service-requests/{id}/quotes`|Cliente dueño, técnico asignado|RF-34, RF-35|Nuevo|Cotizaciones de la solicitud.|
@@ -1715,7 +1715,8 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |POST|`/v1/service-requests/{id}/complete`|Técnico asignado|RF-15||Completar servicio.|
 |POST|`/v1/service-requests/{id}/rating`|Cliente dueño|RF-12||Calificar.|
 |GET|`/v1/technicians/me/service-requests?status=&page=&size=`|`tecnico`|RF-17|Contrato v1.2.0|Solicitudes asignadas al técnico, de la asignación más reciente a la más antigua, sin dirección, ubicación ni cliente (RN-SR13; SCRUM-464).|
-|GET|`/v1/admin/service-requests/summary`|`admin_tenant`|RF-18|Nuevo|Conteo de solicitudes por estado (DEP-15).|
+|GET|`/v1/admin/service-requests/summary`|`admin_tenant`|RF-18|Contrato v1.4.0|Conteo de solicitudes por estado del tenant (sección 8.3.15).|
+|GET|`/v1/platform/service-requests/summary?tenantId=`|`admin_plataforma`|RF-18|Contrato v1.4.0|Conteo por estado de cada tenant, solo conteos; operación de plataforma (secciones 8.3.15 y 10.4, DEP-15).|
 
 #### 8.2.5 Payments Service
 
@@ -2079,7 +2080,7 @@ El técnico se crea **sin contraseña utilizable**. En lugar del correo de Commu
 - `POST /v1/providers/me/technicians/{userId}/invitation` genera un enlace nuevo y anula los anteriores sin usar. Un técnico de otro proveedor o de otro tenant responde `404`; si ya definió su contraseña, `409`.
 - `GET /v1/providers/me/technicians?status=activo|inactivo&page=&size=` devuelve `items` con `userId`, `fullName`, `specialtyId` y `verificationStatus`, solo del equipo del proveedor del token (RN-TP4). **Sin `availability`:** la disponibilidad vive en Matching Service y no se muestra en el MVP (DEP-19).
 
-#### 8.3.15 Panel operativo — `GET /v1/admin/service-requests/summary`
+#### 8.3.15 Panel operativo — `GET /v1/admin/service-requests/summary`, la lista y la vista de plataforma
 
 ```json
 {
@@ -2092,7 +2093,17 @@ El técnico se crea **sin contraseña utilizable**. En lugar del correo de Commu
 }
 ```
 
-Cuenta solo las solicitudes del tenant del `admin_tenant` (RLS). La aplicación consulta este endpoint como máximo una vez por minuto o actualiza los contadores con el canal en tiempo real (SCRUM-38, criterio 3). La vista de todos los tenants que menciona SCRUM-38 depende de DEP-15.
+Cuenta solo las solicitudes del tenant del `admin_tenant` (RLS). `byStatus` siempre trae los 9 estados de la sección 7.4, con 0 si no hay solicitudes, y `createdToday` cuenta las creadas en el día calendario de Bogotá (UTC-5). **v5.2 (SCRUM-485):** el panel consulta como máximo una vez por minuto (SCRUM-38, criterio 3); actualizar los contadores con el canal en tiempo real queda para cuando el panel tenga cliente del canal.
+
+**Lista del `admin_tenant`.** `GET /v1/service-requests?status=&page=&size=` devuelve las solicitudes de su tenant, de la más reciente a la más antigua, con `id`, `status`, `categoryId`, `clientId`, `technicianId`, `createdAt` y `assignedAt`. No trae `address_text`, `location` ni datos de contacto: el panel opera la solicitud por su estado y sus identificadores, y la cancelación desde el panel (RF-36, SCRUM-472) parte de esta lista.
+
+**Vista de plataforma (DEP-15).** `GET /v1/platform/service-requests/summary?tenantId=` devuelve los mismos conteos, uno por tenant, en `tenants[]` con `tenantId`, `byStatus` y `createdToday`, solo para el `admin_plataforma`. Sin `tenantId` trae todos los tenants que tienen solicitudes; los nombres los pone el panel con `GET /v1/platform/tenants` (Identity). **Solo conteos:** el `admin_plataforma` no ve solicitudes, identificadores de usuarios ni datos de clientes de otros tenants. Es la operación de plataforma de ServiceRequest de la sección 10.4.
+
+|Ruta|Rol|Rol de base de datos|Fuga entre tenants que se prueba|
+|---|---|---|---|
+|`GET /v1/admin/service-requests/summary`|`admin_tenant`|`service_request_app` (RLS)|Los conteos no incluyen solicitudes de otro tenant.|
+|`GET /v1/service-requests`|`admin_tenant`|`service_request_app` (RLS)|Una solicitud de otro tenant no aparece en la lista.|
+|`GET /v1/platform/service-requests/summary`|`admin_plataforma`|`service_request_platform` (sección 10.2)|Un `admin_tenant` recibe 403; la respuesta no trae ninguna columna fuera de tenant, estado y conteos.|
 
 ### 8.4 Eventos Kafka
 
@@ -2306,6 +2317,7 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`GET /v1/service-requests/{id}`|`service-request.v1.yaml` 1.0.0+|ServiceRequest|3|4: solicitud de otro cliente (404)|
 |`GET /v1/service-requests/{id}` como técnico asignado|`service-request.v1.yaml` 1.1.0 e `identity-internal.v1.yaml` 1.0.0|ServiceRequest e Identity (SCRUM-91)|—|—|
 |`GET /v1/technicians/me/service-requests`|`service-request.v1.yaml` 1.2.0|ServiceRequest (SCRUM-464)|—|—|
+|`GET /v1/service-requests` (`admin_tenant`), `GET /v1/admin/service-requests/summary` y `GET /v1/platform/service-requests/summary`|`service-request.v1.yaml` 1.4.0|Pendiente (SCRUM-103)|—|—|
 |`GET /v1/admin/technicians` y `POST /v1/admin/technicians/{userId}/approve`, `/reject` y `/suspend`|`identity.v1.yaml` 1.3.0|Identity (SCRUM-106)|—|—|
 |`GET /v1/localities`, `GET` y `PUT /v1/technicians/me/availability` y `/coverage`|`matching.v1.yaml` 1.0.0|Matching (SCRUM-88)|—|—|
 |`GET /v1/matching/offers` y `POST /v1/matching/offers/{attemptId}/accept` y `/reject`|`matching.v1.yaml` 1.0.0|En revisión (SCRUM-79): aceptar, rechazar y vencer (RN-M8)|—|—|
@@ -2462,6 +2474,7 @@ El aislamiento entre tenants sigue ADR-005 (shared-schema con `tenant_id` + Row 
 |`<servicio>_app`|`NOBYPASSRLS`|Los 8 microservicios, para toda operación de negocio, tanto de peticiones REST como de consumidores de eventos. Sobre `audit_logs` solo tiene `INSERT` y `SELECT`; sobre `tenants`, solo `SELECT`; sobre `outbox_events`, solo `INSERT`.|
 |`<servicio>_outbox`|`BYPASSRLS`|El publicador de eventos de cada servicio. Solo tiene `SELECT` y `UPDATE` sobre `outbox_events` y ningún permiso sobre las demás tablas. El publicador lo adopta con `SET LOCAL ROLE` dentro de su transacción, en el mismo pool de conexiones; el rol `_app` tiene membresía en él con el atributo `NOINHERIT`, así que no hereda sus permisos.|
 |`identity_platform`|`BYPASSRLS`|Solo Identity Service, para las operaciones de la sección 10.4. Sobre `audit_logs` solo tiene `INSERT` y `SELECT`.|
+|`service_request_platform`|`BYPASSRLS`|**Nuevo v5.2 (SCRUM-485, DEP-15).** Solo ServiceRequest Service, para la vista de plataforma del panel operativo (sección 10.4). Solo tiene `SELECT` sobre las columnas `tenant_id`, `status` y `created_at` de `service_requests`, mediante permisos por columna, y ningún permiso sobre las demás tablas: puede contar, pero no leer el contenido de una solicitud. Se adopta con `SET LOCAL ROLE` en una transacción de solo lectura, igual que el rol del publicador, así que no abre conexiones adicionales; el rol `_app` tiene membresía en él con `INHERIT FALSE`.|
 |`<servicio>_scheduler`|`BYPASSRLS`|**Nuevo v3 (P-06).** Solo las tareas programadas que recorren filas de todos los tenants: vencimiento de ofertas en Matching (SDD V2, antes DD §10.4), barrido de solicitudes en espera (SDD V2, antes DD §10.5), vencimiento de cotizaciones en ServiceRequest (SDD V2, antes DD §10.7) y conciliación de pagos en Payments (SDD V2, antes DD §10.9). Solo tiene `SELECT` sobre las columnas de identificador, tenant, estado y vencimiento de la tabla que recorre, mediante permisos por columna. No modifica nada: cada cambio se aplica después en una transacción con el rol `_app` y el tenant de la fila. Se adopta con `SET LOCAL ROLE`, igual que el rol del publicador, así que no abre conexiones adicionales.|
 |`<servicio>_migrator`|`BYPASSRLS`|Solo el paso de migraciones del pipeline de despliegue. Es el dueño de las tablas; `BYPASSRLS` evita que `FORCE ROW LEVEL SECURITY` filtre las filas durante las migraciones *expand-contract* (Documento de Infraestructura, sección 5.8).|
 
@@ -2523,12 +2536,13 @@ Cómo se comporta:
 
 ### 10.4 Operaciones de plataforma
 
-Son las únicas operaciones autorizadas a usar `identity_platform`. Cada uso queda registrado en `audit_logs`.
+Son las únicas operaciones autorizadas a usar `identity_platform` o `service_request_platform`. Cada uso que cambia datos queda registrado en `audit_logs`; la consulta de conteos de ServiceRequest, que no cambia nada, queda en el log estructurado (**v5.2**).
 
 |Operación|Servicio|Por qué no puede usar el rol `_app`|
 |---|---|---|
 |Creación, activación y desactivación de tenants (RF-21), por un usuario `admin_plataforma`|Identity|Opera sobre tenants distintos al propio.|
 |Registro de los eventos de auditoría de la operación anterior|Identity|Son filas sin tenant.|
+|Conteo de solicitudes por estado de cada tenant (RF-18), por un usuario `admin_plataforma` (**v5.2**, SCRUM-485)|ServiceRequest, con `service_request_platform`|Lee solicitudes de tenants distintos al propio. Como solo devuelve conteos y no modifica nada, cada consulta queda en el log estructurado (usuario, filtro y `correlationId`) y no en `audit_logs`: una fila por consulta del panel, que se repite cada minuto, no agrega trazabilidad a un dato que no cambia.|
 
 ---
 
@@ -2556,7 +2570,7 @@ El modelo de esta versión depende de las siguientes decisiones de diseño, que 
 |DEP-12|Sección 14.2|Resuelto mediante ADR-012: Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication usan ASP.NET Core / .NET 10; Matching usa Java 25 + Spring Boot 4.1.1. Para persistencia se adopta EF Core + Npgsql en .NET y Spring Data/JPA en Matching.|ADR-012; Infraestructura 5.6 y 5.7|Resuelta (ADR-012).|
 |DEP-13|`tenants`, `register/company`|RF-06 asocia cada empresa cliente a un tenant propio; el SAD (sección 7.1) define el tenant como la empresa oferente y a las empresas cliente como usuarios de ese tenant. Este documento sigue al SAD, así que RF-06 no queda cubierto tal como está redactado.|RF-06; SAD, sección 7.1|Parcial: la tabla `client_companies` (sección 5.19) cubre la razón social, el NIT y los varios usuarios de SCRUM-26, dentro del tenant de la empresa oferente. La diferencia con la redacción de RF-06 se mantiene.|
 |DEP-14|`payments`|El SAD (sección 8.1) lista la entidad `PayoutRecord`, pero R1 excluye la liquidación a técnicos. Este documento no la modela.|R1; SAD, sección 8.1|Abierta.|
-|DEP-15|`GET /v1/admin/service-requests/summary`|SCRUM-38 pide ver las solicitudes de todos los tenants y filtrar por tenant; con RLS (ADR-005) el `admin_tenant` solo ve su tenant. Ver todos exigiría una operación de plataforma nueva para `admin_plataforma` en la sección 10.4.|SCRUM-38; ADR-005|**Nueva v3.** Abierta.|
+|DEP-15|`GET /v1/admin/service-requests/summary`|SCRUM-38 pide ver las solicitudes de todos los tenants y filtrar por tenant; con RLS (ADR-005) el `admin_tenant` solo ve su tenant. Ver todos exigiría una operación de plataforma nueva para `admin_plataforma` en la sección 10.4.|SCRUM-38; ADR-005|**Resuelta v5.2 (SCRUM-485):** el `admin_plataforma` ve solo conteos por tenant con `GET /v1/platform/service-requests/summary` y el rol `service_request_platform` (secciones 8.3.15, 10.2 y 10.4).|
 |DEP-16|RN-Q8, `QUOTE_TTL`|Tiempo que tiene el cliente para responder una cotización. Se propone 24 horas.|RF-35|**Nueva v3.** Abierta.|
 |DEP-17|Registro de técnico y SCRUM-332 (antes DD §12)|Qué documentos de soporte debe subir el técnico (SCRUM-22) y cómo se guardan; y qué pantallas nuevas del artefacto SCRUM-332 (antes DD §12.2) ya están en los Mockups V1 (SCRUM-126).|RF-02; SCRUM-126|**Nueva v3.** Abierta.|
 |DEP-18|`GET /v1/matching/offers`|SCRUM-30 pide que el técnico vea la dirección antes de aceptar; este documento propone mostrar la localidad y la distancia, y entregar la dirección solo al técnico asignado (RN-SR13), para no exponer la dirección del cliente a quienes rechazan.|SCRUM-30; Ley 1581 de 2012 (R6)|**Resuelta en v4:** SCRUM-30 (criterio 1) pide localidad y distancia en la oferta y la dirección solo para el técnico asignado (RN-SR13).|
@@ -2595,7 +2609,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |4.0|DD V4 (SCRUM-416, Sprint 4)|Incremento del técnico. **Modelo (SCRUM-417):** `technician_availability.projection_updated_at`; restricciones, índices y RLS de `technician_profiles`, `technician_availability`, `coverage_zones`, `matching_attempts` y `matching_requests`. **Contratos (SCRUM-418):** `matching.v1.yaml` 1.0.0, `identity.v1.yaml` 1.3.0 y `service-request.v1.yaml` 1.1.0 en `quickpatch-api-gateway`; seis eventos v1 con sus topics en `quickpatch-kafka`. P-01, P-03, P-04 y P-05 pasan a decisiones adoptadas y P-01 se alinea con el ADR-017 (sección 1.8). DEP-01 y DEP-18 resueltas. **SCRUM-419:** `pm.execution.setNextRequest` en el generador (PR #68). **Canal en tiempo real:** la 8.5 deja de estar pendiente de decisión (ADR-023) y enlaza `asyncapi/realtime.v1.yaml` 1.0.0; `matching_requests.client_id` y `clientId` en los eventos de matching para enrutar los avisos al cliente.|
 |5.0|DD V5 (SCRUM-455)|**ADR-024:** geocodificación propia (RIE-02) con `location` opcional y `422 direccion-no-encontrada` en `POST /v1/service-requests` (contrato 1.3.0), y buzón de notificaciones (RIE-03) con la tabla `notifications` en `db_communication` y `communication.v1.yaml` 1.0.0. **Consulta interna por lote:** `identity-internal.v1.yaml` 1.0.0 (SCRUM-91). **Cambios ya implementados que faltaban:** `service_requests.matching_updated_at` (SCRUM-460) y `matching_requests.description` (SCRUM-79); sección 8.3.14 con `specialtyId`, sin `availability` y con el enlace de invitación en lugar del correo de Communication (SCRUM-97, SCRUM-461); tabla `password_setup_tokens`; `crear_tenant` en `audit_logs` y `POST /v1/platform/tenants` (SCRUM-462); `X-Channel-Id` (SCRUM-60). Vista previa de la geocodificación (`POST /v1/service-requests/location-preview`, `Geocoding__NominatimUrl`) y propuesta P-09. DEP-09 pasa a parcial (el Gateway ya fija `X-Channel-Id`), DEP-19 se decide para el MVP y se agrega DEP-20. La trazabilidad (8.8) se actualiza con lo implementado.|
 |5.1|SCRUM-466|**Aviso de estado desde ServiceRequest.** Evento nuevo `service-request.status-changed` v1 (Cuadros 5, 11, 12 y 15): ServiceRequest lo publica por Outbox en la misma transacción del cambio de estado y solo si lo aplicó. Communication avisa el cambio de estado con él y deja de derivarlo de los eventos de Matching, que ServiceRequest puede descartar por viejos (sección 8.5). `asyncapi/realtime.v1.yaml` pasa a 1.0.1 (solo cambia el origen del aviso).|
-|5.2|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.2|SCRUM-485|**Panel operativo de solicitudes (RF-18, SCRUM-38).** `service-request.v1.yaml` 1.4.0: lista de las solicitudes del tenant para el `admin_tenant`, conteos por estado del tenant y, para el `admin_plataforma`, conteos por tenant (secciones 8.2.4 y 8.3.15). Rol nuevo `service_request_platform` con `SELECT` solo sobre `tenant_id`, `status` y `created_at`, y la operación de plataforma de ServiceRequest (secciones 10.2 y 10.4). DEP-15 resuelta.|
+|5.3|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
