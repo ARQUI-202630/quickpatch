@@ -39,11 +39,12 @@ function sendProblemDetails(res, status, problemType, title, detail, correlation
     res.end(JSON.stringify(body, null, 2));
 }
 
-function makeToken(sub, role, tenantId) {
+function makeToken(sub, role, tenantId, email) {
     const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
     const payload = Buffer.from(JSON.stringify({
         sub: sub,
         role: role,
+        email: email || undefined,
         tenant_id: tenantId || "a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee",
         exp: Math.floor(Date.now() / 1000) + 7200
     })).toString("base64url");
@@ -52,6 +53,10 @@ function makeToken(sub, role, tenantId) {
 
 const registeredDocuments = new Set(["CC-1020304050"]);
 const registeredEmails = new Set(["tecnico.existente@quickpatch.test"]);
+const registeredClientEmails = new Set();
+const loginAttempts = {};
+const createdCategoryNames = new Set();
+let isCategoryActive = true;
 
 const providerTechniciansDb = {
     "11111111-1111-1111-1111-111111111111": []
@@ -182,11 +187,29 @@ const server = http.createServer((req, res) => {
 
         // 1. Registro de cliente (Identity)
         if (url === '/api/v1/auth/register/client' && req.method === 'POST') {
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!body.password || body.password.length < 8 || !body.email || !emailRegex.test(body.email)) {
+                return sendProblemDetails(res, 400, 'validacion-solicitud', 'Datos de registro inválidos', 'El correo válido y contraseña de al menos 8 caracteres son obligatorios.', correlationId);
+            }
+            if (registeredClientEmails.has(body.email)) {
+                return sendProblemDetails(res, 409, 'correo-registrado', 'El correo ya está registrado', 'El correo ya está en uso en el tenant.', correlationId);
+            }
+            registeredClientEmails.add(body.email);
+
             res.writeHead(201, {
                 'Content-Type': 'application/json',
                 'X-Correlation-Id': correlationId
             });
-            return res.end(JSON.stringify({ message: "Usuario cliente registrado exitosamente" }));
+            return res.end(JSON.stringify({
+                id: `cli-${Date.now()}`,
+                email: body.email,
+                fullName: body.fullName || "Cliente de prueba",
+                role: "cliente",
+                message: "Usuario cliente registrado exitosamente"
+            }));
         }
 
         // 1.1 Registro de técnico / proveedor (Identity - SCRUM-56)
@@ -229,6 +252,20 @@ const server = http.createServer((req, res) => {
             let body = {};
             try { body = JSON.parse(rawBody || '{}'); } catch {}
 
+            // Bloqueo de cuenta tras 5 intentos fallidos (423 cuenta-bloqueada)
+            if (body.email && body.email.includes('bloqueo')) {
+                loginAttempts[body.email] = (loginAttempts[body.email] || 0) + 1;
+                if (loginAttempts[body.email] >= 5) {
+                    return sendProblemDetails(res, 423, 'cuenta-bloqueada', 'Cuenta Bloqueada Temporalmente', 'La cuenta ha sido bloqueada temporalmente por exceso de intentos fallidos (RN-U4).', correlationId);
+                }
+                return sendProblemDetails(res, 401, 'credenciales-invalidas', 'Correo o contraseña incorrectos', 'Correo o contraseña incorrectos.', correlationId);
+            }
+
+            // Contraseña incorrecta (401 credenciales-invalidas)
+            if (body.password === 'Incorrecta123') {
+                return sendProblemDetails(res, 401, 'credenciales-invalidas', 'Correo o contraseña incorrectos', 'Correo o contraseña incorrectos.', correlationId);
+            }
+
             // IDN-019 / RN-T1 está PENDIENTE en el MVP (un solo tenant, SCRUM-41). El sistema real responde 401
             // credenciales-invalidas a un correo que no existe, y eso es lo que simula este mock.
             if (body.email && body.email.includes('inactivo')) {
@@ -239,9 +276,21 @@ const server = http.createServer((req, res) => {
                 ? "22222222-2222-2222-2222-222222222222"
                 : "11111111-1111-1111-1111-111111111111";
 
+            // Administrador de plataforma (SCRUM-112)
+            if (body.email && (body.email.includes('plataforma') || body.email.includes('platform'))) {
+                const platToken = makeToken("usr-plat-01", "admin_plataforma", tenantId, body.email);
+                res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+                return res.end(JSON.stringify({
+                    accessToken: platToken,
+                    tokenType: "Bearer",
+                    expiresIn: 7200,
+                    user: { id: "usr-plat-01", email: body.email, role: "admin_plataforma" }
+                }));
+            }
+
             // Administrador de tenant (evaluar antes de tecnico para evitar colisiones)
             if (body.email && body.email.includes('admin')) {
-                const token = makeToken("usr-admin-01", "admin_tenant", tenantId);
+                const token = makeToken("usr-admin-01", "admin_tenant", tenantId, body.email);
                 res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
                 return res.end(JSON.stringify({
                     accessToken: token,
@@ -256,7 +305,7 @@ const server = http.createServer((req, res) => {
                 const techSub = (body.email.includes('segundo') || body.email.includes('ocupado'))
                     ? "usr-tec-02"
                     : (body.email.includes('otro') ? "usr-tec-03" : "usr-tec-01");
-                const token = makeToken(techSub, "tecnico", tenantId);
+                const token = makeToken(techSub, "tecnico", tenantId, body.email);
                 res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
                 return res.end(JSON.stringify({
                     accessToken: token,
@@ -271,7 +320,7 @@ const server = http.createServer((req, res) => {
                 const provSub = (body.email.includes('segundo') || body.email.includes('proveedor2') || body.email.includes('ajeno'))
                     ? "usr-prov-02"
                     : "usr-prov-01";
-                const token = makeToken(provSub, "proveedor", tenantId);
+                const token = makeToken(provSub, "proveedor", tenantId, body.email);
                 res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
                 return res.end(JSON.stringify({
                     accessToken: token,
@@ -282,10 +331,10 @@ const server = http.createServer((req, res) => {
             }
 
             // Cliente (SCRUM-31: Soporte para cliente propietario usr-client-01 y cliente ajeno usr-client-02 en mismo tenant)
-            const clientSub = (body.email && (body.email.includes('cliente2') || body.email.includes('ajeno') || body.email.includes('otrocliente')))
+            const clientSub = (body.email && (body.email.includes('cliente2') || body.email.includes('ajeno') || body.email.includes('otrocliente') || body.email.includes('otro.')))
                 ? "usr-client-02"
                 : "usr-client-01";
-            const token = makeToken(clientSub, "cliente", tenantId);
+            const token = makeToken(clientSub, "cliente", tenantId, body.email);
             res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
             return res.end(JSON.stringify({
                 accessToken: token,
@@ -310,26 +359,58 @@ const server = http.createServer((req, res) => {
         }
 
         // 3. Catálogo administrativo de categorías (Catalog - solo admin_tenant)
-        if (url === '/api/v1/catalog/admin/categories') {
+        if (url === '/api/v1/catalog/admin/categories' && req.method === 'POST') {
             if (!user) {
                 return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
             }
             if (user.role !== 'admin_tenant' && user.role !== 'admin') {
                 return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo administradores pueden crear categorías (CAT-010, SCRUM-65)', correlationId);
             }
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            const catName = body.name || "Plomería QA";
+            if (createdCategoryNames.has(catName)) {
+                return sendProblemDetails(res, 409, 'categoria-registrada', 'Categoría ya registrada', 'La categoría ya existe en el catálogo del tenant.', correlationId);
+            }
+            createdCategoryNames.add(catName);
+            isCategoryActive = true;
+
             res.writeHead(201, {
                 'Content-Type': 'application/json',
                 'X-Correlation-Id': correlationId
             });
             return res.end(JSON.stringify({
                 id: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
-                name: "Plomería QA",
+                name: catName,
                 active: true,
                 tenantId: user.tenant_id
             }));
         }
 
-        // 3.1 Consulta pública de catálogo con aislamiento tenant (Catalog - SCRUM-62)
+        // 3.1 Desactivar categoría (Catalog - SCRUM-287)
+        if (url.startsWith('/api/v1/catalog/admin/categories/') && req.method === 'PATCH') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente (IDN-017)', correlationId);
+            }
+            if (user.role !== 'admin_tenant' && user.role !== 'admin') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo administradores pueden modificar categorías', correlationId);
+            }
+            const catId = url.split('/').pop();
+            if (catId !== "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01") {
+                return sendProblemDetails(res, 404, 'no-encontrado', 'Categoría no encontrada', 'La categoría no existe', correlationId);
+            }
+            isCategoryActive = false;
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+            return res.end(JSON.stringify({
+                id: catId,
+                name: "Plomería QA",
+                active: false,
+                updatedAt: new Date().toISOString()
+            }));
+        }
+
+        // 3.2 Consulta pública de catálogo con aislamiento tenant (Catalog - SCRUM-62 / SCRUM-287)
         if (url === '/api/v1/catalog/categories' && req.method === 'GET') {
             if (!user) {
                 return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token ausente', correlationId);
@@ -338,7 +419,7 @@ const server = http.createServer((req, res) => {
             const categories = [
                 { id: "cat-global-01", name: "Cerrajería Global", active: true, tenantId: null }
             ];
-            if (user.tenant_id === "11111111-1111-1111-1111-111111111111") {
+            if (isCategoryActive && user.tenant_id === "11111111-1111-1111-1111-111111111111") {
                 categories.push({ id: "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01", name: "Plomería Exclusiva Alfa", active: true, tenantId: user.tenant_id });
             }
             res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
@@ -355,6 +436,25 @@ const server = http.createServer((req, res) => {
             }
             let body = {};
             try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            // Validación de descripción corta (400)
+            if (body.description && body.description.length < 10) {
+                const errBody = {
+                    type: "https://quickpatch.internal/problems/validacion-solicitud",
+                    title: "Validación de solicitud",
+                    status: 400,
+                    detail: "La descripción debe tener al menos 10 caracteres",
+                    errors: { description: ["La descripción debe tener al menos 10 caracteres"] },
+                    correlationId: correlationId
+                };
+                res.writeHead(400, { 'Content-Type': 'application/problem+json', 'X-Correlation-Id': correlationId });
+                return res.end(JSON.stringify(errBody, null, 2));
+            }
+
+            // Ubicación fuera de Bogotá (422 fuera-de-cobertura)
+            if (body.location && (body.location.latitude > 5.5 || body.location.latitude < 4.4 || body.location.longitude < -74.5 || body.location.longitude > -73.5)) {
+                return sendProblemDetails(res, 422, 'fuera-de-cobertura', 'Ubicación fuera de cobertura', 'La ubicación especificada está fuera del perímetro de Bogotá D.C.', correlationId);
+            }
 
             const isNoCandidates = (body.description && body.description.includes('sin_candidatos')) ||
                                    (body.location && (body.location.latitude > 4.75 || body.location.latitude < 4.50));
@@ -461,7 +561,7 @@ const server = http.createServer((req, res) => {
 
             // Rol Cliente: Aislamiento intra-tenant (Cliente 2 no puede ver la solicitud de Cliente 1)
             const ownerId = currentReq.clientId || "usr-client-01";
-            if (user.role === 'cliente' && user.sub !== ownerId && !reqId.startsWith('sr-mat') && reqId !== 'sr-qa-001') {
+            if (user.role === 'cliente' && user.sub !== ownerId && !reqId.startsWith('sr-mat')) {
                 return sendProblemDetails(res, 404, 'no-encontrado', 'Solicitud no encontrada', 'La solicitud no pertenece al cliente autenticado (Confidencialidad intra-tenant)', correlationId);
             }
 
@@ -566,6 +666,63 @@ const server = http.createServer((req, res) => {
                     "matching.offer-created"
                 ],
                 connectedAt: new Date().toISOString()
+            }));
+        }
+
+        // =========================================================================
+        // 4.4 GESTIÓN DE TENANTS DE PLATAFORMA (Identity - SCRUM-112)
+        // =========================================================================
+        if (url === '/api/v1/platform/tenants' && req.method === 'GET') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token requerido', correlationId);
+            }
+            if (user.role !== 'admin_plataforma') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Solo admin_plataforma puede listar tenants', correlationId);
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+            return res.end(JSON.stringify([
+                { id: "11111111-1111-1111-1111-111111111111", name: "Tenant Alfa", status: "activo" },
+                { id: "22222222-2222-2222-2222-222222222222", name: "Tenant Beta", status: "activo" }
+            ]));
+        }
+
+        if (url.startsWith('/api/v1/platform/tenants/') && req.method === 'PATCH') {
+            if (!user) {
+                return sendProblemDetails(res, 401, 'no-autenticado', 'No autenticado', 'Token requerido', correlationId);
+            }
+            if (user.role !== 'admin_plataforma') {
+                return sendProblemDetails(res, 403, 'no-autorizado', 'Acceso Denegado', 'Permiso denegado', correlationId);
+            }
+            const tenantId = url.split('/').pop();
+            let body = {};
+            try { body = JSON.parse(rawBody || '{}'); } catch {}
+
+            if (body.status !== 'activo' && body.status !== 'inactivo') {
+                const errBody = {
+                    type: "https://quickpatch.internal/problems/validacion-solicitud",
+                    title: "Datos de solicitud inválidos",
+                    status: 400,
+                    detail: "El estado debe ser 'activo' o 'inactivo'",
+                    errors: { status: ["El estado debe ser activo o inactivo"] },
+                    correlationId: correlationId
+                };
+                res.writeHead(400, { 'Content-Type': 'application/problem+json', 'X-Correlation-Id': correlationId });
+                return res.end(JSON.stringify(errBody, null, 2));
+            }
+
+            if (tenantId !== "11111111-1111-1111-1111-111111111111") {
+                return sendProblemDetails(res, 404, 'no-encontrado', 'Tenant no encontrado', 'El tenant especificado no existe', correlationId);
+            }
+
+            if (body.status === 'inactivo') {
+                return sendProblemDetails(res, 409, 'tenant-plataforma', 'Conflicto', 'No se puede desactivar el tenant de la plataforma', correlationId);
+            }
+
+            res.writeHead(200, { 'Content-Type': 'application/json', 'X-Correlation-Id': correlationId });
+            return res.end(JSON.stringify({
+                id: tenantId,
+                status: "activo",
+                updatedAt: new Date().toISOString()
             }));
         }
 
@@ -1137,6 +1294,86 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ error: "Ruta no encontrada" }));
     });
 });
+
+function resetState() {
+    registeredDocuments.clear();
+    registeredDocuments.add("CC-1020304050");
+    registeredEmails.clear();
+    registeredEmails.add("tecnico.existente@quickpatch.test");
+    registeredClientEmails.clear();
+    for (const k in loginAttempts) delete loginAttempts[k];
+    createdCategoryNames.clear();
+    isCategoryActive = true;
+    providerTechniciansDb["11111111-1111-1111-1111-111111111111"] = [];
+    adminTechniciansDb["11111111-1111-1111-1111-111111111111"] = {
+        "usr-tec-pending-01": {
+            userId: "usr-tec-pending-01",
+            fullName: "Hernando López",
+            email: "hernando.lopez@quickpatch.test",
+            documentId: "CC-1122334455",
+            phone: "+573104443322",
+            specialty: "Cerrajería",
+            verificationStatus: "pendiente",
+            tenantId: "11111111-1111-1111-1111-111111111111",
+            role: "tecnico"
+        },
+        "usr-tec-pending-02": {
+            userId: "usr-tec-pending-02",
+            fullName: "Gloria Martínez",
+            email: "gloria.martinez@quickpatch.test",
+            documentId: "CC-2233445566",
+            phone: "+573109998877",
+            specialty: "Electricidad",
+            verificationStatus: "pendiente",
+            tenantId: "11111111-1111-1111-1111-111111111111",
+            role: "tecnico"
+        },
+        "usr-tec-approved-01": {
+            userId: "usr-tec-approved-01",
+            fullName: "Carlos Pérez (Aprobado)",
+            email: "carlos.aprobado@quickpatch.test",
+            documentId: "CC-3344556677",
+            phone: "+573001234567",
+            specialty: "Plomería",
+            verificationStatus: "aprobado",
+            tenantId: "11111111-1111-1111-1111-111111111111",
+            role: "tecnico"
+        },
+        "usr-tec-suspended-01": {
+            userId: "usr-tec-suspended-01",
+            fullName: "Raúl Sánchez (Suspendido)",
+            email: "raul.suspendido@quickpatch.test",
+            documentId: "CC-4455667788",
+            phone: "+573151234567",
+            specialty: "Pintura",
+            verificationStatus: "suspendido",
+            suspensionReason: "Reiteradas quejas de clientes por incumplimiento",
+            tenantId: "11111111-1111-1111-1111-111111111111",
+            role: "tecnico"
+        }
+    };
+    adminTechniciansDb["22222222-2222-2222-2222-222222222222"] = {
+        "usr-tec-beta-01": {
+            userId: "usr-tec-beta-01",
+            fullName: "Técnico Beta",
+            email: "tecnico.beta@quickpatch.test",
+            documentId: "CC-9988776655",
+            phone: "+573112223344",
+            specialty: "Gasodomésticos",
+            verificationStatus: "pendiente",
+            tenantId: "22222222-2222-2222-2222-222222222222",
+            role: "tecnico"
+        }
+    };
+    techniciansState["usr-tec-01"] = { status: "no_disponible", localityCodes: ["02", "12", "13"] };
+    techniciansState["usr-tec-02"] = { status: "ocupado", localityCodes: ["01", "02"] };
+    techniciansState["usr-tec-03"] = { status: "disponible", localityCodes: ["08", "09"] };
+    for (const k in serviceRequestsDb) delete serviceRequestsDb[k];
+    serviceRequestsDb["sr-assigned-01"] = { status: "asignado", technicianId: "usr-tec-01", clientId: "usr-client-01" };
+    serviceRequestsDb["sr-unassigned-01"] = { status: "buscando_tecnico", technicianId: null, clientId: "usr-client-01" };
+}
+
+server.resetState = resetState;
 
 if (require.main === module) {
     server.listen(PORT, () => {

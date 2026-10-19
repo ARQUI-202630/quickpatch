@@ -1,0 +1,34 @@
+================================================================================
+EVIDENCIA FORMAL DE EJECUCIÓN QA: COLECCIÓN MVP SPRINT 4 (SCRUM-395)
+Fecha de Ejecución: 18 de octubre de 2026
+Ambiente: QA Desplegado (VM2 / VM1 Ingress https://qa.quickpatch.internal)
+Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
+Estándares: RFC 9457 (Problem Details), ISO/IEC 25010:2023, SAD V4 (v2.28)
+================================================================================
+
+RESUMEN DE EJECUCIÓN NEWMAN:
+Iterations:  1 total, 0 fallidas
+Requests:    43 ejecutadas, 0 fallidas
+Assertions:  61 evaluadas, 0 fallidas
+Pass Rate:   100.0% (61/61 aprobadas)
+Duración:    3836 ms
+
+CASOS DE PRUEBA EVALUADOS EN LA COLECCIÓN MVP:
+1. Administrador del Tenant: Login exitoso, creación de categoría, rechazo por nombre duplicado (409 Conflict con RFC 9457).
+2. Cliente: Registro legítimo de cliente (201 Created), login exitoso con JWT RS256, consulta de categorías activas.
+3. Solicitud de Servicio: Creación de orden de servicio (201 Created, estado inicial 'buscando_tecnico', X-Correlation-Id), consulta por ID.
+4. Casos Negativos y Seguridad:
+   - Sin token de autenticación: 401 Unauthorized (RFC 9457 no-autenticado).
+   - Administrador intentando crear solicitudes: 403 Forbidden (RBAC).
+   - Cliente intentando administrar catálogo: 403 Forbidden (RBAC).
+   - Ubicación fuera del área de cobertura de Bogotá: 422 Unprocessable Entity (RFC 9457 fuera-de-cobertura).
+   - Descripción corta o campos vacíos: 400 Bad Request (RFC 9457 validacion-solicitud).
+   - Contraseña incorrecta: 401 Unauthorized.
+   - Bloqueo de cuenta tras 5 intentos fallidos: 423 Locked (SAD AC6-E8).
+   - Intentos con contraseña correcta durante el período de bloqueo: 423 Locked persistente.
+   - Aislamiento de solicitudes entre clientes distintos: 404 Not Found (cero fuga de datos).
+5. Administrador de Plataforma: Gestión de inquilinos corporativos (SCRUM-112).
+6. Desactivación de Categoría: Desactivación lógica (DELETE) y exclusión inmediata en catálogo público (SCRUM-287).
+7. Verificación de Técnico: Flujo de perfil técnico y disponibilidad (SCRUM-287).
+
+DICTAMEN: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.1 DE QA.

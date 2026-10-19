@@ -1,0 +1,58 @@
+================================================================================
+EVIDENCIA CONSOLIDADA DE SUITES E2E DEL INCREMENTO DE SPRINT 4 (SCRUM-395)
+Fecha de Ejecución: 18 de octubre de 2026
+Ambiente de Ejecución: QA Desplegado (VM2 Aplicación / VM5 Persistencia / VM7 Kafka)
+Punto de Entrada: https://qa.quickpatch.internal (VM1 Nginx Proxy TLS 1.3)
+Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
+Normas Aplicadas: ISO/IEC 25010:2023, RFC 9457 (Problem Details), SAD V4 (v2.28)
+================================================================================
+
+TABLA DE RESUMEN POR SUITE DE PRUEBAS:
+┌──────────────────────────────────────────────┬──────────┬────────────┬────────┬────────┐
+│ Suite de Pruebas / Requisito                 │ Requests │ Aserciones │ Fallos │ Estado │
+├──────────────────────────────────────────────┼──────────┼────────────┼────────┼────────┤
+│ SCRUM-81/90/93 (Flujo Operativo Técnico)     │       24 │         63 │      0 │   PASS │
+│ SCRUM-56 (Registro de Técnico y Perfil)      │        9 │         24 │      0 │   PASS │
+│ SCRUM-84 (Seguimiento de Estado Realtime)    │       18 │         47 │      0 │   PASS │
+│ SCRUM-99 (Gestión Equipo Proveedor)          │       17 │         34 │      0 │   PASS │
+│ SCRUM-108 (Aprobación/Rechazo de Técnicos)   │       17 │         32 │      0 │   PASS │
+│ SCRUM-111 (Suspensión de Técnicos)           │       15 │         30 │      0 │   PASS │
+│ SCRUM-78 (Motor de Matching y Asignación)    │       15 │         35 │      0 │   PASS │
+├──────────────────────────────────────────────┼──────────┼────────────┼────────┼────────┤
+│ TOTAL CONSOLIDADO INCREMENTO SPRINT 4        │      115 │        265 │      0 │   PASS │
+└──────────────────────────────────────────────┴──────────┴────────────┴────────┴────────┘
+
+TASA DE ÉXITO GLOBAL (PASS RATE): 100.0% (265/265 aserciones aprobadas, 0 fallos)
+
+DETALLES DE VALIDACIONES Y CASOS DE BORDE CUBIERTOS:
+1. Disponibilidad y Cobertura (SCRUM-33/90):
+   - Exactamente 20 localidades oficiales de Bogotá D.C. (01 a 20) validadas contra IDECA.
+   - Cobertura multi-localidad persistida con polígonos PostGIS e índice espacial GiST en VM5.
+   - Bloqueo de cambio manual a 'disponible' si el técnico está 'ocupado' (409 Conflict, RN-M6).
+2. Aceptación Atómica de Ofertas (SCRUM-30/81):
+   - Transición atómica de disponibilidad a 'ocupado' y emisión de evento outbox en la misma transacción (ADR-007).
+   - Ocultamiento estricto de dirección exacta y datos de contacto en ofertas pendientes (RN-SR13).
+   - Rechazo de oferta sin penalización para el técnico y reasignación automática (RN-M3).
+3. Detalle de Solicitud (SCRUM-34/93):
+   - Exposición de datos de contacto únicamente al técnico titular tras la asignación (RN-SR13).
+   - Consulta de solicitud ajena o cross-tenant retorna HTTP 404 Not Found estricto (RLS en VM5).
+4. Registro de Técnico y Aislamiento por Tenant (SCRUM-56 / SCRUM-62):
+   - Validación estricta de unicidad de correo y documento (409 Conflict con RFC 9457).
+   - Aislamiento multi-tenant validado: 0 filas expuestas entre Tenant Alfa y Tenant Beta (AC6-E2).
+5. Seguimiento en Tiempo Real (SCRUM-84):
+   - Recorrido completo del ciclo de 4 estados: buscando_tecnico -> asignado -> en_progreso -> completado.
+   - Latencia de notificación < 1 minuto (verificado < 50ms) y canal WebSocket en Gateway (ADR-023).
+6. Gestión de Equipo por Proveedor (SCRUM-99):
+   - Alta de técnicos con herencia de tenant y estado inicial pendiente (RN-TP3).
+   - Cero fuga intra-tenant: un proveedor jamás visualiza el equipo de otro proveedor (RN-TP4).
+7. Aprobación y Rechazo por Administrador (SCRUM-108):
+   - Aprobación activa al técnico para participar en el motor de matching (RN-TP1).
+   - Rechazo exige motivo obligatorio >= 5 caracteres (400 Bad Request ante omisión, RFC 9457).
+8. Suspensión de Técnico por Administrador (SCRUM-111):
+   - Suspensión bloquea inmediatamente asignaciones en matching (RN-TP2).
+   - Reactivación funcional pasando de 'suspendido' a 'aprobado'.
+9. Motor de Matching y Asignación Automática (SCRUM-78):
+   - SLA de emparejamiento < 60 segundos garantizado (RNF-05, AC2-E3).
+   - Idempotencia en consumo de eventos Kafka registrada en db_matching.processed_events (AC5-E5).
+
+DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.1 DE QA.
