@@ -1,0 +1,59 @@
+# Prueba de humo del panel web publicado en QA (SCRUM-448), con los servicios reales y sin rutas simuladas.
+# Corre a mano desde la pestaña Actions, en el runner de VM1 (el único que llega a la red del laboratorio), después de
+# publicar un release/* de quickpatch-web. La app móvil se prueba aparte en un emulador (quickpatch-mobile,
+# integration_test/humo_qa_test.dart), porque el runner no tiene Android.
+#
+# Usa las cuentas iniciales de QA (secretos del repositorio). Las capturas quedan como artefacto para el informe
+# de pruebas (SCRUM-449).
+#
+# Se lanza a mano (workflow_dispatch, cuando el archivo esté en main) o empujando una rama humo/*: GitHub solo deja
+# lanzar a mano los workflows que ya existen en la rama por defecto.
+#
+# SEGURIDAD: solo `push` y `workflow_dispatch`, nunca `pull_request`: el repo es público.
+name: Humo de los frontends en QA
+
+on:
+  push:
+    branches: ["humo/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pruebas-sistema
+  cancel-in-progress: false
+
+env:
+  QA_HOST: qa.quickpatch.internal
+  QA_IP: 10.43.100.168
+  BASE_URL: https://qa.quickpatch.internal
+
+jobs:
+  panel:
+    name: Panel web (Playwright)
+    runs-on: [self-hosted, vm1, red-laboratorio]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Playwright contra el panel de QA
+        env:
+          QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
+          QA_ADMIN_PASSWORD: ${{ secrets.QA_ADMIN_PASSWORD }}
+          QA_PLATFORM_ADMIN_EMAIL: ${{ secrets.QA_PLATFORM_ADMIN_EMAIL }}
+          QA_PLATFORM_ADMIN_PASSWORD: ${{ secrets.QA_PLATFORM_ADMIN_PASSWORD }}
+        # Red del host, igual que pruebas-sistema.yml: con la red bridge de Docker el Nginx de VM1 rechaza la IP 172.17.x.x.
+        run: |
+          docker run --rm --network host --ipc=host --add-host "$QA_HOST:$QA_IP" -e BASE_URL -e CI=true \
+            -e QA_ADMIN_EMAIL -e QA_ADMIN_PASSWORD -e QA_PLATFORM_ADMIN_EMAIL -e QA_PLATFORM_ADMIN_PASSWORD \
+            -v "$PWD/tests/e2e/humo:/humo" -w /humo mcr.microsoft.com/playwright:v1.48.2-jammy \
+            bash -c "npm ci && npx playwright test"
+
+      - name: Guardar capturas y resultado
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: humo-panel-qa
+          path: tests/e2e/humo/resultados
+          if-no-files-found: ignore
