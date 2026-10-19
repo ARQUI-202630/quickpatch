@@ -79,7 +79,8 @@ test.describe('Panel web en QA (SCRUM-448)', () => {
 
     // La fila del cliente de la corrida, por su ID corto en el nombre accesible del botón.
     const boton = page.getByRole('button', { name: new RegExp(`^Cancelar la solicitud de .* del cliente ${corto}$`) });
-    const fila = page.locator('tbody tr', { has: boton });
+    // Por el ID corto y no por el botón, que desaparece cuando la solicitud queda cancelada.
+    const fila = page.locator('tbody tr', { hasText: corto });
     await boton.click();
     await page.locator('#motivo-cancelacion').fill('Prueba de humo del panel (SCRUM-448).');
     await page.screenshot({ path: 'resultados/3-dialogo-cancelacion.png' });
