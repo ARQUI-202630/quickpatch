@@ -45,6 +45,25 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run quic
 
 En la base: la solicitud quedó en `buscando_tecnico` con su punto, el Outbox publicó `service-request.created` y Matching lo registró en `processed_events`.
 
+## Cancelación de la solicitud de punta a punta (SCRUM-478)
+
+`scrum-478-cancelacion.postman_collection.json` prueba RF-36 (SCRUM-472) contra QA. Se genera con `python tests/e2e/generar-scrum478-cancelacion.py`.
+
+1. **Preparación (administrador del tenant):** una categoría solo para la corrida y un técnico con esa especialidad, aprobado, que cubre toda Bogotá y queda disponible. Así la oferta le llega a él y no a otro técnico de QA.
+2. **Cliente con la oferta pendiente:** el técnico ve la oferta; motivo de 4 caracteres (400 con `reason`), sin token (401), otro cliente del tenant (404), cliente del tenant Beta por `beta.qa.quickpatch.internal` (404, con el `tenant_id` del token distinto) y técnico (403). Después el cliente cancela (200, `CancelledServiceRequest`), el detalle trae la fecha y el motivo sin espacios, cancelar otra vez da 409 `transicion-invalida`, el técnico deja de ver la oferta (Matching consumió `service-request.cancelled`), aceptarla da 409 `oferta-no-disponible` y el técnico sigue disponible.
+3. **Administrador con el técnico asignado:** el técnico acepta, la solicitud queda `asignado` y el técnico `ocupado`; el administrador de la plataforma no puede cancelar (403); el administrador del tenant cancela (`admin_tenant`), el cliente ve su motivo y el técnico vuelve a `disponible`.
+4. **Limpieza:** suspende al técnico y desactiva la categoría de la corrida.
+
+Sin `adminEmail` y `adminPassword` los pasos de técnico, ofertas y administrador se omiten (`pm.execution.skipRequest`), para poder correr el resto sin secretos. Cada corrida usa cuentas nuevas con una clave aleatoria que no se guarda.
+
+`scrum-478-aviso-tiempo-real.mjs` cubre el aviso, que Newman no puede probar porque no habla WebSocket: abre `/v1/realtime`, cancela y espera `service-request.status-changed` con `cancelado` en menos de 15 s. Usa Node 22 o superior, sin dependencias:
+
+```bash
+NODE_TLS_REJECT_UNAUTHORIZED=0 node tests/e2e/scrum-478-aviso-tiempo-real.mjs https://qa.quickpatch.internal
+```
+
+**Evidencia:** `evidencias/scrum-478-cancelacion-qa-2026-10-19.txt`, con el resultado de cada paso y su `correlationId`. No se suben las exportaciones JSON de Newman porque traen los tokens y las claves de las cuentas de prueba.
+
 ## Orden del despliegue del MVP en QA
 
 1. Infraestructura de QA (Ansible): bases `db_<servicio>` con su `_migrator` y su `_app`, PostGIS en `db_service_request` y `db_matching`, Redis, Kafka con los topics de `quickpatch-kafka/topics/topics.yaml` y Garage.
