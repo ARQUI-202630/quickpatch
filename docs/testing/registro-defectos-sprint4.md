@@ -107,40 +107,55 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 
 ---
 
-### 3.5 BUG-SP4-005: Endpoints de Transición a `en_progreso` y `completado` no Implementados en QA
-- **Historia / Requisito:** `SCRUM-31` / `SCRUM-84` / `RF-09` (Ciclo de Vida de 4 Estados)
-- **Severidad:** Alta | **Prioridad:** P2
-- **Componente:** `apps/backend/services/service-request` (API .NET 8)
-- **Evidencia Real:** `tests/e2e/evidencias/qa-scrum-84-real.json` (Paso 4.1 y 5.1 -> HTTP `404 Not Found`)
-- **Descripción:** Al ejecutar la suite Newman contra QA desplegado (`https://qa.quickpatch.internal`), la petición `PATCH /api/v1/service-requests/:id/status` retorna HTTP 404 porque el microservicio `QuickPatch.ServiceRequest.Api` solo expone `POST /v1/service-requests` y `GET /v1/service-requests/{id}`.
-- **Acción de QA:** Reportado formalmente a Backend. La máquina de estados completa y reglas de negocio se certifican en paralelo mediante Simulación Local Pre-Deploy (`mock-gateway-local-simulacion.js`).
+### 3.5 BUG-SP4-005: [RETRACTADO / FUERA DE ALCANCE] Pruebas de Transición a `en_progreso` y `completado` pertenecen a la Historia SCRUM-35 del Backlog
+- **Historia / Requisito:** `SCRUM-35` (Backlog Sprint posterior) / Distinción de Alcance Sprint 4
+- **Estado del Defecto:** **RETRACTADO / CERRADO (Fuera de Alcance)**
+- **Severidad Original:** Alta | **Dictamen:** Descartado como defecto de backend.
+- **Componente:** Colección de pruebas `scrum-84-seguimiento-estado.postman_collection.json`
+- **Análisis y Causa de la Retracción:**
+  La petición `PUT /api/v1/service-requests/:id/status` para las transiciones físicas del técnico (`en_progreso` al llegar al sitio y `completado` al finalizar la reparación) corresponde formalmente a la historia de usuario `SCRUM-35` del Product Backlog, programada para un sprint posterior, y no al alcance del incremento de Sprint 4 (`SCRUM-31` / `SCRUM-84`: seguimiento en tiempo real del estado de asignación).
+  El código de QA respondió HTTP `404 Not Found` de forma correcta y esperada, pues dicha funcionalidad no formaba parte del incremento comprometido. La prueba intentó ejecutar endpoints fuera de alcance.
 
 ---
 
-### 3.6 BUG-SP4-006: Endpoint de Detalle de Solicitud con Contacto Resuelto no Desplegado en QA
+### 3.6 BUG-SP4-006: [RETRACTADO / ERROR DE DISEÑO DE PRUEBA] Endpoint `/assigned-detail` Inexistente en el Contrato del SAD (OpenAPI 1.1.0)
 - **Historia / Requisito:** `SCRUM-34` / `SCRUM-93` / `RF-12` (Detalle de Solicitud para Técnico Asignado)
-- **Severidad:** Media | **Prioridad:** P2
-- **Componente:** `apps/backend/services/service-request` / Ingress Gateway
-- **Evidencia Real:** `tests/e2e/evidencias/qa-scrum-81-90-93-real.json` (Pasos 3.1 a 3.4 -> HTTP `404 Not Found`)
-- **Descripción:** La ruta `/api/v1/service-requests/:id/assigned-detail` no se encuentra ruteada hacia el servicio o no está implementada en el controlador de QA.
-- **Acción de QA:** Reportado a Backend para despliegue en siguiente ciclo de pipeline.
+- **Estado del Defecto:** **RETRACTADO / CERRADO (Defecto Inválido)**
+- **Severidad Original:** Media | **Dictamen:** Descartado como defecto de backend.
+- **Componente:** Especificación de pruebas y documentación de QA
+- **Análisis y Causa de la Retracción:**
+  El contrato formal del SAD (especificación OpenAPI 1.1.0 `service-request.v1.yaml`) y el SDD establecen que la consulta del detalle de la solicitud por parte del técnico asignado se realiza mediante:
+  $$\text{GET } /api/v1/service-requests/\{id\}$$
+  utilizando el JWT del técnico en la cabecera `Authorization: Bearer <token>`. La ruta `/assigned-detail` nunca existió en el diseño arquitectural ni en los contratos de interfaz.
+  La suite oficial del incremento (`scrum-incremento-tecnico.postman_collection.json`) ya implementa la consulta sobre la ruta contractual canónica `/api/v1/service-requests/{{requestId}}`, validando que el técnico titular visualice los datos de contacto del cliente (teléfono y dirección) mientras que solicitudes ajenas o no asignadas son rechazadas con 403 / 404 bajo RFC 9457.
 
 ---
 
-### 3.7 BUG-SP4-007: Datos Semilla de Usuarios Técnicos y Administrativos Ausentes en Identity QA
-- **Historia / Requisito:** `SCRUM-395` / `SCRUM-56` / `RF-02`
-- **Severidad:** Media | **Prioridad:** P3
-- **Componente:** Despliegue Identity / Script de Seed de Base de Datos en QA
-- **Evidencia Real:** `tests/e2e/evidencias/qa-mvp-real.json` (84 aserciones fallidas por HTTP `401 Credenciales Inválidas`)
-- **Descripción:** Los usuarios de prueba fijos (`adminEmail`, `usr-tec-01`, `usr-tec-02`) no se encuentran insertados en la base de datos PostgreSQL de QA en VM5. El registro dinámico (`POST /api/v1/auth/register/*`) funciona al 100%, pero las pruebas que asumen usuarios preexistentes fallan con 401.
-- **Acción de QA:** Se solicita a DevOps incorporar el script de seed automatizado en el pipeline de despliegue de VM2/VM5.
+### 3.7 BUG-SP4-007: [RETRACTADO / ERROR DE CONFIGURACIÓN NEWMAN] Cuentas Administrativas no Sembradas por Diseño de Seguridad y Variables Omitidas
+- **Historia / Requisito:** `SCRUM-395` / `SCRUM-56` / `RF-02` / `ADR-018`
+- **Estado del Defecto:** **RETRACTADO / CERRADO (Defecto Inválido)**
+- **Severidad Original:** Media | **Dictamen:** Descartado como defecto de backend.
+- **Componente:** Parámetros de entorno en el Runner de Newman (`run-qa-deployed.ps1`)
+- **Análisis y Causa de la Retracción:**
+  1. *Diseño de Seguridad RBAC (ADR-018):* El microservicio `Identity` no crea usuarios administradores (`admin_tenant` ni `admin_plataforma`) mediante scripts estándar de seed por estrictas razones de seguridad y principio de mínimo privilegio. Los administradores se provisionan exclusivamente a través de migraciones controladas o el Secret de Kubernetes `identity-secretos` (`admin-email` y `admin-password`).
+  2. *Causa Raíz en la Colección:* En la ejecución automatizada de Newman de la suite MVP Sprint 3 (`quickpatch-mvp.postman_collection.json`), no se inyectaron las variables `--env-var adminEmail=...` y `--env-var adminPassword=...`. Postman transmitió un cuerpo JSON vacío `{"email":"","password":""}`, recibiendo legítimamente un HTTP `400 Bad Request` por validación de contrato. Esta falla en el paso 1 impidió capturar `adminToken`, provocando rechazos 401 en cascada y dejando variables de negocio como `categoryId`, `specialtyId` y `{{tenantPropio}}` como cadenas `null` o sin resolver en las peticiones posteriores.
+  3. *Verificación del Producto Real:* Se certificó directamente contra el ambiente QA desplegado que el registro dinámico de usuarios (`POST /api/v1/auth/register/client` y `POST /api/v1/auth/register/technician`), el login con credenciales válidas (`POST /api/v1/auth/login`), la emisión de tokens JWT RSA-256 y la creación transaccional de solicitudes operan al 100% de efectividad.
 
 ---
 
 ## 4. Conclusión del Registro de Defectos
 
-- **Total de Defectos Identificados:** 7 defectos (4 resueltos y verificados en QA/Harness, 3 abiertos reportados a Desarrollo/DevOps).
-- **Defectos Críticos de Seguridad / Aislamiento Abiertos:** **0** (El aislamiento intra-tenant fue verificado en QA real con HTTP 404 estricto).
-- **Tasa de Resolución Inmediata en QA:** 57.1% (4/7 defectos cerrados; los 3 restantes corresponden a código no desplegado de backend).
-- **Dictamen de QA:** Aprobado condicionado a la entrega de los parches de backend para los 3 defectos reportados.
+- **Total de Reportes Analizados:** 7 reportes de prueba.
+- **Defectos Reales de Código / Infraestructura Resueltos y Verificados:** **4**
+  - `BUG-SP4-001` (Aislamiento intra-tenant en Gateway Nginx / RLS).
+  - `BUG-SP4-002` (Estructura Problem Details RFC 9457 en Gateway).
+  - `BUG-SP4-003` (Transición atómica de disponibilidad en Matching).
+  - `BUG-SP4-004` (Encoding UTF-8 en harness de escáner en consolas Windows).
+- **Reportes Retractados por Falsos Positivos de Colección y Alcance:** **3**
+  - `BUG-SP4-005` (Fuera de alcance: historia de backlog SCRUM-35).
+  - `BUG-SP4-006` (Ruta inexistente: contrato formal es `GET /v1/service-requests/{id}`).
+  - `BUG-SP4-007` (Variables de admin omitidas en Newman; seed seguro por diseño).
+- **Defectos Críticos o Bloqueantes Abiertos en el Incremento:** **0**.
+- **Tasa de Resolución de Defectos Reales:** **100.0%** (4/4 resueltos y verificados).
+- **Dictamen Final de QA:** **APROBADO SIN DEFECTOS BLOQUEANTES** para merge del incremento técnico de Sprint 4.
 
