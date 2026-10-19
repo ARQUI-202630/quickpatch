@@ -36,10 +36,10 @@ package "quickpatch (repositorio principal)" <<principal>> as ROOT {
 
   package "apps/ (12 submódulos)" <<carpeta>> as APPS {
     package "mobile/ → quickpatch-mobile" <<cliente>> as MOBILE {
-      rectangle "Flutter + Dart" as MOBILE_STACK
+      rectangle "App nativa + Dart" as MOBILE_STACK
     }
     package "web/ → quickpatch-web" <<cliente>> as WEB {
-      rectangle "Angular + TypeScript" as WEB_STACK
+      rectangle "SPA web + TypeScript" as WEB_STACK
     }
     package "api-gateway/ → quickpatch-api-gateway" <<plataforma>> as GW {
       rectangle "nginx/ (rutas /api/<servicio>)" as GW_NGINX
@@ -70,7 +70,7 @@ MOBILE ..> GW_OPENAPI : contracts/api-gateway/
 
 legend right
   |= Color |= Significado |
-  |<#E3F2FD>| Cliente (Flutter, Angular) |
+  |<#E3F2FD>| Cliente (App móvil, Panel web) |
   |<#C8E6C9>| Microservicio (8) |
   |<#FFF3E0>| Plataforma con contratos (API Gateway, Kafka) |
   |<#ECEFF1>| Repositorio principal |

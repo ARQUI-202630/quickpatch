@@ -1,0 +1,105 @@
+@startuml 01_vista_logica_capas
+' Figura 4 del SDD (sección 5.2): vista lógica por capas. Usa los mismos contenedores y relaciones
+' que el diagrama de contenedores C4 (Figura 3, C4-03-Contenedores), sin nombrar el framework de los clientes.
+' Generar: docker run --rm -v "$PWD:/data" plantuml/plantuml:1.2026.8 -tsvg -charset UTF-8 -o .. /data/01_vista_logica_capas.puml
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam ArrowColor #555555
+skinparam ArrowFontSize 11
+left to right direction
+hide stereotype
+
+skinparam package {
+  BackgroundColor<<cliente>> #E3F2FD
+  BackgroundColor<<entrada>> #FFF3E0
+  BackgroundColor<<negocio>> #E8F5E9
+  BackgroundColor<<integracion>> #F3E5F5
+  BackgroundColor<<datos>> #ECEFF1
+  BorderColor #607D8B
+}
+skinparam rectangle {
+  BackgroundColor<<servicio>> #C8E6C9
+  BackgroundColor<<externo>> #FFFFFF
+  BorderColor #607D8B
+}
+skinparam rectangle<<externo>> {
+  BorderStyle dashed
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #607D8B
+}
+skinparam queue {
+  BackgroundColor #FFFFFF
+  BorderColor #607D8B
+}
+
+package "Capa de cliente" <<cliente>> as CLIENTE {
+  rectangle "**App móvil**\nClientes, empresas cliente,\ntécnicos y proveedores" as APP
+  rectangle "**Panel web**\nAdministrador del tenant\ny de la plataforma" as PANEL
+}
+
+package "Capa de entrada" <<entrada>> as ENTRADA {
+  rectangle "**API Gateway**\nREST /api/v1/*\nWebSocket /api/v1/realtime (ADR-023)\nQuita /api y enruta por el contrato;\ncada servicio valida el JWT (ADR-018)" as GW
+}
+
+package "Capa de servicios de negocio (8 microservicios)" <<negocio>> as NEGOCIO {
+  rectangle "**Identity**\nAutenticación, usuarios,\ntenants y auditoría" <<servicio>> as IDENTITY
+  rectangle "**Actors**\nProveedores, aliados y clientes\ncomo actores de negocio" <<servicio>> as ACTORS
+  rectangle "**Catalog**\nCategorías y especialidades" <<servicio>> as CATALOG
+  rectangle "**ServiceRequest**\nCiclo de vida de la solicitud\ny su ubicación" <<servicio>> as SR
+  rectangle "**Matching**\nAsignación geoespacial\nde técnicos y ofertas" <<servicio>> as MATCHING
+  rectangle "**Ranking**\nReputación de técnicos" <<servicio>> as RANKING
+  rectangle "**Payments**\nPagos tokenizados\ny facturación" <<servicio>> as PAYMENTS
+  rectangle "**Communication**\nCanal en tiempo real\ny buzón de notificaciones" <<servicio>> as COMMUNICATION
+}
+
+package "Capa de integración" <<integracion>> as INTEGRACION {
+  queue "**Apache Kafka**\nEventos de dominio,\nun topic por tipo (Outbox)" as KAFKA
+  rectangle "**Geocodificador**\nNominatim con el mapa\nde Bogotá (ADR-024)" as GEO
+  rectangle "**Pasarela de pagos PCI-DSS**\nExterna: tokeniza y cobra\n(RIE-01, ADR-009)" <<externo>> as PASARELA
+}
+
+package "Capa de datos" <<datos>> as DATOS {
+  database "**PostgreSQL + PostGIS**\nUna instancia, una base\npor servicio (ADR-014)" as PG
+  database "**Redis**\nCaché y colas cortas" as REDIS
+  database "**Garage (S3)**\nEvidencias y respaldos\n(ADR-016)" as GARAGE
+}
+
+APP --> GW : HTTPS/JSON\ny WebSocket
+PANEL --> GW : HTTPS/JSON
+
+GW --> IDENTITY : REST
+GW --> ACTORS : REST
+GW --> CATALOG : REST
+GW --> SR : REST
+GW --> MATCHING : REST
+GW --> RANKING : REST
+GW --> PAYMENTS : REST
+GW --> COMMUNICATION : REST y WebSocket
+
+IDENTITY --> KAFKA
+CATALOG --> KAFKA
+SR --> KAFKA
+MATCHING --> KAFKA
+RANKING --> KAFKA
+PAYMENTS --> KAFKA
+COMMUNICATION --> KAFKA
+
+SR --> GEO : HTTP
+PAYMENTS --> PASARELA : HTTPS
+MATCHING --> REDIS : caché
+SR --> GARAGE : S3
+NEGOCIO --> PG : cada servicio,\nsu propia base
+
+legend right
+  |= Color |= Capa |
+  |<#E3F2FD>| Cliente |
+  |<#FFF3E0>| Entrada |
+  |<#C8E6C9>| Servicios de negocio |
+  |<#F3E5F5>| Integración (borde punteado: sistema externo) |
+  |<#ECEFF1>| Datos |
+  Flechas a Kafka: publica o consume eventos.
+endlegend
+@enduml
