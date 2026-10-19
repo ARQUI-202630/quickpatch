@@ -21,9 +21,16 @@ const server = require('./mock-gateway-qa');
 
 let newman;
 try {
-    newman = require('C:/Users/kathe/AppData/Local/npm-cache/_npx/75b90f33e80c3d7c/node_modules/newman');
-} catch {
     newman = require('newman');
+} catch {
+    const { execSync } = require('child_process');
+    try {
+        const globalDir = execSync('npm root -g', { encoding: 'utf8' }).trim();
+        newman = require(path.join(globalDir, 'newman'));
+    } catch {
+        console.error('Error: newman no está instalado. Ejecute "npm install -g newman"');
+        process.exit(1);
+    }
 }
 
 const isRemote = process.argv.includes('--remote');

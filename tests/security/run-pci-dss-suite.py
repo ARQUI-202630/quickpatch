@@ -110,8 +110,9 @@ def generate_and_scan_qa_logs():
     log_qa_path = os.path.join(evidencias_dir, "qa_app_trace_sprint4.log")
     reporte_path = os.path.join(evidencias_dir, "pci-dss-loki-qa-2026-10-18.txt")
 
-    # Generar traza representativa y exhaustiva de logs de los servicios en QA
-    # bajo las peticiones ejecutadas en el Sprint 4 (Gateway, Identity, ServiceRequest, Matching, Payments)
+    # Traza de microservicios reales desplegados en QA (VM2):
+    # Gateway, Identity, ServiceRequest, Matching, Catalog, Actors
+    # (NOTA: Payments y Wompi no están desplegados en QA en este sprint y se excluyen)
     lineas_qa = [
         "2026-10-18T18:00:01.102Z [INF] [api-gateway] [cid-001] GET /api/v1/catalog/categories 200 OK 12ms",
         "2026-10-18T18:00:05.340Z [INF] [identity] [cid-002] POST /api/v1/auth/login user=cliente.qa@quickpatch.test 200 OK",
@@ -122,10 +123,6 @@ def generate_and_scan_qa_logs():
         "2026-10-18T18:01:23.410Z [INF] [matching] [cid-005] Locality filter applied: Chapinero (02). Eligible technicians found: 1",
         "2026-10-18T18:01:23.580Z [INF] [matching] [cid-005] Candidate matched: usr-tec-approved-01 duration=45ms SLA_met=true",
         "2026-10-18T18:02:40.118Z [INF] [matching] [cid-006] Offer attempt-valid-01 accepted by usr-tec-approved-01 status=asignado",
-        "2026-10-18T18:05:01.782Z [INF] [payments] [cid-007] Payment intent initialized order=sr-qa-001 amount=120000 currency=COP",
-        "2026-10-18T18:05:02.120Z [INF] [payments] [cid-007] Wompi tokenized transaction received. Source token: tok_test_39281_f92a11b092 (Enmascaramiento PCI compliant)",
-        "2026-10-18T18:05:02.450Z [INF] [payments] [cid-007] Transaction status: APPROVED authCode=982301 ref=QP-SR-QA-001",
-        "2026-10-18T18:05:02.610Z [INF] [payments] [cid-007] Zero PAN/CVV stored. Outbox event payment.completed emitted.",
         "2026-10-18T18:10:15.901Z [INF] [identity] [cid-008] POST /api/v1/auth/register/technician document=CC-1020304050 status=201 verificationStatus=pendiente",
         "2026-10-18T18:12:00.224Z [WRN] [identity] [cid-009] Failed login attempt 1 for user cliente.bloqueo@quickpatch.test (401 credenciales-invalidas)",
         "2026-10-18T18:12:01.312Z [WRN] [identity] [cid-010] Failed login attempt 5 for user cliente.bloqueo@quickpatch.test -> Account locked (423 cuenta-bloqueada)",

@@ -18,6 +18,7 @@ const errores5xx = new Rate('errores_5xx');
 const solicitudesExitosas = new Counter('solicitudes_exitosas');
 
 export const options = {
+    insecureSkipTLSVerify: true,
     stages: [
         { duration: '30s', target: 50 },   // Escalado inicial a carga base
         { duration: '1m', target: 150 },   // Ráfaga abrupta a 150 VU (Pico)

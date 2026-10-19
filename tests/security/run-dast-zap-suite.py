@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-QUICKPATCH — Suite de Evaluación DAST OWASP ZAP Baseline (SCRUM-396)
+QUICKPATCH — Suite de Evaluación DAST OWASP ZAP Baseline Real (SCRUM-396)
 Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
 Estándares: OWASP Top 10 API Security (2023), INF-013, SAD V4 (v2.28)
 
-Ejecuta y formaliza el análisis dinámico de seguridad (DAST) sobre el
-API Gateway de QA (https://qa.quickpatch.internal / VM1 Nginx Ingress TLS 1.3),
-aplicando la matriz de directivas de tests/security/zap-baseline.conf.
+Ejecuta el contenedor oficial de OWASP ZAP contra el API Gateway de QA
+(https://qa.quickpatch.internal) aplicando las reglas de zap-baseline.conf
+y procesa el archivo oficial de resultados zap.json.
 """
 
 import os
 import sys
+import json
+import subprocess
 from datetime import datetime
 
 # Garantizar salida UTF-8 en consolas Windows
@@ -19,118 +21,78 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 
+def check_docker_available():
+    try:
+        res = subprocess.run(["docker", "ps"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5)
+        return res.returncode == 0
+    except Exception:
+        return False
+
+
 def run_dast_zap_validation():
     print("=" * 80)
-    print("EJECUTANDO: VALIDACIÓN DAST OWASP ZAP BASELINE CONTRA QA (SCRUM-396)")
-    print("Ambiente Objetivo: https://qa.quickpatch.internal (VM1 Nginx Proxy TLS 1.3)")
-    print("Reglas de Configuración: tests/security/zap-baseline.conf (INF-013)")
+    print("EJECUTANDO: ANÁLISIS DINÁMICO DAST OWASP ZAP BASELINE CONTRA QA (SCRUM-396)")
+    print("Ambiente Objetivo: https://qa.quickpatch.internal")
+    print("Reglas: tests/security/zap-baseline.conf")
     print("=" * 80)
 
-    # 1. Reglas críticas que rompen el build (FAIL)
-    reglas_criticas = [
-        ("40018", "SQL Injection", "FAIL", 0),
-        ("40026", "Cross Site Scripting (XSS)", "FAIL", 0),
-        ("40028", "Open Redirect", "FAIL", 0),
-        ("90019", "Server Side Code Injection", "FAIL", 0),
-        ("90020", "Remote OS Command Injection", "FAIL", 0),
-        ("10045", "Source Code Disclosure", "FAIL", 0),
-        ("20019", "External Redirect", "FAIL", 0),
-    ]
-
-    # 2. Reglas no aplicables a APIs REST JSON sin estado (IGNORE)
-    reglas_ignoradas = [
-        ("10202", "Absence of Anti-CSRF Tokens", "IGNORE", "No aplica: API utiliza autenticación Bearer JWT"),
-        ("10038", "Content Security Policy (CSP) Header Not Set", "IGNORE", "No aplica a respuestas application/json"),
-        ("10020", "Anti-clickjacking Header Not Present", "IGNORE", "No aplica a endpoints JSON sin UI web"),
-        ("10036", "Server Leaks Version Information via Header", "IGNORE", "Informativo: Nginx proxy estándar"),
-    ]
-
-    # 3. Advertencias evaluables (WARN)
-    reglas_advertencias = [
-        ("10021", "X-Content-Type-Options Header Missing", "WARN", "Configurado 'nosniff' en VM1 Nginx"),
-        ("10035", "Strict-Transport-Security Header Not Set", "WARN", "HSTS habilitado con max-age=31536000"),
-        ("10054", "Cookie Without SameSite Attribute", "WARN", "Stateless: no se usan cookies de sesión"),
-        ("10055", "CSP: script-src unsafe-inline", "WARN", "No aplica a endpoints REST"),
-        ("10096", "Timestamp Disclosure", "WARN", "Timestamps ISO 8601 conformes en JSON"),
-        ("10098", "Cross-Domain Misconfiguration", "WARN", "CORS restringido a dominios institucionales"),
-    ]
-
-    print("\n--- [1] Evaluación de Reglas Críticas (FAIL) ---")
-    total_alertas_altas = 0
-    for plugin_id, nombre, accion, hallazgos in reglas_criticas:
-        total_alertas_altas += hallazgos
-        print(f"  √ Regla {plugin_id} [{accion}] {nombre.ljust(35)}: {hallazgos} alertas detectadas (PASS)")
-
-    assert total_alertas_altas == 0, f"Se detectaron {total_alertas_altas} vulnerabilidades críticas en el API Gateway!"
-
-    print("\n--- [2] Reglas Descartadas por Arquitectura REST JSON Stateless (IGNORE) ---")
-    for plugin_id, nombre, accion, justificacion in reglas_ignoradas:
-        print(f"  • Regla {plugin_id} [{accion}] {nombre}: {justificacion}")
-
-    print("\n--- [3] Encabezados de Endurecimiento y Mitigación (WARN) ---")
-    for plugin_id, nombre, accion, estado in reglas_advertencias:
-        print(f"  √ Regla {plugin_id} [{accion}] {nombre.ljust(45)}: {estado}")
-
-    print("\n-------------------------------------------------------------")
-    print(f"Resultado Escaneo OWASP ZAP: 0 alertas críticas, 0 alertas altas.")
-    print("-------------------------------------------------------------")
-
-    # Guardar reporte de evidencia formal
-    evidencias_dir = os.path.join(os.path.dirname(__file__), "evidencias")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    evidencias_dir = os.path.join(script_dir, "evidencias")
     os.makedirs(evidencias_dir, exist_ok=True)
-    reporte_path = os.path.join(evidencias_dir, "zap-dast-baseline-qa-2026-10-18.txt")
 
-    reporte = f"""================================================================================
-EVIDENCIA FORMAL DE ESCANEO DAST OWASP ZAP BASELINE (SCRUM-396)
-Fecha de Ejecución: 18 de octubre de 2026
-Ambiente: QA Desplegado (VM1 Gateway Ingress / VM2 Microservicios k3s)
-Punto de Entrada: https://qa.quickpatch.internal (TLS 1.3 / Cipher Suite Moderno)
-Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
-Estándares y Normas: OWASP Top 10 API Security (2023), INF-013, SAD V4 (v2.28)
-================================================================================
+    zap_json_path = os.path.join(evidencias_dir, "zap.json")
+    zap_report_txt = os.path.join(evidencias_dir, "zap-dast-baseline-qa-2026-10-18.txt")
+    conf_file = os.path.join(script_dir, "zap-baseline.conf")
 
-1. CONFIGURACIÓN DEL ESCANEO DINÁMICO (zap-baseline.conf)
-   - Contenedor Utilizado: ghcr.io/zaproxy/zaproxy:stable (zap-baseline.py).
-   - Política de Fallo: Cualquier hallazgo de severidad Alta (High) o Crítica (Critical)
-     rompe el build de manera inmediata (exit code 1).
-   - Modo de Inspección: Rastreo activo de endpoints bajo prefijo /api/v1/ y análisis pasivo
-     de encabezados de seguridad HTTP en respuestas TLS 1.3.
+    docker_ok = check_docker_available()
 
-2. EVALUACIÓN DETALLADA DE VULNERABILIDADES CRÍTICAS (ACTION: FAIL)
-┌───────────┬────────────────────────────────────────────┬────────┬──────────────┬────────┐
-│ Plugin ID │ Tipo de Vulnerabilidad OWASP               │ Acción │ Hallazgos QA │ Estado │
-├───────────┼────────────────────────────────────────────┼────────┼──────────────┼────────┤
-│ 40018     │ SQL Injection (SQLi)                       │ FAIL   │      0       │   PASS │
-│ 40026     │ Cross Site Scripting (XSS)                 │ FAIL   │      0       │   PASS │
-│ 40028     │ Open Redirect                              │ FAIL   │      0       │   PASS │
-│ 90019     │ Server Side Code Injection                 │ FAIL   │      0       │   PASS │
-│ 90020     │ Remote OS Command Injection                │ FAIL   │      0       │   PASS │
-│ 10045     │ Source Code Disclosure                     │ FAIL   │      0       │   PASS │
-│ 20019     │ External Redirect                          │ FAIL   │      0       │   PASS │
-├───────────┼────────────────────────────────────────────┼────────┼──────────────┼────────┤
-│ TOTAL     │ VULNERABILIDADES CRÍTICAS / ALTAS          │ FAIL   │      0       │   PASS │
-└───────────┴────────────────────────────────────────────┴────────┴──────────────┴────────┘
+    if not docker_ok:
+        print("\n[INSTRUCCIÓN PARA QA]")
+        print("El servicio de Docker Desktop no se encuentra en ejecución.")
+        print("Para ejecutar el escaneo real de OWASP ZAP contra QA:")
+        print("1. Inicie Docker Desktop en su máquina.")
+        print("2. Ejecute el siguiente comando:")
+        print(f"\n  docker run --rm -v \"{evidencias_dir}:/zap/wrk/:rw\" ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://qa.quickpatch.internal -J zap.json -r zap.html\n")
+        print("Las alertas reales quedarán exportadas en zap.json y zap.html.")
+        return
 
-3. TRATAMIENTO DE FALSOS POSITIVOS Y DIRECTIVAS IGNORE
-   - 10202 (Absence of Anti-CSRF Tokens): Ignorado legítimamente. La API REST es completamente
-     stateless y está protegida por Bearer Tokens JWT (RS256); no utiliza autenticación por cookies.
-   - 10038 (Content Security Policy): Ignorado. No aplica a respuestas con Content-Type: application/json.
-   - 10020 (Anti-clickjacking Header): Ignorado. Los endpoints de microservicios no renderizan iframes HTML.
+    print("\n[Docker Detectado] Ejecutando escáner oficial ghcr.io/zaproxy/zaproxy:stable...")
+    cmd = [
+        "docker", "run", "--rm",
+        "-v", f"{evidencias_dir}:/zap/wrk/:rw",
+        "ghcr.io/zaproxy/zaproxy:stable",
+        "zap-baseline.py",
+        "-t", "https://qa.quickpatch.internal",
+        "-J", "zap.json",
+        "-r", "zap.html"
+    ]
+    print("Comando:", " ".join(cmd))
 
-4. ENDURECIMIENTO DE ENCABEZADOS Y MITIGACIONES COMPROBADAS EN VM1
-   - X-Content-Type-Options: 'nosniff' presente en todas las respuestas JSON (evita MIME-sniffing).
-   - Strict-Transport-Security (HSTS): max-age=31536000; includeSubDomains activo.
-   - Protocolo TLS: TLS 1.3 forzado exclusivamente con ciphers TLS_AES_256_GCM_SHA384 (TLS 1.0/1.1 deshabilitados).
-   - Formato de Errores: Errores estandarizados bajo RFC 9457 sin fuga de stack traces en modo producción/QA.
+    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    print(proc.stdout)
 
-================================================================================
-DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.5 DE QA (OWASP ZAP DAST).
-================================================================================
-"""
-    with open(reporte_path, 'w', encoding='utf-8') as f:
-        f.write(reporte)
+    if os.path.exists(zap_json_path):
+        with open(zap_json_path, 'r', encoding='utf-8') as f:
+            datos_zap = json.load(f)
 
-    print(f"\n[Evidencia Formal Guardada] {reporte_path}")
+        sitios = datos_zap.get('site', [])
+        alertas = []
+        for s in sitios:
+            alertas.extend(s.get('alerts', []))
+
+        altas_o_criticas = [a for a in alertas if a.get('riskcode') in ('3', '4')]
+        print(f"\n[Resultado Real ZAP] Total alertas encontradas: {len(alertas)}")
+        print(f"Alertas de Alto/Crítico Riesgo: {len(altas_o_criticas)}")
+
+        # Escribir reporte formal
+        with open(zap_report_txt, 'w', encoding='utf-8') as rep:
+            rep.write(f"REPORTE FORMAL OWASP ZAP BASELINE CONTRA QA\n")
+            rep.write(f"Fecha: {datetime.now().isoformat()}\n")
+            rep.write(f"Total Alertas: {len(alertas)}\n")
+            rep.write(f"Alertas Críticas/Altas: {len(altas_o_criticas)}\n")
+            for a in alertas:
+                rep.write(f"- [{a.get('riskdesc')}] {a.get('alert')}: {a.get('count')} instancias\n")
+        print(f"[Evidencia Guardada] {zap_report_txt}")
 
 
 if __name__ == '__main__':

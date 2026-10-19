@@ -18,6 +18,7 @@ const solicitudDuration = new Trend('solicitud_duration');
 const tasaErrores = new Rate('tasa_errores');
 
 export const options = {
+    insecureSkipTLSVerify: true,
     stages: [
         { duration: '30s', target: 25 },  // Rampa de subida inicial
         { duration: '1m30s', target: 50 }, // Carga sostenida a 50 VU
