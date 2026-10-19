@@ -1,0 +1,201 @@
+{
+    "metrics": {
+        "http_req_sending": {
+            "avg": 0.006984931506849316,
+            "min": 0,
+            "med": 0,
+            "max": 0.5099,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_blocked": {
+            "p(90)": 0,
+            "p(95)": 60.48901999999994,
+            "avg": 5.817078082191781,
+            "min": 0,
+            "med": 0,
+            "max": 105.8411
+        },
+        "http_req_tls_handshaking": {
+            "med": 0,
+            "max": 95.4265,
+            "p(90)": 0,
+            "p(95)": 37.81175999999987,
+            "avg": 4.646130136986302,
+            "min": 0
+        },
+        "iteration_duration": {
+            "max": 1719.9664,
+            "p(90)": 1680.5814,
+            "p(95)": 1695.68213,
+            "avg": 1588.9482485714288,
+            "min": 1541.4313,
+            "med": 1557.1934
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(95)": 115.72667999999983,
+            "avg": 66.39349452054795,
+            "min": 17.7347,
+            "med": 25.5311,
+            "max": 1096.9991,
+            "p(90)": 99.20389999999995
+        },
+        "http_req_duration": {
+            "avg": 66.39349452054795,
+            "min": 17.7347,
+            "med": 25.5311,
+            "max": 1096.9991,
+            "p(90)": 99.20389999999995,
+            "p(95)": 115.72667999999983
+        },
+        "http_req_waiting": {
+            "avg": 66.07125205479451,
+            "min": 16.7541,
+            "med": 25.3459,
+            "max": 1096.9991,
+            "p(90)": 99.00153999999995,
+            "p(95)": 115.34805999999983
+        },
+        "http_req_receiving": {
+            "max": 1.5104,
+            "p(90)": 0.7892,
+            "p(95)": 0.9930799999999997,
+            "avg": 0.3152575342465753,
+            "min": 0,
+            "med": 0
+        },
+        "catalogo_duration": {
+            "avg": 35.85789142857143,
+            "min": 17.7347,
+            "med": 25.2434,
+            "max": 102.073,
+            "p(90)": 74.10486,
+            "p(95)": 82.15171999999998
+        },
+        "vus": {
+            "value": 5,
+            "min": 0,
+            "max": 5
+        },
+        "iterations": {
+            "count": 35,
+            "rate": 2.6213558173562697
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 73,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "data_sent": {
+            "count": 79066,
+            "rate": 5921.717687288309
+        },
+        "tasa_errores": {
+            "passes": 0,
+            "fails": 70,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "solicitud_duration": {
+            "min": 20.3765,
+            "med": 25.5311,
+            "max": 154.6832,
+            "p(90)": 104.4731,
+            "p(95)": 113.71125999999995,
+            "avg": 41.49233714285714
+        },
+        "http_req_duration{endpoint:catalogo}": {
+            "avg": 35.85789142857143,
+            "min": 17.7347,
+            "med": 25.2434,
+            "max": 102.073,
+            "p(90)": 74.10486,
+            "p(95)": 82.15171999999998,
+            "thresholds": {
+                "p(95)<200": false
+            }
+        },
+        "http_req_connecting": {
+            "min": 0,
+            "med": 0,
+            "max": 10.4146,
+            "p(90)": 0,
+            "p(95)": 10.4146,
+            "avg": 0.795845205479452
+        },
+        "vus_max": {
+            "min": 5,
+            "max": 5,
+            "value": 5
+        },
+        "http_req_duration{endpoint:crear_solicitud}": {
+            "med": 25.5311,
+            "max": 154.6832,
+            "p(90)": 104.4731,
+            "p(95)": 113.71125999999995,
+            "avg": 41.49233714285714,
+            "min": 20.3765,
+            "thresholds": {
+                "p(95)<2000": false
+            }
+        },
+        "http_reqs": {
+            "rate": 5.4673992762002195,
+            "count": 73
+        },
+        "data_received": {
+            "count": 79135,
+            "rate": 5926.885503042526
+        },
+        "checks": {
+            "passes": 140,
+            "fails": 0,
+            "value": 1
+        }
+    },
+    "setup_data": {
+        "categoryId": "01a13205-62a5-7d3e-9070-afb234022ca3",
+        "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJxdWlja3BhdGNoIiwiaXNzIjoicXVpY2twYXRjaC1pZGVudGl0eSIsImV4cCI6MTc5MjM4NzE4MCwiaWF0IjoxNzkyMzgzNTgwLCJuYmYiOjE3OTIzODM1ODAsInN1YiI6IjAxYTE1MjYyLWYzYWItNzkyZi1iY2UzLTAxNDMwZTE3MWNmNSIsInRlbmFudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMSIsInJvbGUiOiJjbGllbnRlIiwianRpIjoiOWUyNDgxMjctODExNi00NGE2LWE4MzctNzI5YjIyNzBlN2ZlIn0.oVqbE-eCeouTXUa4KMOI8JUBWc3MmAB26KvOB8vPRwstZZJJzEs_SBRAKC46MDzSzKVNvbxfnOHPzNTPr3xOCG6b_AVTIxVWiSpF8EeaVNRCGzC6yXDSJsGJAY-hnhXin968iWR5MQaRtGibYERKMPD9Cztgyy44GYiJqtnGAS0OV-6yDf5FI4zSrggOMaHKDUPj_8g5rPw_NXzWMNgmKXcl0DKTAfqTuezi8x1ziym4dryMBgPQt1PpdCeuKWr0M9gSPDgS4ae3Kh0yqbPblzsD5Or2ptF4KlugNNVZPfdWsduWVZFKNStpmjc6Yjo4ThvGgXPIfmJ9gqQzbO9VGA"
+    },
+    "root_group": {
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "Catalogo responde 200 OK": {
+                    "name": "Catalogo responde 200 OK",
+                    "path": "::Catalogo responde 200 OK",
+                    "id": "4007a9a353f8cfceb98dd363725f6af7",
+                    "passes": 35,
+                    "fails": 0
+                },
+                "Catalogo p95 dentro de umbral": {
+                    "name": "Catalogo p95 dentro de umbral",
+                    "path": "::Catalogo p95 dentro de umbral",
+                    "id": "9895c81ee998f0b3a973f8bfd7415af5",
+                    "passes": 35,
+                    "fails": 0
+                },
+                "Solicitud responde 201 Created o 200": {
+                    "id": "27cb3bf0584db64609e0b276f863cc52",
+                    "passes": 35,
+                    "fails": 0,
+                    "name": "Solicitud responde 201 Created o 200",
+                    "path": "::Solicitud responde 201 Created o 200"
+                },
+                "Solicitud p95 dentro de umbral": {
+                    "path": "::Solicitud p95 dentro de umbral",
+                    "id": "c141eff3707cbcb56964a842eaaa54a3",
+                    "passes": 35,
+                    "fails": 0,
+                    "name": "Solicitud p95 dentro de umbral"
+                }
+            },
+        "name": "",
+        "path": ""
+    }
+}
