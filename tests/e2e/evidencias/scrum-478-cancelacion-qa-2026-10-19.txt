@@ -1,0 +1,248 @@
+SCRUM-478: cancelación de la solicitud de punta a punta en QA, 19 de octubre de 2026
+======================================================================================
+Colección: tests/e2e/scrum-478-cancelacion.postman_collection.json (newman 6, contenedor postman/newman:6-alpine).
+Ambiente: https://qa.quickpatch.internal (ServiceRequest release/0.4.0, Matching release/0.5.0). Inicio: 2026-10-19 20:09:26 UTC.
+Corrida sin los secretos del administrador: los pasos de técnico, ofertas y administrador se omiten (pm.execution.skipRequest).
+Cuentas de prueba nuevas con clave aleatoria; la clave y los tokens no se guardan en esta evidencia.
+
+OK    Registro del cliente  (HTTP 201, 1092 ms, correlationId 86e90b0f-1095-4d34-a387-89e50194f0da)
+        ✓ 201
+OK    Login del cliente  (HTTP 200, 972 ms, correlationId 58b19703-6548-4b76-ad36-28c7fcafe358)
+        ✓ 200 con rol cliente
+OK    Categoría de la solicitud  (HTTP 200, 42 ms, correlationId 902e4a80-db63-4d98-9ae2-d18b262321fa)
+        ✓ 200
+OK    Crear la solicitud (espera la réplica de la categoría)  (HTTP 201, 44 ms, correlationId 980a5cbe-cfbd-4197-afed-2d55cf7acb38)
+        ✓ 201 en buscando_tecnico
+OK    Motivo de 4 caracteres → 400  (HTTP 400, 36 ms, correlationId 21e14d52-afd4-446e-8213-b5636eca12b7)
+        ✓ 400
+        ✓ Problem Details (RFC 9457) con correlationId
+        ✓ tipo validacion
+        ✓ error en reason
+OK    Sin token → 401  (HTTP 401, 39 ms, correlationId a6f5f2ad-f4ca-45cb-aa0b-8176898cc0db)
+        ✓ 401
+        ✓ Problem Details (RFC 9457) con correlationId
+OK    Registro del otro cliente  (HTTP 201, 913 ms, correlationId 1a56d891-3ddb-44d8-b8fd-01a082050088)
+        ✓ 201
+OK    Login del otro cliente  (HTTP 200, 969 ms, correlationId 0db6343a-ad97-411e-ad2d-7a6a64e55d3a)
+        ✓ 200 con rol cliente
+OK    Otro cliente del mismo tenant → 404  (HTTP 404, 45 ms, correlationId 5d4f54a9-35f4-4796-bcf3-2b454a1d5e14)
+        ✓ 404
+        ✓ Problem Details (RFC 9457) con correlationId
+        ✓ tipo no-encontrado
+OK    Registro del cliente del tenant Beta  (HTTP 201, 1021 ms, correlationId 1fd8ac35-2744-446e-8937-74a1ed210ee4)
+        ✓ 201
+OK    Login del cliente del tenant Beta  (HTTP 200, 990 ms, correlationId 30073b87-c28f-4153-8130-d1c971701f30)
+        ✓ 200 con rol cliente
+        ✓ el token es de otro tenant
+OK    Cliente de otro tenant → 404 (RLS)  (HTTP 404, 45 ms, correlationId c371b10b-9a43-482c-91c1-7f185e1ae229)
+        ✓ 404
+        ✓ Problem Details (RFC 9457) con correlationId
+        ✓ tipo no-encontrado
+OK    Registro de un técnico sin aprobar  (HTTP 201, 1010 ms, correlationId 131634c3-7ec6-4344-925f-b08dfa3eb047)
+        ✓ 201
+OK    Login del técnico sin aprobar  (HTTP 200, 1068 ms, correlationId 16934763-a700-4fee-aaeb-499fe5a8a753)
+        ✓ 200 con rol tecnico
+OK    Un técnico no cancela → 403  (HTTP 403, 36 ms, correlationId 57c0e540-c6b1-459f-98f5-2bd28e418bf8)
+        ✓ 403
+        ✓ Problem Details (RFC 9457) con correlationId
+OK    La solicitud sigue buscando técnico  (HTTP 200, 42 ms, correlationId 6382f72a-19af-4709-ad0c-76c22463beaf)
+        ✓ 200
+        ✓ nadie la canceló
+OK    El cliente cancela  (HTTP 200, 75 ms, correlationId 01b10f86-0101-4b25-b8d8-ad576c1bf928)
+        ✓ 200 con el contrato CancelledServiceRequest
+OK    El detalle trae la cancelación  (HTTP 200, 79 ms, correlationId 4e0eaf39-ecc2-4ea1-9d80-189f1611ce39)
+        ✓ 200
+        ✓ cancelado con fecha y motivo sin espacios
+OK    Cancelar otra vez → 409  (HTTP 409, 79 ms, correlationId 87ac3e25-8acc-4e83-9da0-5edbe59ae68f)
+        ✓ 409
+        ✓ Problem Details (RFC 9457) con correlationId
+        ✓ tipo transicion-invalida
+
+Resultado: 19 peticiones, 33 aserciones, 0 fallidas.
+
+Aviso en tiempo real (tests/e2e/scrum-478-aviso-tiempo-real.mjs, Node v24.15.0)
+-------------------------------------------------------------------------------
+OK    Registro del cliente  (HTTP 201)
+OK    Login del cliente  (HTTP 200)
+OK    Solicitud creada  (HTTP 201, buscando_tecnico)
+OK    Canal /v1/realtime autenticado  (auth.accepted)
+OK    El cliente cancela  (HTTP 200)
+FALLO Llega service-request.status-changed con cancelado  (sin aviso en 15 s)
+
+5/6 OK. Cliente de prueba: aviso478.mvfown7l@quickpatch.test; solicitud 01a155ca-6a73-7a68-ab83-fb120666f76b.
+
+Análisis del FALLO del aviso: no es un defecto de la cancelación. En QA sigue desplegado Communication release/0.1.0,
+anterior a SCRUM-466 (quickpatch-communication#12), que es la versión que consume service-request.status-changed y
+reenvía el aviso al cliente y al técnico; la 0.1.0 solo reenvía los eventos matching.*. La cancelación sí queda en
+cancelado en ServiceRequest. Se cierra con el release/0.2.0 de Communication y repitiendo este script.
+
+Corrida completa con el administrador del tenant y el de la plataforma
+-----------------------------------------------------------------------
+Workflow «Pruebas de sistema» (.github/workflows/pruebas-sistema.yml) lanzado a mano sobre la rama
+feature/qa/scrum-478-cancelacion, en el runner de VM1, con los secretos QA_ADMIN_* y QA_PLATFORM_ADMIN_* del repositorio:
+https://github.com/ARQUI-202630/quickpatch/actions/runs/39318080663 (job E2E en verde). Salida de Newman (sin cuerpos):
+
+❏ 0. Preparación: categoría propia y técnico aprobado
+↳ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.2kB, 1015ms]
+  ✓  200 con rol admin_tenant
+↳ Categoría solo para esta corrida
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 442B, 38ms]
+  ✓  201
+↳ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 419B, 940ms]
+  ✓  201
+↳ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a155d0-7dd9-7802-8c3f-2893296f5677/approve [200 OK, 321B, 37ms]
+  ✓  200
+↳ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.2kB, 1196ms]
+  ✓  200 con rol tecnico
+↳ Localidades de Bogotá
+  GET https://qa.quickpatch.internal/api/v1/localities [200 OK, 1.06kB, 26ms]
+  ✓  200
+↳ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 48ms]
+  ✓  200
+↳ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 132ms]
+  ✓  200
+  ✓  disponible
+❏ 1. Cliente: cancelar con la oferta pendiente
+↳ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 410B, 924ms]
+  ✓  201
+↳ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.19kB, 952ms]
+  ✓  200 con rol cliente
+↳ Categoría de la solicitud
+  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 1.37kB, 25ms]
+  ✓  200
+↳ Crear la solicitud 1 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 749B, 973ms]
+  ✓  201 en buscando_tecnico
+↳ El técnico ve la oferta de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 33ms]
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 823B, 32ms]
+  ✓  la oferta está pendiente para el técnico
+↳ Motivo de 4 caracteres → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-941f-76de-9994-852ac885aae6/cancel [400 Bad Request, 539B, 22ms]
+  ✓  400
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo validacion
+  ✓  error en reason
+↳ Sin token → 401
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-941f-76de-9994-852ac885aae6/cancel [401 Unauthorized, 476B, 23ms]
+  ✓  401
+  ✓  Problem Details (RFC 9457) con correlationId
+↳ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 412B, 997ms]
+  ✓  201
+↳ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.19kB, 907ms]
+  ✓  200 con rol cliente
+↳ Otro cliente del mismo tenant → 404
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-941f-76de-9994-852ac885aae6/cancel [404 Not Found, 457B, 44ms]
+  ✓  404
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo no-encontrado
+↳ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 423B, 963ms]
+  ✓  201
+↳ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 892ms]
+  ✓  200 con rol cliente
+  ✓  el token es de otro tenant
+↳ Cliente de otro tenant → 404 (RLS)
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-941f-76de-9994-852ac885aae6/cancel [404 Not Found, 457B, 25ms]
+  ✓  404
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo no-encontrado
+↳ Registro de un técnico sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 429B, 1058ms]
+  ✓  201
+↳ Login del técnico sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 942ms]
+  ✓  200 con rol tecnico
+↳ Un técnico no cancela → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-941f-76de-9994-852ac885aae6/cancel [403 Forbidden, 443B, 533ms]
+  ✓  403
+  ✓  Problem Details (RFC 9457) con correlationId
+↳ La solicitud sigue buscando técnico
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-941f-76de-9994-852ac885aae6 [200 OK, 674B, 26ms]
+  ✓  200
+  ✓  nadie la canceló
+↳ El cliente cancela
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-941f-76de-9994-852ac885aae6/cancel [200 OK, 370B, 30ms]
+  ✓  200 con el contrato CancelledServiceRequest
+↳ El detalle trae la cancelación
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-941f-76de-9994-852ac885aae6 [200 OK, 722B, 47ms]
+  ✓  200
+  ✓  cancelado con fecha y motivo sin espacios
+↳ Cancelar otra vez → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-941f-76de-9994-852ac885aae6/cancel [409 Conflict, 520B, 56ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo transicion-invalida
+↳ El técnico ya no ve la oferta (Matching consumió service-request.cancelled)
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 823B, 31ms]
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 29ms]
+  ✓  la oferta se retiró
+↳ Aceptar la oferta retirada → 409
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/66ca51ff-25ae-4fa7-873c-5ea7d9e1d58d/accept [409 Conflict, 708B, 31ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo oferta-no-disponible
+↳ El técnico sigue disponible después de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 30ms]
+  ✓  técnico disponible
+❏ 2. Administrador del tenant: cancelar con el técnico asignado
+↳ Crear la solicitud 2 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 749B, 30ms]
+  ✓  201 en buscando_tecnico
+↳ El técnico ve la oferta de la solicitud 2
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 30ms]
+  ✓  la oferta está pendiente para el técnico
+↳ El técnico acepta la oferta
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/d6e0641b-486d-482d-9089-18250159999b/accept [200 OK, 447B, 48ms]
+  ✓  200
+  ✓  aceptado
+↳ La solicitud queda asignada (ServiceRequest consumió matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-c23b-745b-abe7-26c13b19e819 [200 OK, 674B, 552ms]
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-c23b-745b-abe7-26c13b19e819 [200 OK, 797B, 551ms]
+  ✓  asignado al técnico de la prueba
+↳ El técnico queda ocupado
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 435B, 28ms]
+  ✓  técnico ocupado
+↳ Login del administrador de la plataforma
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 951ms]
+  ✓  200
+↳ El administrador de la plataforma no cancela → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-c23b-745b-abe7-26c13b19e819/cancel [403 Forbidden, 443B, 24ms]
+  ✓  403
+  ✓  Problem Details (RFC 9457) con correlationId
+↳ El administrador del tenant cancela
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-c23b-745b-abe7-26c13b19e819/cancel [200 OK, 375B, 75ms]
+  ✓  200 con el contrato CancelledServiceRequest
+↳ El cliente ve la cancelación con el motivo del administrador
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a155d0-c23b-745b-abe7-26c13b19e819 [200 OK, 851B, 40ms]
+  ✓  200
+  ✓  cancelado con el motivo
+↳ El técnico vuelve a disponible (Matching lo liberó)
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 435B, 25ms]
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 437B, 24ms]
+  ✓  técnico disponible
+❏ 3. Limpieza
+↳ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a155d0-7dd9-7802-8c3f-2893296f5677/suspend [200 OK, 351B, 31ms]
+  ✓  200
+↳ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a155d0-7d6e-7f0f-a6cf-8b446fb3bb5b [200 OK, 438B, 33ms]
+  ✓  200
+│                requests │                  48 │                  0 │
+│              assertions │                  63 │                  0 │
+
+Lectura: Matching retiró la oferta de la solicitud 1 en la primera consulta tras la cancelación y aceptarla dio 409
+oferta-no-disponible; con la solicitud 2 asignada, la cancelación del admin_tenant respondió 200 (con los grants de
+audit_logs ya aplicados en QA) y Matching devolvió al técnico a disponible. El técnico y la categoría de la corrida
+quedaron suspendido y desactivada.
