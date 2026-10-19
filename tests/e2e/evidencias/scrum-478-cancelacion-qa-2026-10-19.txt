@@ -246,3 +246,14 @@ Lectura: Matching retiró la oferta de la solicitud 1 en la primera consulta tra
 oferta-no-disponible; con la solicitud 2 asignada, la cancelación del admin_tenant respondió 200 (con los grants de
 audit_logs ya aplicados en QA) y Matching devolvió al técnico a disponible. El técnico y la categoría de la corrida
 quedaron suspendido y desactivada.
+
+Release 0.4.0 de ServiceRequest después de aplicar los roles en QA (aplicar-roles-db.yml --limit qa)
+-------------------------------------------------------------------------------------------------
+Misma colección con la carpeta 3 nueva, en el workflow «Pruebas de sistema»:
+https://github.com/ARQUI-202630/quickpatch/actions/runs/39322882186 (job E2E en verde). 52 peticiones, 71 aserciones, 0 fallidas.
+
+OK    POST /v1/service-requests/location-preview → 200, punto dentro de Bogotá con su localidad (Nominatim de QA)
+OK    GET /v1/admin/service-requests/summary (admin_tenant) → 200, los 9 estados y las 2 canceladas de la corrida
+OK    GET /v1/platform/service-requests/summary (admin_plataforma) → 200, el tenant del cliente solo con tenantId,
+      byStatus y createdToday (rol service_request_platform con SELECT por columna)
+OK    GET /v1/admin/service-requests/summary con token de cliente → 403
