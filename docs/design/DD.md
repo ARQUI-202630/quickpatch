@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.2|
+|**Versión**|5.3|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -630,7 +630,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 |---|---|---|
 |Identity|`tenants`, `users`, `technician_profiles` (con `provider_id`), `password_setup_tokens`, `audit_logs`, `outbox_events`|`users.company_id` y `client_companies` (RF-06)|
 |Catalog|`service_categories` (con `updated_at`), `outbox_events`|—|
-|ServiceRequest|`service_requests` (con `matching_updated_at`), `service_request_categories`, `outbox_events`, `processed_events`|`company_id` y `client_type` (RF-08), `cancelled_by` y `cancelled_by_type` (RF-36); `quotes`, `ratings` y `service_evidence`|
+|ServiceRequest|`service_requests` (con `matching_updated_at`), `service_request_categories`, `outbox_events`, `processed_events`|`company_id` y `client_type` (RF-08); `cancelled_by`, `cancelled_by_type` y `audit_logs` (RF-36, SCRUM-475); `quotes`, `ratings` y `service_evidence`|
 |Matching|`technician_availability`, `coverage_zones`, `localities`, `matching_requests`, `matching_attempts`, `outbox_events`, `processed_events`|—|
 |Communication|—|`notifications` en `db_communication` (SCRUM-456); hoy solo el canal en tiempo real, sin base|
 |Payments|—|`payments` e `invoices`|
@@ -800,8 +800,8 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |completed_at|TIMESTAMPTZ|Sí|—|Finalización del servicio.|
 |cancelled_at|TIMESTAMPTZ|Sí|—|Momento de la cancelación, si la hubo.|
 |cancellation_reason|TEXT|Sí|—|Motivo de la cancelación. Obligatorio cuando la cancela un usuario (RF-36).|
-|cancelled_by|UUID|Sí|Ref. lógica|**Nuevo v3. Pendiente de implementar (RF-36).** Usuario que canceló la solicitud. Nulo cuando la cancela el propio servicio (RN-Q6, RN-Q7).|
-|cancelled_by_type|VARCHAR(15)|Sí|CHECK|**Nuevo v3. Pendiente de implementar (RF-36).** `cliente`, `admin_tenant` o `sistema` (RN-SR8).|
+|cancelled_by|UUID|Sí|Ref. lógica|**Nuevo v3. Pendiente de implementar (RF-36, SCRUM-475).** Usuario que canceló la solicitud. Nulo cuando la cancela el propio servicio (RN-Q6, RN-Q7).|
+|cancelled_by_type|VARCHAR(15)|Sí|CHECK|**Nuevo v3. Pendiente de implementar (RF-36, SCRUM-475).** `cliente`, `admin_tenant` o `sistema` (RN-SR8). `CHECK (cancelled_by_type IN ('cliente', 'admin_tenant', 'sistema'))`; nulo si la solicitud no se canceló.|
 |created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
 
 **Estados:**
@@ -1087,7 +1087,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 ### 5.14 Tabla `audit_logs`
 
-**Servicio propietario:** Transversal.
+**Servicio propietario:** Transversal: cada servicio que registra operaciones administrativas tiene su propia tabla, con este mismo esquema y RN-A1, en su base. Hoy, Identity; desde **v5.3**, también ServiceRequest, que registra `cancelar_solicitud_admin` en `db_service_request` en la misma transacción de la cancelación (RF-36, SCRUM-474). Ningún servicio escribe en la tabla de otro.
 
 **Propósito:** Registrar operaciones administrativas y accesos no autorizados relevantes.
 
@@ -1114,7 +1114,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 - `alta_tecnico_proveedor` (**nuevo v3**, RF-16)
 - `crear_tenant` (**nuevo v5**, RF-21, SCRUM-462): `tenant_id` nulo, `target_id` el tenant creado y `metadata` con el nombre, el NIT y el `correlationId`
 - `activar_tenant` y `desactivar_tenant` (**nuevo v3**, RF-21)
-- `cancelar_solicitud_admin` (**nuevo v3**, cancelación por `admin_tenant`, RF-36)
+- `cancelar_solicitud_admin` (**nuevo v3**, cancelación por `admin_tenant`, RF-36): en el `audit_logs` de ServiceRequest (**v5.3**), con `tenant_id`, `actor_user_id` el administrador, `target_id` la solicitud y `metadata` con el estado anterior y el `correlationId`. El motivo no va en `metadata`: ya queda en `cancellation_reason`
 - `evento_descartado` (**nuevo v3**, consumidor que recibe un evento de una fila inexistente en su tenant, sección 10.3)
 
 ### 5.15 Tabla `outbox_events`
@@ -1410,7 +1410,7 @@ Matching Service aplica RN-TP1 y RN-TP2 con la copia de `verification_status` qu
 - **RN-SR5:** si Payments Service informa `payment.rejected`, la solicitud permanece en `completado` y el cliente puede reintentar el pago.
 - **RN-SR6:** solo se puede pasar a `en_progreso` desde `cotizacion_aceptada`; el servicio no inicia sin una cotización aceptada.
 - **RN-SR7:** la solicitud puede pasar a `cancelado` desde cualquier estado anterior a `en_progreso`, igual que `CANCELLED` en el SAD (sección 7.4). La cancelación registra `cancelled_at` y `cancellation_reason`, anula la cotización pendiente y publica `service-request.cancelled`.
-- **RN-SR8:** pueden cancelar una solicitud el cliente que la creó (`client_id`) y el `admin_tenant` de su tenant (RF-36). ServiceRequest Service la cancela por sí mismo en los casos de RN-Q6 y RN-Q7. **Cambio v3:** la cancelación registra `cancelled_by` y `cancelled_by_type` (`cliente`, `admin_tenant` o `sistema`); la de un `admin_tenant` queda además en `audit_logs` con la acción `cancelar_solicitud_admin`.
+- **RN-SR8:** pueden cancelar una solicitud el cliente que la creó (`client_id`) y el `admin_tenant` de su tenant (RF-36). ServiceRequest Service la cancela por sí mismo en los casos de RN-Q6 y RN-Q7. **Cambio v3:** la cancelación registra `cancelled_by` y `cancelled_by_type` (`cliente`, `admin_tenant` o `sistema`); la de un `admin_tenant` queda además en `audit_logs` con la acción `cancelar_solicitud_admin`. **v5.3:** en el `audit_logs` de `db_service_request` (sección 5.14), en la misma transacción.
 - **RN-SR9:** la ubicación de una solicitud debe estar dentro del área de cobertura de Bogotá D.C. (restricción R6 del SAD). El área se define en la configuración del servicio como un rectángulo de coordenadas; el valor inicial cubre el área urbana: latitud de 4.45 a 4.85 y longitud de −74.25 a −73.98. Una ubicación fuera del área se rechaza con `422 ubicacion-fuera-de-cobertura`.
 - **RN-SR10:** la categoría de una solicitud nueva debe existir y estar activa en el tenant del usuario, según la réplica local `service_request_categories`. Si no, se rechaza con `422 categoria-no-disponible`.
 - **RN-SR11:** `description` tiene entre 10 y 1000 caracteres y `address_text` entre 5 y 255. `address_text` complementa la ubicación con los datos que el punto no tiene (torre, apartamento, indicaciones).
@@ -1703,7 +1703,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |POST|`/v1/service-requests/location-preview`|`cliente`, `empresa_contacto`|RF-07|Contrato v1.3.0|Vista previa de la geocodificación: punto, localidad y dirección reconocida, sin crear nada (sección 8.3.3).|
 |GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Contrato v1.4.0 (`admin_tenant`); el cliente, pendiente|Listar: el cliente ve las suyas; el `admin_tenant`, todas las de su tenant, sin dirección, ubicación ni contacto (sección 8.3.15).|
 |GET|`/v1/service-requests/{id}`|Cliente dueño, técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato.|
-|POST|`/v1/service-requests/{id}/cancel`|Cliente dueño, `admin_tenant`|RF-36||Cancelar con motivo.|
+|POST|`/v1/service-requests/{id}/cancel`|Cliente dueño, `admin_tenant`|RF-36|Contrato v1.5.0|Cancelar con motivo (sección 8.3.9).|
 |GET|`/v1/service-requests/{id}/quotes`|Cliente dueño, técnico asignado|RF-34, RF-35|Nuevo|Cotizaciones de la solicitud.|
 |POST|`/v1/service-requests/{id}/quotes`|Técnico asignado|RF-34||Emitir cotización.|
 |POST|`/v1/service-requests/{id}/quotes/{quoteId}/accept`|Cliente dueño|RF-35||Aceptar cotización.|
@@ -1991,7 +1991,16 @@ Al rechazar la tercera, `serviceRequestStatus` es `cancelado` y `remainingQuotes
 { "reason": "Ya no necesito el servicio." }
 ```
 
-`reason` es obligatorio (RF-36). **Respuesta `200 OK`:** `{ "id": "...", "status": "cancelado", "cancelledAt": "...", "cancelledByType": "cliente" }`. **Errores:** `409 INVALID_STATE_TRANSITION` desde `en_progreso`, `completado`, `pagado` o `cancelado` (RN-SR7).
+`reason` es obligatorio (RF-36), de 5 a 500 caracteres. **Respuesta `200 OK`:** `{ "id": "...", "status": "cancelado", "cancelledAt": "...", "cancelledByType": "cliente" }`. **Errores:** `409 INVALID_STATE_TRANSITION` desde `en_progreso`, `completado`, `pagado` o `cancelado` (RN-SR7).
+
+**v5.3 (SCRUM-474, contrato v1.5.0).** El error de estado se publica como `409 transicion-invalida`, el mismo tipo de Identity, en lugar del código de P-07. Una solicitud de otro cliente o de otro tenant responde `404 no-encontrado` (RLS); otro rol, `403`. Cancelar exige la fila bloqueada (`SELECT ... FOR UPDATE`): un evento de Matching que llega al mismo tiempo espera, y después ya no cambia el estado (sección 5.5, `matching_updated_at`). En la misma transacción, ServiceRequest guarda `cancelled_at`, `cancellation_reason`, `cancelled_by` y `cancelled_by_type`, escribe `audit_logs` si cancela un `admin_tenant`, y deja en el Outbox `service-request.cancelled` (para Matching, RN-M5 y RN-M6) y `service-request.status-changed` con `cancelado` (aviso en tiempo real al cliente, al técnico asignado y al panel, sección 8.5). El detalle (sección 8.3.4) agrega `cancelledAt` y `cancellationReason`. El motivo no se escribe en los logs.
+
+|Caso|Resultado|
+|---|---|
+|El cliente dueño o el `admin_tenant` de su tenant, en un estado anterior a `en_progreso`|`200`, los dos eventos en el Outbox|
+|El mismo caso cuando la solicitud ya está `cancelado`|`409 transicion-invalida`|
+|Otro cliente, o cualquier usuario de otro tenant|`404 no-encontrado` (prueba de fuga entre tenants)|
+|`tecnico`, `proveedor` o `admin_plataforma`|`403 no-autorizado`|
 
 #### 8.3.10 Evidencia fotográfica
 
@@ -2123,7 +2132,7 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 |`service-request.quote-accepted`|ServiceRequest|Communication|Notificar al técnico que puede iniciar.||
 |`service-request.quote-rejected`|ServiceRequest|Communication|Notificar al técnico que debe emitir otra cotización.|Nuevo|
 |`service-request.started`|ServiceRequest|Communication|Notificar al cliente que el servicio inició (RF-11, D2).|Nuevo|
-|`service-request.cancelled`|ServiceRequest|Matching, Communication|Matching anula la oferta pendiente y libera al técnico (RN-M5, RN-M6).||
+|`service-request.cancelled`|ServiceRequest|Matching|Matching anula la oferta pendiente y libera al técnico (RN-M5, RN-M6). **v5.3:** Communication no lo consume; el aviso sale de `service-request.status-changed`, que se publica en la misma transacción.|Contrato v1 (5.3, SCRUM-474)|
 |`service-request.completed`|ServiceRequest|Payments, Matching, Communication|Payments crea el pago pendiente (RN-P4) y Matching libera al técnico (RN-M6).||
 |`service-request.rated`|ServiceRequest|Ranking, Communication|Ranking actualiza la reputación del técnico (D3, DEP-04).|Nuevo|
 |`payment.approved`|Payments|ServiceRequest, Communication|La solicitud pasa a `pagado`; Payments emite la factura.||
@@ -2317,7 +2326,8 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`GET /v1/service-requests/{id}`|`service-request.v1.yaml` 1.0.0+|ServiceRequest|3|4: solicitud de otro cliente (404)|
 |`GET /v1/service-requests/{id}` como técnico asignado|`service-request.v1.yaml` 1.1.0 e `identity-internal.v1.yaml` 1.0.0|ServiceRequest e Identity (SCRUM-91)|—|—|
 |`GET /v1/technicians/me/service-requests`|`service-request.v1.yaml` 1.2.0|ServiceRequest (SCRUM-464)|—|—|
-|`GET /v1/service-requests` (`admin_tenant`), `GET /v1/admin/service-requests/summary` y `GET /v1/platform/service-requests/summary`|`service-request.v1.yaml` 1.4.0|Pendiente (SCRUM-103)|—|—|
+|`GET /v1/service-requests` (`admin_tenant`), `GET /v1/admin/service-requests/summary` y `GET /v1/platform/service-requests/summary`|`service-request.v1.yaml` 1.4.0|ServiceRequest (SCRUM-103)|—|—|
+|`POST /v1/service-requests/{id}/cancel`|`service-request.v1.yaml` 1.5.0|Pendiente (SCRUM-475)|—|—|
 |`GET /v1/admin/technicians` y `POST /v1/admin/technicians/{userId}/approve`, `/reject` y `/suspend`|`identity.v1.yaml` 1.3.0|Identity (SCRUM-106)|—|—|
 |`GET /v1/localities`, `GET` y `PUT /v1/technicians/me/availability` y `/coverage`|`matching.v1.yaml` 1.0.0|Matching (SCRUM-88)|—|—|
 |`GET /v1/matching/offers` y `POST /v1/matching/offers/{attemptId}/accept` y `/reject`|`matching.v1.yaml` 1.0.0|En revisión (SCRUM-79): aceptar, rechazar y vencer (RN-M8)|—|—|
@@ -2326,7 +2336,7 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`GET /v1/notifications` y `POST /v1/notifications/{id}/read`|`communication.v1.yaml` 1.0.0|Pendiente (SCRUM-456)|—|—|
 |`POST /v1/auth/register/company`, `POST /v1/auth/refresh` y `POST /v1/companies/me/users`|Sin contrato|Pendiente|—|—|
 |WebSocket `/v1/realtime`|`asyncapi/realtime.v1.yaml` 1.0.0|Communication (ADR-023)|—|—|
-|Resto de ServiceRequest (listado, cancelación, cotizaciones, inicio, evidencia, cierre, calificación, historial y resumen) y Payments|Sin contrato|Pendiente|—|—|
+|Resto de ServiceRequest (listado del cliente, cotizaciones, inicio, evidencia, cierre, calificación, historial y resumen) y Payments|Sin contrato|Pendiente|—|—|
 
 |Evento|Contrato|Productor|Consumidores implementados|Evidencia|
 |---|---|---|---|---|
@@ -2335,7 +2345,8 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`technician.registered` y `technician.verification-changed`|`quickpatch-kafka` v1 (v4; topics de 1 partición, clave `technicianId`)|Identity, con Transactional Outbox|Matching (proyección del técnico, SCRUM-88). Communication: pendiente (buzón, SCRUM-456)|—|
 |`matching.offer-created`, `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed`|`quickpatch-kafka` v1 (v4; topics de 3 particiones, clave `serviceRequestId`)|Matching (SCRUM-76: ofertas, espera y reanudación; aceptación, SCRUM-79)|ServiceRequest (espera y reanudación, SCRUM-460; asignación, SCRUM-91). Communication: `offer-created` en el canal en tiempo real; buzón pendiente, SCRUM-456|—|
 |`service-request.status-changed`|`service-request.status-changed.v1.json` (`quickpatch-kafka`, 5.1; topic de 3 particiones, clave `serviceRequestId`)|ServiceRequest, con Transactional Outbox, al aplicar un evento de Matching (SCRUM-466)|Communication (aviso de estado en el canal en tiempo real, SCRUM-466)|Pruebas de integración de ServiceRequest (`MatchingStatusFlowTests`: un evento viejo no deja el evento en el Outbox) y de Communication (`KafkaToRealtimeTests`)|
-|Los 9 eventos restantes del Cuadro 11|Sin esquema|Pendiente|—|—|
+|`service-request.cancelled`|`service-request.cancelled.v1.json` (`quickpatch-kafka` v0.5.0, 5.3; topic de 3 particiones, clave `serviceRequestId`)|Pendiente (ServiceRequest, SCRUM-475)|Pendiente (Matching, SCRUM-476)|—|
+|Los 8 eventos restantes del Cuadro 11|Sin esquema|Pendiente|—|—|
 
 _Cuadro 15: Trazabilidad entre el catálogo, los contratos, el código y la colección de Postman_
 
@@ -2610,7 +2621,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.0|DD V5 (SCRUM-455)|**ADR-024:** geocodificación propia (RIE-02) con `location` opcional y `422 direccion-no-encontrada` en `POST /v1/service-requests` (contrato 1.3.0), y buzón de notificaciones (RIE-03) con la tabla `notifications` en `db_communication` y `communication.v1.yaml` 1.0.0. **Consulta interna por lote:** `identity-internal.v1.yaml` 1.0.0 (SCRUM-91). **Cambios ya implementados que faltaban:** `service_requests.matching_updated_at` (SCRUM-460) y `matching_requests.description` (SCRUM-79); sección 8.3.14 con `specialtyId`, sin `availability` y con el enlace de invitación en lugar del correo de Communication (SCRUM-97, SCRUM-461); tabla `password_setup_tokens`; `crear_tenant` en `audit_logs` y `POST /v1/platform/tenants` (SCRUM-462); `X-Channel-Id` (SCRUM-60). Vista previa de la geocodificación (`POST /v1/service-requests/location-preview`, `Geocoding__NominatimUrl`) y propuesta P-09. DEP-09 pasa a parcial (el Gateway ya fija `X-Channel-Id`), DEP-19 se decide para el MVP y se agrega DEP-20. La trazabilidad (8.8) se actualiza con lo implementado.|
 |5.1|SCRUM-466|**Aviso de estado desde ServiceRequest.** Evento nuevo `service-request.status-changed` v1 (Cuadros 5, 11, 12 y 15): ServiceRequest lo publica por Outbox en la misma transacción del cambio de estado y solo si lo aplicó. Communication avisa el cambio de estado con él y deja de derivarlo de los eventos de Matching, que ServiceRequest puede descartar por viejos (sección 8.5). `asyncapi/realtime.v1.yaml` pasa a 1.0.1 (solo cambia el origen del aviso).|
 |5.2|SCRUM-485|**Panel operativo de solicitudes (RF-18, SCRUM-38).** `service-request.v1.yaml` 1.4.0: lista de las solicitudes del tenant para el `admin_tenant`, conteos por estado del tenant y, para el `admin_plataforma`, conteos por tenant (secciones 8.2.4 y 8.3.15). Rol nuevo `service_request_platform` con `SELECT` solo sobre `tenant_id`, `status` y `created_at`, y la operación de plataforma de ServiceRequest (secciones 10.2 y 10.4). DEP-15 resuelta.|
-|5.3|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.3|SCRUM-474|**Cancelación de la solicitud (RF-36, SCRUM-472).** `service-request.v1.yaml` 1.5.0 con `POST /v1/service-requests/{id}/cancel` y `409 transicion-invalida` (secciones 8.2.4 y 8.3.9); evento `service-request.cancelled` v1 consumido solo por Matching (sección 8.4); `audit_logs` propia de ServiceRequest para `cancelar_solicitud_admin` (secciones 5.14 y RN-SR8). Las pruebas de SCRUM-103 quedan en la trazabilidad.|
+|5.4|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
