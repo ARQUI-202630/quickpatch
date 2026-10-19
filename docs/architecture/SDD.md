@@ -147,11 +147,11 @@ La representación organiza los contenedores de la Figura 3 en cinco capas, sin 
 
 ## 5.3 Componentes lógicos principales del backend (complementaria)
 
-![Diagrama de componentes del backend](diagrams/sdd/02_componentes_backend.png)
+![Diagrama de componentes del backend](diagrams/sdd/02_componentes_backend.svg)
 
 **Figura 5. Componentes lógicos principales del backend.**
 
-El API Gateway concentra la entrada de solicitudes síncronas. ServiceRequest, Matching, Payments, Ranking y Communication participan en los flujos de eventos por Kafka. Cada servicio conserva su límite funcional y su propiedad de datos.
+La figura resume en una sola vista los componentes de cada servicio (secciones 6.4 a 6.11) y los eventos de la matriz 8.6, según el código de `develop`; lo que todavía no está implementado aparece en gris como «planeado». El API Gateway recibe el REST y el WebSocket de los clientes y enruta a cada servicio, que valida el JWT (ADR-018). Identity, Catalog, ServiceRequest y Matching publican sus eventos por un Outbox propio (ADR-007): Identity los del técnico, Catalog los cambios de categoría, ServiceRequest la creación, el cambio de estado y la cancelación de la solicitud, y Matching las ofertas y el resultado de la búsqueda. ServiceRequest consume los resultados de Matching y las categorías; Matching, la solicitud creada o cancelada y los eventos del técnico; Communication, la creación, el cambio de estado y las ofertas, para los avisos del canal en tiempo real (ADR-023). ServiceRequest también pide a Identity los nombres por la consulta interna y ubica la dirección con el geocodificador (ADR-024). Actors, Ranking y Payments siguen planeados. Cada servicio conserva su límite funcional y su propia base de datos (ADR-014). La fuente de la figura es `diagrams/sdd/src/02_componentes_backend.puml`.
 
 ## 5.4 Principios de organización
 

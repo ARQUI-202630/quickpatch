@@ -1,0 +1,150 @@
+@startuml 02_componentes_backend
+' Figura 5 del SDD (sección 5.3): componentes lógicos principales del backend. Resume las secciones 6.4 a 6.11 y la
+' matriz de eventos 8.6 según el código de develop; lo que todavía no está implementado va en gris como «planeado».
+' Generar: docker run --rm -v "$PWD:/data" plantuml/plantuml:1.2026.8 -tsvg -charset UTF-8 -o .. /data/02_componentes_backend.puml
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam ArrowColor #555555
+skinparam ArrowFontSize 10
+skinparam ranksep 70
+hide stereotype
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BackgroundColor<<servicio>> #E8F5E9
+  BackgroundColor<<cliente>> #E3F2FD
+  BackgroundColor<<entrada>> #FFF3E0
+  BorderColor #607D8B
+  FontSize 11
+}
+skinparam rectangle<<planeado>> {
+  BorderStyle dashed
+  FontColor #546E7A
+}
+skinparam queue {
+  BackgroundColor #F3E5F5
+  BorderColor #607D8B
+}
+skinparam database {
+  BackgroundColor #ECEFF1
+  BorderColor #607D8B
+}
+skinparam package {
+  BackgroundColor #FAFAFA
+  BorderColor #607D8B
+}
+
+rectangle "**Clientes**\nApp móvil y Panel web" <<cliente>> as CLIENTES
+rectangle "**API Gateway**\nREST /api/v1/* y WebSocket /api/v1/realtime\nquita /api y enruta; cada servicio valida el JWT (ADR-018)" <<entrada>> as GW
+
+package "Servicios de negocio" as NEGOCIO {
+  rectangle IDENTITY <<servicio>> [
+    **Identity**
+    ----
+    Autenticación (login, JWT RS256)
+    Registro de clientes y técnicos
+    Verificación de técnicos
+    Equipo del proveedor (invitación)
+    Tenants de la plataforma
+    Directorio interno de usuarios
+    Outbox y publicador
+  ]
+  rectangle CATALOG <<servicio>> [
+    **Catalog**
+    ----
+    API de categorías
+    Outbox y publicador
+  ]
+  rectangle SR <<servicio>> [
+    **ServiceRequest**
+    ----
+    API de solicitudes
+    Panel operativo (lista y conteos)
+    Cancelación
+    Geocodificación y vista previa
+    Agregado y máquina de estados
+    Consumidor de Matching
+    Réplica de categorías
+    Directorio de usuarios
+    Outbox y publicador
+    <color:#78909C><i>Pagos, evidencias y calificación (planeado)</i></color>
+  ]
+  rectangle MATCHING <<servicio>> [
+    **Matching** (Java + Spring Boot)
+    ----
+    Disponibilidad y cobertura
+    Proyección del técnico
+    Búsqueda de candidatos (PostGIS)
+    Ofertas: vencimiento y reanudación
+    Retiro de la oferta al cancelar
+    Outbox y publicador
+    <color:#78909C><i>Réplica de categorías (planeado)</i></color>
+  ]
+  rectangle COMM <<servicio>> [
+    **Communication**
+    ----
+    Canal en tiempo real (ADR-023)
+    Consumidor de eventos y avisos
+    <color:#78909C><i>Buzón de notificaciones, ADR-024 (planeado)</i></color>
+  ]
+  rectangle ACTORS <<planeado>> [
+    **Actors** (planeado)
+    ----
+    Proveedores, aliados y clientes
+  ]
+  rectangle RANKING <<planeado>> [
+    **Ranking** (planeado)
+    ----
+    Reputación del técnico
+  ]
+  rectangle PAYMENTS <<planeado>> [
+    **Payments** (planeado)
+    ----
+    Cobro tokenizado y facturación
+  ]
+}
+
+queue "**Apache Kafka**\nun topic por evento (Outbox)" as KAFKA
+database "**PostgreSQL + PostGIS**\nuna base por servicio (ADR-014)" as PG
+rectangle "**Geocodificador**\nNominatim (ADR-024)" as GEO
+rectangle "**Pasarela PCI-DSS**\nexterna (ADR-009)" <<planeado>> as PSP
+rectangle "**Redis**\ncaché del matching" <<planeado>> as REDIS
+rectangle "**Garage (S3)**\nevidencias (ADR-016)" <<planeado>> as GARAGE
+
+' Orden: Identity y Catalog a la izquierda, ServiceRequest y Matching al centro; debajo los demás
+IDENTITY -[hidden]right- CATALOG
+CATALOG -[hidden]right- SR
+SR -[hidden]right- MATCHING
+SR -[hidden]down- KAFKA
+KAFKA -[hidden]down- COMM
+COMM -[hidden]right- ACTORS
+ACTORS -[hidden]right- RANKING
+RANKING -[hidden]right- PAYMENTS
+
+CLIENTES --> GW
+GW --> NEGOCIO : REST y WebSocket
+SR --> IDENTITY : REST interno\n(nombres)
+SR --> GEO : HTTP
+NEGOCIO --> PG : cada servicio,\nsu propia base
+
+' Eventos (8.6): una flecha por servicio con lo que publica (por su Outbox) y lo que consume
+IDENTITY -down-> KAFKA : **publica** technician.registered,\ntechnician.verification-changed
+CATALOG -down-> KAFKA : **publica**\ncatalog.category-changed
+SR <-down-> KAFKA : **publica** service-request.created,\n.status-changed, .cancelled\n**consume** matching.technician-assigned,\n.no-technician-available, .search-resumed,\ncatalog.category-changed
+MATCHING <-down-> KAFKA : **publica** matching.offer-created,\n.technician-assigned, .no-technician-available,\n.search-resumed\n**consume** service-request.created,\n.cancelled, technician.*\n<i>planeado: catalog.category-changed</i>
+KAFKA -down-> COMM : **consume** service-request.created,\n.status-changed, matching.offer-created\n<i>planeado: technician.*</i>
+
+PAYMENTS ..> PSP : HTTPS
+SR ..> GARAGE : S3
+MATCHING ..> REDIS : caché
+
+legend right
+  |= Elemento |= Significado |
+  |<#E8F5E9>| Servicio con código en develop |
+  | borde punteado | Servicio o sistema planeado |
+  | <color:#78909C><i>gris (planeado)</i></color> | Componente diseñado, sin implementar |
+  | línea punteada | Uso planeado |
+  Publica: por su Outbox (ADR-007). Consume: una vez por eventId.
+endlegend
+@enduml
