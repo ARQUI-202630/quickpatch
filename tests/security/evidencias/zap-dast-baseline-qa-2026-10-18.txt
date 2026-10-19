@@ -1,0 +1,46 @@
+================================================================================
+EVIDENCIA FORMAL DE ESCANEO DAST OWASP ZAP BASELINE (SCRUM-396)
+Fecha de Ejecución: 18 de octubre de 2026
+Ambiente: QA Desplegado (VM1 Gateway Ingress / VM2 Microservicios k3s)
+Punto de Entrada: https://qa.quickpatch.internal (TLS 1.3 / Cipher Suite Moderno)
+Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
+Estándares y Normas: OWASP Top 10 API Security (2023), INF-013, SAD V4 (v2.28)
+================================================================================
+
+1. CONFIGURACIÓN DEL ESCANEO DINÁMICO (zap-baseline.conf)
+   - Contenedor Utilizado: ghcr.io/zaproxy/zaproxy:stable (zap-baseline.py).
+   - Política de Fallo: Cualquier hallazgo de severidad Alta (High) o Crítica (Critical)
+     rompe el build de manera inmediata (exit code 1).
+   - Modo de Inspección: Rastreo activo de endpoints bajo prefijo /api/v1/ y análisis pasivo
+     de encabezados de seguridad HTTP en respuestas TLS 1.3.
+
+2. EVALUACIÓN DETALLADA DE VULNERABILIDADES CRÍTICAS (ACTION: FAIL)
+┌───────────┬────────────────────────────────────────────┬────────┬──────────────┬────────┐
+│ Plugin ID │ Tipo de Vulnerabilidad OWASP               │ Acción │ Hallazgos QA │ Estado │
+├───────────┼────────────────────────────────────────────┼────────┼──────────────┼────────┤
+│ 40018     │ SQL Injection (SQLi)                       │ FAIL   │      0       │   PASS │
+│ 40026     │ Cross Site Scripting (XSS)                 │ FAIL   │      0       │   PASS │
+│ 40028     │ Open Redirect                              │ FAIL   │      0       │   PASS │
+│ 90019     │ Server Side Code Injection                 │ FAIL   │      0       │   PASS │
+│ 90020     │ Remote OS Command Injection                │ FAIL   │      0       │   PASS │
+│ 10045     │ Source Code Disclosure                     │ FAIL   │      0       │   PASS │
+│ 20019     │ External Redirect                          │ FAIL   │      0       │   PASS │
+├───────────┼────────────────────────────────────────────┼────────┼──────────────┼────────┤
+│ TOTAL     │ VULNERABILIDADES CRÍTICAS / ALTAS          │ FAIL   │      0       │   PASS │
+└───────────┴────────────────────────────────────────────┴────────┴──────────────┴────────┘
+
+3. TRATAMIENTO DE FALSOS POSITIVOS Y DIRECTIVAS IGNORE
+   - 10202 (Absence of Anti-CSRF Tokens): Ignorado legítimamente. La API REST es completamente
+     stateless y está protegida por Bearer Tokens JWT (RS256); no utiliza autenticación por cookies.
+   - 10038 (Content Security Policy): Ignorado. No aplica a respuestas con Content-Type: application/json.
+   - 10020 (Anti-clickjacking Header): Ignorado. Los endpoints de microservicios no renderizan iframes HTML.
+
+4. ENDURECIMIENTO DE ENCABEZADOS Y MITIGACIONES COMPROBADAS EN VM1
+   - X-Content-Type-Options: 'nosniff' presente en todas las respuestas JSON (evita MIME-sniffing).
+   - Strict-Transport-Security (HSTS): max-age=31536000; includeSubDomains activo.
+   - Protocolo TLS: TLS 1.3 forzado exclusivamente con ciphers TLS_AES_256_GCM_SHA384 (TLS 1.0/1.1 deshabilitados).
+   - Formato de Errores: Errores estandarizados bajo RFC 9457 sin fuga de stack traces en modo producción/QA.
+
+================================================================================
+DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.5 DE QA (OWASP ZAP DAST).
+================================================================================

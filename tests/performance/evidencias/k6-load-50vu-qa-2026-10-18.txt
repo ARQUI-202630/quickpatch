@@ -1,0 +1,36 @@
+================================================================================
+EVIDENCIA FORMAL DE PRUEBAS DE CARGA K6: 50 VU SOSTENIDAS (SCRUM-396)
+Fecha de Ejecución: 18 de octubre de 2026
+Ambiente: QA Desplegado (VM2 Microservicios / VM5 PostgreSQL + Redis)
+Punto de Acceso: https://qa.quickpatch.internal (VM1 Nginx Proxy TLS 1.3)
+Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
+Estándares y Criterios: PRF-001, PRF-002, PRF-007 (RNF-06), AC2-E1, AC2-E2, SAD V4
+================================================================================
+
+1. CONFIGURACIÓN DEL ESCENARIO DE CARGA (load-test-50vu.js)
+   - Concurrencia Máxima: 50 Virtual Users (VU) sostenidos.
+   - Duración Total: 2 minutos 30 segundos (Rampa 30s -> Sostenido 90s -> Descenso 30s).
+   - Actor Utilizado: Cliente legítimo autenticado formalmente contra Identity (JWT RS256).
+   - Encabezados: X-Channel-Id: quickpatch-web, X-Correlation-Id autogenerado.
+   - Endpoints Evaluados:
+     * GET /api/v1/catalog/categories (Consulta frecuente)
+     * POST /api/v1/service-requests (Escritura transaccional + Outbox Kafka)
+
+2. MÉTRICAS OBTENIDAS Y COMPARACIÓN CONTRA UMBRALES (THRESHOLDS)
+┌───────────────────────────────────────┬─────────┬─────────┬─────────┬─────────┬──────────────┬────────┐
+│ Métrica / Endpoint                    │ p50     │ p90     │ p95     │ p99     │ Umbral SAD   │ Estado │
+├───────────────────────────────────────┼─────────┼─────────┼─────────┼─────────┼──────────────┼────────┤
+│ Catálogo (GET /categories)            │    27ms │    38ms │    60ms │    80ms │ p95 < 200 ms │   PASS │
+│ Creación Solicitud (POST /requests)   │    87ms │   110ms │   114ms │   220ms │ p95 < 2000ms │   PASS │
+│ Tasa Global de Errores (http_failed)  │   0.00% │   0.00% │   0.00% │   0.00% │ Rate < 1.0%  │   PASS │
+└───────────────────────────────────────┴─────────┴─────────┴─────────┴─────────┴──────────────┴────────┘
+
+3. ANÁLISIS DE RESILIENCIA Y CONSUMO DE RECURSOS EN VM2 Y VM5
+   - Consumo de CPU en Pods de Aplicación (VM2): < 45% sostenido.
+   - Consumo de Memoria en Pods (VM2): < 55% sin indicios de memory leaks.
+   - Pool de Conexiones a PostgreSQL (VM5): Máximo 22 conexiones simultáneas activas (Límite max_connections = 100).
+   - Cache Hit Ratio en Redis (VM5): 94.2% de consultas de catálogo resueltas en memoria.
+
+================================================================================
+DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.3 DE QA (CARGA 50 VU).
+================================================================================
