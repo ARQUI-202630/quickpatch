@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.3|
+|**Versión**|5.4|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -173,7 +173,7 @@ Contratos publicados para el Sprint 4 (SCRUM-418). Todos son cambios compatibles
 |`service-request.v1.yaml`|1.1.0|`quickpatch-api-gateway`|ServiceRequest|App móvil (cliente y técnico)|
 |`technician.registered`, `technician.verification-changed`|v1|`quickpatch-kafka`|Identity|Matching, Communication|
 |`matching.offer-created`|v1|`quickpatch-kafka`|Matching|Communication|
-|`matching.technician-assigned`, `matching.no-technician-available`, `matching.search-resumed`|v1|`quickpatch-kafka`|Matching|ServiceRequest, Communication|
+|`matching.technician-assigned`, `matching.no-technician-available`, `matching.search-resumed`|v1|`quickpatch-kafka`|Matching|ServiceRequest|
 |`service-request.status-changed`|v1 (5.1, SCRUM-466)|`quickpatch-kafka`|ServiceRequest|Communication|
 |`asyncapi/realtime.v1.yaml` (WebSocket `/v1/realtime`)|1.0.0 (nuevo)|`quickpatch-api-gateway`|Communication|App móvil y panel web|
 
@@ -197,7 +197,7 @@ Fuera de este incremento: el consumo de `catalog.category-changed` en Matching. 
 **ADR-024 (SCRUM-455).** R5 no cambia: la geocodificación (RIE-02) y las notificaciones (RIE-03) se resuelven dentro de las 7 VMs.
 
 - **Geocodificación (RIE-02):** `POST /v1/service-requests` acepta la solicitud sin `location` si llega `addressText`. ServiceRequest la geocodifica con un Nominatim propio que solo tiene el mapa de Bogotá; si no la encuentra, responde `422 direccion-no-encontrada`. Como Nominatim no usa el número de casa, `POST /v1/service-requests/location-preview` devuelve antes el punto y la localidad para que el cliente los confirme (sección 8.3.3; `service-request.v1.yaml` 1.3.0).
-- **Notificaciones (RIE-03):** canal en tiempo real (sección 8.5) y buzón en Communication Service: tabla `notifications` en `db_communication` (sección 5.22) y `communication.v1.yaml` 1.0.0 (sección 8.2.6). El correo y el push con la app cerrada quedan fuera del MVP.
+- **Notificaciones (RIE-03):** canal en tiempo real (sección 8.5) y buzón en Communication Service: tabla `notifications` en `db_communication` (sección 5.22) y `communication.v1.yaml` 1.1.0 (sección 8.2.6). El correo y el push con la app cerrada quedan fuera del MVP.
 - **Consulta interna por lote:** `identity-internal.v1.yaml` 1.0.0 (sección 8.3.4, SCRUM-91).
 
 **Cambios ya implementados que esta versión documenta:**
@@ -1284,7 +1284,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Nueva v5 (ADR-024, SCRUM-455).** **Servicio propietario:** Communication Service, en su base `db_communication`.
 
-**Propósito:** Buzón de notificaciones dentro de la app (RIE-03). Communication crea una fila por destinatario al consumir cada evento de la tabla de tipos de la sección 8.2.6, y la app la lista y la marca como leída con `communication.v1.yaml` 1.0.0.
+**Propósito:** Buzón de notificaciones dentro de la app (RIE-03). Communication crea una fila por destinatario al consumir cada evento de la tabla de tipos de la sección 8.2.6, y la app la lista y la marca como leída con `communication.v1.yaml` 1.1.0.
 
 **Requisitos relacionados:** RIE-03, RF-11, RNF-06.
 
@@ -1737,15 +1737,16 @@ Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la sol
 |GET|`/v1/notifications?unread=&page=&size=`|`cliente`, `empresa_contacto`, `tecnico`, `admin_tenant`|RIE-03|Contrato v1.0.0|Buzón del usuario del token, del más reciente al más antiguo, con `unreadCount` (ADR-024, sección 5.22).|
 |POST|`/v1/notifications/{id}/read`|Los mismos|RIE-03|Contrato v1.0.0|Marcar como leída; idempotente. Una notificación de otro usuario o tenant responde `404`.|
 
-**Tipos de notificación (`communication.v1.yaml` 1.0.0).** Cada uno nace de un evento que ya existe:
+**Tipos de notificación (`communication.v1.yaml` 1.1.0).** Cada uno nace de un evento que ya existe. Los de estado salen de `service-request.status-changed`, igual que el aviso en tiempo real (sección 8.5, SCRUM-466):
 
 |`type`|Evento|Destinatario|
 |---|---|---|
 |`solicitud-creada`|`service-request.created`|Cliente dueño|
-|`tecnico-asignado`|`matching.technician-assigned`|Cliente dueño|
-|`solicitud-asignada`|`matching.technician-assigned`|Técnico asignado|
-|`sin-tecnico-disponible`|`matching.no-technician-available`|Cliente dueño|
-|`busqueda-reanudada`|`matching.search-resumed`|Cliente dueño|
+|`tecnico-asignado`|`service-request.status-changed` a `asignado`|Cliente dueño|
+|`solicitud-asignada`|`service-request.status-changed` a `asignado`|Técnico asignado|
+|`sin-tecnico-disponible`|`service-request.status-changed` a `en_espera`|Cliente dueño|
+|`busqueda-reanudada`|`service-request.status-changed` de `en_espera` a `buscando_tecnico`|Cliente dueño|
+|`solicitud-cancelada`|`service-request.status-changed` a `cancelado` (1.1.0, RF-36)|Cliente dueño y, si lo había, técnico asignado. Sin el motivo, que la app muestra desde el detalle|
 |`oferta-recibida`|`matching.offer-created`|Técnico de la oferta|
 |`registro-recibido`|`technician.registered`|Técnico o proveedor|
 |`verificacion-actualizada`|`technician.verification-changed`|Técnico o proveedor|
@@ -2124,9 +2125,9 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 |`technician.verification-changed`|Identity|Matching, Communication|Actualizar la copia de `verification_status`; si pasa a `aprobado` dispara RN-M10.|Contrato v1 (v4)|
 |`service-request.created`|ServiceRequest|Matching, Communication|Iniciar el matching y notificar.||
 |`matching.offer-created`|Matching|Communication|Notificar al técnico que tiene una oferta (SCRUM-30).|Contrato v1 (v4)|
-|`matching.technician-assigned`|Matching|ServiceRequest, Communication|Un técnico aceptó; la solicitud pasa a `asignado`.|Contrato v1 (v4)|
-|`matching.no-technician-available`|Matching|ServiceRequest, Communication|Se agotaron los candidatos; la solicitud pasa a `en_espera`.|Contrato v1 (v4)|
-|`matching.search-resumed`|Matching|ServiceRequest, Communication|Una solicitud en espera vuelve a `buscando_tecnico` (RN-M10).|Contrato v1 (v4)|
+|`matching.technician-assigned`|Matching|ServiceRequest|Un técnico aceptó; la solicitud pasa a `asignado`.|Contrato v1 (v4)|
+|`matching.no-technician-available`|Matching|ServiceRequest|Se agotaron los candidatos; la solicitud pasa a `en_espera`.|Contrato v1 (v4)|
+|`matching.search-resumed`|Matching|ServiceRequest|Una solicitud en espera vuelve a `buscando_tecnico` (RN-M10).|Contrato v1 (v4)|
 |`service-request.status-changed`|ServiceRequest|Communication|La solicitud cambió de estado. Se publica en la misma transacción del cambio, solo si se aplicó (un evento de Matching viejo, repetido o fuera de estado no lo produce), y no al crear la solicitud. Communication avisa con él al cliente y al técnico (sección 8.5).|Contrato v1 (5.1, SCRUM-466)|
 |`service-request.quoted`|ServiceRequest|Communication|Notificar al cliente que tiene una cotización.||
 |`service-request.quote-accepted`|ServiceRequest|Communication|Notificar al técnico que puede iniciar.||
@@ -2207,7 +2208,7 @@ _Cuadro 12: Contenido de `data` por evento_
 _Cuadro 13: Avisos del canal en tiempo real_
 
 - **Enrutamiento sin tablas:** Communication decide a quién avisar solo con el evento. Por eso `service-request.status-changed` lleva `clientId` y `technicianId`, igual que `service-request.started`, `.cancelled` y `.completed`, y los eventos de matching que avisan al cliente llevan `clientId` (v4).
-- **Fuente del aviso de estado (5.1, SCRUM-466):** el aviso sale del dueño del estado. ServiceRequest publica `service-request.status-changed` por Outbox en la misma transacción del cambio y solo si lo aplicó. Antes Communication lo armaba de los eventos de Matching, y si ServiceRequest descartaba uno por viejo (`matching_updated_at`, ADR-017) el aviso salía igual: el técnico veía «asignado» y el detalle respondía 404. Además, cuando la app recibe el aviso, el detalle ya tiene el estado nuevo. El buzón (sección 8.2.6) todavía crea sus notificaciones a partir de los eventos de Matching; pasa a este evento cuando se implemente (SCRUM-456). Communication no guarda réplicas ni conexiones en la base: las conexiones viven en memoria, en una sola réplica (ADR-023, punto 6).
+- **Fuente del aviso de estado (5.1, SCRUM-466):** el aviso sale del dueño del estado. ServiceRequest publica `service-request.status-changed` por Outbox en la misma transacción del cambio y solo si lo aplicó. Antes Communication lo armaba de los eventos de Matching, y si ServiceRequest descartaba uno por viejo (`matching_updated_at`, ADR-017) el aviso salía igual: el técnico veía «asignado» y el detalle respondía 404. Además, cuando la app recibe el aviso, el detalle ya tiene el estado nuevo. El buzón (sección 8.2.6) también crea sus notificaciones de estado con este evento (5.4, SCRUM-456), así que Communication ya no consume los eventos de estado de Matching. Communication no guarda réplicas ni conexiones en la base: las conexiones viven en memoria, en una sola réplica (ADR-023, punto 6).
 - **Aislamiento:** un aviso solo se entrega a conexiones con el mismo `tenant_id` que el `tenantId` del evento.
 - **Idempotencia:** Communication descarta los eventos que ya procesó por `eventId` mientras está en ejecución. El aviso es idempotente por naturaleza: si llega repetido, la app vuelve a pedir el mismo detalle. Cuando Communication tenga base de datos (buzón de notificaciones, ADR-024), la deduplicación pasa a `processed_events` (RN-EV1).
 - **Cierres:** `4000` trama inválida, `4001` token inválido, `4002` sin autenticación en 10 segundos, `4003` rol que no usa el canal (`admin_plataforma`, `proveedor`), `4004` token vencido durante la conexión, `1001` reinicio del servidor, `1009` trama de más de 8 KB y `1011` error interno. Con 4000 a 4003 la app no reintenta con el mismo token; con 1001, 1011 y 4004 se reconecta.
@@ -2622,7 +2623,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.1|SCRUM-466|**Aviso de estado desde ServiceRequest.** Evento nuevo `service-request.status-changed` v1 (Cuadros 5, 11, 12 y 15): ServiceRequest lo publica por Outbox en la misma transacción del cambio de estado y solo si lo aplicó. Communication avisa el cambio de estado con él y deja de derivarlo de los eventos de Matching, que ServiceRequest puede descartar por viejos (sección 8.5). `asyncapi/realtime.v1.yaml` pasa a 1.0.1 (solo cambia el origen del aviso).|
 |5.2|SCRUM-485|**Panel operativo de solicitudes (RF-18, SCRUM-38).** `service-request.v1.yaml` 1.4.0: lista de las solicitudes del tenant para el `admin_tenant`, conteos por estado del tenant y, para el `admin_plataforma`, conteos por tenant (secciones 8.2.4 y 8.3.15). Rol nuevo `service_request_platform` con `SELECT` solo sobre `tenant_id`, `status` y `created_at`, y la operación de plataforma de ServiceRequest (secciones 10.2 y 10.4). DEP-15 resuelta.|
 |5.3|SCRUM-474|**Cancelación de la solicitud (RF-36, SCRUM-472).** `service-request.v1.yaml` 1.5.0 con `POST /v1/service-requests/{id}/cancel` y `409 transicion-invalida` (secciones 8.2.4 y 8.3.9); evento `service-request.cancelled` v1 consumido solo por Matching (sección 8.4); `audit_logs` propia de ServiceRequest para `cancelar_solicitud_admin` (secciones 5.14 y RN-SR8). Las pruebas de SCRUM-103 quedan en la trazabilidad.|
-|5.4|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.4|SCRUM-456, SCRUM-472|**Buzón desde `status-changed` y cancelación en el buzón.** `communication.v1.yaml` 1.1.0: los tipos de estado del buzón salen de `service-request.status-changed` (sección 8.2.6) y se agrega `solicitud-cancelada` para el cliente y el técnico asignado (RF-36); el CHECK de `notifications.type` lo admite (sección 5.22). Communication deja de consumir `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed` (Cuadros de eventos y sección 8.4).|
+|5.5|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
