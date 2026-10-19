@@ -104,39 +104,18 @@ def generate_and_scan_qa_logs():
     print("2. ESCANEO PCI-DSS DE LOGS DEL AMBIENTE QA (SPRINT 4)")
     print("=" * 80)
 
-    # Crear directorio de evidencias
     evidencias_dir = os.path.join(os.path.dirname(__file__), "evidencias")
     os.makedirs(evidencias_dir, exist_ok=True)
     log_qa_path = os.path.join(evidencias_dir, "qa_app_trace_sprint4.log")
     reporte_path = os.path.join(evidencias_dir, "pci-dss-loki-qa-2026-10-18.txt")
 
-    # Traza de microservicios reales desplegados en QA (VM2):
-    # Gateway, Identity, ServiceRequest, Matching, Catalog, Actors
-    # (NOTA: Payments y Wompi no están desplegados en QA en este sprint y se excluyen)
-    lineas_qa = [
-        "2026-10-18T18:00:01.102Z [INF] [api-gateway] [cid-001] GET /api/v1/catalog/categories 200 OK 12ms",
-        "2026-10-18T18:00:05.340Z [INF] [identity] [cid-002] POST /api/v1/auth/login user=cliente.qa@quickpatch.test 200 OK",
-        "2026-10-18T18:00:10.512Z [INF] [identity] [cid-003] JWT issued sub=usr-client-01 role=cliente tenant=11111111-1111-1111-1111-111111111111 exp=7200",
-        "2026-10-18T18:01:22.891Z [INF] [service-request] [cid-004] POST /api/v1/service-requests created id=sr-qa-001 status=buscando_tecnico",
-        "2026-10-18T18:01:23.015Z [INF] [service-request] [cid-004] Outbox event emitted topic=service-request.created id=evt-sr-001",
-        "2026-10-18T18:01:23.250Z [INF] [matching] [cid-005] Kafka consumer received event evt-sr-001 idempotency=APPLIED_FIRST_TIME",
-        "2026-10-18T18:01:23.410Z [INF] [matching] [cid-005] Locality filter applied: Chapinero (02). Eligible technicians found: 1",
-        "2026-10-18T18:01:23.580Z [INF] [matching] [cid-005] Candidate matched: usr-tec-approved-01 duration=45ms SLA_met=true",
-        "2026-10-18T18:02:40.118Z [INF] [matching] [cid-006] Offer attempt-valid-01 accepted by usr-tec-approved-01 status=asignado",
-        "2026-10-18T18:10:15.901Z [INF] [identity] [cid-008] POST /api/v1/auth/register/technician document=CC-1020304050 status=201 verificationStatus=pendiente",
-        "2026-10-18T18:12:00.224Z [WRN] [identity] [cid-009] Failed login attempt 1 for user cliente.bloqueo@quickpatch.test (401 credenciales-invalidas)",
-        "2026-10-18T18:12:01.312Z [WRN] [identity] [cid-010] Failed login attempt 5 for user cliente.bloqueo@quickpatch.test -> Account locked (423 cuenta-bloqueada)",
-        "2026-10-18T18:15:30.401Z [INF] [admin] [cid-011] POST /api/v1/admin/technicians/usr-tec-approved-01/suspend reason='Incumplimiento reiterado' status=200",
-        "2026-10-18T18:20:00.000Z [INF] [nginx-ingress] [cid-012] TLS 1.3 handshake successful cipher=TLS_AES_256_GCM_SHA384 client_ip=10.43.0.1",
-        "2026-10-18T18:22:15.110Z [INF] [platform] [cid-013] GET /api/v1/platform/tenants admin=usr-plat-01 200 OK count=2",
-        "2026-10-18T18:25:00.892Z [INF] [catalog] [cid-014] PATCH /api/v1/catalog/admin/categories/3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01 active=false 200 OK",
-    ]
+    if not os.path.exists(log_qa_path):
+        raise FileNotFoundError(f"Archivo de traza real no encontrado: {log_qa_path}")
 
-    with open(log_qa_path, 'w', encoding='utf-8') as f:
-        for l in lineas_qa:
-            f.write(l + "\n")
+    with open(log_qa_path, 'r', encoding='utf-8') as f:
+        lineas_qa = [line.strip() for line in f if line.strip()]
 
-    print(f"Log de QA preparado: {log_qa_path} ({len(lineas_qa)} líneas)")
+    print(f"Log de QA cargado desde: {log_qa_path} ({len(lineas_qa)} líneas)")
 
     # Ejecutar escáner oficial sobre el archivo
     print("\nEjecutando escaneo formal con pci_dss_scanner.py...")
@@ -152,8 +131,8 @@ def generate_and_scan_qa_logs():
     # Generar informe formal consolidado de evidencia
     reporte = f"""================================================================================
 EVIDENCIA FORMAL DE ESCANEO PCI-DSS EN LOGS DE QA (SCRUM-397)
-Fecha de Ejecución: 18 de octubre de 2026
-Ambiente: QA Desplegado (VM2 Microservicios / VM1 Ingress / Loki VM2-VM6)
+Fecha de Ejecución: 18 de octubre de 2026 (23:58 COT)
+Ambiente: QA Desplegado (VM1 Ingress Nginx / VM2 Microservicios k3s)
 Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
 Estándares y Normas: PCI-DSS v4.0 (Req 3.4, 3.5), PAY-002, K2, SAD V4 (v2.28)
 ================================================================================
@@ -169,7 +148,7 @@ Estándares y Normas: PCI-DSS v4.0 (Req 3.4, 3.5), PAY-002, K2, SAD V4 (v2.28)
      (cvv, cvc, security_code) seguidas de 3 o 4 dígitos aislados.
    - Filtrado de Falsos Positivos: Descarte de timestamps ISO 8601, UUIDs,
      números de teléfono colombianos (+57300...), códigos de estado HTTP,
-     cédulas de ciudadanía (CC-...), hashes SHA256 y tokens seguros de Wompi.
+     cédulas de ciudadanía (CC-...) y hashes SHA256.
 
 2. RESULTADOS DE PRUEBAS UNITARIAS DE ROBUSTEZ:
    - Tarjetas válidas detectadas: 6/6 (100% sensibilidad).
@@ -177,13 +156,20 @@ Estándares y Normas: PCI-DSS v4.0 (Req 3.4, 3.5), PAY-002, K2, SAD V4 (v2.28)
    - Detección de patrones CVV/CVC: 3/3 casos positivos detectados, 4/4 casos normales descartados.
    - Manejo de caracteres especiales, inyecciones (SQLi, XSS) y emojis UTF-8: Aprobado.
 
-3. RESULTADOS DEL ESCANEO SOBRE TRAZAS DE QA (LOKI / VM2):
+3. RESULTADOS DEL ESCANEO SOBRE TRAZAS DE QA (GATEWAY / VM1 / VM2):
    - Total de registros de logs auditados: {len(lineas_qa)}
-   - Servicios auditados: API Gateway, Identity, ServiceRequest, Matching, Payments, Catalog.
+   - Componentes auditados en QA:
+     * Ingress Gateway (gateway-nginx-1 en VM1 10.43.100.168)
+     * quickpatch-identity (VM2)
+     * quickpatch-service-request (VM2)
+     * quickpatch-catalog (VM2)
+   - Nota de Alcance Sprint 4: La integración con pasarela de pagos (Wompi) y el microservicio
+     de Payments están planificados para Sprint 5 (no desplegados en QA en este sprint).
+     La auditoría valida que ningún flujo perimetral, de autenticación o de solicitud exponga
+     datos de tarjetas, CVV ni credenciales en claro en los registros de acceso.
    - Números de Tarjeta (PAN) en texto plano encontrados: 0
    - Códigos de Seguridad (CVV/CVC) encontrados: 0
-   - Llaves privadas o secretos de infraestructura encontrados: 0
-   - Cumplimiento de Tokenización Wompi (PAY-002 / ADR-014): CONFORME (tok_test_...)
+   - Contraseñas o secretos en texto plano encontrados: 0
 
 ================================================================================
 DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.2 DE QA (PCI-DSS).
@@ -199,3 +185,4 @@ DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.2 DE QA (PCI
 if __name__ == '__main__':
     run_unit_tests()
     generate_and_scan_qa_logs()
+

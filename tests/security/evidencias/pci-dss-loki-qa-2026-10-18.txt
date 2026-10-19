@@ -1,7 +1,7 @@
 ================================================================================
 EVIDENCIA FORMAL DE ESCANEO PCI-DSS EN LOGS DE QA (SCRUM-397)
-Fecha de Ejecución: 18 de octubre de 2026
-Ambiente: QA Desplegado (VM2 Microservicios / VM1 Ingress / Loki VM2-VM6)
+Fecha de Ejecución: 18 de octubre de 2026 (23:58 COT)
+Ambiente: QA Desplegado (VM1 Ingress Nginx / VM2 Microservicios k3s)
 Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
 Estándares y Normas: PCI-DSS v4.0 (Req 3.4, 3.5), PAY-002, K2, SAD V4 (v2.28)
 ================================================================================
@@ -17,7 +17,7 @@ Estándares y Normas: PCI-DSS v4.0 (Req 3.4, 3.5), PAY-002, K2, SAD V4 (v2.28)
      (cvv, cvc, security_code) seguidas de 3 o 4 dígitos aislados.
    - Filtrado de Falsos Positivos: Descarte de timestamps ISO 8601, UUIDs,
      números de teléfono colombianos (+57300...), códigos de estado HTTP,
-     cédulas de ciudadanía (CC-...), hashes SHA256 y tokens seguros de Wompi.
+     cédulas de ciudadanía (CC-...) y hashes SHA256.
 
 2. RESULTADOS DE PRUEBAS UNITARIAS DE ROBUSTEZ:
    - Tarjetas válidas detectadas: 6/6 (100% sensibilidad).
@@ -25,13 +25,20 @@ Estándares y Normas: PCI-DSS v4.0 (Req 3.4, 3.5), PAY-002, K2, SAD V4 (v2.28)
    - Detección de patrones CVV/CVC: 3/3 casos positivos detectados, 4/4 casos normales descartados.
    - Manejo de caracteres especiales, inyecciones (SQLi, XSS) y emojis UTF-8: Aprobado.
 
-3. RESULTADOS DEL ESCANEO SOBRE TRAZAS DE QA (LOKI / VM2):
+3. RESULTADOS DEL ESCANEO SOBRE TRAZAS DE QA (GATEWAY / VM1 / VM2):
    - Total de registros de logs auditados: 20
-   - Servicios auditados: API Gateway, Identity, ServiceRequest, Matching, Payments, Catalog.
+   - Componentes auditados en QA:
+     * Ingress Gateway (gateway-nginx-1 en VM1 10.43.100.168)
+     * quickpatch-identity (VM2)
+     * quickpatch-service-request (VM2)
+     * quickpatch-catalog (VM2)
+   - Nota de Alcance Sprint 4: La integración con pasarela de pagos (Wompi) y el microservicio
+     de Payments están planificados para Sprint 5 (no desplegados en QA en este sprint).
+     La auditoría valida que ningún flujo perimetral, de autenticación o de solicitud exponga
+     datos de tarjetas, CVV ni credenciales en claro en los registros de acceso.
    - Números de Tarjeta (PAN) en texto plano encontrados: 0
    - Códigos de Seguridad (CVV/CVC) encontrados: 0
-   - Llaves privadas o secretos de infraestructura encontrados: 0
-   - Cumplimiento de Tokenización Wompi (PAY-002 / ADR-014): CONFORME (tok_test_...)
+   - Contraseñas o secretos en texto plano encontrados: 0
 
 ================================================================================
 DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.2 DE QA (PCI-DSS).

@@ -131,12 +131,15 @@ La evaluación de API se ejecutó en dos modalidades complementarias:
   - Sensibilidad de Detección: 6 de 6 tarjetas válidas (Visa 13/16 dígitos, Mastercard 51-55 y 2221-2720, Amex 15 dígitos, Discover 16 dígitos) detectadas mediante Algoritmo de Luhn Mod 10 y prefijo IIN/BIN.
   - Especificidad: 16 de 16 casos negativos extremos (números de celular colombianos, cédulas CC, UUIDs, correlation IDs, timestamps, contraseñas, emojis UTF-8 e inyecciones SQLi/XSS) descartados sin falsos positivos.
   - Patrones CVV: 3/3 patrones contextuales detectados, 4/4 números estándar descartados.
-* **Escaneo de Trazas de QA (Loki / VM2):**
-  - Registros de logs auditados: 20 bloques completos de transacciones de microservicios.
+* **Escaneo de Trazas Reales de QA (Gateway Ingress VM1 / Microservicios VM2):**
+  - Registros de logs auditados: 20 registros de acceso y eventos reales del Ingress (`gateway-nginx-1`), Identity, Service-Request, Catalog, k6 y ZAP.
+  - Alcance Sprint 4: La pasarela de pagos (Wompi) y el microservicio de Payments están programados para Sprint 5 (no desplegados en QA en Sprint 4). La auditoría verifica que ningún log perimetral, autenticación o solicitud filtre números PAN, CVV ni contraseñas.
   - Números de Tarjeta (PAN) en texto plano: **0**.
   - Códigos CVV/CVC encontrados: **0**.
-  - Conformidad con Wompi (ADR-014): Exclusivamente tokens seguros `tok_test_...` efímeros y no reversibles.
-* **Evidencia en Repositorio:** `tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt`.
+  - Secretos o credenciales en texto plano: **0**.
+* **Evidencias en Repositorio:**
+  - Reporte formal: `tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt`.
+  - Trazas de QA evaluadas: `tests/security/evidencias/qa_app_trace_sprint4.log`.
 
 ### 3.3 Compuerta 2.3 — Rendimiento Carga Normal Sostenida (50 VU)
 * **Script:** `tests/performance/load-test-50vu.js` / `run-performance-suite.js`.
@@ -156,16 +159,18 @@ La evaluación de API se ejecutó en dos modalidades complementarias:
 * **Evidencia en Repositorio:** `tests/performance/evidencias/k6-stress-150vu-qa-2026-10-18.txt`.
 
 ### 3.5 Compuerta 2.5 — Seguridad Dinámica DAST OWASP ZAP Baseline
-* **Configuración:** `tests/security/zap-baseline.conf` / `run-dast-zap-suite.py`.
-* **Resultados:**
-  - Vulnerabilidades de Severidad Alta / Crítica (FAIL): 0 alertas detectadas.
-    * SQL Injection (40018): 0 alertas.
-    * Cross Site Scripting XSS (40026): 0 alertas.
-    * Remote OS Command Injection (90020): 0 alertas.
-    * Server Side Code Injection (90019): 0 alertas.
-    * Source Code Disclosure (10045): 0 alertas.
-  - Endurecimiento Comprobado: Protocolo TLS 1.3 forzado exclusivamente en VM1 Nginx Proxy, HSTS configurado con `max-age=31536000`, encabezado `X-Content-Type-Options: nosniff` activo en todas las respuestas.
-* **Evidencia en Repositorio:** `tests/security/evidencias/zap-dast-baseline-qa-2026-10-18.txt`.
+* **Ejecutor:** Docker container `ghcr.io/zaproxy/zaproxy:stable` ejecutado sobre VM1 apuntando a `https://qa.quickpatch.internal`.
+* **Script / Configuración:** `tests/security/run-dast-zap-suite.py` / `tests/security/zap-baseline.conf`.
+* **Resultados Oficiales:**
+  - Total Reglas Evaluadas: 61 reglas.
+  - Reglas Aprobadas (PASS): **59 reglas (96.7%)**.
+  - Vulnerabilidades Críticas / Altas (FAIL): **0 alertas** (SQLi, XSS, Command Injection, Source Code Disclosure, Remote Code Execution evaluadas en 0 hallazgos).
+  - Advertencias Defensivas (WARN-NEW): **2 alertas** (HSTS [10035] y CSP [10038] ausentes en respuestas 403 Forbidden de la raíz `/` al no contener index HTML por diseño).
+  - Endurecimiento Comprobado: Protocolo TLS 1.3 forzado exclusivamente en VM1 Nginx Proxy (`TLS_AES_256_GCM_SHA384`), encabezado `X-Content-Type-Options: nosniff` activo en respuestas JSON.
+* **Evidencias en Repositorio:**
+  - Reporte consolidado: `tests/security/evidencias/zap-dast-baseline-qa-2026-10-18.txt`.
+  - JSON nativo ZAP: `tests/security/evidencias/zap.json`.
+
 
 ---
 

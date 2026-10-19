@@ -45,18 +45,31 @@ const BASE_URL = __ENV.BASE_URL || 'https://qa.quickpatch.internal';
  * - Obtiene dinámicamente un categoryId existente de Catalog para evitar 422.
  */
 export function setup() {
+    let email = __ENV.QA_CLIENT_EMAIL || `k6.cliente.${Date.now()}@quickpatch.test`;
+    let password = __ENV.QA_CLIENT_PASSWORD || 'Segura123';
+
+    // 1. Asegurar registro del cliente de prueba en QA
+    const regUrl = `${BASE_URL}/api/v1/auth/register/client`;
+    const regPayload = JSON.stringify({
+        email: email,
+        password: password,
+        fullName: 'Cliente de Carga k6',
+        phone: '3001234567'
+    });
+    http.post(regUrl, regPayload, {
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Channel-Id': 'quickpatch-mobile',
+            'X-Correlation-Id': `k6-setup-reg-${Date.now()}`
+        }
+    });
+
+    // 2. Autenticación en QA
     const loginUrl = `${BASE_URL}/api/v1/auth/login`;
-    const email = __ENV.QA_CLIENT_EMAIL || 'cliente.qa@quickpatch.internal';
-    const password = __ENV.QA_CLIENT_PASSWORD;
-
-    if (!password) {
-        throw new Error('[Setup QA] Variable QA_CLIENT_PASSWORD es requerida para autenticación en QA');
-    }
-
     const loginPayload = JSON.stringify({ email, password });
     const loginHeaders = {
         'Content-Type': 'application/json',
-        'X-Channel-Id': __ENV.CHANNEL_ID || 'quickpatch-web',
+        'X-Channel-Id': 'quickpatch-mobile',
         'X-Correlation-Id': `k6-setup-login-${Date.now()}`
     };
 

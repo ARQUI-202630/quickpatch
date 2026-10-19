@@ -1,0 +1,20 @@
+2026-10-19T04:15:10.102Z [INF] [gateway-nginx-1] 10.101.138.31 - - "GET /api/v1/catalog/categories HTTP/1.1" 200 642 "-" "PostmanRuntime/7.43.0"
+2026-10-19T04:15:15.340Z [INF] [gateway-nginx-1] 10.101.138.31 - - "POST /api/v1/auth/register/client HTTP/1.1" 201 189 "-" "PostmanRuntime/7.43.0"
+2026-10-19T04:15:15.342Z [INF] [quickpatch-identity] [cid-auth-01] POST /api/v1/auth/register/client email=cliente.1792382739408@quickpatch.test status=201
+2026-10-19T04:15:20.512Z [INF] [gateway-nginx-1] 10.101.138.31 - - "POST /api/v1/auth/login HTTP/1.1" 200 452 "-" "PostmanRuntime/7.43.0"
+2026-10-19T04:15:20.515Z [INF] [quickpatch-identity] [cid-auth-02] POST /api/v1/auth/login user=cliente.1792382739408@quickpatch.test 200 OK (JWT issued RS256)
+2026-10-19T04:15:25.891Z [INF] [gateway-nginx-1] 10.101.138.31 - - "POST /api/v1/service-requests HTTP/1.1" 201 374 "-" "PostmanRuntime/7.43.0"
+2026-10-19T04:15:25.895Z [INF] [quickpatch-service-request] [cid-sr-01] POST /api/v1/service-requests id=01a15256-b9bd-77a7-a3d3-246d38016c2e status=buscando_tecnico
+2026-10-19T04:15:30.118Z [INF] [gateway-nginx-1] 10.101.138.31 - - "GET /api/v1/service-requests/01a15256-b9bd-77a7-a3d3-246d38016c2e HTTP/1.1" 404 142 "-" "PostmanRuntime/7.43.0"
+2026-10-19T04:15:30.122Z [INF] [quickpatch-service-request] [cid-sr-02] Cross-tenant isolation enforced: Order 01a15256-b9bd-77a7-a3d3-246d38016c2e not owned by caller -> 404 RFC9457
+2026-10-19T04:20:46.001Z [INF] [gateway-nginx-1] 10.101.138.31 - - "POST /api/v1/service-requests HTTP/1.1" 201 374 "-" "k6/0.54.0 (https://k6.io/)"
+2026-10-19T04:20:46.012Z [INF] [gateway-nginx-1] 10.101.138.31 - - "POST /api/v1/service-requests HTTP/1.1" 201 373 "-" "k6/0.54.0 (https://k6.io/)"
+2026-10-19T04:20:46.025Z [INF] [gateway-nginx-1] 10.101.138.31 - - "POST /api/v1/service-requests HTTP/1.1" 201 374 "-" "k6/0.54.0 (https://k6.io/)"
+2026-10-19T04:20:46.038Z [INF] [gateway-nginx-1] 10.101.138.31 - - "POST /api/v1/service-requests HTTP/1.1" 201 375 "-" "k6/0.54.0 (https://k6.io/)"
+2026-10-19T04:20:46.049Z [INF] [gateway-nginx-1] 10.101.138.31 - - "POST /api/v1/service-requests HTTP/1.1" 201 372 "-" "k6/0.54.0 (https://k6.io/)"
+2026-10-19T04:55:01.110Z [INF] [gateway-nginx-1] 172.17.0.2 - - "GET / HTTP/1.1" 403 548 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/141.0.0.0 Safari/537.36"
+2026-10-19T04:55:01.115Z [WRN] [gateway-nginx-1] 2026/10/19 04:55:01 [error] 22#22: *888 access forbidden by rule, client: 172.17.0.2, server: qa.quickpatch.internal, request: "GET / HTTP/1.1"
+2026-10-19T04:55:01.210Z [INF] [gateway-nginx-1] 172.17.0.2 - - "GET /robots.txt HTTP/1.1" 403 146 "-" ""
+2026-10-19T04:55:01.214Z [WRN] [gateway-nginx-1] 2026/10/19 04:55:01 [error] 22#22: *888 access forbidden by rule, client: 172.17.0.2, server: qa.quickpatch.internal, request: "GET /robots.txt HTTP/1.1"
+2026-10-19T04:55:01.320Z [INF] [gateway-nginx-1] 172.17.0.2 - - "GET /sitemap.xml HTTP/1.1" 403 146 "-" ""
+2026-10-19T04:55:01.325Z [WRN] [gateway-nginx-1] 2026/10/19 04:55:01 [error] 22#22: *890 access forbidden by rule, client: 172.17.0.2, server: qa.quickpatch.internal, request: "GET /sitemap.xml HTTP/1.1"
