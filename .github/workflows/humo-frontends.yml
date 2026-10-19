@@ -35,6 +35,13 @@ jobs:
     runs-on: [self-hosted, vm1, red-laboratorio]
     timeout-minutes: 15
     steps:
+      # Una corrida anterior pudo dejar archivos de root (node_modules) que impiden el checkout en el runner.
+      - name: Limpiar restos de la corrida anterior
+        run: |
+          if [ -d "$GITHUB_WORKSPACE/tests/e2e/humo" ]; then
+            docker run --rm -v "$GITHUB_WORKSPACE/tests/e2e/humo:/humo" alpine:3.20               sh -c "rm -rf /humo/node_modules /humo/resultados"
+          fi
+
       - uses: actions/checkout@v4
 
       - name: Playwright contra el panel de QA
@@ -45,7 +52,8 @@ jobs:
           QA_PLATFORM_ADMIN_PASSWORD: ${{ secrets.QA_PLATFORM_ADMIN_PASSWORD }}
         # Red del host, igual que pruebas-sistema.yml: con la red bridge de Docker el Nginx de VM1 rechaza la IP 172.17.x.x.
         run: |
-          docker run --rm --network host --ipc=host --add-host "$QA_HOST:$QA_IP" -e BASE_URL -e CI=true \
+          # Con el usuario del runner, para que node_modules y los resultados no queden de root.
+          docker run --rm --network host --ipc=host --add-host "$QA_HOST:$QA_IP" -e BASE_URL -e CI=true             --user "$(id -u):$(id -g)" -e HOME=/tmp \
             -e QA_ADMIN_EMAIL -e QA_ADMIN_PASSWORD -e QA_PLATFORM_ADMIN_EMAIL -e QA_PLATFORM_ADMIN_PASSWORD \
             -v "$PWD/tests/e2e/humo:/humo" -w /humo mcr.microsoft.com/playwright:v1.48.2-jammy \
             bash -c "npm ci && npx playwright test"
