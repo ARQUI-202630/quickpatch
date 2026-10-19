@@ -133,17 +133,17 @@ La arquitectura se organiza por dominios y servicios. Los clientes acceden a tra
 
 Para que las capas se lean (personas, apps, gateway, servicios y almacenes), este diagrama no dibuja la entrega de correo y push del proveedor de notificaciones a las personas; esa entrega está en el diagrama de contexto (Figura 2) y en el dinámico de creación de solicitud.
 
-El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 9.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): Flutter Mobile es el canal de clientes, empresas cliente, técnicos y proveedores, y Angular Web es el panel de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 6.5), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que enruta por REST a los 8 microservicios.
+El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 9.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): la App móvil (Flutter) es el canal de clientes, empresas cliente, técnicos y proveedores, y el Panel web (una SPA en Angular) es el de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 6.5), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que enruta por REST a los 8 microservicios.
 
 Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Identity y Actors solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación, y el proveedor de notificaciones. Con ADR-024 solo la pasarela es externa en el MVP: la geocodificación la hace ServiceRequest con un Nominatim propio (mapa de Bogotá, en la VM de datos de cada ambiente) y las notificaciones se entregan dentro de la app (canal de ADR-023 y buzón en Communication); correo y push quedan fuera del MVP. La cercanía entre la solicitud y los técnicos se calcula con PostGIS. El seguimiento en tiempo real de la solicitud (RF-11) usa un WebSocket desde las apps hasta Communication Service a través del API Gateway (`/v1/realtime`, ADR-023), con consulta del estado por REST cada 30 segundos como respaldo. El proveedor concreto de la pasarela de pagos no está definido.
 
 ## 5.2 Vista por capas (complementaria)
 
-![Vista lógica general por capas](diagrams/sdd/01_vista_logica_capas.png)
+![Vista lógica general por capas](diagrams/sdd/01_vista_logica_capas.svg)
 
 **Figura 4. Vista lógica general por capas de QUICKPATCH.**
 
-La representación organiza el sistema en capa de cliente, entrada/presentación, servicios de negocio, integración y datos. Los ocho microservicios definidos en la arquitectura de alto nivel aparecen dentro de la capa de negocio y se conectan con los recursos de integración y persistencia correspondientes.
+La representación organiza los contenedores de la Figura 3 en cinco capas, sin nombrar el framework de los clientes. En la **capa de cliente** están la App móvil (clientes, empresas cliente, técnicos y proveedores) y el Panel web (administradores). En la **capa de entrada**, el API Gateway recibe REST en `/api/v1/*` y el canal en tiempo real por WebSocket en `/api/v1/realtime` (ADR-023), quita `/api` y enruta por el contrato; cada servicio valida el JWT (ADR-018). La **capa de servicios de negocio** reúne los ocho microservicios. En la **capa de integración** están Apache Kafka, por donde los servicios publican y consumen eventos de dominio con el patrón Outbox; el Geocodificador (Nominatim con el mapa de Bogotá, ADR-024), que usa ServiceRequest para ubicar la dirección; y la pasarela de pagos PCI-DSS, el único sistema externo, que usa Payments. En la **capa de datos**, PostgreSQL + PostGIS es una sola instancia con una base por servicio (ADR-014), Redis guarda la caché de Matching y Garage (S3) las evidencias y los respaldos (ADR-016). La fuente de la figura es `diagrams/sdd/src/01_vista_logica_capas.puml`.
 
 ## 5.3 Componentes lógicos principales del backend (complementaria)
 
@@ -306,9 +306,9 @@ El detalle definitivo de proyectos, carpetas y paquetes debe quedar sincronizado
 
 Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componente indica la carpeta del repositorio donde vive (sección 10.2) y corresponde al código de `develop`; los componentes con borde punteado están planeados.
 
-![Componentes de Angular Web](diagrams/c4/C4-04-Componentes-Web.png)
+![Componentes del Panel web](diagrams/c4/C4-04-Componentes-Web.png)
 
-**Figura 8. Componentes de Angular Web (C4 · Component). Vista `C4-04-Componentes-Web`.**
+**Figura 8. Componentes del Panel web (C4 · Component). Vista `C4-04-Componentes-Web`.**
 
 | Componente | Carpeta | Responsabilidad | HU |
 |---|---|---|---|
@@ -325,9 +325,9 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Cliente API de técnicos | `features/tecnicos/tecnicos-api.ts` | `GET /v1/admin/technicians` y `POST .../{userId}/approve`, `/reject` y `/suspend`; los nombres de especialidad salen de `GET /v1/catalog/categories`. | SCRUM-39 / SCRUM-107; SCRUM-40 / SCRUM-110 |
 | Activación de cuenta | `features/activacion` | Página pública `/activar` donde el técnico del equipo de un proveedor define su contraseña con el enlace de invitación (`POST /v1/auth/password/setup`). El token viaja en el fragmento del enlace, que el navegador no envía al servidor, y solo sale en el cuerpo del `POST`. | SCRUM-36 / SCRUM-463 |
 
-![Componentes de Flutter Mobile](diagrams/c4/C4-04-Componentes-Mobile.png)
+![Componentes de la App móvil](diagrams/c4/C4-04-Componentes-Mobile.png)
 
-**Figura 9. Componentes de Flutter Mobile (C4 · Component). Vista `C4-04-Componentes-Mobile`.**
+**Figura 9. Componentes de la App móvil (C4 · Component). Vista `C4-04-Componentes-Mobile`.**
 
 | Componente | Carpeta | Responsabilidad | HU |
 |---|---|---|---|
