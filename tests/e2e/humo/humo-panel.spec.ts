@@ -78,7 +78,7 @@ test.describe('Panel web en QA (SCRUM-448)', () => {
     await page.screenshot({ path: 'resultados/2-solicitudes-tenant.png', fullPage: true });
 
     // La fila del cliente de la corrida, por su ID corto en el nombre accesible del botón.
-    const boton = page.getByRole('button', { name: new RegExp(`del cliente ${corto}$`) });
+    const boton = page.getByRole('button', { name: new RegExp(`^Cancelar la solicitud de .* del cliente ${corto}$`) });
     const fila = page.locator('tbody tr', { has: boton });
     await boton.click();
     await page.locator('#motivo-cancelacion').fill('Prueba de humo del panel (SCRUM-448).');
