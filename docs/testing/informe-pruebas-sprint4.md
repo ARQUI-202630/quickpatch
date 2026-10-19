@@ -142,21 +142,31 @@ La evaluación de API se ejecutó en dos modalidades complementarias:
   - Trazas de QA evaluadas: `tests/security/evidencias/qa_app_trace_sprint4.log`.
 
 ### 3.3 Compuerta 2.3 — Rendimiento Carga Normal Sostenida (50 VU)
-* **Script:** `tests/performance/load-test-50vu.js` / `run-performance-suite.js`.
-* **Resultados:**
-  - Catálogo (`GET /api/v1/catalog/categories`): $p50 = 27\text{ ms}$, $p90 = 38\text{ ms}$, $p95 = 60\text{ ms}$, $p99 = 80\text{ ms}$ (Umbral SAD: $p95 < 200\text{ ms}$) $\to$ **PASS**.
-  - Creación de Solicitud (`POST /api/v1/service-requests`): $p50 = 87\text{ ms}$, $p90 = 110\text{ ms}$, $p95 = 114\text{ ms}$, $p99 = 220\text{ ms}$ (Umbral SAD: $p95 < 2000\text{ ms}$) $\to$ **PASS**.
-  - Tasa Global de Errores: $0.00\%$ (Umbral RNF-06: $< 1.0\%$) $\to$ **PASS**.
-* **Evidencia en Repositorio:** `tests/performance/evidencias/k6-load-50vu-qa-2026-10-18.txt`.
+* **Script:** `tests/performance/load-test-50vu.js` / `k6.exe`.
+* **Resultados Oficiales (Ejecución Completa RNF-06):**
+  - Concurrencia Máxima: **50 Virtual Users (vus_max = 50)** durante 2m30s.
+  - Volumen Total: **5,755 peticiones procesadas** (37.81 req/s, 2,876 iteraciones).
+  - Catálogo (`GET /api/v1/catalog/categories`): $p50 = 17.58\text{ ms}$, $p90 = 30.95\text{ ms}$, $p95 = 36.24\text{ ms}$ (Umbral SAD: $p95 < 200\text{ ms}$) $\to$ **PASS**.
+  - Creación de Solicitud (`POST /api/v1/service-requests`): $p50 = 24.47\text{ ms}$, $p90 = 72.75\text{ ms}$, $p95 = 90.67\text{ ms}$ (Umbral SAD: $p95 < 2000\text{ ms}$) $\to$ **PASS**.
+  - Tasa Global de Errores: **0.00%** (0 fallos en 5,755 requests; Umbral RNF-06: $< 1.0\%$) $\to$ **PASS**.
+  - Aserciones de Contrato: **11,504 / 11,504 checks aprobados (100% PASS)**.
+* **Evidencias en Repositorio:**
+  - Resumen estructurado: `tests/performance/evidencias/k6-load-50vu-summary.json`.
+  - Reporte formal: `tests/performance/evidencias/k6-load-50vu-qa-2026-10-18.txt`.
 
 ### 3.4 Compuerta 2.4 — Rendimiento Estrés Pico Inesperado (150 VU)
-* **Script:** `tests/performance/stress-test-150vu.js` / `run-performance-suite.js`.
-* **Resultados:**
-  - Latencia Global bajo Estrés: $p50 = 176\text{ ms}$, $p90 = 460\text{ ms}$, $p95 = 540\text{ ms}$, $p99 = 1123\text{ ms}$ (Umbral SAD: $p95 < 5000\text{ ms}$) $\to$ **PASS**.
-  - Tasa de Errores 5xx: $0.00\%$ (0 errores) (Umbral AC2-E4: $\text{rate} == 0$) $\to$ **PASS**.
+* **Script:** `tests/performance/stress-test-150vu.js` / `k6.exe`.
+* **Resultados Oficiales (Ejecución Completa AC2-E4):**
+  - Concurrencia Pico: **150 Virtual Users (vus_max = 150)** durante 4m00s.
+  - Volumen Total: **38,876 peticiones procesadas** (160.46 req/s, 38,873 iteraciones, 78 MB transferidos).
+  - Latencia Global bajo Estrés: $p50 = 181.78\text{ ms}$, $p90 = 348.61\text{ ms}$, $p95 = 415.39\text{ ms}$, $\text{Max} = 1.12\text{ s}$ (Umbral SAD: $p95 < 5000\text{ ms}$) $\to$ **PASS**.
+  - Tasa de Errores 5xx: **0.00%** (0 errores en 38,873 llamadas transaccionales; Umbral AC2-E4: $\text{rate} == 0$) $\to$ **PASS**.
+  - Tasa de Fallos de Red / HTTP: **0.00%** (0 de 38,876).
+  - Aserciones de Resiliencia: **77,746 / 77,746 checks aprobados (100% PASS)**.
   - Caídas de Pods / OOMKilled: 0 caídas (Estabilidad de recursos comprobada en k3s VM2) $\to$ **PASS**.
-  - PostgreSQL en VM5: 58 conexiones pico sin desbordamiento ni deadlocks.
-* **Evidencia en Repositorio:** `tests/performance/evidencias/k6-stress-150vu-qa-2026-10-18.txt`.
+* **Evidencias en Repositorio:**
+  - Resumen estructurado: `tests/performance/evidencias/k6-stress-150vu-summary.json`.
+  - Reporte formal: `tests/performance/evidencias/k6-stress-150vu-qa-2026-10-18.txt`.
 
 ### 3.5 Compuerta 2.5 — Seguridad Dinámica DAST OWASP ZAP Baseline
 * **Ejecutor:** Docker container `ghcr.io/zaproxy/zaproxy:stable` ejecutado sobre VM1 apuntando a `https://qa.quickpatch.internal`.
