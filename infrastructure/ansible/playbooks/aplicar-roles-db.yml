@@ -10,7 +10,7 @@
   vars:
     dir: "{{ stack_dir }}/postgres"
     roles_ref: develop
-    servicios_con_roles: [identity, catalog, service_request, matching]
+    servicios_con_roles: [identity, catalog, service_request, matching, communication]
     lista: "{{ [servicio] if servicio is defined else servicios_con_roles }}"
   tasks:
     - name: Carpeta de los roles.sql
