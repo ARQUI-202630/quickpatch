@@ -38,6 +38,9 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 | **BUG-SP4-002** | Colisión de Scope en Newman entre Environment Estático y Colección Dinámica (`sufijo`) | SCRUM-395 / RF-01 | Media | P2 | Runner MVP (`run-mvp.js`) | `tests/e2e/run-mvp.js:L40` | **Verificado y Cerrado** |
 | **BUG-SP4-003** | Contaminación de Estado en Memoria entre Suites Secuenciales (SCRUM-108 vs SCRUM-111) | SCRUM-40 / RN-TP2 / DD §8.3.13 | Alta | P1 | Harness E2E (`mock-gateway-qa.js`) | `tests/e2e/run-all-increment-suites.js:L50` | **Verificado y Cerrado** |
 | **BUG-SP4-004** | Fallo de Codificación `UnicodeEncodeError` en Consolas Windows con Símbolos y Emojis | INF-QA / PCI-DSS v4.0 | Baja | P3 | Scanner PCI (`pci_dss_scanner.py`) | `tests/security/run-pci-dss-suite.py:L20` | **Verificado y Cerrado** |
+| **BUG-SP4-005** | Endpoints de Transición a `en_progreso` y `completado` no Implementados en QA | SCRUM-31 / SCRUM-84 / RF-09 | Alta | P2 | Backend ServiceRequest | `tests/e2e/evidencias/qa-scrum-84-real.json` | **Abierto (Reportado a Dev)** |
+| **BUG-SP4-006** | Endpoint de Detalle de Solicitud con Contacto Resuelto no Desplegado en QA | SCRUM-34 / SCRUM-93 / RF-12 | Media | P2 | Backend ServiceRequest / Identity | `tests/e2e/evidencias/qa-scrum-81-90-93-real.json` | **Abierto (Reportado a Dev)** |
+| **BUG-SP4-007** | Datos Semilla de Usuarios Técnicos y Administrativos Ausentes en Identity QA | SCRUM-395 / SCRUM-56 / RF-02 | Media | P3 | Despliegue Identity / Seed DB | `tests/e2e/evidencias/qa-mvp-real.json` | **Abierto (Reportado a DevOps)** |
 
 ---
 
@@ -104,12 +107,40 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 
 ---
 
+### 3.5 BUG-SP4-005: Endpoints de Transición a `en_progreso` y `completado` no Implementados en QA
+- **Historia / Requisito:** `SCRUM-31` / `SCRUM-84` / `RF-09` (Ciclo de Vida de 4 Estados)
+- **Severidad:** Alta | **Prioridad:** P2
+- **Componente:** `apps/backend/services/service-request` (API .NET 8)
+- **Evidencia Real:** `tests/e2e/evidencias/qa-scrum-84-real.json` (Paso 4.1 y 5.1 -> HTTP `404 Not Found`)
+- **Descripción:** Al ejecutar la suite Newman contra QA desplegado (`https://qa.quickpatch.internal`), la petición `PATCH /api/v1/service-requests/:id/status` retorna HTTP 404 porque el microservicio `QuickPatch.ServiceRequest.Api` solo expone `POST /v1/service-requests` y `GET /v1/service-requests/{id}`.
+- **Acción de QA:** Reportado formalmente a Backend. La máquina de estados completa y reglas de negocio se certifican en paralelo mediante Simulación Local Pre-Deploy (`mock-gateway-local-simulacion.js`).
+
+---
+
+### 3.6 BUG-SP4-006: Endpoint de Detalle de Solicitud con Contacto Resuelto no Desplegado en QA
+- **Historia / Requisito:** `SCRUM-34` / `SCRUM-93` / `RF-12` (Detalle de Solicitud para Técnico Asignado)
+- **Severidad:** Media | **Prioridad:** P2
+- **Componente:** `apps/backend/services/service-request` / Ingress Gateway
+- **Evidencia Real:** `tests/e2e/evidencias/qa-scrum-81-90-93-real.json` (Pasos 3.1 a 3.4 -> HTTP `404 Not Found`)
+- **Descripción:** La ruta `/api/v1/service-requests/:id/assigned-detail` no se encuentra ruteada hacia el servicio o no está implementada en el controlador de QA.
+- **Acción de QA:** Reportado a Backend para despliegue en siguiente ciclo de pipeline.
+
+---
+
+### 3.7 BUG-SP4-007: Datos Semilla de Usuarios Técnicos y Administrativos Ausentes en Identity QA
+- **Historia / Requisito:** `SCRUM-395` / `SCRUM-56` / `RF-02`
+- **Severidad:** Media | **Prioridad:** P3
+- **Componente:** Despliegue Identity / Script de Seed de Base de Datos en QA
+- **Evidencia Real:** `tests/e2e/evidencias/qa-mvp-real.json` (84 aserciones fallidas por HTTP `401 Credenciales Inválidas`)
+- **Descripción:** Los usuarios de prueba fijos (`adminEmail`, `usr-tec-01`, `usr-tec-02`) no se encuentran insertados en la base de datos PostgreSQL de QA en VM5. El registro dinámico (`POST /api/v1/auth/register/*`) funciona al 100%, pero las pruebas que asumen usuarios preexistentes fallan con 401.
+- **Acción de QA:** Se solicita a DevOps incorporar el script de seed automatizado en el pipeline de despliegue de VM2/VM5.
+
+---
+
 ## 4. Conclusión del Registro de Defectos
 
-- **Total de Defectos Identificados:** 4
-- **Total de Defectos Resueltos:** 4
-- **Total de Defectos Verificados en QA:** 4
-- **Defectos Bloqueantes / Críticos Abiertos:** 0
-- **Tasa de Resolución:** 100.0%
+- **Total de Defectos Identificados:** 7 defectos (4 resueltos y verificados en QA/Harness, 3 abiertos reportados a Desarrollo/DevOps).
+- **Defectos Críticos de Seguridad / Aislamiento Abiertos:** **0** (El aislamiento intra-tenant fue verificado en QA real con HTTP 404 estricto).
+- **Tasa de Resolución Inmediata en QA:** 57.1% (4/7 defectos cerrados; los 3 restantes corresponden a código no desplegado de backend).
+- **Dictamen de QA:** Aprobado condicionado a la entrega de los parches de backend para los 3 defectos reportados.
 
-El incremento técnico de Sprint 4 no presenta defectos pendientes de severidad crítica ni alta, habilitando formalmente la aprobación del Quality Gate.

@@ -1,0 +1,6696 @@
+{
+  "collection": {
+    "item": [
+      {
+        "id": "6c283235-7ed3-46b5-9317-f1b51ee2d281",
+        "name": "0. Semillas y Datos de Referencia",
+        "item": [
+          {
+            "id": "9d2582a0-94cf-451d-a66f-29ba5ebd859e",
+            "name": "0.1 Login Administrador de Tenant (Obtener token para catálogo)",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "auth",
+                  "login"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{$guid}}"
+                },
+                {
+                  "key": "X-Channel-Id",
+                  "value": "quickpatch-mobile"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "86375b11-f3c5-41cf-992d-4b1108735822",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('[Auth] Login de administrador exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                    "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
+                  ],
+                  "_lastExecutionId": "d811c29e-93cf-450c-80d5-110904e8d683"
+                }
+              }
+            ]
+          },
+          {
+            "id": "d9ef2c92-4586-4fd7-8e6c-e6249e1b5d8d",
+            "name": "0.2 Obtener Especialidad Real de Catálogo",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "catalog",
+                  "categories"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{$guid}}"
+                },
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{adminToken}}"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "e31cac5f-873d-4f65-a6fa-44b7cc2edf3a",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('[Catalog] 200 OK en consulta de categorías activas', () => pm.response.to.have.status(200));",
+                    "const categories = pm.response.json();",
+                    "pm.test('[Catalog] Existe al menos una categoría en el tenant', () => pm.expect(categories.length).to.be.above(0));",
+                    "if (categories && categories.length > 0) {",
+                    "  pm.collectionVariables.set('specialtyId', categories[0].id);",
+                    "}"
+                  ],
+                  "_lastExecutionId": "2f89d0ae-d57e-4c7f-a870-56581586e9b3"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "c251b279-859d-48ec-8156-d928b6443fa2",
+        "name": "1. SCRUM-56 — Registro y Perfil de Técnico (Identity)",
+        "item": [
+          {
+            "id": "147b461b-8155-46c9-8bd8-ebf25aecdd7c",
+            "name": "1.1 Registro exitoso de técnico (verificationStatus: pendiente)",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "auth",
+                  "register",
+                  "technician"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{$guid}}"
+                },
+                {
+                  "key": "X-Channel-Id",
+                  "value": "quickpatch-mobile"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Carlos Alberto Técnico QA\",\n  \"phone\": \"3109876543\",\n  \"documentId\": \"{{documentoTecnico}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "9fb2a611-a7a7-4511-a9dd-61320d5807e8",
+                  "type": "text/javascript",
+                  "exec": [
+                    "const ts = Date.now();",
+                    "const doc = String(ts).slice(-8);",
+                    "pm.collectionVariables.set('documentoTecnico', doc);",
+                    "pm.collectionVariables.set('correoTecnico', 'tecnico.' + ts + '@quickpatch.test');"
+                  ],
+                  "_lastExecutionId": "91e067d0-f9b1-483d-a3da-194f49acea91"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "b3c307ae-f929-4b88-9b6a-1cf796220e26",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('[SCRUM-56] 201 Created para registro legítimo', () => pm.response.to.have.status(201));",
+                    "pm.test('[SCRUM-56] Rol verificado como tecnico', () => pm.expect(pm.response.json().role).to.eql('tecnico'));",
+                    "pm.test('[SCRUM-56 / RN-U1] verificationStatus inicial es pendiente', () => pm.expect(pm.response.json().verificationStatus).to.eql('pendiente'));",
+                    "pm.test('[Auditoría] Correlation ID presente en cabecera', () => pm.expect(pm.response.headers.get('X-Correlation-Id')).to.not.be.empty);"
+                  ],
+                  "_lastExecutionId": "02829db4-6a06-4ed8-b56b-23cd9e624c7e"
+                }
+              }
+            ]
+          },
+          {
+            "id": "8ec43ee1-2161-494e-8ba8-5903d3687ac7",
+            "name": "1.2 Rechazo por documento de identidad repetido → 409 Conflict",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "auth",
+                  "register",
+                  "technician"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{$guid}}"
+                },
+                {
+                  "key": "X-Channel-Id",
+                  "value": "quickpatch-mobile"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"{{otroCorreo}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Intento Duplicado Documento\",\n  \"phone\": \"3112223344\",\n  \"documentId\": \"{{documentoTecnico}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "a1ef5d66-ea0a-4fb1-9676-1a2300d0c560",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.collectionVariables.set('otroCorreo', 'otro.' + Date.now() + '@quickpatch.test');"
+                  ],
+                  "_lastExecutionId": "fdca725e-0d87-4263-9cd6-083f92ae2710"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "9da7b88c-7b88-4c40-bce1-acf8dbbc17d4",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('[SCRUM-56] 409 Conflict ante documento repetido', () => pm.response.to.have.status(409));",
+                    "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                    "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                    "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                    "});",
+                    "pm.test('[Contrato] Tipo de error documento-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/documento-registrado$/));"
+                  ],
+                  "_lastExecutionId": "971cde32-6806-43d2-a64d-6257c286c6a8"
+                }
+              }
+            ]
+          },
+          {
+            "id": "c18aa78c-072e-4518-9bb8-f2199f8faf39",
+            "name": "1.3 Rechazo por correo electrónico repetido → 409 Conflict",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "auth",
+                  "register",
+                  "technician"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{$guid}}"
+                },
+                {
+                  "key": "X-Channel-Id",
+                  "value": "quickpatch-mobile"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Intento Duplicado Correo\",\n  \"phone\": \"3119998877\",\n  \"documentId\": \"{{otroDocumento}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "4cf728c9-fa7d-4643-bb01-04b3db13dd57",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.collectionVariables.set('otroDocumento', String(Date.now() + 1).slice(-8));"
+                  ],
+                  "_lastExecutionId": "fcc026c9-d9b6-42c5-9b53-c84e1d41d962"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "43ec8c54-3fd8-42bd-a16e-c3e18b605049",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('[SCRUM-56] 409 Conflict ante correo repetido', () => pm.response.to.have.status(409));",
+                    "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                    "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                    "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                    "});",
+                    "pm.test('[Contrato] Tipo de error correo-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/correo-registrado$/));"
+                  ],
+                  "_lastExecutionId": "741ff900-b0cf-441e-b212-c64580a8166a"
+                }
+              }
+            ]
+          },
+          {
+            "id": "15ec0b5d-3151-4b10-9e9d-2aed07195fb4",
+            "name": "1.4 Rechazo por documento ausente / clave corta → 400 Bad Request",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "auth",
+                  "register",
+                  "technician"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{$guid}}"
+                },
+                {
+                  "key": "X-Channel-Id",
+                  "value": "quickpatch-mobile"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"invalido@quickpatch.test\",\n  \"password\": \"123\",\n  \"fullName\": \"Técnico Inválido\",\n  \"role\": \"tecnico\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "05998c4c-e627-4cc7-a80b-258b6786a467",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('[SCRUM-56] 400 Bad Request por fallo de validación de contrato', () => pm.response.to.have.status(400));",
+                    "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                    "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                    "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                    "});",
+                    "pm.test('[Contrato] Tipo de error validacion-solicitud', () => pm.expect(pm.response.json().type).to.match(/\\/validacion-solicitud$/));"
+                  ],
+                  "_lastExecutionId": "476c769a-7b22-4fbb-9c04-95205e6e0544"
+                }
+              }
+            ]
+          },
+          {
+            "id": "1b6ce9a0-39e6-49f9-a293-f3cb99b29113",
+            "name": "1.5 Login de técnico registrado y obtención de JWT",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "auth",
+                  "login"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{$guid}}"
+                },
+                {
+                  "key": "X-Channel-Id",
+                  "value": "quickpatch-mobile"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "fb2cba47-a228-4bd1-be12-3e511e78cdf4",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('[Auth] Login de técnico registrado exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                    "pm.test('[RBAC] Rol del usuario es tecnico', () => pm.expect(pm.response.json().user.role).to.eql('tecnico'));",
+                    "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);"
+                  ],
+                  "_lastExecutionId": "89fd1ea0-ddb0-4174-992b-1a2ce8177077"
+                }
+              }
+            ]
+          },
+          {
+            "id": "6bbab87b-9426-4c75-a53d-e8b6a51fa28c",
+            "name": "1.6 Consulta de perfil propio (/v1/users/me) con verificationStatus",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "users",
+                  "me"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{$guid}}"
+                },
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{tecnicoToken}}"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "debd3687-8b62-459e-b6c6-bfca1e2dcffb",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('[SCRUM-56] 200 OK en consulta de perfil', () => pm.response.to.have.status(200));",
+                    "pm.test('[SCRUM-56] verificationStatus visible como pendiente', () => pm.expect(pm.response.json().verificationStatus).to.eql('pendiente'));",
+                    "pm.test('[SCRUM-56] Rol verificado como tecnico', () => pm.expect(pm.response.json().role).to.eql('tecnico'));"
+                  ],
+                  "_lastExecutionId": "c3c7bf72-c330-4538-8bf3-74eb41676ed4"
+                }
+              }
+            ]
+          },
+          {
+            "id": "56ddb7ff-5758-4b43-befb-9999c72a1185",
+            "name": "1.7 Control RBAC: Técnico no puede crear solicitudes de cliente → 403 Forbidden",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "service-requests"
+                ],
+                "host": [
+                  "{{baseUrl}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{$guid}}"
+                },
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{tecnicoToken}}"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"categoryId\": \"{{specialtyId}}\",\n  \"description\": \"Fuga de agua intentada por técnico\",\n  \"location\": {\n    \"latitude\": 4.6533,\n    \"longitude\": -74.0836\n  },\n  \"addressText\": \"Calle 45 # 13-20\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "f31e62be-2f64-4a39-9bc3-fa93f0936214",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('[RBAC / IDN-012] 403 Forbidden para rol tecnico creando solicitud', () => pm.response.to.have.status(403));",
+                    "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                    "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                    "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                    "});",
+                    "pm.test('[Contrato] Tipo de error no-autorizado', () => pm.expect(pm.response.json().type).to.match(/\\/no-autorizado$/));"
+                  ],
+                  "_lastExecutionId": "85119b4c-4c23-49d6-95be-2b81b789787f"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      }
+    ],
+    "event": [],
+    "variable": [
+      {
+        "type": "string",
+        "value": "http://localhost:8080",
+        "key": "baseUrl"
+      },
+      {
+        "type": "string",
+        "value": "admin@quickpatch.test",
+        "key": "adminEmail"
+      },
+      {
+        "type": "string",
+        "value": "PasswordAdmin123*",
+        "key": "adminPassword"
+      },
+      {
+        "type": "string",
+        "value": "",
+        "key": "adminToken"
+      },
+      {
+        "type": "string",
+        "value": "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
+        "key": "specialtyId"
+      },
+      {
+        "type": "string",
+        "value": "",
+        "key": "documentoTecnico"
+      },
+      {
+        "type": "string",
+        "value": "",
+        "key": "correoTecnico"
+      },
+      {
+        "type": "string",
+        "value": "",
+        "key": "tecnicoToken"
+      }
+    ],
+    "info": {
+      "_postman_id": "d4880111-7c24-48df-b700-d63846bbe1d7",
+      "name": "QUICKPATCH — Registro y Perfil de Técnico (SCRUM-56)",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Suite automatizada de pruebas de sistema (E2E) para SCRUM-56 (Identity Service):\nValida el flujo completo de registro de técnicos y proveedores bajo contratos OpenAPI identity.v1.yaml.\nCompatible con ejecución en QA real y en simulador local.\nVariables: baseUrl (https://qa.quickpatch.internal o http://localhost:8080), adminEmail, adminPassword.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "id": "ca8a876e-2b96-4208-9db4-be5e657019ff",
+    "values": [
+      {
+        "type": "any",
+        "value": "https://qa.quickpatch.internal",
+        "key": "baseUrl"
+      }
+    ]
+  },
+  "globals": {
+    "id": "9b61a9ed-0370-4438-a831-2070071424ee",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 9,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 12,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 9,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 9,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 9,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 24,
+        "pending": 0,
+        "failed": 4
+      },
+      "testScripts": {
+        "total": 9,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 379.6666666666667,
+      "responseMin": 17,
+      "responseMax": 1231,
+      "responseSd": 508.65771071189585,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1792382874997,
+      "completed": 1792382878629
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 9,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "cb70bcb2-b4e4-4350-898f-51ae217b570d",
+          "httpRequestId": "fc708bd9-ce87-4cde-8e8e-86c30c73e4a3"
+        },
+        "item": {
+          "id": "9d2582a0-94cf-451d-a66f-29ba5ebd859e",
+          "name": "0.1 Login Administrador de Tenant (Obtener token para catálogo)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "86375b11-f3c5-41cf-992d-4b1108735822",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de administrador exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
+                ],
+                "_lastExecutionId": "d811c29e-93cf-450c-80d5-110904e8d683"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "https",
+            "path": [
+              "api",
+              "v1",
+              "auth",
+              "login"
+            ],
+            "host": [
+              "qa",
+              "quickpatch",
+              "internal"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "60cbe6b1-6b02-477c-b89b-4e8bb0adba29"
+            },
+            {
+              "key": "X-Channel-Id",
+              "value": "quickpatch-mobile"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "07be5a22-24d6-4e87-a9f5-918d6db950ad",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "qa.quickpatch.internal",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "73",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"admin@quickpatch.test\",\n  \"password\": \"PasswordAdmin123*\"\n}"
+          }
+        },
+        "response": {
+          "id": "83626ead-37fb-4b27-8a26-11da0247994f",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "Server",
+              "value": "nginx"
+            },
+            {
+              "key": "Date",
+              "value": "Mon, 19 Oct 2026 04:07:55 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/problem+json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "60cbe6b1-6b02-477c-b89b-4e8bb0adba29"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              104,
+              116,
+              116,
+              112,
+              115,
+              58,
+              47,
+              47,
+              113,
+              117,
+              105,
+              99,
+              107,
+              112,
+              97,
+              116,
+              99,
+              104,
+              46,
+              105,
+              110,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              47,
+              112,
+              114,
+              111,
+              98,
+              108,
+              101,
+              109,
+              115,
+              47,
+              99,
+              114,
+              101,
+              100,
+              101,
+              110,
+              99,
+              105,
+              97,
+              108,
+              101,
+              115,
+              45,
+              105,
+              110,
+              118,
+              97,
+              108,
+              105,
+              100,
+              97,
+              115,
+              34,
+              44,
+              34,
+              116,
+              105,
+              116,
+              108,
+              101,
+              34,
+              58,
+              34,
+              67,
+              111,
+              114,
+              114,
+              101,
+              111,
+              32,
+              111,
+              32,
+              99,
+              111,
+              110,
+              116,
+              114,
+              97,
+              115,
+              101,
+              195,
+              177,
+              97,
+              32,
+              105,
+              110,
+              99,
+              111,
+              114,
+              114,
+              101,
+              99,
+              116,
+              111,
+              115,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              52,
+              48,
+              49,
+              44,
+              34,
+              116,
+              114,
+              97,
+              99,
+              101,
+              73,
+              100,
+              34,
+              58,
+              34,
+              48,
+              48,
+              45,
+              48,
+              54,
+              55,
+              102,
+              100,
+              56,
+              52,
+              97,
+              56,
+              51,
+              98,
+              53,
+              49,
+              98,
+              51,
+              99,
+              54,
+              49,
+              48,
+              57,
+              102,
+              53,
+              99,
+              55,
+              49,
+              55,
+              56,
+              97,
+              52,
+              49,
+              99,
+              51,
+              45,
+              52,
+              55,
+              57,
+              54,
+              54,
+              48,
+              53,
+              99,
+              99,
+              53,
+              49,
+              101,
+              49,
+              52,
+              56,
+              51,
+              45,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              111,
+              114,
+              114,
+              101,
+              108,
+              97,
+              116,
+              105,
+              111,
+              110,
+              73,
+              100,
+              34,
+              58,
+              34,
+              54,
+              48,
+              99,
+              98,
+              101,
+              54,
+              98,
+              49,
+              45,
+              54,
+              98,
+              48,
+              50,
+              45,
+              52,
+              55,
+              55,
+              99,
+              45,
+              98,
+              56,
+              57,
+              98,
+              45,
+              52,
+              101,
+              56,
+              98,
+              98,
+              48,
+              97,
+              100,
+              98,
+              97,
+              50,
+              57,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 961,
+          "responseSize": 249
+        },
+        "id": "9d2582a0-94cf-451d-a66f-29ba5ebd859e",
+        "assertions": [
+          {
+            "assertion": "[Auth] Login de administrador exitoso (200 OK)",
+            "skipped": false,
+            "error": {
+              "name": "AssertionError",
+              "index": 0,
+              "test": "[Auth] Login de administrador exitoso (200 OK)",
+              "message": "expected response to have status code 200 but got 401",
+              "stack": "AssertionError: expected response to have status code 200 but got 401\n   at Object.eval sandbox-script.js:1:1)"
+            }
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "3725c0a1-afe1-4c6e-97ae-f33e21121437",
+          "length": 9,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "4afb7509-1a7c-489d-89bd-7445619fc687"
+        },
+        "item": {
+          "id": "d9ef2c92-4586-4fd7-8e6c-e6249e1b5d8d",
+          "name": "0.2 Obtener Especialidad Real de Catálogo",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "categories"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e31cac5f-873d-4f65-a6fa-44b7cc2edf3a",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Catalog] 200 OK en consulta de categorías activas', () => pm.response.to.have.status(200));",
+                  "const categories = pm.response.json();",
+                  "pm.test('[Catalog] Existe al menos una categoría en el tenant', () => pm.expect(categories.length).to.be.above(0));",
+                  "if (categories && categories.length > 0) {",
+                  "  pm.collectionVariables.set('specialtyId', categories[0].id);",
+                  "}"
+                ],
+                "_lastExecutionId": "2f89d0ae-d57e-4c7f-a870-56581586e9b3"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "https",
+            "path": [
+              "api",
+              "v1",
+              "catalog",
+              "categories"
+            ],
+            "host": [
+              "qa",
+              "quickpatch",
+              "internal"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "09bcaa98-35d7-45dd-bde9-ae4053da3d17"
+            },
+            {
+              "key": "Authorization",
+              "value": "Bearer null"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "79219229-20a8-420f-a256-9e9479ceaab4",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "qa.quickpatch.internal",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "9d1aeeb7-e51e-41dd-a7f3-91a1e6c9cfa3",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "Server",
+              "value": "nginx"
+            },
+            {
+              "key": "Date",
+              "value": "Mon, 19 Oct 2026 04:07:56 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/problem+json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "09bcaa98-35d7-45dd-bde9-ae4053da3d17"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              104,
+              116,
+              116,
+              112,
+              115,
+              58,
+              47,
+              47,
+              113,
+              117,
+              105,
+              99,
+              107,
+              112,
+              97,
+              116,
+              99,
+              104,
+              46,
+              105,
+              110,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              47,
+              112,
+              114,
+              111,
+              98,
+              108,
+              101,
+              109,
+              115,
+              47,
+              110,
+              111,
+              45,
+              97,
+              117,
+              116,
+              101,
+              110,
+              116,
+              105,
+              99,
+              97,
+              100,
+              111,
+              34,
+              44,
+              34,
+              116,
+              105,
+              116,
+              108,
+              101,
+              34,
+              58,
+              34,
+              69,
+              108,
+              32,
+              116,
+              111,
+              107,
+              101,
+              110,
+              32,
+              110,
+              111,
+              32,
+              116,
+              114,
+              97,
+              101,
+              32,
+              117,
+              115,
+              117,
+              97,
+              114,
+              105,
+              111,
+              32,
+              110,
+              105,
+              32,
+              116,
+              101,
+              110,
+              97,
+              110,
+              116,
+              32,
+              118,
+              195,
+              161,
+              108,
+              105,
+              100,
+              111,
+              115,
+              46,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              52,
+              48,
+              49,
+              44,
+              34,
+              116,
+              114,
+              97,
+              99,
+              101,
+              73,
+              100,
+              34,
+              58,
+              34,
+              48,
+              48,
+              45,
+              99,
+              97,
+              54,
+              48,
+              102,
+              52,
+              57,
+              101,
+              51,
+              52,
+              102,
+              49,
+              98,
+              50,
+              54,
+              50,
+              97,
+              99,
+              49,
+              53,
+              97,
+              100,
+              51,
+              54,
+              56,
+              99,
+              52,
+              100,
+              57,
+              99,
+              101,
+              52,
+              45,
+              51,
+              55,
+              98,
+              49,
+              51,
+              98,
+              51,
+              97,
+              99,
+              97,
+              98,
+              97,
+              49,
+              97,
+              54,
+              102,
+              45,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              111,
+              114,
+              114,
+              101,
+              108,
+              97,
+              116,
+              105,
+              111,
+              110,
+              73,
+              100,
+              34,
+              58,
+              34,
+              48,
+              57,
+              98,
+              99,
+              97,
+              97,
+              57,
+              56,
+              45,
+              51,
+              53,
+              100,
+              55,
+              45,
+              52,
+              53,
+              100,
+              100,
+              45,
+              98,
+              100,
+              101,
+              57,
+              45,
+              97,
+              101,
+              52,
+              48,
+              53,
+              51,
+              100,
+              97,
+              51,
+              100,
+              49,
+              55,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 19,
+          "responseSize": 253
+        },
+        "id": "d9ef2c92-4586-4fd7-8e6c-e6249e1b5d8d",
+        "assertions": [
+          {
+            "assertion": "[Catalog] 200 OK en consulta de categorías activas",
+            "skipped": false,
+            "error": {
+              "name": "AssertionError",
+              "index": 0,
+              "test": "[Catalog] 200 OK en consulta de categorías activas",
+              "message": "expected response to have status code 200 but got 401",
+              "stack": "AssertionError: expected response to have status code 200 but got 401\n   at Object.eval sandbox-script.js:1:2)"
+            }
+          },
+          {
+            "assertion": "[Catalog] Existe al menos una categoría en el tenant",
+            "skipped": false,
+            "error": {
+              "name": "AssertionError",
+              "index": 1,
+              "test": "[Catalog] Existe al menos una categoría en el tenant",
+              "message": "expected undefined to be a number or a date",
+              "stack": "AssertionError: expected undefined to be a number or a date\n   at Object.eval sandbox-script.js:2:2)"
+            }
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "fc3b530b-4885-40d4-8f3e-db44d49162fe",
+          "length": 9,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "17cc1249-0d70-427e-b3da-f87e05397287"
+        },
+        "item": {
+          "id": "147b461b-8155-46c9-8bd8-ebf25aecdd7c",
+          "name": "1.1 Registro exitoso de técnico (verificationStatus: pendiente)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Carlos Alberto Técnico QA\",\n  \"phone\": \"3109876543\",\n  \"documentId\": \"{{documentoTecnico}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "9fb2a611-a7a7-4511-a9dd-61320d5807e8",
+                "type": "text/javascript",
+                "exec": [
+                  "const ts = Date.now();",
+                  "const doc = String(ts).slice(-8);",
+                  "pm.collectionVariables.set('documentoTecnico', doc);",
+                  "pm.collectionVariables.set('correoTecnico', 'tecnico.' + ts + '@quickpatch.test');"
+                ],
+                "_lastExecutionId": "91e067d0-f9b1-483d-a3da-194f49acea91"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "b3c307ae-f929-4b88-9b6a-1cf796220e26",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-56] 201 Created para registro legítimo', () => pm.response.to.have.status(201));",
+                  "pm.test('[SCRUM-56] Rol verificado como tecnico', () => pm.expect(pm.response.json().role).to.eql('tecnico'));",
+                  "pm.test('[SCRUM-56 / RN-U1] verificationStatus inicial es pendiente', () => pm.expect(pm.response.json().verificationStatus).to.eql('pendiente'));",
+                  "pm.test('[Auditoría] Correlation ID presente en cabecera', () => pm.expect(pm.response.headers.get('X-Correlation-Id')).to.not.be.empty);"
+                ],
+                "_lastExecutionId": "02829db4-6a06-4ed8-b56b-23cd9e624c7e"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "https",
+            "path": [
+              "api",
+              "v1",
+              "auth",
+              "register",
+              "technician"
+            ],
+            "host": [
+              "qa",
+              "quickpatch",
+              "internal"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "2496ce53-6392-468e-93e9-085f4bc49a9a"
+            },
+            {
+              "key": "X-Channel-Id",
+              "value": "quickpatch-mobile"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "3a76c0c2-dac0-41cc-8fde-1dd73a3a5c17",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "qa.quickpatch.internal",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "266",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"tecnico.1792382876052@quickpatch.test\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Carlos Alberto Técnico QA\",\n  \"phone\": \"3109876543\",\n  \"documentId\": \"82876052\",\n  \"specialtyId\": \"3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01\",\n  \"role\": \"tecnico\"\n}"
+          }
+        },
+        "response": {
+          "id": "0d1a84f5-313f-46e5-b104-d5c4eb61f82c",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "Server",
+              "value": "nginx"
+            },
+            {
+              "key": "Date",
+              "value": "Mon, 19 Oct 2026 04:07:57 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "2496ce53-6392-468e-93e9-085f4bc49a9a"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              48,
+              49,
+              97,
+              49,
+              53,
+              50,
+              53,
+              56,
+              45,
+              51,
+              57,
+              98,
+              97,
+              45,
+              55,
+              102,
+              51,
+              98,
+              45,
+              98,
+              100,
+              49,
+              99,
+              45,
+              49,
+              50,
+              48,
+              97,
+              49,
+              57,
+              98,
+              55,
+              51,
+              100,
+              54,
+              56,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              116,
+              101,
+              99,
+              110,
+              105,
+              99,
+              111,
+              46,
+              49,
+              55,
+              57,
+              50,
+              51,
+              56,
+              50,
+              56,
+              55,
+              54,
+              48,
+              53,
+              50,
+              64,
+              113,
+              117,
+              105,
+              99,
+              107,
+              112,
+              97,
+              116,
+              99,
+              104,
+              46,
+              116,
+              101,
+              115,
+              116,
+              34,
+              44,
+              34,
+              102,
+              117,
+              108,
+              108,
+              78,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              67,
+              97,
+              114,
+              108,
+              111,
+              115,
+              32,
+              65,
+              108,
+              98,
+              101,
+              114,
+              116,
+              111,
+              32,
+              84,
+              195,
+              169,
+              99,
+              110,
+              105,
+              99,
+              111,
+              32,
+              81,
+              65,
+              34,
+              44,
+              34,
+              114,
+              111,
+              108,
+              101,
+              34,
+              58,
+              34,
+              116,
+              101,
+              99,
+              110,
+              105,
+              99,
+              111,
+              34,
+              44,
+              34,
+              112,
+              104,
+              111,
+              110,
+              101,
+              34,
+              58,
+              34,
+              51,
+              49,
+              48,
+              57,
+              56,
+              55,
+              54,
+              53,
+              52,
+              51,
+              34,
+              44,
+              34,
+              118,
+              101,
+              114,
+              105,
+              102,
+              105,
+              99,
+              97,
+              116,
+              105,
+              111,
+              110,
+              83,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              112,
+              101,
+              110,
+              100,
+              105,
+              101,
+              110,
+              116,
+              101,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1231,
+          "responseSize": 204
+        },
+        "id": "147b461b-8155-46c9-8bd8-ebf25aecdd7c",
+        "assertions": [
+          {
+            "assertion": "[SCRUM-56] 201 Created para registro legítimo",
+            "skipped": false
+          },
+          {
+            "assertion": "[SCRUM-56] Rol verificado como tecnico",
+            "skipped": false
+          },
+          {
+            "assertion": "[SCRUM-56 / RN-U1] verificationStatus inicial es pendiente",
+            "skipped": false
+          },
+          {
+            "assertion": "[Auditoría] Correlation ID presente en cabecera",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "abffbd51-1c94-4ad1-bb32-909c863d70b6",
+          "length": 9,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "79cfec49-d42f-4dc2-bd57-d5a1540b40e6"
+        },
+        "item": {
+          "id": "8ec43ee1-2161-494e-8ba8-5903d3687ac7",
+          "name": "1.2 Rechazo por documento de identidad repetido → 409 Conflict",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{otroCorreo}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Intento Duplicado Documento\",\n  \"phone\": \"3112223344\",\n  \"documentId\": \"{{documentoTecnico}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "a1ef5d66-ea0a-4fb1-9676-1a2300d0c560",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('otroCorreo', 'otro.' + Date.now() + '@quickpatch.test');"
+                ],
+                "_lastExecutionId": "fdca725e-0d87-4263-9cd6-083f92ae2710"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "9da7b88c-7b88-4c40-bce1-acf8dbbc17d4",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-56] 409 Conflict ante documento repetido', () => pm.response.to.have.status(409));",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato] Tipo de error documento-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/documento-registrado$/));"
+                ],
+                "_lastExecutionId": "971cde32-6806-43d2-a64d-6257c286c6a8"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "https",
+            "path": [
+              "api",
+              "v1",
+              "auth",
+              "register",
+              "technician"
+            ],
+            "host": [
+              "qa",
+              "quickpatch",
+              "internal"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "7884d855-bae9-404f-a7f3-98cb5a8f1fa5"
+            },
+            {
+              "key": "X-Channel-Id",
+              "value": "quickpatch-mobile"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "bb0d1473-0209-4aad-8cd8-eed699f89587",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "qa.quickpatch.internal",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "264",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"otro.1792382877312@quickpatch.test\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Intento Duplicado Documento\",\n  \"phone\": \"3112223344\",\n  \"documentId\": \"82876052\",\n  \"specialtyId\": \"3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01\",\n  \"role\": \"tecnico\"\n}"
+          }
+        },
+        "response": {
+          "id": "5f36e70f-d26d-4781-9965-6b567ecc9069",
+          "status": "Conflict",
+          "code": 409,
+          "header": [
+            {
+              "key": "Server",
+              "value": "nginx"
+            },
+            {
+              "key": "Date",
+              "value": "Mon, 19 Oct 2026 04:07:57 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/problem+json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "7884d855-bae9-404f-a7f3-98cb5a8f1fa5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              104,
+              116,
+              116,
+              112,
+              115,
+              58,
+              47,
+              47,
+              113,
+              117,
+              105,
+              99,
+              107,
+              112,
+              97,
+              116,
+              99,
+              104,
+              46,
+              105,
+              110,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              47,
+              112,
+              114,
+              111,
+              98,
+              108,
+              101,
+              109,
+              115,
+              47,
+              100,
+              111,
+              99,
+              117,
+              109,
+              101,
+              110,
+              116,
+              111,
+              45,
+              114,
+              101,
+              103,
+              105,
+              115,
+              116,
+              114,
+              97,
+              100,
+              111,
+              34,
+              44,
+              34,
+              116,
+              105,
+              116,
+              108,
+              101,
+              34,
+              58,
+              34,
+              69,
+              108,
+              32,
+              100,
+              111,
+              99,
+              117,
+              109,
+              101,
+              110,
+              116,
+              111,
+              32,
+              121,
+              97,
+              32,
+              101,
+              115,
+              116,
+              195,
+              161,
+              32,
+              114,
+              101,
+              103,
+              105,
+              115,
+              116,
+              114,
+              97,
+              100,
+              111,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              52,
+              48,
+              57,
+              44,
+              34,
+              116,
+              114,
+              97,
+              99,
+              101,
+              73,
+              100,
+              34,
+              58,
+              34,
+              48,
+              48,
+              45,
+              102,
+              97,
+              57,
+              49,
+              48,
+              50,
+              53,
+              98,
+              101,
+              50,
+              100,
+              98,
+              99,
+              53,
+              51,
+              48,
+              97,
+              50,
+              50,
+              50,
+              98,
+              48,
+              56,
+              97,
+              99,
+              51,
+              52,
+              48,
+              55,
+              49,
+              100,
+              99,
+              45,
+              102,
+              52,
+              98,
+              99,
+              52,
+              51,
+              101,
+              57,
+              52,
+              56,
+              98,
+              57,
+              48,
+              98,
+              53,
+              53,
+              45,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              111,
+              114,
+              114,
+              101,
+              108,
+              97,
+              116,
+              105,
+              111,
+              110,
+              73,
+              100,
+              34,
+              58,
+              34,
+              55,
+              56,
+              56,
+              52,
+              100,
+              56,
+              53,
+              53,
+              45,
+              98,
+              97,
+              101,
+              57,
+              45,
+              52,
+              48,
+              52,
+              102,
+              45,
+              97,
+              55,
+              102,
+              51,
+              45,
+              57,
+              56,
+              99,
+              98,
+              53,
+              97,
+              56,
+              102,
+              49,
+              102,
+              97,
+              53,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 27,
+          "responseSize": 247
+        },
+        "id": "8ec43ee1-2161-494e-8ba8-5903d3687ac7",
+        "assertions": [
+          {
+            "assertion": "[SCRUM-56] 409 Conflict ante documento repetido",
+            "skipped": false
+          },
+          {
+            "assertion": "[RFC 9457] Problem Details con correlationId",
+            "skipped": false
+          },
+          {
+            "assertion": "[Contrato] Tipo de error documento-registrado",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "300a5b9a-9a92-45ac-87ce-75381b853e9b",
+          "length": 9,
+          "cycles": 1,
+          "position": 4,
+          "iteration": 0,
+          "httpRequestId": "2205dd61-65aa-4e9e-8d64-bb6ac197e855"
+        },
+        "item": {
+          "id": "c18aa78c-072e-4518-9bb8-f2199f8faf39",
+          "name": "1.3 Rechazo por correo electrónico repetido → 409 Conflict",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Intento Duplicado Correo\",\n  \"phone\": \"3119998877\",\n  \"documentId\": \"{{otroDocumento}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "4cf728c9-fa7d-4643-bb01-04b3db13dd57",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('otroDocumento', String(Date.now() + 1).slice(-8));"
+                ],
+                "_lastExecutionId": "fcc026c9-d9b6-42c5-9b53-c84e1d41d962"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "43ec8c54-3fd8-42bd-a16e-c3e18b605049",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-56] 409 Conflict ante correo repetido', () => pm.response.to.have.status(409));",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato] Tipo de error correo-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/correo-registrado$/));"
+                ],
+                "_lastExecutionId": "741ff900-b0cf-441e-b212-c64580a8166a"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "https",
+            "path": [
+              "api",
+              "v1",
+              "auth",
+              "register",
+              "technician"
+            ],
+            "host": [
+              "qa",
+              "quickpatch",
+              "internal"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "0fd0ad29-bda4-4298-96ca-2a30a35207f4"
+            },
+            {
+              "key": "X-Channel-Id",
+              "value": "quickpatch-mobile"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "72742f6a-0fdf-41cc-b528-528c558bb992",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "qa.quickpatch.internal",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "264",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"tecnico.1792382876052@quickpatch.test\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Intento Duplicado Correo\",\n  \"phone\": \"3119998877\",\n  \"documentId\": \"82877360\",\n  \"specialtyId\": \"3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01\",\n  \"role\": \"tecnico\"\n}"
+          }
+        },
+        "response": {
+          "id": "26b78535-2f13-4d74-8cf4-4e19678fbb73",
+          "status": "Conflict",
+          "code": 409,
+          "header": [
+            {
+              "key": "Server",
+              "value": "nginx"
+            },
+            {
+              "key": "Date",
+              "value": "Mon, 19 Oct 2026 04:07:57 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/problem+json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "0fd0ad29-bda4-4298-96ca-2a30a35207f4"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              104,
+              116,
+              116,
+              112,
+              115,
+              58,
+              47,
+              47,
+              113,
+              117,
+              105,
+              99,
+              107,
+              112,
+              97,
+              116,
+              99,
+              104,
+              46,
+              105,
+              110,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              47,
+              112,
+              114,
+              111,
+              98,
+              108,
+              101,
+              109,
+              115,
+              47,
+              99,
+              111,
+              114,
+              114,
+              101,
+              111,
+              45,
+              114,
+              101,
+              103,
+              105,
+              115,
+              116,
+              114,
+              97,
+              100,
+              111,
+              34,
+              44,
+              34,
+              116,
+              105,
+              116,
+              108,
+              101,
+              34,
+              58,
+              34,
+              69,
+              108,
+              32,
+              99,
+              111,
+              114,
+              114,
+              101,
+              111,
+              32,
+              121,
+              97,
+              32,
+              101,
+              115,
+              116,
+              195,
+              161,
+              32,
+              114,
+              101,
+              103,
+              105,
+              115,
+              116,
+              114,
+              97,
+              100,
+              111,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              52,
+              48,
+              57,
+              44,
+              34,
+              116,
+              114,
+              97,
+              99,
+              101,
+              73,
+              100,
+              34,
+              58,
+              34,
+              48,
+              48,
+              45,
+              52,
+              102,
+              100,
+              52,
+              51,
+              102,
+              97,
+              55,
+              55,
+              51,
+              100,
+              52,
+              49,
+              56,
+              97,
+              57,
+              56,
+              100,
+              48,
+              97,
+              51,
+              57,
+              102,
+              55,
+              99,
+              53,
+              54,
+              97,
+              100,
+              48,
+              100,
+              57,
+              45,
+              98,
+              49,
+              54,
+              48,
+              100,
+              100,
+              99,
+              50,
+              57,
+              55,
+              55,
+              54,
+              100,
+              54,
+              101,
+              56,
+              45,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              111,
+              114,
+              114,
+              101,
+              108,
+              97,
+              116,
+              105,
+              111,
+              110,
+              73,
+              100,
+              34,
+              58,
+              34,
+              48,
+              102,
+              100,
+              48,
+              97,
+              100,
+              50,
+              57,
+              45,
+              98,
+              100,
+              97,
+              52,
+              45,
+              52,
+              50,
+              57,
+              56,
+              45,
+              57,
+              54,
+              99,
+              97,
+              45,
+              50,
+              97,
+              51,
+              48,
+              97,
+              51,
+              53,
+              50,
+              48,
+              55,
+              102,
+              52,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 31,
+          "responseSize": 241
+        },
+        "id": "c18aa78c-072e-4518-9bb8-f2199f8faf39",
+        "assertions": [
+          {
+            "assertion": "[SCRUM-56] 409 Conflict ante correo repetido",
+            "skipped": false
+          },
+          {
+            "assertion": "[RFC 9457] Problem Details con correlationId",
+            "skipped": false
+          },
+          {
+            "assertion": "[Contrato] Tipo de error correo-registrado",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "2d9ba59a-010d-45f3-9857-847c3f9fd60a",
+          "length": 9,
+          "cycles": 1,
+          "position": 5,
+          "iteration": 0,
+          "httpRequestId": "c86164e7-c77e-4da2-a6be-b371d55cf6a3"
+        },
+        "item": {
+          "id": "15ec0b5d-3151-4b10-9e9d-2aed07195fb4",
+          "name": "1.4 Rechazo por documento ausente / clave corta → 400 Bad Request",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalido@quickpatch.test\",\n  \"password\": \"123\",\n  \"fullName\": \"Técnico Inválido\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "05998c4c-e627-4cc7-a80b-258b6786a467",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-56] 400 Bad Request por fallo de validación de contrato', () => pm.response.to.have.status(400));",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato] Tipo de error validacion-solicitud', () => pm.expect(pm.response.json().type).to.match(/\\/validacion-solicitud$/));"
+                ],
+                "_lastExecutionId": "476c769a-7b22-4fbb-9c04-95205e6e0544"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "https",
+            "path": [
+              "api",
+              "v1",
+              "auth",
+              "register",
+              "technician"
+            ],
+            "host": [
+              "qa",
+              "quickpatch",
+              "internal"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "0824b554-2eaa-4076-a98e-69ab8d4e7050"
+            },
+            {
+              "key": "X-Channel-Id",
+              "value": "quickpatch-mobile"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "705f0796-9a54-4665-addc-9ff5f36bdb88",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "qa.quickpatch.internal",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "119",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"invalido@quickpatch.test\",\n  \"password\": \"123\",\n  \"fullName\": \"Técnico Inválido\",\n  \"role\": \"tecnico\"\n}"
+          }
+        },
+        "response": {
+          "id": "c8826aed-2f76-436c-8c28-342d26562bc6",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            {
+              "key": "Server",
+              "value": "nginx"
+            },
+            {
+              "key": "Date",
+              "value": "Mon, 19 Oct 2026 04:07:57 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/problem+json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "0824b554-2eaa-4076-a98e-69ab8d4e7050"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              104,
+              116,
+              116,
+              112,
+              115,
+              58,
+              47,
+              47,
+              113,
+              117,
+              105,
+              99,
+              107,
+              112,
+              97,
+              116,
+              99,
+              104,
+              46,
+              105,
+              110,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              47,
+              112,
+              114,
+              111,
+              98,
+              108,
+              101,
+              109,
+              115,
+              47,
+              118,
+              97,
+              108,
+              105,
+              100,
+              97,
+              99,
+              105,
+              111,
+              110,
+              34,
+              44,
+              34,
+              116,
+              105,
+              116,
+              108,
+              101,
+              34,
+              58,
+              34,
+              76,
+              97,
+              32,
+              115,
+              111,
+              108,
+              105,
+              99,
+              105,
+              116,
+              117,
+              100,
+              32,
+              116,
+              105,
+              101,
+              110,
+              101,
+              32,
+              100,
+              97,
+              116,
+              111,
+              115,
+              32,
+              105,
+              110,
+              118,
+              195,
+              161,
+              108,
+              105,
+              100,
+              111,
+              115,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              52,
+              48,
+              48,
+              44,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              115,
+              34,
+              58,
+              123,
+              34,
+              112,
+              97,
+              115,
+              115,
+              119,
+              111,
+              114,
+              100,
+              34,
+              58,
+              91,
+              34,
+              76,
+              97,
+              32,
+              99,
+              111,
+              110,
+              116,
+              114,
+              97,
+              115,
+              101,
+              195,
+              177,
+              97,
+              32,
+              100,
+              101,
+              98,
+              101,
+              32,
+              116,
+              101,
+              110,
+              101,
+              114,
+              32,
+              101,
+              110,
+              116,
+              114,
+              101,
+              32,
+              56,
+              32,
+              121,
+              32,
+              49,
+              50,
+              56,
+              32,
+              99,
+              97,
+              114,
+              97,
+              99,
+              116,
+              101,
+              114,
+              101,
+              115,
+              46,
+              34,
+              93,
+              44,
+              34,
+              112,
+              104,
+              111,
+              110,
+              101,
+              34,
+              58,
+              91,
+              34,
+              69,
+              108,
+              32,
+              116,
+              101,
+              108,
+              195,
+              169,
+              102,
+              111,
+              110,
+              111,
+              32,
+              101,
+              115,
+              32,
+              111,
+              98,
+              108,
+              105,
+              103,
+              97,
+              116,
+              111,
+              114,
+              105,
+              111,
+              32,
+              121,
+              32,
+              100,
+              101,
+              98,
+              101,
+              32,
+              116,
+              101,
+              110,
+              101,
+              114,
+              32,
+              101,
+              110,
+              116,
+              114,
+              101,
+              32,
+              55,
+              32,
+              121,
+              32,
+              51,
+              48,
+              32,
+              99,
+              97,
+              114,
+              97,
+              99,
+              116,
+              101,
+              114,
+              101,
+              115,
+              46,
+              34,
+              93,
+              44,
+              34,
+              100,
+              111,
+              99,
+              117,
+              109,
+              101,
+              110,
+              116,
+              73,
+              100,
+              34,
+              58,
+              91,
+              34,
+              69,
+              108,
+              32,
+              100,
+              111,
+              99,
+              117,
+              109,
+              101,
+              110,
+              116,
+              111,
+              32,
+              100,
+              101,
+              98,
+              101,
+              32,
+              116,
+              101,
+              110,
+              101,
+              114,
+              32,
+              101,
+              110,
+              116,
+              114,
+              101,
+              32,
+              53,
+              32,
+              121,
+              32,
+              51,
+              48,
+              32,
+              99,
+              97,
+              114,
+              97,
+              99,
+              116,
+              101,
+              114,
+              101,
+              115,
+              46,
+              34,
+              93,
+              44,
+              34,
+              115,
+              112,
+              101,
+              99,
+              105,
+              97,
+              108,
+              116,
+              121,
+              73,
+              100,
+              34,
+              58,
+              91,
+              34,
+              76,
+              97,
+              32,
+              101,
+              115,
+              112,
+              101,
+              99,
+              105,
+              97,
+              108,
+              105,
+              100,
+              97,
+              100,
+              32,
+              101,
+              115,
+              32,
+              111,
+              98,
+              108,
+              105,
+              103,
+              97,
+              116,
+              111,
+              114,
+              105,
+              97,
+              46,
+              34,
+              93,
+              125,
+              44,
+              34,
+              116,
+              114,
+              97,
+              99,
+              101,
+              73,
+              100,
+              34,
+              58,
+              34,
+              48,
+              48,
+              45,
+              52,
+              51,
+              52,
+              102,
+              48,
+              56,
+              54,
+              100,
+              51,
+              54,
+              49,
+              99,
+              50,
+              57,
+              49,
+              53,
+              51,
+              52,
+              55,
+              49,
+              100,
+              97,
+              57,
+              100,
+              48,
+              56,
+              98,
+              53,
+              52,
+              57,
+              48,
+              101,
+              45,
+              101,
+              99,
+              52,
+              48,
+              54,
+              55,
+              53,
+              101,
+              52,
+              52,
+              101,
+              53,
+              54,
+              102,
+              54,
+              52,
+              45,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              111,
+              114,
+              114,
+              101,
+              108,
+              97,
+              116,
+              105,
+              111,
+              110,
+              73,
+              100,
+              34,
+              58,
+              34,
+              48,
+              56,
+              50,
+              52,
+              98,
+              53,
+              53,
+              52,
+              45,
+              50,
+              101,
+              97,
+              97,
+              45,
+              52,
+              48,
+              55,
+              54,
+              45,
+              97,
+              57,
+              56,
+              101,
+              45,
+              54,
+              57,
+              97,
+              98,
+              56,
+              100,
+              52,
+              101,
+              55,
+              48,
+              53,
+              48,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 17,
+          "responseSize": 512
+        },
+        "id": "15ec0b5d-3151-4b10-9e9d-2aed07195fb4",
+        "assertions": [
+          {
+            "assertion": "[SCRUM-56] 400 Bad Request por fallo de validación de contrato",
+            "skipped": false
+          },
+          {
+            "assertion": "[RFC 9457] Problem Details con correlationId",
+            "skipped": false
+          },
+          {
+            "assertion": "[Contrato] Tipo de error validacion-solicitud",
+            "skipped": false,
+            "error": {
+              "name": "AssertionError",
+              "index": 2,
+              "test": "[Contrato] Tipo de error validacion-solicitud",
+              "message": "expected 'https://quickpatch.internal/problems/…' to match /\\/validacion-solicitud$/",
+              "stack": "AssertionError: expected 'https://quickpatch.internal/problems/…' to match /\\/validacion-solicitud$/\n   at Object.eval sandbox-script.js:3:6)"
+            }
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "7afb4deb-7b7f-40c1-8545-4d7e7c422e96",
+          "length": 9,
+          "cycles": 1,
+          "position": 6,
+          "iteration": 0,
+          "httpRequestId": "d359d90c-7315-46da-855a-2080acc342c8"
+        },
+        "item": {
+          "id": "1b6ce9a0-39e6-49f9-a293-f3cb99b29113",
+          "name": "1.5 Login de técnico registrado y obtención de JWT",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "fb2cba47-a228-4bd1-be12-3e511e78cdf4",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de técnico registrado exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                  "pm.test('[RBAC] Rol del usuario es tecnico', () => pm.expect(pm.response.json().user.role).to.eql('tecnico'));",
+                  "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);"
+                ],
+                "_lastExecutionId": "89fd1ea0-ddb0-4174-992b-1a2ce8177077"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "https",
+            "path": [
+              "api",
+              "v1",
+              "auth",
+              "login"
+            ],
+            "host": [
+              "qa",
+              "quickpatch",
+              "internal"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "50131a13-2e77-4494-b5b4-1c10ba9bb81a"
+            },
+            {
+              "key": "X-Channel-Id",
+              "value": "quickpatch-mobile"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "4734d69c-9000-40a1-9579-d225f2fc2c66",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "qa.quickpatch.internal",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "91",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"tecnico.1792382876052@quickpatch.test\",\n  \"password\": \"PasswordTecnico123*\"\n}"
+          }
+        },
+        "response": {
+          "id": "76c18f6e-2916-4368-b7f7-ff4147867c0b",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Server",
+              "value": "nginx"
+            },
+            {
+              "key": "Date",
+              "value": "Mon, 19 Oct 2026 04:07:58 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "50131a13-2e77-4494-b5b4-1c10ba9bb81a"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              97,
+              99,
+              99,
+              101,
+              115,
+              115,
+              84,
+              111,
+              107,
+              101,
+              110,
+              34,
+              58,
+              34,
+              101,
+              121,
+              74,
+              104,
+              98,
+              71,
+              99,
+              105,
+              79,
+              105,
+              74,
+              83,
+              85,
+              122,
+              73,
+              49,
+              78,
+              105,
+              73,
+              115,
+              73,
+              110,
+              82,
+              53,
+              99,
+              67,
+              73,
+              54,
+              73,
+              107,
+              112,
+              88,
+              86,
+              67,
+              74,
+              57,
+              46,
+              101,
+              121,
+              74,
+              104,
+              100,
+              87,
+              81,
+              105,
+              79,
+              105,
+              74,
+              120,
+              100,
+              87,
+              108,
+              106,
+              97,
+              51,
+              66,
+              104,
+              100,
+              71,
+              78,
+              111,
+              73,
+              105,
+              119,
+              105,
+              97,
+              88,
+              78,
+              122,
+              73,
+              106,
+              111,
+              105,
+              99,
+              88,
+              86,
+              112,
+              89,
+              50,
+              116,
+              119,
+              89,
+              88,
+              82,
+              106,
+              97,
+              67,
+              49,
+              112,
+              90,
+              71,
+              86,
+              117,
+              100,
+              71,
+              108,
+              48,
+              101,
+              83,
+              73,
+              115,
+              73,
+              109,
+              86,
+              52,
+              99,
+              67,
+              73,
+              54,
+              77,
+              84,
+              99,
+              53,
+              77,
+              106,
+              77,
+              52,
+              78,
+              106,
+              81,
+              51,
+              79,
+              67,
+              119,
+              105,
+              97,
+              87,
+              70,
+              48,
+              73,
+              106,
+              111,
+              120,
+              78,
+              122,
+              107,
+              121,
+              77,
+              122,
+              103,
+              121,
+              79,
+              68,
+              99,
+              52,
+              76,
+              67,
+              74,
+              117,
+              89,
+              109,
+              89,
+              105,
+              79,
+              106,
+              69,
+              51,
+              79,
+              84,
+              73,
+              122,
+              79,
+              68,
+              73,
+              52,
+              78,
+              122,
+              103,
+              115,
+              73,
+              110,
+              78,
+              49,
+              89,
+              105,
+              73,
+              54,
+              73,
+              106,
+              65,
+              120,
+              89,
+              84,
+              69,
+              49,
+              77,
+              106,
+              85,
+              52,
+              76,
+              84,
+              77,
+              53,
+              89,
+              109,
+              69,
+              116,
+              78,
+              50,
+              89,
+              122,
+              89,
+              105,
+              49,
+              105,
+              90,
+              68,
+              70,
+              106,
+              76,
+              84,
+              69,
+              121,
+              77,
+              71,
+              69,
+              120,
+              79,
+              87,
+              73,
+              51,
+              77,
+              50,
+              81,
+              50,
+              79,
+              67,
+              73,
+              115,
+              73,
+              110,
+              82,
+              108,
+              98,
+              109,
+              70,
+              117,
+              100,
+              70,
+              57,
+              112,
+              90,
+              67,
+              73,
+              54,
+              73,
+              106,
+              65,
+              119,
+              77,
+              68,
+              65,
+              119,
+              77,
+              68,
+              65,
+              119,
+              76,
+              84,
+              65,
+              119,
+              77,
+              68,
+              65,
+              116,
+              77,
+              68,
+              65,
+              119,
+              77,
+              67,
+              48,
+              119,
+              77,
+              68,
+              65,
+              119,
+              76,
+              84,
+              65,
+              119,
+              77,
+              68,
+              65,
+              119,
+              77,
+              68,
+              65,
+              119,
+              77,
+              68,
+              65,
+              119,
+              77,
+              83,
+              73,
+              115,
+              73,
+              110,
+              74,
+              118,
+              98,
+              71,
+              85,
+              105,
+              79,
+              105,
+              74,
+              48,
+              90,
+              87,
+              78,
+              117,
+              97,
+              87,
+              78,
+              118,
+              73,
+              105,
+              119,
+              105,
+              97,
+              110,
+              82,
+              112,
+              73,
+              106,
+              111,
+              105,
+              89,
+              122,
+              85,
+              53,
+              77,
+              71,
+              81,
+              121,
+              89,
+              84,
+              85,
+              116,
+              89,
+              122,
+              86,
+              105,
+              79,
+              83,
+              48,
+              48,
+              78,
+              109,
+              85,
+              48,
+              76,
+              84,
+              103,
+              51,
+              78,
+              106,
+              69,
+              116,
+              78,
+              71,
+              77,
+              49,
+              79,
+              84,
+              77,
+              120,
+              90,
+              84,
+              81,
+              122,
+              89,
+              122,
+              100,
+              109,
+              73,
+              110,
+              48,
+              46,
+              117,
+              115,
+              52,
+              97,
+              66,
+              103,
+              110,
+              101,
+              82,
+              122,
+              55,
+              120,
+              69,
+              75,
+              78,
+              48,
+              119,
+              55,
+              48,
+              76,
+              97,
+              109,
+              106,
+              120,
+              72,
+              85,
+              88,
+              107,
+              117,
+              81,
+              108,
+              51,
+              54,
+              84,
+              110,
+              76,
+              48,
+              121,
+              101,
+              84,
+              71,
+              111,
+              67,
+              87,
+              99,
+              89,
+              102,
+              109,
+              107,
+              76,
+              112,
+              103,
+              69,
+              55,
+              80,
+              97,
+              55,
+              119,
+              56,
+              122,
+              98,
+              86,
+              88,
+              108,
+              103,
+              81,
+              98,
+              108,
+              78,
+              77,
+              122,
+              115,
+              54,
+              109,
+              97,
+              119,
+              67,
+              72,
+              105,
+              71,
+              90,
+              54,
+              101,
+              110,
+              53,
+              98,
+              78,
+              111,
+              73,
+              67,
+              100,
+              81,
+              111,
+              86,
+              90,
+              83,
+              119,
+              52,
+              111,
+              120,
+              108,
+              97,
+              82,
+              117,
+              110,
+              82,
+              86,
+              98,
+              76,
+              116,
+              117,
+              56,
+              73,
+              45,
+              105,
+              107,
+              55,
+              107,
+              90,
+              52,
+              110,
+              81,
+              106,
+              108,
+              113,
+              98,
+              88,
+              82,
+              77,
+              52,
+              97,
+              111,
+              105,
+              100,
+              109,
+              101,
+              104,
+              114,
+              100,
+              103,
+              56,
+              109,
+              115,
+              87,
+              52,
+              76,
+              45,
+              121,
+              90,
+              90,
+              57,
+              121,
+              112,
+              120,
+              116,
+              97,
+              106,
+              107,
+              97,
+              66,
+              72,
+              101,
+              68,
+              68,
+              74,
+              110,
+              49,
+              119,
+              112,
+              70,
+              84,
+              118,
+              122,
+              122,
+              103,
+              48,
+              109,
+              116,
+              72,
+              52,
+              118,
+              49,
+              97,
+              73,
+              52,
+              100,
+              110,
+              81,
+              81,
+              52,
+              106,
+              100,
+              114,
+              99,
+              120,
+              111,
+              52,
+              113,
+              68,
+              45,
+              110,
+              53,
+              52,
+              68,
+              122,
+              113,
+              81,
+              84,
+              100,
+              86,
+              105,
+              109,
+              119,
+              113,
+              79,
+              49,
+              112,
+              87,
+              111,
+              81,
+              100,
+              113,
+              83,
+              83,
+              51,
+              69,
+              49,
+              79,
+              118,
+              89,
+              115,
+              71,
+              98,
+              103,
+              71,
+              70,
+              88,
+              114,
+              72,
+              101,
+              70,
+              79,
+              48,
+              85,
+              87,
+              55,
+              103,
+              73,
+              69,
+              112,
+              87,
+              50,
+              76,
+              78,
+              52,
+              97,
+              89,
+              79,
+              84,
+              84,
+              82,
+              108,
+              102,
+              81,
+              68,
+              118,
+              121,
+              72,
+              74,
+              76,
+              79,
+              110,
+              70,
+              104,
+              75,
+              83,
+              69,
+              95,
+              113,
+              71,
+              83,
+              88,
+              69,
+              110,
+              117,
+              90,
+              55,
+              69,
+              70,
+              66,
+              115,
+              121,
+              54,
+              55,
+              89,
+              57,
+              118,
+              81,
+              84,
+              100,
+              109,
+              53,
+              74,
+              105,
+              95,
+              51,
+              120,
+              73,
+              115,
+              75,
+              49,
+              52,
+              86,
+              49,
+              68,
+              49,
+              89,
+              81,
+              71,
+              72,
+              85,
+              114,
+              106,
+              121,
+              103,
+              67,
+              48,
+              71,
+              76,
+              49,
+              77,
+              81,
+              74,
+              81,
+              75,
+              98,
+              104,
+              101,
+              100,
+              77,
+              84,
+              103,
+              34,
+              44,
+              34,
+              116,
+              111,
+              107,
+              101,
+              110,
+              84,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              66,
+              101,
+              97,
+              114,
+              101,
+              114,
+              34,
+              44,
+              34,
+              101,
+              120,
+              112,
+              105,
+              114,
+              101,
+              115,
+              73,
+              110,
+              34,
+              58,
+              51,
+              54,
+              48,
+              48,
+              44,
+              34,
+              117,
+              115,
+              101,
+              114,
+              34,
+              58,
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              48,
+              49,
+              97,
+              49,
+              53,
+              50,
+              53,
+              56,
+              45,
+              51,
+              57,
+              98,
+              97,
+              45,
+              55,
+              102,
+              51,
+              98,
+              45,
+              98,
+              100,
+              49,
+              99,
+              45,
+              49,
+              50,
+              48,
+              97,
+              49,
+              57,
+              98,
+              55,
+              51,
+              100,
+              54,
+              56,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              116,
+              101,
+              99,
+              110,
+              105,
+              99,
+              111,
+              46,
+              49,
+              55,
+              57,
+              50,
+              51,
+              56,
+              50,
+              56,
+              55,
+              54,
+              48,
+              53,
+              50,
+              64,
+              113,
+              117,
+              105,
+              99,
+              107,
+              112,
+              97,
+              116,
+              99,
+              104,
+              46,
+              116,
+              101,
+              115,
+              116,
+              34,
+              44,
+              34,
+              102,
+              117,
+              108,
+              108,
+              78,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              67,
+              97,
+              114,
+              108,
+              111,
+              115,
+              32,
+              65,
+              108,
+              98,
+              101,
+              114,
+              116,
+              111,
+              32,
+              84,
+              195,
+              169,
+              99,
+              110,
+              105,
+              99,
+              111,
+              32,
+              81,
+              65,
+              34,
+              44,
+              34,
+              114,
+              111,
+              108,
+              101,
+              34,
+              58,
+              34,
+              116,
+              101,
+              99,
+              110,
+              105,
+              99,
+              111,
+              34,
+              44,
+              34,
+              112,
+              104,
+              111,
+              110,
+              101,
+              34,
+              58,
+              34,
+              51,
+              49,
+              48,
+              57,
+              56,
+              55,
+              54,
+              53,
+              52,
+              51,
+              34,
+              44,
+              34,
+              118,
+              101,
+              114,
+              105,
+              102,
+              105,
+              99,
+              97,
+              116,
+              105,
+              111,
+              110,
+              83,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              112,
+              101,
+              110,
+              100,
+              105,
+              101,
+              110,
+              116,
+              101,
+              34,
+              125,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 1088,
+          "responseSize": 991
+        },
+        "id": "1b6ce9a0-39e6-49f9-a293-f3cb99b29113",
+        "assertions": [
+          {
+            "assertion": "[Auth] Login de técnico registrado exitoso (200 OK)",
+            "skipped": false
+          },
+          {
+            "assertion": "[RBAC] Rol del usuario es tecnico",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "b96cbbe8-8378-4c94-9091-244f3ab3ef93",
+          "length": 9,
+          "cycles": 1,
+          "position": 7,
+          "iteration": 0,
+          "httpRequestId": "3fc392b3-2754-4cf1-862b-eb3fd400a33b"
+        },
+        "item": {
+          "id": "6bbab87b-9426-4c75-a53d-e8b6a51fa28c",
+          "name": "1.6 Consulta de perfil propio (/v1/users/me) con verificationStatus",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "debd3687-8b62-459e-b6c6-bfca1e2dcffb",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-56] 200 OK en consulta de perfil', () => pm.response.to.have.status(200));",
+                  "pm.test('[SCRUM-56] verificationStatus visible como pendiente', () => pm.expect(pm.response.json().verificationStatus).to.eql('pendiente'));",
+                  "pm.test('[SCRUM-56] Rol verificado como tecnico', () => pm.expect(pm.response.json().role).to.eql('tecnico'));"
+                ],
+                "_lastExecutionId": "c3c7bf72-c330-4538-8bf3-74eb41676ed4"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "https",
+            "path": [
+              "api",
+              "v1",
+              "users",
+              "me"
+            ],
+            "host": [
+              "qa",
+              "quickpatch",
+              "internal"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": "afd1561f-4003-42c3-bae4-b21498d15fd0"
+            },
+            {
+              "key": "Authorization",
+              "value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJxdWlja3BhdGNoIiwiaXNzIjoicXVpY2twYXRjaC1pZGVudGl0eSIsImV4cCI6MTc5MjM4NjQ3OCwiaWF0IjoxNzkyMzgyODc4LCJuYmYiOjE3OTIzODI4NzgsInN1YiI6IjAxYTE1MjU4LTM5YmEtN2YzYi1iZDFjLTEyMGExOWI3M2Q2OCIsInRlbmFudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMSIsInJvbGUiOiJ0ZWNuaWNvIiwianRpIjoiYzU5MGQyYTUtYzViOS00NmU0LTg3NjEtNGM1OTMxZTQzYzdmIn0.us4aBgneRz7xEKN0w70LamjxHUXkuQl36TnL0yeTGoCWcYfmkLpgE7Pa7w8zbVXlgQblNMzs6mawCHiGZ6en5bNoICdQoVZSw4oxlaRunRVbLtu8I-ik7kZ4nQjlqbXRM4aoidmehrdg8msW4L-yZZ9ypxtajkaBHeDDJn1wpFTvzzg0mtH4v1aI4dnQQ4jdrcxo4qD-n54DzqQTdVimwqO1pWoQdqSS3E1OvYsGbgGFXrHeFO0UW7gIEpW2LN4aYOTTRlfQDvyHJLOnFhKSE_qGSXEnuZ7EFBsy67Y9vQTdm5Ji_3xIsK14V1D1YQGHUrjygC0GL1MQJQKbhedMTg"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "81e1018d-5a9d-4ef6-ac95-d1b15a1873a4",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "qa.quickpatch.internal",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "7e68168f-25ad-4713-806f-dfb0af75feb9",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Server",
+              "value": "nginx"
+            },
+            {
+              "key": "Date",
+              "value": "Mon, 19 Oct 2026 04:07:58 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "afd1561f-4003-42c3-bae4-b21498d15fd0"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              48,
+              49,
+              97,
+              49,
+              53,
+              50,
+              53,
+              56,
+              45,
+              51,
+              57,
+              98,
+              97,
+              45,
+              55,
+              102,
+              51,
+              98,
+              45,
+              98,
+              100,
+              49,
+              99,
+              45,
+              49,
+              50,
+              48,
+              97,
+              49,
+              57,
+              98,
+              55,
+              51,
+              100,
+              54,
+              56,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              116,
+              101,
+              99,
+              110,
+              105,
+              99,
+              111,
+              46,
+              49,
+              55,
+              57,
+              50,
+              51,
+              56,
+              50,
+              56,
+              55,
+              54,
+              48,
+              53,
+              50,
+              64,
+              113,
+              117,
+              105,
+              99,
+              107,
+              112,
+              97,
+              116,
+              99,
+              104,
+              46,
+              116,
+              101,
+              115,
+              116,
+              34,
+              44,
+              34,
+              102,
+              117,
+              108,
+              108,
+              78,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              67,
+              97,
+              114,
+              108,
+              111,
+              115,
+              32,
+              65,
+              108,
+              98,
+              101,
+              114,
+              116,
+              111,
+              32,
+              84,
+              195,
+              169,
+              99,
+              110,
+              105,
+              99,
+              111,
+              32,
+              81,
+              65,
+              34,
+              44,
+              34,
+              114,
+              111,
+              108,
+              101,
+              34,
+              58,
+              34,
+              116,
+              101,
+              99,
+              110,
+              105,
+              99,
+              111,
+              34,
+              44,
+              34,
+              112,
+              104,
+              111,
+              110,
+              101,
+              34,
+              58,
+              34,
+              51,
+              49,
+              48,
+              57,
+              56,
+              55,
+              54,
+              53,
+              52,
+              51,
+              34,
+              44,
+              34,
+              118,
+              101,
+              114,
+              105,
+              102,
+              105,
+              99,
+              97,
+              116,
+              105,
+              111,
+              110,
+              83,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              112,
+              101,
+              110,
+              100,
+              105,
+              101,
+              110,
+              116,
+              101,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 25,
+          "responseSize": 204
+        },
+        "id": "6bbab87b-9426-4c75-a53d-e8b6a51fa28c",
+        "assertions": [
+          {
+            "assertion": "[SCRUM-56] 200 OK en consulta de perfil",
+            "skipped": false
+          },
+          {
+            "assertion": "[SCRUM-56] verificationStatus visible como pendiente",
+            "skipped": false
+          },
+          {
+            "assertion": "[SCRUM-56] Rol verificado como tecnico",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "375da673-a094-4d85-96a8-663e9464da50",
+          "length": 9,
+          "cycles": 1,
+          "position": 8,
+          "iteration": 0,
+          "httpRequestId": "ef49eef3-7ca2-48d4-9842-9daa111d15a7"
+        },
+        "item": {
+          "id": "56ddb7ff-5758-4b43-befb-9999c72a1185",
+          "name": "1.7 Control RBAC: Técnico no puede crear solicitudes de cliente → 403 Forbidden",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{specialtyId}}\",\n  \"description\": \"Fuga de agua intentada por técnico\",\n  \"location\": {\n    \"latitude\": 4.6533,\n    \"longitude\": -74.0836\n  },\n  \"addressText\": \"Calle 45 # 13-20\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "f31e62be-2f64-4a39-9bc3-fa93f0936214",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[RBAC / IDN-012] 403 Forbidden para rol tecnico creando solicitud', () => pm.response.to.have.status(403));",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato] Tipo de error no-autorizado', () => pm.expect(pm.response.json().type).to.match(/\\/no-autorizado$/));"
+                ],
+                "_lastExecutionId": "85119b4c-4c23-49d6-95be-2b81b789787f"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "https",
+            "path": [
+              "api",
+              "v1",
+              "service-requests"
+            ],
+            "host": [
+              "qa",
+              "quickpatch",
+              "internal"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "4f805f0c-ca04-4dd3-89aa-1c5912b3284b"
+            },
+            {
+              "key": "Authorization",
+              "value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJxdWlja3BhdGNoIiwiaXNzIjoicXVpY2twYXRjaC1pZGVudGl0eSIsImV4cCI6MTc5MjM4NjQ3OCwiaWF0IjoxNzkyMzgyODc4LCJuYmYiOjE3OTIzODI4NzgsInN1YiI6IjAxYTE1MjU4LTM5YmEtN2YzYi1iZDFjLTEyMGExOWI3M2Q2OCIsInRlbmFudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMSIsInJvbGUiOiJ0ZWNuaWNvIiwianRpIjoiYzU5MGQyYTUtYzViOS00NmU0LTg3NjEtNGM1OTMxZTQzYzdmIn0.us4aBgneRz7xEKN0w70LamjxHUXkuQl36TnL0yeTGoCWcYfmkLpgE7Pa7w8zbVXlgQblNMzs6mawCHiGZ6en5bNoICdQoVZSw4oxlaRunRVbLtu8I-ik7kZ4nQjlqbXRM4aoidmehrdg8msW4L-yZZ9ypxtajkaBHeDDJn1wpFTvzzg0mtH4v1aI4dnQQ4jdrcxo4qD-n54DzqQTdVimwqO1pWoQdqSS3E1OvYsGbgGFXrHeFO0UW7gIEpW2LN4aYOTTRlfQDvyHJLOnFhKSE_qGSXEnuZ7EFBsy67Y9vQTdm5Ji_3xIsK14V1D1YQGHUrjygC0GL1MQJQKbhedMTg"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "9f7a986f-811a-4878-8c5d-f685294b3172",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "qa.quickpatch.internal",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "222",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"categoryId\": \"3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01\",\n  \"description\": \"Fuga de agua intentada por técnico\",\n  \"location\": {\n    \"latitude\": 4.6533,\n    \"longitude\": -74.0836\n  },\n  \"addressText\": \"Calle 45 # 13-20\"\n}"
+          }
+        },
+        "response": {
+          "id": "ebb114aa-d97a-4737-a430-49263d76e774",
+          "status": "Forbidden",
+          "code": 403,
+          "header": [
+            {
+              "key": "Server",
+              "value": "nginx"
+            },
+            {
+              "key": "Date",
+              "value": "Mon, 19 Oct 2026 04:07:58 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/problem+json"
+            },
+            {
+              "key": "Transfer-Encoding",
+              "value": "chunked"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "4f805f0c-ca04-4dd3-89aa-1c5912b3284b"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              104,
+              116,
+              116,
+              112,
+              115,
+              58,
+              47,
+              47,
+              113,
+              117,
+              105,
+              99,
+              107,
+              112,
+              97,
+              116,
+              99,
+              104,
+              46,
+              105,
+              110,
+              116,
+              101,
+              114,
+              110,
+              97,
+              108,
+              47,
+              112,
+              114,
+              111,
+              98,
+              108,
+              101,
+              109,
+              115,
+              47,
+              110,
+              111,
+              45,
+              97,
+              117,
+              116,
+              111,
+              114,
+              105,
+              122,
+              97,
+              100,
+              111,
+              34,
+              44,
+              34,
+              116,
+              105,
+              116,
+              108,
+              101,
+              34,
+              58,
+              34,
+              70,
+              111,
+              114,
+              98,
+              105,
+              100,
+              100,
+              101,
+              110,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              52,
+              48,
+              51,
+              44,
+              34,
+              116,
+              114,
+              97,
+              99,
+              101,
+              73,
+              100,
+              34,
+              58,
+              34,
+              48,
+              48,
+              45,
+              101,
+              54,
+              100,
+              49,
+              49,
+              57,
+              56,
+              100,
+              50,
+              98,
+              56,
+              49,
+              98,
+              48,
+              48,
+              50,
+              101,
+              56,
+              98,
+              56,
+              98,
+              101,
+              48,
+              57,
+              101,
+              56,
+              48,
+              50,
+              50,
+              56,
+              101,
+              49,
+              45,
+              98,
+              54,
+              56,
+              56,
+              52,
+              99,
+              99,
+              56,
+              57,
+              55,
+              97,
+              54,
+              51,
+              48,
+              51,
+              51,
+              45,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              111,
+              114,
+              114,
+              101,
+              108,
+              97,
+              116,
+              105,
+              111,
+              110,
+              73,
+              100,
+              34,
+              58,
+              34,
+              52,
+              102,
+              56,
+              48,
+              53,
+              102,
+              48,
+              99,
+              45,
+              99,
+              97,
+              48,
+              52,
+              45,
+              52,
+              100,
+              100,
+              51,
+              45,
+              56,
+              57,
+              97,
+              97,
+              45,
+              49,
+              99,
+              53,
+              57,
+              49,
+              50,
+              98,
+              51,
+              50,
+              56,
+              52,
+              98,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 18,
+          "responseSize": 217
+        },
+        "id": "56ddb7ff-5758-4b43-befb-9999c72a1185",
+        "assertions": [
+          {
+            "assertion": "[RBAC / IDN-012] 403 Forbidden para rol tecnico creando solicitud",
+            "skipped": false
+          },
+          {
+            "assertion": "[RFC 9457] Problem Details con correlationId",
+            "skipped": false
+          },
+          {
+            "assertion": "[Contrato] Tipo de error no-autorizado",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 3118
+    },
+    "failures": [
+      {
+        "error": {
+          "name": "AssertionError",
+          "index": 0,
+          "test": "[Auth] Login de administrador exitoso (200 OK)",
+          "message": "expected response to have status code 200 but got 401",
+          "stack": "AssertionError: expected response to have status code 200 but got 401\n   at Object.eval sandbox-script.js:1:1)",
+          "checksum": "5774f0163e46e0039e5e24593b02a5e6",
+          "id": "07311988-a259-4195-996f-0fc9cef232af",
+          "timestamp": 1792382875998,
+          "stacktrace": [
+            {
+              "fileName": "sandbox-script.js",
+              "lineNumber": 1,
+              "functionName": "Object.eval",
+              "typeName": "Object",
+              "methodName": "eval",
+              "columnNumber": 1,
+              "native": false
+            }
+          ]
+        },
+        "at": "assertion:0 in test-script",
+        "source": {
+          "id": "9d2582a0-94cf-451d-a66f-29ba5ebd859e",
+          "name": "0.1 Login Administrador de Tenant (Obtener token para catálogo)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "86375b11-f3c5-41cf-992d-4b1108735822",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Auth] Login de administrador exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
+                ],
+                "_lastExecutionId": "d811c29e-93cf-450c-80d5-110904e8d683"
+              }
+            }
+          ]
+        },
+        "parent": {
+          "id": "6c283235-7ed3-46b5-9317-f1b51ee2d281",
+          "name": "0. Semillas y Datos de Referencia",
+          "item": [
+            {
+              "id": "9d2582a0-94cf-451d-a66f-29ba5ebd859e",
+              "name": "0.1 Login Administrador de Tenant (Obtener token para catálogo)",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "X-Channel-Id",
+                    "value": "quickpatch-mobile"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "86375b11-f3c5-41cf-992d-4b1108735822",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[Auth] Login de administrador exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                      "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
+                    ],
+                    "_lastExecutionId": "d811c29e-93cf-450c-80d5-110904e8d683"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "d9ef2c92-4586-4fd7-8e6c-e6249e1b5d8d",
+              "name": "0.2 Obtener Especialidad Real de Catálogo",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "categories"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "method": "GET"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "e31cac5f-873d-4f65-a6fa-44b7cc2edf3a",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[Catalog] 200 OK en consulta de categorías activas', () => pm.response.to.have.status(200));",
+                      "const categories = pm.response.json();",
+                      "pm.test('[Catalog] Existe al menos una categoría en el tenant', () => pm.expect(categories.length).to.be.above(0));",
+                      "if (categories && categories.length > 0) {",
+                      "  pm.collectionVariables.set('specialtyId', categories[0].id);",
+                      "}"
+                    ],
+                    "_lastExecutionId": "2f89d0ae-d57e-4c7f-a870-56581586e9b3"
+                  }
+                }
+              ]
+            }
+          ],
+          "event": []
+        },
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 9,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "cb70bcb2-b4e4-4350-898f-51ae217b570d",
+          "httpRequestId": "fc708bd9-ce87-4cde-8e8e-86c30c73e4a3",
+          "scriptId": "86375b11-f3c5-41cf-992d-4b1108735822",
+          "execution": "d811c29e-93cf-450c-80d5-110904e8d683"
+        }
+      },
+      {
+        "error": {
+          "name": "AssertionError",
+          "index": 0,
+          "test": "[Catalog] 200 OK en consulta de categorías activas",
+          "message": "expected response to have status code 200 but got 401",
+          "stack": "AssertionError: expected response to have status code 200 but got 401\n   at Object.eval sandbox-script.js:1:2)",
+          "checksum": "6156ac31fc2fc90c3bb4e9df1bcb055a",
+          "id": "67c2d768-47d0-4b48-9c40-c8f4151d8389",
+          "timestamp": 1792382876042,
+          "stacktrace": [
+            {
+              "fileName": "sandbox-script.js",
+              "lineNumber": 1,
+              "functionName": "Object.eval",
+              "typeName": "Object",
+              "methodName": "eval",
+              "columnNumber": 2,
+              "native": false
+            }
+          ]
+        },
+        "at": "assertion:0 in test-script",
+        "source": {
+          "id": "d9ef2c92-4586-4fd7-8e6c-e6249e1b5d8d",
+          "name": "0.2 Obtener Especialidad Real de Catálogo",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "categories"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e31cac5f-873d-4f65-a6fa-44b7cc2edf3a",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Catalog] 200 OK en consulta de categorías activas', () => pm.response.to.have.status(200));",
+                  "const categories = pm.response.json();",
+                  "pm.test('[Catalog] Existe al menos una categoría en el tenant', () => pm.expect(categories.length).to.be.above(0));",
+                  "if (categories && categories.length > 0) {",
+                  "  pm.collectionVariables.set('specialtyId', categories[0].id);",
+                  "}"
+                ],
+                "_lastExecutionId": "2f89d0ae-d57e-4c7f-a870-56581586e9b3"
+              }
+            }
+          ]
+        },
+        "parent": {
+          "id": "6c283235-7ed3-46b5-9317-f1b51ee2d281",
+          "name": "0. Semillas y Datos de Referencia",
+          "item": [
+            {
+              "id": "9d2582a0-94cf-451d-a66f-29ba5ebd859e",
+              "name": "0.1 Login Administrador de Tenant (Obtener token para catálogo)",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "X-Channel-Id",
+                    "value": "quickpatch-mobile"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "86375b11-f3c5-41cf-992d-4b1108735822",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[Auth] Login de administrador exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                      "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
+                    ],
+                    "_lastExecutionId": "d811c29e-93cf-450c-80d5-110904e8d683"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "d9ef2c92-4586-4fd7-8e6c-e6249e1b5d8d",
+              "name": "0.2 Obtener Especialidad Real de Catálogo",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "categories"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "method": "GET"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "e31cac5f-873d-4f65-a6fa-44b7cc2edf3a",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[Catalog] 200 OK en consulta de categorías activas', () => pm.response.to.have.status(200));",
+                      "const categories = pm.response.json();",
+                      "pm.test('[Catalog] Existe al menos una categoría en el tenant', () => pm.expect(categories.length).to.be.above(0));",
+                      "if (categories && categories.length > 0) {",
+                      "  pm.collectionVariables.set('specialtyId', categories[0].id);",
+                      "}"
+                    ],
+                    "_lastExecutionId": "2f89d0ae-d57e-4c7f-a870-56581586e9b3"
+                  }
+                }
+              ]
+            }
+          ],
+          "event": []
+        },
+        "cursor": {
+          "ref": "3725c0a1-afe1-4c6e-97ae-f33e21121437",
+          "length": 9,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "4afb7509-1a7c-489d-89bd-7445619fc687",
+          "scriptId": "e31cac5f-873d-4f65-a6fa-44b7cc2edf3a",
+          "execution": "2f89d0ae-d57e-4c7f-a870-56581586e9b3"
+        }
+      },
+      {
+        "error": {
+          "name": "AssertionError",
+          "index": 1,
+          "test": "[Catalog] Existe al menos una categoría en el tenant",
+          "message": "expected undefined to be a number or a date",
+          "stack": "AssertionError: expected undefined to be a number or a date\n   at Object.eval sandbox-script.js:2:2)",
+          "checksum": "143678fcab50d7fb8946fd043cd6ec1f",
+          "id": "94d337f4-62da-46a5-a76f-33c5b1b604cf",
+          "timestamp": 1792382876043,
+          "stacktrace": [
+            {
+              "fileName": "sandbox-script.js",
+              "lineNumber": 2,
+              "functionName": "Object.eval",
+              "typeName": "Object",
+              "methodName": "eval",
+              "columnNumber": 2,
+              "native": false
+            }
+          ]
+        },
+        "at": "assertion:1 in test-script",
+        "source": {
+          "id": "d9ef2c92-4586-4fd7-8e6c-e6249e1b5d8d",
+          "name": "0.2 Obtener Especialidad Real de Catálogo",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "categories"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e31cac5f-873d-4f65-a6fa-44b7cc2edf3a",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[Catalog] 200 OK en consulta de categorías activas', () => pm.response.to.have.status(200));",
+                  "const categories = pm.response.json();",
+                  "pm.test('[Catalog] Existe al menos una categoría en el tenant', () => pm.expect(categories.length).to.be.above(0));",
+                  "if (categories && categories.length > 0) {",
+                  "  pm.collectionVariables.set('specialtyId', categories[0].id);",
+                  "}"
+                ],
+                "_lastExecutionId": "2f89d0ae-d57e-4c7f-a870-56581586e9b3"
+              }
+            }
+          ]
+        },
+        "parent": {
+          "id": "6c283235-7ed3-46b5-9317-f1b51ee2d281",
+          "name": "0. Semillas y Datos de Referencia",
+          "item": [
+            {
+              "id": "9d2582a0-94cf-451d-a66f-29ba5ebd859e",
+              "name": "0.1 Login Administrador de Tenant (Obtener token para catálogo)",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "X-Channel-Id",
+                    "value": "quickpatch-mobile"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "86375b11-f3c5-41cf-992d-4b1108735822",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[Auth] Login de administrador exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                      "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
+                    ],
+                    "_lastExecutionId": "d811c29e-93cf-450c-80d5-110904e8d683"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "d9ef2c92-4586-4fd7-8e6c-e6249e1b5d8d",
+              "name": "0.2 Obtener Especialidad Real de Catálogo",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "categories"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "method": "GET"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "e31cac5f-873d-4f65-a6fa-44b7cc2edf3a",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[Catalog] 200 OK en consulta de categorías activas', () => pm.response.to.have.status(200));",
+                      "const categories = pm.response.json();",
+                      "pm.test('[Catalog] Existe al menos una categoría en el tenant', () => pm.expect(categories.length).to.be.above(0));",
+                      "if (categories && categories.length > 0) {",
+                      "  pm.collectionVariables.set('specialtyId', categories[0].id);",
+                      "}"
+                    ],
+                    "_lastExecutionId": "2f89d0ae-d57e-4c7f-a870-56581586e9b3"
+                  }
+                }
+              ]
+            }
+          ],
+          "event": []
+        },
+        "cursor": {
+          "ref": "3725c0a1-afe1-4c6e-97ae-f33e21121437",
+          "length": 9,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "4afb7509-1a7c-489d-89bd-7445619fc687",
+          "scriptId": "e31cac5f-873d-4f65-a6fa-44b7cc2edf3a",
+          "execution": "2f89d0ae-d57e-4c7f-a870-56581586e9b3"
+        }
+      },
+      {
+        "error": {
+          "name": "AssertionError",
+          "index": 2,
+          "test": "[Contrato] Tipo de error validacion-solicitud",
+          "message": "expected 'https://quickpatch.internal/problems/…' to match /\\/validacion-solicitud$/",
+          "stack": "AssertionError: expected 'https://quickpatch.internal/problems/…' to match /\\/validacion-solicitud$/\n   at Object.eval sandbox-script.js:3:6)",
+          "checksum": "41d280f4a003d8246a2e801b1e7a3eaa",
+          "id": "97e711fc-a3d3-4de6-b30e-8c92024fc070",
+          "timestamp": 1792382877439,
+          "stacktrace": [
+            {
+              "fileName": "sandbox-script.js",
+              "lineNumber": 3,
+              "functionName": "Object.eval",
+              "typeName": "Object",
+              "methodName": "eval",
+              "columnNumber": 6,
+              "native": false
+            }
+          ]
+        },
+        "at": "assertion:2 in test-script",
+        "source": {
+          "id": "15ec0b5d-3151-4b10-9e9d-2aed07195fb4",
+          "name": "1.4 Rechazo por documento ausente / clave corta → 400 Bad Request",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalido@quickpatch.test\",\n  \"password\": \"123\",\n  \"fullName\": \"Técnico Inválido\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "05998c4c-e627-4cc7-a80b-258b6786a467",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('[SCRUM-56] 400 Bad Request por fallo de validación de contrato', () => pm.response.to.have.status(400));",
+                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('[Contrato] Tipo de error validacion-solicitud', () => pm.expect(pm.response.json().type).to.match(/\\/validacion-solicitud$/));"
+                ],
+                "_lastExecutionId": "476c769a-7b22-4fbb-9c04-95205e6e0544"
+              }
+            }
+          ]
+        },
+        "parent": {
+          "id": "c251b279-859d-48ec-8156-d928b6443fa2",
+          "name": "1. SCRUM-56 — Registro y Perfil de Técnico (Identity)",
+          "item": [
+            {
+              "id": "147b461b-8155-46c9-8bd8-ebf25aecdd7c",
+              "name": "1.1 Registro exitoso de técnico (verificationStatus: pendiente)",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "register",
+                    "technician"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "X-Channel-Id",
+                    "value": "quickpatch-mobile"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Carlos Alberto Técnico QA\",\n  \"phone\": \"3109876543\",\n  \"documentId\": \"{{documentoTecnico}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "id": "9fb2a611-a7a7-4511-a9dd-61320d5807e8",
+                    "type": "text/javascript",
+                    "exec": [
+                      "const ts = Date.now();",
+                      "const doc = String(ts).slice(-8);",
+                      "pm.collectionVariables.set('documentoTecnico', doc);",
+                      "pm.collectionVariables.set('correoTecnico', 'tecnico.' + ts + '@quickpatch.test');"
+                    ],
+                    "_lastExecutionId": "91e067d0-f9b1-483d-a3da-194f49acea91"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "b3c307ae-f929-4b88-9b6a-1cf796220e26",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[SCRUM-56] 201 Created para registro legítimo', () => pm.response.to.have.status(201));",
+                      "pm.test('[SCRUM-56] Rol verificado como tecnico', () => pm.expect(pm.response.json().role).to.eql('tecnico'));",
+                      "pm.test('[SCRUM-56 / RN-U1] verificationStatus inicial es pendiente', () => pm.expect(pm.response.json().verificationStatus).to.eql('pendiente'));",
+                      "pm.test('[Auditoría] Correlation ID presente en cabecera', () => pm.expect(pm.response.headers.get('X-Correlation-Id')).to.not.be.empty);"
+                    ],
+                    "_lastExecutionId": "02829db4-6a06-4ed8-b56b-23cd9e624c7e"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "8ec43ee1-2161-494e-8ba8-5903d3687ac7",
+              "name": "1.2 Rechazo por documento de identidad repetido → 409 Conflict",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "register",
+                    "technician"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "X-Channel-Id",
+                    "value": "quickpatch-mobile"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{otroCorreo}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Intento Duplicado Documento\",\n  \"phone\": \"3112223344\",\n  \"documentId\": \"{{documentoTecnico}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "id": "a1ef5d66-ea0a-4fb1-9676-1a2300d0c560",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set('otroCorreo', 'otro.' + Date.now() + '@quickpatch.test');"
+                    ],
+                    "_lastExecutionId": "fdca725e-0d87-4263-9cd6-083f92ae2710"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "9da7b88c-7b88-4c40-bce1-acf8dbbc17d4",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[SCRUM-56] 409 Conflict ante documento repetido', () => pm.response.to.have.status(409));",
+                      "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                      "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                      "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                      "});",
+                      "pm.test('[Contrato] Tipo de error documento-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/documento-registrado$/));"
+                    ],
+                    "_lastExecutionId": "971cde32-6806-43d2-a64d-6257c286c6a8"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "c18aa78c-072e-4518-9bb8-f2199f8faf39",
+              "name": "1.3 Rechazo por correo electrónico repetido → 409 Conflict",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "register",
+                    "technician"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "X-Channel-Id",
+                    "value": "quickpatch-mobile"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Intento Duplicado Correo\",\n  \"phone\": \"3119998877\",\n  \"documentId\": \"{{otroDocumento}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "id": "4cf728c9-fa7d-4643-bb01-04b3db13dd57",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set('otroDocumento', String(Date.now() + 1).slice(-8));"
+                    ],
+                    "_lastExecutionId": "fcc026c9-d9b6-42c5-9b53-c84e1d41d962"
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "43ec8c54-3fd8-42bd-a16e-c3e18b605049",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[SCRUM-56] 409 Conflict ante correo repetido', () => pm.response.to.have.status(409));",
+                      "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                      "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                      "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                      "});",
+                      "pm.test('[Contrato] Tipo de error correo-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/correo-registrado$/));"
+                    ],
+                    "_lastExecutionId": "741ff900-b0cf-441e-b212-c64580a8166a"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "15ec0b5d-3151-4b10-9e9d-2aed07195fb4",
+              "name": "1.4 Rechazo por documento ausente / clave corta → 400 Bad Request",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "register",
+                    "technician"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "X-Channel-Id",
+                    "value": "quickpatch-mobile"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"invalido@quickpatch.test\",\n  \"password\": \"123\",\n  \"fullName\": \"Técnico Inválido\",\n  \"role\": \"tecnico\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "05998c4c-e627-4cc7-a80b-258b6786a467",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[SCRUM-56] 400 Bad Request por fallo de validación de contrato', () => pm.response.to.have.status(400));",
+                      "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                      "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                      "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                      "});",
+                      "pm.test('[Contrato] Tipo de error validacion-solicitud', () => pm.expect(pm.response.json().type).to.match(/\\/validacion-solicitud$/));"
+                    ],
+                    "_lastExecutionId": "476c769a-7b22-4fbb-9c04-95205e6e0544"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "1b6ce9a0-39e6-49f9-a293-f3cb99b29113",
+              "name": "1.5 Login de técnico registrado y obtención de JWT",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "X-Channel-Id",
+                    "value": "quickpatch-mobile"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "fb2cba47-a228-4bd1-be12-3e511e78cdf4",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[Auth] Login de técnico registrado exitoso (200 OK)', () => pm.response.to.have.status(200));",
+                      "pm.test('[RBAC] Rol del usuario es tecnico', () => pm.expect(pm.response.json().user.role).to.eql('tecnico'));",
+                      "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);"
+                    ],
+                    "_lastExecutionId": "89fd1ea0-ddb0-4174-992b-1a2ce8177077"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "6bbab87b-9426-4c75-a53d-e8b6a51fa28c",
+              "name": "1.6 Consulta de perfil propio (/v1/users/me) con verificationStatus",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "users",
+                    "me"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{tecnicoToken}}"
+                  }
+                ],
+                "method": "GET"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "debd3687-8b62-459e-b6c6-bfca1e2dcffb",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[SCRUM-56] 200 OK en consulta de perfil', () => pm.response.to.have.status(200));",
+                      "pm.test('[SCRUM-56] verificationStatus visible como pendiente', () => pm.expect(pm.response.json().verificationStatus).to.eql('pendiente'));",
+                      "pm.test('[SCRUM-56] Rol verificado como tecnico', () => pm.expect(pm.response.json().role).to.eql('tecnico'));"
+                    ],
+                    "_lastExecutionId": "c3c7bf72-c330-4538-8bf3-74eb41676ed4"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "56ddb7ff-5758-4b43-befb-9999c72a1185",
+              "name": "1.7 Control RBAC: Técnico no puede crear solicitudes de cliente → 403 Forbidden",
+              "request": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "service-requests"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{$guid}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{tecnicoToken}}"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"categoryId\": \"{{specialtyId}}\",\n  \"description\": \"Fuga de agua intentada por técnico\",\n  \"location\": {\n    \"latitude\": 4.6533,\n    \"longitude\": -74.0836\n  },\n  \"addressText\": \"Calle 45 # 13-20\"\n}"
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "f31e62be-2f64-4a39-9bc3-fa93f0936214",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('[RBAC / IDN-012] 403 Forbidden para rol tecnico creando solicitud', () => pm.response.to.have.status(403));",
+                      "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                      "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                      "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                      "});",
+                      "pm.test('[Contrato] Tipo de error no-autorizado', () => pm.expect(pm.response.json().type).to.match(/\\/no-autorizado$/));"
+                    ],
+                    "_lastExecutionId": "85119b4c-4c23-49d6-95be-2b81b789787f"
+                  }
+                }
+              ]
+            }
+          ],
+          "event": []
+        },
+        "cursor": {
+          "ref": "2d9ba59a-010d-45f3-9857-847c3f9fd60a",
+          "length": 9,
+          "cycles": 1,
+          "position": 5,
+          "iteration": 0,
+          "httpRequestId": "c86164e7-c77e-4da2-a6be-b371d55cf6a3",
+          "scriptId": "05998c4c-e627-4cc7-a80b-258b6786a467",
+          "execution": "476c769a-7b22-4fbb-9c04-95205e6e0544"
+        }
+      }
+    ],
+    "error": null
+  }
+}
