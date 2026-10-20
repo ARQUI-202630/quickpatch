@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.6|
+|**Versión**|5.7|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -461,6 +461,7 @@ erDiagram
         uuid category_id PK
         uuid tenant_id
         varchar name
+        varchar description
         boolean active
         timestamptz updated_at
     }
@@ -1256,6 +1257,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |category_id|UUID|No|PK|`id` de la categoría en Catalog Service (ref. lógica).|
 |tenant_id|UUID|No|—|Tenant dueño de la categoría.|
 |name|VARCHAR(100)|No|—|Nombre de la categoría.|
+|description|VARCHAR(255)|Sí|—|**Nuevo v5.7 (ADR-025).** Descripción de la categoría (`data.description` del evento, desde quickpatch-kafka v0.8.0). ServiceRequest la entrega en `GET /v1/service-requests/categories`.|
 |active|BOOLEAN|No|—|Si la categoría está disponible para nuevas solicitudes.|
 |updated_at|TIMESTAMPTZ|No|—|Momento del cambio en Catalog (`data.updatedAt` del evento). Un evento con un `updatedAt` anterior al guardado se descarta.|
 
@@ -1681,7 +1683,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 
 |Método|Endpoint|Roles|RF|v3|Descripción|
 |---|---|---|---|---|---|
-|GET|`/v1/catalog/categories`|Todos (con token); público con `X-Channel-Id` para el registro de técnicos|RF-02, RF-07|Contrato v1|Categorías activas del tenant. El registro de técnicos la usa para elegir especialidad (P-03).|
+|GET|`/v1/catalog/categories`|Todos (con token); público con `X-Channel-Id` para el registro de técnicos|RF-02, RF-07|Obsoleta (catalog 1.3.0, ADR-025)|Reemplazada por `GET /v1/service-requests/categories`. Se retira del gateway cuando la app y el panel ya no la usen. La administración del catálogo sigue en Catalog como excepción del ADR-025.|
 |POST|`/v1/catalog/admin/categories`|`admin_tenant`|—|Nuevo|Crear categoría.|
 |PATCH|`/v1/catalog/admin/categories/{id}`|`admin_tenant`|—|Nuevo|Cambiar descripción o activar y desactivar.|
 
@@ -1689,7 +1691,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 
 |Método|Endpoint|Roles|RF|v3|Descripción|
 |---|---|---|---|---|---|
-|GET|`/v1/localities`|Público y todos|RF-13|Contrato v1.0.0|Localidades de Bogotá, sin polígono.|
+|GET|`/v1/localities`|Público y todos|RF-13|Obsoleta (matching 1.1.0, ADR-025)|Reemplazada por `GET /v1/service-requests/localities`. Disponibilidad, cobertura y ofertas siguen en Matching como excepción del ADR-025.|
 |GET|`/v1/technicians/me/availability`|`tecnico`|RF-13|Contrato v1.0.0|Consultar disponibilidad.|
 |PUT|`/v1/technicians/me/availability`|`tecnico`|RF-13|Contrato v1.0.0|Cambiar entre `disponible` y `no_disponible`.|
 |GET|`/v1/technicians/me/coverage`|`tecnico`|RF-13|Contrato v1.0.0|Consultar localidades cubiertas.|
@@ -1703,6 +1705,8 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |Método|Endpoint|Roles|RF|v3|Descripción|
 |---|---|---|---|---|---|
 |POST|`/v1/service-requests`|`cliente`, `empresa_contacto`|RF-07, RF-08|Contrato v1.3.0 (ubicación opcional)|Crear solicitud; sin `location`, se geocodifica `addressText` (sección 8.3.3).|
+|GET|`/v1/service-requests/categories`|Todos (con token); público con `X-Channel-Id` para el registro de técnicos|RF-02, RF-07|Contrato v1.8.0 (ADR-025)|Categorías activas del tenant desde la réplica `service_request_categories`, que guarda la descripción desde quickpatch-kafka v0.8.0.|
+|GET|`/v1/service-requests/localities`|Público y todos|RF-13|Contrato v1.8.0 (ADR-025)|Localidades de Bogotá desde la copia P-09, sin polígono.|
 |POST|`/v1/service-requests/location-preview`|`cliente`, `empresa_contacto`|RF-07|Contrato v1.3.0|Vista previa de la geocodificación: punto, localidad y dirección reconocida, sin crear nada (sección 8.3.3).|
 |GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Contrato v1.4.0 (`admin_tenant`); el cliente, pendiente|Listar: el cliente ve las suyas; el `admin_tenant`, todas las de su tenant, sin dirección, ubicación ni contacto (sección 8.3.15).|
 |GET|`/v1/service-requests/{id}`|Cliente dueño, técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato.|
@@ -2144,7 +2148,7 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 |`service-request.rated`|ServiceRequest|Ranking, Communication|Ranking actualiza la reputación del técnico (D3, DEP-04).|Nuevo|
 |`payment.approved`|Payments|ServiceRequest, Communication|La solicitud pasa a `pagado`; Payments emite la factura.||
 |`payment.rejected`|Payments|ServiceRequest, Communication|La solicitud permanece en `completado` (RN-SR5).||
-|`catalog.category-changed`|Catalog|ServiceRequest, Matching|Estado completo de una categoría para las réplicas locales (`service_request_categories`).|Contrato v1|
+|`catalog.category-changed`|Catalog|ServiceRequest, Matching|Estado completo de una categoría para las réplicas locales (`service_request_categories`). Desde ADR-025, ServiceRequest sirve con ella la lista de categorías de las apps.|Contrato v1; `description` opcional desde quickpatch-kafka v0.8.0 (5.7)|
 
 _Cuadro 11: Eventos Kafka, productores y consumidores_
 
@@ -2632,7 +2636,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.4|SCRUM-456, SCRUM-472|**Buzón desde `status-changed` y cancelación en el buzón.** `communication.v1.yaml` 1.1.0: los tipos de estado del buzón salen de `service-request.status-changed` (sección 8.2.6) y se agrega `solicitud-cancelada` para el cliente y el técnico asignado (RF-36); el CHECK de `notifications.type` lo admite (sección 5.22). Communication deja de consumir `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed` (Cuadros de eventos y sección 8.4).|
 |5.5|SCRUM-487|**Contratos de la cotización (RF-34, RF-35, SCRUM-486).** `service-request.v1.yaml` 1.6.0 con listar, emitir, aceptar y rechazar cotizaciones y `409 limite-de-cotizaciones` (secciones 8.2.4, 8.3.7 y 8.3.8); eventos `service-request.quoted`, `quote-accepted` y `quote-rejected` v1 en quickpatch-kafka v0.6.0 (Cuadros de eventos); columna `quotes.rejection_reason` (sección 5.11) y `QUOTE_TTL` configurable (RN-Q8). `communication.v1.yaml` 1.2.0 agrega `cotizacion-recibida`, `cotizacion-aceptada` y `cotizacion-rechazada`, y `tecnico-asignado` y `solicitud-asignada` quedan solo para la llegada a `asignado` desde `buscando_tecnico` (sección 8.2.6). DEP-20 se resuelve en la parte de la cotización.|
 |5.6|SCRUM-94|**Inicio, evidencia y cierre del servicio (RF-14, RF-15, SCRUM-35).** `service-request.v1.yaml` 1.7.0 con `start`, `evidence` (subir, listar y descargar) y `complete`, y `startedAt` y `completedAt` en el detalle (secciones 8.2.4, 8.3.10 y 8.3.11). Nueva regla RN-E4: como máximo 10 evidencias por solicitud (sección 7.7). Eventos `service-request.started` y `service-request.completed` v1 en quickpatch-kafka v0.7.0 (Cuadro 11): `completed` lo consume Matching para liberar al técnico (RN-M6); `started` queda sin consumidor porque el aviso sale de `status-changed`.|
-|5.7|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.7|ADR-025|**REST solo hacia Identity, ServiceRequest y Payments.** ServiceRequest sirve las categorías y las localidades (`service-request.v1.yaml` 1.8.0, sección 8.2.4) desde la réplica `service_request_categories`, que suma `description`, y la copia `localities`. `catalog.category-changed` agrega `description` opcional (quickpatch-kafka v0.8.0). `GET /v1/catalog/categories` y `GET /v1/localities` quedan obsoletas (secciones 8.2.2 y 8.2.3).|
+|5.8|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
