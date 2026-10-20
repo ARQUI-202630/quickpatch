@@ -62,6 +62,7 @@ package "Servicios de negocio" as NEGOCIO {
     API de solicitudes
     Panel operativo (lista y conteos)
     Cancelación
+    Cotización y su vencimiento
     Geocodificación y vista previa
     Agregado y máquina de estados
     Consumidor de Matching
@@ -86,7 +87,7 @@ package "Servicios de negocio" as NEGOCIO {
     ----
     Canal en tiempo real (ADR-023)
     Consumidor de eventos y avisos
-    <color:#78909C><i>Buzón de notificaciones, ADR-024 (planeado)</i></color>
+    Buzón de notificaciones (ADR-024)
   ]
   rectangle ACTORS <<planeado>> [
     **Actors** (planeado)
@@ -109,7 +110,7 @@ queue "**Apache Kafka**\nun topic por evento (Outbox)" as KAFKA
 database "**PostgreSQL + PostGIS**\nuna base por servicio (ADR-014)" as PG
 rectangle "**Geocodificador**\nNominatim (ADR-024)" as GEO
 rectangle "**Pasarela PCI-DSS**\nexterna (ADR-009)" <<planeado>> as PSP
-rectangle "**Redis**\ncaché del matching" <<planeado>> as REDIS
+rectangle "**Redis**\ncandados y caché" as REDIS
 rectangle "**Garage (S3)**\nevidencias (ADR-016)" <<planeado>> as GARAGE
 
 ' Orden: Identity y Catalog a la izquierda, ServiceRequest y Matching al centro; debajo los demás
@@ -131,13 +132,14 @@ NEGOCIO --> PG : cada servicio,\nsu propia base
 ' Eventos (8.6): una flecha por servicio con lo que publica (por su Outbox) y lo que consume
 IDENTITY -down-> KAFKA : **publica** technician.registered,\ntechnician.verification-changed
 CATALOG -down-> KAFKA : **publica**\ncatalog.category-changed
-SR <-down-> KAFKA : **publica** service-request.created,\n.status-changed, .cancelled\n**consume** matching.technician-assigned,\n.no-technician-available, .search-resumed,\ncatalog.category-changed
+SR <-down-> KAFKA : **publica** service-request.created,\n.status-changed, .cancelled, .quoted,\n.quote-accepted, .quote-rejected\n**consume** matching.technician-assigned,\n.no-technician-available, .search-resumed,\ncatalog.category-changed
 MATCHING <-down-> KAFKA : **publica** matching.offer-created,\n.technician-assigned, .no-technician-available,\n.search-resumed\n**consume** service-request.created,\n.cancelled, technician.*\n<i>planeado: catalog.category-changed</i>
-KAFKA -down-> COMM : **consume** service-request.created,\n.status-changed, matching.offer-created\n<i>planeado: technician.*</i>
+KAFKA -down-> COMM : **consume** service-request.created,\n.status-changed, .quoted, .quote-accepted,\n.quote-rejected, matching.offer-created,\ntechnician.*
 
 PAYMENTS ..> PSP : HTTPS
 SR ..> GARAGE : S3
-MATCHING ..> REDIS : caché
+SR --> REDIS : candados\n(vencimiento de cotizaciones)
+MATCHING ..> REDIS : caché\n(planeado)
 
 legend right
   |= Elemento |= Significado |

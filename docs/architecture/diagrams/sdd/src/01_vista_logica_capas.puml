@@ -89,7 +89,8 @@ COMMUNICATION --> KAFKA
 
 SR --> GEO : HTTP
 PAYMENTS --> PASARELA : HTTPS
-MATCHING --> REDIS : caché
+SR --> REDIS : candados
+MATCHING ..> REDIS : caché\n(planeado)
 SR --> GARAGE : S3
 NEGOCIO --> PG : cada servicio,\nsu propia base
 
@@ -101,5 +102,6 @@ legend right
   |<#F3E5F5>| Integración (borde punteado: sistema externo) |
   |<#ECEFF1>| Datos |
   Flechas a Kafka: publica o consume eventos.
+  Línea punteada: uso planeado.
 endlegend
 @enduml
