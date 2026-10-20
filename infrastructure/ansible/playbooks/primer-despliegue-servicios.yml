@@ -27,6 +27,7 @@
         panel: "{{ gateway_hosts.qa }}"
         pw: "{{ vault_qa_db_roles_passwords }}"
         garage: "{{ vault_qa_garage_keys.service_request }}"
+        redis: "{{ vault_qa_redis_users.service_request }}"
       produccion:
         kubeconfig: config-produccion
         datos: "{{ ip.vm4 }}"
@@ -34,6 +35,7 @@
         panel: "{{ gateway_hosts.produccion }}"
         pw: "{{ vault_db_roles_passwords }}"
         garage: "{{ vault_garage_keys.service_request }}"
+        redis: "{{ vault_redis_users.service_request }}"
     e: "{{ amb[ambiente] }}"
     jwt: "{{ vault_jwt_keys[ambiente] }}"
     admins: "{{ vault_identity_admins[ambiente] }}"
