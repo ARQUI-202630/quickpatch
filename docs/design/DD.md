@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.4|
+|**Versión**|5.5|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -1003,6 +1003,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |created_at|TIMESTAMPTZ|No|—|Fecha de emisión.|
 |expires_at|TIMESTAMPTZ|No|—|Fecha límite para que el cliente responda.|
 |responded_at|TIMESTAMPTZ|Sí|—|Momento en que el cliente la aceptó o rechazó.|
+|rejection_reason|VARCHAR(500)|Sí|—|**Nuevo v5.5.** Motivo opcional que da el cliente al rechazarla (sección 8.3.8), de 5 a 500 caracteres. Es un dato del usuario: no se escribe en los logs.|
 
 **Estados:**
 
@@ -1508,7 +1509,7 @@ Derivadas de la etapa de cotización del SAD (sección 7.4).
 - **RN-Q5:** si la solicitud se cancela con una cotización `pendiente`, esa cotización pasa a `anulada`.
 - **RN-Q6:** si el cliente no responde antes de `expires_at`, la cotización pasa a `expirada` y la solicitud se cancela con el motivo "cotización sin respuesta", lo que libera al técnico (RN-M6).
 - **RN-Q7:** una solicitud admite como máximo 3 cotizaciones. Si el cliente rechaza la tercera, la solicitud se cancela con el motivo "cotizaciones rechazadas".
-- **RN-Q8 (nuevo v3):** una cotización vence 24 horas después de emitida (`expires_at = created_at + QUOTE_TTL`). El valor es una propuesta pendiente de confirmar con el equipo (DEP-16).
+- **RN-Q8 (nuevo v3):** una cotización vence 24 horas después de emitida (`expires_at = created_at + QUOTE_TTL`). El valor es una propuesta pendiente de confirmar con el equipo (DEP-16). **v5.5:** `QUOTE_TTL` es configuración del servicio (`Quotes__Ttl`), para que QA pueda usar un plazo corto en las pruebas de vencimiento.
 
 ### 7.10 Reglas de `audit_logs`
 
@@ -1704,10 +1705,10 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Contrato v1.4.0 (`admin_tenant`); el cliente, pendiente|Listar: el cliente ve las suyas; el `admin_tenant`, todas las de su tenant, sin dirección, ubicación ni contacto (sección 8.3.15).|
 |GET|`/v1/service-requests/{id}`|Cliente dueño, técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato.|
 |POST|`/v1/service-requests/{id}/cancel`|Cliente dueño, `admin_tenant`|RF-36|Contrato v1.5.0|Cancelar con motivo (sección 8.3.9).|
-|GET|`/v1/service-requests/{id}/quotes`|Cliente dueño, técnico asignado|RF-34, RF-35|Nuevo|Cotizaciones de la solicitud.|
-|POST|`/v1/service-requests/{id}/quotes`|Técnico asignado|RF-34||Emitir cotización.|
-|POST|`/v1/service-requests/{id}/quotes/{quoteId}/accept`|Cliente dueño|RF-35||Aceptar cotización.|
-|POST|`/v1/service-requests/{id}/quotes/{quoteId}/reject`|Cliente dueño|RF-35||Rechazar cotización.|
+|GET|`/v1/service-requests/{id}/quotes`|Cliente dueño, técnico asignado|RF-34, RF-35|Contrato v1.6.0|Cotizaciones de la solicitud, de la más antigua a la más reciente.|
+|POST|`/v1/service-requests/{id}/quotes`|Técnico asignado|RF-34|Contrato v1.6.0|Emitir cotización (sección 8.3.7).|
+|POST|`/v1/service-requests/{id}/quotes/{quoteId}/accept`|Cliente dueño|RF-35|Contrato v1.6.0|Aceptar cotización (sección 8.3.8).|
+|POST|`/v1/service-requests/{id}/quotes/{quoteId}/reject`|Cliente dueño|RF-35|Contrato v1.6.0|Rechazar cotización con motivo opcional (sección 8.3.8).|
 |POST|`/v1/service-requests/{id}/start`|Técnico asignado|RF-14||Iniciar servicio.|
 |POST|`/v1/service-requests/{id}/evidence`|Técnico asignado|RF-15||Subir una foto (`multipart/form-data`).|
 |GET|`/v1/service-requests/{id}/evidence`|Cliente dueño, técnico asignado, `admin_tenant`|RF-15|Nuevo|Listar evidencias (metadatos).|
@@ -1737,21 +1738,24 @@ Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la sol
 |GET|`/v1/notifications?unread=&page=&size=`|`cliente`, `empresa_contacto`, `tecnico`, `admin_tenant`|RIE-03|Contrato v1.0.0|Buzón del usuario del token, del más reciente al más antiguo, con `unreadCount` (ADR-024, sección 5.22).|
 |POST|`/v1/notifications/{id}/read`|Los mismos|RIE-03|Contrato v1.0.0|Marcar como leída; idempotente. Una notificación de otro usuario o tenant responde `404`.|
 
-**Tipos de notificación (`communication.v1.yaml` 1.1.0).** Cada uno nace de un evento que ya existe. Los de estado salen de `service-request.status-changed`, igual que el aviso en tiempo real (sección 8.5, SCRUM-466):
+**Tipos de notificación (`communication.v1.yaml` 1.2.0).** Cada uno nace de un evento que ya existe. Los de estado salen de `service-request.status-changed`, igual que el aviso en tiempo real (sección 8.5, SCRUM-466):
 
 |`type`|Evento|Destinatario|
 |---|---|---|
 |`solicitud-creada`|`service-request.created`|Cliente dueño|
-|`tecnico-asignado`|`service-request.status-changed` a `asignado`|Cliente dueño|
-|`solicitud-asignada`|`service-request.status-changed` a `asignado`|Técnico asignado|
+|`tecnico-asignado`|`service-request.status-changed` de `buscando_tecnico` a `asignado`|Cliente dueño|
+|`solicitud-asignada`|`service-request.status-changed` de `buscando_tecnico` a `asignado`|Técnico asignado|
 |`sin-tecnico-disponible`|`service-request.status-changed` a `en_espera`|Cliente dueño|
 |`busqueda-reanudada`|`service-request.status-changed` de `en_espera` a `buscando_tecnico`|Cliente dueño|
 |`solicitud-cancelada`|`service-request.status-changed` a `cancelado` (1.1.0, RF-36)|Cliente dueño y, si lo había, técnico asignado. Sin el motivo, que la app muestra desde el detalle|
+|`cotizacion-recibida`|`service-request.quoted` (1.2.0, RF-34)|Cliente dueño, con el total y el vencimiento|
+|`cotizacion-aceptada`|`service-request.quote-accepted` (1.2.0, RF-35)|Técnico asignado: ya puede iniciar|
+|`cotizacion-rechazada`|`service-request.quote-rejected` (1.2.0, RF-35)|Técnico asignado, con las cotizaciones que le quedan|
 |`oferta-recibida`|`matching.offer-created`|Técnico de la oferta|
 |`registro-recibido`|`technician.registered`|Técnico o proveedor|
 |`verificacion-actualizada`|`technician.verification-changed`|Técnico o proveedor|
 
-El "registro confirmado" del cliente que menciona RIE-03 no tiene evento (Identity no publica nada al registrar un cliente), y la cotización llega cuando se publiquen sus esquemas (DEP-20).
+El "registro confirmado" del cliente que menciona RIE-03 no tiene evento (Identity no publica nada al registrar un cliente; DEP-20). **v5.5:** los cambios a `cotizado` y a `cotizacion_aceptada`, y el regreso de `cotizado` a `asignado` al rechazar, siguen saliendo por el canal en tiempo real, pero no crean notificación de estado: la del buzón sale del evento de la cotización, que trae el total y las cotizaciones que quedan. Por eso `tecnico-asignado` y `solicitud-asignada` solo salen cuando la solicitud llega a `asignado` desde `buscando_tecnico`.
 
 
 ### 8.3 Especificación de los endpoints principales
@@ -1963,7 +1967,7 @@ Acepta `disponible` y `no_disponible`. El estado `ocupado` solo lo fija Matching
 }
 ```
 
-`quoteNumber` es la posición de la cotización en la solicitud (1 a 3). **Errores:** `409 INVALID_STATE_TRANSITION` si la solicitud no está en `asignado`; `409 QUOTE_LIMIT_REACHED`. El algoritmo está en el SDD V2 (antes DD §10.7).
+`quoteNumber` es la posición de la cotización en la solicitud (1 a 3). **Errores:** `409 INVALID_STATE_TRANSITION` si la solicitud no está en `asignado`; `409 QUOTE_LIMIT_REACHED`. **v5.5:** en el contrato 1.6.0 los errores son `problems/transicion-invalida` y `problems/limite-de-cotizaciones`, y la respuesta trae además `detail`, `createdAt`, `respondedAt` y `rejectionReason` (el esquema `Quote` que devuelve también el `GET`). El algoritmo está en el SDD V2 (antes DD §10.7).
 
 #### 8.3.8 Responder cotización
 
@@ -1984,7 +1988,7 @@ Acepta `disponible` y `no_disponible`. El estado `ocupado` solo lo fija Matching
 }
 ```
 
-Al rechazar la tercera, `serviceRequestStatus` es `cancelado` y `remainingQuotes` es 0 (RN-Q7). **Errores:** `409 INVALID_STATE_TRANSITION` si la cotización no está `pendiente` o ya venció.
+Al rechazar la tercera, `serviceRequestStatus` es `cancelado` y `remainingQuotes` es 0 (RN-Q7). **Errores:** `409 INVALID_STATE_TRANSITION` si la cotización no está `pendiente` o ya venció. **v5.5:** el motivo se guarda en `quotes.rejection_reason` y lo ven el cliente y el técnico asignado en el `GET`; el evento `service-request.quote-rejected` no lo lleva.
 
 #### 8.3.9 Cancelar solicitud — `POST /v1/service-requests/{id}/cancel`
 
@@ -2129,9 +2133,9 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 |`matching.no-technician-available`|Matching|ServiceRequest|Se agotaron los candidatos; la solicitud pasa a `en_espera`.|Contrato v1 (v4)|
 |`matching.search-resumed`|Matching|ServiceRequest|Una solicitud en espera vuelve a `buscando_tecnico` (RN-M10).|Contrato v1 (v4)|
 |`service-request.status-changed`|ServiceRequest|Communication|La solicitud cambió de estado. Se publica en la misma transacción del cambio, solo si se aplicó (un evento de Matching viejo, repetido o fuera de estado no lo produce), y no al crear la solicitud. Communication avisa con él al cliente y al técnico (sección 8.5).|Contrato v1 (5.1, SCRUM-466)|
-|`service-request.quoted`|ServiceRequest|Communication|Notificar al cliente que tiene una cotización.||
-|`service-request.quote-accepted`|ServiceRequest|Communication|Notificar al técnico que puede iniciar.||
-|`service-request.quote-rejected`|ServiceRequest|Communication|Notificar al técnico que debe emitir otra cotización.|Nuevo|
+|`service-request.quoted`|ServiceRequest|Communication|Notificar al cliente que tiene una cotización.|Contrato v1 (5.5, SCRUM-487)|
+|`service-request.quote-accepted`|ServiceRequest|Communication|Notificar al técnico que puede iniciar.|Contrato v1 (5.5, SCRUM-487)|
+|`service-request.quote-rejected`|ServiceRequest|Communication|Notificar al técnico que debe emitir otra cotización.|Contrato v1 (5.5, SCRUM-487)|
 |`service-request.started`|ServiceRequest|Communication|Notificar al cliente que el servicio inició (RF-11, D2).|Nuevo|
 |`service-request.cancelled`|ServiceRequest|Matching|Matching anula la oferta pendiente y libera al técnico (RN-M5, RN-M6). **v5.3:** Communication no lo consume; el aviso sale de `service-request.status-changed`, que se publica en la misma transacción.|Contrato v1 (5.3, SCRUM-474)|
 |`service-request.completed`|ServiceRequest|Payments, Matching, Communication|Payments crea el pago pendiente (RN-P4) y Matching libera al técnico (RN-M6).||
@@ -2173,7 +2177,7 @@ Todos los campos son obligatorios salvo que se indique "opcional". Los eventos n
 |`matching.no-technician-available`|`serviceRequestId`, `clientId`, `attemptsCount`. `clientId` es nuevo en v4.|
 |`matching.search-resumed`|`serviceRequestId`, `clientId`, `trigger` (`disponibilidad`, `cobertura`, `aprobacion`, `liberacion` o `barrido`). `clientId` es nuevo en v4.|
 |`service-request.status-changed`|`serviceRequestId`, `clientId`, `previousStatus`, `status` (estados de la sección 7.4), `changedAt`; `technicianId` (opcional, nulo si la solicitud no tiene técnico).|
-|`service-request.quoted`|`serviceRequestId`, `quoteId`, `clientId`, `technicianId`, `totalAmount`, `expiresAt`|
+|`service-request.quoted`|`serviceRequestId`, `quoteId`, `clientId`, `technicianId`, `totalAmount`, `expiresAt`; `quoteNumber` (opcional, v5.5)|
 |`service-request.quote-accepted`|`serviceRequestId`, `quoteId`, `technicianId`, `totalAmount`|
 |`service-request.quote-rejected`|`serviceRequestId`, `quoteId`, `technicianId`, `remainingQuotes`|
 |`service-request.started`|`serviceRequestId`, `clientId`, `technicianId`, `startedAt`|
@@ -2587,7 +2591,7 @@ El modelo de esta versión depende de las siguientes decisiones de diseño, que 
 |DEP-17|Registro de técnico y SCRUM-332 (antes DD §12)|Qué documentos de soporte debe subir el técnico (SCRUM-22) y cómo se guardan; y qué pantallas nuevas del artefacto SCRUM-332 (antes DD §12.2) ya están en los Mockups V1 (SCRUM-126).|RF-02; SCRUM-126|**Nueva v3.** Abierta.|
 |DEP-18|`GET /v1/matching/offers`|SCRUM-30 pide que el técnico vea la dirección antes de aceptar; este documento propone mostrar la localidad y la distancia, y entregar la dirección solo al técnico asignado (RN-SR13), para no exponer la dirección del cliente a quienes rechazan.|SCRUM-30; Ley 1581 de 2012 (R6)|**Resuelta en v4:** SCRUM-30 (criterio 1) pide localidad y distancia en la oferta y la dirección solo para el técnico asignado (RN-SR13).|
 |DEP-19|`GET /v1/providers/me/technicians`|Cómo muestra el proveedor la disponibilidad de su equipo, que vive en Matching Service.|RF-16|Decidida para el MVP (v5): no se muestra; el contrato 1.7.0 no incluye `availability`.|
-|DEP-20|`notifications`, RIE-03|El "registro confirmado" del cliente no tiene evento (Identity no publica nada al registrar un cliente), y la cotización no tiene esquemas publicados. Sin ellos, el buzón no puede notificarlos.|RIE-03, RF-34|**Nueva v5.** Abierta.|
+|DEP-20|`notifications`, RIE-03|El "registro confirmado" del cliente no tiene evento (Identity no publica nada al registrar un cliente), y la cotización no tiene esquemas publicados. Sin ellos, el buzón no puede notificarlos.|RIE-03, RF-34|**Nueva v5.** Abierta. **v5.5:** la parte de la cotización queda resuelta (quickpatch-kafka v0.6.0, `communication.v1.yaml` 1.2.0); sigue abierto el registro del cliente.|
 
 **Modelos que podrían aparecer en versiones futuras:**
 
@@ -2624,7 +2628,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.2|SCRUM-485|**Panel operativo de solicitudes (RF-18, SCRUM-38).** `service-request.v1.yaml` 1.4.0: lista de las solicitudes del tenant para el `admin_tenant`, conteos por estado del tenant y, para el `admin_plataforma`, conteos por tenant (secciones 8.2.4 y 8.3.15). Rol nuevo `service_request_platform` con `SELECT` solo sobre `tenant_id`, `status` y `created_at`, y la operación de plataforma de ServiceRequest (secciones 10.2 y 10.4). DEP-15 resuelta.|
 |5.3|SCRUM-474|**Cancelación de la solicitud (RF-36, SCRUM-472).** `service-request.v1.yaml` 1.5.0 con `POST /v1/service-requests/{id}/cancel` y `409 transicion-invalida` (secciones 8.2.4 y 8.3.9); evento `service-request.cancelled` v1 consumido solo por Matching (sección 8.4); `audit_logs` propia de ServiceRequest para `cancelar_solicitud_admin` (secciones 5.14 y RN-SR8). Las pruebas de SCRUM-103 quedan en la trazabilidad.|
 |5.4|SCRUM-456, SCRUM-472|**Buzón desde `status-changed` y cancelación en el buzón.** `communication.v1.yaml` 1.1.0: los tipos de estado del buzón salen de `service-request.status-changed` (sección 8.2.6) y se agrega `solicitud-cancelada` para el cliente y el técnico asignado (RF-36); el CHECK de `notifications.type` lo admite (sección 5.22). Communication deja de consumir `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed` (Cuadros de eventos y sección 8.4).|
-|5.5|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.5|SCRUM-487|**Contratos de la cotización (RF-34, RF-35, SCRUM-486).** `service-request.v1.yaml` 1.6.0 con listar, emitir, aceptar y rechazar cotizaciones y `409 limite-de-cotizaciones` (secciones 8.2.4, 8.3.7 y 8.3.8); eventos `service-request.quoted`, `quote-accepted` y `quote-rejected` v1 en quickpatch-kafka v0.6.0 (Cuadros de eventos); columna `quotes.rejection_reason` (sección 5.11) y `QUOTE_TTL` configurable (RN-Q8). `communication.v1.yaml` 1.2.0 agrega `cotizacion-recibida`, `cotizacion-aceptada` y `cotizacion-rechazada`, y `tecnico-asignado` y `solicitud-asignada` quedan solo para la llegada a `asignado` desde `buscando_tecnico` (sección 8.2.6). DEP-20 se resuelve en la parte de la cotización.|
+|5.6|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
