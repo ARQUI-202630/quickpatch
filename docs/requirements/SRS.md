@@ -5,8 +5,8 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 5.1 (MVP, incremento del Sprint 4) |
-| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472 |
+| **Versión del documento** | 5.2 (MVP, incremento del Sprint 4) |
+| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486 |
 | **Responsable** | Angy Bautista (Product Owner) |
 | **Estado** | Aprobado por el Product Owner el 14 de octubre de 2026 (SCRUM-406). Línea base de la sección 1.3 revisada el 14 de octubre de 2026 (Sebastián Sánchez). Pendiente: el PR a `develop` |
 | **Estándar de referencia** | IEEE Std 830-1998 |
@@ -235,7 +235,7 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 
 | Feature (Jira label) | Descripción | Requisitos | HU (Jira) |
 |---|---|---|---|
-| F2.1 — Solicitud de Servicio | Creación de solicitudes de servicio técnico por Cliente y Empresa, respuesta a la cotización y cancelación antes de iniciar el servicio. | RF-07, RF-08, RF-35, RF-36 | SCRUM-27, 28, 472 (RF-35: historia por crear) |
+| F2.1 — Solicitud de Servicio | Creación de solicitudes de servicio técnico por Cliente y Empresa, respuesta a la cotización y cancelación antes de iniciar el servicio. | RF-07, RF-08, RF-35, RF-36 | SCRUM-27, 28, 472, 486 |
 | F2.2 — Motor de Matching | Asignación automática de técnico y aceptación/rechazo de la solicitud por parte del Técnico. | RF-09, RF-10 | SCRUM-29, 30 |
 | F2.3 — Seguimiento del Servicio | Visualización en tiempo real del estado de la solicitud. | RF-11 | SCRUM-31 |
 | F2.4 — Calificación del Servicio | Calificación del servicio por parte del Cliente después de pagarlo. | RF-12 | SCRUM-32 |
@@ -245,7 +245,7 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 | Feature (Jira label) | Descripción | Requisitos | HU (Jira) |
 |---|---|---|---|
 | F3.1 — Perfil y Disponibilidad | Configuración de disponibilidad y zona de cobertura del Técnico. | RF-13 | SCRUM-33 |
-| F3.2 — Gestión de Servicios Asignados | Consulta de detalle, cotización y cierre (completado, con evidencia fotográfica obligatoria) de una solicitud asignada. | RF-14, RF-15, RF-34 | SCRUM-34, 35 (RF-34: historia por crear) |
+| F3.2 — Gestión de Servicios Asignados | Consulta de detalle, cotización y cierre (completado, con evidencia fotográfica obligatoria) de una solicitud asignada. | RF-14, RF-15, RF-34 | SCRUM-34, 35, 486 |
 | F3.3 — Gestión de Equipo (Proveedor) | Administración del equipo de técnicos por parte de un Proveedor. | RF-16 | SCRUM-36 |
 | F3.4 — Historial de Servicios | Consulta del historial de solicitudes atendidas por el Técnico. | RF-17 | SCRUM-37 |
 
@@ -351,7 +351,7 @@ La Épica 6 tiene además cuatro historias de infraestructura sin etiqueta de Fe
 | RF-10 | El sistema debe ofrecer cada solicitud a un técnico a la vez y permitirle aceptarla o rechazarla desde la app móvil antes de que la oferta venza (3 minutos), sin penalización por rechazarla. Si la rechaza o no responde, el sistema la ofrece al siguiente candidato. Criterios de aceptación: sección 5.5.2. | Alta | F2.2 | SCRUM-30 |
 | RF-11 | El sistema debe mostrar al Cliente el estado actual de su solicitud en tiempo real (mínimo 4 estados). | Alta | F2.3 | SCRUM-31 |
 | RF-12 | El sistema debe permitir al Cliente calificar el servicio (1 a 5, con comentario opcional) una sola vez, después de que se confirme el pago (estado "Pagado"). | Media | F2.4 | SCRUM-32 |
-| RF-35 | El sistema debe permitir al Cliente aceptar o rechazar la cotización de su solicitud. Una solicitud admite como máximo 3 cotizaciones, y una cotización sin respuesta antes de su vencimiento cancela la solicitud. | Alta | F2.1 | Por crear |
+| RF-35 | El sistema debe permitir al Cliente aceptar o rechazar la cotización de su solicitud. Una solicitud admite como máximo 3 cotizaciones, y una cotización sin respuesta antes de su vencimiento cancela la solicitud. | Alta | F2.1 | SCRUM-486 |
 | RF-36 | El sistema debe permitir al Cliente, o al administrador de su tenant, cancelar una solicitud mientras el servicio no haya iniciado, registrando el motivo de la cancelación. | Media | F2.1 | SCRUM-472 |
 
 #### Épica 3 — Herramientas para el Técnico y Proveedores (SCRUM-9)
@@ -363,7 +363,7 @@ La Épica 6 tiene además cuatro historias de infraestructura sin etiqueta de Fe
 | RF-15 | El sistema debe permitir al Técnico marcar una solicitud como completada únicamente después de adjuntar al menos una evidencia fotográfica del trabajo realizado, habilitando el proceso de pago. | Alta | F3.2 | SCRUM-35 |
 | RF-16 | El sistema debe permitir al Proveedor registrar y administrar su equipo de técnicos. | Media | F3.3 | SCRUM-36 |
 | RF-17 | El sistema debe mostrar al Técnico el historial de solicitudes atendidas. | Media | F3.4 | SCRUM-37 |
-| RF-34 | El sistema debe permitir al Técnico asignado emitir una cotización de mano de obra y materiales para la solicitud; el servicio no puede iniciar sin una cotización aceptada por el Cliente. | Alta | F3.2 | Por crear |
+| RF-34 | El sistema debe permitir al Técnico asignado emitir una cotización de mano de obra y materiales para la solicitud; el servicio no puede iniciar sin una cotización aceptada por el Cliente. | Alta | F3.2 | SCRUM-486 |
 
 #### Épica 4 — Panel Administrativo y Operaciones (SCRUM-10)
 
@@ -514,8 +514,8 @@ Con el fin de justificar el enfoque del producto, se comparó QUICKPATCH frente 
 | Épica (Jira) | Features | Requisitos | Historias de Usuario (Jira) |
 |---|---|---|---|
 | SCRUM-7 — Fundación y Multi-tenant | F1.1 – F1.4 | RF-01 – RF-06 | SCRUM-21 a SCRUM-26 |
-| SCRUM-8 — Matching y Experiencia Cliente | F2.1 – F2.4 | RF-07 – RF-12, RF-35, RF-36 | SCRUM-27 a SCRUM-32, SCRUM-472 (RF-35: por crear) |
-| SCRUM-9 — Herramientas Técnico/Proveedor | F3.1 – F3.4 | RF-13 – RF-17, RF-34 | SCRUM-33 a SCRUM-37 (RF-34: por crear) |
+| SCRUM-8 — Matching y Experiencia Cliente | F2.1 – F2.4 | RF-07 – RF-12, RF-35, RF-36 | SCRUM-27 a SCRUM-32, SCRUM-472, SCRUM-486 |
+| SCRUM-9 — Herramientas Técnico/Proveedor | F3.1 – F3.4 | RF-13 – RF-17, RF-34 | SCRUM-33 a SCRUM-37, SCRUM-486 |
 | SCRUM-10 — Panel Administrativo | F4.1 – F4.3 | RF-18 – RF-21 | SCRUM-38 a SCRUM-41, SCRUM-348 |
 | SCRUM-11 — Pagos PCI-DSS y Facturación | F5.1 – F5.3 | RF-22 – RF-25 | SCRUM-42 a SCRUM-45 |
 | SCRUM-12 — Infraestructura (DevOps & QA) | F6.1 – F6.4 | RF-26 – RF-29, RNF-07, RNF-08 | SCRUM-46 a SCRUM-49, SCRUM-306, SCRUM-333, SCRUM-334, SCRUM-388 |
@@ -556,34 +556,31 @@ Cada RF se enlaza con su historia de Jira y con los casos del Documento de Prueb
 | RF-27 | SCRUM-47 | E2E-001 |
 | RF-28 | SCRUM-48 | INF-011, INF-012, PRF-010 |
 | RF-29 | SCRUM-49 | IDN-015, IDN-021, INF-005 |
-| RF-34 | Por crear | SRQ-008, SRQ-009, SRQ-010 |
-| RF-35 | Por crear | SRQ-011, SRQ-012, SRQ-013, E2E-008 |
+| RF-34 | SCRUM-486 | SRQ-008, SRQ-009, SRQ-010 |
+| RF-35 | SCRUM-486 | SRQ-011, SRQ-012, SRQ-013, E2E-008 |
 | RF-36 | SCRUM-472 | SRQ-019, SRQ-020, E2E-010 |
 
 Los RNF se verifican por medio de su escenario de calidad del SAD (sección 5.3), y el TD (sección 7.1.2) enlaza cada escenario con sus casos de prueba.
 
 ### 7.2 Resumen de Requisitos Funcionales
 
-El presente MVP contempla un total de **32 requisitos funcionales**, agrupados en **23 Features**, organizados en **7 módulos de dominio** y soportados por **7 módulos transversales** (incluyendo la Gestión del Proyecto y Documentación), distribuidos en **7 épicas**. Se definen además **14 requisitos no funcionales** y **3 requisitos de interfaces externas**. Todos los requisitos están priorizados como *Alta* o *Media* por ser esenciales para demostrar el ciclo completo del negocio: registro y autenticación multi-tenant, solicitud de servicio, asignación automática, cotización, ejecución técnica con evidencia fotográfica, pago seguro y calificación. La numeración salta de RF-29 a RF-34 porque RF-30 a RF-33 (versiones 2.x, control de cambios) se retiraron en la versión 3.0 al reemplazarse por RNF-13, y sus números no se reutilizan. Cuatro RF del incremento (RF-09, RF-10, RF-13 y RF-19) tienen criterios de aceptación detallados en la sección 5.5. Dos requisitos (RF-34 y RF-35) todavía no tienen historia de usuario en Jira; la de RF-36 es SCRUM-472 (versión 5.1).
+El presente MVP contempla un total de **32 requisitos funcionales**, agrupados en **23 Features**, organizados en **7 módulos de dominio** y soportados por **7 módulos transversales** (incluyendo la Gestión del Proyecto y Documentación), distribuidos en **7 épicas**. Se definen además **14 requisitos no funcionales** y **3 requisitos de interfaces externas**. Todos los requisitos están priorizados como *Alta* o *Media* por ser esenciales para demostrar el ciclo completo del negocio: registro y autenticación multi-tenant, solicitud de servicio, asignación automática, cotización, ejecución técnica con evidencia fotográfica, pago seguro y calificación. La numeración salta de RF-29 a RF-34 porque RF-30 a RF-33 (versiones 2.x, control de cambios) se retiraron en la versión 3.0 al reemplazarse por RNF-13, y sus números no se reutilizan. Cuatro RF del incremento (RF-09, RF-10, RF-13 y RF-19) tienen criterios de aceptación detallados en la sección 5.5. RF-34 y RF-35 comparten la historia SCRUM-486 (versión 5.2) y la de RF-36 es SCRUM-472 (versión 5.1).
 
 **Estado de avance de la Épica 7 (consultado en Jira el 14 de octubre de 2026):** de sus 34 elementos, 27 figuran como Finalizados: todos los documentos y tareas de las versiones V1 a V4 y del Sprint 3, más el DD V4 (SCRUM-416) y el Documento de Infraestructura V3 (SCRUM-420). De las 7 historias restantes del Sprint 4, el SRS V5, el SAD V4 y el SDD V3 están en desarrollo; el TD V2 y el informe de pruebas, por hacer; y el Backlog V5 y la presentación, en Backlog.
 
 ### 7.3 Historias de Jira por actualizar
 
-Las siguientes historias de usuario tienen criterios de aceptación que no coinciden con este documento. SCRUM-24, SCRUM-29, SCRUM-30, SCRUM-33, SCRUM-34, SCRUM-39 y SCRUM-40 ya se reescribieron en Jira y salen de la lista de la versión 4.0. Faltan las de esta tabla y crear las historias de RF-34 y RF-35; la de RF-36 ya existe (SCRUM-472).
+Las siguientes historias de usuario tienen criterios de aceptación que no coinciden con este documento. SCRUM-24, SCRUM-29, SCRUM-30, SCRUM-33, SCRUM-34, SCRUM-39 y SCRUM-40 ya se reescribieron en Jira y salen de la lista de la versión 4.0. Faltan las de esta tabla. SCRUM-35 se reescribió con la evidencia fotográfica obligatoria (RF-15), y las historias de RF-34, RF-35 y RF-36 ya existen (SCRUM-486 y SCRUM-472).
 
 | Jira | Criterio de aceptación actual | Cambio necesario | Requisito |
 |---|---|---|---|
 | SCRUM-21 | El usuario queda asociado al tenant "Hogar/Bogotá" por defecto. | El Cliente queda en el tenant de la empresa oferente por cuyo canal se registra; no existe un tenant "Hogar". | RF-01, RF-04 |
 | SCRUM-26 | La cuenta empresarial queda asociada a un tenant propio. | La cuenta empresarial es una cuenta de usuario dentro del tenant. | RF-06 |
 | SCRUM-32 | La calificación solo se habilita cuando la solicitud está en estado "Completado". | Se habilita cuando la solicitud está en estado "Pagado". | RF-12 |
-| SCRUM-35 | No exige evidencia fotográfica. | Agregar: solo se puede completar con al menos una foto adjunta. | RF-15 |
 | SCRUM-38 | El Admin ve las solicitudes de todos los tenants. | El Admin del tenant ve solo su tenant; el Admin de plataforma ve todos, filtrables por tenant. | RF-18 |
 | SCRUM-41 | Criterio 4: "Un tenant desactivado no puede crear nuevas solicitudes." | La historia está finalizada y lo que se implementó es el rechazo del login. El rechazo inmediato de solicitudes pasa a SCRUM-348; conviene anotarlo en SCRUM-41. | RF-21 |
 | SCRUM-46, SCRUM-47 | Ambiente de "staging". | Ambiente de QA (VM2, VM5 y VM7). | RNF-07, RNF-08 |
 | SCRUM-47 | Flujo Cliente → Técnico → Pago → Calificación. | Incluir la cotización y la evidencia fotográfica. | RF-27 |
-| Por crear | — | Historia para la cotización del Técnico. | RF-34 |
-| Por crear | — | Historia para la respuesta del Cliente a la cotización. | RF-35 |
 
 ### 7.4 Decisiones
 
@@ -624,6 +621,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | 4.1 | 12 oct 2026 | Resuelve la decisión pendiente P1 (SCRUM-405, SCRUM-413; SAD 2.27, ADR-024): RIE-02 pasa a una geocodificación propia dentro de la infraestructura, solo para Bogotá, y RIE-03 a notificaciones dentro de la app (canal en tiempo real de ADR-023 y buzón); el correo y el push con la app cerrada quedan fuera del MVP. R5 no cambia. |
 | 5.0 | 14 oct 2026 | SRS V5 (SCRUM-403). Se alinea con `develop` al 14 de octubre de 2026 (SAD 2.28, DD 4.0, SDD V2, TD 1.4, Infraestructura 3.7) y con Jira. **Criterios de aceptación (SCRUM-404):** nueva sección 5.5 con los criterios verificables de RF-09, RF-10, RF-13 y RF-19, cada uno con su historia, su regla del DD y su caso de prueba; se reescriben esos cuatro RF y se señalan las diferencias del TD que debe corregir el TD V2. **R5 frente a RIE-02 y RIE-03 (SCRUM-405):** se incorpora la decisión del ADR-024 del SAD (DR-01): R5 no cambia, RIE-02 pasa a un geocodificador propio con el mapa de Bogotá usado por ServiceRequest y RIE-03, a avisos dentro de la app (canal en tiempo real y buzón). El correo y el push quedan fuera del MVP. Se ajustan los supuestos, RF-07 y RNF-14. **Revisión del SRS V4 (Sebastián Sánchez):** RF-21 deja de decir que un tenant desactivado no puede crear solicitudes y describe lo implementado (rechazo del login; sesiones vigentes hasta que vence el token), con el rechazo inmediato en SCRUM-348; la restricción de la sección 2.3 describe el reparto de VMs del ADR-022 en lugar de "producción en las 7 VMs"; las versiones de los demás documentos se concentran en la línea base (nueva sección 1.3) y el resto del documento cita secciones; RF-07 aclara que la ubicación viene del GPS o de la dirección geocodificada (DR-02, por confirmar con el equipo); el diagrama BPMN en Mermaid se reemplaza por un flujo de negocio por carriles y fases (Figura 1, `diagrams/flujo-negocio.png`): incluye el registro, la pasarela de pagos como pool externo, el tipo de cada tarea y los caminos alternos (solicitud rechazada, espera y reasignación del matching, límite de 3 cotizaciones, reintento del pago y cancelación). **RNF:** pasan a tabla con el escenario del SAD que los mide y su estado de validación. **Apéndices:** la matriz de trazabilidad enlaza cada RF con su historia y sus casos de prueba (7.1.2); se actualizan los estados de Jira de las épicas 6 y 7 (Sprint 4: SCRUM-388 y las 9 historias de documentación); la sección 7.3 retira las historias ya reescritas en Jira y agrega SCRUM-41; la 7.4 separa las decisiones tomadas (DR-01, DR-02) de las pendientes y agrega P6 a P9. **Revisión del borrador (Sebastián Sánchez, 14 oct 2026):** la sección 1.3 deja escrito que la línea base debe pasar al SAD 2.28, el DD 4.0 y la Infraestructura 3.3 antes de aprobar; los estados de Jira de las épicas 6 y 7 se actualizan al 14 de octubre (27 de 34 elementos finalizados en la Épica 7); RF-07 y el supuesto de geocodificación incluyen el caso en que Nominatim no responde (ADR-024), y DR-02 indica que depende del DD V5 y del contrato `service-request.v1.yaml` 1.2.0 (SCRUM-455); en 5.5.1, los criterios 1 y 3 pasan a cobertura parcial con lo que falta por probar. La Figura 1 se acompaña de su fuente editable (`diagrams/flujo-negocio.svg`). **Aprobación:** el Product Owner aprobó la versión el 14 de octubre de 2026 (SCRUM-406). **Línea base (Sebastián Sánchez, 14 oct 2026):** la tabla de la sección 1.3 pasa al SAD 2.28, el DD 4.0 y la Infraestructura 3.7 tras comprobar que las secciones citadas existen y que lo que el SRS afirma de ellas sigue siendo cierto; en DR-01, el playbook de Nominatim figura como hecho en QA (`quickpatch#93`) y la referencia al SDD apunta a su sección 4. Pendiente: el PR a `develop`. |
 | 5.1 | 18 oct 2026 | RF-36 (cancelación antes de iniciar el servicio) deja de estar «por crear»: su historia es SCRUM-472 (Sprint 4), con el diseño en el DD 5.3 y el contrato `service-request.v1.yaml` 1.5.0 (SCRUM-474). Se actualizan F2.1, la tabla de RF, la Épica SCRUM-8, la matriz de trazabilidad (7.1.2), el resumen y la sección 7.3. RF-34 y RF-35 siguen sin historia. |
+| 5.2 | 19 oct 2026 | RF-34 (cotización del Técnico) y RF-35 (respuesta del Cliente) dejan de estar «por crear»: su historia es SCRUM-486, con el diseño en el DD 5.5 y el contrato `service-request.v1.yaml` 1.6.0 (SCRUM-487). Se actualizan F2.1, F3.2, la tabla de RF, las Épicas SCRUM-8 y SCRUM-9, la matriz de trazabilidad (7.1.2), el resumen y la sección 7.3, que además quita SCRUM-35 porque su descripción ya exige la evidencia fotográfica (RF-15). |
 
 ---
 
