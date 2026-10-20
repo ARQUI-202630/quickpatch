@@ -1,10 +1,10 @@
-# Documento de Pruebas (TD V2.8) — QUICKPATCH
+# Documento de Pruebas (TD V2.9) — QUICKPATCH
 ## Sistema Multi-tenant de Servicios Técnicos para el Hogar y las Empresas
 
 | | |
 |---|---|
 | **Tipo de documento** | Documento de Diseño y Definición de Pruebas (Test Document - TD) |
-| **Versión** | 2.8 (Entrega Sprint 4 / Semana 11) |
+| **Versión** | 2.9 (Entrega Sprint 4 / Semana 11) |
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
 | **Rol Responsable** | Katherine Bravo (QA Lead) |
@@ -24,7 +24,7 @@
 7. [Matriz de Trazabilidad RTM y Catálogo de Pruebas (Test Scenarios, RTM & Test Cases)](#7-matriz-de-trazabilidad-rtm-y-catálogo-de-pruebas-187-casos)
 8. [Gestión de Datos de Prueba (Test Data)](#8-gestión-de-datos-de-prueba-test-data)
 9. [Gestión y Reporte de Defectos (Bug Report)](#9-gestión-y-reporte-de-defectos-bug-report)
-10. [Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3)](#10-informe-de-ejecución-de-pruebas-test-execution-report---sprint-3)
+10. [Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3 & Sprint 4)](#10-informe-de-ejecución-de-pruebas-test-execution-report---sprint-3--sprint-4)
 11. [Control de Versiones del Documento](#11-control-de-versiones-del-documento)
 
 ---
@@ -32,7 +32,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V2.8) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente V5) y los escenarios de calidad del SAD (versión vigente V4 / v2.28) de cara a los entregables del Sprint 4.
+El presente Documento de Pruebas (TD V2.9) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente V5) y los escenarios de calidad del SAD (versión vigente V4 / v2.28) de cara a los entregables del Sprint 4.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -885,7 +885,7 @@ El sistema retornó HTTP 500 Internal Server Error o no generó el evento en la 
 
 ---
 
-## 10. Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3)
+## 10. Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3 & Sprint 4)
 
 ### 10.1 Resumen Ejecutivo del Incremento de Valor
 En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad (QA) ha completado el diseño, estructuración y especificación formal de la arquitectura de pruebas integral para la plataforma QUICKPATCH sobre los 13 repositorios y el entorno de las 7 Máquinas Virtuales (ADR-022).
@@ -1345,6 +1345,67 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-09** / F2.1, **R
 | `db_matching` | `technician_availability` | `technician_id`, `is_available`, `active_service_id`, `updated_at` | Actualización de disponibilidad tras asignación exitosa (`is_available = false`, RN-M9). |
 | `db_matching` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` | Bloqueo absoluto de ofertas cruzadas: un técnico del Tenant Beta jamás recibe solicitudes del Tenant Alfa (SAD AC6-E2). |
 
+### 10.12 Evidencias Fotográficas y Gráficas de Ejecución Real en Ambiente QA (Compuerta 2 — Sprint 4)
+
+A continuación se incorporan las evidencias fotográficas y capturas de pantalla de terminal obtenidas durante la ejecución real de las compuertas de aseguramiento de calidad sobre la topología de máquinas virtuales de QA (VM1: Observabilidad y Herramientas, VM2: Cómputo k3s Microservicios, VM5: Persistencia PostgreSQL, VM7: Kafka/Garage S3 — ADR-015, ADR-022).
+
+#### 10.12.1 Pruebas de Carga Sostenida (50 VU) con Grafana k6 en Windows PowerShell
+
+Ejecución automatizada de `tests/performance/load-test-50vu.js` contra el Ingress Nginx del cluster de QA (`http://10.43.100.168:80`). Se simularon 50 usuarios virtuales concurrentes durante 1 minuto, evaluando los flujos concurrentes de consulta de catálogo y creación de solicitudes de servicio técnico.
+
+![Pruebas de Carga 50 VU con Grafana k6 en QA](img/k6-load-50vu-qa.png)
+
+- **Throughput y Volumen:** 5,755 peticiones HTTP completadas satisfactoriamente (tasa de 88.08 req/s).
+- **Tasa de Acierto y Disponibilidad:** 100.00% de aserciones exitosas (11,510/11,510 checks superados), tasa de fallo del 0.00%.
+- **Latencias Obtenidas:**
+  - Catálogo de Servicios (`GET /v1/catalog`): p95 = 36.24 ms (ampliamente inferior al SLA del SAD AC2-E4 de 2,000 ms).
+  - Solicitudes de Servicio (`POST /v1/service-requests`): p95 = 90.67 ms (supera holgadamente el criterio de aceptación).
+
+#### 10.12.2 Pruebas de Estrés Pico Inesperado (150 VU) con Grafana k6 en Windows PowerShell
+
+Ejecución de `tests/performance/stress-test-150vu.js` inyectando 150 usuarios virtuales concurrentes sobre la infraestructura de QA para evaluar la capacidad de resiliencia del cluster k3s y degradación controlada bajo estrés (SAD AC2-E5).
+
+![Pruebas de Estrés 150 VU con Grafana k6 en QA](img/k6-stress-150vu-qa.png)
+
+- **Throughput y Volumen:** 38,876 peticiones HTTP procesadas con un caudal medio de 160.45 req/s.
+- **Resiliencia Operativa:** 0 errores de servidor (0.00% respuestas 5xx).
+- **Latencia Percentil 95:** p95 global de 415.39 ms, cumpliendo holgadamente el umbral de degradación de RNF-02 ($\le 2,000\text{ ms}$).
+- **Estabilidad de Pods:** Cero reinicios de contenedores (`Restarts = 0`), cero caídas por agotamiento de memoria (`0 OOMKilled`).
+
+#### 10.12.3 Monitoreo de Tráfico Transaccional en Vivo sobre Ingress Nginx (VM1)
+
+Inspección de telemetría y logs en tiempo real capturados directamente en el Ingress Controller Nginx del cluster de QA durante la inyección de tráfico concurrente con Grafana k6.
+
+![Logs en Vivo del Ingress Nginx en VM1](img/nginx-ingress-k6-traffic.png)
+
+- **Flujo Observado:** Se aprecian las peticiones entrantes `POST /v1/service-requests` y `GET /v1/catalog` respondiendo con códigos de éxito `HTTP 201 Created` y `HTTP 200 OK`, con tiempos de respuesta en el rango de los 3 ms a 28 ms por request en el gateway perimetral.
+
+#### 10.12.4 Exportación de Logs Estructurados desde Grafana Loki API (VM1)
+
+Extracción de telemetría viva de los microservicios en formato JSON estructurado (.NET `AddJsonConsole`) directamente desde el endpoint REST de Loki (`http://10.43.100.168:3100/loki/api/v1/query_range`), eliminando intermediarios sintéticos y garantizando la trazabilidad real del ambiente k3s.
+
+![Consulta y Exportación de Logs Estructurados en Grafana Loki API](img/loki-qa-vm1-export.png)
+
+- **Parámetros de Consulta:** Query LogQL `{namespace="quickpatch-qa"}` en ventana temporal del Sprint 4.
+- **Resultado del Escaneo PCI-DSS:** Las 100 trazas JSON exportadas en `tests/security/evidencias/loki_qa_k3s.json` fueron analizadas con el script auditor `tests/security/pci_dss_scanner.py`, arrojando **0 hallazgos de PAN (Primary Account Number)** y **0 hallazgos de CVV**, acreditando el cumplimiento formal de PCI-DSS Req 3.4 y SAD AC6-E1.
+
+#### 10.12.5 Transferencia Cifrada de Evidencias desde VM1 hacia Estación de QA
+
+Descarga formal y segura de los artefactos brutos de ejecución (`zap.html`, `loki_qa_k3s.json`) desde la máquina virtual VM1 hacia el entorno local de control de versiones de QA mediante el protocolo SCP cifrado vía SSH.
+
+![Transferencia Segura SCP de Evidencias desde VM1](img/scp-transfer-evidencias.png)
+
+- **Integridad:** Asegura la cadena de custodia de las evidencias de auditoría y pruebas no funcionales, garantizando que los reportes incorporados al repositorio provienen directamente de la ejecución física en la infraestructura asignada.
+
+#### 10.12.6 Escaneo de Seguridad Dinámica DAST con OWASP ZAP Baseline en Docker (VM1)
+
+Ejecución del contenedor oficial `zaproxy/zap-stable` sobre VM1 para llevar a cabo el análisis dinámico de vulnerabilidades (DAST) contra la API Gateway expuesta en QA (`http://10.43.100.168`).
+
+![Escaneo de Seguridad Dinámica DAST con OWASP ZAP en Docker VM1](img/zap-dast-vm1-docker.png)
+
+- **Cobertura de Reglas:** 59 reglas de inspección DAST evaluadas en modo pasivo/activo baseline.
+- **Hallazgos:** Cero vulnerabilidades críticas o de severidad alta (**0 FAIL**), confirmando que las cabeceras de seguridad (`Content-Type-Options`, `X-Frame-Options`, directivas CORS) y la protección contra inyecciones cumplen con los estándares de seguridad perimetral de la arquitectura.
+
 ---
 
 ## 11. Control de Versiones del Documento
@@ -1365,6 +1426,7 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-09** / F2.1, **R
 | **2.6** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Motor de Matching y Asignación Automática (SCRUM-78 / HU SCRUM-29 / RF-09, RF-10, RNF-05). Verificación de asignación automática a candidato elegible en menos de 60 segundos (AC2-E3), exclusión de candidatos no aprobados, ocupados o fuera de cobertura (RN-M9), transición a estado en_espera ante ausencia de candidatos y reintento (RN-M10), deduplicación e idempotencia en consumo de eventos Kafka vía processed_events (AC5-E5), control de acceso RBAC contra clientes y técnicos (403 Forbidden), seguridad anónima (401 Unauthorized / IDN-017) y aislamiento multi-tenant estricto con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (15 peticiones, 35 aserciones, 100% Pass). |
 | **2.7** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Actualización integral de la Matriz de Trazabilidad de Requisitos (RTM) alineada a SRS V5 (32 RFs, 23 Features, 7 Épicas), incorporación formal de la trazabilidad bidireccional de las Historias de Usuario de Sprint 4 (SCRUM-22, 24, 29, 30, 31, 33, 34, 36, 39, 40, 454/456, 399, 394), y resolución de criterios de aceptación verificables de SRS V5 §5.5 (RF-09, RF-10, RF-13, RF-19) cerrando todos los casos pendientes (SCRUM-401). |
 | **2.8** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Especificación formal de la estrategia de compuertas de calidad (Compuerta 0 a Compuerta 3) y definición operativa de la Compuerta 2 en la infraestructura dedicada de QA sobre 7 VMs (ADR-015, ADR-022: VM1, VM2, VM5, VM7), estableciendo umbrales de aceptación para suites E2E/API, escáner PCI-DSS en Loki, pruebas k6 (50/150 VU), DAST ZAP y aislamiento RLS (SCRUM-402 / SCRUM-399). |
+| **2.9** | 19 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de evidencias fotográficas y gráficas de ejecución real en ambiente de QA (Compuerta 2 — Sprint 4) en §10.12: pruebas de carga (50 VU) y estrés (150 VU) con Grafana k6, telemetría y logs transaccionales en vivo en Nginx Ingress, exportación de logs estructurados desde Grafana Loki API para auditoría PCI-DSS, transferencia segura SCP y reporte DAST con OWASP ZAP Baseline en Docker. |
 
 
 
