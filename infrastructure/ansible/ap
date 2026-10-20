@@ -3,18 +3,32 @@
 # Monta el repositorio quickpatch completo: los playbooks usan la configuración del gateway (apps/api-gateway/nginx)
 # y el despliegue de Kafka (apps/kafka/deploy), que vienen de sus submódulos (git submodule update --init).
 # Si existe ~/.config/quickpatch/vault-pass, se usa como clave del vault (no está en el repo).
+# Funciona también en Git Bash de Windows (ver abajo).
 set -euo pipefail
 cd "$(dirname "$0")"
 RAIZ="$(cd ../.. && pwd)"
 for sub in apps/api-gateway apps/kafka; do
   [ -e "$RAIZ/$sub/.git" ] || { echo "Falta el submódulo $sub: git submodule update --init $sub" >&2; exit 1; }
 done
+SSH_DIR="$HOME/.ssh"
+VAULT_FILE="$HOME/.config/quickpatch/vault-pass"
+# Git Bash convierte las rutas que empiezan por / (como /quickpatch) en rutas de Windows; Docker necesita las del host
+# en formato C:/... y las del contenedor tal cual.
+if command -v cygpath >/dev/null 2>&1; then
+  export MSYS_NO_PATHCONV=1
+  RAIZ="$(cygpath -m "$RAIZ")"
+  SSH_DIR="$(cygpath -m "$SSH_DIR")"
+  VAULT_FILE="$(cygpath -m "$VAULT_FILE")"
+fi
 VAULT=()
-[ -f "$HOME/.config/quickpatch/vault-pass" ] && VAULT=(-v "$HOME/.config/quickpatch/vault-pass:/run/vault-pass:ro" -e ANSIBLE_VAULT_PASSWORD_FILE=/run/vault-pass)
-docker run --rm -it --network host \
+[ -f "$VAULT_FILE" ] && VAULT=(-v "$VAULT_FILE:/run/vault-pass:ro" -e ANSIBLE_VAULT_PASSWORD_FILE=/run/vault-pass)
+# -it solo con terminal: las claves de -k y -K se piden por ella.
+TTY=()
+[ -t 0 ] && TTY=(-it)
+docker run --rm "${TTY[@]}" --network host \
   -v "$RAIZ":/quickpatch \
   -w /quickpatch/infrastructure/ansible \
-  -v "$HOME/.ssh":/root/.ssh:ro \
+  -v "$SSH_DIR":/root/.ssh:ro \
   "${VAULT[@]}" \
   -e ANSIBLE_CONFIG=/quickpatch/infrastructure/ansible/ansible.cfg \
   quickpatch-ansible "$@"
