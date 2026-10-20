@@ -257,3 +257,24 @@ OK    GET /v1/admin/service-requests/summary (admin_tenant) → 200, los 9 estad
 OK    GET /v1/platform/service-requests/summary (admin_plataforma) → 200, el tenant del cliente solo con tenantId,
       byStatus y createdToday (rol service_request_platform con SELECT por columna)
 OK    GET /v1/admin/service-requests/summary con token de cliente → 403
+
+Aviso en tiempo real repetido después de limpiar la carga de QA (20 de octubre de 2026, 12:29 UTC)
+-------------------------------------------------------------------------------------------------
+Antes de esta corrida, el aviso tardaba o no llegaba aunque Communication ya consumía service-request.status-changed:
+las corridas de k6 habían dejado unas 237.000 solicitudes vivas, Matching las reintentaba y el outbox de
+db_service_request tenía unos 365.000 eventos en cola, con retrasos de hasta 134 s. Se corrió
+infrastructure/ansible/playbooks/limpiar-carga-qa.yml -e borrar=si (respaldo pg_dump de las tres bases en VM5):
+213.924 matching_requests, 237.633 service_requests y sus outbox_events borrados; se conservaron las 65 solicitudes
+que no eran de carga. k6 ahora cancela cada solicitud que crea (tests/performance, quickpatch#121).
+
+tests/e2e/scrum-478-aviso-tiempo-real.mjs, Node v24.15.0, contra https://qa.quickpatch.internal:
+OK    Registro del cliente  (HTTP 201)
+OK    Login del cliente  (HTTP 200)
+OK    Solicitud creada  (HTTP 201, buscando_tecnico)
+OK    Canal /v1/realtime autenticado  (auth.accepted)
+OK    El cliente cancela  (HTTP 200)
+OK    Llega service-request.status-changed con cancelado  (950 ms después de cancelar)
+
+6/6 OK. Cliente de prueba: aviso478.mvgnupgy@quickpatch.test; solicitud 01a1594a-0c06-75ef-bb13-80598d5fa306.
+La sonda de DevOps, justo después de la limpieza, también dio 6/6 (aviso en 296 ms). Queda cerrado el FALLO del
+19 de octubre: el aviso llega muy por debajo del límite de 15 s.
