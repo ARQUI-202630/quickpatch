@@ -1,0 +1,2669 @@
+{
+  "info": {
+    "name": "QUICKPATCH — SCRUM-478 Cancelación de la solicitud de punta a punta",
+    "description": "RF-36 (SCRUM-472) contra QA: el cliente cancela con una oferta pendiente y el técnico deja de verla; el administrador del tenant cancela con el técnico asignado y el técnico vuelve a disponible (SCRUM-475, SCRUM-476). Casos negativos: motivo inválido (400), sin token (401), técnico (403), otro cliente (404), cliente de otro tenant (404), administrador de la plataforma (403) y cancelar dos veces (409). Variables: baseUrl, adminEmail, adminPassword, platformAdminEmail y platformAdminPassword (secretos de QA, nunca en el repositorio). Sin el administrador se omiten los pasos de técnico, ofertas y administrador. Contratos: service-request.v1.yaml 1.5.0, matching.v1.yaml, identity.v1.yaml.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://qa.quickpatch.internal"
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "platformAdminEmail",
+      "value": ""
+    },
+    {
+      "key": "platformAdminPassword",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Preparación: categoría propia y técnico aprobado",
+      "item": [
+        {
+          "name": "Login del administrador del tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('sufijo')) {",
+                  "  pm.collectionVariables.set('sufijo', Date.now().toString(36));",
+                  "  // Clave de las cuentas de prueba de esta corrida; no se guarda en ningún lado.",
+                  "  pm.collectionVariables.set('clave', 'Qp' + Math.random().toString(36).slice(2, 12) + '7Z');",
+                  "}",
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol admin_tenant', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('admin_tenant');",
+                  "});",
+                  "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Categoría solo para esta corrida",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/admin/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "admin",
+                "categories"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cancelación {{sufijo}}\",\n  \"description\": \"Categoría de la prueba SCRUM-478; se desactiva al final\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('categoriaPropia', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro del técnico con esa especialidad",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/technician",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico478.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Técnico 478\",\n  \"phone\": \"3007654321\",\n  \"documentId\": \"{{documento}}\",\n  \"specialtyId\": \"{{categoriaPropia}}\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }",
+                  "pm.collectionVariables.set('documento', String(Date.now()).slice(-10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('tecnicoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El administrador aprueba al técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "{{tecnicoId}}",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico478.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol tecnico', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('tecnico');",
+                  "});",
+                  "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Localidades de Bogotá",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/localities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "localities"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('localidades', JSON.stringify(pm.response.json().slice(0, 20).map(l => l.code)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico cubre toda Bogotá (espera a que Matching lo conozca)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/me/coverage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "technicians",
+                "me",
+                "coverage"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"localityCodes\": []\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }",
+                  "pm.request.body.raw = JSON.stringify({ localityCodes: JSON.parse(pm.collectionVariables.get('localidades')) });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code === 200) && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('200', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico queda disponible",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/me/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "technicians",
+                "me",
+                "availability"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"disponible\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code === 200) && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('200', () => pm.response.to.have.status(200));",
+                  "  pm.test('disponible', () => pm.expect(pm.response.json().status).to.eql('disponible'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Cliente: cancelar con la oferta pendiente",
+      "item": [
+        {
+          "name": "Registro del cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente478.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba 478 cliente\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('sufijo')) {",
+                  "  pm.collectionVariables.set('sufijo', Date.now().toString(36));",
+                  "  // Clave de las cuentas de prueba de esta corrida; no se guarda en ningún lado.",
+                  "  pm.collectionVariables.set('clave', 'Qp' + Math.random().toString(36).slice(2, 12) + '7Z');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente478.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol cliente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);",
+                  "const partes = pm.response.json().accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "const carga = JSON.parse(CryptoJS.enc.Base64.parse(partes + '='.repeat((4 - partes.length % 4) % 4)).toString(CryptoJS.enc.Utf8));",
+                  "pm.collectionVariables.set('tenantCliente', carga.tenant_id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Categoría de la solicitud",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "categories"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "// Con administrador, la categoría propia (solo el técnico de la prueba la atiende); sin él, una cualquiera.",
+                  "const propia = pm.collectionVariables.get('categoriaPropia');",
+                  "const ids = pm.response.json().map(c => c.id);",
+                  "pm.collectionVariables.set('categoriaId', propia || ids[0]);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear la solicitud 1 (espera la réplica de la categoría)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cancelación de punta a punta (SCRUM-478)\",\n  \"location\": {\n    \"latitude\": 4.6486,\n    \"longitude\": -74.063\n  },\n  \"addressText\": \"Calle 63 # 9-45, apto 201\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code !== 422) && intento < 10) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('201 en buscando_tecnico', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.json().status).to.eql('buscando_tecnico');",
+                  "  });",
+                  "  pm.collectionVariables.set('solicitudId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico ve la oferta de la solicitud 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matching/offers?status=pendiente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matching",
+                "offers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pendiente"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const oferta = pm.response.code === 200 && pm.response.json().items.find(o => o.serviceRequestId === pm.collectionVariables.get('solicitudId'));",
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(oferta) && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('la oferta está pendiente para el técnico', () => pm.expect(oferta).to.be.ok);",
+                  "  if (oferta) { pm.collectionVariables.set('ofertaId', oferta.attemptId); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Motivo de 4 caracteres → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitudId}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \" no \"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo validacion', () => pm.expect(pm.response.json().type).to.match(/\\/validacion$/));",
+                  "pm.test('error en reason', () => pm.expect(pm.response.json().errors).to.have.property('reason'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitudId}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Ya no necesito el servicio.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro del otro cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"otro478.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba 478 otro cliente\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del otro cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"otro478.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol cliente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('otroToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Otro cliente del mismo tenant → 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{otroToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitudId}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Ya no necesito el servicio.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo no-encontrado', () => pm.expect(pm.response.json().type).to.match(/\\/no-encontrado$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro del cliente del tenant Beta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"beta478.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba 478 cliente del tenant Beta\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del cliente del tenant Beta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"beta478.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol cliente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('betaToken', pm.response.json().accessToken);",
+                  "const partes = pm.response.json().accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "const carga = JSON.parse(CryptoJS.enc.Base64.parse(partes + '='.repeat((4 - partes.length % 4) % 4)).toString(CryptoJS.enc.Utf8));",
+                  "pm.collectionVariables.set('tenantBeta', carga.tenant_id);",
+                  "pm.test('el token es de otro tenant', () => {",
+                  "  pm.expect(pm.collectionVariables.get('tenantBeta')).to.be.a('string');",
+                  "  pm.expect(pm.collectionVariables.get('tenantBeta')).to.not.eql(pm.collectionVariables.get('tenantCliente'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cliente de otro tenant → 404 (RLS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{betaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitudId}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Ya no necesito el servicio.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo no-encontrado', () => pm.expect(pm.response.json().type).to.match(/\\/no-encontrado$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro de un técnico sin aprobar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/technician",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecpend478.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Técnico pendiente 478\",\n  \"phone\": \"3007654322\",\n  \"documentId\": \"{{documento2}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('documento2', String(Date.now() + 7).slice(-10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del técnico sin aprobar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecpend478.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol tecnico', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('tecnico');",
+                  "});",
+                  "pm.collectionVariables.set('tecPendToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un técnico no cancela → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecPendToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitudId}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Ya no necesito el servicio.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La solicitud sigue buscando técnico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitudId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "// Sin el técnico de la prueba, Matching no encuentra candidato y la deja en en_espera.",
+                  "pm.test('nadie la canceló', () => pm.expect(pm.response.json().status).to.be.oneOf(['buscando_tecnico', 'en_espera']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El cliente cancela",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitudId}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"  Ya no necesito el servicio.  \"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con el contrato CancelledServiceRequest', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(Object.keys(r).sort()).to.eql(['cancelledAt', 'cancelledByType', 'id', 'status']);",
+                  "  pm.expect(r.status).to.eql('cancelado');",
+                  "  pm.expect(r.cancelledByType).to.eql('cliente');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El detalle trae la cancelación",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitudId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('cancelado con fecha y motivo sin espacios', () => {",
+                  "  const s = pm.response.json();",
+                  "  pm.expect(s.status).to.eql('cancelado');",
+                  "  pm.expect(s.cancellationReason).to.eql('Ya no necesito el servicio.');",
+                  "  pm.expect(s.cancelledAt).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar otra vez → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitudId}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Ya no necesito el servicio.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo transicion-invalida', () => pm.expect(pm.response.json().type).to.match(/\\/transicion-invalida$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico ya no ve la oferta (Matching consumió service-request.cancelled)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matching/offers?status=pendiente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matching",
+                "offers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pendiente"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const sigue = pm.response.code !== 200 || pm.response.json().items.some(o => o.serviceRequestId === pm.collectionVariables.get('solicitudId'));",
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(!sigue) && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('la oferta se retiró', () => pm.expect(sigue).to.eql(false));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aceptar la oferta retirada → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matching/offers/{{ofertaId}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matching",
+                "offers",
+                "{{ofertaId}}",
+                "accept"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo oferta-no-disponible', () => pm.expect(pm.response.json().type).to.match(/\\/oferta-no-disponible$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico sigue disponible después de la solicitud 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/me/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "technicians",
+                "me",
+                "availability"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code === 200 && pm.response.json().status === 'disponible') && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('técnico disponible', () => pm.expect(pm.response.json().status).to.eql('disponible'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Administrador del tenant: cancelar con el técnico asignado",
+      "item": [
+        {
+          "name": "Crear la solicitud 2 (espera la réplica de la categoría)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cancelación de punta a punta (SCRUM-478)\",\n  \"location\": {\n    \"latitude\": 4.6486,\n    \"longitude\": -74.063\n  },\n  \"addressText\": \"Calle 63 # 9-45, apto 201\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code !== 422) && intento < 10) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('201 en buscando_tecnico', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.json().status).to.eql('buscando_tecnico');",
+                  "  });",
+                  "  pm.collectionVariables.set('solicitud2Id', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico ve la oferta de la solicitud 2",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matching/offers?status=pendiente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matching",
+                "offers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pendiente"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const oferta = pm.response.code === 200 && pm.response.json().items.find(o => o.serviceRequestId === pm.collectionVariables.get('solicitud2Id'));",
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(oferta) && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('la oferta está pendiente para el técnico', () => pm.expect(oferta).to.be.ok);",
+                  "  if (oferta) { pm.collectionVariables.set('oferta2Id', oferta.attemptId); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico acepta la oferta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matching/offers/{{oferta2Id}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matching",
+                "offers",
+                "{{oferta2Id}}",
+                "accept"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('aceptado', () => pm.expect(pm.response.json().response).to.eql('aceptado'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La solicitud queda asignada (ServiceRequest consumió matching.technician-assigned)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud2Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud2Id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.json().status === 'asignado') && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('asignado al técnico de la prueba', () => {",
+                  "    pm.expect(pm.response.json().status).to.eql('asignado');",
+                  "    pm.expect(pm.response.json().technicianId).to.eql(pm.collectionVariables.get('tecnicoId'));",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico queda ocupado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/me/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "technicians",
+                "me",
+                "availability"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code === 200 && pm.response.json().status === 'ocupado') && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('técnico ocupado', () => pm.expect(pm.response.json().status).to.eql('ocupado'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del administrador de la plataforma",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{platformAdminEmail}}\",\n  \"password\": \"{{platformAdminPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('plataformaToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El administrador de la plataforma no cancela → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud2Id}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud2Id}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Prueba de rol.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El administrador del tenant cancela",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud2Id}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud2Id}}",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"El cliente no respondió.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con el contrato CancelledServiceRequest', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(Object.keys(r).sort()).to.eql(['cancelledAt', 'cancelledByType', 'id', 'status']);",
+                  "  pm.expect(r.status).to.eql('cancelado');",
+                  "  pm.expect(r.cancelledByType).to.eql('admin_tenant');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El cliente ve la cancelación con el motivo del administrador",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud2Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud2Id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('cancelado con el motivo', () => {",
+                  "  pm.expect(pm.response.json().status).to.eql('cancelado');",
+                  "  pm.expect(pm.response.json().cancellationReason).to.eql('El cliente no respondió.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico vuelve a disponible (Matching lo liberó)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/me/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "technicians",
+                "me",
+                "availability"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code === 200 && pm.response.json().status === 'disponible') && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  // Por id y no por nombre: la colección repite pasos parecidos en varias carpetas.",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('técnico disponible', () => pm.expect(pm.response.json().status).to.eql('disponible'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Release 0.4.0 de ServiceRequest: geocodificación y panel",
+      "item": [
+        {
+          "name": "Vista previa de la ubicación (Nominatim de QA, SCRUM-457)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Calle 63 # 9-45, Bogotá\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('punto en Bogotá con localidad', () => {",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(r.location.latitude).to.be.within(4.45, 4.85);",
+                  "  pm.expect(r.location.longitude).to.be.within(-74.25, -73.98);",
+                  "  pm.expect(r.locality.code).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Conteos del tenant para su administrador (SCRUM-103)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/service-requests/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "service-requests",
+                "summary"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('los 9 estados y al menos las 2 canceladas de esta corrida', () => {",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(Object.keys(r.byStatus)).to.have.lengthOf(9);",
+                  "  pm.expect(r.byStatus.cancelado).to.be.at.least(2);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Conteos por tenant para la plataforma (rol service_request_platform)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/service-requests/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "service-requests",
+                "summary"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el tenant del cliente, sin datos de las solicitudes', () => {",
+                  "  const t = pm.response.json().tenants.find(x => x.tenantId === pm.collectionVariables.get('tenantCliente'));",
+                  "  pm.expect(t).to.be.ok;",
+                  "  pm.expect(Object.keys(t).sort()).to.eql(['byStatus', 'createdToday', 'tenantId']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El cliente no ve los conteos del tenant → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/service-requests/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "service-requests",
+                "summary"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Limpieza",
+      "item": [
+        {
+          "name": "Suspender al técnico de la prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/suspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "{{tecnicoId}}",
+                "suspend"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cuenta de la prueba SCRUM-478.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar la categoría de la prueba",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/admin/categories/{{categoriaPropia}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "admin",
+                "categories",
+                "{{categoriaPropia}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

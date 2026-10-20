@@ -105,6 +105,28 @@ export function setup() {
     return { token, categoryId };
 }
 
+/**
+ * Cancela la solicitud que la iteración acaba de crear (SCRUM-472). Sin esto queda en QA buscando técnico o en espera,
+ * y Matching la reintenta para siempre: cada corrida dejaba unas 40.000 solicitudes vivas en el tenant principal.
+ * Lleva su propia etiqueta para no mezclarse con los umbrales de creación; un 409 (ya asignada) también vale.
+ */
+function cancelar(res, headers) {
+    let id;
+    try {
+        id = res.json('id');
+    } catch (e) {
+        return;
+    }
+    if (!id) {
+        return;
+    }
+    http.post(`${BASE_URL}/api/v1/service-requests/${id}/cancel`, JSON.stringify({ reason: 'Fin de la iteración de k6.' }), {
+        headers: headers,
+        tags: { endpoint: 'cancelar_solicitud' },
+        responseCallback: http.expectedStatuses(200, 409),
+    });
+}
+
 export default function (data) {
     const correlationId = `k6-50vu-${__VU}-${__ITER}-${Date.now()}`;
     const token = data.token;
@@ -158,6 +180,11 @@ export default function (data) {
 
     solicitudDuration.add(resSolicitud.timings.duration);
     tasaErrores.add(!solicitudOk);
+
+    // 3. Paso 3: la solicitud no se queda en QA
+    if (resSolicitud.status === 201) {
+        cancelar(resSolicitud, headers);
+    }
 
     // Pausa proporcional entre iteraciones para mantener 50 VU estables
     sleep(1);
