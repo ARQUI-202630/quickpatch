@@ -1,0 +1,11 @@
+{
+  "name": "quickpatch-humo-panel",
+  "private": true,
+  "description": "Prueba de humo del panel web contra QA (SCRUM-448)",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.48.2"
+  }
+}
