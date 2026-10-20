@@ -21,6 +21,7 @@
     # Las sentencias de cada base usan la tabla temporal k6 (id de las solicitudes) que carga tarea «Contar o borrar».
     bases:
       - base: db_matching
+        tabla: matching_requests
         conteo: >-
           SELECT 'matching_attempts', count(*) FROM matching_attempts WHERE service_request_id IN (SELECT id FROM k6)
           UNION ALL SELECT 'matching_requests', count(*) FROM matching_requests WHERE service_request_id IN (SELECT id FROM k6)
@@ -30,11 +31,14 @@
           DELETE FROM matching_requests WHERE service_request_id IN (SELECT id FROM k6);
           DELETE FROM outbox_events WHERE aggregate_id IN (SELECT id FROM k6);
       - base: db_communication
+        # No existe hasta el release 0.3.0 de Communication (buzón): entonces se omite.
+        tabla: notifications
         conteo: >-
           SELECT 'notifications', count(*) FROM notifications WHERE service_request_id IN (SELECT id FROM k6);
         borrado: >-
           DELETE FROM notifications WHERE service_request_id IN (SELECT id FROM k6);
       - base: db_service_request
+        tabla: service_requests
         conteo: >-
           SELECT 'audit_logs', count(*) FROM audit_logs WHERE target_id IN (SELECT id FROM k6)
           UNION ALL SELECT 'outbox_events', count(*) FROM outbox_events WHERE aggregate_id IN (SELECT id FROM k6)
@@ -76,6 +80,11 @@
     - name: Contar o borrar en cada base
       ansible.builtin.shell: |
         set -euo pipefail
+        existe=$({{ psql }} -d {{ item.base }} -c "SELECT to_regclass('public.{{ item.tabla }}') IS NOT NULL")
+        if [ "$existe" != t ]; then
+          echo "{{ item.base }}: no tiene la tabla {{ item.tabla }} todavía; se omite"
+          exit 0
+        fi
         {
           echo "BEGIN;"
           echo "CREATE TEMP TABLE k6 (id uuid PRIMARY KEY) ON COMMIT DROP;"
