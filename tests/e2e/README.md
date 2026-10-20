@@ -65,6 +65,32 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 node tests/e2e/scrum-478-aviso-tiempo-real.mjs ht
 
 **Evidencia:** `evidencias/scrum-478-cancelacion-qa-2026-10-19.txt`, con el resultado de cada paso y su `correlationId`. No se suben las exportaciones JSON de Newman porque traen los tokens y las claves de las cuentas de prueba.
 
+## Cotización y ejecución con evidencia de punta a punta (SCRUM-490 y SCRUM-96)
+
+`scrum-490-cotizacion.postman_collection.json` y `scrum-96-evidencia.postman_collection.json` se generan con `python tests/e2e/generar-scrum490-96-cotizacion-evidencia.py`, que también escribe las fotos de prueba de `fixtures/`. Las dos arrancan igual: el administrador del tenant crea una categoría para la corrida, aprueba a un técnico con esa especialidad, que cubre las 20 localidades y queda disponible, y se registran un cliente, otro cliente del mismo tenant, un cliente del tenant Beta y un técnico sin aprobar.
+
+**SCRUM-490, cotización (service-request 1.6.0):**
+
+1. **Tres rechazadas (RN-Q7):** lista vacía; monto sin decimales (400 en `laborAmount`); el cliente no cotiza (403); cotización 1 (201, `quoteNumber` 1, total calculado) y la solicitud pasa a `cotizado`; otra con una pendiente (409 `transicion-invalida`); el técnico no acepta (403); otro cliente (404); el cliente de Beta no ve las cotizaciones (404 por RLS); motivo corto (400); rechazos con y sin motivo; la tercera rechazada cancela la solicitud con «Cotizaciones rechazadas.», el técnico ve las tres en orden y Matching lo libera.
+2. **Rechazar y aceptar:** rechaza la primera, acepta la segunda (`cotizacion_aceptada`, quedan 1), aceptar otra vez y cotizar con una aceptada (409), y el técnico sigue `ocupado`.
+3. **Cierre:** el cliente cancela la solicitud 2 (todavía se puede antes de iniciar, RN-SR7) y el técnico vuelve a `disponible`.
+
+El vencimiento (RN-Q6) no entra: `Quotes__Ttl` es de 24 horas en QA.
+
+**SCRUM-96, iniciar, evidencia y completar (service-request 1.7.0):** después de la cotización aceptada:
+
+1. **Iniciar:** subir o completar antes de iniciar (409), el cliente no inicia (403), otro técnico (404), el asignado inicia (`StartedServiceRequest`), iniciar otra vez y cancelar después de iniciar (409).
+2. **Evidencia en Garage:** completar sin fotos (422 `evidencia-requerida`); un archivo de texto con nombre `.jpg` (400 en `file`: el tipo se reconoce por el contenido); otro técnico (404); la foto se sube (201, solo `id` y `uploadedAt`); el cliente la lista y la descarga con `image/png` y el mismo tamaño; el `admin_tenant` la ve; otro cliente y el cliente de Beta reciben 404.
+3. **Completar:** `CompletedServiceRequest`, el detalle trae `startedAt` y `completedAt`, subir o completar otra vez da 409, y el técnico vuelve a `disponible` cuando Matching consume `service-request.completed`.
+
+Los límites de 10 MB y de 10 fotos los cubren las pruebas del backend. Las dos colecciones necesitan `adminEmail` y `adminPassword`; sin ellos, todo se omite. Correr con `--reporters cli` y guardar la salida en un `.txt`: el reporte JSON de Newman guarda los cuerpos con tokens y no se sube. En `pruebas-sistema.yml` entran solas por el patrón `tests/e2e/*.postman_collection.json`, con `tests/e2e` como carpeta de trabajo, que es donde Newman busca `fixtures/`.
+
+Para correrlas a mano (no lanzar el workflow completo, que incluye k6):
+
+```bash
+docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scrum-490-cotizacion.postman_collection.json   --insecure --reporters cli --env-var "baseUrl=https://qa.quickpatch.internal"   --env-var "adminEmail=$QA_ADMIN_EMAIL" --env-var "adminPassword=$QA_ADMIN_PASSWORD" > scrum-490.txt
+```
+
 ## Orden del despliegue del MVP en QA
 
 1. Infraestructura de QA (Ansible): bases `db_<servicio>` con su `_migrator` y su `_app`, PostGIS en `db_service_request` y `db_matching`, Redis, Kafka con los topics de `quickpatch-kafka/topics/topics.yaml` y Garage.
