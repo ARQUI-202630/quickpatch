@@ -1,0 +1,106 @@
+# Borra de QA las solicitudes que crean las pruebas de carga de k6 (tests/performance): «Solicitud de carga k6 …»
+# (load-test-50vu.js) y «Estrés pico 150 VU …» (stress-test-150vu.js), con lo que generaron en Matching y
+# Communication. Solo QA (VM5): el grupo está fijo y no hay forma de apuntarlo a producción.
+#
+#   ./ap playbooks/limpiar-carga-qa.yml -k -K                 solo cuenta lo que se borraría (no cambia nada)
+#   ./ap playbooks/limpiar-carga-qa.yml -k -K -e borrar=si    respalda las tres bases y borra
+#
+# El respaldo (pg_dump de db_service_request, db_matching y db_communication) queda en
+# {{ stack_dir }}/postgres/limpieza-<fecha>/ en VM5; se restaura con pg_restore --clean (INFRASTRUCTURE.md 9.3).
+# Corre como postgres: el dueño salta RLS, que aquí no se debilita (no cambia políticas ni roles).
+- name: Limpiar las solicitudes de las pruebas de carga en QA
+  hosts: qa_datos
+  gather_facts: false
+  become: true
+  vars:
+    dir: "{{ stack_dir }}/postgres"
+    psql: docker compose -f {{ dir }}/compose.yml exec -T -u postgres postgres psql -X -v ON_ERROR_STOP=1 -q -At
+    ids: /tmp/quickpatch-carga-k6.ids
+    filtro: >-
+      description LIKE 'Solicitud de carga k6 %' OR description LIKE 'Estrés pico 150 VU%'
+    # Las sentencias de cada base usan la tabla temporal k6 (id de las solicitudes) que carga tarea «Contar o borrar».
+    bases:
+      - base: db_matching
+        conteo: >-
+          SELECT 'matching_attempts', count(*) FROM matching_attempts WHERE service_request_id IN (SELECT id FROM k6)
+          UNION ALL SELECT 'matching_requests', count(*) FROM matching_requests WHERE service_request_id IN (SELECT id FROM k6)
+          UNION ALL SELECT 'outbox_events', count(*) FROM outbox_events WHERE aggregate_id IN (SELECT id FROM k6);
+        borrado: >-
+          DELETE FROM matching_attempts WHERE service_request_id IN (SELECT id FROM k6);
+          DELETE FROM matching_requests WHERE service_request_id IN (SELECT id FROM k6);
+          DELETE FROM outbox_events WHERE aggregate_id IN (SELECT id FROM k6);
+      - base: db_communication
+        conteo: >-
+          SELECT 'notifications', count(*) FROM notifications WHERE service_request_id IN (SELECT id FROM k6);
+        borrado: >-
+          DELETE FROM notifications WHERE service_request_id IN (SELECT id FROM k6);
+      - base: db_service_request
+        conteo: >-
+          SELECT 'audit_logs', count(*) FROM audit_logs WHERE target_id IN (SELECT id FROM k6)
+          UNION ALL SELECT 'outbox_events', count(*) FROM outbox_events WHERE aggregate_id IN (SELECT id FROM k6)
+          UNION ALL SELECT 'service_requests', count(*) FROM service_requests WHERE id IN (SELECT id FROM k6);
+        borrado: >-
+          DELETE FROM audit_logs WHERE target_id IN (SELECT id FROM k6);
+          DELETE FROM outbox_events WHERE aggregate_id IN (SELECT id FROM k6);
+          DELETE FROM service_requests WHERE id IN (SELECT id FROM k6);
+  tasks:
+    - name: Ids de las solicitudes de k6
+      ansible.builtin.shell: >-
+        {{ psql }} -d db_service_request -c "SELECT id FROM service_requests WHERE {{ filtro }}" > {{ ids }}
+        && wc -l < {{ ids }}
+      register: total
+      changed_when: false
+
+    - name: Solicitudes que no son de k6 (se conservan)
+      ansible.builtin.shell: >-
+        {{ psql }} -d db_service_request -c "SELECT count(*) FROM service_requests WHERE NOT ({{ filtro }})"
+      register: conservadas
+      changed_when: false
+
+    - name: Respaldo de las tres bases antes de borrar
+      when: borrar | default('no') == 'si'
+      ansible.builtin.shell: |
+        set -euo pipefail
+        destino={{ dir }}/limpieza-$(date -u +%Y%m%dT%H%M%SZ)
+        mkdir -p "$destino"
+        for b in db_service_request db_matching db_communication; do
+          docker compose -f {{ dir }}/compose.yml exec -T -u postgres postgres pg_dump -Fc -d "$b" > "$destino/$b.dump"
+        done
+        ls -la "$destino"
+      args: { executable: /bin/bash }
+      register: respaldo
+      changed_when: true
+
+    # Matching y Communication antes que ServiceRequest: así, si algo falla a mitad, las solicitudes siguen ahí y se
+    # puede repetir. Cada base va en una sola transacción.
+    - name: Contar o borrar en cada base
+      ansible.builtin.shell: |
+        set -euo pipefail
+        {
+          echo "BEGIN;"
+          echo "CREATE TEMP TABLE k6 (id uuid PRIMARY KEY) ON COMMIT DROP;"
+          echo "COPY k6 FROM STDIN;"
+          cat {{ ids }}
+          echo '\.'
+          echo "{{ item.conteo }}"
+          {% if borrar | default('no') == 'si' %}
+          echo "{{ item.borrado }}"
+          {% endif %}
+          echo "COMMIT;"
+        } | {{ psql }} -F ': ' -d {{ item.base }}
+      args: { executable: /bin/bash }
+      loop: "{{ bases }}"
+      loop_control: { label: "{{ item.base }}" }
+      register: resultado
+      changed_when: borrar | default('no') == 'si'
+
+    - name: Quitar la lista de ids
+      ansible.builtin.file: { path: "{{ ids }}", state: absent }
+
+    - name: Resultado
+      ansible.builtin.debug:
+        msg:
+          - "{{ 'BORRADO' if borrar | default('no') == 'si' else 'SOLO CONTEO (nada cambió; -e borrar=si para borrar)' }}"
+          - "Solicitudes de k6: {{ total.stdout }}; otras solicitudes que se conservan: {{ conservadas.stdout }}"
+          - "{{ resultado.results | map(attribute='stdout_lines') | flatten }}"
+          - "{{ respaldo.stdout_lines | default(['(sin respaldo: no se borró nada)']) }}"
