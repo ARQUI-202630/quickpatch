@@ -17,6 +17,12 @@ on:
   push:
     branches: ["release/**"]
   workflow_dispatch:
+    inputs:
+      carga:
+        # k6 crea y cancela miles de solicitudes en el tenant principal de QA y llena el outbox: a mano solo si se pide.
+        description: Correr también la carga de k6 (miles de solicitudes en QA)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -157,6 +163,8 @@ jobs:
   carga:
     name: Carga (k6)
     needs: [e2e, seguridad]
+    # Siempre en release/* (compuerta 3); a mano, solo con la casilla «carga».
+    if: github.event_name == 'push' || inputs.carga
     runs-on: [self-hosted, vm1, red-laboratorio]
     timeout-minutes: 30
     steps:
