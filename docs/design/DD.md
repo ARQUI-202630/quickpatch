@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.5|
+|**Versión**|5.6|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -975,7 +975,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |file_url|VARCHAR(500)|No|—|Referencia al objeto almacenado en Garage.|
 |uploaded_at|TIMESTAMPTZ|No|—|Fecha y hora en que se subió la evidencia.|
 
-**Reglas de negocio:** RN-E1 a RN-E3 (sección 7.7).
+**Reglas de negocio:** RN-E1 a RN-E4 (sección 7.7).
 
 **Índices sugeridos:**
 
@@ -1488,6 +1488,7 @@ Derivadas de RF-10 y del driver D1 del SAD.
 - **RN-E1:** una solicitud requiere al menos un registro en esta tabla antes de poder pasar al estado `completado`.
 - **RN-E2:** solo el técnico asignado a la solicitud puede subir evidencia para esa solicitud.
 - **RN-E3:** el archivo referenciado se almacena en Garage (VM6; VM7 en QA), no en la base de datos.
+- **RN-E4 (nuevo v5.6):** una solicitud admite como máximo 10 evidencias; la undécima se rechaza con `409 limite-de-evidencias`. Acota lo que un técnico puede subir a Garage, que no tiene copia (Documento de Infraestructura, sección 9.5) y en QA tiene 10 GB.
 
 ### 7.8 Reglas de `payments`
 
@@ -1560,6 +1561,7 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 |RN-R2|Índice único sobre `ratings.service_request_id`.|
 |RN-E1|Igual que RN-SR3.|
 |RN-E3|`file_url` guarda solo la referencia al objeto en Garage.|
+|RN-E4|ServiceRequest cuenta las evidencias con la fila de la solicitud bloqueada antes de guardar la nueva.|
 |RN-P1|Tokenización en el cliente contra la pasarela (ADR-009).|
 |RN-P2|Índice único parcial sobre `service_request_id` con `status = 'aprobado'`.|
 |RN-P3|ServiceRequest incluye en `data` del evento el total de la cotización aceptada y el técnico asignado.|
@@ -1709,11 +1711,11 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |POST|`/v1/service-requests/{id}/quotes`|Técnico asignado|RF-34|Contrato v1.6.0|Emitir cotización (sección 8.3.7).|
 |POST|`/v1/service-requests/{id}/quotes/{quoteId}/accept`|Cliente dueño|RF-35|Contrato v1.6.0|Aceptar cotización (sección 8.3.8).|
 |POST|`/v1/service-requests/{id}/quotes/{quoteId}/reject`|Cliente dueño|RF-35|Contrato v1.6.0|Rechazar cotización con motivo opcional (sección 8.3.8).|
-|POST|`/v1/service-requests/{id}/start`|Técnico asignado|RF-14||Iniciar servicio.|
-|POST|`/v1/service-requests/{id}/evidence`|Técnico asignado|RF-15||Subir una foto (`multipart/form-data`).|
-|GET|`/v1/service-requests/{id}/evidence`|Cliente dueño, técnico asignado, `admin_tenant`|RF-15|Nuevo|Listar evidencias (metadatos).|
-|GET|`/v1/service-requests/{id}/evidence/{evidenceId}/file`|Cliente dueño, técnico asignado, `admin_tenant`|RF-15|Nuevo|Descargar archivo de evidencia; el servicio lo recupera del almacenamiento y lo devuelve con su `Content-Type`.|
-|POST|`/v1/service-requests/{id}/complete`|Técnico asignado|RF-15||Completar servicio.|
+|POST|`/v1/service-requests/{id}/start`|Técnico asignado|RF-14|Contrato v1.7.0|Iniciar servicio desde `cotizacion_aceptada` (RN-SR6).|
+|POST|`/v1/service-requests/{id}/evidence`|Técnico asignado|RF-15|Contrato v1.7.0|Subir una foto (`multipart/form-data`), como máximo 10 (RN-E4; sección 8.3.10).|
+|GET|`/v1/service-requests/{id}/evidence`|Cliente dueño, técnico asignado, `admin_tenant`|RF-15|Contrato v1.7.0|Listar evidencias (metadatos).|
+|GET|`/v1/service-requests/{id}/evidence/{evidenceId}/file`|Cliente dueño, técnico asignado, `admin_tenant`|RF-15|Contrato v1.7.0|Descargar archivo de evidencia; el servicio lo recupera del almacenamiento y lo devuelve con su `Content-Type`.|
+|POST|`/v1/service-requests/{id}/complete`|Técnico asignado|RF-15|Contrato v1.7.0|Completar servicio (sección 8.3.11).|
 |POST|`/v1/service-requests/{id}/rating`|Cliente dueño|RF-12||Calificar.|
 |GET|`/v1/technicians/me/service-requests?status=&page=&size=`|`tecnico`|RF-17|Contrato v1.2.0|Solicitudes asignadas al técnico, de la asignación más reciente a la más antigua, sin dirección, ubicación ni cliente (RN-SR13; SCRUM-464).|
 |GET|`/v1/admin/service-requests/summary`|`admin_tenant`|RF-18|Contrato v1.4.0|Conteo de solicitudes por estado del tenant (sección 8.3.15).|
@@ -2025,7 +2027,7 @@ Al rechazar la tercera, `serviceRequestStatus` es `cancelado` y `remainingQuotes
 
 `GET /v1/service-requests/{id}/evidence/{evidenceId}/file` descarga el archivo: ServiceRequest lo recupera de Garage y lo devuelve con su `Content-Type` (`image/jpeg`, `image/png`, etc.). Aplican las mismas reglas de autenticación y aislamiento de tenant que el listado; devuelve `404` si la evidencia no pertenece al tenant.
 
-**Errores del POST:** `409 INVALID_STATE_TRANSITION` si la solicitud no está en `en_progreso`; `400 VALIDATION_ERROR` por tipo o tamaño.
+**Errores del POST:** `409 INVALID_STATE_TRANSITION` si la solicitud no está en `en_progreso`; `409 limite-de-evidencias` si ya tiene 10 (RN-E4); `400 VALIDATION_ERROR` por tipo o tamaño. **v5.6:** el tipo se reconoce por los primeros bytes del archivo, no por el nombre ni por el `Content-Type` declarado. La clave del objeto es `{tenant}/{solicitud}/{evidencia}` y no depende de nada que envíe el cliente. Si la fila no se guarda después de subir el archivo (por ejemplo, porque el técnico completó en paralelo), ServiceRequest borra el objeto.
 
 #### 8.3.11 Completar y calificar
 
@@ -2136,9 +2138,9 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 |`service-request.quoted`|ServiceRequest|Communication|Notificar al cliente que tiene una cotización.|Contrato v1 (5.5, SCRUM-487)|
 |`service-request.quote-accepted`|ServiceRequest|Communication|Notificar al técnico que puede iniciar.|Contrato v1 (5.5, SCRUM-487)|
 |`service-request.quote-rejected`|ServiceRequest|Communication|Notificar al técnico que debe emitir otra cotización.|Contrato v1 (5.5, SCRUM-487)|
-|`service-request.started`|ServiceRequest|Communication|Notificar al cliente que el servicio inició (RF-11, D2).|Nuevo|
+|`service-request.started`|ServiceRequest|Communication (previsto)|Notificar al cliente que el servicio inició (RF-11, D2).|Contrato v1 (5.6, SCRUM-94). Hoy sin consumidor: el aviso al cliente sale de `service-request.status-changed`, que se publica en la misma transacción (sección 8.5).|
 |`service-request.cancelled`|ServiceRequest|Matching|Matching anula la oferta pendiente y libera al técnico (RN-M5, RN-M6). **v5.3:** Communication no lo consume; el aviso sale de `service-request.status-changed`, que se publica en la misma transacción.|Contrato v1 (5.3, SCRUM-474)|
-|`service-request.completed`|ServiceRequest|Payments, Matching, Communication|Payments crea el pago pendiente (RN-P4) y Matching libera al técnico (RN-M6).||
+|`service-request.completed`|ServiceRequest|Payments, Matching, Communication|Payments crea el pago pendiente (RN-P4) y Matching libera al técnico (RN-M6).|Contrato v1 (5.6, SCRUM-94). Lo consume Matching; Payments, cuando exista. El aviso al cliente sale de `status-changed`.|
 |`service-request.rated`|ServiceRequest|Ranking, Communication|Ranking actualiza la reputación del técnico (D3, DEP-04).|Nuevo|
 |`payment.approved`|Payments|ServiceRequest, Communication|La solicitud pasa a `pagado`; Payments emite la factura.||
 |`payment.rejected`|Payments|ServiceRequest, Communication|La solicitud permanece en `completado` (RN-SR5).||
@@ -2629,7 +2631,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.3|SCRUM-474|**Cancelación de la solicitud (RF-36, SCRUM-472).** `service-request.v1.yaml` 1.5.0 con `POST /v1/service-requests/{id}/cancel` y `409 transicion-invalida` (secciones 8.2.4 y 8.3.9); evento `service-request.cancelled` v1 consumido solo por Matching (sección 8.4); `audit_logs` propia de ServiceRequest para `cancelar_solicitud_admin` (secciones 5.14 y RN-SR8). Las pruebas de SCRUM-103 quedan en la trazabilidad.|
 |5.4|SCRUM-456, SCRUM-472|**Buzón desde `status-changed` y cancelación en el buzón.** `communication.v1.yaml` 1.1.0: los tipos de estado del buzón salen de `service-request.status-changed` (sección 8.2.6) y se agrega `solicitud-cancelada` para el cliente y el técnico asignado (RF-36); el CHECK de `notifications.type` lo admite (sección 5.22). Communication deja de consumir `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed` (Cuadros de eventos y sección 8.4).|
 |5.5|SCRUM-487|**Contratos de la cotización (RF-34, RF-35, SCRUM-486).** `service-request.v1.yaml` 1.6.0 con listar, emitir, aceptar y rechazar cotizaciones y `409 limite-de-cotizaciones` (secciones 8.2.4, 8.3.7 y 8.3.8); eventos `service-request.quoted`, `quote-accepted` y `quote-rejected` v1 en quickpatch-kafka v0.6.0 (Cuadros de eventos); columna `quotes.rejection_reason` (sección 5.11) y `QUOTE_TTL` configurable (RN-Q8). `communication.v1.yaml` 1.2.0 agrega `cotizacion-recibida`, `cotizacion-aceptada` y `cotizacion-rechazada`, y `tecnico-asignado` y `solicitud-asignada` quedan solo para la llegada a `asignado` desde `buscando_tecnico` (sección 8.2.6). DEP-20 se resuelve en la parte de la cotización.|
-|5.6|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.6|SCRUM-94|**Inicio, evidencia y cierre del servicio (RF-14, RF-15, SCRUM-35).** `service-request.v1.yaml` 1.7.0 con `start`, `evidence` (subir, listar y descargar) y `complete`, y `startedAt` y `completedAt` en el detalle (secciones 8.2.4, 8.3.10 y 8.3.11). Nueva regla RN-E4: como máximo 10 evidencias por solicitud (sección 7.7). Eventos `service-request.started` y `service-request.completed` v1 en quickpatch-kafka v0.7.0 (Cuadro 11): `completed` lo consume Matching para liberar al técnico (RN-M6); `started` queda sin consumidor porque el aviso sale de `status-changed`.|
+|5.7|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
