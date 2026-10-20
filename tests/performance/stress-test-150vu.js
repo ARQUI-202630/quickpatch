@@ -28,7 +28,8 @@ export const options = {
         // Criterio PRF-004 / AC2-E4: Cero caídas de pod y 0% de errores críticos 5xx
         'errores_5xx': ['rate==0'],
         // Degradación controlada: bajo estrés extremo el 95% de respuestas responde en < 5.0 s
-        'http_req_duration': ['p(95)<5000'],
+        // Solo la creación: la cancelación del final de cada iteración no entra en la medida.
+        'http_req_duration{test_type:stress_150vu}': ['p(95)<5000'],
         // Al menos el 98% de las peticiones deben ser atendidas o degradadas con 429/503 controlados, no colapsos
         'http_req_failed': ['rate<0.05'],
     },
@@ -105,6 +106,28 @@ export function setup() {
     return { token, categoryId };
 }
 
+/**
+ * Cancela la solicitud que la iteración acaba de crear (SCRUM-472). Sin esto queda en QA buscando técnico o en espera,
+ * y Matching la reintenta para siempre: cada corrida dejaba unas 40.000 solicitudes vivas en el tenant principal.
+ * Lleva su propia etiqueta para no mezclarse con los umbrales de creación; un 409 (ya asignada) también vale.
+ */
+function cancelar(res, headers) {
+    let id;
+    try {
+        id = res.json('id');
+    } catch (e) {
+        return;
+    }
+    if (!id) {
+        return;
+    }
+    http.post(`${BASE_URL}/api/v1/service-requests/${id}/cancel`, JSON.stringify({ reason: 'Fin de la iteración de k6.' }), {
+        headers: headers,
+        tags: { endpoint: 'cancelar_solicitud' },
+        responseCallback: http.expectedStatuses(200, 409),
+    });
+}
+
 export default function (data) {
     const correlationId = `k6-150vu-${__VU}-${__ITER}-${Date.now()}`;
     const token = data.token;
@@ -148,6 +171,11 @@ export default function (data) {
     }
 
     latenciaPico.add(res.timings.duration);
+
+    // La solicitud no se queda en QA
+    if (res.status === 201) {
+        cancelar(res, headers);
+    }
 
     // Sleep dinámico breve para mantener alta concurrencia
     sleep(0.3 + (Math.random() * 0.4));
