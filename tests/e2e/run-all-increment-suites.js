@@ -14,7 +14,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const server = require('./mock-gateway-qa');
+const server = require('./mock-gateway-local-simulacion');
 
 let newman;
 try {

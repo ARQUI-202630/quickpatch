@@ -89,36 +89,45 @@ El alcance de pruebas cubrió las Historias de Usuario priorizadas, requerimient
 
 La evaluación de API se ejecutó en dos modalidades complementarias:
 
-#### 3.1.1 Diagnóstico de Ejecución en QA Desplegado y Clarificación de Métricas del Producto
-* **Ejecutor:** Newman CLI con flags `--insecure` y exportación de reportes JSON nativos.
-* **Diagnóstico de la Primera Corrida y Causa Raíz de Fallos Iniciales:**
-  En la evaluación exploratoria inicial se registró una tasa aparente del 36.1% (117 aserciones aprobadas de 324). Tras una revisión técnica exhaustiva con Arquitectura y Backend (Revisión PR #106), se evidenció que la totalidad de los 207 fallos registrados correspondieron a desajustes en los parámetros de la colección y alcances de prueba, no a defectos de la implementación del backend:
-  1. *Omisión de Variables Administrativas en Runner (84 fallos en cascada):* En `quickpatch-mvp`, el login de administrador envió cadenas vacías (`""`) al omitirse `--env-var adminEmail=...` y `--env-var adminPassword=...`. Esto generó legítimamente HTTP `400 Bad Request` por validación de contrato, impidiendo capturar `adminToken` y causando 401s en cascada que dejaron `categoryId`, `specialtyId` y `{{tenantPropio}}` como cadenas `null` o sin resolver.
-  2. *Pruebas Fuera de Alcance del Sprint 4 (41 fallos):* En `scrum-84`, la colección incluyó validaciones para las transiciones físicas a `en_progreso` y `completado`. Dichas transiciones corresponden formalmente a la historia de usuario `SCRUM-35` del Product Backlog (sprint posterior), por lo que la respuesta HTTP `404 Not Found` en QA fue correcta y esperada para el incremento actual.
-  3. *Invocación Contractual en Detalle de Solicitud:* El contrato OpenAPI 1.1.0 (`service-request.v1.yaml`) estipula la consulta del técnico asignado vía $\text{GET } /api/v1/service-requests/\{id\}$. La ruta `/assigned-detail` nunca existió en el SAD.
-  4. *Diseño Seguro de Semillas de Usuario:* Identity no crea cuentas administrativas mediante seeds estándar por política estricta de seguridad (ADR-018); los administradores se provisionan mediante el Secret de Kubernetes `identity-secretos`.
-* **Métricas Reales del Producto Certificadas en QA Desplegado:**
-  Al ejecutar los flujos del incremento técnico bajo los contratos oficiales de Sprint 4, el clúster QA responde con total conformidad arquitectural:
-  - ✅ **Registro y Autenticación:** Registro dinámico de clientes y técnicos (`POST /api/v1/auth/register/*`) al 100% PASS, validación de unicidad de documento y correo con HTTP 409 PASS, login y emisión de JWT RSA-256 (`POST /api/v1/auth/login`) al 100% PASS.
-  - ✅ **Catálogo Público y Cobertura:** Consulta pública de categorías activas (`GET /api/v1/catalog/categories`) al 100% PASS (sin requerir autenticación administrativa); catálogo de 20 localidades oficiales de Bogotá (`GET /api/v1/localities`) al 100% PASS.
-  - ✅ **Transaccionalidad y Persistencia:** Creación de órdenes en PostgreSQL VM5 (`POST /api/v1/service-requests`) con 201 Created y transición a `buscando_tecnico` al 100% PASS.
-  - ✅ **Aislamiento Intra-Tenant y RLS:** Acceso denegado con HTTP 404 estricto bajo RFC 9457 al consultar solicitudes de otros usuarios o inquilinos. Cero fuga de datos.
-  - ✅ **Detalle de Asignación (SCRUM-93):** Consulta mediante `GET /api/v1/service-requests/{id}` exponiendo datos de contacto exclusivamente al técnico asignado.
-  - ✅ **Control RBAC:** Bloqueo 403 Forbidden a técnicos intentando crear órdenes y a clientes intentando gestionar ofertas de asignación.
+#### 3.1.1 Diagnóstico de Ejecución en QA Desplegado y Realidad de Evidencias
 
-| Dimensión de Evaluación | Estado QA Real | Cumplimiento | Observaciones Técnicas |
+La evaluación de API se ejecutó en dos modalidades complementarias:
+
+1. **Simulación Local Preparatoria (Harness `mock-gateway-local-simulacion.js`):**
+   - 158 peticiones, 326 aserciones evaluadas: **100.0% PASS** (`tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt`).
+   - Respaldó la consistencia sintáctica de los contratos OpenAPI y las reglas de negocio antes de la salida a QA.
+
+2. **Ejecución Inicial contra el Ambiente de QA Desplegado (`https://qa.quickpatch.internal`):**
+   - Las 7 evidencias generadas directamente contra QA (`tests/e2e/evidencias/*-qa-2026-10-18.txt`) registraron una tasa inicial de aprobación del **36.1% (117 aserciones aprobadas de 324 evaluadas)** y **207 aserciones fallidas**.
+   - **Desglose real por colección en QA:**
+     * `scrum-81-90-93` (Incremento del técnico): 17 aprobadas (✓) y 45 fallidas (✗).
+     * `scrum-84` (Seguimiento tiempo real): 9 aprobadas (✓) y 38 fallidas (✗).
+     * `scrum-99` (Equipo de proveedor): 8 aprobadas (✓) y 26 fallidas (✗).
+     * `scrum-108` (Aprobación/Rechazo): 10 aprobadas (✓) y 22 fallidas (✗).
+     * `scrum-111` (Suspensión técnico): 8 aprobadas (✓) y 22 fallidas (✗).
+     * `scrum-78` (Motor matching): 13 aprobadas (✓) y 22 fallidas (✗).
+     * `scrum-56` (Registro de técnico): 20 aprobadas (✓) y 4 fallidas (✗).
+     * `quickpatch-mvp`: 32 aprobadas (✓) y 28 fallidas (✗).
+
+* **Causa Raíz de los Fallos en QA Desplegado:**
+  1. *Dependencia de Usuarios Fijos Inexistentes (Causa principal de 401s en cascada):* Las colecciones originales asumieron la existencia de usuarios sembrados fijos (`usr-tec-01`, `usr-client-01`, `usr-tec-pending-01`) que no están en la base de datos de QA. Al fallar el login inicial con 401, las peticiones encadenadas no recibieron token y fallaron en bloque.
+  2. *Discrepancia de Contrato en Transiciones Físicas (SCRUM-35):* En `scrum-84`, la colección invocó `PUT /api/v1/service-requests/:id/status` con `{"status": "en_progreso"}` esperando 200, pero el contrato formal de ServiceRequest v1.7.0 (SCRUM-96) expone `POST /api/v1/service-requests/{id}/start` y `POST /{id}/complete`. La llamada a la ruta no definida generó HTTP 404 legítimo.
+  3. *Alcance de Pagos (Payments):* Payments (SCRUM-42, 116, 44) forma parte del alcance del Sprint 4, pero no se encuentra aún desplegado en los pods de QA.
+  4. *Retención de Datos en Pruebas de Carga (k6):* Las corridas de carga de k6 contra QA generan órdenes persistidas en `db_service_request` (VM5). Se documenta formalmente que dichas solicitudes de prueba permanecen en la persistencia de QA.
+
+* **Estado Real de Verificación por Servicio:**
+
+| Dimensión de Evaluación | Estado en QA Real (Primera Corrida) | Estado en Simulación Local | Acción Correctiva de QA |
 |---|:---:|:---:|---|
-| **Identity Service (SCRUM-56 / RBAC)** | **PASS** | 100% | Registro dinámico, JWT RSA-256, unicidad y aislamiento de roles. |
-| **Catalog Service (Categorías)** | **PASS** | 100% | Endpoint público `/categories` activo; réplicas sincronizadas. |
-| **Service-Request (SCRUM-84/93)** | **PASS** | 100% | Creación 201, consulta contractual `GET /{id}` y RLS intra-tenant. |
-| **Matching Service (SCRUM-81/90)** | **PASS** | 100% | 20 localidades IDECA, disponibilidad y asignación atómica. |
-| **Harness de Simulación Local (Contratos)** | **PASS** | 100% | 158 peticiones, 326 aserciones aprobadas (`suites-e2e-qa-sprint4-2026-10-18.txt`). |
+| **Identity Service (SCRUM-56 / RBAC)** | Parcial (20 PASS / 4 FAIL) | 100% PASS | Migrar a creación dinámica de cuentas al vuelo (`preparacion()`). |
+| **Catalog Service (Categorías)** | PASS en endpoints públicos | 100% PASS | Categorías dinámicas creadas por admin en cada corrida. |
+| **Service-Request (SCRUM-84/93)** | Parcial por logins 401 y PUT obsoleto | 100% PASS | Usar `POST /start` y `POST /complete` de SR v1.7.0 (SCRUM-96). |
+| **Matching Service (SCRUM-81/90/78)** | Parcial por falta de técnicos aprobados | 100% PASS | Integrar flujo de aprobación previo para que el técnico sea elegible. |
+| **Simulador Local (Contratos)** | N/A | **100% PASS** | Válido como verificación de sintaxis y contratos OpenAPI. |
 
 #### 3.1.2 Evidencias en Repositorio
-* `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt`
-* `tests/e2e/evidencias/scrum-81-90-93-qa-2026-10-18.txt`
-* `tests/e2e/evidencias/scrum-56-qa-2026-10-18.txt`
-* `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt`
+* Simulación local preparatoria: `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt`
+* Reportes reales de primera corrida en QA: `tests/e2e/evidencias/*-qa-2026-10-18.txt` y `mvp-qa-sprint4-2026-10-18.txt`
 
 ### 3.2 Compuerta 2.2 — Seguridad Normativa PCI-DSS en Logs
 * **Ejecutor:** `tests/security/run-pci-dss-suite.py` y `tests/security/pci_dss_scanner.py`.

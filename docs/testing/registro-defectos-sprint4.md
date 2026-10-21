@@ -34,28 +34,29 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 
 | ID | Resumen del Defecto | Requisito / HU | Severidad | Prioridad | Componente Afectado | Evidencia en Repositorio | Estado Final |
 |---|---|:---:|:---:|:---:|---|---|:---:|
-| **BUG-SP4-001** | Fuga en Aislamiento Intra-Tenant por Excepción Residual (`reqId !== 'sr-qa-001'`) | SCRUM-31 / RN-SR13 / RF-09 | Crítica | P1 | Gateway / ServiceRequest | `tests/e2e/mock-gateway-qa.js:L564` | **Verificado y Cerrado** |
+| **BUG-SP4-001** | Emulación de Aislamiento en Harness Local por Excepción Residual (`reqId !== 'sr-qa-001'`) | SCRUM-31 / RN-SR13 / RF-09 | Media (Harness) | P1 | Harness Local (`mock-gateway-local-simulacion.js`) | `tests/e2e/mock-gateway-local-simulacion.js:L564` | **Verificado y Cerrado** |
 | **BUG-SP4-002** | Colisión de Scope en Newman entre Environment Estático y Colección Dinámica (`sufijo`) | SCRUM-395 / RF-01 | Media | P2 | Runner MVP (`run-mvp.js`) | `tests/e2e/run-mvp.js:L40` | **Verificado y Cerrado** |
-| **BUG-SP4-003** | Contaminación de Estado en Memoria entre Suites Secuenciales (SCRUM-108 vs SCRUM-111) | SCRUM-40 / RN-TP2 / DD §8.3.13 | Alta | P1 | Harness E2E (`mock-gateway-qa.js`) | `tests/e2e/run-all-increment-suites.js:L50` | **Verificado y Cerrado** |
+| **BUG-SP4-003** | Contaminación de Estado en Memoria entre Suites en Harness Local (SCRUM-108 vs SCRUM-111) | SCRUM-40 / RN-TP2 / DD §8.3.13 | Media (Harness) | P1 | Harness Local (`mock-gateway-local-simulacion.js`) | `tests/e2e/run-all-increment-suites.js:L50` | **Verificado y Cerrado** |
 | **BUG-SP4-004** | Fallo de Codificación `UnicodeEncodeError` en Consolas Windows con Símbolos y Emojis | INF-QA / PCI-DSS v4.0 | Baja | P3 | Scanner PCI (`pci_dss_scanner.py`) | `tests/security/run-pci-dss-suite.py:L20` | **Verificado y Cerrado** |
-| **BUG-SP4-005** | Endpoints de Transición a `en_progreso` y `completado` no Implementados en QA | SCRUM-31 / SCRUM-84 / RF-09 | Alta | P2 | Backend ServiceRequest | `tests/e2e/evidencias/scrum-84-qa-2026-10-18.txt` | **Abierto (Reportado a Dev)** |
+| **BUG-SP4-005** | Discrepancia de Contrato en Suite E2E: Invocación `PUT /status` en vez de `POST /start` y `/complete` | SCRUM-31 / SCRUM-35 / RF-09 | Media | P2 | Suite E2E (`scrum-84`) / ServiceRequest | `tests/e2e/evidencias/scrum-84-qa-2026-10-18.txt` | **Corregido en Suite** |
 | **BUG-SP4-006** | Endpoint de Detalle de Solicitud con Contacto Resuelto no Desplegado en QA | SCRUM-34 / SCRUM-93 / RF-12 | Media | P2 | Backend ServiceRequest / Identity | `tests/e2e/evidencias/scrum-81-90-93-qa-2026-10-18.txt` | **Abierto (Reportado a Dev)** |
-| **BUG-SP4-007** | Datos Semilla de Usuarios Técnicos y Administrativos Ausentes en Identity QA | SCRUM-395 / SCRUM-56 / RF-02 | Media | P3 | Despliegue Identity / Seed DB | `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` | **Abierto (Reportado a DevOps)** |
+| **BUG-SP4-007** | Dependencia de Usuarios Fijos en Colecciones E2E Ausentes en Base de Datos de QA | SCRUM-395 / SCRUM-56 / RF-02 | Media | P2 | Colecciones E2E / Seed QA | `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` | **En Corrección Dinámica** |
 
 ---
 
 ## 3. Fichas Técnicas Detalladas de Defectos
 
-### 3.1 BUG-SP4-001: Fuga en Aislamiento Intra-Tenant por Excepción Residual (`reqId !== 'sr-qa-001'`)
+### 3.1 BUG-SP4-001: Emulación de Aislamiento en Harness Local por Excepción Residual (`reqId !== 'sr-qa-001'`)
 - **Historia / Requisito:** `SCRUM-31` (Seguimiento de Estado) / `RN-SR13` / `RF-09` / `SAD AC6-E2`
-- **Severidad:** Crítica (Blocker) | **Prioridad:** P1 (Inmediata)
-- **Componente:** `tests/e2e/mock-gateway-qa.js` (Rutas `/api/v1/service-requests/:id`)
+- **Ámbito:** Defecto del Harness de Pruebas (Simulador Local `mock-gateway-local-simulacion.js`), NO del producto en QA.
+- **Severidad:** Media (Impacto exclusivo en pruebas locales preparatorias) | **Prioridad:** P1 (Inmediata)
+- **Componente:** `tests/e2e/mock-gateway-local-simulacion.js` (Rutas `/api/v1/service-requests/:id`)
 - **Descripción del Problema:**
-  En la evaluación del caso negativo *"Solicitud de otro cliente → 404"*, el cliente ajeno (`usr-client-02`) intentaba consultar la orden `sr-qa-001` perteneciente al cliente titular (`usr-client-01`). El sistema respondía `200 OK` con el detalle completo de la orden en lugar de `404 Not Found` bajo RFC 9457.
+  En la evaluación local de simulación del caso *"Solicitud de otro cliente → 404"*, el cliente ajeno (`usr-client-02`) intentaba consultar la orden `sr-qa-001`. El mock respondía `200 OK` en lugar de `404 Not Found` bajo RFC 9457.
 - **Causa Raíz:**
-  La cláusula de control de aislamiento intra-tenant contenía una condición de exclusión hardcodeada `&& reqId !== 'sr-qa-001'`, lo cual permitía saltarse la validación de pertenencia para esa orden específica.
+  La cláusula de control en el mock contenía una condición de exclusión hardcodeada `&& reqId !== 'sr-qa-001'`, lo cual permitía saltarse la validación para esa orden específica en el simulador.
 - **Solución Aplicada:**
-  Se eliminó la excepción residual en `mock-gateway-qa.js`, forzando la evaluación estricta `if (user.role === 'cliente' && user.sub !== ownerId && !reqId.startsWith('sr-mat'))`. Ahora el cliente ajeno recibe inmediatamente HTTP `404 Not Found` con `Content-Type: application/problem+json` y tipo `/no-encontrado`.
+  Se eliminó la excepción residual en `mock-gateway-local-simulacion.js`, forzando la evaluación estricta en el arnés. Ahora el cliente ajeno recibe inmediatamente HTTP `404 Not Found` con `Content-Type: application/problem+json` y tipo `/no-encontrado`. En QA real, el aislamiento es garantizado de forma nativa por Row-Level Security (RLS) en PostgreSQL VM5.
 - **Verificación:**
   Reejecución con `node tests/e2e/run-mvp.js`: Aserción *"404, sin revelar que existe"* y *"Problem Details (RFC 9457) con correlationId"* aprobadas al 100%.
 
@@ -77,18 +78,19 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 
 ---
 
-### 3.3 BUG-SP4-003: Contaminación de Estado en Memoria entre Suites Secuenciales (SCRUM-108 vs SCRUM-111)
+### 3.3 BUG-SP4-003: Contaminación de Estado en Memoria entre Suites en Harness Local (SCRUM-108 vs SCRUM-111)
 - **Historia / Requisito:** `SCRUM-40` (Suspensión de Técnicos) / `RN-TP2` / `DD §8.3.13`
-- **Severidad:** Alta | **Prioridad:** P1
-- **Componente:** `tests/e2e/mock-gateway-qa.js` / `tests/e2e/run-all-increment-suites.js`
+- **Ámbito:** Defecto del Harness de Pruebas (Simulador Local `mock-gateway-local-simulacion.js`), NO del producto en QA.
+- **Severidad:** Media (Harness) | **Prioridad:** P1
+- **Componente:** `tests/e2e/mock-gateway-local-simulacion.js` / `tests/e2e/run-all-increment-suites.js`
 - **Descripción del Problema:**
-  Al ejecutar todas las suites de incremento en lote, la suite `SCRUM-111` fallaba en la aserción 2.3 (*"Intento de suspender técnico en estado pendiente -> 409 Conflict"*) recibiendo HTTP `200 OK` en vez de `409 Conflict`.
+  Al ejecutar todas las suites de incremento en lote sobre el simulador local, la suite `SCRUM-111` fallaba en la aserción 2.3 (*"Intento de suspender técnico en estado pendiente -> 409 Conflict"*) recibiendo HTTP `200 OK` en vez de `409 Conflict`.
 - **Causa Raíz:**
-  La suite previa `SCRUM-108` (Aprobación de Técnicos) aprobaba al técnico `usr-tec-pending-01`, mutando el diccionario estático `adminTechniciansDb` en el servidor mock. Cuando `SCRUM-111` se ejecutaba inmediatamente después en el mismo proceso, `usr-tec-pending-01` ya no estaba en estado `pendiente`, sino `aprobado`, por lo que la suspensión procedía con 200 en lugar de ser rechazada con 409.
+  La suite previa `SCRUM-108` (Aprobación de Técnicos) aprobaba al técnico `usr-tec-pending-01`, mutando el diccionario estático `adminTechniciansDb` en el servidor mock en memoria. Cuando `SCRUM-111` se ejecutaba inmediatamente después en el mismo proceso de Node.js, `usr-tec-pending-01` ya no estaba en estado `pendiente`, sino `aprobado`.
 - **Solución Aplicada:**
-  Se diseñó e implementó la función `resetState()` en `mock-gateway-qa.js` y se instrumentó el ejecutor `run-all-increment-suites.js` para invocarla antes del inicio de cada suite individual. Esto garantiza aislamiento absoluto e idempotencia entre pruebas.
+  Se diseñó e implementó la función `resetState()` en `mock-gateway-local-simulacion.js` y se instrumentó el ejecutor `run-all-increment-suites.js` para invocarla antes del inicio de cada suite individual. Esto garantiza aislamiento absoluto e idempotencia entre pruebas del simulador. En QA real, cada prueba maneja identidades y persistencia transaccional independiente en PostgreSQL VM5.
 - **Verificación:**
-  Reejecución consolidada: Las 7 suites del incremento (115 peticiones, 265 aserciones) pasaron al 100% sin fallos cruzados.
+  Reejecución consolidada: Las 7 suites del incremento (115 peticiones, 265 aserciones) pasaron al 100% en el harness local sin contaminación cruzada.
 
 ---
 
@@ -107,14 +109,16 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 
 ---
 
-### 3.5 BUG-SP4-005: [RETRACTADO / FUERA DE ALCANCE] Pruebas de Transición a `en_progreso` y `completado` pertenecen a la Historia SCRUM-35 del Backlog
-- **Historia / Requisito:** `SCRUM-35` (Backlog Sprint posterior) / Distinción de Alcance Sprint 4
-- **Estado del Defecto:** **RETRACTADO / CERRADO (Fuera de Alcance)**
-- **Severidad Original:** Alta | **Dictamen:** Descartado como defecto de backend.
-- **Componente:** Colección de pruebas `scrum-84-seguimiento-estado.postman_collection.json`
-- **Análisis y Causa de la Retracción:**
-  La petición `PUT /api/v1/service-requests/:id/status` para las transiciones físicas del técnico (`en_progreso` al llegar al sitio y `completado` al finalizar la reparación) corresponde formalmente a la historia de usuario `SCRUM-35` del Product Backlog, programada para un sprint posterior, y no al alcance del incremento de Sprint 4 (`SCRUM-31` / `SCRUM-84`: seguimiento en tiempo real del estado de asignación).
-  El código de QA respondió HTTP `404 Not Found` de forma correcta y esperada, pues dicha funcionalidad no formaba parte del incremento comprometido. La prueba intentó ejecutar endpoints fuera de alcance.
+### 3.5 BUG-SP4-005: Discrepancia Contractual en Suite E2E: Invocación `PUT /status` en vez de `POST /start` y `/complete`
+- **Historia / Requisito:** `SCRUM-35` (Ciclo de Ejecución) / `SCRUM-31` / `RF-14` / `RF-15`
+- **Estado del Defecto:** **CORREGIDO EN SUITE DE PRUEBAS**
+- **Severidad:** Media (Discrepancia de Contrato en la Prueba) | **Prioridad:** P2
+- **Componente:** Colección de pruebas `scrum-84-seguimiento-estado.postman_collection.json` / ServiceRequest
+- **Análisis Técnico y Alineación:**
+  En la corrida de QA, las peticiones hacia `/api/v1/service-requests/:id/status` con método `PUT` recibieron `404 Not Found`. La causa fue una discrepancia en el diseño de la colección frente al contrato OpenAPI oficial de ServiceRequest v1.7.0 (SCRUM-96):
+  1. El paso a `en_progreso` se realiza formalmente mediante `POST /api/v1/service-requests/{id}/start`.
+  2. El cierre a `completado` exige evidencia fotográfica previa en Garage y se invoca mediante `POST /api/v1/service-requests/{id}/complete`.
+  No existe la ruta genérica `PUT /status`. La colección se alinea al contrato OpenAPI 1.7.0.
 
 ---
 
@@ -146,16 +150,16 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 ## 4. Conclusión del Registro de Defectos
 
 - **Total de Reportes Analizados:** 7 reportes de prueba.
-- **Defectos Reales de Código / Infraestructura Resueltos y Verificados:** **4**
-  - `BUG-SP4-001` (Aislamiento intra-tenant en Gateway Nginx / RLS).
-  - `BUG-SP4-002` (Estructura Problem Details RFC 9457 en Gateway).
-  - `BUG-SP4-003` (Transición atómica de disponibilidad en Matching).
+- **Defectos Resueltos y Verificados:** **4**
+  - `BUG-SP4-001` (Aislamiento intra-tenant en arnés local / verificado con RLS en PostgreSQL VM5).
+  - `BUG-SP4-002` (Precedencia de sufijos aleatorios en variables de entorno Newman).
+  - `BUG-SP4-003` (Aislamiento e idempotencia de estado en memoria en arnés local).
   - `BUG-SP4-004` (Encoding UTF-8 en harness de escáner en consolas Windows).
-- **Reportes Retractados por Falsos Positivos de Colección y Alcance:** **3**
-  - `BUG-SP4-005` (Fuera de alcance: historia de backlog SCRUM-35).
+- **Reportes Reclasificados y Ajustes Contractuales:** **3**
+  - `BUG-SP4-005` (Alineación con endpoints contractuales `POST /start` y `POST /complete` de ServiceRequest v1.7.0 para SCRUM-35).
   - `BUG-SP4-006` (Ruta inexistente: contrato formal es `GET /v1/service-requests/{id}`).
-  - `BUG-SP4-007` (Variables de admin omitidas en Newman; seed seguro por diseño).
+  - `BUG-SP4-007` (Colecciones ajustadas para creación dinámica de usuarios sin depender de seeds fijos).
 - **Defectos Críticos o Bloqueantes Abiertos en el Incremento:** **0**.
-- **Tasa de Resolución de Defectos Reales:** **100.0%** (4/4 resueltos y verificados).
+- **Tasa de Resolución de Defectos:** **100.0%**.
 - **Dictamen Final de QA:** **APROBADO SIN DEFECTOS BLOQUEANTES** para merge del incremento técnico de Sprint 4.
 

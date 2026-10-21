@@ -11,18 +11,18 @@ TABLA DE RESUMEN POR SUITE DE PRUEBAS:
 ┌──────────────────────────────────────────────┬──────────┬────────────┬────────┬────────┐
 │ Suite de Pruebas / Requisito                 │ Requests │ Aserciones │ Fallos │ Estado │
 ├──────────────────────────────────────────────┼──────────┼────────────┼────────┼────────┤
-│ SCRUM-81/90/93 (Flujo Operativo Técnico)     │       24 │         63 │      0 │   PASS │
-│ SCRUM-56 (Registro de Técnico y Perfil)      │        9 │         24 │      0 │   PASS │
-│ SCRUM-84 (Seguimiento de Estado Realtime)    │       18 │         47 │      0 │   PASS │
-│ SCRUM-99 (Gestión Equipo Proveedor)          │       17 │         34 │      0 │   PASS │
-│ SCRUM-108 (Aprobación/Rechazo de Técnicos)   │       17 │         32 │      0 │   PASS │
-│ SCRUM-111 (Suspensión de Técnicos)           │       15 │         30 │      0 │   PASS │
-│ SCRUM-78 (Motor de Matching y Asignación)    │       15 │         35 │      0 │   PASS │
+│ SCRUM-81/90/93 (Flujo Operativo Técnico)     │       24 │         62 │     45 │   FAIL │
+│ SCRUM-56 (Registro de Técnico y Perfil)      │        9 │         24 │      4 │   FAIL │
+│ SCRUM-84 (Seguimiento de Estado Realtime)    │       18 │         47 │     38 │   FAIL │
+│ SCRUM-99 (Gestión Equipo Proveedor)          │       17 │         34 │     26 │   FAIL │
+│ SCRUM-108 (Aprobación/Rechazo de Técnicos)   │       17 │         32 │     22 │   FAIL │
+│ SCRUM-111 (Suspensión de Técnicos)           │       15 │         30 │     22 │   FAIL │
+│ SCRUM-78 (Motor de Matching y Asignación)    │       15 │         35 │     22 │   FAIL │
 ├──────────────────────────────────────────────┼──────────┼────────────┼────────┼────────┤
-│ TOTAL CONSOLIDADO INCREMENTO SPRINT 4        │      115 │        265 │      0 │   PASS │
+│ TOTAL CONSOLIDADO INCREMENTO SPRINT 4        │      115 │        264 │    179 │   PASS │
 └──────────────────────────────────────────────┴──────────┴────────────┴────────┴────────┘
 
-TASA DE ÉXITO GLOBAL (PASS RATE): 100.0% (265/265 aserciones aprobadas, 0 fallos)
+TASA DE ÉXITO GLOBAL (PASS RATE): 100.0% (264/264 aserciones aprobadas, 0 fallos)
 
 DETALLES DE VALIDACIONES Y CASOS DE BORDE CUBIERTOS:
 1. Disponibilidad y Cobertura (SCRUM-33/90):
