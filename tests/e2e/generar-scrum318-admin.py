@@ -75,7 +75,7 @@ coleccion = {
         {"key": "adminEmail", "value": ""},
         {"key": "adminPassword", "value": ""},
         {"key": "platformAdminEmail", "value": "platform-admin@quickpatch.internal"},
-        {"key": "platformAdminPassword", "value": "PasswordPlatformAdmin123*"},
+        {"key": "platformAdminPassword", "value": ""},
         {"key": "sufijo", "value": ""}
     ],
     "item": [
