@@ -91,6 +91,16 @@ Para correrlas a mano (no lanzar el workflow completo, que incluye k6):
 docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scrum-490-cotizacion.postman_collection.json   --insecure --reporters cli --env-var "baseUrl=https://qa.quickpatch.internal"   --env-var "adminEmail=$QA_ADMIN_EMAIL" --env-var "adminPassword=$QA_ADMIN_PASSWORD" > scrum-490.txt
 ```
 
+## Pago con la pasarela simulada de punta a punta (SCRUM-117)
+
+`scrum-117-pago.postman_collection.json` la genera `generar-scrum117-pago.py`, que reutiliza los pasos de la colección de SCRUM-96 hasta dejar la solicitud en `completado`. Contratos: `payments.v1.yaml` 1.0.0 y la pasarela simulada del ADR-009 modificado. Los tokens `tok_sim_aprobada_…`, `tok_sim_rechazada_…` y `tok_sim_error_…` son los que genera el tokenizador de la app con las tres tarjetas de prueba; la colección nunca envía números de tarjeta, salvo el caso negativo que comprueba que el backend los rechaza.
+
+1. **Pago pendiente y accesos:** el cliente ve el pago `pendiente` de 185.000 cuando Payments consume `service-request.completed`; el técnico recibe 403; otro cliente y el cliente de Beta, 404 (RLS); el número de tarjeta en lugar del token y un campo desconocido dan 400.
+2. **Rechazo y pasarela sin respuesta:** la tarjeta sin fondos responde 200 `rechazado` con `fondos_insuficientes` y la solicitud sigue en `completado` (RN-SR5); la pasarela sin respuesta da 502 y un pago inmediato, 409 `pago-en-curso`; la conciliación (cada 30 s) lo cierra como `rechazado` con `pasarela_sin_respuesta` (AC9-E5).
+3. **Pago aprobado:** 200 `aprobado` con `invoiceId`; ServiceRequest pasa la solicitud a `pagado` al consumir `payment.approved`; pagar otra vez da 409 `ya-pagado`.
+
+Necesita a Payments desplegado en QA, ServiceRequest con el consumidor de `payment.*` y los topics de quickpatch-kafka v0.9.0. Igual que las demás: `adminEmail` y `adminPassword` desde el entorno y salida con `--reporters cli` en un `.txt`.
+
 ## Orden del despliegue del MVP en QA
 
 1. Infraestructura de QA (Ansible): bases `db_<servicio>` con su `_migrator` y su `_app`, PostGIS en `db_service_request` y `db_matching`, Redis, Kafka con los topics de `quickpatch-kafka/topics/topics.yaml` y Garage.
