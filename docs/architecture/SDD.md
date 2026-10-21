@@ -644,9 +644,10 @@ Todos los componentes están planeados. El servicio nunca recibe PAN ni CVV: la 
 - reaccionar a eventos del ciclo de servicio;
 - generar notificaciones para clientes y técnicos;
 - ejecutar comunicaciones que no deben bloquear operaciones síncronas;
-- mantener el canal de estado en tiempo real (`/v1/realtime`, ADR-023): valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant, de los cambios que le corresponden.
+- mantener el canal de estado en tiempo real (`/v1/realtime`, ADR-023): valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant, de los cambios que le corresponden;
+- guardar y entregar el chat de cada solicitud entre el cliente dueño y el técnico asignado (RF-37, ADR-026).
 
-Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean incorporadas por un Sprint y requisito explícito.
+**Chat de la solicitud (ADR-026, SCRUM-473).** Communication conoce a los participantes por una réplica (`chat_participants`) que alimenta `service-request.status-changed`, guarda los mensajes en `chat_messages` y atiende `GET` y `POST /v1/service-requests/{id}/messages` (`communication.v1.yaml` 1.3.0), una excepción de ADR-025. Al guardar un mensaje lo envía por el canal con la trama `chat.message` (`realtime.v1.yaml` 1.1.0) al otro participante. El chat queda de solo lectura al completar, pagar o cancelar la solicitud (DD, RN-CH1 a RN-CH4). Las reclamaciones siguen como funcionalidad futura.
 
 **Componentes (C4).**
 
