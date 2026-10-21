@@ -192,9 +192,10 @@ node tests/e2e/validar-diagnostico-error-qa.js
 
 ### Ejecución sobre QA (VM2 y VM1)
 ```bash
-# Requiere variables de credenciales de QA
-export QA_CLIENT_EMAIL="cliente@quickpatch.test"
-export QA_CLIENT_PASSWORD="PasswordCliente123*"
+# Requiere las credenciales del cliente de QA en el entorno (gestor de secretos del equipo;
+# en el CI, los secretos QA_CLIENT_*). Nunca se escriben en el repositorio ni en la documentación.
+export QA_CLIENT_EMAIL="<correo del cliente de QA>"
+export QA_CLIENT_PASSWORD="<contraseña del cliente de QA>"
 node tests/e2e/validar-diagnostico-error-qa.js --remote
 ```
 
