@@ -11,6 +11,26 @@
       "type": "string"
     },
     {
+      "key": "clienteAlfaEmail",
+      "value": "cliente.alfa@quickpatch.test",
+      "type": "string"
+    },
+    {
+      "key": "clienteAlfaPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clienteBetaEmail",
+      "value": "cliente.beta@quickpatch.test",
+      "type": "string"
+    },
+    {
+      "key": "clienteBetaPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "tokenAlfa",
       "value": "",
       "type": "string"
@@ -62,7 +82,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"cliente.alfa@quickpatch.test\",\n  \"password\": \"PasswordCliente123*\"\n}"
+              "raw": "{\n  \"email\": \"{{clienteAlfaEmail}}\",\n  \"password\": \"{{clienteAlfaPassword}}\"\n}"
             }
           },
           "event": [
@@ -157,7 +177,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"cliente.beta@quickpatch.test\",\n  \"password\": \"PasswordCliente123*\"\n}"
+              "raw": "{\n  \"email\": \"{{clienteBetaEmail}}\",\n  \"password\": \"{{clienteBetaPassword}}\"\n}"
             }
           },
           "event": [

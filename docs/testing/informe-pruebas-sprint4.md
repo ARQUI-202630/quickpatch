@@ -28,7 +28,7 @@ El presente informe consolida los resultados del ciclo integral de verificación
 > * **Ejecución contra QA Desplegado:** 158 peticiones HTTP, 324 aserciones evaluadas:
 >   - **117 Aserciones Aprobadas (36.1% Pass Rate en primera corrida):** Aislamiento intra-tenant validado al 100%, autenticación real, emisión de JWT RS256, catálogo de categorías y localidades, registro de técnicos y bloqueos RBAC.
 >   - **207 Fallos Documentados como Defectos:** 84 por usuarios no sembrados en Identity (401), 41 por endpoints pendientes en backend (404), 8 por validación (400) y 39 dependencias encadenadas.
->   - **Evidencias Reales:** 8 archivos JSON oficiales exportados en `tests/e2e/evidencias/qa-*-real.json`.
+>   - **Evidencias Reales:** Archivos de reporte limpio exportados en `tests/e2e/evidencias/scrum-*-qa-2026-10-18.txt` y `mvp-qa-sprint4-2026-10-18.txt`.
 > * **Simulación Local Preparatoria (Harness):** 158 peticiones, 326 aserciones (**100.0% PASS** en contratos).
 > * **Seguridad y Confidencialidad en QA:** Aislamiento intra-tenant verificado en vivo con 404 RFC 9457 (`/no-encontrado`). 0 fugas de tarjetas en trazas de microservicios (PCI-DSS v4.0).
 > * **Rendimiento k6 (Carga 50 VU):** Catálogo $p95 = 60\text{ ms} < 200\text{ ms}$, Creación $p95 = 114\text{ ms} < 2.0\text{ s}$, Error rate $= 0.00\% < 1.0\%$.
@@ -116,8 +116,8 @@ La evaluación de API se ejecutó en dos modalidades complementarias:
 
 #### 3.1.2 Evidencias en Repositorio
 * `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt`
-* `tests/e2e/evidencias/qa-scrum-81-90-93-real.json`
-* `tests/e2e/evidencias/qa-scrum-56-real.json`
+* `tests/e2e/evidencias/scrum-81-90-93-qa-2026-10-18.txt`
+* `tests/e2e/evidencias/scrum-56-qa-2026-10-18.txt`
 * `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt`
 
 ### 3.2 Compuerta 2.2 — Seguridad Normativa PCI-DSS en Logs

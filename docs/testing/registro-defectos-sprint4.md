@@ -38,9 +38,9 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 | **BUG-SP4-002** | Colisión de Scope en Newman entre Environment Estático y Colección Dinámica (`sufijo`) | SCRUM-395 / RF-01 | Media | P2 | Runner MVP (`run-mvp.js`) | `tests/e2e/run-mvp.js:L40` | **Verificado y Cerrado** |
 | **BUG-SP4-003** | Contaminación de Estado en Memoria entre Suites Secuenciales (SCRUM-108 vs SCRUM-111) | SCRUM-40 / RN-TP2 / DD §8.3.13 | Alta | P1 | Harness E2E (`mock-gateway-qa.js`) | `tests/e2e/run-all-increment-suites.js:L50` | **Verificado y Cerrado** |
 | **BUG-SP4-004** | Fallo de Codificación `UnicodeEncodeError` en Consolas Windows con Símbolos y Emojis | INF-QA / PCI-DSS v4.0 | Baja | P3 | Scanner PCI (`pci_dss_scanner.py`) | `tests/security/run-pci-dss-suite.py:L20` | **Verificado y Cerrado** |
-| **BUG-SP4-005** | Endpoints de Transición a `en_progreso` y `completado` no Implementados en QA | SCRUM-31 / SCRUM-84 / RF-09 | Alta | P2 | Backend ServiceRequest | `tests/e2e/evidencias/qa-scrum-84-real.json` | **Abierto (Reportado a Dev)** |
-| **BUG-SP4-006** | Endpoint de Detalle de Solicitud con Contacto Resuelto no Desplegado en QA | SCRUM-34 / SCRUM-93 / RF-12 | Media | P2 | Backend ServiceRequest / Identity | `tests/e2e/evidencias/qa-scrum-81-90-93-real.json` | **Abierto (Reportado a Dev)** |
-| **BUG-SP4-007** | Datos Semilla de Usuarios Técnicos y Administrativos Ausentes en Identity QA | SCRUM-395 / SCRUM-56 / RF-02 | Media | P3 | Despliegue Identity / Seed DB | `tests/e2e/evidencias/qa-mvp-real.json` | **Abierto (Reportado a DevOps)** |
+| **BUG-SP4-005** | Endpoints de Transición a `en_progreso` y `completado` no Implementados en QA | SCRUM-31 / SCRUM-84 / RF-09 | Alta | P2 | Backend ServiceRequest | `tests/e2e/evidencias/scrum-84-qa-2026-10-18.txt` | **Abierto (Reportado a Dev)** |
+| **BUG-SP4-006** | Endpoint de Detalle de Solicitud con Contacto Resuelto no Desplegado en QA | SCRUM-34 / SCRUM-93 / RF-12 | Media | P2 | Backend ServiceRequest / Identity | `tests/e2e/evidencias/scrum-81-90-93-qa-2026-10-18.txt` | **Abierto (Reportado a Dev)** |
+| **BUG-SP4-007** | Datos Semilla de Usuarios Técnicos y Administrativos Ausentes en Identity QA | SCRUM-395 / SCRUM-56 / RF-02 | Media | P3 | Despliegue Identity / Seed DB | `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` | **Abierto (Reportado a DevOps)** |
 
 ---
 

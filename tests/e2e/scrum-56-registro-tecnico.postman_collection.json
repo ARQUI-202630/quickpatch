@@ -12,12 +12,17 @@
     },
     {
       "key": "adminEmail",
-      "value": "admin@quickpatch.test",
+      "value": "",
       "type": "string"
     },
     {
       "key": "adminPassword",
-      "value": "PasswordAdmin123*",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tecnicoPassword",
+      "value": "",
       "type": "string"
     },
     {
@@ -180,7 +185,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Carlos Alberto Técnico QA\",\n  \"phone\": \"3109876543\",\n  \"documentId\": \"{{documentoTecnico}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+              "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"{{tecnicoPassword}}\",\n  \"fullName\": \"Carlos Alberto Técnico QA\",\n  \"phone\": \"3109876543\",\n  \"documentId\": \"{{documentoTecnico}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
             }
           },
           "event": [
@@ -192,7 +197,8 @@
                   "const ts = Date.now();",
                   "const doc = String(ts).slice(-8);",
                   "pm.collectionVariables.set('documentoTecnico', doc);",
-                  "pm.collectionVariables.set('correoTecnico', 'tecnico.' + ts + '@quickpatch.test');"
+                  "pm.collectionVariables.set('correoTecnico', 'tecnico.' + ts + '@quickpatch.test');",
+                  "pm.collectionVariables.set('tecnicoPassword', 'Qp_' + ts + '_Tec9!');"
                 ]
               }
             },
@@ -243,7 +249,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{otroCorreo}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Intento Duplicado Documento\",\n  \"phone\": \"3112223344\",\n  \"documentId\": \"{{documentoTecnico}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+              "raw": "{\n  \"email\": \"{{otroCorreo}}\",\n  \"password\": \"{{tecnicoPassword}}\",\n  \"fullName\": \"Intento Duplicado Documento\",\n  \"phone\": \"3112223344\",\n  \"documentId\": \"{{documentoTecnico}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
             }
           },
           "event": [
@@ -305,7 +311,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\",\n  \"fullName\": \"Intento Duplicado Correo\",\n  \"phone\": \"3119998877\",\n  \"documentId\": \"{{otroDocumento}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
+              "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"{{tecnicoPassword}}\",\n  \"fullName\": \"Intento Duplicado Correo\",\n  \"phone\": \"3119998877\",\n  \"documentId\": \"{{otroDocumento}}\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"role\": \"tecnico\"\n}"
             }
           },
           "event": [
@@ -419,7 +425,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"PasswordTecnico123*\"\n}"
+              "raw": "{\n  \"email\": \"{{correoTecnico}}\",\n  \"password\": \"{{tecnicoPassword}}\"\n}"
             }
           },
           "event": [

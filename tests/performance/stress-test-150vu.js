@@ -46,8 +46,9 @@ const BASE_URL = __ENV.BASE_URL || 'https://qa.quickpatch.internal';
  * - Obtiene dinámicamente un categoryId existente de Catalog para evitar 422.
  */
 export function setup() {
-    let email = __ENV.QA_CLIENT_EMAIL || `k6.cliente.${Date.now()}@quickpatch.test`;
-    let password = __ENV.QA_CLIENT_PASSWORD || 'Segura123';
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const email = __ENV.QA_CLIENT_EMAIL || `k6.cliente.${Date.now()}.${randomSuffix}@quickpatch.test`;
+    const password = __ENV.QA_CLIENT_PASSWORD || `K6_${Date.now()}_${randomSuffix}!Aa1`;
 
     // 1. Asegurar registro del cliente de prueba en QA
     const regUrl = `${BASE_URL}/api/v1/auth/register/client`;

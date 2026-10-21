@@ -190,7 +190,10 @@ function doHttpRequest(options, postData) {
 async function obtenerToken(baseUrl) {
   const parsed = new URL(baseUrl);
   const email = process.env.QA_CLIENT_EMAIL || 'cliente@quickpatch.test';
-  const password = process.env.QA_CLIENT_PASSWORD || 'PasswordCliente123*';
+  const password = process.env.QA_CLIENT_PASSWORD || '';
+  if (!password) {
+    throw new Error('[QA Auth] Variable de entorno QA_CLIENT_PASSWORD requerida.');
+  }
 
   const res = await doHttpRequest({
     protocol: parsed.protocol,

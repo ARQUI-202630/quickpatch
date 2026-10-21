@@ -32,7 +32,7 @@
     },
     {
       "key": "passwordComun",
-      "value": "Password123*",
+      "value": "",
       "type": "string"
     },
     {

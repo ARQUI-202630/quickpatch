@@ -71,6 +71,10 @@ coleccion = {
     },
     "variable": [
         {"key": "baseUrl", "value": "http://localhost:8080", "type": "string"},
+        {"key": "clienteAlfaEmail", "value": "cliente.alfa@quickpatch.test", "type": "string"},
+        {"key": "clienteAlfaPassword", "value": "", "type": "string"},
+        {"key": "clienteBetaEmail", "value": "cliente.beta@quickpatch.test", "type": "string"},
+        {"key": "clienteBetaPassword", "value": "", "type": "string"},
         {"key": "tokenAlfa", "value": "", "type": "string"},
         {"key": "tokenBeta", "value": "", "type": "string"},
         {"key": "solicitudAlfaId", "value": "sr-qa-001", "type": "string"}
@@ -85,8 +89,8 @@ coleccion = {
                     "/v1/auth/login",
                     [JSON, CORR, CANAL],
                     {
-                        "email": "cliente.alfa@quickpatch.test",
-                        "password": "PasswordCliente123*"
+                        "email": "{{clienteAlfaEmail}}",
+                        "password": "{{clienteAlfaPassword}}"
                     },
                     pruebas=[
                         "pm.test('[Tenant Alfa] Login exitoso', () => pm.response.to.have.status(200));",
@@ -115,8 +119,8 @@ coleccion = {
                     "/v1/auth/login",
                     [JSON, CORR, CANAL],
                     {
-                        "email": "cliente.beta@quickpatch.test",
-                        "password": "PasswordCliente123*"
+                        "email": "{{clienteBetaEmail}}",
+                        "password": "{{clienteBetaPassword}}"
                     },
                     pruebas=[
                         "pm.test('[Tenant Beta] Login exitoso con credenciales de Tenant Beta', () => pm.response.to.have.status(200));",

@@ -64,7 +64,7 @@ def run_unit_tests():
         ("Inyección SQL simulada", "' OR 1=1; DROP TABLE users; --", False),
         ("Payload XSS con script", "<script>alert('XSS-TEST')</script>", False),
         ("Texto con emojis y caracteres UTF-8", "Fuga en lavaplatos 💧🛠️ pagado con éxito 🎉💳", False),
-        ("Contraseña con caracteres especiales", "Segura123*!#$&?@%", False),
+        ("Contraseña con caracteres especiales", "QpP@ssw0rd*!#$&?@%", False),
     ]
 
     print("\n--- [1.2] Descarte Estricto de Falsos Positivos (Casos Negativos & Emojis) ---")

@@ -108,13 +108,13 @@ def generar():
         "name": "0. Autenticación de Actores",
         "item": [
             req("0.1 Login Administrador Tenant Alfa", "POST", "/v1/auth/login", [JSON, CORR, CANAL_WEB],
-                {"email": "admin@quickpatch.test", "password": "PasswordAdmin123*"}, login_admin),
+                {"email": "{{adminEmail}}", "password": "{{adminPassword}}"}, login_admin),
             req("0.2 Login Administrador Tenant Beta", "POST", "/v1/auth/login", [JSON, CORR, CANAL_WEB],
-                {"email": "admin.beta@quickpatch.test", "password": "PasswordAdminBeta123*"}, login_admin_beta),
+                {"email": "{{adminBetaEmail}}", "password": "{{adminBetaPassword}}"}, login_admin_beta),
             req("0.3 Login Cliente para Control RBAC", "POST", "/v1/auth/login", [JSON, CORR, CANAL_WEB],
-                {"email": "cliente@quickpatch.test", "password": "PasswordCliente123*"}, login_cliente),
+                {"email": "{{clienteEmail}}", "password": "{{clientePassword}}"}, login_cliente),
             req("0.4 Login Técnico para Control RBAC", "POST", "/v1/auth/login", [JSON, CORR, CANAL_WEB],
-                {"email": "tecnico@quickpatch.test", "password": "PasswordTecnico123*"}, login_tecnico),
+                {"email": "{{tecnicoEmail}}", "password": "{{tecnicoPassword}}"}, login_tecnico),
         ],
     })
 
@@ -337,6 +337,14 @@ def generar():
         "item": carpetas,
         "variable": [
             {"key": "baseUrl", "value": "http://localhost:8080"},
+            {"key": "adminEmail", "value": ""},
+            {"key": "adminPassword", "value": ""},
+            {"key": "adminBetaEmail", "value": ""},
+            {"key": "adminBetaPassword", "value": ""},
+            {"key": "clienteEmail", "value": ""},
+            {"key": "clientePassword", "value": ""},
+            {"key": "tecnicoEmail", "value": ""},
+            {"key": "tecnicoPassword", "value": ""},
             {"key": "tokenAdmin", "value": ""},
             {"key": "tokenAdminBeta", "value": ""},
             {"key": "tokenCliente", "value": ""},

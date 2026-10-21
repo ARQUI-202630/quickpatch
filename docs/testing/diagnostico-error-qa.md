@@ -194,7 +194,7 @@ node tests/e2e/validar-diagnostico-error-qa.js
 ```bash
 # Requiere variables de credenciales de QA
 export QA_CLIENT_EMAIL="cliente@quickpatch.test"
-export QA_CLIENT_PASSWORD="PasswordCliente123*"
+export QA_CLIENT_PASSWORD="<PASSWORD_CLIENTE_QA>"
 node tests/e2e/validar-diagnostico-error-qa.js --remote
 ```
 

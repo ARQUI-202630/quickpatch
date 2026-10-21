@@ -1,0 +1,90 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN REAL EN QA — Aprobación y Rechazo de Técnicos (SCRUM-108)
+Ambiente: QA Desplegado (k3s en VM2 / Ingress https://qa.quickpatch.internal)
+Ejecutado con: Newman CLI (reporte limpio sin credenciales)
+================================================================================
+
+
+❏ 0. Autenticación de Actores
+↳ 0.1 Login Administrador Tenant Alfa
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 1122ms]
+  ✗  [Auth] Login de Admin Tenant Alfa exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.2 Login Administrador Tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 1061ms]
+  ✗  [Auth] Login de Admin Tenant Beta exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.3 Login Cliente para Control RBAC
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 954ms]
+  ✗  [Auth] Login de Cliente para RBAC exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.4 Login Técnico para Control RBAC
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 962ms]
+  ✗  [Auth] Login de Técnico para RBAC exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+
+❏ 1. Consulta y Filtros de Verificación
+↳ 1.1 Admin lista técnicos pendientes de verificación
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians?verificationStatus=pendiente [401 Unauthorized, 221B, 19ms]
+  ✗  [RF-19] 200 OK al listar técnicos pendientes de verificación (falló: expected response to have status code 200 but got 401)
+  ✗  [RF-19] Técnicos en lista tienen estado pendiente y datos requeridos (falló: Cannot read properties of undefined (reading 'find'))
+↳ 1.2 Admin lista técnicos aprobados
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians?verificationStatus=aprobado [401 Unauthorized, 221B, 28ms]
+  ✗  [Filtro status=aprobado] 200 OK y técnicos aprobados listados (falló: expected response to have status code 200 but got 401)
+
+❏ 2. Aprobación de Técnico
+↳ 2.1 Admin aprueba técnico pendiente (usr-tec-pending-01)
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/usr-tec-pending-01/approve [404 Not Found, 217B, 21ms]
+  ✗  [RF-19 / RN-TP1] 200 OK al aprobar perfil técnico (falló: expected response to have status code 200 but got 404)
+↳ 2.2 Admin verifica que técnico aprobado ya no está en pendientes
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians?verificationStatus=pendiente [401 Unauthorized, 221B, 17ms]
+  ✗  [Consistencia] El técnico aprobado ya no aparece en lista de pendientes (falló: expected response to have status code 200 but got 401)
+↳ 2.3 Transición Inválida: Intento de aprobar técnico ya aprobado -> 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/usr-tec-approved-01/approve [404 Not Found, 217B, 26ms]
+  ✗  [RN-TP1 / Transición] 409 Conflict al intentar aprobar técnico ya aprobado (falló: expected response to have status code 409 but got 404)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /transicion-invalida (falló: expected 'https://tools.ietf.org/html/rfc9110#s…' to include 'transicion-invalida')
+
+❏ 3. Rechazo de Técnico con Motivo
+↳ 3.1 Admin rechaza técnico con motivo válido
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/usr-tec-pending-02/reject [404 Not Found, 217B, 29ms]
+  ✗  [RF-19] 200 OK al rechazar técnico con motivo fundamentado (falló: expected response to have status code 200 but got 404)
+↳ 3.2 Validación: Intento de rechazar sin motivo válido -> 400 Bad Request
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/usr-tec-pending-02/reject [404 Not Found, 217B, 31ms]
+  ✗  [Validación] 400 Bad Request cuando el motivo es menor a 5 caracteres (falló: expected response to have status code 400 but got 404)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /validacion-solicitud (falló: expected 'https://tools.ietf.org/html/rfc9110#s…' to include 'validacion-solicitud')
+↳ 3.3 Transición Inválida: Intento de rechazar técnico aprobado -> 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/usr-tec-approved-01/reject [404 Not Found, 217B, 24ms]
+  ✗  [Transición Inválida] 409 Conflict al intentar rechazar un técnico en estado aprobado (falló: expected response to have status code 409 but got 404)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /transicion-invalida (falló: expected 'https://tools.ietf.org/html/rfc9110#s…' to include 'transicion-invalida')
+
+❏ 4. Control de Acceso RBAC y Aislamiento Multi-Tenant
+↳ 4.1 Control RBAC: Cliente intenta aprobar técnico -> 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/usr-tec-pending-01/approve [404 Not Found, 217B, 14ms]
+  ✗  [RBAC] 403 Forbidden para cliente intentando aprobar técnicos (falló: expected response to have status code 403 but got 404)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /no-autorizado (falló: expected 'https://tools.ietf.org/html/rfc9110#s…' to include 'no-autorizado')
+↳ 4.2 Control RBAC: Técnico intenta auto-aprobarse -> 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/usr-tec-pending-01/approve [404 Not Found, 217B, 15ms]
+  ✗  [RBAC] 403 Forbidden para técnico intentando auto-aprobarse (falló: expected response to have status code 403 but got 404)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /no-autorizado (falló: expected 'https://tools.ietf.org/html/rfc9110#s…' to include 'no-autorizado')
+↳ 4.3 Seguridad: Consulta anónima sin token -> 401 Unauthorized
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians [401 Unauthorized, 221B, 12ms]
+  ✓  [Seguridad] 401 Unauthorized ante solicitud anónima (IDN-017)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✓  [Contrato RFC 9457] Tipo de error /no-autenticado
+↳ 4.4 Aislamiento Multi-Tenant (RLS): Admin Beta intenta aprobar técnico de Tenant Alfa -> 404 Not Found
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/usr-tec-pending-01/approve [404 Not Found, 217B, 15ms]
+  ✓  [SAD AC6-E2 / RLS] 404 Not Found para Admin Beta intentando aprobar técnico de Alfa
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /no-encontrado (falló: expected 'https://tools.ietf.org/html/rfc9110#s…' to include 'no-encontrado')
+↳ 4.5 Aislamiento Multi-Tenant (RLS): Admin Beta lista técnicos pendientes con cero fuga de Alfa
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians?verificationStatus=pendiente [401 Unauthorized, 221B, 12ms]
+  ✗  [SAD AC6-E2 / RLS] 200 OK para Admin Beta con aislamiento estricto de técnicos (falló: expected response to have status code 200 but got 401)
+
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+│                requests │               17 │                0 │
+│              assertions │               32 │               22 │
+└─────────────────────────┴──────────────────┴──────────────────┘

@@ -1,0 +1,60 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN REAL EN QA — Registro de Técnico (SCRUM-56)
+Ambiente: QA Desplegado (k3s en VM2 / Ingress https://qa.quickpatch.internal)
+Ejecutado con: Newman CLI (reporte limpio sin credenciales)
+================================================================================
+
+
+❏ 0. Semillas y Datos de Referencia
+↳ 0.1 Login Administrador de Tenant (Obtener token para catálogo)
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 961ms]
+  ✗  [Auth] Login de administrador exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.2 Obtener Especialidad Real de Catálogo
+  GET https://qa.quickpatch.internal/api/v1/catalog/categories [401 Unauthorized, 253B, 19ms]
+  ✗  [Catalog] 200 OK en consulta de categorías activas (falló: expected response to have status code 200 but got 401)
+  ✗  [Catalog] Existe al menos una categoría en el tenant (falló: expected undefined to be a number or a date)
+
+❏ 1. SCRUM-56 — Registro y Perfil de Técnico (Identity)
+↳ 1.1 Registro exitoso de técnico (verificationStatus: pendiente)
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 204B, 1231ms]
+  ✓  [SCRUM-56] 201 Created para registro legítimo
+  ✓  [SCRUM-56] Rol verificado como tecnico
+  ✓  [SCRUM-56 / RN-U1] verificationStatus inicial es pendiente
+  ✓  [Auditoría] Correlation ID presente en cabecera
+↳ 1.2 Rechazo por documento de identidad repetido → 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [409 Conflict, 247B, 27ms]
+  ✓  [SCRUM-56] 409 Conflict ante documento repetido
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✓  [Contrato] Tipo de error documento-registrado
+↳ 1.3 Rechazo por correo electrónico repetido → 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [409 Conflict, 241B, 31ms]
+  ✓  [SCRUM-56] 409 Conflict ante correo repetido
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✓  [Contrato] Tipo de error correo-registrado
+↳ 1.4 Rechazo por documento ausente / clave corta → 400 Bad Request
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [400 Bad Request, 512B, 17ms]
+  ✓  [SCRUM-56] 400 Bad Request por fallo de validación de contrato
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato] Tipo de error validacion-solicitud (falló: expected 'https://quickpatch.internal/problems/…' to match /\/validacion-solicitud$/)
+↳ 1.5 Login de técnico registrado y obtención de JWT
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 991B, 1088ms]
+  ✓  [Auth] Login de técnico registrado exitoso (200 OK)
+  ✓  [RBAC] Rol del usuario es tecnico
+↳ 1.6 Consulta de perfil propio (/v1/users/me) con verificationStatus
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 204B, 25ms]
+  ✓  [SCRUM-56] 200 OK en consulta de perfil
+  ✓  [SCRUM-56] verificationStatus visible como pendiente
+  ✓  [SCRUM-56] Rol verificado como tecnico
+↳ 1.7 Control RBAC: Técnico no puede crear solicitudes de cliente → 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/service-requests [403 Forbidden, 217B, 18ms]
+  ✓  [RBAC / IDN-012] 403 Forbidden para rol tecnico creando solicitud
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✓  [Contrato] Tipo de error no-autorizado
+
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+│                requests │                9 │                0 │
+│              assertions │               24 │                4 │
+└─────────────────────────┴──────────────────┴──────────────────┘

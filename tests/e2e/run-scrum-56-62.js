@@ -33,8 +33,8 @@ function runCollection(file, title, callback) {
         'run',
         file,
         '--env-var', `baseUrl=${baseUrl}`,
-        '--env-var', `adminEmail=admin@quickpatch.test`,
-        '--env-var', `adminPassword=PasswordAdmin123*`,
+        '--env-var', `adminEmail=${process.env.QA_ADMIN_EMAIL || 'admin@quickpatch.test'}`,
+        '--env-var', `adminPassword=${process.env.QA_ADMIN_PASSWORD || ''}`,
         '--insecure',
         '--reporters', 'cli'
     ];

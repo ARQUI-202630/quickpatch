@@ -1,0 +1,92 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN REAL EN QA — Gestión de Equipo de Técnicos (SCRUM-99)
+Ambiente: QA Desplegado (k3s en VM2 / Ingress https://qa.quickpatch.internal)
+Ejecutado con: Newman CLI (reporte limpio sin credenciales)
+================================================================================
+
+
+❏ 0. Autenticación de Actores
+↳ 0.1 Login Proveedor Principal (usr-prov-01)
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 1038ms]
+  ✗  [Auth] Login de Proveedor 1 exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.2 Login Proveedor 2 en Mismo Tenant (usr-prov-02)
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 871ms]
+  ✗  [Auth] Login de Proveedor 2 exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.3 Login Proveedor Tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 961ms]
+  ✗  [Auth] Login de Proveedor Beta exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.4 Login Cliente para Control RBAC
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 1072ms]
+  ✗  [Auth] Login de Cliente para RBAC exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.5 Login Técnico para Control RBAC
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 979ms]
+  ✗  [Auth] Login de Técnico para RBAC exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+
+❏ 1. Registro de Técnico en Equipo del Proveedor
+↳ 1.1 Proveedor 1 registra un técnico en su equipo
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 221B, 18ms]
+  ✗  [RN-TP3 / RF-16] 201 Created al dar de alta técnico en equipo (falló: expected response to have status code 201 but got 401)
+  ✗  [RN-TP3] El técnico hereda estado pendiente y rol técnico (falló: expected undefined to deeply equal 'pendiente')
+
+❏ 2. Consulta y Filtros de Equipo
+↳ 2.1 Proveedor 1 consulta la lista completa de su equipo
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 221B, 18ms]
+  ✗  [RN-TP4] 200 OK al consultar equipo de técnicos (falló: expected response to have status code 200 but got 401)
+  ✗  [RF-16] Técnico registrado aparece en la lista con datos completos (falló: Cannot read properties of undefined (reading 'find'))
+↳ 2.2 Proveedor 1 filtra equipo por status=inactivo
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians?status=inactivo [401 Unauthorized, 221B, 20ms]
+  ✗  [Filtro status=inactivo] 200 OK y técnico pendiente listado (falló: expected response to have status code 200 but got 401)
+↳ 2.3 Proveedor 1 filtra equipo por status=activo
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians?status=activo [401 Unauthorized, 221B, 16ms]
+  ✗  [Filtro status=activo] 200 OK y técnico pendiente NO listado como activo (falló: expected response to have status code 200 but got 401)
+  ✗  [RN-TP1] Solo técnicos aprobados por admin_tenant pueden estar activos (falló: expected undefined to deeply equal +0)
+
+❏ 3. Validaciones de Negocio y Errores
+↳ 3.1 Validación: Proveedor envía solicitud incompleta -> 400 Bad Request
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 221B, 16ms]
+  ✗  [Validación] 400 Bad Request ante datos faltantes (falló: expected response to have status code 400 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /validacion-solicitud (falló: expected 'https://quickpatch.internal/problems/…' to include 'validacion-solicitud')
+↳ 3.2 Unicidad: Proveedor intenta registrar documento duplicado -> 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 221B, 17ms]
+  ✗  [RN-U1] 409 Conflict ante documento de identidad duplicado (falló: expected response to have status code 409 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /documento-registrado (falló: expected 'https://quickpatch.internal/problems/…' to include 'documento-registrado')
+↳ 3.3 Unicidad: Proveedor intenta registrar correo duplicado -> 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 221B, 14ms]
+  ✗  [RN-U1] 409 Conflict ante correo electrónico duplicado (falló: expected response to have status code 409 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /correo-registrado (falló: expected 'https://quickpatch.internal/problems/…' to include 'correo-registrado')
+
+❏ 4. Control de Acceso RBAC y Aislamiento Multi-Tenant
+↳ 4.1 Control RBAC: Cliente intenta dar de alta técnico en equipo -> 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 221B, 12ms]
+  ✗  [RBAC] 403 Forbidden para cliente intentando gestionar equipo (falló: expected response to have status code 403 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /no-autorizado (falló: expected 'https://quickpatch.internal/problems/…' to include 'no-autorizado')
+↳ 4.2 Control RBAC: Técnico intenta dar de alta técnico en equipo -> 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 221B, 13ms]
+  ✗  [RBAC] 403 Forbidden para técnico intentando registrar equipo (falló: expected response to have status code 403 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /no-autorizado (falló: expected 'https://quickpatch.internal/problems/…' to include 'no-autorizado')
+↳ 4.3 Seguridad: Consulta anónima sin token -> 401 Unauthorized
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 221B, 16ms]
+  ✓  [Seguridad] 401 Unauthorized ante solicitud anónima (IDN-017)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✓  [Contrato RFC 9457] Tipo de error /no-autenticado
+↳ 4.4 Aislamiento Intra-Tenant (RN-TP4): Proveedor 2 no ve técnicos de Proveedor 1
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 221B, 12ms]
+  ✗  [RN-TP4 / Confidencialidad] 200 OK para Proveedor 2 sin ver técnicos de Proveedor 1 (falló: expected response to have status code 200 but got 401)
+  ✗  [Aislamiento Intra-Tenant] Cero fuga de técnicos entre proveedores del mismo tenant (falló: expected undefined to deeply equal +0)
+↳ 4.5 Aislamiento Multi-Tenant (RLS): Proveedor Beta no ve técnicos de Tenant Alfa
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 221B, 16ms]
+  ✗  [SAD AC6-E2 / RLS] 200 OK para Proveedor Beta con cero técnicos de Tenant Alfa (falló: expected response to have status code 200 but got 401)
+  ✗  [Multi-Tenancy] Row-Level Security garantiza aislamiento estricto cross-tenant (falló: expected undefined to deeply equal +0)
+
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+│                requests │               17 │                0 │
+│              assertions │               34 │               26 │
+└─────────────────────────┴──────────────────┴──────────────────┘

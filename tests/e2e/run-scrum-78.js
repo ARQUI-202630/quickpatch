@@ -50,7 +50,8 @@ function start() {
         collection: require(collectionFile),
         environment: {
             values: [
-                { key: 'baseUrl', value: baseUrl }
+                { key: 'baseUrl', value: baseUrl },
+                { key: 'userPassword', value: process.env.QA_CLIENT_PASSWORD || '' }
             ]
         },
         reporters: ['cli'],

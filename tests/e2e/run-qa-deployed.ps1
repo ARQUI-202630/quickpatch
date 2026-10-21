@@ -9,15 +9,30 @@
 
 [CmdletBinding()]
 param (
-    [string]$BaseUrl = "https://qa.quickpatch.internal/api",
-    [string]$EvidenciasDir = "$PSScriptRoot/evidencias"
+    [string]$BaseUrl = "https://qa.quickpatch.internal",
+    [string]$AdminEmail = ($env:QA_ADMIN_EMAIL ? $env:QA_ADMIN_EMAIL : "admin@quickpatch.com"),
+    [string]$AdminPassword = $env:QA_ADMIN_PASSWORD,
+    [string]$UserPassword = ($env:QA_USER_PASSWORD ? $env:QA_USER_PASSWORD : $env:QA_CLIENT_PASSWORD),
+    [string]$EvidenciasDir = "$PSScriptRoot/evidencias",
+    [string]$Fecha = (Get-Date -Format "yyyy-MM-dd")
 )
 
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host " QUICKPATCH — EJECUCIÓN E2E CONTRA QA DESPLEGADO (VM2)" -ForegroundColor Cyan
 Write-Host " Base URL: $BaseUrl" -ForegroundColor Yellow
-Write-Host " Evidencias: $EvidenciasDir" -ForegroundColor Yellow
+Write-Host " Admin Email: $AdminEmail" -ForegroundColor Yellow
+Write-Host " Evidencias: $EvidenciasDir (*.txt)" -ForegroundColor Yellow
 Write-Host "================================================================================"
+
+if (-not $AdminPassword) {
+    $secPass = Read-Host "Ingresa la contrasena de Admin QA (se mantiene oculta)" -AsSecureString
+    $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secPass)
+    $AdminPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+}
+
+if (-not $UserPassword) {
+    $UserPassword = $AdminPassword
+}
 
 if (-not (Test-Path $EvidenciasDir)) {
     New-Item -ItemType Directory -Path $EvidenciasDir -Force | Out-Null
@@ -38,24 +53,23 @@ try {
 }
 
 $collections = @(
-    @{ Name = "MVP Sprint 4"; File = "quickpatch-mvp.postman_collection.json"; Prefix = "qa-mvp" },
-    @{ Name = "SCRUM-81/90/93 Incremento Técnico"; File = "scrum-incremento-tecnico.postman_collection.json"; Prefix = "qa-scrum-81-90-93" },
-    @{ Name = "SCRUM-56 Registro Técnico"; File = "scrum-56-registro-tecnico.postman_collection.json"; Prefix = "qa-scrum-56" },
-    @{ Name = "SCRUM-84 Seguimiento Estados"; File = "scrum-84-seguimiento-estado.postman_collection.json"; Prefix = "qa-scrum-84" },
-    @{ Name = "SCRUM-99 Equipo Proveedor"; File = "scrum-99-equipo-proveedor.postman_collection.json"; Prefix = "qa-scrum-99" },
-    @{ Name = "SCRUM-108 Aprobación Técnicos"; File = "scrum-108-aprobacion-rechazo.postman_collection.json"; Prefix = "qa-scrum-108" },
-    @{ Name = "SCRUM-111 Suspensión Técnicos"; File = "scrum-111-suspension-tecnico.postman_collection.json"; Prefix = "qa-scrum-111" },
-    @{ Name = "SCRUM-78 Motor Matching"; File = "scrum-78-motor-matching.postman_collection.json"; Prefix = "qa-scrum-78" }
+    @{ Name = "MVP Sprint 4"; File = "quickpatch-mvp.postman_collection.json"; Prefix = "mvp" },
+    @{ Name = "SCRUM-81/90/93 Incremento Técnico"; File = "scrum-incremento-tecnico.postman_collection.json"; Prefix = "scrum-81-90-93" },
+    @{ Name = "SCRUM-56 Registro Técnico"; File = "scrum-56-registro-tecnico.postman_collection.json"; Prefix = "scrum-56" },
+    @{ Name = "SCRUM-84 Seguimiento Estados"; File = "scrum-84-seguimiento-estado.postman_collection.json"; Prefix = "scrum-84" },
+    @{ Name = "SCRUM-99 Equipo Proveedor"; File = "scrum-99-equipo-proveedor.postman_collection.json"; Prefix = "scrum-99" },
+    @{ Name = "SCRUM-108 Aprobación Técnicos"; File = "scrum-108-aprobacion-rechazo.postman_collection.json"; Prefix = "scrum-108" },
+    @{ Name = "SCRUM-111 Suspensión Técnicos"; File = "scrum-111-suspension-tecnico.postman_collection.json"; Prefix = "scrum-111" },
+    @{ Name = "SCRUM-78 Motor Matching"; File = "scrum-78-motor-matching.postman_collection.json"; Prefix = "scrum-78" }
 )
 
-Write-Host "`n[2/3] Ejecutando colecciones Newman..." -ForegroundColor Cyan
+Write-Host "`n[2/3] Ejecutando colecciones con Newman (Reporter CLI)..." -ForegroundColor Cyan
 
 $resumen = @()
 
 foreach ($col in $collections) {
     $colPath = Join-Path $PSScriptRoot $col.File
-    $jsonExport = Join-Path $EvidenciasDir "$($col.Prefix)-evidence.json"
-    $txtExport = Join-Path $EvidenciasDir "$($col.Prefix)-cli.txt"
+    $txtExport = Join-Path $EvidenciasDir "$($col.Prefix)-qa-$Fecha.txt"
 
     if (-not (Test-Path $colPath)) {
         Write-Warning "Colección no encontrada: $colPath"
@@ -65,11 +79,24 @@ foreach ($col in $collections) {
     Write-Host "`n------------------------------------------------------------" -ForegroundColor DarkGray
     Write-Host " Ejecutando: $($col.Name)" -ForegroundColor Yellow
     Write-Host " Archivo: $($col.File)" -ForegroundColor DarkGray
+    Write-Host " Evidencia: $txtExport" -ForegroundColor DarkGray
     Write-Host "------------------------------------------------------------"
 
-    $cmd = "newman run `"$colPath`" --env-var `"baseUrl=$BaseUrl`" --insecure -r cli,json --reporter-json-export `"$jsonExport`""
-    
-    # Ejecutar newman
+    $argsList = @(
+        "run", "`"$colPath`"",
+        "--env-var", "`"baseUrl=$BaseUrl`"",
+        "--env-var", "`"adminEmail=$AdminEmail`"",
+        "--env-var", "`"adminPassword=$AdminPassword`"",
+        "--env-var", "`"userPassword=$UserPassword`"",
+        "--env-var", "`"passwordComun=$UserPassword`"",
+        "--env-var", "`"clientePassword=$UserPassword`"",
+        "--env-var", "`"tecnicoPassword=$UserPassword`"",
+        "--env-var", "`"proveedorPassword=$UserPassword`"",
+        "--insecure",
+        "--reporters", "cli"
+    )
+
+    $cmd = "newman " + ($argsList -join " ")
     $output = Invoke-Expression $cmd 2>&1
     $output | Out-File -FilePath $txtExport -Encoding utf8
     $output | ForEach-Object { Write-Host $_ }
@@ -78,10 +105,10 @@ foreach ($col in $collections) {
     $resumen += [PSCustomObject]@{
         Suite = $col.Name
         Resultado = if ($passed) { "PASS" } else { "FAIL (Revisar Defectos)" }
-        JSON = $jsonExport
+        EvidenciaTXT = $txtExport
     }
 }
 
 Write-Host "`n[3/3] Resumen de Ejecución contra QA Desplegado:" -ForegroundColor Cyan
 $resumen | Format-Table -AutoSize
-Write-Host "`nEvidencias JSON exportadas exitosamente en: $EvidenciasDir" -ForegroundColor Green
+Write-Host "`nEvidencias CLI (.txt) exportadas exitosamente en: $EvidenciasDir" -ForegroundColor Green

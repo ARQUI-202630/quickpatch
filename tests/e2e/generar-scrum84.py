@@ -76,7 +76,7 @@ items = [
             req(
                 "0.1 Login Cliente Propietario (usr-client-01)",
                 "POST", "/v1/auth/login", [JSON, CORR, CANAL_MOVIL],
-                {"email": "{{clienteEmail}}", "password": "PasswordCliente123*"},
+                {"email": "{{clienteEmail}}", "password": "{{clientePassword}}"},
                 [
                     "pm.test('[Auth] Login de cliente exitoso (200 OK)', () => pm.response.to.have.status(200));",
                     "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);",
@@ -85,7 +85,7 @@ items = [
             req(
                 "0.2 Login Técnico Asignado (usr-tec-01)",
                 "POST", "/v1/auth/login", [JSON, CORR, CANAL_MOVIL],
-                {"email": "{{tecnicoEmail}}", "password": "PasswordTecnico123*"},
+                {"email": "{{tecnicoEmail}}", "password": "{{tecnicoPassword}}"},
                 [
                     "pm.test('[Auth] Login de técnico exitoso (200 OK)', () => pm.response.to.have.status(200));",
                     "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);",
@@ -94,7 +94,7 @@ items = [
             req(
                 "0.3 Login Cliente Ajeno en Mismo Tenant (usr-client-02)",
                 "POST", "/v1/auth/login", [JSON, CORR, CANAL_MOVIL],
-                {"email": "{{cliente2Email}}", "password": "PasswordCliente123*"},
+                {"email": "{{cliente2Email}}", "password": "{{cliente2Password}}"},
                 [
                     "pm.test('[Auth] Login de cliente 2 exitoso (200 OK)', () => pm.response.to.have.status(200));",
                     "pm.collectionVariables.set('cliente2Token', pm.response.json().accessToken);",
@@ -103,7 +103,7 @@ items = [
             req(
                 "0.4 Login Cliente en Tenant Beta",
                 "POST", "/v1/auth/login", [JSON, CORR, CANAL_MOVIL],
-                {"email": "{{clienteBetaEmail}}", "password": "PasswordCliente123*"},
+                {"email": "{{clienteBetaEmail}}", "password": "{{clienteBetaPassword}}"},
                 [
                     "pm.test('[Auth] Login de cliente Beta exitoso (200 OK)', () => pm.response.to.have.status(200));",
                     "pm.collectionVariables.set('clienteBetaToken', pm.response.json().accessToken);",
@@ -338,10 +338,14 @@ collection = {
     },
     "variable": [
         {"key": "baseUrl", "value": "http://localhost:8080", "type": "string"},
-        {"key": "clienteEmail", "value": "cliente@quickpatch.test", "type": "string"},
-        {"key": "tecnicoEmail", "value": "tecnico@quickpatch.test", "type": "string"},
-        {"key": "cliente2Email", "value": "cliente2@quickpatch.test", "type": "string"},
-        {"key": "clienteBetaEmail", "value": "cliente.beta@quickpatch.test", "type": "string"},
+        {"key": "clienteEmail", "value": "", "type": "string"},
+        {"key": "clientePassword", "value": "", "type": "string"},
+        {"key": "tecnicoEmail", "value": "", "type": "string"},
+        {"key": "tecnicoPassword", "value": "", "type": "string"},
+        {"key": "cliente2Email", "value": "", "type": "string"},
+        {"key": "cliente2Password", "value": "", "type": "string"},
+        {"key": "clienteBetaEmail", "value": "", "type": "string"},
+        {"key": "clienteBetaPassword", "value": "", "type": "string"},
         {"key": "clienteToken", "value": "", "type": "string"},
         {"key": "tecnicoToken", "value": "", "type": "string"},
         {"key": "cliente2Token", "value": "", "type": "string"},

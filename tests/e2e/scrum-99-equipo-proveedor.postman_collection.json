@@ -41,7 +41,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"proveedor@quickpatch.test\",\n  \"password\": \"PasswordProveedor123*\"\n}"
+              "raw": "{\n  \"email\": \"{{proveedorEmail}}\",\n  \"password\": \"{{proveedorPassword}}\"\n}"
             }
           },
           "event": [
@@ -94,7 +94,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"proveedor2@quickpatch.test\",\n  \"password\": \"PasswordProveedor123*\"\n}"
+              "raw": "{\n  \"email\": \"{{proveedor2Email}}\",\n  \"password\": \"{{proveedor2Password}}\"\n}"
             }
           },
           "event": [
@@ -147,7 +147,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"proveedor.beta@quickpatch.test\",\n  \"password\": \"PasswordProveedor123*\"\n}"
+              "raw": "{\n  \"email\": \"{{proveedorBetaEmail}}\",\n  \"password\": \"{{proveedorBetaPassword}}\"\n}"
             }
           },
           "event": [
@@ -200,7 +200,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"cliente@quickpatch.test\",\n  \"password\": \"PasswordCliente123*\"\n}"
+              "raw": "{\n  \"email\": \"{{clienteEmail}}\",\n  \"password\": \"{{clientePassword}}\"\n}"
             }
           },
           "event": [
@@ -253,7 +253,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"tecnico@quickpatch.test\",\n  \"password\": \"PasswordTecnico123*\"\n}"
+              "raw": "{\n  \"email\": \"{{tecnicoEmail}}\",\n  \"password\": \"{{tecnicoPassword}}\"\n}"
             }
           },
           "event": [
@@ -962,6 +962,46 @@
     {
       "key": "baseUrl",
       "value": "http://localhost:8080"
+    },
+    {
+      "key": "proveedorEmail",
+      "value": ""
+    },
+    {
+      "key": "proveedorPassword",
+      "value": ""
+    },
+    {
+      "key": "proveedor2Email",
+      "value": ""
+    },
+    {
+      "key": "proveedor2Password",
+      "value": ""
+    },
+    {
+      "key": "proveedorBetaEmail",
+      "value": ""
+    },
+    {
+      "key": "proveedorBetaPassword",
+      "value": ""
+    },
+    {
+      "key": "clienteEmail",
+      "value": ""
+    },
+    {
+      "key": "clientePassword",
+      "value": ""
+    },
+    {
+      "key": "tecnicoEmail",
+      "value": ""
+    },
+    {
+      "key": "tecnicoPassword",
+      "value": ""
     },
     {
       "key": "tokenProv1",

@@ -1,0 +1,132 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN REAL EN QA — Incremento Técnico (SCRUM-81, 90, 93)
+Ambiente: QA Desplegado (k3s en VM2 / Ingress https://qa.quickpatch.internal)
+Ejecutado con: Newman CLI (reporte limpio sin credenciales)
+================================================================================
+
+
+❏ 0. Autenticación y Tokens de Prueba
+↳ 0.1 Login Técnico Principal (usr-tec-01)
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 971ms]
+  ✗  [Auth] Login técnico exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.2 Login Técnico Ocupado (usr-tec-02)
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 877ms]
+  ✗  [Auth] Login técnico ocupado exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.3 Login Técnico Ajeno (usr-tec-03)
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 872ms]
+  ✗  [Auth] Login técnico ajeno exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.4 Login Cliente Dueño (usr-client-01)
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 1042ms]
+  ✗  [Auth] Login cliente exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+
+❏ 1. SCRUM-90 — Disponibilidad y Cobertura (Matching Service)
+↳ 1.1 [COV-001] Catálogo público de 20 localidades oficiales de Bogotá
+  GET https://qa.quickpatch.internal/api/v1/localities [200 OK, 686B, 51ms]
+  ✓  [SCRUM-90] 200 OK en listado de localidades
+  ✓  [Localidades] Devuelve exactamente las 20 localidades oficiales de Bogotá
+  ✓  [Localidades] Códigos oficiales 01 a 20 presentes
+↳ 1.2 [AVA-001] Consulta de disponibilidad inicial del técnico
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [401 Unauthorized, 171B, 49ms]
+  ✗  [SCRUM-90] 200 OK en consulta de disponibilidad (falló: expected response to have status code 200 but got 401)
+  ✗  [Contrato] Atributos de disponibilidad presentes (falló: expected { status: 401, …(3) } to have property 'available')
+↳ 1.3 [AVA-002] Cambiar disponibilidad a disponible (RF-13, RN-M10)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [401 Unauthorized, 171B, 26ms]
+  ✗  [SCRUM-90] 200 OK al actualizar disponibilidad (falló: expected response to have status code 200 but got 401)
+  ✗  [SCRUM-90] Estado actualizado a disponible (falló: expected 401 to equal 'disponible')
+  ✗  [SCRUM-90] Flag available es true (falló: expected undefined to be true)
+  ✗  [SCRUM-90] Flag busy es false (falló: expected undefined to be false)
+↳ 1.4 [AVA-003] Rechazo de cambio manual si técnico está ocupado en servicio (RN-M6)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [401 Unauthorized, 171B, 23ms]
+  ✗  [SCRUM-90 / RN-M6] 409 Conflict si técnico está ocupado (falló: expected response to have status code 409 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato] Tipo de error transicion-invalida (falló: expected 'https://quickpatch.internal/problems/…' to match /\/transicion-invalida$/)
+↳ 1.5 [COV-002] Consulta de cobertura inicial del técnico
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/coverage [401 Unauthorized, 171B, 21ms]
+  ✗  [SCRUM-90] 200 OK en consulta de cobertura (falló: expected response to have status code 200 but got 401)
+  ✗  [Contrato] Atributo localityCodes es array (falló: expected undefined to be an array)
+↳ 1.6 [COV-003] Configuración de cobertura geográfica por localidades (RF-13)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [401 Unauthorized, 171B, 19ms]
+  ✗  [SCRUM-90] 200 OK al actualizar cobertura (falló: expected response to have status code 200 but got 401)
+  ✗  [SCRUM-90] Localidades configuradas correctamente (falló: the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string)
+↳ 1.7 [COV-004] Rechazo de cobertura vacía o con código inexistente
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [401 Unauthorized, 171B, 24ms]
+  ✗  [SCRUM-90] 400 Bad Request ante código inexistente (falló: expected response to have status code 400 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato] Tipo de error validacion-solicitud (falló: expected 'https://quickpatch.internal/problems/…' to match /\/validacion-solicitud$/)
+↳ 1.8 [AVA-004] Rechazo de consulta sin token → 401 Unauthorized
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [401 Unauthorized, 171B, 28ms]
+  ✓  [Seguridad] 401 Unauthorized sin token
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✓  [Contrato] Tipo de error no-autenticado
+↳ 1.9 [AVA-005] Control RBAC: Rol cliente no puede gestionar disponibilidad → 403 Forbidden
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [401 Unauthorized, 171B, 24ms]
+  ✗  [RBAC] 403 Forbidden para rol cliente (falló: expected response to have status code 403 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato] Tipo de error no-autorizado (falló: expected 'https://quickpatch.internal/problems/…' to match /\/no-autorizado$/)
+
+❏ 2. SCRUM-81 — Aceptación y Rechazo de Ofertas (Matching Service)
+↳ 2.1 [OFF-001] Consultar ofertas pendientes (sin dirección exacta, RN-SR13)
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [401 Unauthorized, 171B, 21ms]
+  ✗  [SCRUM-81] 200 OK en consulta de ofertas (falló: expected response to have status code 200 but got 401)
+  ✗  [SCRUM-81] Lista de ofertas con al menos un elemento (falló: Cannot read properties of undefined (reading 'length'))
+↳ 2.2 [OFF-002] Aceptar oferta legítima (Atómica: ocupado, asignado, Outbox)
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/attempt-valid-01/accept [401 Unauthorized, 171B, 18ms]
+  ✗  [SCRUM-81] 200 OK al aceptar oferta legítima (falló: expected response to have status code 200 but got 401)
+  ✗  [SCRUM-81] Respuesta es aceptado (falló: expected undefined to equal 'aceptado')
+  ✗  [SCRUM-81] Atributos de respuesta presentes (falló: expected { status: 401, …(3) } to have property 'attemptId')
+↳ 2.3 [OFF-003] Rechazo de oferta ya respondida o duplicada → 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/attempt-valid-01/accept [401 Unauthorized, 171B, 21ms]
+  ✗  [SCRUM-81] 409 Conflict ante intento duplicado (falló: expected response to have status code 409 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato] Tipo de error oferta-no-disponible (falló: expected 'https://quickpatch.internal/problems/…' to match /\/oferta-no-disponible$/)
+↳ 2.4 [OFF-004] Rechazo de oferta vencida por tiempo límite (RN-M8) → 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/attempt-expired-01/accept [401 Unauthorized, 171B, 18ms]
+  ✗  [SCRUM-81 / RN-M8] 409 Conflict ante oferta expirada (falló: expected response to have status code 409 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato] Tipo de error oferta-no-disponible (falló: expected 'https://quickpatch.internal/problems/…' to match /\/oferta-no-disponible$/)
+↳ 2.5 [OFF-005] Rechazo de oferta si el técnico ya está ocupado (RN-M7) → 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/attempt-second-01/accept [401 Unauthorized, 171B, 19ms]
+  ✗  [SCRUM-81 / RN-M7] 409 Conflict si técnico está ocupado (falló: expected response to have status code 409 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato] Tipo de error tecnico-no-disponible (falló: expected 'https://quickpatch.internal/problems/…' to match /\/tecnico-no-disponible$/)
+↳ 2.6 [OFF-006] Rechazo de oferta sin penalización (RF-10, R12)
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/attempt-reject-01/reject [401 Unauthorized, 171B, 17ms]
+  ✗  [SCRUM-81 / R12] 200 OK al rechazar oferta sin penalización (falló: expected response to have status code 200 but got 401)
+  ✗  [SCRUM-81] Respuesta es rechazado (falló: expected undefined to equal 'rechazado')
+  ✗  [RN-M3] Siguiente candidato notificado (falló: expected undefined to be true)
+↳ 2.7 [OFF-007] Control RBAC: Rol cliente no puede responder ofertas → 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/attempt-valid-01/accept [401 Unauthorized, 171B, 16ms]
+  ✗  [RBAC] 403 Forbidden para rol cliente (falló: expected response to have status code 403 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato] Tipo de error no-autorizado (falló: expected 'https://quickpatch.internal/problems/…' to match /\/no-autorizado$/)
+
+❏ 3. SCRUM-93 — Detalle de Solicitud para Técnico Asignado (ServiceRequest)
+↳ 3.1 [DTL-001] Técnico asignado ve detalle completo con contacto del cliente (RN-SR13)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/sr-assigned-01 [404 Not Found, 217B, 15ms]
+  ✗  [SCRUM-93] 200 OK en consulta de solicitud asignada (falló: expected response to have status code 200 but got 404)
+  ✗  [SCRUM-93] Estado verificado como asignado (falló: expected 404 to equal 'asignado')
+  ✗  [SCRUM-93] Dirección exacta visible para técnico asignado (falló: expected { …(5) } to have property 'addressText')
+  ✗  [RN-SR13] Contacto del cliente presente con nombre y teléfono (falló: expected { …(5) } to have property 'client')
+↳ 3.2 [DTL-002] Técnico consulta solicitud no asignada (buscando_tecnico) → 403 Forbidden
+  GET https://qa.quickpatch.internal/api/v1/service-requests/sr-unassigned-01 [404 Not Found, 217B, 14ms]
+  ✗  [SCRUM-93 / RN-SR13] 403 Forbidden antes de asignación (falló: expected response to have status code 403 but got 404)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato] Tipo de error solicitud-no-asignada (falló: expected 'https://quickpatch.internal/problems/…' to match /\/solicitud-no-asignada$/)
+↳ 3.3 [DTL-003] Técnico ajeno consulta solicitud asignada a otro → 404 Not Found
+  GET https://qa.quickpatch.internal/api/v1/service-requests/sr-assigned-01 [404 Not Found, 217B, 15ms]
+  ✓  [Confidencialidad] 404 Not Found para técnico ajeno
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✓  [Contrato] Tipo de error no-encontrado
+↳ 3.4 [DTL-004] Cliente dueño consulta su solicitud asignada (client es null)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/sr-assigned-01 [404 Not Found, 217B, 16ms]
+  ✗  [Cliente] 200 OK en consulta de solicitud propia (falló: expected response to have status code 200 but got 404)
+  ✗  [Contrato] Para cliente el bloque client es null (falló: expected undefined to be null)
+  ✗  [Contrato] Bloque technician visible con nombre de técnico (falló: Target cannot be null or undefined.)
+
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+│                requests │               24 │                0 │
+│              assertions │               62 │               45 │
+└─────────────────────────┴──────────────────┴──────────────────┘

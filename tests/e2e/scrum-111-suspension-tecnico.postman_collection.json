@@ -41,7 +41,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@quickpatch.test\",\n  \"password\": \"PasswordAdmin123*\"\n}"
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
             }
           },
           "event": [
@@ -94,7 +94,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin.beta@quickpatch.test\",\n  \"password\": \"PasswordAdminBeta123*\"\n}"
+              "raw": "{\n  \"email\": \"{{adminBetaEmail}}\",\n  \"password\": \"{{adminBetaPassword}}\"\n}"
             }
           },
           "event": [
@@ -147,7 +147,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"cliente@quickpatch.test\",\n  \"password\": \"PasswordCliente123*\"\n}"
+              "raw": "{\n  \"email\": \"{{clienteEmail}}\",\n  \"password\": \"{{clientePassword}}\"\n}"
             }
           },
           "event": [
@@ -200,7 +200,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"tecnico@quickpatch.test\",\n  \"password\": \"PasswordTecnico123*\"\n}"
+              "raw": "{\n  \"email\": \"{{tecnicoEmail}}\",\n  \"password\": \"{{tecnicoPassword}}\"\n}"
             }
           },
           "event": [
@@ -855,6 +855,38 @@
     {
       "key": "baseUrl",
       "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "adminBetaEmail",
+      "value": ""
+    },
+    {
+      "key": "adminBetaPassword",
+      "value": ""
+    },
+    {
+      "key": "clienteEmail",
+      "value": ""
+    },
+    {
+      "key": "clientePassword",
+      "value": ""
+    },
+    {
+      "key": "tecnicoEmail",
+      "value": ""
+    },
+    {
+      "key": "tecnicoPassword",
+      "value": ""
     },
     {
       "key": "tokenAdmin",

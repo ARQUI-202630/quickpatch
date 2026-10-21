@@ -77,6 +77,7 @@ coleccion = {
     },
     "variable": [
         {"key": "baseUrl", "value": "http://localhost:8080", "type": "string"},
+        {"key": "userPassword", "value": "", "type": "string"},
         {"key": "tokenAlfa", "value": "", "type": "string"},
         {"key": "tokenBeta", "value": "", "type": "string"},
         {"key": "tokenTecnico", "value": "", "type": "string"},
@@ -93,7 +94,7 @@ coleccion = {
                     "POST",
                     "/v1/auth/login",
                     [JSON, CORR],
-                    {"email": "cliente.alfa@quickpatch.test", "password": "Password123*"},
+                    {"email": "cliente.alfa@quickpatch.test", "password": "{{userPassword}}"},
                     pruebas=[
                         "pm.test('[Auth] Login de Cliente Tenant Alfa exitoso (200 OK)', () => pm.response.to.have.status(200));",
                         "pm.collectionVariables.set('tokenAlfa', pm.response.json().accessToken);"
@@ -104,7 +105,7 @@ coleccion = {
                     "POST",
                     "/v1/auth/login",
                     [JSON, CORR],
-                    {"email": "cliente.beta@quickpatch.test", "password": "Password123*"},
+                    {"email": "cliente.beta@quickpatch.test", "password": "{{userPassword}}"},
                     pruebas=[
                         "pm.test('[Auth] Login de Cliente Tenant Beta exitoso (200 OK)', () => pm.response.to.have.status(200));",
                         "pm.collectionVariables.set('tokenBeta', pm.response.json().accessToken);"
@@ -115,7 +116,7 @@ coleccion = {
                     "POST",
                     "/v1/auth/login",
                     [JSON, CORR],
-                    {"email": "tecnico.alfa@quickpatch.test", "password": "Password123*"},
+                    {"email": "tecnico.alfa@quickpatch.test", "password": "{{userPassword}}"},
                     pruebas=[
                         "pm.test('[Auth] Login de Técnico para Control RBAC exitoso (200 OK)', () => pm.response.to.have.status(200));",
                         "pm.collectionVariables.set('tokenTecnico', pm.response.json().accessToken);"

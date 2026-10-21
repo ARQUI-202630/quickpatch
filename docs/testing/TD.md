@@ -1351,15 +1351,17 @@ A continuación se incorporan las evidencias fotográficas y capturas de pantall
 
 #### 10.12.1 Pruebas de Carga Sostenida (50 VU) con Grafana k6 en Windows PowerShell
 
-Ejecución automatizada de `tests/performance/load-test-50vu.js` contra el Ingress Nginx del cluster de QA (`http://10.43.100.168:80`). Se simularon 50 usuarios virtuales concurrentes durante 1 minuto, evaluando los flujos concurrentes de consulta de catálogo y creación de solicitudes de servicio técnico.
+Ejecución automatizada de `tests/performance/load-test-50vu.js` contra el Ingress Nginx del cluster de QA (`https://qa.quickpatch.internal:443`). Se simularon 50 usuarios virtuales concurrentes durante 2 minutos y 30 segundos, evaluando los flujos concurrentes de consulta de catálogo y creación transaccional de solicitudes de servicio técnico.
 
 ![Pruebas de Carga 50 VU con Grafana k6 en QA](img/k6-load-50vu-qa.png)
 
-- **Throughput y Volumen:** 5,755 peticiones HTTP completadas satisfactoriamente (tasa de 88.08 req/s).
-- **Tasa de Acierto y Disponibilidad:** 100.00% de aserciones exitosas (11,510/11,510 checks superados), tasa de fallo del 0.00%.
-- **Latencias Obtenidas:**
-  - Catálogo de Servicios (`GET /v1/catalog`): p95 = 36.24 ms (ampliamente inferior al SLA del SAD AC2-E4 de 2,000 ms).
-  - Solicitudes de Servicio (`POST /v1/service-requests`): p95 = 90.67 ms (supera holgadamente el criterio de aceptación).
+- **Throughput y Volumen:** 8,259 peticiones HTTP procesadas con 2,752 iteraciones completadas satisfactoriamente (caudal medio sostenido de 53.92 req/s).
+- **Tasa de Acierto y Confiabilidad:** 100.00% de aserciones exitosas (11,008 de 11,008 checks superados), tasa de fallo del 0.00% (0 errores en 8,259 requests).
+- **Latencias Obtenidas (Percentil 95):**
+  - Catálogo de Servicios (`GET /v1/catalog`): p95 = 38.72 ms (ampliamente inferior al SLA del SAD AC2-E4 de 200 ms).
+  - Solicitudes de Servicio (`POST /v1/service-requests`): p95 = 130.12 ms (supera holgadamente el criterio de aceptación del SAD AC2-E1 de 2,000 ms).
+- **Auto-Cancelación Transaccional (PR #121):** Se incorporó la cancelación inmediata de cada solicitud creada (`cancelar()`) en cada iteración, previniendo la sobrecarga de la base de datos PostgreSQL en VM5 y la saturación de la cola outbox en VM7.
+- **Credenciales Dinámicas por Iteración:** Generación aleatoria de contraseñas y sufijos en `setup()` conforme a las recomendaciones de seguridad de la revisión de PR #106.
 
 #### 10.12.2 Pruebas de Estrés Pico Inesperado (150 VU) con Grafana k6 en Windows PowerShell
 
@@ -1386,8 +1388,9 @@ Extracción de telemetría viva de los microservicios en formato JSON estructura
 
 ![Consulta y Exportación de Logs Estructurados en Grafana Loki API](img/loki-qa-vm1-export.png)
 
-- **Parámetros de Consulta:** Query LogQL `{namespace="quickpatch-qa"}` en ventana temporal del Sprint 4.
-- **Resultado del Escaneo PCI-DSS:** Las 100 trazas JSON exportadas en `tests/security/evidencias/loki_qa_k3s.json` fueron analizadas con el script auditor `tests/security/pci_dss_scanner.py`, arrojando **0 hallazgos de PAN (Primary Account Number)** y **0 hallazgos de CVV**, acreditando el cumplimiento formal de PCI-DSS Req 3.4 y SAD AC6-E1.
+- **Parámetros de Consulta:** Query LogQL `{vm="vm2"}` ejecutada directamente en la VM1.
+- **Volumen de Telemetría:** 2,649 líneas de logs procesadas y 580 KB de datos estructurados de los microservicios (.NET en k3s VM2: `ServiceRequest.Infrastructure... QuoteExpirer.cs`).
+- **Resultado del Escaneo PCI-DSS:** Las trazas exportadas en `tests/security/evidencias/loki_qa_k3s.json` fueron analizadas con el script auditor `tests/security/pci_dss_scanner.py`, arrojando **0 hallazgos de PAN (Primary Account Number)** y **0 hallazgos de CVV**, acreditando el cumplimiento formal de PCI-DSS Req 3.4 y SAD AC6-E1.
 
 #### 10.12.5 Transferencia Cifrada de Evidencias desde VM1 hacia Estación de QA
 
@@ -1405,6 +1408,14 @@ Ejecución del contenedor oficial `zaproxy/zap-stable` sobre VM1 para llevar a c
 
 - **Cobertura de Reglas:** 59 reglas de inspección DAST evaluadas en modo pasivo/activo baseline.
 - **Hallazgos:** Cero vulnerabilidades críticas o de severidad alta (**0 FAIL**), confirmando que las cabeceras de seguridad (`Content-Type-Options`, `X-Frame-Options`, directivas CORS) y la protección contra inyecciones cumplen con los estándares de seguridad perimetral de la arquitectura.
+
+#### 10.12.7 Ejecución de Pruebas de API E2E con Newman contra Ingress de QA
+
+Ejecución de la suite oficial `tests/e2e/scrum-56-registro-tecnico.postman_collection.json` contra el ambiente desplegado de QA (`https://qa.quickpatch.internal`), evaluando el ciclo de vida completo del técnico bajo contratos OpenAPI y control de acceso RBAC.
+
+![Ejecución de Pruebas E2E de Registro de Técnico con Newman en QA](img/newman-scrum56-qa.png)
+
+- **Aserciones Funcionales Superadas:** 20 aserciones aprobadas al 100%, certificando la creación transaccional del técnico (`201 Created`), detección estricta de duplicados de cédula y correo (`409 Conflict`), autenticación y emisión de token JWT RSA-256 (`200 OK`), consulta de perfil propio (`200 OK`) y bloqueo de operaciones cliente por control RBAC (`403 Forbidden`).
 
 ---
 
@@ -1427,6 +1438,7 @@ Ejecución del contenedor oficial `zaproxy/zap-stable` sobre VM1 para llevar a c
 | **2.7** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Actualización integral de la Matriz de Trazabilidad de Requisitos (RTM) alineada a SRS V5 (32 RFs, 23 Features, 7 Épicas), incorporación formal de la trazabilidad bidireccional de las Historias de Usuario de Sprint 4 (SCRUM-22, 24, 29, 30, 31, 33, 34, 36, 39, 40, 454/456, 399, 394), y resolución de criterios de aceptación verificables de SRS V5 §5.5 (RF-09, RF-10, RF-13, RF-19) cerrando todos los casos pendientes (SCRUM-401). |
 | **2.8** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Especificación formal de la estrategia de compuertas de calidad (Compuerta 0 a Compuerta 3) y definición operativa de la Compuerta 2 en la infraestructura dedicada de QA sobre 7 VMs (ADR-015, ADR-022: VM1, VM2, VM5, VM7), estableciendo umbrales de aceptación para suites E2E/API, escáner PCI-DSS en Loki, pruebas k6 (50/150 VU), DAST ZAP y aislamiento RLS (SCRUM-402 / SCRUM-399). |
 | **2.9** | 19 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de evidencias fotográficas y gráficas de ejecución real en ambiente de QA (Compuerta 2 — Sprint 4) en §10.12: pruebas de carga (50 VU) y estrés (150 VU) con Grafana k6, telemetría y logs transaccionales en vivo en Nginx Ingress, exportación de logs estructurados desde Grafana Loki API para auditoría PCI-DSS, transferencia segura SCP y reporte DAST con OWASP ZAP Baseline en Docker. |
+| **2.10** | 21 de octubre de 2026 | Katherine Bravo (QA Lead) | Actualización de evidencias fotográficas en §10.12 con la ejecución real certificada en ambiente de QA: corrida k6 50 VU con auto-cancelación (PR #121) y contraseñas dinámicas (11,008 checks, 0% error), consulta de logs estructurados en vivo en Grafana Loki API (2,649 líneas) y reporte CLI de Newman para SCRUM-56 (20 aserciones aprobadas). |
 
 
 

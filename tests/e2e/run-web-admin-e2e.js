@@ -28,10 +28,10 @@ function runNewman() {
     'run',
     collectionFile,
     '--env-var', `baseUrl=${baseUrl}`,
-    '--env-var', `adminEmail=admin@quickpatch.internal`,
-    '--env-var', `adminPassword=PasswordAdmin123*`,
-    '--env-var', `platformAdminEmail=platform-admin@quickpatch.internal`,
-    '--env-var', `platformAdminPassword=PasswordPlatformAdmin123*`,
+    '--env-var', `adminEmail=${process.env.QA_ADMIN_EMAIL || 'admin@quickpatch.internal'}`,
+    '--env-var', `adminPassword=${process.env.QA_ADMIN_PASSWORD || ''}`,
+    '--env-var', `platformAdminEmail=${process.env.QA_PLATFORM_ADMIN_EMAIL || 'platform-admin@quickpatch.internal'}`,
+    '--env-var', `platformAdminPassword=${process.env.QA_PLATFORM_ADMIN_PASSWORD || ''}`,
     '--insecure',
     '--reporters', 'cli'
   ];

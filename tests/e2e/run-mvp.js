@@ -44,10 +44,10 @@ function runMvp() {
         environment: {
             values: [
                 { key: 'baseUrl', value: baseUrl },
-                { key: 'adminEmail', value: 'admin@quickpatch.test' },
-                { key: 'adminPassword', value: 'PasswordAdmin123*' },
-                { key: 'platformAdminEmail', value: 'admin.plataforma@quickpatch.internal' },
-                { key: 'platformAdminPassword', value: 'PlatPassword123*' }
+                { key: 'adminEmail', value: process.env.QA_ADMIN_EMAIL || 'admin@quickpatch.test' },
+                { key: 'adminPassword', value: process.env.QA_ADMIN_PASSWORD || '' },
+                { key: 'platformAdminEmail', value: process.env.QA_PLATFORM_ADMIN_EMAIL || 'admin.plataforma@quickpatch.internal' },
+                { key: 'platformAdminPassword', value: process.env.QA_PLATFORM_ADMIN_PASSWORD || '' }
             ]
         },
         reporters: ['cli'],

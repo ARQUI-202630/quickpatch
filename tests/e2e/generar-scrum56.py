@@ -71,8 +71,9 @@ coleccion = {
     },
     "variable": [
         {"key": "baseUrl", "value": "http://localhost:8080", "type": "string"},
-        {"key": "adminEmail", "value": "admin@quickpatch.test", "type": "string"},
-        {"key": "adminPassword", "value": "PasswordAdmin123*", "type": "string"},
+        {"key": "adminEmail", "value": "", "type": "string"},
+        {"key": "adminPassword", "value": "", "type": "string"},
+        {"key": "tecnicoPassword", "value": "", "type": "string"},
         {"key": "adminToken", "value": "", "type": "string"},
         {"key": "specialtyId", "value": "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01", "type": "string"},
         {"key": "documentoTecnico", "value": "", "type": "string"},
@@ -123,7 +124,7 @@ coleccion = {
                     [JSON, CORR, CANAL],
                     {
                         "email": "{{correoTecnico}}",
-                        "password": "PasswordTecnico123*",
+                        "password": "{{tecnicoPassword}}",
                         "fullName": "Carlos Alberto Técnico QA",
                         "phone": "3109876543",
                         "documentId": "{{documentoTecnico}}",
@@ -134,7 +135,8 @@ coleccion = {
                         "const ts = Date.now();",
                         "const doc = String(ts).slice(-8);",
                         "pm.collectionVariables.set('documentoTecnico', doc);",
-                        "pm.collectionVariables.set('correoTecnico', 'tecnico.' + ts + '@quickpatch.test');"
+                        "pm.collectionVariables.set('correoTecnico', 'tecnico.' + ts + '@quickpatch.test');",
+                        "pm.collectionVariables.set('tecnicoPassword', 'Qp_' + ts + '_Tec9!');"
                     ],
                     pruebas=[
                         "pm.test('[SCRUM-56] 201 Created para registro legítimo', () => pm.response.to.have.status(201));",
@@ -150,7 +152,7 @@ coleccion = {
                     [JSON, CORR, CANAL],
                     {
                         "email": "{{otroCorreo}}",
-                        "password": "PasswordTecnico123*",
+                        "password": "{{tecnicoPassword}}",
                         "fullName": "Intento Duplicado Documento",
                         "phone": "3112223344",
                         "documentId": "{{documentoTecnico}}",
@@ -171,7 +173,7 @@ coleccion = {
                     [JSON, CORR, CANAL],
                     {
                         "email": "{{correoTecnico}}",
-                        "password": "PasswordTecnico123*",
+                        "password": "{{tecnicoPassword}}",
                         "fullName": "Intento Duplicado Correo",
                         "phone": "3119998877",
                         "documentId": "{{otroDocumento}}",
@@ -207,7 +209,7 @@ coleccion = {
                     [JSON, CORR, CANAL],
                     {
                         "email": "{{correoTecnico}}",
-                        "password": "PasswordTecnico123*"
+                        "password": "{{tecnicoPassword}}"
                     },
                     pruebas=[
                         "pm.test('[Auth] Login de técnico registrado exitoso (200 OK)', () => pm.response.to.have.status(200));",

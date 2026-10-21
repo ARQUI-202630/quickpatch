@@ -12,22 +12,42 @@
     },
     {
       "key": "clienteEmail",
-      "value": "cliente@quickpatch.test",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientePassword",
+      "value": "",
       "type": "string"
     },
     {
       "key": "tecnicoEmail",
-      "value": "tecnico@quickpatch.test",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tecnicoPassword",
+      "value": "",
       "type": "string"
     },
     {
       "key": "cliente2Email",
-      "value": "cliente2@quickpatch.test",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cliente2Password",
+      "value": "",
       "type": "string"
     },
     {
       "key": "clienteBetaEmail",
-      "value": "cliente.beta@quickpatch.test",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clienteBetaPassword",
+      "value": "",
       "type": "string"
     },
     {
@@ -92,7 +112,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{clienteEmail}}\",\n  \"password\": \"PasswordCliente123*\"\n}"
+              "raw": "{\n  \"email\": \"{{clienteEmail}}\",\n  \"password\": \"{{clientePassword}}\"\n}"
             }
           },
           "event": [
@@ -140,7 +160,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{tecnicoEmail}}\",\n  \"password\": \"PasswordTecnico123*\"\n}"
+              "raw": "{\n  \"email\": \"{{tecnicoEmail}}\",\n  \"password\": \"{{tecnicoPassword}}\"\n}"
             }
           },
           "event": [
@@ -188,7 +208,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{cliente2Email}}\",\n  \"password\": \"PasswordCliente123*\"\n}"
+              "raw": "{\n  \"email\": \"{{cliente2Email}}\",\n  \"password\": \"{{cliente2Password}}\"\n}"
             }
           },
           "event": [
@@ -236,7 +256,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{clienteBetaEmail}}\",\n  \"password\": \"PasswordCliente123*\"\n}"
+              "raw": "{\n  \"email\": \"{{clienteBetaEmail}}\",\n  \"password\": \"{{clienteBetaPassword}}\"\n}"
             }
           },
           "event": [

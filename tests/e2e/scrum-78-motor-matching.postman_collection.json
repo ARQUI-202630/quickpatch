@@ -11,6 +11,11 @@
       "type": "string"
     },
     {
+      "key": "userPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "tokenAlfa",
       "value": "",
       "type": "string"
@@ -73,7 +78,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"cliente.alfa@quickpatch.test\",\n  \"password\": \"Password123*\"\n}"
+              "raw": "{\n  \"email\": \"cliente.alfa@quickpatch.test\",\n  \"password\": \"{{userPassword}}\"\n}"
             }
           },
           "event": [
@@ -117,7 +122,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"cliente.beta@quickpatch.test\",\n  \"password\": \"Password123*\"\n}"
+              "raw": "{\n  \"email\": \"cliente.beta@quickpatch.test\",\n  \"password\": \"{{userPassword}}\"\n}"
             }
           },
           "event": [
@@ -161,7 +166,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"tecnico.alfa@quickpatch.test\",\n  \"password\": \"Password123*\"\n}"
+              "raw": "{\n  \"email\": \"tecnico.alfa@quickpatch.test\",\n  \"password\": \"{{userPassword}}\"\n}"
             }
           },
           "event": [

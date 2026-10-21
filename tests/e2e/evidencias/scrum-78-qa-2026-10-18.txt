@@ -1,0 +1,91 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN REAL EN QA — Motor de Matching y Asignación (SCRUM-78)
+Ambiente: QA Desplegado (k3s en VM2 / Ingress https://qa.quickpatch.internal)
+Ejecutado con: Newman CLI (reporte limpio sin credenciales)
+================================================================================
+
+
+❏ 0. Autenticación de Actores
+↳ 0.1 Login Cliente Tenant Alfa
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 1024ms]
+  ✗  [Auth] Login de Cliente Tenant Alfa exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.2 Login Cliente Tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 902ms]
+  ✗  [Auth] Login de Cliente Tenant Beta exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+↳ 0.3 Login Técnico Tenant Alfa para Control RBAC
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 992ms]
+  ✗  [Auth] Login de Técnico para Control RBAC exitoso (200 OK) (falló: expected response to have status code 200 but got 401)
+
+❏ 1. Asignación Automática y Verificación de SLA (RN-M9, RNF-05, RF-09)
+↳ 1.1 Creación de solicitud con candidato elegible → Estado asignado
+  POST https://qa.quickpatch.internal/api/v1/service-requests [401 Unauthorized, 221B, 17ms]
+  ✗  [RF-09 / RN-M9] Solicitud creada y técnico asignado automáticamente (201 Created) (falló: expected response to have status code 201 but got 401)
+  ✓  [RNF-05 / AC2-E3] SLA: Tiempo de primer intento de asignación < 60 segundos
+↳ 1.2 Consulta de Intentos de Matching y Evaluación de Candidatos
+  GET https://qa.quickpatch.internal/api/v1/matching/attempts/sr-mat-001 [401 Unauthorized, 171B, 25ms]
+  ✗  [SCRUM-78] 200 OK en historial de matching_attempts (falló: expected response to have status code 200 but got 401)
+  ✗  [Matching Engine] Se registró intento de matching con resultado asignado (falló: expected undefined to be a number or a date)
+  ✗  [RN-M9] Candidato seleccionado es un técnico aprobado y disponible (falló: Cannot read properties of undefined (reading 'eligibleCandidateAssigned'))
+  ✗  [RNF-05] Duración del intento de matching medida dentro del SLA (< 60.000 ms) (falló: expected undefined to be a number or a date)
+
+❏ 2. Exclusión de Candidatos No Elegibles y Estado En Espera (RN-M9, RN-M10, RF-10)
+↳ 2.1 Solicitud sin candidatos elegibles → Estado en_espera (RN-M10)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [401 Unauthorized, 221B, 17ms]
+  ✗  [RF-10 / RN-M10] Solicitud creada pasa a en_espera por falta de candidatos (201 Created) (falló: expected response to have status code 201 but got 401)
+↳ 2.2 Detalle de Solicitud en_espera no expone asignación previa
+  GET https://qa.quickpatch.internal/api/v1/service-requests/sr-mat-espera-002 [404 Not Found, 217B, 13ms]
+  ✗  [Consistencia] 200 OK en consulta de solicitud en espera (falló: expected response to have status code 200 but got 404)
+  ✗  [RN-M10] Solicitud permanece en_espera de nuevo técnico disponible (falló: expected 404 to deeply equal 'en_espera')
+↳ 2.3 Auditoría de Intentos: Técnicos pendientes y fuera de zona descartados
+  GET https://qa.quickpatch.internal/api/v1/matching/attempts/sr-mat-espera-002 [401 Unauthorized, 171B, 22ms]
+  ✗  [Matching Engine] 200 OK en intentos de solicitud en espera (falló: expected response to have status code 200 but got 401)
+  ✗  [RN-M9] Técnicos pendientes y fuera de cobertura fueron excluidos (falló: Cannot read properties of undefined (reading 'excludedNotApproved'))
+  ✗  [Estado] Resultado global de matching es sin_candidatos (falló: expected 401 to deeply equal 'sin_candidatos')
+
+❏ 3. Idempotencia del Consumidor de Eventos (processed_events / AC5-E5)
+↳ 3.1 Primer consumo del evento service-request.created
+  POST https://qa.quickpatch.internal/api/v1/matching/events/simulate-event [401 Unauthorized, 171B, 19ms]
+  ✗  [Idempotencia / AC5-E5] Evento procesado exitosamente por primera vez (200 OK) (falló: expected response to have status code 200 but got 401)
+  ✗  [processed_events] Resultado registrado es APPLIED_FIRST_TIME (falló: expected undefined to deeply equal 'APPLIED_FIRST_TIME')
+↳ 3.2 Reenvío duplicado del mismo evento → Descartado sin reprocesamiento
+  POST https://qa.quickpatch.internal/api/v1/matching/events/simulate-event [401 Unauthorized, 171B, 18ms]
+  ✗  [Idempotencia] Reenvío duplicado responde 200 OK sin fallar (falló: expected response to have status code 200 but got 401)
+  ✗  [processed_events] Detección de duplicado: SKIPPED_ALREADY_PROCESSED (falló: expected undefined to deeply equal 'SKIPPED_ALREADY_PROCESSED')
+
+❏ 4. Control de Acceso RBAC y Seguridad (IDN-017, RFC 9457)
+↳ 4.1 Control RBAC: Rol Técnico intenta crear solicitud de servicio → 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/service-requests [401 Unauthorized, 221B, 12ms]
+  ✗  [RBAC / IDN-012] 403 Forbidden para rol técnico creando solicitudes (falló: expected response to have status code 403 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /no-autorizado (falló: expected 'https://quickpatch.internal/problems/…' to match /\/no-autorizado$/)
+↳ 4.2 Seguridad: Solicitud anónima de creación sin token → 401 Unauthorized
+  POST https://qa.quickpatch.internal/api/v1/service-requests [401 Unauthorized, 221B, 17ms]
+  ✓  [Seguridad / IDN-017] 401 Unauthorized ante creación anónima
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✓  [Contrato RFC 9457] Tipo de error /no-autenticado
+↳ 4.3 Seguridad: Consulta anónima de intentos de matching sin token → 401 Unauthorized
+  GET https://qa.quickpatch.internal/api/v1/matching/attempts/sr-mat-001 [401 Unauthorized, 171B, 13ms]
+  ✓  [Seguridad / IDN-017] 401 Unauthorized ante consulta anónima de matching
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✓  [Contrato RFC 9457] Tipo de error /no-autenticado
+
+❏ 5. Aislamiento Multi-Tenant (RLS / SAD AC6-E2)
+↳ 5.1 Fuga Cross-Tenant Bloqueada: Cliente Beta consulta solicitud de Alfa → 404 Not Found
+  GET https://qa.quickpatch.internal/api/v1/service-requests/sr-mat-001 [404 Not Found, 217B, 14ms]
+  ✓  [Aislamiento Multi-Tenant] 404 Not Found para usuario de otro tenant (RLS)
+  ✓  [Seguridad] Cero filtración de datos de la orden ni del técnico asignado
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✓  [Contrato RFC 9457] Tipo de error /no-encontrado
+↳ 5.2 Fuga Cross-Tenant Bloqueada: Cliente Beta consulta matching de Alfa → 404 Not Found
+  GET https://qa.quickpatch.internal/api/v1/matching/attempts/sr-mat-001 [401 Unauthorized, 171B, 16ms]
+  ✗  [Aislamiento Multi-Tenant] 404 Not Found para intentos de matching de otro tenant (RLS) (falló: expected response to have status code 404 but got 401)
+  ✓  [RFC 9457] Problem Details con correlationId
+  ✗  [Contrato RFC 9457] Tipo de error /no-encontrado (falló: expected 'https://quickpatch.internal/problems/…' to match /\/no-encontrado$/)
+
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+│                requests │               15 │                0 │
+│              assertions │               35 │               22 │
+└─────────────────────────┴──────────────────┴──────────────────┘

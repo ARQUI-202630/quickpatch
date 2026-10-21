@@ -76,7 +76,7 @@ coleccion = {
         {"key": "tecnicoOcupadoEmail", "value": "tecnico.ocupado@quickpatch.test", "type": "string"},
         {"key": "tecnicoOtroEmail", "value": "tecnico.otro@quickpatch.test", "type": "string"},
         {"key": "clienteEmail", "value": "cliente@quickpatch.test", "type": "string"},
-        {"key": "passwordComun", "value": "Password123*", "type": "string"},
+        {"key": "passwordComun", "value": "", "type": "string"},
         {"key": "tecnicoToken", "value": "", "type": "string"},
         {"key": "tecnicoOcupadoToken", "value": "", "type": "string"},
         {"key": "tecnicoOtroToken", "value": "", "type": "string"},

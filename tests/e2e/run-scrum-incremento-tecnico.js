@@ -38,6 +38,7 @@ function runCollection(file, title, callback) {
         '--env-var', `tecnicoOcupadoEmail=tecnico.ocupado@quickpatch.test`,
         '--env-var', `tecnicoOtroEmail=tecnico.otro@quickpatch.test`,
         '--env-var', `clienteEmail=cliente@quickpatch.test`,
+        '--env-var', `passwordComun=${process.env.QA_PASSWORD_COMUN || process.env.QA_CLIENT_PASSWORD || ''}`,
         '--insecure',
         '--reporters', 'cli'
     ];
