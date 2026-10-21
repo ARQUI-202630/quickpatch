@@ -10,7 +10,7 @@ Cada decisión de arquitectura tiene su propio archivo en esta carpeta, con cont
 | [ADR-005](ADR-005-multitenancy-rls.md) | Multi-tenancy con `tenant_id` + RLS | AC7 | Aceptado |
 | [ADR-006](ADR-006-kafka-bus-eventos.md) | Kafka como bus de eventos | AC5, AC8 | Aceptado |
 | [ADR-007](ADR-007-outbox-idempotencia.md) | Outbox + idempotencia | AC5 | Aceptado |
-| [ADR-009](ADR-009-tokenizacion-pagos.md) | Tokenización de pagos | AC6 | Aceptado |
+| [ADR-009](ADR-009-tokenizacion-pagos.md) | Tokenización de pagos (pasarela simulada en el MVP desde el 20 oct 2026) | AC6 | Aceptado, modificado |
 | [ADR-011](ADR-011-k3s-orquestacion.md) | k3s para los microservicios | AC5 | Aceptado; ampliado por ADR-015 y ADR-022 |
 | [ADR-012](ADR-012-stack-tecnologico-polyglot.md) | Stack polyglot | AC7 | Aceptado |
 | [ADR-013](ADR-013-estrategia-de-repositorios.md) | Un repositorio por componente | AC7 | Aceptado; modificado por ADR-021 |
@@ -25,6 +25,8 @@ Cada decisión de arquitectura tiene su propio archivo en esta carpeta, con cont
 | [ADR-022](ADR-022-redistribucion-vms.md) | 7 VMs: 3 de producción, 3 de QA y 1 de herramientas | AC7 | Aceptado; implementación en curso |
 | [ADR-023](ADR-023-canal-tiempo-real-websocket.md) | Canal de estado en tiempo real por WebSocket hacia Communication Service, con respaldo por REST | AC4, AC2 | Aceptado |
 | [ADR-024](ADR-024-dependencias-externas-r5.md) | R5 sin cambios: geocodificación con Nominatim propio (Bogotá) y notificaciones dentro de la app | AC6, AC5 | Aceptado; excepción a ADR-014 |
+| [ADR-025](ADR-025-rest-solo-identity-service-request-payments.md) | REST desde el gateway solo hacia Identity, ServiceRequest y Payments; el resto por Kafka, con excepciones explícitas | AC7, AC5 | Aceptado |
+| [ADR-026](ADR-026-chat-de-la-solicitud.md) | Chat de la solicitud en Communication, sobre el canal en tiempo real; historial y envío como excepción de ADR-025 | AC4, AC6 | Propuesto (SCRUM-473) |
 
 **Números sin asignar.** ADR-001 y ADR-010 nunca se usaron. ADR-008 aparecía en versiones anteriores del SAD como referencia a una decisión que no existía y se retiró en la versión 2.0. No se reutilizan, para no confundir referencias históricas.
 

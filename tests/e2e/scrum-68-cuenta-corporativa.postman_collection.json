@@ -1,0 +1,1855 @@
+{
+  "info": {
+    "name": "QUICKPATCH — SCRUM-68 Cuenta corporativa de punta a punta",
+    "description": "RF-06 (SCRUM-26) contra QA, con identity.v1.yaml 1.8.0. La empresa se registra con su primer usuario dentro del tenant del canal; el token trae company_id. El primer usuario agrega a otro con una invitación de un solo uso: sin usarla no puede entrar, la usa, entra con la misma empresa y los dos aparecen con la contraseña definida. Casos negativos: NIT y correo repetidos (409), datos inválidos (400 por campo), invitación para quien ya definió su contraseña (409), usuario de otra empresa (404), cliente hogar (403) y sin token (401). Aislamiento: otra empresa del mismo tenant solo ve sus usuarios, y el mismo NIT se registra en el tenant Beta como otra cuenta. Variables: baseUrl. Correr con --reporters cli: el reporte JSON de Newman guarda tokens.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://qa.quickpatch.internal"
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Registro de la empresa",
+      "item": [
+        {
+          "name": "Registro de la empresa con su primer usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "company"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": {\n    \"legalName\": \"Inversiones Andinas QA S.A.S.\",\n    \"nit\": \"{{nit}}\",\n    \"contactEmail\": \"compras.empresa.qa.{{sufijo}}@quickpatch.test\"\n  },\n  \"user\": {\n    \"email\": \"empresa.qa.{{sufijo}}@quickpatch.test\",\n    \"password\": \"{{clave}}\",\n    \"fullName\": \"Contacto empresa.qa\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('sufijo')) {",
+                  "  pm.collectionVariables.set('sufijo', Date.now().toString(36));",
+                  "  // Clave de las cuentas de esta corrida: se genera al vuelo y no se guarda en ningún lado.",
+                  "  pm.collectionVariables.set('clave', 'Qp_' + Math.random().toString(36).slice(2, 12) + '!Aa7');",
+                  "  // NIT de 9 dígitos con dígito de verificación, distinto en cada corrida.",
+                  "  const base = String(Date.now()).slice(-9);",
+                  "  pm.collectionVariables.set('nit', base + '-7');",
+                  "  pm.collectionVariables.set('nitOtra', String(Number(base) + 1).padStart(9, '1').slice(-9) + '-3');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 con el contrato CompanyRegistered', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(Object.keys(r.company).sort()).to.eql([\"contactEmail\", \"contactPhone\", \"createdAt\", \"id\", \"legalName\", \"nit\"]);",
+                  "  pm.expect(r.user.role).to.eql('empresa_contacto');",
+                  "  pm.expect(r.user.companyId).to.eql(r.company.id);",
+                  "  pm.expect(r.user).to.not.have.property('password');",
+                  "});",
+                  "pm.collectionVariables.set('empresaId', pm.response.json().company.id);",
+                  "pm.collectionVariables.set('fundadorId', pm.response.json().user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El mismo NIT en el tenant → 409 nit-registrado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "company"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": {\n    \"legalName\": \"Copia\",\n    \"nit\": \"{{nit}}\",\n    \"contactEmail\": \"copia.{{sufijo}}@quickpatch.test\"\n  },\n  \"user\": {\n    \"email\": \"copia.{{sufijo}}@quickpatch.test\",\n    \"password\": \"{{clave}}\",\n    \"fullName\": \"Copia\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo nit-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/nit-registrado$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El mismo correo → 409 correo-registrado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "company"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": {\n    \"legalName\": \"Otra\",\n    \"nit\": \"{{nitOtra}}\",\n    \"contactEmail\": \"otra.{{sufijo}}@quickpatch.test\"\n  },\n  \"user\": {\n    \"email\": \"empresa.qa.{{sufijo}}@quickpatch.test\",\n    \"password\": \"{{clave}}\",\n    \"fullName\": \"Otra\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo correo-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/correo-registrado$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Datos inválidos → 400 por campo con prefijo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "company"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": {\n    \"legalName\": \"A\",\n    \"nit\": \"900.123\",\n    \"contactEmail\": \"no-es-correo\"\n  },\n  \"user\": {\n    \"email\": \"malo\",\n    \"password\": \"corta\",\n    \"fullName\": \"B\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo validacion', () => pm.expect(pm.response.json().type).to.match(/\\/validacion$/));",
+                  "pm.test('errores de la empresa y del usuario', () => {",
+                  "  const e = pm.response.json().errors;",
+                  "  ['company.legalName', 'company.nit', 'company.contactEmail', 'user.email', 'user.password']",
+                  "    .forEach(c => pm.expect(e).to.have.property(c));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login de la empresa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"empresa.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 como empresa_contacto de la empresa', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('empresa_contacto');",
+                  "  pm.expect(pm.response.json().user.companyId).to.eql(pm.collectionVariables.get('empresaId'));",
+                  "});",
+                  "const parte = pm.response.json().accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "const claims = JSON.parse(atob(parte + '='.repeat((4 - parte.length % 4) % 4)));",
+                  "pm.test('el token trae company_id', () => pm.expect(claims.company_id).to.eql(pm.collectionVariables.get('empresaId')));",
+                  "pm.collectionVariables.set('fundadorToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El perfil trae companyId",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fundadorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('companyId de la empresa', () => pm.expect(pm.response.json().companyId).to.eql(pm.collectionVariables.get('empresaId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La empresa del token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fundadorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('contrato Company con el NIT registrado', () => {",
+                  "  const c = pm.response.json();",
+                  "  pm.expect(Object.keys(c).sort()).to.eql([\"contactEmail\", \"contactPhone\", \"createdAt\", \"id\", \"legalName\", \"nit\"]);",
+                  "  pm.expect(c.id).to.eql(pm.collectionVariables.get('empresaId'));",
+                  "  pm.expect(c.nit).to.eql(pm.collectionVariables.get('nit'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Otro usuario de la empresa con su invitación",
+      "item": [
+        {
+          "name": "Agregar un usuario a la empresa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fundadorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario2.qa.{{sufijo}}@quickpatch.test\",\n  \"fullName\": \"Segundo usuario QA\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 con la invitación y la misma empresa', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const u = pm.response.json();",
+                  "  pm.expect(u.role).to.eql('empresa_contacto');",
+                  "  pm.expect(u.companyId).to.eql(pm.collectionVariables.get('empresaId'));",
+                  "  pm.expect(u.invitation.link).to.include('#token=');",
+                  "  pm.expect(u.invitation.token).to.have.lengthOf(43);",
+                  "});",
+                  "pm.collectionVariables.set('usuario2Id', pm.response.json().id);",
+                  "pm.collectionVariables.set('invitacion2', pm.response.json().invitation.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Correo repetido → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fundadorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario2.qa.{{sufijo}}@quickpatch.test\",\n  \"fullName\": \"Repetido\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo correo-registrado', () => pm.expect(pm.response.json().type).to.match(/\\/correo-registrado$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Datos inválidos → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fundadorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"malo\",\n  \"fullName\": \"A\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo validacion', () => pm.expect(pm.response.json().type).to.match(/\\/validacion$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin usar la invitación no puede entrar → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario2.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo credenciales-invalidas', () => pm.expect(pm.response.json().type).to.match(/\\/credenciales-invalidas$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lista: el nuevo aparece sin contraseña definida",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fundadorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('dos usuarios; el nuevo pendiente', () => {",
+                  "  const p = pm.response.json();",
+                  "  pm.expect(p.totalItems).to.eql(2);",
+                  "  pm.expect(Object.keys(p.items[0]).sort()).to.eql([\"createdAt\", \"email\", \"fullName\", \"passwordDefined\", \"phone\", \"userId\"]);",
+                  "  const nuevo = p.items.find(u => u.userId === pm.collectionVariables.get('usuario2Id'));",
+                  "  pm.expect(nuevo.passwordDefined).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El usuario define su contraseña con la invitación",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/password/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "password",
+                "setup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{invitacion2}}\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La invitación no sirve dos veces → 400 enlace-invalido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/password/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "password",
+                "setup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{invitacion2}}\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo enlace-invalido', () => pm.expect(pm.response.json().type).to.match(/\\/enlace-invalido$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login de el segundo usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario2.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 como empresa_contacto de la empresa', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('empresa_contacto');",
+                  "  pm.expect(pm.response.json().user.companyId).to.eql(pm.collectionVariables.get('empresaId'));",
+                  "});",
+                  "const parte = pm.response.json().accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "const claims = JSON.parse(atob(parte + '='.repeat((4 - parte.length % 4) % 4)));",
+                  "pm.test('el token trae company_id', () => pm.expect(claims.company_id).to.eql(pm.collectionVariables.get('empresaId')));",
+                  "pm.collectionVariables.set('usuario2Token', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El segundo usuario ve a los dos, ya activos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{usuario2Token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('dos usuarios con la contraseña definida', () => {",
+                  "  const p = pm.response.json();",
+                  "  pm.expect(p.totalItems).to.eql(2);",
+                  "  pm.expect(p.items.every(u => u.passwordDefined)).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nadie recibe invitación para el primer usuario → 409 (nadie toma su cuenta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{usuario2Token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users/{{fundadorId}}/invitation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users",
+                "{{fundadorId}}",
+                "invitation"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo contrasena-definida', () => pm.expect(pm.response.json().type).to.match(/\\/contrasena-definida$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ni para quien ya usó la suya → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fundadorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users/{{usuario2Id}}/invitation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users",
+                "{{usuario2Id}}",
+                "invitation"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo contrasena-definida', () => pm.expect(pm.response.json().type).to.match(/\\/contrasena-definida$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agregar un tercero",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{usuario2Token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario3.qa.{{sufijo}}@quickpatch.test\",\n  \"fullName\": \"Tercer usuario QA\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('usuario3Id', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Enlace nuevo para el tercero, que aún no lo usa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{fundadorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users/{{usuario3Id}}/invitation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users",
+                "{{usuario3Id}}",
+                "invitation"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.test('contrato Invitation', () => pm.expect(Object.keys(pm.response.json()).sort()).to.eql(['expiresAt', 'link', 'token']));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Aislamiento y roles",
+      "item": [
+        {
+          "name": "Otra empresa del mismo tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "company"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": {\n    \"legalName\": \"Otra Empresa QA S.A.S.\",\n    \"nit\": \"{{nitOtra}}\",\n    \"contactEmail\": \"compras.otra.qa.{{sufijo}}@quickpatch.test\"\n  },\n  \"user\": {\n    \"email\": \"otra.qa.{{sufijo}}@quickpatch.test\",\n    \"password\": \"{{clave}}\",\n    \"fullName\": \"Contacto otra.qa\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 con el contrato CompanyRegistered', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(Object.keys(r.company).sort()).to.eql([\"contactEmail\", \"contactPhone\", \"createdAt\", \"id\", \"legalName\", \"nit\"]);",
+                  "  pm.expect(r.user.role).to.eql('empresa_contacto');",
+                  "  pm.expect(r.user.companyId).to.eql(r.company.id);",
+                  "  pm.expect(r.user).to.not.have.property('password');",
+                  "});",
+                  "pm.collectionVariables.set('otraEmpresaId', pm.response.json().company.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login de la otra empresa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"otra.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 como empresa_contacto de la empresa', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('empresa_contacto');",
+                  "  pm.expect(pm.response.json().user.companyId).to.eql(pm.collectionVariables.get('otraEmpresaId'));",
+                  "});",
+                  "const parte = pm.response.json().accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "const claims = JSON.parse(atob(parte + '='.repeat((4 - parte.length % 4) % 4)));",
+                  "pm.test('el token trae company_id', () => pm.expect(claims.company_id).to.eql(pm.collectionVariables.get('otraEmpresaId')));",
+                  "pm.collectionVariables.set('otraToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La otra empresa solo ve a su usuario",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{otraToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('un usuario', () => pm.expect(pm.response.json().totalItems).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "No renueva la invitación de un usuario ajeno → 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{otraToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users/{{usuario3Id}}/invitation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users",
+                "{{usuario3Id}}",
+                "invitation"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo no-encontrado', () => pm.expect(pm.response.json().type).to.match(/\\/no-encontrado$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro de un cliente hogar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hogar.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Cliente hogar QA\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del cliente hogar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hogar.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('sin companyId', () => pm.expect(pm.response.json().user.companyId).to.eql(null));",
+                  "const parte = pm.response.json().accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "const claims = JSON.parse(atob(parte + '='.repeat((4 - parte.length % 4) % 4)));",
+                  "pm.test('el token no trae company_id', () => pm.expect(claims).to.not.have.property('company_id'));",
+                  "pm.collectionVariables.set('hogarToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El cliente hogar no tiene empresa → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{hogarToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El mismo NIT en el tenant Beta es otra cuenta (DEP-13)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "company"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": {\n    \"legalName\": \"Inversiones Andinas QA S.A.S.\",\n    \"nit\": \"{{nit}}\",\n    \"contactEmail\": \"compras.beta.qa.{{sufijo}}@quickpatch.test\"\n  },\n  \"user\": {\n    \"email\": \"beta.qa.{{sufijo}}@quickpatch.test\",\n    \"password\": \"{{clave}}\",\n    \"fullName\": \"Contacto beta.qa\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 con el contrato CompanyRegistered', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(Object.keys(r.company).sort()).to.eql([\"contactEmail\", \"contactPhone\", \"createdAt\", \"id\", \"legalName\", \"nit\"]);",
+                  "  pm.expect(r.user.role).to.eql('empresa_contacto');",
+                  "  pm.expect(r.user.companyId).to.eql(r.company.id);",
+                  "  pm.expect(r.user).to.not.have.property('password');",
+                  "});",
+                  "pm.test('otra empresa', () => pm.expect(pm.response.json().company.id).to.not.eql(pm.collectionVariables.get('empresaId')));",
+                  "pm.collectionVariables.set('betaEmpresaId', pm.response.json().company.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login de la empresa de Beta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"beta.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 como empresa_contacto de la empresa', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('empresa_contacto');",
+                  "  pm.expect(pm.response.json().user.companyId).to.eql(pm.collectionVariables.get('betaEmpresaId'));",
+                  "});",
+                  "const parte = pm.response.json().accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "const claims = JSON.parse(atob(parte + '='.repeat((4 - parte.length % 4) % 4)));",
+                  "pm.test('el token trae company_id', () => pm.expect(claims.company_id).to.eql(pm.collectionVariables.get('betaEmpresaId')));",
+                  "pm.collectionVariables.set('betaToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La empresa de Beta no ve los usuarios de Alfa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{betaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('solo su usuario', () => pm.expect(pm.response.json().totalItems).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ni renueva la invitación de un usuario de Alfa → 404 (RLS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{betaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/companies/me/users/{{usuario3Id}}/invitation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "me",
+                "users",
+                "{{usuario3Id}}",
+                "invitation"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": []
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

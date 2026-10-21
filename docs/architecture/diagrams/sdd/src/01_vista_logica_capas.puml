@@ -70,16 +70,17 @@ package "Capa de datos" <<datos>> as DATOS {
 APP --> GW : HTTPS/JSON\ny WebSocket
 PANEL --> GW : HTTPS/JSON
 
+' ADR-025: REST principal solo hacia Identity, ServiceRequest y Payments. Las líneas punteadas son las excepciones
+' explícitas del ADR (el usuario necesita la respuesta al instante).
 GW --> IDENTITY : REST
-GW --> ACTORS : REST
-GW --> CATALOG : REST
 GW --> SR : REST
-GW --> MATCHING : REST
-GW --> RANKING : REST
 GW --> PAYMENTS : REST
-GW --> COMMUNICATION : REST y WebSocket
+GW ..> MATCHING : REST, excepción:\nacciones del técnico
+GW ..> CATALOG : REST, excepción:\nadministración
+GW ..> COMMUNICATION : excepción: buzón\ny WebSocket
 
 IDENTITY --> KAFKA
+ACTORS --> KAFKA
 CATALOG --> KAFKA
 SR --> KAFKA
 MATCHING --> KAFKA
@@ -90,7 +91,7 @@ COMMUNICATION --> KAFKA
 SR --> GEO : HTTP
 PAYMENTS --> PASARELA : HTTPS
 SR --> REDIS : candados
-MATCHING ..> REDIS : caché\n(planeado)
+MATCHING ..> REDIS #90A4AE : <color:#78909C>caché\n<color:#78909C>(planeado)
 SR --> GARAGE : S3
 NEGOCIO --> PG : cada servicio,\nsu propia base
 
@@ -102,6 +103,7 @@ legend right
   |<#F3E5F5>| Integración (borde punteado: sistema externo) |
   |<#ECEFF1>| Datos |
   Flechas a Kafka: publica o consume eventos.
-  Línea punteada: uso planeado.
+  Línea punteada desde el gateway: excepción del ADR-025.
+  Línea gris punteada: uso planeado.
 endlegend
 @enduml
