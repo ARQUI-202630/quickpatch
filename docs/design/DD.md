@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.12|
+|**Versión**|5.13|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -789,8 +789,9 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |client_id|UUID|No|Ref. lógica|Usuario que creó la solicitud.|
 |category_id|UUID|No|Ref. lógica|Categoría del servicio (Catalog Service).|
 |technician_id|UUID|Sí|Ref. lógica|Técnico asignado a la solicitud.|
-|company_id|UUID|Sí|Ref. lógica|**Nuevo v3. Pendiente de implementar (RF-08).** Empresa cliente (`client_companies.id`) cuando la crea un `empresa_contacto`; sale del token (RN-SR12).|
-|client_type|VARCHAR(10)|No|CHECK|**Nuevo v3. Pendiente de implementar (RF-08).** `hogar` o `empresa`. Se fija a partir del rol del creador: `empresa_contacto` produce `empresa` (RF-08, SCRUM-28).|
+|company_id|UUID|Sí|Ref. lógica|**Nuevo v3; implementado en v5.13 (RF-08, SCRUM-73).** Empresa cliente (`client_companies.id`) cuando la crea un `empresa_contacto`; sale del claim `company_id` del token (RN-SR12). Índice `ix_service_requests_company`.|
+|client_type|VARCHAR(10)|No|CHECK|**Nuevo v3; implementado en v5.13.** `hogar` o `empresa`. Se fija a partir del rol del creador: `empresa_contacto` produce `empresa` (RF-08, SCRUM-28). `CHECK ((client_type = 'empresa') = (company_id IS NOT NULL))`; las solicitudes anteriores quedan en `hogar`.|
+|site_name|VARCHAR(100)|Sí|—|**Nuevo v5.13 (SCRUM-73).** Nombre de la sede de la empresa (por ejemplo, `Sede Chapinero`). Solo en solicitudes de empresa.|
 |description|TEXT|No|—|Descripción del problema.|
 |location|geometry(POINT,4326)|No|—|Ubicación geográfica del servicio. Viene del GPS del teléfono o, si la solicitud llega sin coordenadas, de geocodificar `address_text` con el Nominatim propio (**v5**, ADR-024, sección 8.3.3).|
 |address_text|VARCHAR(255)|No|—|Dirección escrita.|
@@ -817,7 +818,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 - `pagado`
 - `cancelado`
 
-**Reglas de negocio:** RN-SR1 a RN-SR13 y máquina de estados (sección 7.4).
+**Reglas de negocio:** RN-SR1 a RN-SR14 y máquina de estados (sección 7.4).
 
 **Índices sugeridos:**
 
@@ -1462,6 +1463,7 @@ Matching Service aplica RN-TP1 y RN-TP2 con la copia de `verification_status` qu
 - **RN-SR11:** `description` tiene entre 10 y 1000 caracteres y `address_text` entre 5 y 255. `address_text` complementa la ubicación con los datos que el punto no tiene (torre, apartamento, indicaciones).
 - **RN-SR12 (nuevo v3):** `client_type` es `empresa` cuando el creador tiene rol `empresa_contacto` y `hogar` en los demás casos. No se recibe del cliente (RF-08).
 - **RN-SR13 (nuevo v3):** la dirección exacta y el teléfono del cliente solo se entregan al técnico asignado, y solo mientras la solicitud está entre `asignado` y `completado` (SCRUM-34, criterio 2). En el historial (RF-17) el técnico ve la solicitud sin datos de contacto.
+- **RN-SR14 (nuevo v5.13):** en una solicitud de empresa, los demás `empresa_contacto` de la misma empresa la ven en el detalle y en la lista, igual que quien la creó (SCRUM-28, criterio 4). Las acciones sobre la solicitud (cancelar, responder la cotización, calificar) siguen siendo de quien la creó; el pago de la empresa es RN-P6 (SCRUM-43).
 
 **Figura 3: Máquina de estados de `service_requests`**
 
@@ -1601,6 +1603,7 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 |RN-SR1, RN-SR2|`location` es NOT NULL; `technician_id` admite nulos.|
 |RN-SR3 a RN-SR7, RN-R3|Validación de transiciones en ServiceRequest Service (módulo *State Validation* del SDD). RN-SR3 cuenta las evidencias dentro de la misma transacción que cambia el estado.|
 |RN-SR8, RN-SR13, RN-E2, RN-Q1, RN-Q3|Autorización en ServiceRequest Service comparando el usuario del token con `client_id`, `technician_id` o el rol.|
+|RN-SR12, RN-SR14|ServiceRequest Service fija `client_type` y `company_id` con el rol y el claim `company_id` del token, y compara ese claim con `company_id` para mostrar la solicitud a los demás usuarios de la empresa.|
 |RN-M1, RN-M7|Índices únicos parciales sobre `matching_attempts` (sección 5.8). La aceptación ejecuta `UPDATE technician_availability SET status = 'ocupado' WHERE technician_id = $1 AND status = 'disponible'` y la rechaza si no actualiza ninguna fila.|
 |RN-M2|La aceptación actualiza la oferta con la condición `response = 'pendiente' AND expires_at > now()` y el técnico del token.|
 |RN-M3, RN-M8|Tarea programada de Matching Service que marca como `expirado` cada oferta vencida y ofrece la solicitud al siguiente candidato (SDD V2, antes DD §10.4).|
@@ -1761,12 +1764,12 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 
 |Método|Endpoint|Roles|RF|v3|Descripción|
 |---|---|---|---|---|---|
-|POST|`/v1/service-requests`|`cliente`, `empresa_contacto`|RF-07, RF-08|Contrato v1.3.0 (ubicación opcional)|Crear solicitud; sin `location`, se geocodifica `addressText` (sección 8.3.3).|
+|POST|`/v1/service-requests`|`cliente`, `empresa_contacto`|RF-07, RF-08|Contrato v1.3.0 (ubicación opcional); `empresa_contacto` y `siteName` desde v1.9.0|Crear solicitud; sin `location`, se geocodifica `addressText` (sección 8.3.3).|
 |GET|`/v1/service-requests/categories`|Todos (con token); público con `X-Channel-Id` para el registro de técnicos|RF-02, RF-07|Contrato v1.8.0 (ADR-025)|Categorías activas del tenant desde la réplica `service_request_categories`, que guarda la descripción desde quickpatch-kafka v0.8.0.|
 |GET|`/v1/service-requests/localities`|Público y todos|RF-13|Contrato v1.8.0 (ADR-025)|Localidades de Bogotá desde la copia P-09, sin polígono.|
 |POST|`/v1/service-requests/location-preview`|`cliente`, `empresa_contacto`|RF-07|Contrato v1.3.0|Vista previa de la geocodificación: punto, localidad y dirección reconocida, sin crear nada (sección 8.3.3).|
-|GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Contrato v1.4.0 (`admin_tenant`); el cliente, pendiente|Listar: el cliente ve las suyas; el `admin_tenant`, todas las de su tenant, sin dirección, ubicación ni contacto (sección 8.3.15).|
-|GET|`/v1/service-requests/{id}`|Cliente dueño, técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato.|
+|GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Contrato v1.4.0 (`admin_tenant`); `cliente` y `empresa_contacto` desde v1.9.0|Listar: el cliente ve las suyas, el `empresa_contacto` las de su empresa (RN-SR14) y el `admin_tenant` todas las del tenant. Sin dirección, ubicación ni contacto; con `clientType`, `companyId`, `siteName` y `description` (sección 8.3.15).|
+|GET|`/v1/service-requests/{id}`|Cliente dueño, `empresa_contacto` de la misma empresa (v1.9.0, RN-SR14), técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato.|
 |POST|`/v1/service-requests/{id}/cancel`|Cliente dueño, `admin_tenant`|RF-36|Contrato v1.5.0|Cancelar con motivo (sección 8.3.9).|
 |GET|`/v1/service-requests/{id}/quotes`|Cliente dueño, técnico asignado|RF-34, RF-35|Contrato v1.6.0|Cotizaciones de la solicitud, de la más antigua a la más reciente.|
 |POST|`/v1/service-requests/{id}/quotes`|Técnico asignado|RF-34|Contrato v1.6.0|Emitir cotización (sección 8.3.7).|
@@ -1894,7 +1897,7 @@ El token de acceso dura 15 minutos y el de renovación 7 días (SDD V2, antes DD
 }
 ```
 
-`client_type`, `company_id`, `client_id` y `tenant_id` no se reciben: salen del token (RN-SR12, RN-U3). El formulario de la aplicación lo divide en máximo 3 pasos (RNF-11; SCRUM-332, antes DD §12).
+`client_type`, `company_id`, `client_id` y `tenant_id` no se reciben: salen del token (RN-SR12, RN-U3). **v5.13 (contrato 1.9.0, SCRUM-73):** el `empresa_contacto` puede enviar `siteName` (2 a 100 caracteres) con el nombre de la sede; un `cliente` que lo envía recibe `400` en `siteName`. La solicitud de empresa sigue el mismo flujo de matching, cotización, ejecución y pago que la de hogar. El formulario de la aplicación lo divide en máximo 3 pasos (RNF-11; SCRUM-332, antes DD §12).
 
 **Respuesta `201 Created`:**
 
@@ -2775,7 +2778,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.10|SCRUM-44|**Comprobante del pago (RF-24).** `payments.v1.yaml` 1.1.0 con `GET /v1/payments/{id}/invoice` en JSON o PDF según `Accept`, para el pagador y el `admin_tenant` (secciones 8.2.5 y 8.3.16). El PDF se genera al pedirlo y `invoices.pdf_url` queda nulo (sección 5.13). Es un comprobante sin validez fiscal (SRS DR-03, antes P3). El `IngressRoute` de Payments suma el prefijo `/v1/payments`.|
 |5.11|SCRUM-479|**Chat de la solicitud (RF-37, ADR-026).** Tablas `chat_participants` (réplica de `service-request.status-changed`) y `chat_messages` en `db_communication` (secciones 5.23 y 5.24), reglas RN-CH1 a RN-CH4 (sección 7.14), `communication.v1.yaml` 1.3.0 con `GET` y `POST /v1/service-requests/{id}/messages` (secciones 8.2.6 y 8.3.17) y la trama `chat.message` del canal (`realtime.v1.yaml` 1.1.0, sección 8.5).|
 |5.12|SCRUM-484|**Cuenta corporativa (RF-06, SCRUM-26).** `identity.v1.yaml` 1.8.0 con `POST /v1/auth/register/company`, `GET /v1/companies/me` y `GET` y `POST /v1/companies/me/users` con la invitación de la sección 5.21 (secciones 8.2.1 y 8.3.18). Claim `company_id` en el token y `companyId` en el perfil. Nueva regla RN-CC4 (nadie define la contraseña de otro usuario). DEP-13 queda resuelta: el SRS V4 ya ubica la empresa cliente dentro del tenant.|
-|5.13|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.13|SCRUM-73|**Solicitud de empresa (RF-08, SCRUM-28).** `service-request.v1.yaml` 1.9.0: el `empresa_contacto` crea solicitudes con `siteName` opcional; `client_type` y `company_id` se implementan y salen del token (RN-SR12); `site_name` nueva en `service_requests` (sección 5.5). RN-SR14: los demás usuarios de la empresa ven la solicitud. `GET /v1/service-requests` se abre al `cliente` y al `empresa_contacto`, con `clientType` para que el panel distinga las de empresa (secciones 8.2.4 y 8.3.3).|
+|5.14|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
