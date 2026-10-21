@@ -121,6 +121,22 @@ Necesita a Payments con el comprobante desplegado en QA (quickpatch-payments#8).
   - **Buzón:** `solicitud-creada` para el cliente y `oferta-recibida` para el técnico. Otro cliente, el administrador y el cliente de Beta no las ven y no pueden marcarlas como leídas (404). Marcar como leída es idempotente.
   - El caso del geocodificador sin respuesta no se provoca en QA: lo cubren las pruebas de ServiceRequest.
 
+## Cuenta corporativa de punta a punta (SCRUM-68)
+
+`scrum-68-cuenta-corporativa.postman_collection.json` (RF-06, SCRUM-26) la genera `generar-scrum68-cuenta-corporativa.py`. Contrato: `identity.v1.yaml` 1.8.0. **No necesita al administrador**: todas las cuentas se registran por el canal con correo, NIT y clave generados en la corrida.
+
+1. **Registro:** la empresa y su primer usuario quedan en el tenant del canal. El perfil y el token traen `companyId` y `company_id`. Responde 409 si el NIT o el correo se repiten, y 400 por campo (`company.nit`, `user.password`…) con datos inválidos.
+2. **Otro usuario con invitación:**
+   - El primer usuario lo agrega. Sin usar la invitación no puede entrar (401); con ella define su contraseña (204), y el mismo enlace no sirve dos veces (400).
+   - Al entrar, su token tiene la misma empresa y los dos usuarios aparecen activos.
+   - Nadie recibe invitación para un usuario que ya definió su contraseña (409), así nadie toma la cuenta de otro.
+3. **Aislamiento:**
+   - Otra empresa del mismo tenant solo ve a su usuario y recibe 404 con usuarios ajenos.
+   - El cliente hogar recibe 403 y su token no trae `company_id`. Sin token, 401.
+   - El mismo NIT se registra en el tenant Beta como otra cuenta, que no ve ni toca los usuarios de Alfa (404, RLS).
+
+Se verificó contra Identity local (PostgreSQL 16 con las migraciones y los roles). Las 61 aserciones del tenant del canal pasan; las del tenant Beta solo aplican en QA, porque el Nginx de VM1 elige el tenant por el host. Necesita quickpatch-identity#24 desplegado: migración `CuentaCorporativa`, `aplicar-roles-db.yml` y la ruta `/v1/companies` del Ingress.
+
 ## Chat de la solicitud de punta a punta (SCRUM-483)
 
 `scrum-483-chat.postman_collection.json` (RF-37, SCRUM-473, ADR-026) la genera `generar-scrum483-chat.py` con la preparación y la asignación de SCRUM-490. Contrato: `communication.v1.yaml` 1.3.0 (`GET` y `POST /v1/service-requests/{id}/messages`). Communication conoce a los participantes por `service-request.status-changed`, así que las consultas del historial reintentan hasta que llega la réplica.
