@@ -137,6 +137,21 @@ Necesita a Payments con el comprobante desplegado en QA (quickpatch-payments#8).
 
 Se verificó contra Identity local (PostgreSQL 16 con las migraciones y los roles). Las 61 aserciones del tenant del canal pasan; las del tenant Beta solo aplican en QA, porque el Nginx de VM1 elige el tenant por el host. Necesita quickpatch-identity#24 desplegado: migración `CuentaCorporativa`, `aplicar-roles-db.yml` y la ruta `/v1/companies` del Ingress.
 
+## Solicitud de empresa de punta a punta (SCRUM-75)
+
+`scrum-75-solicitud-empresa.postman_collection.json` (RF-08, SCRUM-28) la genera `generar-scrum75-solicitud-empresa.py` con la preparación de SCRUM-490 (categoría propia y técnico aprobado). Contratos: `service-request.v1.yaml` 1.9.0 e `identity.v1.yaml` 1.8.0.
+
+1. **Empresa y usuarios:** se registra una empresa, agrega a un colega que define su contraseña con la invitación, y se registra otra empresa.
+2. **Crear:** la empresa crea la solicitud con su sede (`clientType` empresa, `companyId` del token, sede sin espacios). Una sede de un carácter y la sede de un cliente hogar responden 400.
+3. **Mismo flujo de matching:** el técnico recibe la oferta, la acepta, la solicitud queda asignada y el técnico ve la sede.
+4. **Quién la ve (RN-SR14):**
+   - El colega la ve en el detalle y en la lista de la empresa, sin dirección en la lista.
+   - Otra empresa, un cliente hogar y el cliente de Beta reciben 404.
+   - El administrador la ve en su lista como de empresa.
+5. **Cerrar:** el colega no la cancela (404), quien la creó sí, y el técnico queda libre.
+
+Necesita en QA a Identity con quickpatch-identity#24, a ServiceRequest con quickpatch-service-request#27 (migración `SolicitudDeEmpresa`) y a Matching. Igual que las demás: `adminEmail` y `adminPassword` desde el entorno.
+
 ## Chat de la solicitud de punta a punta (SCRUM-483)
 
 `scrum-483-chat.postman_collection.json` (RF-37, SCRUM-473, ADR-026) la genera `generar-scrum483-chat.py` con la preparación y la asignación de SCRUM-490. Contrato: `communication.v1.yaml` 1.3.0 (`GET` y `POST /v1/service-requests/{id}/messages`). Communication conoce a los participantes por `service-request.status-changed`, así que las consultas del historial reintentan hasta que llega la réplica.
