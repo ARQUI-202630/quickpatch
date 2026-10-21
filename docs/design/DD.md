@@ -1316,6 +1316,43 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Retención:** el MVP no borra notificaciones. Una política de retención (por ejemplo, 90 días) queda como evolución.
 
+### 5.23 Tabla `chat_participants`
+
+**Nueva v5.11 (ADR-026, SCRUM-479).** **Servicio propietario:** Communication Service, en `db_communication`.
+
+**Propósito:** Réplica de quién participa en el chat de cada solicitud y en qué estado está la solicitud (ADR-017). Communication la llena al consumir `service-request.status-changed`, que trae `clientId`, `technicianId` y `status`; no llama a ServiceRequest.
+
+**Requisitos relacionados:** RF-37.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|service_request_id|UUID|No|PK|Solicitud (ref. lógica a `service_requests.id`).|
+|tenant_id|UUID|No|—|`tenantId` del evento.|
+|client_id|UUID|No|—|Cliente dueño de la solicitud.|
+|technician_id|UUID|Sí|—|Técnico asignado actual; nulo sin técnico.|
+|status|VARCHAR(30)|No|—|Último estado aplicado (sección 7.4).|
+|status_changed_at|TIMESTAMPTZ|No|—|`changedAt` del último evento aplicado; un evento más viejo se descarta (ADR-017).|
+
+**Reglas de negocio:** RN-CH1 a RN-CH3 (sección 7.14). RLS por tenant. El consumidor escribe con `communication_app` bajo el `tenantId` del evento.
+
+### 5.24 Tabla `chat_messages`
+
+**Nueva v5.11 (ADR-026, SCRUM-479).** **Servicio propietario:** Communication Service, en `db_communication`.
+
+**Propósito:** Mensajes del chat de cada solicitud (RF-37).
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|id|UUID|No|PK|Identificador del mensaje (UUID v7, ordenable por tiempo).|
+|tenant_id|UUID|No|—|Tenant del autor (claim `tenant_id`).|
+|service_request_id|UUID|No|FK local|`chat_participants.service_request_id`.|
+|author_id|UUID|No|Ref. lógica|Autor (claim `sub`).|
+|author_role|VARCHAR(30)|No|CHECK|`cliente` o `tecnico` según el lugar del autor en el chat (un `empresa_contacto` dueño escribe como `cliente`).|
+|body|VARCHAR(1000)|No|—|Texto plano, de 1 a 1.000 caracteres sin espacios al inicio ni al final. No se escribe en logs ni en eventos.|
+|sent_at|TIMESTAMPTZ|No|—|Hora del servidor al guardarlo.|
+
+**Restricciones e índices:** índice `(tenant_id, service_request_id, sent_at DESC, id DESC)` para el historial. RLS por tenant. `communication_app` tiene `SELECT` e `INSERT` en las dos tablas y `UPDATE` en `chat_participants`; los mensajes no se editan ni se borran en el MVP.
+
 ---
 
 ## 6. Relaciones entre datos
@@ -1534,6 +1571,15 @@ Derivadas de la etapa de cotización del SAD (sección 7.4).
 - **RN-CC2:** todo usuario `empresa_contacto` pertenece a exactamente una empresa cliente (`company_id` no nulo), y ningún otro rol tiene empresa.
 - **RN-CC3:** solo un `empresa_contacto` de la misma empresa puede agregar otros usuarios solicitantes a ella (SCRUM-26, criterio 3). El usuario agregado hereda el tenant y la empresa de quien lo agrega.
 
+### 7.14 Reglas del chat (`chat_participants` y `chat_messages`)
+
+**Nuevo v5.11 (ADR-026).**
+
+- **RN-CH1:** solo participan el cliente dueño (`client_id`) y el técnico asignado actual (`technician_id`). Para cualquier otro usuario, incluido el mismo rol de otro tenant, la solicitud no tiene chat (`404`). Si la solicitud se reasigna, el técnico anterior deja de verlo. Los demás usuarios autorizados de una empresa se suman cuando el token traiga la empresa (SCRUM-26).
+- **RN-CH2:** se puede escribir con técnico asignado y en `asignado`, `cotizado`, `cotizacion_aceptada` o `en_progreso`. En `completado`, `pagado` y `cancelado` el chat es de solo lectura (`409 chat-cerrado`). Si la solicitud ya no tiene técnico (por ejemplo, volvió a `buscando_tecnico` o pasó a `en_espera`), el cliente dueño lee el historial con `writable = false` y escribir responde `409 chat-no-disponible`. Una solicitud que Communication todavía no conoce (aún no ha tenido técnico) responde `404`, como para cualquier usuario que no participa.
+- **RN-CH3:** `chat_participants` aplica un `service-request.status-changed` solo si su `changedAt` es más nuevo que `status_changed_at` (ADR-017).
+- **RN-CH4:** el texto es plano, de 1 a 1.000 caracteres, sin adjuntos, y no se escribe en logs ni en eventos.
+
 ### 7.13 Mecanismo de cumplimiento de cada regla
 
 Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de una decisión externa, se indica la dependencia.
@@ -1747,6 +1793,8 @@ Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la sol
 |GET|`/v1/realtime` (WebSocket)|`cliente`, `empresa_contacto`, `tecnico`, `admin_tenant`|RF-11, RNF-06|Contrato AsyncAPI 1.0.0|Canal de avisos en tiempo real (ADR-023, sección 8.5). Se describe en `asyncapi/realtime.v1.yaml`, no en OpenAPI.|
 |GET|`/v1/notifications?unread=&page=&size=`|`cliente`, `empresa_contacto`, `tecnico`, `admin_tenant`|RIE-03|Contrato v1.0.0|Buzón del usuario del token, del más reciente al más antiguo, con `unreadCount` (ADR-024, sección 5.22).|
 |POST|`/v1/notifications/{id}/read`|Los mismos|RIE-03|Contrato v1.0.0|Marcar como leída; idempotente. Una notificación de otro usuario o tenant responde `404`.|
+|GET|`/v1/service-requests/{id}/messages?page=&size=`|Participantes: cliente dueño (o `empresa_contacto` dueño) y técnico asignado|RF-37|Contrato v1.3.0|Historial del chat, del más reciente al más antiguo, con `writable` (sección 8.3.17, ADR-026).|
+|POST|`/v1/service-requests/{id}/messages`|Los mismos|RF-37|Contrato v1.3.0|Enviar un mensaje; se entrega por el canal (`chat.message`). `409 chat-cerrado` o `chat-no-disponible` (RN-CH2).|
 
 **Tipos de notificación (`communication.v1.yaml` 1.2.0).** Cada uno nace de un evento que ya existe. Los de estado salen de `service-request.status-changed`, igual que el aviso en tiempo real (sección 8.5, SCRUM-466):
 
@@ -2157,6 +2205,26 @@ Cuenta solo las solicitudes del tenant del `admin_tenant` (RLS). `byStatus` siem
 |Otro cliente del tenant, cualquier usuario de otro tenant (RLS) o pago sin comprobante|404 `no-encontrado`|
 |Técnico u otro rol|403|
 
+#### 8.3.17 Chat de la solicitud — `/v1/service-requests/{id}/messages`
+
+```json
+{
+  "items": [
+    { "id": "019a0b1c-...", "authorId": "2b8f6c1e-...", "authorRole": "tecnico", "text": "Llego a las 3 p. m. ¿La portería tiene mi nombre?", "sentAt": "2026-10-21T17:40:02Z" }
+  ],
+  "page": 1, "size": 30, "totalItems": 1,
+  "writable": true
+}
+```
+
+**v5.11 (ADR-026, RF-37).** Lo atiende Communication como excepción de ADR-025; Traefik lo enruta por el sufijo `/messages` con más prioridad que el prefijo de ServiceRequest. `POST` recibe `{ "text": "..." }` (1 a 1.000 caracteres; si no, `400`) y responde `201` con el mensaje. Communication lo guarda y envía la trama `chat.message` del canal (sección 8.5) al otro participante y a las demás conexiones del autor. `writable` dice si se puede escribir (RN-CH2).
+
+|Quién|`GET`|`POST`|
+|---|---|---|
+|Cliente dueño o técnico asignado|200|201, o 409 según RN-CH2|
+|Otro cliente o técnico del tenant, técnico anterior, cualquier usuario de otro tenant|404|404|
+|`admin_tenant`, `admin_plataforma`, `proveedor`|403|403|
+
 ### 8.4 Eventos Kafka
 
 Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de partición es el identificador de la entidad principal (`serviceRequestId` en los eventos de solicitud, matching y pago; `technicianId` en los de técnicos), para que Kafka entregue en orden los eventos de una misma entidad. Los errores de consumo siguen la política de reintentos y DLQ del SDD (sección 8.9).
@@ -2246,11 +2314,12 @@ _Cuadro 12: Contenido de `data` por evento_
 |`service-request.status-changed` (`serviceRequestId`, `status`, `occurredAt`)|Cliente dueño (`clientId`) y técnico asignado (`technicianId`), si lo hay|`service-request.created` (`buscando_tecnico`) y el evento de Kafka `service-request.status-changed` (el `status` que trae). Desde 5.1 no sale de los eventos de Matching (SCRUM-466)|`GET /v1/service-requests/{id}`|
 |`offer.created` (`attemptId`, `serviceRequestId`, `expiresAt`, `occurredAt`)|Técnico de la oferta|`matching.offer-created`|`GET /v1/matching/offers`|
 |`service-request.counts-changed` (`occurredAt`)|`admin_tenant` del tenant|Cada `service-request.status-changed` del tenant|`GET /v1/admin/service-requests/summary` (sin contrato todavía)|
+|`chat.message` (`serviceRequestId` y el mensaje: `id`, `authorId`, `authorRole`, `text`, `sentAt`). **v5.11, `realtime.v1.yaml` 1.1.0**|El otro participante y las demás conexiones del autor (RN-CH1)|No sale de Kafka: lo envía Communication al guardar el mensaje (ADR-026)|Nada: trae el mensaje completo|
 
 _Cuadro 13: Avisos del canal en tiempo real_
 
 - **Enrutamiento sin tablas:** Communication decide a quién avisar solo con el evento. Por eso `service-request.status-changed` lleva `clientId` y `technicianId`, igual que `service-request.started`, `.cancelled` y `.completed`, y los eventos de matching que avisan al cliente llevan `clientId` (v4).
-- **Fuente del aviso de estado (5.1, SCRUM-466):** el aviso sale del dueño del estado. ServiceRequest publica `service-request.status-changed` por Outbox en la misma transacción del cambio y solo si lo aplicó. Antes Communication lo armaba de los eventos de Matching, y si ServiceRequest descartaba uno por viejo (`matching_updated_at`, ADR-017) el aviso salía igual: el técnico veía «asignado» y el detalle respondía 404. Además, cuando la app recibe el aviso, el detalle ya tiene el estado nuevo. El buzón (sección 8.2.6) también crea sus notificaciones de estado con este evento (5.4, SCRUM-456), así que Communication ya no consume los eventos de estado de Matching. Communication no guarda réplicas ni conexiones en la base: las conexiones viven en memoria, en una sola réplica (ADR-023, punto 6).
+- **Fuente del aviso de estado (5.1, SCRUM-466):** el aviso sale del dueño del estado. ServiceRequest publica `service-request.status-changed` por Outbox en la misma transacción del cambio y solo si lo aplicó. Antes Communication lo armaba de los eventos de Matching, y si ServiceRequest descartaba uno por viejo (`matching_updated_at`, ADR-017) el aviso salía igual: el técnico veía «asignado» y el detalle respondía 404. Además, cuando la app recibe el aviso, el detalle ya tiene el estado nuevo. El buzón (sección 8.2.6) también crea sus notificaciones de estado con este evento (5.4, SCRUM-456), así que Communication ya no consume los eventos de estado de Matching. Communication no guarda conexiones en la base: viven en memoria, en una sola réplica (ADR-023, punto 6). Desde 5.11 sí guarda una réplica para el chat (`chat_participants`, ADR-026), que no cambia el enrutamiento de los avisos.
 - **Aislamiento:** un aviso solo se entrega a conexiones con el mismo `tenant_id` que el `tenantId` del evento.
 - **Idempotencia:** Communication descarta los eventos que ya procesó por `eventId` mientras está en ejecución. El aviso es idempotente por naturaleza: si llega repetido, la app vuelve a pedir el mismo detalle. Cuando Communication tenga base de datos (buzón de notificaciones, ADR-024), la deduplicación pasa a `processed_events` (RN-EV1).
 - **Cierres:** `4000` trama inválida, `4001` token inválido, `4002` sin autenticación en 10 segundos, `4003` rol que no usa el canal (`admin_plataforma`, `proveedor`), `4004` token vencido durante la conexión, `1001` reinicio del servidor, `1009` trama de más de 8 KB y `1011` error interno. Con 4000 a 4003 la app no reintenta con el mismo token; con 1001, 1011 y 4004 se reconecta.
@@ -2672,7 +2741,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.8|SCRUM-42|**Pago con la pasarela simulada (RF-22, RF-23, ADR-009 modificado).** `payments.v1.yaml` 1.0.0: `GET` y `POST /v1/service-requests/{id}/payment`, enrutados por un `IngressRoute` de Traefik (sección 8.2.5). Tokens de la pasarela simulada en la sección 8.3.12. La tabla `payments` suma `reason_code` y `processed_at` (sección 5.12). `payment.approved` y `payment.rejected` (quickpatch-kafka) llevan también `clientId`, `companyId` y `technicianId`, para que Communication avise sin consultar a otro servicio (Cuadro 12).|
 |5.9|SCRUM-115|**Implementación del pago (quickpatch-payments).** `payments` suma `processing_started_at` y `billing` (sección 5.12). La conciliación usa el rol `payments_scheduler` ya previsto en la sección 10.2, con `SELECT` sobre `id`, `tenant_id`, `status`, `provider_token_ref` y `processing_started_at`. Quien paga es el creador de la solicitud; RN-P6 (cualquier `empresa_contacto` de la empresa) queda para SCRUM-43, porque el token aún no trae la empresa.|
 |5.10|SCRUM-44|**Comprobante del pago (RF-24).** `payments.v1.yaml` 1.1.0 con `GET /v1/payments/{id}/invoice` en JSON o PDF según `Accept`, para el pagador y el `admin_tenant` (secciones 8.2.5 y 8.3.16). El PDF se genera al pedirlo y `invoices.pdf_url` queda nulo (sección 5.13). Es un comprobante sin validez fiscal (SRS DR-03, antes P3). El `IngressRoute` de Payments suma el prefijo `/v1/payments`.|
-|5.11|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.11|SCRUM-479|**Chat de la solicitud (RF-37, ADR-026).** Tablas `chat_participants` (réplica de `service-request.status-changed`) y `chat_messages` en `db_communication` (secciones 5.23 y 5.24), reglas RN-CH1 a RN-CH4 (sección 7.14), `communication.v1.yaml` 1.3.0 con `GET` y `POST /v1/service-requests/{id}/messages` (secciones 8.2.6 y 8.3.17) y la trama `chat.message` del canal (`realtime.v1.yaml` 1.1.0, sección 8.5).|
+|5.12|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 

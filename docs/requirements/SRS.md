@@ -5,8 +5,8 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 5.4 (MVP, incremento del Sprint 4) |
-| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44 |
+| **Versión del documento** | 5.5 (MVP, incremento del Sprint 4) |
+| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473 |
 | **Responsable** | Angy Bautista (Product Owner) |
 | **Estado** | Aprobado por el Product Owner el 14 de octubre de 2026 (SCRUM-406). Línea base de la sección 1.3 revisada el 14 de octubre de 2026 (Sebastián Sánchez). Pendiente: el PR a `develop` |
 | **Estándar de referencia** | IEEE Std 830-1998 |
@@ -131,7 +131,7 @@ A alto nivel, el MVP debe permitir:
 - El sistema debe cumplir la normativa colombiana que aplica al producto: protección de datos personales (Ley 1581 de 2012), protección al consumidor (Ley 1480 de 2011) y facturación electrónica (SAD, killers K12 a K14).
 - El técnico no es subordinado de la plataforma: el sistema no impone turnos, exclusividad ni sanciones por rechazar una solicitud (SAD, restricción R12).
 
-**Fuera del alcance del MVP:** modo sin conexión en la app móvil, sitio web público más allá de la página de presentación (sin SEO ni redes sociales), chat dentro de la aplicación y módulo de reclamos (SAD, sección 1.3).
+**Fuera del alcance del MVP:** modo sin conexión en la app móvil, sitio web público más allá de la página de presentación (sin SEO ni redes sociales) y módulo de reclamos (SAD, sección 1.3). El chat entre el Cliente y el Técnico asignado sí entra desde la versión 5.5 (RF-37, SCRUM-473); los adjuntos en el chat siguen fuera.
 
 ### 2.4 Supuestos y Dependencias
 
@@ -237,7 +237,7 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 |---|---|---|---|
 | F2.1 — Solicitud de Servicio | Creación de solicitudes de servicio técnico por Cliente y Empresa, respuesta a la cotización y cancelación antes de iniciar el servicio. | RF-07, RF-08, RF-35, RF-36 | SCRUM-27, 28, 472, 486 |
 | F2.2 — Motor de Matching | Asignación automática de técnico y aceptación/rechazo de la solicitud por parte del Técnico. | RF-09, RF-10 | SCRUM-29, 30 |
-| F2.3 — Seguimiento del Servicio | Visualización en tiempo real del estado de la solicitud. | RF-11 | SCRUM-31 |
+| F2.3 — Seguimiento del Servicio | Visualización en tiempo real del estado de la solicitud y chat con el técnico asignado. | RF-11, RF-37 | SCRUM-31, 473 |
 | F2.4 — Calificación del Servicio | Calificación del servicio por parte del Cliente después de pagarlo. | RF-12 | SCRUM-32 |
 
 #### Épica 3 — Herramientas para el Técnico y Proveedores (SCRUM-9)
@@ -353,6 +353,7 @@ La Épica 6 tiene además cuatro historias de infraestructura sin etiqueta de Fe
 | RF-12 | El sistema debe permitir al Cliente calificar el servicio (1 a 5, con comentario opcional) una sola vez, después de que se confirme el pago (estado "Pagado"). | Media | F2.4 | SCRUM-32 |
 | RF-35 | El sistema debe permitir al Cliente aceptar o rechazar la cotización de su solicitud. Una solicitud admite como máximo 3 cotizaciones, y una cotización sin respuesta antes de su vencimiento cancela la solicitud. | Alta | F2.1 | SCRUM-486 |
 | RF-36 | El sistema debe permitir al Cliente, o al administrador de su tenant, cancelar una solicitud mientras el servicio no haya iniciado, registrando el motivo de la cancelación. | Media | F2.1 | SCRUM-472 |
+| RF-37 | El sistema debe permitir al Cliente dueño de una solicitud (o a los usuarios autorizados de su Empresa) y al Técnico asignado escribirse mensajes de texto dentro de la solicitud, con historial guardado y entrega en tiempo real. El chat se habilita cuando la solicitud tiene técnico asignado y queda de solo lectura cuando se completa, se paga o se cancela. Ningún otro usuario ve los mensajes. | Media | F2.3 | SCRUM-473 |
 
 #### Épica 3 — Herramientas para el Técnico y Proveedores (SCRUM-9)
 
@@ -514,7 +515,7 @@ Con el fin de justificar el enfoque del producto, se comparó QUICKPATCH frente 
 | Épica (Jira) | Features | Requisitos | Historias de Usuario (Jira) |
 |---|---|---|---|
 | SCRUM-7 — Fundación y Multi-tenant | F1.1 – F1.4 | RF-01 – RF-06 | SCRUM-21 a SCRUM-26 |
-| SCRUM-8 — Matching y Experiencia Cliente | F2.1 – F2.4 | RF-07 – RF-12, RF-35, RF-36 | SCRUM-27 a SCRUM-32, SCRUM-472, SCRUM-486 |
+| SCRUM-8 — Matching y Experiencia Cliente | F2.1 – F2.4 | RF-07 – RF-12, RF-35 – RF-37 | SCRUM-27 a SCRUM-32, SCRUM-472, SCRUM-473, SCRUM-486 |
 | SCRUM-9 — Herramientas Técnico/Proveedor | F3.1 – F3.4 | RF-13 – RF-17, RF-34 | SCRUM-33 a SCRUM-37, SCRUM-486 |
 | SCRUM-10 — Panel Administrativo | F4.1 – F4.3 | RF-18 – RF-21 | SCRUM-38 a SCRUM-41, SCRUM-348 |
 | SCRUM-11 — Pagos PCI-DSS y Facturación | F5.1 – F5.3 | RF-22 – RF-25 | SCRUM-42 a SCRUM-45 |
@@ -559,6 +560,7 @@ Cada RF se enlaza con su historia de Jira y con los casos del Documento de Prueb
 | RF-34 | SCRUM-486 | SRQ-008, SRQ-009, SRQ-010 |
 | RF-35 | SCRUM-486 | SRQ-011, SRQ-012, SRQ-013, E2E-008 |
 | RF-36 | SCRUM-472 | SRQ-019, SRQ-020, E2E-010 |
+| RF-37 | SCRUM-473 | Por definir en el TD V2 (colección de SCRUM-483) |
 
 Los RNF se verifican por medio de su escenario de calidad del SAD (sección 5.3), y el TD (sección 7.1.2) enlaza cada escenario con sus casos de prueba.
 
@@ -624,6 +626,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | 5.2 | 19 oct 2026 | RF-34 (cotización del Técnico) y RF-35 (respuesta del Cliente) dejan de estar «por crear»: su historia es SCRUM-486, con el diseño en el DD 5.5 y el contrato `service-request.v1.yaml` 1.6.0 (SCRUM-487). Se actualizan F2.1, F3.2, la tabla de RF, las Épicas SCRUM-8 y SCRUM-9, la matriz de trazabilidad (7.1.2), el resumen y la sección 7.3, que además quita SCRUM-35 porque su descripción ya exige la evidencia fotográfica (RF-15). |
 | 5.3 | 20 oct 2026 | Página de presentación pública (SCRUM-491), pedida por el profesor en la revisión del 20 de octubre de 2026. La sección 2.1 suma la página al panel web y la 2.3 acota el «sitio web público» fuera de alcance: solo entra esa página, sin SEO ni redes sociales (SAD 2.31, FA2). No cambia ningún RF ni RNF. |
 | 5.4 | 21 oct 2026 | Comprobante de pago (SCRUM-44). La decisión pendiente P3 pasa a DR-03 (sección 7.4.1): en el MVP, RF-24 se cumple con un comprobante de pago sin validez fiscal, rotulado como tal; la factura electrónica validada por la DIAN queda para producción real (SAD 2.33, killer K14; DD 5.10). No cambia la redacción de RF-24. |
+| 5.5 | 21 oct 2026 | Chat de la solicitud (SCRUM-473, subtarea SCRUM-479). Nuevo RF-37 en F2.3: el Cliente dueño y el Técnico asignado se escriben dentro de la solicitud, con historial y entrega en tiempo real, y el chat queda de solo lectura al terminar o cancelar. La sección 2.3 saca el chat de lo que queda fuera del MVP (los adjuntos siguen fuera) y la matriz de trazabilidad agrega RF-37 (SAD 2.34, ADR-026; DD 5.11). |
 
 ---
 

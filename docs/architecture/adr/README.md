@@ -26,6 +26,7 @@ Cada decisión de arquitectura tiene su propio archivo en esta carpeta, con cont
 | [ADR-023](ADR-023-canal-tiempo-real-websocket.md) | Canal de estado en tiempo real por WebSocket hacia Communication Service, con respaldo por REST | AC4, AC2 | Aceptado |
 | [ADR-024](ADR-024-dependencias-externas-r5.md) | R5 sin cambios: geocodificación con Nominatim propio (Bogotá) y notificaciones dentro de la app | AC6, AC5 | Aceptado; excepción a ADR-014 |
 | [ADR-025](ADR-025-rest-solo-identity-service-request-payments.md) | REST desde el gateway solo hacia Identity, ServiceRequest y Payments; el resto por Kafka, con excepciones explícitas | AC7, AC5 | Aceptado |
+| [ADR-026](ADR-026-chat-de-la-solicitud.md) | Chat de la solicitud en Communication, sobre el canal en tiempo real; historial y envío como excepción de ADR-025 | AC4, AC6 | Propuesto (SCRUM-473) |
 
 **Números sin asignar.** ADR-001 y ADR-010 nunca se usaron. ADR-008 aparecía en versiones anteriores del SAD como referencia a una decisión que no existía y se retiró en la versión 2.0. No se reutilizan, para no confundir referencias históricas.
 
