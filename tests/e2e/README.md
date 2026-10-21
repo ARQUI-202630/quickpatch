@@ -121,6 +121,26 @@ Necesita a Payments con el comprobante desplegado en QA (quickpatch-payments#8).
   - **Buzón:** `solicitud-creada` para el cliente y `oferta-recibida` para el técnico. Otro cliente, el administrador y el cliente de Beta no las ven y no pueden marcarlas como leídas (404). Marcar como leída es idempotente.
   - El caso del geocodificador sin respuesta no se provoca en QA: lo cubren las pruebas de ServiceRequest.
 
+## Chat de la solicitud de punta a punta (SCRUM-483)
+
+`scrum-483-chat.postman_collection.json` (RF-37, SCRUM-473, ADR-026) la genera `generar-scrum483-chat.py` con la preparación y la asignación de SCRUM-490. Contrato: `communication.v1.yaml` 1.3.0 (`GET` y `POST /v1/service-requests/{id}/messages`). Communication conoce a los participantes por `service-request.status-changed`, así que las consultas del historial reintentan hasta que llega la réplica.
+
+1. **Chat abierto:** con la solicitud asignada, el cliente ve el chat vacío y con `writable = true`.
+2. **Conversación:** el cliente escribe (se le quitan los espacios de los extremos) y el técnico responde. Los dos ven el mismo historial, del más reciente al más antiguo, y la página 2 de tamaño 1 trae el primero.
+3. **Validación y acceso:**
+   - 400 con un texto vacío o de 1.001 caracteres, con campos de más (`authorId`) o con `size=500`.
+   - 401 sin token y 403 para el administrador del tenant.
+   - 404 para otro cliente, otro técnico y el cliente de Beta (RLS).
+4. **Solo lectura (RN-CH2):** al cancelar, el historial se sigue leyendo con `writable = false`, y escribir da 409 `chat-cerrado` al cliente y al técnico.
+
+`scrum-483-chat-tiempo-real.mjs` cubre la entrega en tiempo real, que Newman no puede probar. Arma su propia solicitud asignada y conecta al cliente y al técnico a `/v1/realtime`, como dos dispositivos. Cada uno escribe por REST, y al otro le debe llegar la trama `chat.message` con el mismo mensaje en menos de 15 s. Al final cancela la solicitud, suspende al técnico y desactiva la categoría, aunque algo haya fallado. Usa Node 22 o superior y las mismas variables de entorno del administrador:
+
+```powershell
+$env:NODE_TLS_REJECT_UNAUTHORIZED = '0'; node tests/e2e/scrum-483-chat-tiempo-real.mjs > tests/e2e/evidencias/scrum-483-chat-tiempo-real-qa-<fecha>.txt
+```
+
+Necesita a Communication con el chat desplegado en QA (quickpatch-communication#16): migración `ChatDeLaSolicitud`, `aplicar-roles-db.yml` y el `IngressRoute` `communication-chat`.
+
 ## Correr colecciones contra QA y guardar la evidencia
 
 `correr-colecciones-qa.js` corre una o varias colecciones contra QA y guarda la salida de Newman (reporter cli, sin colores) en `evidencias/<coleccion>-qa-<fecha>.txt`. Las claves se leen del entorno y nunca quedan en la evidencia; el script también reemplaza cualquier aparición de la clave por `***`.
