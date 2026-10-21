@@ -10,7 +10,7 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.8|
+|**Versión**|5.9|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
 |**Historia en Jira**|ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
@@ -1045,6 +1045,8 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |status|VARCHAR(20)|No|—|Estado del pago.|
 |reason_code|VARCHAR(50)|Sí|—|**Nuevo v5.8.** Motivo del rechazo que devuelve la pasarela (por ejemplo `fondos_insuficientes` o `pasarela_sin_respuesta`); va en `payment.rejected`. Nulo si no fue rechazado.|
 |processed_at|TIMESTAMPTZ|Sí|—|**Nuevo v5.8.** Cuándo quedó `aprobado` o `rechazado`.|
+|processing_started_at|TIMESTAMPTZ|Sí|—|**Nuevo v5.9.** Cuándo pasó a `procesando`. La conciliación solo toma pagos que llevan un tiempo procesándose, para no cerrar uno que se está cobrando (AC9-E5).|
+|billing|JSONB|Sí|—|**Nuevo v5.9.** Datos de facturación del intento (sección 8.3.12): nombre, tipo y número de documento y correo del pagador, nunca datos de tarjeta. Permiten emitir el comprobante si la conciliación aprueba el cobro.|
 |created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
 
 **Estados:**
@@ -2640,7 +2642,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.6|SCRUM-94|**Inicio, evidencia y cierre del servicio (RF-14, RF-15, SCRUM-35).** `service-request.v1.yaml` 1.7.0 con `start`, `evidence` (subir, listar y descargar) y `complete`, y `startedAt` y `completedAt` en el detalle (secciones 8.2.4, 8.3.10 y 8.3.11). Nueva regla RN-E4: como máximo 10 evidencias por solicitud (sección 7.7). Eventos `service-request.started` y `service-request.completed` v1 en quickpatch-kafka v0.7.0 (Cuadro 11): `completed` lo consume Matching para liberar al técnico (RN-M6); `started` queda sin consumidor porque el aviso sale de `status-changed`.|
 |5.7|ADR-025|**REST solo hacia Identity, ServiceRequest y Payments.** ServiceRequest sirve las categorías y las localidades (`service-request.v1.yaml` 1.8.0, sección 8.2.4) desde la réplica `service_request_categories`, que suma `description`, y la copia `localities`. `catalog.category-changed` agrega `description` opcional (quickpatch-kafka v0.8.0). `GET /v1/catalog/categories` y `GET /v1/localities` quedan obsoletas (secciones 8.2.2 y 8.2.3).|
 |5.8|SCRUM-42|**Pago con la pasarela simulada (RF-22, RF-23, ADR-009 modificado).** `payments.v1.yaml` 1.0.0: `GET` y `POST /v1/service-requests/{id}/payment`, enrutados por un `IngressRoute` de Traefik (sección 8.2.5). Tokens de la pasarela simulada en la sección 8.3.12. La tabla `payments` suma `reason_code` y `processed_at` (sección 5.12). `payment.approved` y `payment.rejected` (quickpatch-kafka) llevan también `clientId`, `companyId` y `technicianId`, para que Communication avise sin consultar a otro servicio (Cuadro 12).|
-|5.9|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.9|SCRUM-115|**Implementación del pago (quickpatch-payments).** `payments` suma `processing_started_at` y `billing` (sección 5.12). La conciliación usa el rol `payments_scheduler` ya previsto en la sección 10.2, con `SELECT` sobre `id`, `tenant_id`, `status`, `provider_token_ref` y `processing_started_at`. Quien paga es el creador de la solicitud; RN-P6 (cualquier `empresa_contacto` de la empresa) queda para SCRUM-43, porque el token aún no trae la empresa.|
+|5.10|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
