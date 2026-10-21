@@ -1089,7 +1089,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |payer_nit|VARCHAR(30)|Sí|—|NIT cuando corresponde a empresa.|
 |amount|NUMERIC(12,2)|No|—|Valor facturado.|
 |issued_at|TIMESTAMPTZ|No|—|Fecha de emisión.|
-|pdf_url|VARCHAR(500)|Sí|—|Ruta del comprobante generado.|
+|pdf_url|VARCHAR(500)|Sí|—|Ruta del comprobante generado. **v5.10:** no se usa en el MVP: el PDF se genera al pedirlo con los datos de esta fila y del pago (sección 8.3.16), así que queda nulo.|
 
 ### 5.14 Tabla `audit_logs`
 
@@ -1735,10 +1735,10 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |---|---|---|---|---|---|
 |GET|`/v1/service-requests/{id}/payment`|Cliente dueño, `empresa_contacto` de la empresa|RF-22, RF-23|Nuevo|Estado del pago actual de la solicitud.|
 |POST|`/v1/service-requests/{id}/payment`|Cliente dueño, `empresa_contacto` de la empresa|RF-22, RF-23||Procesar el pago pendiente o reintentar tras un rechazo (RN-P4, RN-P5).|
-|GET|`/v1/payments/{id}/invoice`|Pagador, `admin_tenant`|RF-24||Comprobante en JSON o PDF según `Accept`.|
+|GET|`/v1/payments/{id}/invoice`|Pagador, `admin_tenant`|RF-24|Contrato 1.1.0|Comprobante en JSON o PDF según `Accept` (sección 8.3.16).|
 |GET|`/v1/payments/received?page=&size=`|`tecnico`|RF-25||Pagos de los servicios del técnico autenticado.|
 
-Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la solicitud que se paga, pero las atiende Payments Service: el Gateway enruta por el sufijo `/payment`. **v5.8:** en k3s lo hace un `IngressRoute` de Traefik con `PathRegexp` sobre `/v1/service-requests/{id}/payment`, que tiene más prioridad que el prefijo `/v1/service-requests` de ServiceRequest (manifiesto de Payments). Contrato: `payments.v1.yaml` 1.0.0 (SCRUM-42); el comprobante (`/v1/payments/{id}/invoice`) y los pagos recibidos llegan con SCRUM-44 y SCRUM-45.
+Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la solicitud que se paga, pero las atiende Payments Service: el Gateway enruta por el sufijo `/payment`. **v5.8:** en k3s lo hace un `IngressRoute` de Traefik con `PathRegexp` sobre `/v1/service-requests/{id}/payment`, que tiene más prioridad que el prefijo `/v1/service-requests` de ServiceRequest (manifiesto de Payments). Contrato: `payments.v1.yaml` 1.0.0 (SCRUM-42) y 1.1.0, con el comprobante (SCRUM-44); los pagos recibidos llegan con SCRUM-45. **v5.10:** el prefijo `/v1/payments` es solo de Payments y el mismo `IngressRoute` lo enruta con `PathPrefix`.
 
 #### 8.2.6 Communication Service
 
@@ -2128,6 +2128,34 @@ Cuenta solo las solicitudes del tenant del `admin_tenant` (RLS). `byStatus` siem
 |`GET /v1/admin/service-requests/summary`|`admin_tenant`|`service_request_app` (RLS)|Los conteos no incluyen solicitudes de otro tenant.|
 |`GET /v1/service-requests`|`admin_tenant`|`service_request_app` (RLS)|Una solicitud de otro tenant no aparece en la lista.|
 |`GET /v1/platform/service-requests/summary`|`admin_plataforma`|`service_request_platform` (sección 10.2)|Un `admin_tenant` recibe 403; la respuesta no trae ninguna columna fuera de tenant, estado y conteos.|
+
+#### 8.3.16 Comprobante — `GET /v1/payments/{id}/invoice`
+
+```json
+{
+  "invoiceId": "8f7e6d5c-4b3a-4291-8f7e-6d5c4b3a2910",
+  "invoiceNumber": "QP-20261021-1B2C3D4E5F",
+  "paymentId": "1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b",
+  "serviceRequestId": "7d1f6a52-0c8e-4f0b-9b8e-2a6c5f3d1e90",
+  "payer": { "name": "Inversiones Andinas S.A.S.", "documentType": "NIT", "documentNumber": "900123456-7", "email": "pagos@andinas.com.co" },
+  "amount": "185000.00",
+  "currency": "COP",
+  "concept": "Servicio técnico de la solicitud 7d1f6a52-0c8e-4f0b-9b8e-2a6c5f3d1e90",
+  "issuedAt": "2026-10-21T15:02:10Z",
+  "fiscalValidity": false
+}
+```
+
+**v5.10 (SCRUM-44, RF-24).** `id` es el del pago. Payments emite la fila de `invoices` en la misma transacción que aprueba el pago (sección 8.3.12), así que todo pago `aprobado` tiene comprobante. `payer` sale de `payments.billing`: son los datos que el pagador envió al pagar. Si facturó con NIT, el comprobante lo lleva (y `invoices.payer_nit`). Con `Accept: application/pdf` la respuesta es un PDF de una página con los mismos datos, generado al pedirlo, con `Content-Disposition: attachment; filename="<invoiceNumber>.pdf"`. Otro tipo en `Accept` responde `406`.
+
+**Sin validez fiscal.** El comprobante se rotula como comprobante de pago y no como factura electrónica (`fiscalValidity = false`). Es la opción (a) de la decisión DR-03 del SRS (antes P3) y del killer K14 del SAD. La factura electrónica validada por la DIAN queda para producción real.
+
+|Quién|Resultado|
+|---|---|
+|Cliente o `empresa_contacto` que pagó (`payments.client_id`)|200|
+|`admin_tenant` del mismo tenant|200|
+|Otro cliente del tenant, cualquier usuario de otro tenant (RLS) o pago sin comprobante|404 `no-encontrado`|
+|Técnico u otro rol|403|
 
 ### 8.4 Eventos Kafka
 
@@ -2643,7 +2671,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.7|ADR-025|**REST solo hacia Identity, ServiceRequest y Payments.** ServiceRequest sirve las categorías y las localidades (`service-request.v1.yaml` 1.8.0, sección 8.2.4) desde la réplica `service_request_categories`, que suma `description`, y la copia `localities`. `catalog.category-changed` agrega `description` opcional (quickpatch-kafka v0.8.0). `GET /v1/catalog/categories` y `GET /v1/localities` quedan obsoletas (secciones 8.2.2 y 8.2.3).|
 |5.8|SCRUM-42|**Pago con la pasarela simulada (RF-22, RF-23, ADR-009 modificado).** `payments.v1.yaml` 1.0.0: `GET` y `POST /v1/service-requests/{id}/payment`, enrutados por un `IngressRoute` de Traefik (sección 8.2.5). Tokens de la pasarela simulada en la sección 8.3.12. La tabla `payments` suma `reason_code` y `processed_at` (sección 5.12). `payment.approved` y `payment.rejected` (quickpatch-kafka) llevan también `clientId`, `companyId` y `technicianId`, para que Communication avise sin consultar a otro servicio (Cuadro 12).|
 |5.9|SCRUM-115|**Implementación del pago (quickpatch-payments).** `payments` suma `processing_started_at` y `billing` (sección 5.12). La conciliación usa el rol `payments_scheduler` ya previsto en la sección 10.2, con `SELECT` sobre `id`, `tenant_id`, `status`, `provider_token_ref` y `processing_started_at`. Quien paga es el creador de la solicitud; RN-P6 (cualquier `empresa_contacto` de la empresa) queda para SCRUM-43, porque el token aún no trae la empresa.|
-|5.10|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.10|SCRUM-44|**Comprobante del pago (RF-24).** `payments.v1.yaml` 1.1.0 con `GET /v1/payments/{id}/invoice` en JSON o PDF según `Accept`, para el pagador y el `admin_tenant` (secciones 8.2.5 y 8.3.16). El PDF se genera al pedirlo y `invoices.pdf_url` queda nulo (sección 5.13). Es un comprobante sin validez fiscal (SRS DR-03, antes P3). El `IngressRoute` de Payments suma el prefijo `/v1/payments`.|
+|5.11|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
