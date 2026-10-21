@@ -111,6 +111,28 @@ Necesita a Payments desplegado en QA, ServiceRequest con el consumidor de `payme
 
 Necesita a Payments con el comprobante desplegado en QA (quickpatch-payments#8). Igual que las demás: `adminEmail` y `adminPassword` desde el entorno y salida con `--reporters cli` en un `.txt`.
 
+## Panel operativo y geocodificación con el buzón (SCRUM-105 y SCRUM-458)
+
+`generar-scrum105-458.py` genera dos colecciones con la preparación de SCRUM-490 y SCRUM-96:
+
+- `scrum-105-panel-operativo.postman_collection.json` (RF-18, SCRUM-38): el administrador del tenant ve el resumen por estado y la lista de su tenant. La solicitud de la prueba aparece sin dirección ni ubicación y suma a `createdToday`. El cliente, el técnico y el cliente de Beta reciben 403, y el administrador del tenant recibe 403 en la vista de plataforma. Con `platformAdminEmail`, la vista de plataforma solo trae conteos por tenant.
+- `scrum-458-geocodificacion-buzon.postman_collection.json` (ADR-024):
+  - **Geocodificación:** `location-preview` con una dirección de Bogotá y con una inexistente (422 `direccion-no-encontrada`), y la solicitud creada solo con la dirección.
+  - **Buzón:** `solicitud-creada` para el cliente y `oferta-recibida` para el técnico. Otro cliente, el administrador y el cliente de Beta no las ven y no pueden marcarlas como leídas (404). Marcar como leída es idempotente.
+  - El caso del geocodificador sin respuesta no se provoca en QA: lo cubren las pruebas de ServiceRequest.
+
+## Correr colecciones contra QA y guardar la evidencia
+
+`correr-colecciones-qa.js` corre una o varias colecciones contra QA y guarda la salida de Newman (reporter cli, sin colores) en `evidencias/<coleccion>-qa-<fecha>.txt`. Las claves se leen del entorno y nunca quedan en la evidencia; el script también reemplaza cualquier aparición de la clave por `***`.
+
+```powershell
+# En tu propia terminal; las claves no van en el repositorio ni en un chat.
+$env:QA_ADMIN_EMAIL = '...'; $env:QA_ADMIN_PASSWORD = '...'
+# Opcional, para la vista de plataforma de SCRUM-105:
+$env:QA_PLATFORM_ADMIN_EMAIL = '...'; $env:QA_PLATFORM_ADMIN_PASSWORD = '...'
+node tests/e2e/correr-colecciones-qa.js scrum-490-cotizacion scrum-96-evidencia scrum-105-panel-operativo scrum-458-geocodificacion-buzon
+```
+
 ## Orden del despliegue del MVP en QA
 
 1. Infraestructura de QA (Ansible): bases `db_<servicio>` con su `_migrator` y su `_app`, PostGIS en `db_service_request` y `db_matching`, Redis, Kafka con los topics de `quickpatch-kafka/topics/topics.yaml` y Garage.
