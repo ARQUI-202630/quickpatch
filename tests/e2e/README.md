@@ -101,6 +101,16 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scru
 
 Necesita a Payments desplegado en QA, ServiceRequest con el consumidor de `payment.*` y los topics de quickpatch-kafka v0.9.0. Igual que las demás: `adminEmail` y `adminPassword` desde el entorno y salida con `--reporters cli` en un `.txt`.
 
+## Comprobante del pago de punta a punta (SCRUM-495)
+
+`scrum-495-comprobante.postman_collection.json` la genera `generar-scrum495-comprobante.py`, que reutiliza los pasos de SCRUM-117 hasta el servicio completado. Contrato: `payments.v1.yaml` 1.1.0 (`GET /v1/payments/{id}/invoice`). El comprobante no tiene validez fiscal (SRS DR-03).
+
+1. **Pago aprobado con NIT:** el cliente paga con `tok_sim_aprobada_…` y factura a nombre de una empresa con NIT.
+2. **Comprobante:** el pagador lo ve en JSON (contrato `Invoice`, NIT en `payer`, `fiscalValidity = false`) y lo descarga en PDF (`Accept: application/pdf`, adjunto con el número del comprobante). El administrador del tenant también lo ve. Un `Accept` que no es JSON ni PDF da 406.
+3. **Accesos:** el técnico recibe 403; otro cliente, el cliente de Beta (RLS) y un pago inexistente, 404.
+
+Necesita a Payments con el comprobante desplegado en QA (quickpatch-payments#8). Igual que las demás: `adminEmail` y `adminPassword` desde el entorno y salida con `--reporters cli` en un `.txt`.
+
 ## Panel operativo y geocodificación con el buzón (SCRUM-105 y SCRUM-458)
 
 `generar-scrum105-458.py` genera dos colecciones con la preparación de SCRUM-490 y SCRUM-96:
