@@ -189,10 +189,11 @@ function doHttpRequest(options, postData) {
 
 async function obtenerToken(baseUrl) {
   const parsed = new URL(baseUrl);
-  const email = process.env.QA_CLIENT_EMAIL || 'cliente@quickpatch.test';
-  const password = process.env.QA_CLIENT_PASSWORD || '';
-  if (!password) {
-    throw new Error('[QA Auth] Variable de entorno QA_CLIENT_PASSWORD requerida.');
+  // Credenciales solo desde el entorno (secretos QA_* del CI); nunca en el repositorio.
+  const email = process.env.QA_CLIENT_EMAIL;
+  const password = process.env.QA_CLIENT_PASSWORD;
+  if (!email || !password) {
+    throw new Error('Faltan QA_CLIENT_EMAIL y QA_CLIENT_PASSWORD en el entorno.');
   }
 
   const res = await doHttpRequest({

@@ -65,6 +65,125 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 node tests/e2e/scrum-478-aviso-tiempo-real.mjs ht
 
 **Evidencia:** `evidencias/scrum-478-cancelacion-qa-2026-10-19.txt`, con el resultado de cada paso y su `correlationId`. No se suben las exportaciones JSON de Newman porque traen los tokens y las claves de las cuentas de prueba.
 
+## Cotización y ejecución con evidencia de punta a punta (SCRUM-490 y SCRUM-96)
+
+`scrum-490-cotizacion.postman_collection.json` y `scrum-96-evidencia.postman_collection.json` se generan con `python tests/e2e/generar-scrum490-96-cotizacion-evidencia.py`, que también escribe las fotos de prueba de `fixtures/`. Las dos arrancan igual: el administrador del tenant crea una categoría para la corrida, aprueba a un técnico con esa especialidad, que cubre las 20 localidades y queda disponible, y se registran un cliente, otro cliente del mismo tenant, un cliente del tenant Beta y un técnico sin aprobar.
+
+**SCRUM-490, cotización (service-request 1.6.0):**
+
+1. **Tres rechazadas (RN-Q7):** lista vacía; monto sin decimales (400 en `laborAmount`); el cliente no cotiza (403); cotización 1 (201, `quoteNumber` 1, total calculado) y la solicitud pasa a `cotizado`; otra con una pendiente (409 `transicion-invalida`); el técnico no acepta (403); otro cliente (404); el cliente de Beta no ve las cotizaciones (404 por RLS); motivo corto (400); rechazos con y sin motivo; la tercera rechazada cancela la solicitud con «Cotizaciones rechazadas.», el técnico ve las tres en orden y Matching lo libera.
+2. **Rechazar y aceptar:** rechaza la primera, acepta la segunda (`cotizacion_aceptada`, quedan 1), aceptar otra vez y cotizar con una aceptada (409), y el técnico sigue `ocupado`.
+3. **Cierre:** el cliente cancela la solicitud 2 (todavía se puede antes de iniciar, RN-SR7) y el técnico vuelve a `disponible`.
+
+El vencimiento (RN-Q6) no entra: `Quotes__Ttl` es de 24 horas en QA.
+
+**SCRUM-96, iniciar, evidencia y completar (service-request 1.7.0):** después de la cotización aceptada:
+
+1. **Iniciar:** subir o completar antes de iniciar (409), el cliente no inicia (403), otro técnico (404), el asignado inicia (`StartedServiceRequest`), iniciar otra vez y cancelar después de iniciar (409).
+2. **Evidencia en Garage:** completar sin fotos (422 `evidencia-requerida`); un archivo de texto con nombre `.jpg` (400 en `file`: el tipo se reconoce por el contenido); otro técnico (404); la foto se sube (201, solo `id` y `uploadedAt`); el cliente la lista y la descarga con `image/png` y el mismo tamaño; el `admin_tenant` la ve; otro cliente y el cliente de Beta reciben 404.
+3. **Completar:** `CompletedServiceRequest`, el detalle trae `startedAt` y `completedAt`, subir o completar otra vez da 409, y el técnico vuelve a `disponible` cuando Matching consume `service-request.completed`.
+
+Los límites de 10 MB y de 10 fotos los cubren las pruebas del backend. Las dos colecciones necesitan `adminEmail` y `adminPassword`; sin ellos, todo se omite. Correr con `--reporters cli` y guardar la salida en un `.txt`: el reporte JSON de Newman guarda los cuerpos con tokens y no se sube. En `pruebas-sistema.yml` entran solas por el patrón `tests/e2e/*.postman_collection.json`, con `tests/e2e` como carpeta de trabajo, que es donde Newman busca `fixtures/`.
+
+Para correrlas a mano (no lanzar el workflow completo, que incluye k6):
+
+```bash
+docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scrum-490-cotizacion.postman_collection.json   --insecure --reporters cli --env-var "baseUrl=https://qa.quickpatch.internal"   --env-var "adminEmail=$QA_ADMIN_EMAIL" --env-var "adminPassword=$QA_ADMIN_PASSWORD" > scrum-490.txt
+```
+
+## Pago con la pasarela simulada de punta a punta (SCRUM-117)
+
+`scrum-117-pago.postman_collection.json` la genera `generar-scrum117-pago.py`, que reutiliza los pasos de la colección de SCRUM-96 hasta dejar la solicitud en `completado`. Contratos: `payments.v1.yaml` 1.0.0 y la pasarela simulada del ADR-009 modificado. Los tokens `tok_sim_aprobada_…`, `tok_sim_rechazada_…` y `tok_sim_error_…` son los que genera el tokenizador de la app con las tres tarjetas de prueba; la colección nunca envía números de tarjeta, salvo el caso negativo que comprueba que el backend los rechaza.
+
+1. **Pago pendiente y accesos:** el cliente ve el pago `pendiente` de 185.000 cuando Payments consume `service-request.completed`; el técnico recibe 403; otro cliente y el cliente de Beta, 404 (RLS); el número de tarjeta en lugar del token y un campo desconocido dan 400.
+2. **Rechazo y pasarela sin respuesta:** la tarjeta sin fondos responde 200 `rechazado` con `fondos_insuficientes` y la solicitud sigue en `completado` (RN-SR5); la pasarela sin respuesta da 502 y un pago inmediato, 409 `pago-en-curso`; la conciliación (cada 30 s) lo cierra como `rechazado` con `pasarela_sin_respuesta` (AC9-E5).
+3. **Pago aprobado:** 200 `aprobado` con `invoiceId`; ServiceRequest pasa la solicitud a `pagado` al consumir `payment.approved`; pagar otra vez da 409 `ya-pagado`.
+
+Necesita a Payments desplegado en QA, ServiceRequest con el consumidor de `payment.*` y los topics de quickpatch-kafka v0.9.0. Igual que las demás: `adminEmail` y `adminPassword` desde el entorno y salida con `--reporters cli` en un `.txt`.
+
+## Comprobante del pago de punta a punta (SCRUM-495)
+
+`scrum-495-comprobante.postman_collection.json` la genera `generar-scrum495-comprobante.py`, que reutiliza los pasos de SCRUM-117 hasta el servicio completado. Contrato: `payments.v1.yaml` 1.1.0 (`GET /v1/payments/{id}/invoice`). El comprobante no tiene validez fiscal (SRS DR-03).
+
+1. **Pago aprobado con NIT:** el cliente paga con `tok_sim_aprobada_…` y factura a nombre de una empresa con NIT.
+2. **Comprobante:** el pagador lo ve en JSON (contrato `Invoice`, NIT en `payer`, `fiscalValidity = false`) y lo descarga en PDF (`Accept: application/pdf`, adjunto con el número del comprobante). El administrador del tenant también lo ve. Un `Accept` que no es JSON ni PDF da 406.
+3. **Accesos:** el técnico recibe 403; otro cliente, el cliente de Beta (RLS) y un pago inexistente, 404.
+
+Necesita a Payments con el comprobante desplegado en QA (quickpatch-payments#8). Igual que las demás: `adminEmail` y `adminPassword` desde el entorno y salida con `--reporters cli` en un `.txt`.
+
+## Panel operativo y geocodificación con el buzón (SCRUM-105 y SCRUM-458)
+
+`generar-scrum105-458.py` genera dos colecciones con la preparación de SCRUM-490 y SCRUM-96:
+
+- `scrum-105-panel-operativo.postman_collection.json` (RF-18, SCRUM-38): el administrador del tenant ve el resumen por estado y la lista de su tenant. La solicitud de la prueba aparece sin dirección ni ubicación y suma a `createdToday`. El cliente, el técnico y el cliente de Beta reciben 403, y el administrador del tenant recibe 403 en la vista de plataforma. Con `platformAdminEmail`, la vista de plataforma solo trae conteos por tenant.
+- `scrum-458-geocodificacion-buzon.postman_collection.json` (ADR-024):
+  - **Geocodificación:** `location-preview` con una dirección de Bogotá y con una inexistente (422 `direccion-no-encontrada`), y la solicitud creada solo con la dirección.
+  - **Buzón:** `solicitud-creada` para el cliente y `oferta-recibida` para el técnico. Otro cliente, el administrador y el cliente de Beta no las ven y no pueden marcarlas como leídas (404). Marcar como leída es idempotente.
+  - El caso del geocodificador sin respuesta no se provoca en QA: lo cubren las pruebas de ServiceRequest.
+
+## Cuenta corporativa de punta a punta (SCRUM-68)
+
+`scrum-68-cuenta-corporativa.postman_collection.json` (RF-06, SCRUM-26) la genera `generar-scrum68-cuenta-corporativa.py`. Contrato: `identity.v1.yaml` 1.8.0. **No necesita al administrador**: todas las cuentas se registran por el canal con correo, NIT y clave generados en la corrida.
+
+1. **Registro:** la empresa y su primer usuario quedan en el tenant del canal. El perfil y el token traen `companyId` y `company_id`. Responde 409 si el NIT o el correo se repiten, y 400 por campo (`company.nit`, `user.password`…) con datos inválidos.
+2. **Otro usuario con invitación:**
+   - El primer usuario lo agrega. Sin usar la invitación no puede entrar (401); con ella define su contraseña (204), y el mismo enlace no sirve dos veces (400).
+   - Al entrar, su token tiene la misma empresa y los dos usuarios aparecen activos.
+   - Nadie recibe invitación para un usuario que ya definió su contraseña (409), así nadie toma la cuenta de otro.
+3. **Aislamiento:**
+   - Otra empresa del mismo tenant solo ve a su usuario y recibe 404 con usuarios ajenos.
+   - El cliente hogar recibe 403 y su token no trae `company_id`. Sin token, 401.
+   - El mismo NIT se registra en el tenant Beta como otra cuenta, que no ve ni toca los usuarios de Alfa (404, RLS).
+
+Se verificó contra Identity local (PostgreSQL 16 con las migraciones y los roles). Las 61 aserciones del tenant del canal pasan; las del tenant Beta solo aplican en QA, porque el Nginx de VM1 elige el tenant por el host. Necesita quickpatch-identity#24 desplegado: migración `CuentaCorporativa`, `aplicar-roles-db.yml` y la ruta `/v1/companies` del Ingress.
+
+## Solicitud de empresa de punta a punta (SCRUM-75)
+
+`scrum-75-solicitud-empresa.postman_collection.json` (RF-08, SCRUM-28) la genera `generar-scrum75-solicitud-empresa.py` con la preparación de SCRUM-490 (categoría propia y técnico aprobado). Contratos: `service-request.v1.yaml` 1.9.0 e `identity.v1.yaml` 1.8.0.
+
+1. **Empresa y usuarios:** se registra una empresa, agrega a un colega que define su contraseña con la invitación, y se registra otra empresa.
+2. **Crear:** la empresa crea la solicitud con su sede (`clientType` empresa, `companyId` del token, sede sin espacios). Una sede de un carácter y la sede de un cliente hogar responden 400.
+3. **Mismo flujo de matching:** el técnico recibe la oferta, la acepta, la solicitud queda asignada y el técnico ve la sede.
+4. **Quién la ve (RN-SR14):**
+   - El colega la ve en el detalle y en la lista de la empresa, sin dirección en la lista.
+   - Otra empresa, un cliente hogar y el cliente de Beta reciben 404.
+   - El administrador la ve en su lista como de empresa.
+5. **Cerrar:** el colega no la cancela (404), quien la creó sí, y el técnico queda libre.
+
+Necesita en QA a Identity con quickpatch-identity#24, a ServiceRequest con quickpatch-service-request#27 (migración `SolicitudDeEmpresa`) y a Matching. Igual que las demás: `adminEmail` y `adminPassword` desde el entorno.
+
+## Chat de la solicitud de punta a punta (SCRUM-483)
+
+`scrum-483-chat.postman_collection.json` (RF-37, SCRUM-473, ADR-026) la genera `generar-scrum483-chat.py` con la preparación y la asignación de SCRUM-490. Contrato: `communication.v1.yaml` 1.3.0 (`GET` y `POST /v1/service-requests/{id}/messages`). Communication conoce a los participantes por `service-request.status-changed`, así que las consultas del historial reintentan hasta que llega la réplica.
+
+1. **Chat abierto:** con la solicitud asignada, el cliente ve el chat vacío y con `writable = true`.
+2. **Conversación:** el cliente escribe (se le quitan los espacios de los extremos) y el técnico responde. Los dos ven el mismo historial, del más reciente al más antiguo, y la página 2 de tamaño 1 trae el primero.
+3. **Validación y acceso:**
+   - 400 con un texto vacío o de 1.001 caracteres, con campos de más (`authorId`) o con `size=500`.
+   - 401 sin token y 403 para el administrador del tenant.
+   - 404 para otro cliente, otro técnico y el cliente de Beta (RLS).
+4. **Solo lectura (RN-CH2):** al cancelar, el historial se sigue leyendo con `writable = false`, y escribir da 409 `chat-cerrado` al cliente y al técnico.
+
+`scrum-483-chat-tiempo-real.mjs` cubre la entrega en tiempo real, que Newman no puede probar. Arma su propia solicitud asignada y conecta al cliente y al técnico a `/v1/realtime`, como dos dispositivos. Cada uno escribe por REST, y al otro le debe llegar la trama `chat.message` con el mismo mensaje en menos de 15 s. Al final cancela la solicitud, suspende al técnico y desactiva la categoría, aunque algo haya fallado. Usa Node 22 o superior y las mismas variables de entorno del administrador:
+
+```powershell
+$env:NODE_TLS_REJECT_UNAUTHORIZED = '0'; node tests/e2e/scrum-483-chat-tiempo-real.mjs > tests/e2e/evidencias/scrum-483-chat-tiempo-real-qa-<fecha>.txt
+```
+
+Necesita a Communication con el chat desplegado en QA (quickpatch-communication#16): migración `ChatDeLaSolicitud`, `aplicar-roles-db.yml` y el `IngressRoute` `communication-chat`.
+
+## Correr colecciones contra QA y guardar la evidencia
+
+`correr-colecciones-qa.js` corre una o varias colecciones contra QA y guarda la salida de Newman (reporter cli, sin colores) en `evidencias/<coleccion>-qa-<fecha>.txt`. Las claves se leen del entorno y nunca quedan en la evidencia; el script también reemplaza cualquier aparición de la clave por `***`.
+
+```powershell
+# En tu propia terminal; las claves no van en el repositorio ni en un chat.
+$env:QA_ADMIN_EMAIL = '...'; $env:QA_ADMIN_PASSWORD = '...'
+# Opcional, para la vista de plataforma de SCRUM-105:
+$env:QA_PLATFORM_ADMIN_EMAIL = '...'; $env:QA_PLATFORM_ADMIN_PASSWORD = '...'
+node tests/e2e/correr-colecciones-qa.js scrum-490-cotizacion scrum-96-evidencia scrum-105-panel-operativo scrum-458-geocodificacion-buzon
+```
+
 ## Orden del despliegue del MVP en QA
 
 1. Infraestructura de QA (Ansible): bases `db_<servicio>` con su `_migrator` y su `_app`, PostGIS en `db_service_request` y `db_matching`, Redis, Kafka con los topics de `quickpatch-kafka/topics/topics.yaml` y Garage.

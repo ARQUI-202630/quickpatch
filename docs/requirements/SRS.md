@@ -5,8 +5,8 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 5.2 (MVP, incremento del Sprint 4) |
-| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486 |
+| **Versión del documento** | 5.5 (MVP, incremento del Sprint 4) |
+| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473 |
 | **Responsable** | Angy Bautista (Product Owner) |
 | **Estado** | Aprobado por el Product Owner el 14 de octubre de 2026 (SCRUM-406). Línea base de la sección 1.3 revisada el 14 de octubre de 2026 (Sebastián Sánchez). Pendiente: el PR a `develop` |
 | **Estándar de referencia** | IEEE Std 830-1998 |
@@ -93,7 +93,7 @@ Este SRS se alinea con los documentos de `develop` del repositorio `quickpatch` 
 La plataforma es un sistema nuevo, independiente, compuesto por:
 
 - Una **app móvil** para **Clientes**, **Empresas**, **Técnicos** y **Proveedores**: creación, cotización, seguimiento, pago y calificación de solicitudes; disponibilidad, ejecución y cierre de servicios; gestión del equipo de técnicos.
-- Un **panel web** de uso exclusivo de los administradores (**Admin del tenant** y **Admin de plataforma**): operación, verificación de técnicos y gestión de tenants. El panel web no tiene sitio público.
+- Un **panel web** de uso exclusivo de los administradores (**Admin del tenant** y **Admin de plataforma**): operación, verificación de técnicos y gestión de tenants. Desde la versión 5.3 tiene además una página de presentación pública en su raíz (SCRUM-491).
 - Un backend con arquitectura **multi-tenant**, un motor de *matching*, y una pasarela de pagos certificada **PCI-DSS** integrada mediante un proveedor externo.
 
 **Canales por rol**
@@ -131,7 +131,7 @@ A alto nivel, el MVP debe permitir:
 - El sistema debe cumplir la normativa colombiana que aplica al producto: protección de datos personales (Ley 1581 de 2012), protección al consumidor (Ley 1480 de 2011) y facturación electrónica (SAD, killers K12 a K14).
 - El técnico no es subordinado de la plataforma: el sistema no impone turnos, exclusividad ni sanciones por rechazar una solicitud (SAD, restricción R12).
 
-**Fuera del alcance del MVP:** modo sin conexión en la app móvil, sitio web público, chat dentro de la aplicación y módulo de reclamos (SAD, sección 1.3).
+**Fuera del alcance del MVP:** modo sin conexión en la app móvil, sitio web público más allá de la página de presentación (sin SEO ni redes sociales) y módulo de reclamos (SAD, sección 1.3). El chat entre el Cliente y el Técnico asignado sí entra desde la versión 5.5 (RF-37, SCRUM-473); los adjuntos en el chat siguen fuera.
 
 ### 2.4 Supuestos y Dependencias
 
@@ -237,7 +237,7 @@ A continuación se listan las **23 Features** identificadas en el backlog, agrup
 |---|---|---|---|
 | F2.1 — Solicitud de Servicio | Creación de solicitudes de servicio técnico por Cliente y Empresa, respuesta a la cotización y cancelación antes de iniciar el servicio. | RF-07, RF-08, RF-35, RF-36 | SCRUM-27, 28, 472, 486 |
 | F2.2 — Motor de Matching | Asignación automática de técnico y aceptación/rechazo de la solicitud por parte del Técnico. | RF-09, RF-10 | SCRUM-29, 30 |
-| F2.3 — Seguimiento del Servicio | Visualización en tiempo real del estado de la solicitud. | RF-11 | SCRUM-31 |
+| F2.3 — Seguimiento del Servicio | Visualización en tiempo real del estado de la solicitud y chat con el técnico asignado. | RF-11, RF-37 | SCRUM-31, 473 |
 | F2.4 — Calificación del Servicio | Calificación del servicio por parte del Cliente después de pagarlo. | RF-12 | SCRUM-32 |
 
 #### Épica 3 — Herramientas para el Técnico y Proveedores (SCRUM-9)
@@ -353,6 +353,7 @@ La Épica 6 tiene además cuatro historias de infraestructura sin etiqueta de Fe
 | RF-12 | El sistema debe permitir al Cliente calificar el servicio (1 a 5, con comentario opcional) una sola vez, después de que se confirme el pago (estado "Pagado"). | Media | F2.4 | SCRUM-32 |
 | RF-35 | El sistema debe permitir al Cliente aceptar o rechazar la cotización de su solicitud. Una solicitud admite como máximo 3 cotizaciones, y una cotización sin respuesta antes de su vencimiento cancela la solicitud. | Alta | F2.1 | SCRUM-486 |
 | RF-36 | El sistema debe permitir al Cliente, o al administrador de su tenant, cancelar una solicitud mientras el servicio no haya iniciado, registrando el motivo de la cancelación. | Media | F2.1 | SCRUM-472 |
+| RF-37 | El sistema debe permitir al Cliente dueño de una solicitud (o a los usuarios autorizados de su Empresa) y al Técnico asignado escribirse mensajes de texto dentro de la solicitud, con historial guardado y entrega en tiempo real. El chat se habilita cuando la solicitud tiene técnico asignado y queda de solo lectura cuando se completa, se paga o se cancela. Ningún otro usuario ve los mensajes. | Media | F2.3 | SCRUM-473 |
 
 #### Épica 3 — Herramientas para el Técnico y Proveedores (SCRUM-9)
 
@@ -514,7 +515,7 @@ Con el fin de justificar el enfoque del producto, se comparó QUICKPATCH frente 
 | Épica (Jira) | Features | Requisitos | Historias de Usuario (Jira) |
 |---|---|---|---|
 | SCRUM-7 — Fundación y Multi-tenant | F1.1 – F1.4 | RF-01 – RF-06 | SCRUM-21 a SCRUM-26 |
-| SCRUM-8 — Matching y Experiencia Cliente | F2.1 – F2.4 | RF-07 – RF-12, RF-35, RF-36 | SCRUM-27 a SCRUM-32, SCRUM-472, SCRUM-486 |
+| SCRUM-8 — Matching y Experiencia Cliente | F2.1 – F2.4 | RF-07 – RF-12, RF-35 – RF-37 | SCRUM-27 a SCRUM-32, SCRUM-472, SCRUM-473, SCRUM-486 |
 | SCRUM-9 — Herramientas Técnico/Proveedor | F3.1 – F3.4 | RF-13 – RF-17, RF-34 | SCRUM-33 a SCRUM-37, SCRUM-486 |
 | SCRUM-10 — Panel Administrativo | F4.1 – F4.3 | RF-18 – RF-21 | SCRUM-38 a SCRUM-41, SCRUM-348 |
 | SCRUM-11 — Pagos PCI-DSS y Facturación | F5.1 – F5.3 | RF-22 – RF-25 | SCRUM-42 a SCRUM-45 |
@@ -559,6 +560,7 @@ Cada RF se enlaza con su historia de Jira y con los casos del Documento de Prueb
 | RF-34 | SCRUM-486 | SRQ-008, SRQ-009, SRQ-010 |
 | RF-35 | SCRUM-486 | SRQ-011, SRQ-012, SRQ-013, E2E-008 |
 | RF-36 | SCRUM-472 | SRQ-019, SRQ-020, E2E-010 |
+| RF-37 | SCRUM-473 | Por definir en el TD V2 (colección de SCRUM-483) |
 
 Los RNF se verifican por medio de su escenario de calidad del SAD (sección 5.3), y el TD (sección 7.1.2) enlaza cada escenario con sus casos de prueba.
 
@@ -590,6 +592,7 @@ Las siguientes historias de usuario tienen criterios de aceptación que no coinc
 |---|---|---|---|
 | DR-01 (antes P1) | **R5 frente a RIE-02 y RIE-03.** R5 no cambia: la pasarela de pagos es la única dependencia externa de producción. La geocodificación (RIE-02) corre con un Nominatim propio que solo tiene el mapa de Bogotá, en VM4 (producción) y VM5 (QA), y la usa ServiceRequest Service. Las notificaciones del MVP (RIE-03) se entregan dentro de la app, por el canal en tiempo real y en un buzón de notificaciones. El correo y el push con la app cerrada quedan fuera del MVP. | Es la opción (b) de la versión 4.0. El equipo descartó la opción (a), ampliar R5 para admitir servicios externos gratuitos: un geocodificador o un proveedor de correo en la nube recibe datos personales mientras procesa la petición (K12). Con solo el mapa de Bogotá, la importación y la base de Nominatim caben en la VM de datos (R10). Este borrador había propuesto la opción (a), y se ajustó a la decisión del equipo. | Decidida por el equipo el 12 de octubre de 2026 en el ADR-024 del SAD (SAD 2.27; SCRUM-405 y SCRUM-413). Hecho: el playbook de Nominatim, aplicado en QA (VM5, `quickpatch#93`). Pendientes: Nominatim en producción (VM4), DD (coordenadas opcionales en `CreateServiceRequest` y buzón de notificaciones, en el DD V5) y SDD (sección 4, System Context). |
 | DR-02 | **Ubicación de la solicitud (RF-07).** La ubicación sale del GPS del dispositivo o de la dirección que escribe el Cliente. En el segundo caso, ServiceRequest Service la convierte en coordenadas (RIE-02). La dirección escrita se guarda como complemento. | Une lo que se había decidido ("el Cliente escribe una dirección") con los contratos del DD (RN-SR9 y RN-SR11), que trabajan con coordenadas, y con el ADR-024, que hace la geocodificación en el servidor. | Confirmar con el equipo en la revisión de SCRUM-406. Depende del DD y del contrato: hoy `POST /v1/service-requests` exige `location`. El DD V5 (SCRUM-455) y `service-request.v1.yaml` 1.2.0 la vuelven opcional cuando llega `addressText` y agregan `422 direccion-no-encontrada` (también cuando Nominatim no responde a tiempo). Mientras no entren a `develop`, DR-02 no se puede implementar. |
+| DR-03 (antes P3) | **Comprobante de RF-24 sin validez fiscal en el MVP.** Payments emite, por cada pago aprobado, un comprobante de pago a nombre de la plataforma, rotulado como «Documento sin validez fiscal», en JSON y PDF. Si el pagador factura con NIT, el comprobante lo incluye. La factura electrónica validada por la DIAN (K14) queda para producción real. | Es la opción (a). La opción (b), la solución gratuita de la DIAN, exige conexión saliente desde la red del laboratorio (R9) y el registro del facturador, y el MVP ya cobra con una pasarela simulada (ADR-009 modificado), así que no hay ventas reales que facturar. El rótulo evita lo que K14 prohíbe: presentar como factura un documento sin validación de la DIAN. | Decidida el 21 de octubre de 2026 con SCRUM-44 (SAD 2.33, DD 5.10, `payments.v1.yaml` 1.1.0). |
 
 #### 7.4.2 Decisiones pendientes
 
@@ -598,7 +601,6 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | ID | Requisito | Contradicción | Opciones |
 |---|---|---|---|
 | P2 | RF-12 | Este documento, el SDD (escenario 7) y el DD (RN-R3) ponen el pago antes de la calificación; el ciclo de vida del SAD (sección 7.4) todavía libera el pago después de la evaluación (`EVALUATED`). | Actualizar la sección 7.4 del SAD V4 al orden de este documento (pago → calificación). |
-| P3 | RF-24 | Al cobrar a nombre de la plataforma, la factura debe ser electrónica y validada por la DIAN (killer K14), lo que exige conexión a Internet y, en general, un proveedor con costo (R5, R9). | (a) Emitir en el MVP un comprobante de pago sin validez fiscal, rotulado como tal; (b) integrar la solución gratuita de la DIAN. |
 | P4 | — | La Ley 1480 de 2011 (killer K13) exige un mecanismo para recibir reclamos, y el módulo de reclamos está fuera del MVP (SAD, FA3). | (a) Un canal mínimo de reclamos asociado a la solicitud, que requeriría un RF nuevo; (b) un canal externo documentado (correo de soporte). |
 | P5 | RF-11, RF-22 | Los técnicos en campo y la respuesta de la pasarela de pagos deben alcanzar el sistema desde fuera de la red del laboratorio, que no es accesible desde Internet (SAD, R9). | Las del SAD, sección 1.2: demostración en la red del campus, túnel gratuito o IP pública de la universidad. |
 | P6 | RNF-02, RNF-03 | No tienen un escenario de calidad que los mida (SAD, sección 2.2). | (a) Agregarlos como escenarios de AC6 (*Confidentiality*) en el SAD V4; (b) tratarlos como restricciones verificables por inspección. |
@@ -622,6 +624,9 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | 5.0 | 14 oct 2026 | SRS V5 (SCRUM-403). Se alinea con `develop` al 14 de octubre de 2026 (SAD 2.28, DD 4.0, SDD V2, TD 1.4, Infraestructura 3.7) y con Jira. **Criterios de aceptación (SCRUM-404):** nueva sección 5.5 con los criterios verificables de RF-09, RF-10, RF-13 y RF-19, cada uno con su historia, su regla del DD y su caso de prueba; se reescriben esos cuatro RF y se señalan las diferencias del TD que debe corregir el TD V2. **R5 frente a RIE-02 y RIE-03 (SCRUM-405):** se incorpora la decisión del ADR-024 del SAD (DR-01): R5 no cambia, RIE-02 pasa a un geocodificador propio con el mapa de Bogotá usado por ServiceRequest y RIE-03, a avisos dentro de la app (canal en tiempo real y buzón). El correo y el push quedan fuera del MVP. Se ajustan los supuestos, RF-07 y RNF-14. **Revisión del SRS V4 (Sebastián Sánchez):** RF-21 deja de decir que un tenant desactivado no puede crear solicitudes y describe lo implementado (rechazo del login; sesiones vigentes hasta que vence el token), con el rechazo inmediato en SCRUM-348; la restricción de la sección 2.3 describe el reparto de VMs del ADR-022 en lugar de "producción en las 7 VMs"; las versiones de los demás documentos se concentran en la línea base (nueva sección 1.3) y el resto del documento cita secciones; RF-07 aclara que la ubicación viene del GPS o de la dirección geocodificada (DR-02, por confirmar con el equipo); el diagrama BPMN en Mermaid se reemplaza por un flujo de negocio por carriles y fases (Figura 1, `diagrams/flujo-negocio.png`): incluye el registro, la pasarela de pagos como pool externo, el tipo de cada tarea y los caminos alternos (solicitud rechazada, espera y reasignación del matching, límite de 3 cotizaciones, reintento del pago y cancelación). **RNF:** pasan a tabla con el escenario del SAD que los mide y su estado de validación. **Apéndices:** la matriz de trazabilidad enlaza cada RF con su historia y sus casos de prueba (7.1.2); se actualizan los estados de Jira de las épicas 6 y 7 (Sprint 4: SCRUM-388 y las 9 historias de documentación); la sección 7.3 retira las historias ya reescritas en Jira y agrega SCRUM-41; la 7.4 separa las decisiones tomadas (DR-01, DR-02) de las pendientes y agrega P6 a P9. **Revisión del borrador (Sebastián Sánchez, 14 oct 2026):** la sección 1.3 deja escrito que la línea base debe pasar al SAD 2.28, el DD 4.0 y la Infraestructura 3.3 antes de aprobar; los estados de Jira de las épicas 6 y 7 se actualizan al 14 de octubre (27 de 34 elementos finalizados en la Épica 7); RF-07 y el supuesto de geocodificación incluyen el caso en que Nominatim no responde (ADR-024), y DR-02 indica que depende del DD V5 y del contrato `service-request.v1.yaml` 1.2.0 (SCRUM-455); en 5.5.1, los criterios 1 y 3 pasan a cobertura parcial con lo que falta por probar. La Figura 1 se acompaña de su fuente editable (`diagrams/flujo-negocio.svg`). **Aprobación:** el Product Owner aprobó la versión el 14 de octubre de 2026 (SCRUM-406). **Línea base (Sebastián Sánchez, 14 oct 2026):** la tabla de la sección 1.3 pasa al SAD 2.28, el DD 4.0 y la Infraestructura 3.7 tras comprobar que las secciones citadas existen y que lo que el SRS afirma de ellas sigue siendo cierto; en DR-01, el playbook de Nominatim figura como hecho en QA (`quickpatch#93`) y la referencia al SDD apunta a su sección 4. Pendiente: el PR a `develop`. |
 | 5.1 | 18 oct 2026 | RF-36 (cancelación antes de iniciar el servicio) deja de estar «por crear»: su historia es SCRUM-472 (Sprint 4), con el diseño en el DD 5.3 y el contrato `service-request.v1.yaml` 1.5.0 (SCRUM-474). Se actualizan F2.1, la tabla de RF, la Épica SCRUM-8, la matriz de trazabilidad (7.1.2), el resumen y la sección 7.3. RF-34 y RF-35 siguen sin historia. |
 | 5.2 | 19 oct 2026 | RF-34 (cotización del Técnico) y RF-35 (respuesta del Cliente) dejan de estar «por crear»: su historia es SCRUM-486, con el diseño en el DD 5.5 y el contrato `service-request.v1.yaml` 1.6.0 (SCRUM-487). Se actualizan F2.1, F3.2, la tabla de RF, las Épicas SCRUM-8 y SCRUM-9, la matriz de trazabilidad (7.1.2), el resumen y la sección 7.3, que además quita SCRUM-35 porque su descripción ya exige la evidencia fotográfica (RF-15). |
+| 5.3 | 20 oct 2026 | Página de presentación pública (SCRUM-491), pedida por el profesor en la revisión del 20 de octubre de 2026. La sección 2.1 suma la página al panel web y la 2.3 acota el «sitio web público» fuera de alcance: solo entra esa página, sin SEO ni redes sociales (SAD 2.31, FA2). No cambia ningún RF ni RNF. |
+| 5.4 | 21 oct 2026 | Comprobante de pago (SCRUM-44). La decisión pendiente P3 pasa a DR-03 (sección 7.4.1): en el MVP, RF-24 se cumple con un comprobante de pago sin validez fiscal, rotulado como tal; la factura electrónica validada por la DIAN queda para producción real (SAD 2.33, killer K14; DD 5.10). No cambia la redacción de RF-24. |
+| 5.5 | 21 oct 2026 | Chat de la solicitud (SCRUM-473, subtarea SCRUM-479). Nuevo RF-37 en F2.3: el Cliente dueño y el Técnico asignado se escriben dentro de la solicitud, con historial y entrega en tiempo real, y el chat queda de solo lectura al terminar o cancelar. La sección 2.3 saca el chat de lo que queda fuera del MVP (los adjuntos siguen fuera) y la matriz de trazabilidad agrega RF-37 (SAD 2.34, ADR-026; DD 5.11). |
 
 ---
 
