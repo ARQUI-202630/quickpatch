@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.9|
+|**Versión**|5.12|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -683,7 +683,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |phone|VARCHAR(30)|Sí|—|Número de teléfono.|
 |failed_login_attempts|INTEGER|No|—|Cantidad de intentos fallidos consecutivos.|
 |locked_until|TIMESTAMPTZ|Sí|—|Fecha hasta la cual permanece bloqueada la cuenta.|
-|company_id|UUID|Sí|FK local|**Nuevo v3. Pendiente de implementar (RF-06).** Empresa cliente a la que pertenece el usuario (`client_companies.id`). Obligatorio cuando `role = 'empresa_contacto'` y nulo en los demás roles (RN-CC2).|
+|company_id|UUID|Sí|FK local|**Nuevo v3; contrato en v5.12 (RF-06, SCRUM-484).** Empresa cliente a la que pertenece el usuario (`client_companies.id`). Obligatorio cuando `role = 'empresa_contacto'` y nulo en los demás roles (RN-CC2).|
 |created_at|TIMESTAMPTZ|No|—|Fecha de creación del usuario.|
 
 **Valores iniciales de `role`:**
@@ -1244,7 +1244,9 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Índices sugeridos:**
 
-- UNIQUE compuesto sobre `tenant_id, nit`.
+- UNIQUE compuesto sobre `tenant_id, nit` (`ux_client_companies_tenant_nit`).
+
+**v5.12 (SCRUM-484).** El NIT se guarda tal como lo valida el contrato (`^[0-9]{5,15}(-[0-9])?$`, con o sin dígito de verificación), así que `900123456-7` y `900123456` son NIT distintos para el índice. RLS forzada por tenant, como `users`; `identity_app` tiene `SELECT` e `INSERT` (la razón social y el NIT no se editan en el MVP). Contrato y flujo en la sección 8.3.18.
 
 ---
 
@@ -1271,7 +1273,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Nueva v5 (SCRUM-461).** **Servicio propietario:** Identity Service.
 
-**Propósito:** Invitaciones para que el técnico del equipo de un proveedor defina su contraseña (sección 8.3.14). El técnico se crea sin contraseña utilizable y el proveedor le comparte el enlace por el medio que use; no hay correo en el MVP (ADR-024).
+**Propósito:** Invitaciones para que el técnico del equipo de un proveedor (sección 8.3.14) o, desde la v5.12, el usuario agregado a una empresa cliente (sección 8.3.18) defina su contraseña. El técnico se crea sin contraseña utilizable y el proveedor le comparte el enlace por el medio que use; no hay correo en el MVP (ADR-024).
 
 **Requisitos relacionados:** RF-16.
 
@@ -1570,6 +1572,7 @@ Derivadas de la etapa de cotización del SAD (sección 7.4).
 - **RN-CC1:** el NIT de una empresa cliente es único dentro del tenant.
 - **RN-CC2:** todo usuario `empresa_contacto` pertenece a exactamente una empresa cliente (`company_id` no nulo), y ningún otro rol tiene empresa.
 - **RN-CC3:** solo un `empresa_contacto` de la misma empresa puede agregar otros usuarios solicitantes a ella (SCRUM-26, criterio 3). El usuario agregado hereda el tenant y la empresa de quien lo agrega.
+- **RN-CC4 (v5.12):** el usuario agregado se crea sin contraseña utilizable y la define con su invitación (sección 5.21); nadie define la contraseña de otro. El primer `empresa_contacto` la define al registrar la empresa.
 
 ### 7.14 Reglas del chat (`chat_participants` y `chat_messages`)
 
@@ -1625,6 +1628,7 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 |RN-CC1|Índice único sobre `tenant_id, nit` en `client_companies`.|
 |RN-CC2|`CHECK ((role = 'empresa_contacto') = (company_id IS NOT NULL))` en `users`.|
 |RN-CC3|Identity Service toma `company_id` y `tenant_id` del token, no del cuerpo de la petición.|
+|RN-CC4|Identity Service crea al usuario agregado con un hash inutilizable y le entrega la invitación de la sección 5.21.|
 |RN-A1|Permisos: los roles de aplicación solo tienen `INSERT` y `SELECT` sobre `audit_logs` (sección 10.2).|
 
 ---
@@ -1711,11 +1715,14 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |---|---|---|---|---|---|
 |POST|`/v1/auth/register/client`|Público|RF-01||Registrar cliente hogar.|
 |POST|`/v1/auth/register/technician`|Público|RF-02||Registrar técnico o proveedor; queda `pendiente`.|
-|POST|`/v1/auth/register/company`|Público|RF-06||Registrar empresa cliente y su primer `empresa_contacto` (DEP-13).|
+|POST|`/v1/auth/register/company`|Público|RF-06|Contrato v1.8.0|Registrar la empresa cliente y su primer `empresa_contacto` en el tenant del canal (sección 8.3.18).|
 |POST|`/v1/auth/login`|Público|RF-03||Autenticar y emitir tokens.|
 |POST|`/v1/auth/refresh`|Público con *refresh token*|RF-03|Nuevo|Renovar el token de acceso (SDD, sección 8.2.1).|
 |GET|`/v1/users/me`|Todos|RF-05, RF-19||Perfil actual. Para técnicos incluye `verificationStatus` (SCRUM-39, criterio 4).|
-|POST|`/v1/companies/me/users`|`empresa_contacto`|RF-06|Nuevo|Agregar otro usuario solicitante a la empresa (SCRUM-26, criterio 3).|
+|GET|`/v1/companies/me`|`empresa_contacto`|RF-06|Contrato v1.8.0|La empresa del token.|
+|POST|`/v1/companies/me/users`|`empresa_contacto`|RF-06|Contrato v1.8.0|Agregar otro usuario solicitante a la empresa con su invitación (SCRUM-26, criterio 3; RN-CC3, RN-CC4).|
+|GET|`/v1/companies/me/users?page=&size=`|`empresa_contacto`|RF-06|Contrato v1.8.0|Usuarios de la empresa del token, con `passwordDefined`.|
+|POST|`/v1/companies/me/users/{userId}/invitation`|`empresa_contacto`|RF-06|Contrato v1.8.0|Enlace nuevo para un usuario de la empresa que aún no definió su contraseña.|
 |GET|`/v1/admin/technicians?verificationStatus=`|`admin_tenant`|RF-19|Contrato v1.3.0|Listar técnicos y proveedores por estado de verificación.|
 |POST|`/v1/admin/technicians/{userId}/approve`|`admin_tenant`|RF-19|Contrato v1.3.0|Aprobar.|
 |POST|`/v1/admin/technicians/{userId}/reject`|`admin_tenant`|RF-19|Contrato v1.3.0|Rechazar con motivo.|
@@ -1723,7 +1730,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |POST|`/v1/providers/me/technicians`|`proveedor`|RF-16|Contrato v1.7.0|Dar de alta un técnico del equipo (RN-TP3) con su invitación (sección 8.3.14).|
 |GET|`/v1/providers/me/technicians?status=`|`proveedor`|RF-16|Contrato v1.7.0|Listar el equipo; `status` es `activo` (aprobado) o `inactivo` (pendiente, rechazado o suspendido).|
 |POST|`/v1/providers/me/technicians/{userId}/invitation`|`proveedor`|RF-16|Contrato v1.7.0|Generar un enlace nuevo y anular los anteriores sin usar.|
-|POST|`/v1/auth/password/setup`|Público, con el token de la invitación|RF-16|Contrato v1.7.0|El técnico del equipo define su contraseña.|
+|POST|`/v1/auth/password/setup`|Público, con el token de la invitación|RF-16, RF-06|Contrato v1.7.0|El técnico del equipo o, desde la 1.8.0, el usuario agregado a una empresa define su contraseña.|
 |GET|`/internal/v1/users?ids=`|Interno: ServiceRequest con el JWT del usuario|RF-14|Contrato interno v1.0.0|Nombre y teléfono por lote (sección 8.3.4). No pasa por el Gateway.|
 |GET|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.2.0|Listar todos los tenants, activos e inactivos, ordenados por nombre.|
 |POST|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.5.0|Crear un tenant (empresa oferente) en `activo`; NIT único en la plataforma (`409`). Queda en `audit_logs` (`crear_tenant`). No crea usuarios ni el canal.|
@@ -2225,6 +2232,30 @@ Cuenta solo las solicitudes del tenant del `admin_tenant` (RLS). `byStatus` siem
 |Otro cliente o técnico del tenant, técnico anterior, cualquier usuario de otro tenant|404|404|
 |`admin_tenant`, `admin_plataforma`, `proveedor`|403|403|
 
+#### 8.3.18 Cuenta corporativa — `POST /v1/auth/register/company` y `/v1/companies/me/users`
+
+**Contrato `identity.v1.yaml` 1.8.0 (v5.12, RF-06, SCRUM-26 y SCRUM-484).**
+
+```json
+{
+  "company": { "legalName": "Inversiones Andinas S.A.S.", "nit": "900123456-7", "contactEmail": "mantenimiento@andinas.com.co", "contactPhone": "+5716012345" },
+  "user": { "email": "laura.mora@andinas.com.co", "password": "<contraseña>", "fullName": "Laura Mora", "phone": "+573001112233" }
+}
+```
+
+**Registro.** Es público y el tenant sale del canal (`X-Channel-Id`, RN-U5), igual que el registro de cliente. Identity crea en una sola transacción la fila de `client_companies` y el usuario `empresa_contacto` con su `company_id` (RN-CC2), y responde `201` con `company` y `user`. La empresa cliente es una cuenta dentro del tenant de la empresa oferente; no se crea un tenant (SAD 7.1, DEP-13). Errores: `400 validacion` por campo (`company.nit`, `user.password`…), `409 nit-registrado` (RN-CC1), `409 correo-registrado` (RN-U1), `403 tenant-inactivo` y `503 canal-sin-tenant`. No inicia sesión.
+
+**Token.** El JWT del `empresa_contacto` lleva el claim `company_id`; `UserProfile` suma `companyId` (nulo en los demás roles). ServiceRequest lo usa para `client_type` y `company_id` de la solicitud (RN-SR12) y Payments para el pago de la empresa (RN-P6); ninguno lo recibe del cuerpo.
+
+**Usuarios de la empresa.** `POST /v1/companies/me/users` recibe `email`, `fullName` y `phone` opcional; el tenant y la empresa salen del token (RN-CC3). El usuario se crea con rol `empresa_contacto` y sin contraseña utilizable, y la respuesta trae su `invitation`, igual que el equipo del proveedor (sección 8.3.14): enlace de un solo uso que vence a las 72 horas, con el token después de `#`; Identity solo guarda su hash (sección 5.21). El usuario define la contraseña con `POST /v1/auth/password/setup` (RN-CC4).
+
+|Ruta|`empresa_contacto` de la empresa|Otro rol|Usuario de otra empresa u otro tenant|
+|---|---|---|---|
+|`GET /v1/companies/me`|200|403|— (solo ve la suya)|
+|`GET /v1/companies/me/users`|200, solo los de su empresa|403|— (no aparecen)|
+|`POST /v1/companies/me/users`|201, o 409 `correo-registrado`|403|—|
+|`POST /v1/companies/me/users/{userId}/invitation`|201, o 409 `contrasena-definida`|403|404|
+
 ### 8.4 Eventos Kafka
 
 Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de partición es el identificador de la entidad principal (`serviceRequestId` en los eventos de solicitud, matching y pago; `technicianId` en los de técnicos), para que Kafka entregue en orden los eventos de una misma entidad. Los errores de consumo siguen la política de reintentos y DLQ del SDD (sección 8.9).
@@ -2446,7 +2477,8 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`POST /v1/platform/tenants`|`identity.v1.yaml` 1.5.0|Identity (SCRUM-462)|—|—|
 |Equipo del proveedor, invitación y `POST /v1/auth/password/setup`|`identity.v1.yaml` 1.7.0|Identity (SCRUM-97, SCRUM-461)|—|—|
 |`GET /v1/notifications` y `POST /v1/notifications/{id}/read`|`communication.v1.yaml` 1.0.0|Pendiente (SCRUM-456)|—|—|
-|`POST /v1/auth/register/company`, `POST /v1/auth/refresh` y `POST /v1/companies/me/users`|Sin contrato|Pendiente|—|—|
+|`POST /v1/auth/register/company`, `GET /v1/companies/me` y `/v1/companies/me/users` con su invitación|`identity.v1.yaml` 1.8.0|Pendiente (SCRUM-66)|—|—|
+|`POST /v1/auth/refresh`|Sin contrato|Pendiente|—|—|
 |WebSocket `/v1/realtime`|`asyncapi/realtime.v1.yaml` 1.0.0|Communication (ADR-023)|—|—|
 |Resto de ServiceRequest (listado del cliente, cotizaciones, inicio, evidencia, cierre, calificación, historial y resumen) y Payments|Sin contrato|Pendiente|—|—|
 
@@ -2691,7 +2723,7 @@ El modelo de esta versión depende de las siguientes decisiones de diseño, que 
 |DEP-10|`quotes`, estado `cancelado`, `service_evidence`|Requisitos en el SRS para la cotización, la cancelación y la evidencia fotográfica obligatoria, que el SAD define y el SRS v3.1 no incluye.|SAD, sección 7.4 y D7|**Resuelta** con el SRS v3.2 (RF-15, RF-34, RF-35 y RF-36).|
 |DEP-11|RN-R3|Orden entre evaluación y pago. El SRS (RF-12) permite calificar desde `completado` y el SAD (sección 7.4) libera el pago después de la evaluación, mientras que el SDD (escenario 7) y RF-27 ponen el pago antes de la calificación. Este documento sigue al SDD y a RF-27.|RF-12, RF-27; SDD, escenario 7|**Resuelta** con el SRS V4: RF-12 habilita la calificación cuando la solicitud está en `pagado`, igual que RN-R3. Falta actualizar el ciclo de vida del SAD (sección 7.4), como registra el SRS (P2), y el criterio de SCRUM-32.|
 |DEP-12|Sección 14.2|Resuelto mediante ADR-012: Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication usan ASP.NET Core / .NET 10; Matching usa Java 25 + Spring Boot 4.1.1. Para persistencia se adopta EF Core + Npgsql en .NET y Spring Data/JPA en Matching.|ADR-012; Infraestructura 5.6 y 5.7|Resuelta (ADR-012).|
-|DEP-13|`tenants`, `register/company`|RF-06 asocia cada empresa cliente a un tenant propio; el SAD (sección 7.1) define el tenant como la empresa oferente y a las empresas cliente como usuarios de ese tenant. Este documento sigue al SAD, así que RF-06 no queda cubierto tal como está redactado.|RF-06; SAD, sección 7.1|Parcial: la tabla `client_companies` (sección 5.19) cubre la razón social, el NIT y los varios usuarios de SCRUM-26, dentro del tenant de la empresa oferente. La diferencia con la redacción de RF-06 se mantiene.|
+|DEP-13|`tenants`, `register/company`|RF-06 asocia cada empresa cliente a un tenant propio; el SAD (sección 7.1) define el tenant como la empresa oferente y a las empresas cliente como usuarios de ese tenant. Este documento sigue al SAD, así que RF-06 no queda cubierto tal como está redactado.|RF-06; SAD, sección 7.1|Resuelta en v5.12 (SCRUM-484): el SRS V4 ya redacta RF-06 como una cuenta corporativa dentro del tenant, y `identity.v1.yaml` 1.8.0 la registra en el tenant del canal con `client_companies` (secciones 5.19 y 8.3.18).|
 |DEP-14|`payments`|El SAD (sección 8.1) lista la entidad `PayoutRecord`, pero R1 excluye la liquidación a técnicos. Este documento no la modela.|R1; SAD, sección 8.1|Abierta.|
 |DEP-15|`GET /v1/admin/service-requests/summary`|SCRUM-38 pide ver las solicitudes de todos los tenants y filtrar por tenant; con RLS (ADR-005) el `admin_tenant` solo ve su tenant. Ver todos exigiría una operación de plataforma nueva para `admin_plataforma` en la sección 10.4.|SCRUM-38; ADR-005|**Resuelta v5.2 (SCRUM-485):** el `admin_plataforma` ve solo conteos por tenant con `GET /v1/platform/service-requests/summary` y el rol `service_request_platform` (secciones 8.3.15, 10.2 y 10.4).|
 |DEP-16|RN-Q8, `QUOTE_TTL`|Tiempo que tiene el cliente para responder una cotización. Se propone 24 horas.|RF-35|**Nueva v3.** Abierta.|
@@ -2742,7 +2774,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.9|SCRUM-115|**Implementación del pago (quickpatch-payments).** `payments` suma `processing_started_at` y `billing` (sección 5.12). La conciliación usa el rol `payments_scheduler` ya previsto en la sección 10.2, con `SELECT` sobre `id`, `tenant_id`, `status`, `provider_token_ref` y `processing_started_at`. Quien paga es el creador de la solicitud; RN-P6 (cualquier `empresa_contacto` de la empresa) queda para SCRUM-43, porque el token aún no trae la empresa.|
 |5.10|SCRUM-44|**Comprobante del pago (RF-24).** `payments.v1.yaml` 1.1.0 con `GET /v1/payments/{id}/invoice` en JSON o PDF según `Accept`, para el pagador y el `admin_tenant` (secciones 8.2.5 y 8.3.16). El PDF se genera al pedirlo y `invoices.pdf_url` queda nulo (sección 5.13). Es un comprobante sin validez fiscal (SRS DR-03, antes P3). El `IngressRoute` de Payments suma el prefijo `/v1/payments`.|
 |5.11|SCRUM-479|**Chat de la solicitud (RF-37, ADR-026).** Tablas `chat_participants` (réplica de `service-request.status-changed`) y `chat_messages` en `db_communication` (secciones 5.23 y 5.24), reglas RN-CH1 a RN-CH4 (sección 7.14), `communication.v1.yaml` 1.3.0 con `GET` y `POST /v1/service-requests/{id}/messages` (secciones 8.2.6 y 8.3.17) y la trama `chat.message` del canal (`realtime.v1.yaml` 1.1.0, sección 8.5).|
-|5.12|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.12|SCRUM-484|**Cuenta corporativa (RF-06, SCRUM-26).** `identity.v1.yaml` 1.8.0 con `POST /v1/auth/register/company`, `GET /v1/companies/me` y `GET` y `POST /v1/companies/me/users` con la invitación de la sección 5.21 (secciones 8.2.1 y 8.3.18). Claim `company_id` en el token y `companyId` en el perfil. Nueva regla RN-CC4 (nadie define la contraseña de otro usuario). DEP-13 queda resuelta: el SRS V4 ya ubica la empresa cliente dentro del tenant.|
+|5.13|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 

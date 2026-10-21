@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.34 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.35 — QUICKPATCH
 
 ---
 
@@ -174,7 +174,7 @@ Cada requisito no funcional del SRS (sección 5) se sigue hasta el escenario que
 |RNF-12|Agregar pruebas de diseño por tamaño de pantalla (widget tests en Flutter, viewport en Angular)|Frontend|
 |RNF-01|Validar AC6-E1 cuando Payments implemente la tokenización|Backend y QA|
 
-**Hallazgo de contratos.** La app móvil llama a `POST /v1/auth/register/company`, que el DD lista como pendiente (DEP-13) pero que no existe en `identity.v1.yaml`. Hasta que Backend lo publique en el contrato, el registro de empresas desde la app falla.
+**Hallazgo de contratos (resuelto en el contrato, v2.35).** La app móvil llama a `POST /v1/auth/register/company`, que no existía en `identity.v1.yaml`. Desde la 1.8.0 (SCRUM-484) el contrato lo publica junto con `/v1/companies/me/users`, y la empresa cliente queda dentro del tenant del canal (sección 7.1, DEP-13 del DD). El registro en la app sigue oculto hasta que Identity lo implemente (SCRUM-66).
 
 ---
 
@@ -1267,5 +1267,6 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.32|20 oct 2026|Pasarela de pagos simulada en el MVP (SCRUM-42). Se modifica ADR-009: un tokenizador en la app y un adaptador dentro de Payments Service imitan a la pasarela detrás del puerto `IPaymentProvider`, con tres tarjetas de prueba (aprobada, rechazada y sin respuesta). Se mantienen K2 y RN-P1: el PAN y el CVV no salen del dispositivo. La sección 4.1 lo anota en los sistemas externos. Ningún otro ADR cambia.|
 |2.33|21 oct 2026|Comprobante de pago (SCRUM-44). Se resuelve el conflicto de K14 con R5 y R9 (sección 1.2) con la opción (a): en el MVP, Payments emite un comprobante de pago sin validez fiscal, rotulado como tal, y la factura electrónica validada por la DIAN queda para producción real (SRS 5.4, DR-03). D4 no cambia.|
 |2.34|21 oct 2026|Chat de la solicitud (SCRUM-473, subtarea SCRUM-479). Se propone ADR-026: Communication guarda la conversación de cada solicitud, conoce a los participantes por `service-request.status-changed` y entrega los mensajes por el canal en tiempo real; el historial y el envío son una excepción más de ADR-025. FA3 (sección 1.3) queda solo con el módulo de reclamos, y se actualizan la sección 4.1 (gateway), la 4.2 (Communication) y la tabla de la sección 6.|
+|2.35|21 oct 2026|Cuenta corporativa (SCRUM-26, subtarea SCRUM-484). El hallazgo de contratos de la sección 2.2 queda resuelto en el contrato: `identity.v1.yaml` 1.8.0 publica el registro de la empresa cliente y sus usuarios, dentro del tenant (sección 7.1). Sin cambios de arquitectura.|
 |2.27|12 oct 2026|Dependencias externas frente a R5 (SCRUM-413 y SCRUM-405). Se acepta ADR-024: R5 no cambia; la geocodificación (RIE-02) corre con un Nominatim propio con el mapa de Bogotá en VM4 y VM5, usado por ServiceRequest cuando la solicitud llega sin coordenadas, y las notificaciones (RIE-03) del MVP se entregan dentro de la app (canal de ADR-023 y buzón en Communication). El diagrama de contexto (4.1) pasa el geocodificador adentro del sistema y retira el proveedor de correo y push, y la nota de sistemas externos lo explica. ADR-024 entra a la tabla 5.5 y a la matriz 6.1 como excepción a ADR-014.|
 |2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|
