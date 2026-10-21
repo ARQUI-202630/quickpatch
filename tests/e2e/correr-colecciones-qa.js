@@ -34,6 +34,56 @@ const baseUrl = process.env.QA_BASE_URL || 'https://qa.quickpatch.internal';
 const fecha = new Date().toISOString().slice(0, 10);
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const sinColor = (texto) => texto.replace(/\u001b\[[0-9;]*m/g, '');
+
+/**
+ * Un solo login del administrador antes de correr nada. Cada colección hace su propio login, e Identity bloquea la
+ * cuenta 15 minutos al quinto intento fallido (RN-U4): con una clave equivocada, varias colecciones seguidas la
+ * bloquearían. Devuelve el código HTTP y el rol, nunca el token.
+ */
+function verificarAdministrador() {
+  const https = require('node:https');
+  const http = require('node:http');
+  const url = new URL('/api/v1/auth/login', baseUrl);
+  const cuerpo = JSON.stringify({ email: process.env.QA_ADMIN_EMAIL, password: process.env.QA_ADMIN_PASSWORD });
+  const cliente = url.protocol === 'https:' ? https : http;
+  return new Promise((resolve) => {
+    const peticion = cliente.request(url, {
+      method: 'POST',
+      rejectUnauthorized: false,
+      timeout: 15000,
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(cuerpo) },
+    }, (respuesta) => {
+      let datos = '';
+      respuesta.on('data', (trozo) => { datos += trozo; });
+      respuesta.on('end', () => {
+        let rol = null;
+        try { rol = JSON.parse(datos).user?.role ?? null; } catch { /* Problem Details o cuerpo vacío */ }
+        resolve({ estado: respuesta.statusCode, rol });
+      });
+    });
+    peticion.on('timeout', () => peticion.destroy(new Error('sin respuesta en 15 s')));
+    peticion.on('error', (e) => resolve({ estado: null, rol: null, error: e.message }));
+    peticion.end(cuerpo);
+  });
+}
+
+async function principal() {
+  const { estado, rol, error } = await verificarAdministrador();
+  if (estado !== 200 || rol !== 'admin_tenant') {
+    const motivo = error ? `error de red (${error})`
+      : estado === 401 ? '401: el correo o la clave no son los del administrador del tenant de QA'
+      : estado === 423 || estado === 429 ? `${estado}: la cuenta está bloqueada; espera 15 minutos`
+      : estado === 200 ? `200, pero el rol es ${rol} y no admin_tenant`
+      : `HTTP ${estado}`;
+    console.error(`No se corrió ninguna colección. Login del administrador: ${motivo}.`);
+    console.error('Identity bloquea la cuenta 15 minutos al quinto intento fallido seguido; revisa las credenciales antes de reintentar.');
+    process.exit(2);
+  }
+  console.log('Login del administrador del tenant: OK');
+  correr();
+}
+
+function correr() {
 let fallidas = 0;
 
 for (const nombre of colecciones) {
@@ -78,3 +128,6 @@ for (const nombre of colecciones) {
 }
 
 process.exit(fallidas === 0 ? 0 : 1);
+}
+
+principal();
