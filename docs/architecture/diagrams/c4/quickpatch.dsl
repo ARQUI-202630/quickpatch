@@ -88,7 +88,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             gateway = container "API Gateway" "Única entrada HTTP: quita /api y enruta al servicio por la ruta del contrato; cada servicio valida el JWT (ADR-018, SDD 6.3)." "Nginx (quickpatch-api-gateway)" "Gateway"
 
             group "Microservicios" {
-                identity = container "Identity Service" "Autenticación, usuarios, tenants y auditoría." "ASP.NET Core (.NET 10)" {
+                identity = container "Identity Service" "Autenticación, usuarios, tenants y auditoría." "ASP.NET Core (.NET 10)" "Microservicio" {
                     idApi = component "API de autenticación y usuarios" "POST /v1/auth/register/client, /register/technician y /login; GET /v1/users/me." "Minimal API · Endpoints"
                     idPlatformApi = component "API de plataforma" "GET y PATCH /v1/platform/tenants; solo admin_plataforma." "Minimal API · Endpoints"
                     idSeguridad = component "Autorización y auditoría de 403" "Valida rol y tenant del JWT y registra cada acceso denegado (RNF-04)." "ASP.NET Core · Security"
@@ -102,14 +102,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idEmpresas = component "Cuenta corporativa" "Registro de la empresa cliente con su primer empresa_contacto, usuarios de la empresa con invitación y claim company_id (RF-06, identity 1.8.0)." "Minimal API + Application · Companies"
                     idPersistencia = component "Persistencia con RLS" "TenantUnitOfWork (set_config app.current_tenant) y PlatformUnitOfWork (SET LOCAL ROLE identity_platform)." "EF Core + Npgsql · Infrastructure"
                 }
-                actors = container "Actors Service" "Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" {
+                actors = container "Actors Service" "Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     acApi = component "API de actores" "Consulta y mantenimiento de actores del tenant." "Minimal API" "Planeado"
                     acProveedores = component "Proveedores de materiales" "Supplier: proveedor de materiales o repuestos (concepto evolutivo)." "Domain" "Planeado"
                     acAliados = component "Aliados" "Ally: técnico, profesional o empresa aliada." "Domain" "Planeado"
                     acClientes = component "Clientes" "Client: cliente hogar o empresarial." "Domain" "Planeado"
                     acPersistencia = component "Persistencia con RLS" "Repositorios de actores por tenant." "EF Core + Npgsql" "Planeado"
                 }
-                catalog = container "Catalog Service" "Categorías y especialidades de servicio." "ASP.NET Core (.NET 10)" {
+                catalog = container "Catalog Service" "Categorías y especialidades de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     catApi = component "API de categorías" "GET /v1/catalog/categories (con token o, sin token, con el tenant del canal para el registro de técnicos); POST y PATCH /v1/catalog/admin/categories (contrato 1.2.0)." "Minimal API · Endpoints"
                     catSeguridad = component "Contexto autenticado y auditoría de 403" "Toma usuario, tenant y rol del JWT; registra los 403." "ASP.NET Core · Security"
                     catCasos = component "Casos de uso de categorías" "Crear, actualizar y listar; nombre único por tenant (409)." "Application · Categories"
@@ -118,7 +118,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     catOutbox = component "Registro en outbox" "Encola catalog.category-changed en la misma transacción (ADR-007)." "EF Core · Infrastructure"
                     catPublicador = component "Publicador del outbox" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure"
                 }
-                serviceRequest = container "ServiceRequest Service" "Ciclo de vida de la solicitud de servicio." "ASP.NET Core (.NET 10)" {
+                serviceRequest = container "ServiceRequest Service" "Ciclo de vida de la solicitud de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     srContexto = component "Contexto autenticado" "Toma usuario, tenant y rol de los claims del JWT; nunca del cuerpo (RN-U3)." "ASP.NET Core · Security"
                     srApi = component "API REST de solicitudes" "POST, GET y lista de /v1/service-requests para cliente y empresa_contacto (con su sede, RN-SR12 y RN-SR14), detalle por rol, categorías y localidades (ADR-025)." "Minimal API · Endpoints"
                     srCasos = component "Casos de uso de la solicitud" "Crear y consultar; al crear coordina validación, agregado, persistencia y outbox en una transacción." "Application"
@@ -135,7 +135,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     srEvidencias = component "Ejecución y evidencias" "Inicia, guarda las fotos en Garage y completa con al menos una; publica .started y .completed (RF-14, RF-15)." "Application"
                     srCalificacion = component "Calificación" "Calificación del cliente después del pago; publicará service-request.evaluated (RF-12)." "Application" "Planeado"
                 }
-                matching = container "Matching Service" "Asignación geoespacial de técnicos." "Java 21 + Spring Boot" {
+                matching = container "Matching Service" "Asignación geoespacial de técnicos." "Java 21 + Spring Boot" "Microservicio" {
                     maListener = component "Listener de service-request.created" "Valida el contrato, descarta mensajes inválidos y propaga correlationId en el MDC." "@KafkaListener · infrastructure/messaging"
                     maHandler = component "Manejador del evento" "En una transacción por tenant registra el evento y, si es nuevo, inicia el matching (APPLIED o DUPLICATE)." "application/events"
                     maProcesados = component "Registro de eventos procesados" "INSERT ... ON CONFLICT (event_id) DO NOTHING en processed_events." "JDBC · infrastructure/persistence"
@@ -145,13 +145,13 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     maApi = component "API de técnicos y ofertas" "Localidades; disponibilidad y cobertura del técnico; ofertas pendientes, aceptar y rechazar (matching.v1.yaml 1.0.0)." "Spring MVC"
                     maProyeccion = component "Proyección del técnico" "Consume technician.registered y technician.verification-changed y guarda especialidad y verificación (P-01, ADR-017); reanuda solicitudes en espera (RN-M10)." "@KafkaListener"
                 }
-                ranking = container "Ranking Service" "Reputación de técnicos." "ASP.NET Core (.NET 10)" {
+                ranking = container "Ranking Service" "Reputación de técnicos." "ASP.NET Core (.NET 10)" "Microservicio" {
                     raConsumidor = component "Consumidor de service-request.evaluated" "Recibe cada calificación, una vez por eventId." "Kafka consumer" "Planeado"
                     raCalculo = component "Cálculo de reputación" "Recalcula el promedio del técnico (RF-12)." "Domain" "Planeado"
                     raApi = component "API de reputación" "Consulta de la reputación del técnico." "Minimal API" "Planeado"
                     raPersistencia = component "Persistencia con RLS" "Reputación agregada por tenant." "EF Core + Npgsql" "Planeado"
                 }
-                payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" {
+                payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" "Microservicio" {
                     paApi = component "API de pagos" "Inicia el pago con el token de la tarjeta; nunca recibe PAN ni CVV (RNF-01)." "Minimal API"
                     paProcesamiento = component "Procesamiento de pagos" "Estados del pago y reintentos idempotentes." "Application"
                     paAdaptadorPsp = component "Adaptador del PSP" "Cobra con la referencia del token; en el MVP es la pasarela simulada, detrás del mismo puerto que usará la certificada (ADR-009 modificado)." "Application"
@@ -159,7 +159,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     paFacturacion = component "Facturación" "Emite el comprobante del pago aprobado en JSON o PDF, sin validez fiscal (RF-24, payments 1.1.0)." "Application"
                     paOutbox = component "Outbox de pagos" "Publica payment.approved y payment.rejected." "BackgroundService"
                 }
-                communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" {
+                communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" "Microservicio" {
                     coConsumidores = component "Consumidores de eventos" "service-request.*, matching.* y payment.*, una vez por eventId." "Kafka consumer"
                     coPlantillas = component "Plantillas de notificación" "Arma el mensaje según el evento y el destinatario." "Application"
                     coCanal = component "Canal en tiempo real" "WebSocket /v1/realtime: valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant (ADR-023)." "ASP.NET Core WebSockets"
@@ -707,7 +707,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             element "Mobile App" {
                 shape MobileDevicePortrait
             }
+            # Observación del profesor (22 de octubre): el API Gateway es un rectángulo y los microservicios, hexágonos.
             element "Gateway" {
+                shape Box
+            }
+            element "Microservicio" {
                 shape Hexagon
             }
             element "Planeado" {
