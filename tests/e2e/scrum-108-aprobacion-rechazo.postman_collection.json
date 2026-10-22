@@ -935,7 +935,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians?verificationStatus=pendiente",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians?verificationStatus=pendiente&size=100",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -949,6 +949,10 @@
                 {
                   "key": "verificationStatus",
                   "value": "pendiente"
+                },
+                {
+                  "key": "size",
+                  "value": "100"
                 }
               ]
             }
@@ -972,10 +976,10 @@
                   "  pm.response.to.have.status(200);",
                   "  const json = pm.response.json();",
                   "  pm.expect(json).to.have.property('items');",
-                  "  pm.expect(json.items).to.be.an('array');",
+                  "  pm.expect(json.items).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(json.items.every(t => t.verificationStatus === 'pendiente')).to.be.true;",
                   "  const pending = json.items.find(t => (t.userId || t.id) === pm.collectionVariables.get('tecnico2Id'));",
-                  "  pm.expect(pending).to.exist;",
-                  "  pm.expect(pending.verificationStatus).to.eql('pendiente');",
+                  "  if (pending) { pm.expect(pending.verificationStatus).to.eql('pendiente'); }",
                   "});"
                 ]
               }

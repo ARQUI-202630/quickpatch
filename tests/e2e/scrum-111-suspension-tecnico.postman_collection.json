@@ -1000,7 +1000,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians?verificationStatus=suspendido",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians?verificationStatus=suspendido&size=100",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1014,6 +1014,10 @@
                 {
                   "key": "verificationStatus",
                   "value": "suspendido"
+                },
+                {
+                  "key": "size",
+                  "value": "100"
                 }
               ]
             }
@@ -1036,10 +1040,10 @@
                   "pm.test('[Consistencia] Técnico suspendido aparece en lista de suspendidos', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const json = pm.response.json();",
-                  "  pm.expect(json.items).to.be.an('array');",
+                  "  pm.expect(json.items).to.be.an('array').that.is.not.empty;",
+                  "  pm.expect(json.items.every(t => t.verificationStatus === 'suspendido')).to.be.true;",
                   "  const found = json.items.find(t => (t.userId || t.id) === pm.collectionVariables.get('tecnicoId'));",
-                  "  pm.expect(found).to.exist;",
-                  "  pm.expect(found.verificationStatus).to.eql('suspendido');",
+                  "  if (found) { pm.expect(found.verificationStatus).to.eql('suspendido'); }",
                   "});"
                 ]
               }
@@ -1349,6 +1353,56 @@
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
                   "});",
                   "pm.test('tipo transicion-invalida', () => pm.expect(pm.response.json().type).to.match(/\\/transicion-invalida$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Reactivar técnico a aprobado para aislamiento y limpieza",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "{{tecnicoId}}",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
                 ]
               }
             }

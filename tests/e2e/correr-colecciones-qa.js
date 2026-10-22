@@ -97,6 +97,7 @@ for (const nombre of colecciones) {
   const args = [
     '--yes', 'newman@6', 'run', archivo,
     '--insecure', '--reporters', 'cli', '--color', 'off',
+    '--working-dir', aqui,
     '--env-var', `baseUrl=${baseUrl}`,
     '--env-var', `adminEmail=${process.env.QA_ADMIN_EMAIL}`,
     '--env-var', `adminPassword=${process.env.QA_ADMIN_PASSWORD}`,
@@ -108,7 +109,7 @@ for (const nombre of colecciones) {
 
   const inicio = new Date();
   console.log(`\n▶ ${nombre} contra ${baseUrl}`);
-  const corrida = spawnSync(npx, args, { encoding: 'utf8', shell: process.platform === 'win32', maxBuffer: 64 * 1024 * 1024 });
+  const corrida = spawnSync(npx, args, { cwd: aqui, encoding: 'utf8', shell: process.platform === 'win32', maxBuffer: 64 * 1024 * 1024 });
   let salida = sinColor(`${corrida.stdout || ''}${corrida.stderr || ''}`);
   for (const secreto of [process.env.QA_ADMIN_PASSWORD, process.env.QA_PLATFORM_ADMIN_PASSWORD].filter(Boolean)) {
     salida = salida.split(secreto).join('***');
