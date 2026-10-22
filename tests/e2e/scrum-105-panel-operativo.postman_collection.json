@@ -1159,7 +1159,7 @@
                   "  const items = pm.response.json().items;",
                   "  const s = items.find(x => x.id === pm.collectionVariables.get('solicitud1Id'));",
                   "  pm.expect(s, 'la solicitud de la prueba').to.be.ok;",
-                  "  items.forEach(x => pm.expect(Object.keys(x).sort()).to.eql([\"assignedAt\", \"categoryId\", \"clientId\", \"createdAt\", \"id\", \"status\", \"technicianId\"]));",
+                  "  items.forEach(x => pm.expect(Object.keys(x).sort()).to.eql([\"assignedAt\", \"categoryId\", \"clientId\", \"clientType\", \"companyId\", \"createdAt\", \"description\", \"id\", \"siteName\", \"status\", \"technicianId\"]));",
                   "});"
                 ]
               }

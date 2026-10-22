@@ -1,0 +1,154 @@
+scrum-105-panel-operativo contra QA, 2026-10-22
+Colección: tests/e2e/scrum-105-panel-operativo.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-10-22T03:25:16.404Z. Duración: 16 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-105 Panel operativo del administrador del tenant
+
+□ 0. Preparación: categoría propia, técnico aprobado y clientes
+└ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1011ms]
+  √  200 con rol admin_tenant
+
+└ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 439B, 40ms]
+  √  201
+
+└ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 442B, 891ms]
+  √  201
+
+└ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a161a4-4e74-733f-9aa3-e9708b610aa9/approve [200 OK, 321B, 40ms]
+  √  200
+
+└ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 913ms]
+  √  200 con rol tecnico
+
+└ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 52ms]
+  √  200
+
+└ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 37ms]
+  √  200
+
+└ Registro de otro técnico, sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 970ms]
+  √  201
+
+└ Login del otro técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 986ms]
+  √  200 con rol tecnico
+
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 1024ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 913ms]
+  √  200 con rol cliente
+
+└ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 432B, 918ms]
+  √  201
+
+└ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 990ms]
+  √  200 con rol cliente
+
+└ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 439B, 1090ms]
+  √  201
+
+└ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 948ms]
+  √  200 con rol cliente
+
+□ 1. Resumen y lista del administrador del tenant
+└ Resumen antes de la solicitud
+  GET https://qa.quickpatch.internal/api/v1/admin/service-requests/summary [200 OK, 456B, 41ms]
+  √  200 con los 9 estados y createdToday
+
+└ El cliente crea una solicitud
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 824B, 42ms]
+  √  201
+
+└ El resumen suma la solicitud del día
+  GET https://qa.quickpatch.internal/api/v1/admin/service-requests/summary [200 OK, 456B, 37ms]
+  √  200 con los 9 estados y createdToday
+  √  createdToday sube
+
+└ La lista del tenant trae la solicitud, sin dirección ni ubicación
+  GET https://qa.quickpatch.internal/api/v1/service-requests?page=1&size=50 [200 OK, 19.09kB, 64ms]
+  √  200 con la solicitud de la prueba y solo los campos del contrato
+
+└ La lista filtra por estado
+  GET https://qa.quickpatch.internal/api/v1/service-requests?status=cancelado&page=1&size=20 [200 OK, 7.85kB, 44ms]
+  √  200
+  √  solo canceladas
+
+□ 2. Ningún otro rol entra al panel
+└ El cliente no ve el resumen → 403
+  GET https://qa.quickpatch.internal/api/v1/admin/service-requests/summary [403 Forbidden, 443B, 29ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ El técnico no ve la lista → 403
+  GET https://qa.quickpatch.internal/api/v1/service-requests?page=1&size=20 [403 Forbidden, 443B, 33ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ El cliente del tenant Beta no ve el resumen → 403
+  GET https://qa.quickpatch.internal/api/v1/admin/service-requests/summary [403 Forbidden, 443B, 31ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ El administrador del tenant no usa la vista de plataforma → 403
+  GET https://qa.quickpatch.internal/api/v1/platform/service-requests/summary [403 Forbidden, 443B, 34ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+□ 3. Vista de plataforma (solo con platformAdminEmail)
+└ Login del administrador de la plataforma
+
+└ Solo conteos por tenant
+
+□ Limpieza de la solicitud
+└ El cliente cancela la solicitud de la prueba
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a161a4-797a-7c21-b914-3442a5e6054a/cancel [200 OK, 370B, 41ms]
+  √  200
+
+□ Limpieza
+└ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a161a4-4e74-733f-9aa3-e9708b610aa9/suspend [200 OK, 348B, 39ms]
+  √  200
+
+└ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a161a4-4df7-70b3-a74b-d4c8aff3bc01 [200 OK, 434B, 41ms]
+  √  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  27 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  27 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  29 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  33 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 13.6s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 36.85kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 418ms [min: 29ms, max: 1090ms, s.d.: 457ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:31780) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
