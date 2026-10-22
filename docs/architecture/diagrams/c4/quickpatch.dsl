@@ -135,7 +135,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     srEvidencias = component "Ejecución y evidencias" "Inicia, guarda las fotos en Garage y completa con al menos una; publica .started y .completed (RF-14, RF-15)." "Application"
                     srCalificacion = component "Calificación" "Calificación del cliente después del pago; publicará service-request.evaluated (RF-12)." "Application" "Planeado"
                 }
-                matching = container "Matching Service" "Asignación geoespacial de técnicos." "Java 21 + Spring Boot" "Microservicio" {
+                matching = container "Matching Service" "Asignación geoespacial de técnicos." "Java 25 + Spring Boot 4.1" "Microservicio" {
                     maListener = component "Listener de service-request.created" "Valida el contrato, descarta mensajes inválidos y propaga correlationId en el MDC." "@KafkaListener · infrastructure/messaging"
                     maHandler = component "Manejador del evento" "En una transacción por tenant registra el evento y, si es nuevo, inicia el matching (APPLIED o DUPLICATE)." "application/events"
                     maProcesados = component "Registro de eventos procesados" "INSERT ... ON CONFLICT (event_id) DO NOTHING en processed_events." "JDBC · infrastructure/persistence"
@@ -398,11 +398,15 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         traefikProd = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
                         gatewayProd = containerInstance gateway
                         identityProd = containerInstance identity
-                        actorsProd = containerInstance actors
+                        actorsProd = containerInstance actors {
+                            tags "Planeado"
+                        }
                         catalogProd = containerInstance catalog
                         serviceRequestProd = containerInstance serviceRequest
                         matchingProd = containerInstance matching
-                        rankingProd = containerInstance ranking
+                        rankingProd = containerInstance ranking {
+                            tags "Planeado"
+                        }
                         paymentsProd = containerInstance payments
                         communicationProd = containerInstance communication
                     }
@@ -419,7 +423,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         dbCommunicationProd = containerInstance dbCommunication
                     }
                     redisProd = containerInstance redis
-                    geocodificadorProd = containerInstance geocodificador
+                    geocodificadorProd = containerInstance geocodificador {
+                            tags "Planeado"
+                        }
                 }
                 deploymentNode "VM6 · Mensajería y almacenamiento · 10.43.99.12" "Recibe 9092 y 9000 desde VM3 y 9000 desde VM4." "4 vCPU · 11 GiB RAM · 68 GB" {
                     kafkaProd = containerInstance kafka
@@ -450,11 +456,15 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         traefikQa = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
                         gatewayQa = containerInstance gateway
                         identityQa = containerInstance identity
-                        actorsQa = containerInstance actors
+                        actorsQa = containerInstance actors {
+                            tags "Planeado"
+                        }
                         catalogQa = containerInstance catalog
                         serviceRequestQa = containerInstance serviceRequest
                         matchingQa = containerInstance matching
-                        rankingQa = containerInstance ranking
+                        rankingQa = containerInstance ranking {
+                            tags "Planeado"
+                        }
                         paymentsQa = containerInstance payments
                         communicationQa = containerInstance communication
                     }
