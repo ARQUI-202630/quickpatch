@@ -497,7 +497,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('201', () => pm.response.to.have.status(201));"
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('tecnico2Id', pm.response.json().id);"
                 ]
               }
             }

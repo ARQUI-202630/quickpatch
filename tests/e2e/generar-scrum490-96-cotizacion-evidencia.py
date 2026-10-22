@@ -159,7 +159,7 @@ def preparacion(historia):
                 {"email": "tecnico2.qa.{{sufijo}}@quickpatch.test", "password": "{{clave}}", "fullName": "Otro técnico QA",
                  "phone": "3007654322", "documentId": "{{documento2}}", "specialtyId": "{{categoriaId}}", "role": "tecnico"},
                 previo=["pm.collectionVariables.set('documento2', String(Date.now() + 7).slice(-10));"],
-                pruebas=estado(201)),
+                pruebas=estado(201) + ["pm.collectionVariables.set('tecnico2Id', pm.response.json().id);"]),
             login("otro técnico", "tecnico2.qa", "otroTecnicoToken", "tecnico"),
             registro_cliente("cliente", "cliente.qa"),
             login("cliente", "cliente.qa", "clienteToken", "cliente"),

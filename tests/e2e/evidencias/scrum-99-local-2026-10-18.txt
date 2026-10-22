@@ -1,0 +1,128 @@
+(node:6608) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[QA Mock Gateway] Inicializado en http://localhost:8080
+
+======================================================
+ EJECUTANDO: SCRUM-99 (Gestión de Equipo de Técnicos)
+ HU Padre: SCRUM-36 | RF-16 | RN-TP3 | RN-TP4
+ Modo: Simulación Preparatoria Local
+ Target: http://localhost:8080
+ Archivo: scrum-99-equipo-proveedor.postman_collection.json
+======================================================
+
+newman
+
+QUICKPATCH — Gestión de Equipo de Técnicos (SCRUM-99 / HU SCRUM-36)
+
+□ 0. Autenticación de Actores
+└ 0.1 Login Proveedor Principal (usr-prov-01)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 560B, 40ms]
+  √  [Auth] Login de Proveedor 1 exitoso (200 OK)
+
+└ 0.2 Login Proveedor 2 en Mismo Tenant (usr-prov-02)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 561B, 6ms]
+  √  [Auth] Login de Proveedor 2 exitoso (200 OK)
+
+└ 0.3 Login Proveedor Tenant Beta
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 565B, 3ms]
+  √  [Auth] Login de Proveedor Beta exitoso (200 OK)
+
+└ 0.4 Login Cliente para Control RBAC
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 558B, 4ms]
+  √  [Auth] Login de Cliente para RBAC exitoso (200 OK)
+
+└ 0.5 Login Técnico para Control RBAC
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 584B, 3ms]
+  √  [Auth] Login de Técnico para RBAC exitoso (200 OK)
+
+□ 1. Registro de Técnico en Equipo del Proveedor
+└ 1.1 Proveedor 1 registra un técnico en su equipo
+  POST http://localhost:8080/api/v1/providers/me/technicians [201 Created, 550B, 4ms]
+  √  [RN-TP3 / RF-16] 201 Created al dar de alta técnico en equipo
+  √  [RN-TP3] El técnico hereda estado pendiente y rol técnico
+
+□ 2. Consulta y Filtros de Equipo
+└ 2.1 Proveedor 1 consulta la lista completa de su equipo
+  GET http://localhost:8080/api/v1/providers/me/technicians [200 OK, 469B, 6ms]
+  √  [RN-TP4] 200 OK al consultar equipo de técnicos
+  √  [RF-16] Técnico registrado aparece en la lista con datos completos
+
+└ 2.2 Proveedor 1 filtra equipo por status=inactivo
+  GET http://localhost:8080/api/v1/providers/me/technicians?status=inactivo [200 OK, 469B, 3ms]
+  √  [Filtro status=inactivo] 200 OK y técnico pendiente listado
+
+└ 2.3 Proveedor 1 filtra equipo por status=activo
+  GET http://localhost:8080/api/v1/providers/me/technicians?status=activo [200 OK, 241B, 5ms]
+  √  [Filtro status=activo] 200 OK y técnico pendiente NO listado como activo
+  √  [RN-TP1] Solo técnicos aprobados por admin_tenant pueden estar activos
+
+□ 3. Validaciones de Negocio y Errores
+└ 3.1 Validación: Proveedor envía solicitud incompleta -> 400 Bad Request
+  POST http://localhost:8080/api/v1/providers/me/technicians [400 Bad Request, 552B, 3ms]
+  √  [Validación] 400 Bad Request ante datos faltantes
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /validacion-solicitud
+
+└ 3.2 Unicidad: Proveedor intenta registrar documento duplicado -> 409 Conflict
+  POST http://localhost:8080/api/v1/providers/me/technicians [409 Conflict, 511B, 3ms]
+  √  [RN-U1] 409 Conflict ante documento de identidad duplicado
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /documento-registrado
+
+└ 3.3 Unicidad: Proveedor intenta registrar correo duplicado -> 409 Conflict
+  POST http://localhost:8080/api/v1/providers/me/technicians [409 Conflict, 502B, 3ms]
+  √  [RN-U1] 409 Conflict ante correo electrónico duplicado
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /correo-registrado
+
+□ 4. Control de Acceso RBAC y Aislamiento Multi-Tenant
+└ 4.1 Control RBAC: Cliente intenta dar de alta técnico en equipo -> 403 Forbidden
+  POST http://localhost:8080/api/v1/providers/me/technicians [403 Forbidden, 514B, 2ms]
+  √  [RBAC] 403 Forbidden para cliente intentando gestionar equipo
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autorizado
+
+└ 4.2 Control RBAC: Técnico intenta dar de alta técnico en equipo -> 403 Forbidden
+  POST http://localhost:8080/api/v1/providers/me/technicians [403 Forbidden, 514B, 1ms]
+  √  [RBAC] 403 Forbidden para técnico intentando registrar equipo
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autorizado
+
+└ 4.3 Seguridad: Consulta anónima sin token -> 401 Unauthorized
+  GET http://localhost:8080/api/v1/providers/me/technicians [401 Unauthorized, 470B, 3ms]
+  √  [Seguridad] 401 Unauthorized ante solicitud anónima (IDN-017)
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autenticado
+
+└ 4.4 Aislamiento Intra-Tenant (RN-TP4): Proveedor 2 no ve técnicos de Proveedor 1
+  GET http://localhost:8080/api/v1/providers/me/technicians [200 OK, 241B, 3ms]
+  √  [RN-TP4 / Confidencialidad] 200 OK para Proveedor 2 sin ver técnicos de Proveedor 1
+  √  [Aislamiento Intra-Tenant] Cero fuga de técnicos entre proveedores del mismo tenant
+
+└ 4.5 Aislamiento Multi-Tenant (RLS): Proveedor Beta no ve técnicos de Tenant Alfa
+  GET http://localhost:8080/api/v1/providers/me/technicians [200 OK, 241B, 2ms]
+  √  [SAD AC6-E2 / RLS] 200 OK para Proveedor Beta con cero técnicos de Tenant Alfa
+  √  [Multi-Tenancy] Row-Level Security garantiza aislamiento estricto cross-tenant
+
+┌─────────────────────────┬─────────────────┬─────────────────┐
+│                         │        executed │          failed │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              iterations │               1 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│                requests │              17 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│            test-scripts │              17 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│      prerequest-scripts │               0 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              assertions │              34 │               0 │
+├─────────────────────────┴─────────────────┴─────────────────┤
+│ total run duration: 1525ms                                  │
+├─────────────────────────────────────────────────────────────┤
+│ total data received: 4.28kB (approx)                        │
+├─────────────────────────────────────────────────────────────┤
+│ average response time: 5ms [min: 1ms, max: 40ms, s.d.: 8ms] │
+└─────────────────────────────────────────────────────────────┘
+
+[Newman] Ejecución de SCRUM-99 completada al 100% con éxito.
+[QA Mock Gateway] Servidor local cerrado.
