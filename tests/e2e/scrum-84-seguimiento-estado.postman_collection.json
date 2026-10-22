@@ -1,87 +1,29 @@
 {
   "info": {
-    "name": "QUICKPATCH — Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31)",
-    "description": "Suite E2E automatizada para SCRUM-84 (HU SCRUM-31: Seguimiento en tiempo real del estado de la solicitud):\nValida ServiceRequest (máquina de estados), Communication (WebSocket y evento status-changed) y API Gateway (/api/v1/realtime).\nAutora: Katherine Bravo — QA Lead.",
+    "name": "QUICKPATCH — SCRUM-84 Seguimiento de estado en tiempo real de punta a punta",
+    "description": "RF-11 (SCRUM-31) y SCRUM-35 contra QA, con service-request.v1.yaml 1.7.0. La solicitud recorre los cuatro estados: buscando_tecnico al crearse, asignado tras la aceptación de la oferta (matching.technician-assigned), en_progreso al iniciar el técnico con la cotización aceptada (POST /start), y completado al terminar el servicio (POST /complete) habiendo subido previamente la foto de evidencia obligatoria desde fixtures/evidencia-1x1.png. El cliente visualiza la actualización y los datos del técnico en cada estado. Casos negativos: cliente que intenta iniciar o completar (403), otro cliente del mismo tenant (404), cliente de otro tenant (404 por RLS), sin token (401), y transiciones inválidas al completar dos veces (409). Variables: baseUrl, adminEmail y adminPassword (secretos de QA, nunca en el repositorio). Correr con --reporters cli: el reporte JSON de Newman guarda tokens.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8080",
-      "type": "string"
+      "value": "https://qa.quickpatch.internal"
     },
     {
-      "key": "clienteEmail",
-      "value": "",
-      "type": "string"
+      "key": "adminEmail",
+      "value": ""
     },
     {
-      "key": "clientePassword",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "tecnicoEmail",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "tecnicoPassword",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "cliente2Email",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "cliente2Password",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "clienteBetaEmail",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "clienteBetaPassword",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "clienteToken",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "tecnicoToken",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "cliente2Token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "clienteBetaToken",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "requestId",
-      "value": "sr-tracking-01",
-      "type": "string"
+      "key": "adminPassword",
+      "value": ""
     }
   ],
   "item": [
     {
-      "name": "0. Autenticación de Actores",
+      "name": "0. Preparación: categoría propia, técnico aprobado y clientes",
       "item": [
         {
-          "name": "0.1 Login Cliente Propietario (usr-client-01)",
+          "name": "Login del administrador del tenant",
           "request": {
             "method": "POST",
             "header": [
@@ -112,24 +54,42 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{clienteEmail}}\",\n  \"password\": \"{{clientePassword}}\"\n}"
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('sufijo')) {",
+                  "  pm.collectionVariables.set('sufijo', Date.now().toString(36));",
+                  "  // Clave de las cuentas de esta corrida: se genera al vuelo y no se guarda en ningún lado.",
+                  "  pm.collectionVariables.set('clave', 'Qp_' + Math.random().toString(36).slice(2, 12) + '!Aa7');",
+                  "}"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Auth] Login de cliente exitoso (200 OK)', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);"
+                  "pm.test('200 con rol admin_tenant', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('admin_tenant');",
+                  "});",
+                  "// El token solo vive en memoria durante la corrida.",
+                  "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "0.2 Login Técnico Asignado (usr-tec-01)",
+          "name": "Categoría solo para esta corrida (solo el técnico de la prueba la atiende)",
           "request": {
             "method": "POST",
             "header": [
@@ -142,42 +102,52 @@
                 "value": "{{$guid}}"
               },
               {
-                "key": "X-Channel-Id",
-                "value": "quickpatch-mobile"
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "raw": "{{baseUrl}}/api/v1/catalog/admin/categories",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "auth",
-                "login"
+                "catalog",
+                "admin",
+                "categories"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{tecnicoEmail}}\",\n  \"password\": \"{{tecnicoPassword}}\"\n}"
+              "raw": "{\n  \"name\": \"SCRUM-84 {{sufijo}}\",\n  \"description\": \"Categoría de la prueba SCRUM-84; se desactiva al final\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Auth] Login de técnico exitoso (200 OK)', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);"
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('categoriaId', pm.response.json().id);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "0.3 Login Cliente Ajeno en Mismo Tenant (usr-client-02)",
+          "name": "Registro del técnico con esa especialidad",
           "request": {
             "method": "POST",
             "header": [
@@ -195,7 +165,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "raw": "{{baseUrl}}/api/v1/auth/register/technician",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -203,84 +173,42 @@
                 "api",
                 "v1",
                 "auth",
-                "login"
+                "register",
+                "technician"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{cliente2Email}}\",\n  \"password\": \"{{cliente2Password}}\"\n}"
+              "raw": "{\n  \"email\": \"tecnico.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Técnico SCRUM-84\",\n  \"phone\": \"3007654321\",\n  \"documentId\": \"{{documento}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }",
+                  "pm.collectionVariables.set('documento', String(Date.now()).slice(-10));"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Auth] Login de cliente 2 exitoso (200 OK)', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('cliente2Token', pm.response.json().accessToken);"
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('tecnicoId', pm.response.json().id);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "0.4 Login Cliente en Tenant Beta",
+          "name": "El administrador aprueba al técnico",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "X-Channel-Id",
-                "value": "quickpatch-mobile"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "login"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{clienteBetaEmail}}\",\n  \"password\": \"{{clienteBetaPassword}}\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('[Auth] Login de cliente Beta exitoso (200 OK)', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('clienteBetaToken', pm.response.json().accessToken);"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "1. Canal en Tiempo Real (WebSocket / Gateway)",
-      "item": [
-        {
-          "name": "1.1 Handshake y suscripción a WebSocket (/v1/realtime) con token",
-          "request": {
-            "method": "GET",
             "header": [
               {
                 "key": "X-Correlation-Id",
@@ -288,90 +216,47 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{clienteToken}}"
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/realtime",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/approve",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "realtime"
+                "admin",
+                "technicians",
+                "{{tecnicoId}}",
+                "approve"
               ]
             }
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[ADR-023 / SCRUM-451] 200 OK en handshake de canal en tiempo real', () => pm.response.to.have.status(200));",
-                  "pm.test('[Gateway] Cabecera de canal activo verificada', () => pm.expect(pm.response.headers.get('X-Realtime-Channel')).to.eql('active'));",
-                  "pm.test('[Tiempo Real] Estado connected y transporte websocket', () => {",
-                  "  const res = pm.response.json();",
-                  "  pm.expect(res.status).to.eql('connected');",
-                  "  pm.expect(res.transport).to.eql('websocket');",
-                  "});",
-                  "pm.test('[SCRUM-466] Suscripción obligatoria a service-request.status-changed', () => {",
-                  "  pm.expect(pm.response.json().subscribedEvents).to.include('service-request.status-changed');",
-                  "});"
+                  "pm.test('200', () => pm.response.to.have.status(200));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "1.2 Rechazo de conexión a tiempo real sin token (IDN-017) -> 401 Unauthorized",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/realtime",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "realtime"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('[Seguridad] 401 Unauthorized para handshake anónimo', () => pm.response.to.have.status(401));",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
-                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
-                  "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /no-autenticado', () => {",
-                  "  pm.expect(pm.response.json().type).to.match(/\\/no-autenticado$/);",
-                  "});"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "2. Estado 1: Buscando Técnico",
-      "item": [
-        {
-          "name": "2.1 Creación de solicitud por cliente (estado inicial buscando_tecnico)",
+          "name": "Login del técnico",
           "request": {
             "method": "POST",
             "header": [
@@ -386,6 +271,666 @@
               {
                 "key": "X-Channel-Id",
                 "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol tecnico', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('tecnico');",
+                  "});",
+                  "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico cubre toda Bogotá (espera a que Matching lo conozca)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/me/coverage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "technicians",
+                "me",
+                "coverage"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"localityCodes\": [\n    \"01\",\n    \"02\",\n    \"03\",\n    \"04\",\n    \"05\",\n    \"06\",\n    \"07\",\n    \"08\",\n    \"09\",\n    \"10\",\n    \"11\",\n    \"12\",\n    \"13\",\n    \"14\",\n    \"15\",\n    \"16\",\n    \"17\",\n    \"18\",\n    \"19\",\n    \"20\"\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code === 200) && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('200', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico queda disponible",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/me/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "technicians",
+                "me",
+                "availability"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"disponible\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code === 200) && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('200', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro de otro técnico, sin aprobar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/technician",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico2.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Otro técnico QA\",\n  \"phone\": \"3007654322\",\n  \"documentId\": \"{{documento2}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }",
+                  "pm.collectionVariables.set('documento2', String(Date.now() + 7).slice(-10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del otro técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico2.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol tecnico', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('tecnico');",
+                  "});",
+                  "pm.collectionVariables.set('otroTecnicoToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro del cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba QA cliente\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol cliente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro del otro cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente2.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba QA otro cliente\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del otro cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente2.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol cliente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('otroClienteToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro del cliente del tenant Beta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"beta.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba QA cliente del tenant Beta\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del cliente del tenant Beta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"beta.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol cliente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('betaToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Ciclo de estados: buscando_tecnico -> asignado -> en_progreso -> completado",
+      "item": [
+        {
+          "name": "Crear la solicitud 1 (espera la réplica de la categoría)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
               },
               {
                 "key": "Authorization",
@@ -405,25 +950,155 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"id\": \"sr-tracking-01\",\n  \"categoryId\": \"3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01\",\n  \"description\": \"Fuga de tubería principal en cocina\",\n  \"location\": {\n    \"latitude\": 4.6533,\n    \"longitude\": -74.0836\n  },\n  \"addressText\": \"Carrera 15 # 85-30, apto 401\"\n}"
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de punta a punta SCRUM-84, solicitud 1\",\n  \"location\": {\n    \"latitude\": 4.6486,\n    \"longitude\": -74.063\n  },\n  \"addressText\": \"Calle 63 # 9-45, apto 201\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[ServiceRequest] 201 Created para nueva solicitud', () => pm.response.to.have.status(201));",
-                  "pm.test('[SCRUM-31] Estado inicial es buscando_tecnico', () => pm.expect(pm.response.json().status).to.eql('buscando_tecnico'));",
-                  "pm.collectionVariables.set('requestId', pm.response.json().id);"
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code !== 422) && intento < 10) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('201', () => pm.response.to.have.status(201));",
+                  "  pm.collectionVariables.set('solicitud1Id', pm.response.json().id);",
+                  "}"
                 ]
               }
             }
           ]
         },
         {
-          "name": "2.2 Cliente consulta estado inicial de su solicitud",
+          "name": "El técnico ve la oferta de la solicitud 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matching/offers?status=pendiente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matching",
+                "offers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pendiente"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const oferta = pm.response.code === 200 && pm.response.json().items.find(x => x.serviceRequestId === pm.collectionVariables.get('solicitud1Id'));",
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(oferta) && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('la oferta está pendiente para el técnico', () => pm.expect(oferta).to.be.ok);",
+                  "  if (oferta) { pm.collectionVariables.set('oferta1Id', oferta.attemptId); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico acepta la oferta de la solicitud 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/matching/offers/{{oferta1Id}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "matching",
+                "offers",
+                "{{oferta1Id}}",
+                "accept"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La solicitud 1 queda asignada (matching.technician-assigned)",
           "request": {
             "method": "GET",
             "header": [
@@ -437,7 +1112,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -445,33 +1120,99 @@
                 "api",
                 "v1",
                 "service-requests",
-                "{{requestId}}"
+                "{{solicitud1Id}}"
               ]
             }
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Seguimiento] 200 OK en consulta de solicitud', () => pm.response.to.have.status(200));",
-                  "pm.test('[Estado 1] Solicitud visible en estado buscando_tecnico', () => pm.expect(pm.response.json().status).to.eql('buscando_tecnico'));",
-                  "pm.test('[Cliente] Técnico es null antes de la asignación', () => pm.expect(pm.response.json().technician).to.be.null);"
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.json().status === 'asignado') && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('asignado al técnico de la prueba', () => {",
+                  "    pm.expect(pm.response.json().status).to.eql('asignado');",
+                  "    pm.expect(pm.response.json().technicianId).to.eql(pm.collectionVariables.get('tecnicoId'));",
+                  "  });",
+                  "}"
                 ]
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "3. Estado 2: Asignado",
-      "item": [
+        },
         {
-          "name": "3.1 Actualización a estado 'asignado' tras aceptación de oferta",
+          "name": "El cliente ve la solicitud asignada y datos del técnico (RF-11, RF-14)",
           "request": {
-            "method": "PUT",
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 asignado con datos del técnico', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(r.status).to.eql('asignado');",
+                  "  pm.expect(r.technicianId).to.eql(pm.collectionVariables.get('tecnicoId'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico cotiza la reparación previa a iniciar",
+          "request": {
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
@@ -487,7 +1228,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}/status",
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}/quotes",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -495,34 +1236,49 @@
                 "api",
                 "v1",
                 "service-requests",
-                "{{requestId}}",
-                "status"
+                "{{solicitud1Id}}",
+                "quotes"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"asignado\"\n}"
+              "raw": "{\n  \"laborAmount\": \"120000.00\",\n  \"materialsAmount\": \"45000.00\",\n  \"detail\": \"Cambio de sifón y empaques.\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Transición] 200 OK en actualización a asignado', () => pm.response.to.have.status(200));",
-                  "const resAsig = pm.response.json();",
-                  "pm.test('[Transición] Estado nuevo es asignado', () => pm.expect(resAsig.status).to.eql('asignado'));",
-                  "pm.test('[SCRUM-466] Evento service-request.status-changed emitido', () => pm.expect(resAsig.noticeEmitted).to.eql('service-request.status-changed'));"
+                  "pm.test('201 con el contrato Quote', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const q = pm.response.json();",
+                  "  pm.expect(q.quoteNumber).to.eql(1);",
+                  "  pm.expect(q.status).to.eql('pendiente');",
+                  "  pm.expect(q.totalAmount).to.eql('165000.00');",
+                  "  pm.expect(new Date(q.expiresAt) > new Date(q.createdAt)).to.eql(true);",
+                  "  pm.expect(q.respondedAt).to.eql(null);",
+                  "});",
+                  "pm.collectionVariables.set('cot1', pm.response.json().id);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "3.2 Cliente consulta estado asignado y visualiza datos del técnico",
+          "name": "El cliente acepta la cotización",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
               {
                 "key": "X-Correlation-Id",
@@ -534,7 +1290,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}/quotes/{{cot1}}/accept",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -542,45 +1298,46 @@
                 "api",
                 "v1",
                 "service-requests",
-                "{{requestId}}"
+                "{{solicitud1Id}}",
+                "quotes",
+                "{{cot1}}",
+                "accept"
               ]
             }
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Seguimiento] 200 OK para cliente consultando asignación', () => pm.response.to.have.status(200));",
-                  "pm.test('[Estado 2] Estado actualizado a asignado', () => pm.expect(pm.response.json().status).to.eql('asignado'));",
-                  "pm.test('[SCRUM-31 / Criterio 3] Nombre del técnico visible para el cliente', () => {",
-                  "  const res = pm.response.json();",
-                  "  pm.expect(res.technician).to.not.be.null;",
-                  "  pm.expect(res.technician.fullName).to.include('Carlos Pérez');",
-                  "});",
-                  "pm.test('[SCRUM-31 / Criterio 3] Especialidad del técnico visible para el cliente', () => {",
-                  "  pm.expect(pm.response.json().technician.specialty).to.eql('Plomería');",
+                  "pm.test('200 con el contrato QuoteDecision', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const d = pm.response.json();",
+                  "  pm.expect(Object.keys(d).sort()).to.eql(['quoteId', 'quoteStatus', 'remainingQuotes', 'serviceRequestStatus']);",
+                  "  pm.expect(d.quoteStatus).to.eql('aceptada');",
+                  "  pm.expect(d.serviceRequestStatus).to.eql('cotizacion_aceptada');",
+                  "  pm.expect(d.remainingQuotes).to.eql(2);",
                   "});"
                 ]
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "4. Estado 3: En Progreso",
-      "item": [
+        },
         {
-          "name": "4.1 Técnico inicia el trabajo y pasa solicitud a 'en_progreso'",
+          "name": "El técnico inicia el trabajo (pasa a en_progreso / SCRUM-35)",
           "request": {
-            "method": "PUT",
+            "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
               {
                 "key": "X-Correlation-Id",
                 "value": "{{$guid}}"
@@ -591,7 +1348,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}/status",
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}/start",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -599,35 +1356,34 @@
                 "api",
                 "v1",
                 "service-requests",
-                "{{requestId}}",
-                "status"
+                "{{solicitud1Id}}",
+                "start"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"en_progreso\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Transición] 200 OK en actualización a en_progreso', () => pm.response.to.have.status(200));",
-                  "const resProg = pm.response.json();",
-                  "pm.test('[Máquina de Estados] previousStatus: asignado -> status: en_progreso', () => {",
-                  "  pm.expect(resProg.previousStatus).to.eql('asignado');",
-                  "  pm.expect(resProg.status).to.eql('en_progreso');",
-                  "});",
-                  "pm.test('[SCRUM-466] Aviso de estado emitido en la misma transacción', () => pm.expect(resProg.noticeEmitted).to.eql('service-request.status-changed'));"
+                  "pm.test('200', () => pm.response.to.have.status(200));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "4.2 Cliente observa estado 'en_progreso' con latencia inmediata (< 1 minuto)",
+          "name": "El cliente ve la solicitud en_progreso (RF-11)",
           "request": {
             "method": "GET",
             "header": [
@@ -641,7 +1397,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -649,41 +1405,44 @@
                 "api",
                 "v1",
                 "service-requests",
-                "{{requestId}}"
+                "{{solicitud1Id}}"
               ]
             }
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Seguimiento] 200 OK en consulta de estado en progreso', () => pm.response.to.have.status(200));",
-                  "pm.test('[SCRUM-31 / Criterio 2] Latencia de respuesta inferior a 1 minuto (< 60s)', () => {",
-                  "  pm.expect(pm.response.responseTime).to.be.below(60000);",
-                  "});",
-                  "pm.test('[Estado 3] Estado confirmado como en_progreso', () => pm.expect(pm.response.json().status).to.eql('en_progreso'));",
-                  "pm.test('[Seguimiento] Técnico asignado permanece visible', () => pm.expect(pm.response.json().technician.fullName).to.not.be.empty);"
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.json().status === 'en_progreso') && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('en_progreso', () => pm.expect(pm.response.json().status).to.eql('en_progreso'));",
+                  "}"
                 ]
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "5. Estado 4: Completado",
-      "item": [
+        },
         {
-          "name": "5.1 Técnico finaliza la reparación y pasa solicitud a 'completado'",
+          "name": "El técnico sube foto de evidencia obligatoria antes de completar",
           "request": {
-            "method": "PUT",
+            "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
               {
                 "key": "X-Correlation-Id",
                 "value": "{{$guid}}"
@@ -694,7 +1453,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}/status",
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}/evidence",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -702,89 +1461,47 @@
                 "api",
                 "v1",
                 "service-requests",
-                "{{requestId}}",
-                "status"
+                "{{solicitud1Id}}",
+                "evidence"
               ]
             },
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"completado\"\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "fixtures/evidencia-1x1.png"
+                }
+              ]
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Transición] 200 OK en finalización de servicio', () => pm.response.to.have.status(200));",
-                  "const resComp = pm.response.json();",
-                  "pm.test('[Máquina de Estados] previousStatus: en_progreso -> status: completado', () => {",
-                  "  pm.expect(resComp.previousStatus).to.eql('en_progreso');",
-                  "  pm.expect(resComp.status).to.eql('completado');",
-                  "});"
+                  "pm.test('201', () => pm.response.to.have.status(201));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "5.2 Cliente consulta estado final 'completado' (ciclo completo 4/4 estados)",
+          "name": "El técnico completa el trabajo (pasa a completado / SCRUM-35)",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clienteToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "service-requests",
-                "{{requestId}}"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('[Seguimiento] 200 OK en consulta de estado completado', () => pm.response.to.have.status(200));",
-                  "pm.test('[Estado 4] Estado confirmado como completado', () => pm.expect(pm.response.json().status).to.eql('completado'));",
-                  "pm.test('[Criterio 1 Cumplido] 4 estados verificados (buscando_tecnico, asignado, en_progreso, completado)', () => {",
-                  "  pm.expect(['buscando_tecnico', 'asignado', 'en_progreso', 'completado']).to.include(pm.response.json().status);",
-                  "});"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "6. Filtros Negativos y Aislamiento",
-      "item": [
-        {
-          "name": "6.1 Transición Inválida: Técnico intenta saltar de completado a buscando_tecnico -> 409 Conflict",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
               {
                 "key": "X-Correlation-Id",
                 "value": "{{$guid}}"
@@ -795,7 +1512,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}/status",
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}/complete",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -803,28 +1520,140 @@
                 "api",
                 "v1",
                 "service-requests",
-                "{{requestId}}",
-                "status"
+                "{{solicitud1Id}}",
+                "complete"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"buscando_tecnico\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[RN-SR6] 409 Conflict ante transición de estado inválida', () => pm.response.to.have.status(409));",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El cliente ve la solicitud completada (RF-11)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.json().status === 'completado') && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('completado', () => pm.expect(pm.response.json().status).to.eql('completado'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Controles de acceso RBAC, transiciones inválidas y aislamiento RLS",
+      "item": [
+        {
+          "name": "El cliente no puede iniciar el servicio → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}",
+                "start"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
                   "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
-                  "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /transicion-invalida', () => {",
-                  "  pm.expect(pm.response.json().type).to.match(/\\/transicion-invalida$/);",
                   "});"
                 ]
               }
@@ -832,9 +1661,273 @@
           ]
         },
         {
-          "name": "6.2 Control RBAC: Cliente intenta modificar el estado técnico de la orden -> 403 Forbidden",
+          "name": "El cliente no puede completar el servicio → 403",
           "request": {
-            "method": "PUT",
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}",
+                "complete"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Completar un servicio ya completado → 409 transicion-invalida",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}",
+                "complete"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo transicion-invalida', () => pm.expect(pm.response.json().type).to.match(/\\/transicion-invalida$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Otro cliente del mismo tenant no ve la solicitud → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{otroClienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cliente de otro tenant no ve la solicitud → 404 (RLS)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{betaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Limpieza",
+      "item": [
+        {
+          "name": "Suspender al técnico de la prueba",
+          "request": {
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
@@ -846,133 +1939,102 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{clienteToken}}"
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}/status",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/suspend",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "service-requests",
-                "{{requestId}}",
-                "status"
+                "admin",
+                "technicians",
+                "{{tecnicoId}}",
+                "suspend"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"en_progreso\"\n}"
+              "raw": "{\n  \"reason\": \"Cuenta de una prueba de QA.\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[RBAC / SCRUM-31] 403 Forbidden para cliente intentando cambiar estado', () => pm.response.to.have.status(403));",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
-                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
-                  "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /no-autorizado', () => {",
-                  "  pm.expect(pm.response.json().type).to.match(/\\/no-autorizado$/);",
-                  "});"
+                  "pm.test('200', () => pm.response.to.have.status(200));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "6.3 Aislamiento Intra-Tenant: Cliente 2 intenta consultar la solicitud de Cliente 1 -> 404 Not Found",
+          "name": "Desactivar la categoría de la prueba",
           "request": {
-            "method": "GET",
+            "method": "PATCH",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "X-Correlation-Id",
                 "value": "{{$guid}}"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{cliente2Token}}"
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
+              "raw": "{{baseUrl}}/api/v1/catalog/admin/categories/{{categoriaId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "service-requests",
-                "{{requestId}}"
+                "catalog",
+                "admin",
+                "categories",
+                "{{categoriaId}}"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
             }
           },
           "event": [
             {
-              "listen": "test",
+              "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Confidencialidad Intra-Tenant] 404 Not Found para cliente ajeno del mismo tenant', () => pm.response.to.have.status(404));",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
-                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
-                  "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /no-encontrado', () => {",
-                  "  pm.expect(pm.response.json().type).to.match(/\\/no-encontrado$/);",
-                  "});"
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
                 ]
               }
-            }
-          ]
-        },
-        {
-          "name": "6.4 Aislamiento Multi-Tenant: Cliente de Tenant Beta intenta consultar solicitud de Tenant Alfa -> 404 Not Found",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clienteBetaToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{requestId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "service-requests",
-                "{{requestId}}"
-              ]
-            }
-          },
-          "event": [
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[SAD AC6-E2 / RLS] 404 Not Found garantizado por Row-Level Security', () => pm.response.to.have.status(404));",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
-                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
-                  "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /no-encontrado', () => {",
-                  "  pm.expect(pm.response.json().type).to.match(/\\/no-encontrado$/);",
-                  "});"
+                  "pm.test('200', () => pm.response.to.have.status(200));"
                 ]
               }
             }

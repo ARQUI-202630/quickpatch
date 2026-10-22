@@ -26,11 +26,6 @@
       "type": "string"
     },
     {
-      "key": "adminToken",
-      "value": "",
-      "type": "string"
-    },
-    {
       "key": "specialtyId",
       "value": "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
       "type": "string"
@@ -56,55 +51,7 @@
       "name": "0. Semillas y Datos de Referencia",
       "item": [
         {
-          "name": "0.1 Login Administrador de Tenant (Obtener token para catálogo)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "X-Channel-Id",
-                "value": "quickpatch-mobile"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "login"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('[Auth] Login de administrador exitoso (200 OK)', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "0.2 Obtener Especialidad Real de Catálogo",
+          "name": "0.1 Obtener Especialidad Real de Catálogo",
           "request": {
             "method": "GET",
             "header": [
@@ -113,8 +60,8 @@
                 "value": "{{$guid}}"
               },
               {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
               }
             ],
             "url": {

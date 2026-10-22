@@ -74,7 +74,6 @@ coleccion = {
         {"key": "adminEmail", "value": "", "type": "string"},
         {"key": "adminPassword", "value": "", "type": "string"},
         {"key": "tecnicoPassword", "value": "", "type": "string"},
-        {"key": "adminToken", "value": "", "type": "string"},
         {"key": "specialtyId", "value": "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01", "type": "string"},
         {"key": "documentoTecnico", "value": "", "type": "string"},
         {"key": "correoTecnico", "value": "", "type": "string"},
@@ -85,24 +84,10 @@ coleccion = {
             "name": "0. Semillas y Datos de Referencia",
             "item": [
                 req(
-                    "0.1 Login Administrador de Tenant (Obtener token para catálogo)",
-                    "POST",
-                    "/v1/auth/login",
-                    [JSON, CORR, CANAL],
-                    {
-                        "email": "{{adminEmail}}",
-                        "password": "{{adminPassword}}"
-                    },
-                    pruebas=[
-                        "pm.test('[Auth] Login de administrador exitoso (200 OK)', () => pm.response.to.have.status(200));",
-                        "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
-                    ]
-                ),
-                req(
-                    "0.2 Obtener Especialidad Real de Catálogo",
+                    "0.1 Obtener Especialidad Real de Catálogo",
                     "GET",
                     "/v1/catalog/categories",
-                    [CORR, auth("adminToken")],
+                    [CORR, CANAL],
                     pruebas=[
                         "pm.test('[Catalog] 200 OK en consulta de categorías activas', () => pm.response.to.have.status(200));",
                         "const categories = pm.response.json();",

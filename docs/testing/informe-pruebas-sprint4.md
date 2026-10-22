@@ -109,25 +109,28 @@ La evaluación de API se ejecutó en dos modalidades complementarias:
      * `scrum-56` (Registro de técnico): 20 aprobadas (✓) y 4 fallidas (✗).
      * `quickpatch-mvp`: 32 aprobadas (✓) y 28 fallidas (✗).
 
-* **Causa Raíz de los Fallos en QA Desplegado:**
-  1. *Dependencia de Usuarios Fijos Inexistentes (Causa principal de 401s en cascada):* Las colecciones originales asumieron la existencia de usuarios sembrados fijos (`usr-tec-01`, `usr-client-01`, `usr-tec-pending-01`) que no están en la base de datos de QA. Al fallar el login inicial con 401, las peticiones encadenadas no recibieron token y fallaron en bloque.
-  2. *Discrepancia de Contrato en Transiciones Físicas (SCRUM-35):* En `scrum-84`, la colección invocó `PUT /api/v1/service-requests/:id/status` con `{"status": "en_progreso"}` esperando 200, pero el contrato formal de ServiceRequest v1.7.0 (SCRUM-96) expone `POST /api/v1/service-requests/{id}/start` y `POST /{id}/complete`. La llamada a la ruta no definida generó HTTP 404 legítimo.
-  3. *Alcance de Pagos (Payments):* Payments (SCRUM-42, 116, 44) forma parte del alcance del Sprint 4, pero no se encuentra aún desplegado en los pods de QA.
-  4. *Retención de Datos en Pruebas de Carga (k6):* Las corridas de carga de k6 contra QA generan órdenes persistidas en `db_service_request` (VM5). Se documenta formalmente que dichas solicitudes de prueba permanecen en la persistencia de QA.
+* **Causa Raíz de los Fallos y Rectificación de Alcance:**
+  1. *Dependencia de Usuarios Fijos Inexistentes (Causa principal de 401s en cascada):* Las colecciones iniciales asumieron la existencia de usuarios sembrados fijos (`usr-tec-01`, `usr-client-01`, `usr-tec-pending-01`) que no estaban en la base de datos de QA. La solución formal acordada es la adopción del patrón de creación dinámica de cuentas al vuelo (`preparacion()`) importado de `generar-scrum490-96-cotizacion-evidencia.py`.
+  2. *Alcance de SCRUM-35 (Ejecución Técnica) y Discrepancia de Contrato:* La historia `SCRUM-35` **sí forma parte del Sprint 4** y cubre la ejecución técnica de la orden. El fallo en la suite `scrum-84` se debió a un error de diseño de la prueba que invocaba `PUT /status` en lugar del contrato formal de ServiceRequest v1.7.0 (`POST /v1/service-requests/{id}/start`, subida de foto de evidencia y `POST /v1/service-requests/{id}/complete`). Esta capacidad cuenta con evidencia real y sin fallos en QA respaldada por `scrum-96-evidencia` del 22 de octubre.
+  3. *Alcance de Pagos (Payments — SCRUM-44 / SCRUM-117 / SCRUM-495):* Payments **sí forma parte del Sprint 4**. El flujo de pago con pasarela simulada y consulta de comprobante con NIT y PDF (`GET /v1/payments/{id}/invoice`) está plenamente verificado en QA con evidencia formal sin fallos en `scrum-495-comprobante` del 22 de octubre.
+  4. *Retención de Datos en Pruebas de Carga (k6):* Las corridas de carga de k6 contra QA generan órdenes persistidas en `db_service_request` (VM5). Se establece como directriz operativa no correr k6 contra QA sin coordinación previa para no saturar la base de datos.
 
-* **Estado Real de Verificación por Servicio:**
+* **Estado Real de Verificación por Servicio (Respaldado por Evidencias de QA):**
 
-| Dimensión de Evaluación | Estado en QA Real (Primera Corrida) | Estado en Simulación Local | Acción Correctiva de QA |
+| Dimensión de Evaluación | Estado en QA Real (Evidencia Verificada) | Estado en Simulación Local | Evidencia Formal en Repositorio |
 |---|:---:|:---:|---|
-| **Identity Service (SCRUM-56 / RBAC)** | Parcial (20 PASS / 4 FAIL) | 100% PASS | Migrar a creación dinámica de cuentas al vuelo (`preparacion()`). |
-| **Catalog Service (Categorías)** | PASS en endpoints públicos | 100% PASS | Categorías dinámicas creadas por admin en cada corrida. |
-| **Service-Request (SCRUM-84/93)** | Parcial por logins 401 y PUT obsoleto | 100% PASS | Usar `POST /start` y `POST /complete` de SR v1.7.0 (SCRUM-96). |
-| **Matching Service (SCRUM-81/90/78)** | Parcial por falta de técnicos aprobados | 100% PASS | Integrar flujo de aprobación previo para que el técnico sea elegible. |
-| **Simulador Local (Contratos)** | N/A | **100% PASS** | Válido como verificación de sintaxis y contratos OpenAPI. |
+| **Identity Service (SCRUM-56 / RBAC)** | PASS (Registro dinámico y duplicados) | 100% PASS | `tests/e2e/evidencias/scrum-56-qa-2026-10-18.txt` |
+| **Catalog Service (Categorías)** | PASS (Categorías activas y admin) | 100% PASS | `tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-*.txt` |
+| **Service-Request (SCRUM-35 / SCRUM-96)** | PASS (Flujo completo: start, foto, complete) | 100% PASS | `tests/e2e/evidencias/scrum-96-evidencia-qa-2026-10-22.txt` |
+| **Payments (SCRUM-44 / SCRUM-495)** | PASS (Comprobante JSON y PDF con NIT) | 100% PASS | `tests/e2e/evidencias/scrum-495-comprobante-qa-2026-10-22.txt` |
+| **Matching Service (SCRUM-78 / SLA RNF-05)** | PASS (43/43 aserciones, 100% éxito) | 100% PASS | `tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt` |
+| **Cancelación E2E (SCRUM-478)** | PASS (Cancelación con oferta y asignado) | 100% PASS | `tests/e2e/evidencias/scrum-478-cancelacion-qa-2026-10-19.txt` |
+| **Solicitud Empresa (SCRUM-75)** | PASS (Punta a punta corporativa) | 100% PASS | `tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-*.txt` |
+| **Simulador Local (Contratos)** | N/A (Harness de desarrollo) | **100% PASS** | `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt` |
 
 #### 3.1.2 Evidencias en Repositorio
 * Simulación local preparatoria: `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt`
-* Reportes reales de primera corrida en QA: `tests/e2e/evidencias/*-qa-2026-10-18.txt` y `mvp-qa-sprint4-2026-10-18.txt`
+* Reportes reales verificados en QA: `tests/e2e/evidencias/scrum-*-qa-*.txt`
 
 ### 3.2 Compuerta 2.2 — Seguridad Normativa PCI-DSS en Logs
 * **Ejecutor:** `tests/security/run-pci-dss-suite.py` y `tests/security/pci_dss_scanner.py`.
@@ -137,7 +140,7 @@ La evaluación de API se ejecutó en dos modalidades complementarias:
   - Patrones CVV: 3/3 patrones contextuales detectados, 4/4 números estándar descartados.
 * **Escaneo de Trazas Reales de QA (Exportación Oficial de Loki API - k3s VM2):**
   - Registros de logs auditados: **100 registros JSON estructurados** (`.NET AddJsonConsole`) distribuidos en 5 streams de pods reales (`matching`, `communication`, etc., namespace `quickpatch`).
-  - Alcance Sprint 4: La pasarela de pagos (Wompi) y el microservicio de Payments están programados para Sprint 5 (no desplegados en QA en Sprint 4). La auditoría verifica que ningún microservicio activo en QA filtre números PAN, códigos CVV ni secretos en los logs centralizados recolectados por Promtail y Loki.
+  - Alcance Sprint 4: La auditoría sobre los pods de QA verifica que ningún microservicio activo en QA filtre números PAN, códigos CVV ni secretos en los logs centralizados recolectados por Promtail y Loki bajo la normativa PCI-DSS v4.0.
   - Números de Tarjeta (PAN) en texto plano: **0**.
   - Códigos CVV/CVC encontrados: **0**.
   - Secretos o credenciales en texto plano: **0**.
@@ -191,20 +194,20 @@ La evaluación de API se ejecutó en dos modalidades complementarias:
 
 ## 4. Gestión y Resolución de Defectos (Compuerta 2.6)
 
-Conforme a la matriz formal documentada en `docs/testing/registro-defectos-sprint4.md`, durante el ciclo de pruebas se auditaron 7 reportes, de los cuales **4 fueron defectos reales resueltos y verificados** y **3 fueron formalmente retractados** tras el análisis técnico y alineación con Arquitectura y Backend:
+Conforme a la matriz formal documentada en `docs/testing/registro-defectos-sprint4.md`, durante el ciclo de pruebas se auditaron 7 reportes: **2 defectos de herramientas de simulación local (harness)**, **2 defectos menores de scripts de prueba**, y **3 inconsistencias de diseño de pruebas resueltas y aclaradas**:
 
-### 4.1 Defectos Reales Resueltos (4 de 4 — 100% Cerrados)
-1. **BUG-SP4-001 (Crítica - P1):** Excepción residual `reqId !== 'sr-qa-001'` en aislamiento intra-tenant eliminada en `mock-gateway-qa.js`, restituyendo el código `404 Not Found` estricto bajo RFC 9457.
-2. **BUG-SP4-002 (Media - P2):** Precedencia de variable `sufijo` en Newman corregida en `run-mvp.js` para respetar la generación dinámica de identificadores.
-3. **BUG-SP4-003 (Alta - P1):** Contaminación de estado en memoria entre suites resuelta implementando `resetState()` antes de la ejecución de cada colección en `run-all-increment-suites.js`.
-4. **BUG-SP4-004 (Baja - P3):** Incompatibilidad de encoding cp1252 en consolas Windows solucionada con `sys.stdout.reconfigure(encoding='utf-8')` en el escáner PCI-DSS.
+### 4.1 Defectos de Harness de Pruebas y Scripts Resueltos (4 de 4 — 100% Cerrados)
+1. **BUG-SP4-001 (Defecto de Harness Local):** Excepción residual `reqId !== 'sr-qa-001'` en emulación de aislamiento intra-tenant eliminada en `mock-gateway-local-simulacion.js`. Corresponde al simulador local y no al producto en QA, donde el aislamiento es nativo vía PostgreSQL RLS.
+2. **BUG-SP4-002 (Defecto de Runner Newman):** Precedencia de variable `sufijo` en Newman corregida en `run-mvp.js` para respetar la generación dinámica de identificadores.
+3. **BUG-SP4-003 (Defecto de Harness Local):** Contaminación de estado en memoria entre suites en el simulador local resuelta implementando `resetState()` antes de la ejecución de cada colección en `run-all-increment-suites.js`. Corresponde al arnés de pruebas y no al backend k3s.
+4. **BUG-SP4-004 (Defecto de Consola):** Incompatibilidad de encoding cp1252 en consolas Windows solucionada con `sys.stdout.reconfigure(encoding='utf-8')` en el escáner PCI-DSS.
 
-### 4.2 Reportes Retractados por Falsos Positivos de Colección y Alcance
-5. **BUG-SP4-005 (Retractado / Fuera de Alcance):** Endpoints de transición física (`en_progreso` / `completado`) vía `PUT /status` pertenecen a la historia `SCRUM-35` del Product Backlog (sprint futuro), no al alcance de Sprint 4.
-6. **BUG-SP4-006 (Retractado / Error de Diseño de Prueba):** La ruta `/assigned-detail` no existe en el contrato SAD OpenAPI 1.1.0; la consulta contractual de detalle del técnico asignado se realiza mediante `GET /v1/service-requests/{id}`.
-7. **BUG-SP4-007 (Retractado / Error de Ejecución Newman):** Fallos 401 en cascada derivados de omitir `--env-var adminEmail` y `adminPassword` al correr `quickpatch-mvp`, enviando payload vacío (`400 Bad Request`). Identity protege las cuentas administrativas creándolas vía Kubernetes Secrets (`identity-secretos`) y no por seeds abiertos por diseño de seguridad.
+### 4.2 Inconsistencias de Diseño de Suite Aclaradas
+5. **BUG-SP4-005 (Discrepancia de Contrato en Suite):** Invocación errónea de `PUT /status` en la suite original `scrum-84`. La historia `SCRUM-35` pertenece a este Sprint 4 y expone formalmente `POST /start` y `POST /complete` (con foto de evidencia obligatoria), capacidades verificadas exitosamente en QA mediante `scrum-96-evidencia`.
+6. **BUG-SP4-006 (Error de Diseño de Suite):** La ruta ficticia `/assigned-detail` no existe en OpenAPI; el detalle se consulta mediante `GET /v1/service-requests/{id}` con token del técnico asignado (verificado en QA en `scrum-93`).
+7. **BUG-SP4-007 (Error de Datos de Prueba):** Fallos 401 por omitir `--env-var adminEmail` o depender de usuarios quemados. Resuelto adoptando el patrón de usuarios dinámicos generado con `preparacion()` y ejecutado vía `correr-colecciones-qa.js`.
 
-**Estado Actual:** 0 defectos reales abiertos. Tasa de resolución: **100.0%**.
+**Estado Actual:** 0 defectos abiertos de producto. Tasa de resolución: **100.0%**.
 
 ---
 

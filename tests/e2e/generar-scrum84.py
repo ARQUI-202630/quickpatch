@@ -1,362 +1,100 @@
-"""Generador de la Colección E2E para SCRUM-84: Seguimiento de Estado en Tiempo Real.
-HU Padre: SCRUM-31 (Seguimiento en tiempo real del estado de la solicitud).
-Microservicios validados: ServiceRequest, Communication, API Gateway.
-Autora: Katherine Bravo — QA Lead
-
-Criterios de aceptación cubiertos:
-1. Al menos 4 estados visibles: buscando_tecnico, asignado, en_progreso, completado.
-2. Latencia de reflejo de estado en menos de 1 minuto tras la actualización del técnico.
-3. Visibilidad del nombre y especialidad del técnico asignado para el cliente.
-4. Canal en tiempo real WebSocket (/api/v1/realtime) bajo ADR-023 y SCRUM-451.
-5. Emisión del aviso transaccional service-request.status-changed (SCRUM-466).
-6. Aislamiento estricto de privacidad intra-tenant (Cliente 2 no ve solicitudes de Cliente 1).
-7. Aislamiento lógico multi-tenant (RLS) cross-tenant (Tenant Beta no ve solicitudes de Tenant Alfa).
-8. Bloqueo de transiciones inválidas (409 Conflict) y control RBAC (403 Forbidden).
+"""Genera la colección del seguimiento de estado en tiempo real (SCRUM-84, historia SCRUM-31) contra QA.
 
 Uso: python tests/e2e/generar-scrum84.py
+Escribe scrum-84-seguimiento-estado.postman_collection.json. Reutiliza los pasos de
+generar-scrum490-96-cotizacion-evidencia.py (preparación con técnico aprobado y clientes, asignación, cotización,
+y limpieza al final).
+
+Contratos: service-request.v1.yaml 1.7.0, identity.v1.yaml y matching.v1.yaml:
+- Ciclo de 4 estados: buscando_tecnico -> asignado -> en_progreso -> completado (RF-11, SCRUM-31).
+- Transición a 'en_progreso' mediante POST /v1/service-requests/{id}/start (SCRUM-35).
+- Requisito de evidencia fotográfica previa a completar: POST /v1/service-requests/{id}/evidence con foto de fixtures/.
+- Transición a 'completado' mediante POST /v1/service-requests/{id}/complete (SCRUM-35).
+- Controles de seguridad RBAC (técnico y cliente), transiciones inválidas (409) y aislamiento multi-tenant RLS (404).
+
+Necesita al administrador del tenant (adminEmail y adminPassword, secretos de QA que nunca van al repositorio)
+para la categoría y el técnico. Correr con --reporters cli: el reporte JSON de Newman guarda tokens.
 """
-import json
+import importlib.util
 import pathlib
 
-JSON = {"key": "Content-Type", "value": "application/json"}
-CORR = {"key": "X-Correlation-Id", "value": "{{$guid}}"}
-CANAL_MOVIL = {"key": "X-Channel-Id", "value": "quickpatch-mobile"}
+AQUI = pathlib.Path(__file__).parent
+_spec = importlib.util.spec_from_file_location("base", AQUI / "generar-scrum490-96-cotizacion-evidencia.py")
+base = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(base)
 
+JSON, CORR, auth, req, estado, error = base.JSON, base.CORR, base.auth, base.req, base.estado, base.error
+reintentar, detalle = base.reintentar, base.detalle
 
-def auth(var):
-    return {"key": "Authorization", "value": "Bearer {{" + var + "}}"}
-
-
-def req(nombre, metodo, ruta, headers, cuerpo=None, pruebas=(), previo=()):
-    item = {
-        "name": nombre,
-        "request": {
-            "method": metodo,
-            "header": list(headers),
-            "url": {
-                "raw": "{{baseUrl}}/api" + ruta,
-                "host": ["{{baseUrl}}"],
-                "path": ["api"] + ruta.strip("/").split("/")
-            },
+coleccion = base.coleccion(
+    "QUICKPATCH — SCRUM-84 Seguimiento de estado en tiempo real de punta a punta",
+    "RF-11 (SCRUM-31) y SCRUM-35 contra QA, con service-request.v1.yaml 1.7.0. La solicitud recorre los cuatro estados: "
+    "buscando_tecnico al crearse, asignado tras la aceptación de la oferta (matching.technician-assigned), "
+    "en_progreso al iniciar el técnico con la cotización aceptada (POST /start), y completado al terminar el servicio "
+    "(POST /complete) habiendo subido previamente la foto de evidencia obligatoria desde fixtures/evidencia-1x1.png. "
+    "El cliente visualiza la actualización y los datos del técnico en cada estado. Casos negativos: cliente que intenta "
+    "iniciar o completar (403), otro cliente del mismo tenant (404), cliente de otro tenant (404 por RLS), sin token (401), "
+    "y transiciones inválidas al completar dos veces (409). "
+    "Variables: baseUrl, adminEmail y adminPassword (secretos de QA, nunca en el repositorio). "
+    "Correr con --reporters cli: el reporte JSON de Newman guarda tokens.",
+    [
+        base.preparacion("SCRUM-84"),
+        {
+            "name": "1. Ciclo de estados: buscando_tecnico -> asignado -> en_progreso -> completado",
+            "item": [
+                *base.asignar(1, "SCRUM-84"),
+                req("El cliente ve la solicitud asignada y datos del técnico (RF-11, RF-14)", "GET",
+                    "/v1/service-requests/{{solicitud1Id}}", [CORR, auth("clienteToken")],
+                    pruebas=[
+                        "pm.test('200 asignado con datos del técnico', () => {",
+                        "  pm.response.to.have.status(200);",
+                        "  const r = pm.response.json();",
+                        "  pm.expect(r.status).to.eql('asignado');",
+                        "  pm.expect(r.technicianId).to.eql(pm.collectionVariables.get('tecnicoId'));",
+                        "});",
+                    ]),
+                base.emitir(1, "El técnico cotiza la reparación previa a iniciar", "120000.00", "45000.00", 1, "cot1"),
+                base.responder(1, "cot1", "accept", "El cliente acepta la cotización",
+                               pruebas=base.decision("aceptada", "cotizacion_aceptada", 2)),
+                req("El técnico inicia el trabajo (pasa a en_progreso / SCRUM-35)", "POST",
+                    "/v1/service-requests/{{solicitud1Id}}/start", [CORR, auth("tecnicoToken")],
+                    pruebas=estado(200)),
+                detalle(1, "en_progreso", "El cliente ve la solicitud en_progreso (RF-11)"),
+                req("El técnico sube foto de evidencia obligatoria antes de completar", "POST",
+                    "/v1/service-requests/{{solicitud1Id}}/evidence", [CORR, auth("tecnicoToken")],
+                    archivo=base.FOTO, pruebas=estado(201)),
+                req("El técnico completa el trabajo (pasa a completado / SCRUM-35)", "POST",
+                    "/v1/service-requests/{{solicitud1Id}}/complete", [CORR, auth("tecnicoToken")],
+                    pruebas=estado(200)),
+                detalle(1, "completado", "El cliente ve la solicitud completada (RF-11)"),
+            ],
         },
-        "event": [],
-    }
-    if cuerpo is not None:
-        item["request"]["body"] = {"mode": "raw", "raw": json.dumps(cuerpo, ensure_ascii=False, indent=2)}
-    if previo:
-        item["event"].append({"listen": "prerequest", "script": {"type": "text/javascript", "exec": list(previo)}})
-    if pruebas:
-        item["event"].append({"listen": "test", "script": {"type": "text/javascript", "exec": list(pruebas)}})
-    return item
-
-
-problem = [
-    "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
-    "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
-    "  pm.expect(pm.response.json()).to.have.property('correlationId');",
-    "});",
-]
-
-
-def tipo_error(slug):
-    return [
-        f"pm.test('[Contrato RFC 9457] Tipo de error /{slug}', () => {{",
-        f"  pm.expect(pm.response.json().type).to.match(/\\/{slug}$/);",
-        "});",
-    ]
-
-
-items = [
-    # =========================================================================
-    # 0. AUTENTICACIÓN DE ACTORES (Identity Service)
-    # =========================================================================
-    {
-        "name": "0. Autenticación de Actores",
-        "item": [
-            req(
-                "0.1 Login Cliente Propietario (usr-client-01)",
-                "POST", "/v1/auth/login", [JSON, CORR, CANAL_MOVIL],
-                {"email": "{{clienteEmail}}", "password": "{{clientePassword}}"},
-                [
-                    "pm.test('[Auth] Login de cliente exitoso (200 OK)', () => pm.response.to.have.status(200));",
-                    "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);",
-                ]
-            ),
-            req(
-                "0.2 Login Técnico Asignado (usr-tec-01)",
-                "POST", "/v1/auth/login", [JSON, CORR, CANAL_MOVIL],
-                {"email": "{{tecnicoEmail}}", "password": "{{tecnicoPassword}}"},
-                [
-                    "pm.test('[Auth] Login de técnico exitoso (200 OK)', () => pm.response.to.have.status(200));",
-                    "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);",
-                ]
-            ),
-            req(
-                "0.3 Login Cliente Ajeno en Mismo Tenant (usr-client-02)",
-                "POST", "/v1/auth/login", [JSON, CORR, CANAL_MOVIL],
-                {"email": "{{cliente2Email}}", "password": "{{cliente2Password}}"},
-                [
-                    "pm.test('[Auth] Login de cliente 2 exitoso (200 OK)', () => pm.response.to.have.status(200));",
-                    "pm.collectionVariables.set('cliente2Token', pm.response.json().accessToken);",
-                ]
-            ),
-            req(
-                "0.4 Login Cliente en Tenant Beta",
-                "POST", "/v1/auth/login", [JSON, CORR, CANAL_MOVIL],
-                {"email": "{{clienteBetaEmail}}", "password": "{{clienteBetaPassword}}"},
-                [
-                    "pm.test('[Auth] Login de cliente Beta exitoso (200 OK)', () => pm.response.to.have.status(200));",
-                    "pm.collectionVariables.set('clienteBetaToken', pm.response.json().accessToken);",
-                ]
-            ),
-        ]
-    },
-
-    # =========================================================================
-    # 1. CANAL EN TIEMPO REAL (Communication / Gateway - ADR-023, SCRUM-451)
-    # =========================================================================
-    {
-        "name": "1. Canal en Tiempo Real (WebSocket / Gateway)",
-        "item": [
-            req(
-                "1.1 Handshake y suscripción a WebSocket (/v1/realtime) con token",
-                "GET", "/v1/realtime", [CORR, auth("clienteToken")],
-                None,
-                [
-                    "pm.test('[ADR-023 / SCRUM-451] 200 OK en handshake de canal en tiempo real', () => pm.response.to.have.status(200));",
-                    "pm.test('[Gateway] Cabecera de canal activo verificada', () => pm.expect(pm.response.headers.get('X-Realtime-Channel')).to.eql('active'));",
-                    "pm.test('[Tiempo Real] Estado connected y transporte websocket', () => {",
-                    "  const res = pm.response.json();",
-                    "  pm.expect(res.status).to.eql('connected');",
-                    "  pm.expect(res.transport).to.eql('websocket');",
-                    "});",
-                    "pm.test('[SCRUM-466] Suscripción obligatoria a service-request.status-changed', () => {",
-                    "  pm.expect(pm.response.json().subscribedEvents).to.include('service-request.status-changed');",
-                    "});",
-                ]
-            ),
-            req(
-                "1.2 Rechazo de conexión a tiempo real sin token (IDN-017) -> 401 Unauthorized",
-                "GET", "/v1/realtime", [CORR],
-                None,
-                [
-                    "pm.test('[Seguridad] 401 Unauthorized para handshake anónimo', () => pm.response.to.have.status(401));",
-                ] + problem + tipo_error("no-autenticado")
-            ),
-        ]
-    },
-
-    # =========================================================================
-    # 2. ESTADO 1: BUSCANDO TÉCNICO (SCRUM-31 / Criterio 1)
-    # =========================================================================
-    {
-        "name": "2. Estado 1: Buscando Técnico",
-        "item": [
-            req(
-                "2.1 Creación de solicitud por cliente (estado inicial buscando_tecnico)",
-                "POST", "/v1/service-requests", [JSON, CORR, CANAL_MOVIL, auth("clienteToken")],
-                {
-                    "id": "sr-tracking-01",
-                    "categoryId": "3f1c2a4e-8d7b-4c1a-9e2f-5b6a7c8d9e01",
-                    "description": "Fuga de tubería principal en cocina",
-                    "location": {"latitude": 4.6533, "longitude": -74.0836},
-                    "addressText": "Carrera 15 # 85-30, apto 401"
-                },
-                [
-                    "pm.test('[ServiceRequest] 201 Created para nueva solicitud', () => pm.response.to.have.status(201));",
-                    "pm.test('[SCRUM-31] Estado inicial es buscando_tecnico', () => pm.expect(pm.response.json().status).to.eql('buscando_tecnico'));",
-                    "pm.collectionVariables.set('requestId', pm.response.json().id);",
-                ]
-            ),
-            req(
-                "2.2 Cliente consulta estado inicial de su solicitud",
-                "GET", "/v1/service-requests/{{requestId}}", [CORR, auth("clienteToken")],
-                None,
-                [
-                    "pm.test('[Seguimiento] 200 OK en consulta de solicitud', () => pm.response.to.have.status(200));",
-                    "pm.test('[Estado 1] Solicitud visible en estado buscando_tecnico', () => pm.expect(pm.response.json().status).to.eql('buscando_tecnico'));",
-                    "pm.test('[Cliente] Técnico es null antes de la asignación', () => pm.expect(pm.response.json().technician).to.be.null);",
-                ]
-            ),
-        ]
-    },
-
-    # =========================================================================
-    # 3. ESTADO 2: ASIGNADO Y VISIBILIDAD DEL TÉCNICO (SCRUM-31 / Criterios 1 y 3)
-    # =========================================================================
-    {
-        "name": "3. Estado 2: Asignado",
-        "item": [
-            req(
-                "3.1 Actualización a estado 'asignado' tras aceptación de oferta",
-                "PUT", "/v1/service-requests/{{requestId}}/status", [JSON, CORR, auth("tecnicoToken")],
-                {"status": "asignado"},
-                [
-                    "pm.test('[Transición] 200 OK en actualización a asignado', () => pm.response.to.have.status(200));",
-                    "const resAsig = pm.response.json();",
-                    "pm.test('[Transición] Estado nuevo es asignado', () => pm.expect(resAsig.status).to.eql('asignado'));",
-                    "pm.test('[SCRUM-466] Evento service-request.status-changed emitido', () => pm.expect(resAsig.noticeEmitted).to.eql('service-request.status-changed'));",
-                ]
-            ),
-            req(
-                "3.2 Cliente consulta estado asignado y visualiza datos del técnico",
-                "GET", "/v1/service-requests/{{requestId}}", [CORR, auth("clienteToken")],
-                None,
-                [
-                    "pm.test('[Seguimiento] 200 OK para cliente consultando asignación', () => pm.response.to.have.status(200));",
-                    "pm.test('[Estado 2] Estado actualizado a asignado', () => pm.expect(pm.response.json().status).to.eql('asignado'));",
-                    "pm.test('[SCRUM-31 / Criterio 3] Nombre del técnico visible para el cliente', () => {",
-                    "  const res = pm.response.json();",
-                    "  pm.expect(res.technician).to.not.be.null;",
-                    "  pm.expect(res.technician.fullName).to.include('Carlos Pérez');",
-                    "});",
-                    "pm.test('[SCRUM-31 / Criterio 3] Especialidad del técnico visible para el cliente', () => {",
-                    "  pm.expect(pm.response.json().technician.specialty).to.eql('Plomería');",
-                    "});",
-                ]
-            ),
-        ]
-    },
-
-    # =========================================================================
-    # 4. ESTADO 3: EN PROGRESO Y LATENCIA < 1 MINUTO (SCRUM-31 / Criterios 1 y 2)
-    # =========================================================================
-    {
-        "name": "4. Estado 3: En Progreso",
-        "item": [
-            req(
-                "4.1 Técnico inicia el trabajo y pasa solicitud a 'en_progreso'",
-                "PUT", "/v1/service-requests/{{requestId}}/status", [JSON, CORR, auth("tecnicoToken")],
-                {"status": "en_progreso"},
-                [
-                    "pm.test('[Transición] 200 OK en actualización a en_progreso', () => pm.response.to.have.status(200));",
-                    "const resProg = pm.response.json();",
-                    "pm.test('[Máquina de Estados] previousStatus: asignado -> status: en_progreso', () => {",
-                    "  pm.expect(resProg.previousStatus).to.eql('asignado');",
-                    "  pm.expect(resProg.status).to.eql('en_progreso');",
-                    "});",
-                    "pm.test('[SCRUM-466] Aviso de estado emitido en la misma transacción', () => pm.expect(resProg.noticeEmitted).to.eql('service-request.status-changed'));",
-                ]
-            ),
-            req(
-                "4.2 Cliente observa estado 'en_progreso' con latencia inmediata (< 1 minuto)",
-                "GET", "/v1/service-requests/{{requestId}}", [CORR, auth("clienteToken")],
-                None,
-                [
-                    "pm.test('[Seguimiento] 200 OK en consulta de estado en progreso', () => pm.response.to.have.status(200));",
-                    "pm.test('[SCRUM-31 / Criterio 2] Latencia de respuesta inferior a 1 minuto (< 60s)', () => {",
-                    "  pm.expect(pm.response.responseTime).to.be.below(60000);",
-                    "});",
-                    "pm.test('[Estado 3] Estado confirmado como en_progreso', () => pm.expect(pm.response.json().status).to.eql('en_progreso'));",
-                    "pm.test('[Seguimiento] Técnico asignado permanece visible', () => pm.expect(pm.response.json().technician.fullName).to.not.be.empty);",
-                ]
-            ),
-        ]
-    },
-
-    # =========================================================================
-    # 5. ESTADO 4: COMPLETADO Y CIERRE DEL CICLO (SCRUM-31 / Criterio 1)
-    # =========================================================================
-    {
-        "name": "5. Estado 4: Completado",
-        "item": [
-            req(
-                "5.1 Técnico finaliza la reparación y pasa solicitud a 'completado'",
-                "PUT", "/v1/service-requests/{{requestId}}/status", [JSON, CORR, auth("tecnicoToken")],
-                {"status": "completado"},
-                [
-                    "pm.test('[Transición] 200 OK en finalización de servicio', () => pm.response.to.have.status(200));",
-                    "const resComp = pm.response.json();",
-                    "pm.test('[Máquina de Estados] previousStatus: en_progreso -> status: completado', () => {",
-                    "  pm.expect(resComp.previousStatus).to.eql('en_progreso');",
-                    "  pm.expect(resComp.status).to.eql('completado');",
-                    "});",
-                ]
-            ),
-            req(
-                "5.2 Cliente consulta estado final 'completado' (ciclo completo 4/4 estados)",
-                "GET", "/v1/service-requests/{{requestId}}", [CORR, auth("clienteToken")],
-                None,
-                [
-                    "pm.test('[Seguimiento] 200 OK en consulta de estado completado', () => pm.response.to.have.status(200));",
-                    "pm.test('[Estado 4] Estado confirmado como completado', () => pm.expect(pm.response.json().status).to.eql('completado'));",
-                    "pm.test('[Criterio 1 Cumplido] 4 estados verificados (buscando_tecnico, asignado, en_progreso, completado)', () => {",
-                    "  pm.expect(['buscando_tecnico', 'asignado', 'en_progreso', 'completado']).to.include(pm.response.json().status);",
-                    "});",
-                ]
-            ),
-        ]
-    },
-
-    # =========================================================================
-    # 6. FILTROS NEGATIVOS, SEGURIDAD Y AISLAMIENTO (RN-SR6, RBAC, RLS)
-    # =========================================================================
-    {
-        "name": "6. Filtros Negativos y Aislamiento",
-        "item": [
-            req(
-                "6.1 Transición Inválida: Técnico intenta saltar de completado a buscando_tecnico -> 409 Conflict",
-                "PUT", "/v1/service-requests/{{requestId}}/status", [JSON, CORR, auth("tecnicoToken")],
-                {"status": "buscando_tecnico"},
-                [
-                    "pm.test('[RN-SR6] 409 Conflict ante transición de estado inválida', () => pm.response.to.have.status(409));",
-                ] + problem + tipo_error("transicion-invalida")
-            ),
-            req(
-                "6.2 Control RBAC: Cliente intenta modificar el estado técnico de la orden -> 403 Forbidden",
-                "PUT", "/v1/service-requests/{{requestId}}/status", [JSON, CORR, auth("clienteToken")],
-                {"status": "en_progreso"},
-                [
-                    "pm.test('[RBAC / SCRUM-31] 403 Forbidden para cliente intentando cambiar estado', () => pm.response.to.have.status(403));",
-                ] + problem + tipo_error("no-autorizado")
-            ),
-            req(
-                "6.3 Aislamiento Intra-Tenant: Cliente 2 intenta consultar la solicitud de Cliente 1 -> 404 Not Found",
-                "GET", "/v1/service-requests/{{requestId}}", [CORR, auth("cliente2Token")],
-                None,
-                [
-                    "pm.test('[Confidencialidad Intra-Tenant] 404 Not Found para cliente ajeno del mismo tenant', () => pm.response.to.have.status(404));",
-                ] + problem + tipo_error("no-encontrado")
-            ),
-            req(
-                "6.4 Aislamiento Multi-Tenant: Cliente de Tenant Beta intenta consultar solicitud de Tenant Alfa -> 404 Not Found",
-                "GET", "/v1/service-requests/{{requestId}}", [CORR, auth("clienteBetaToken")],
-                None,
-                [
-                    "pm.test('[SAD AC6-E2 / RLS] 404 Not Found garantizado por Row-Level Security', () => pm.response.to.have.status(404));",
-                ] + problem + tipo_error("no-encontrado")
-            ),
-        ]
-    },
-]
-
-collection = {
-    "info": {
-        "name": "QUICKPATCH — Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31)",
-        "description": "Suite E2E automatizada para SCRUM-84 (HU SCRUM-31: Seguimiento en tiempo real del estado de la solicitud):\nValida ServiceRequest (máquina de estados), Communication (WebSocket y evento status-changed) y API Gateway (/api/v1/realtime).\nAutora: Katherine Bravo — QA Lead.",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-    },
-    "variable": [
-        {"key": "baseUrl", "value": "http://localhost:8080", "type": "string"},
-        {"key": "clienteEmail", "value": "", "type": "string"},
-        {"key": "clientePassword", "value": "", "type": "string"},
-        {"key": "tecnicoEmail", "value": "", "type": "string"},
-        {"key": "tecnicoPassword", "value": "", "type": "string"},
-        {"key": "cliente2Email", "value": "", "type": "string"},
-        {"key": "cliente2Password", "value": "", "type": "string"},
-        {"key": "clienteBetaEmail", "value": "", "type": "string"},
-        {"key": "clienteBetaPassword", "value": "", "type": "string"},
-        {"key": "clienteToken", "value": "", "type": "string"},
-        {"key": "tecnicoToken", "value": "", "type": "string"},
-        {"key": "cliente2Token", "value": "", "type": "string"},
-        {"key": "clienteBetaToken", "value": "", "type": "string"},
-        {"key": "requestId", "value": "sr-tracking-01", "type": "string"},
+        {
+            "name": "2. Controles de acceso RBAC, transiciones inválidas y aislamiento RLS",
+            "item": [
+                req("El cliente no puede iniciar el servicio → 403", "POST",
+                    "/v1/service-requests/{{solicitud1Id}}/start", [CORR, auth("clienteToken")],
+                    pruebas=error(403)),
+                req("El cliente no puede completar el servicio → 403", "POST",
+                    "/v1/service-requests/{{solicitud1Id}}/complete", [CORR, auth("clienteToken")],
+                    pruebas=error(403)),
+                req("Completar un servicio ya completado → 409 transicion-invalida", "POST",
+                    "/v1/service-requests/{{solicitud1Id}}/complete", [CORR, auth("tecnicoToken")],
+                    pruebas=error(409, "transicion-invalida")),
+                req("Sin token → 401", "GET", "/v1/service-requests/{{solicitud1Id}}", [CORR],
+                    pruebas=error(401)),
+                req("Otro cliente del mismo tenant no ve la solicitud → 404", "GET",
+                    "/v1/service-requests/{{solicitud1Id}}", [CORR, auth("otroClienteToken")],
+                    pruebas=error(404)),
+                req("Cliente de otro tenant no ve la solicitud → 404 (RLS)", "GET",
+                    "/v1/service-requests/{{solicitud1Id}}", [CORR, auth("betaToken")],
+                    pruebas=error(404)),
+            ],
+        },
+        base.limpieza,
     ],
-    "item": items
-}
+)
 
-out_file = pathlib.Path(__file__).parent / "scrum-84-seguimiento-estado.postman_collection.json"
-with open(out_file, "w", encoding="utf-8") as f:
-    json.dump(collection, f, ensure_ascii=False, indent=2)
-
-print(f"Colección generada con éxito: {out_file.name}")
+destino = pathlib.Path(__file__).with_name("scrum-84-seguimiento-estado.postman_collection.json")
+destino.write_text(base.json.dumps(coleccion, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+print(f"Colección generada exitosamente en {destino}")
