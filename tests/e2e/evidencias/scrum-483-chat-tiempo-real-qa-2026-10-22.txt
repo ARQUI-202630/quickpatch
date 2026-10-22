@@ -1,0 +1,27 @@
+(node:21497) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+OK    Login del administrador del tenant  (HTTP 200)
+OK    Categoría solo para esta corrida  (HTTP 201)
+OK    Registro del técnico  (HTTP 201)
+OK    El administrador aprueba al técnico  (HTTP 200)
+OK    Login del técnico  (HTTP 200)
+OK    El técnico cubre toda Bogotá  (HTTP 200)
+OK    El técnico queda disponible  (HTTP 200)
+OK    Registro del cliente  (HTTP 201)
+OK    Login del cliente  (HTTP 200)
+OK    Solicitud creada  (HTTP 201)
+OK    El técnico recibe la oferta
+OK    El técnico acepta la oferta  (HTTP 200)
+OK    La solicitud queda asignada
+OK    El chat está abierto (Communication tiene la réplica)  (HTTP 200)
+OK    Cliente y técnico conectados a /v1/realtime  (auth.accepted en los dos)
+OK    El técnico escribe  (HTTP 201)
+OK    Al cliente le llega chat.message con el mismo mensaje  (62 ms)
+OK    El cliente escribe  (HTTP 201)
+OK    Al técnico le llega chat.message con el mismo mensaje  (28 ms)
+OK    El cliente cancela la solicitud  (HTTP 200)
+OK    El técnico conserva el historial en solo lectura  (2 mensajes)
+OK    Limpieza: suspender al técnico  (HTTP 200)
+OK    Limpieza: desactivar la categoría  (HTTP 200)
+
+23/23 OK.
