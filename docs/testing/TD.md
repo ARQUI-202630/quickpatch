@@ -1308,30 +1308,30 @@ En cumplimiento de los requerimientos funcionales del SRS (**RF-09** / F2.1, **R
 | **MAT-013** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/service-requests/{id}` | Cliente de Tenant Beta intenta consultar solicitud perteneciente a Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
 | **MAT-014** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/matching/attempts/{id}` | Cliente de Tenant Beta intenta consultar auditoría de matching de Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
 
-#### 10.11.2 Resumen Estadístico de Ejecución E2E (Newman CLI)
+#### 10.11.2 Resumen Estadístico de Ejecución E2E (Newman CLI en Ambiente QA)
 
 ```text
 ┌───────────────────────────────────────────────────────────────┐
 │ EJECUCIÓN FORMAL: SCRUM-78 (Motor de Matching y Asignación)   │
 │ Archivo: scrum-78-motor-matching.postman_collection.json      │
-│ Suite E2E / Gateway Mock Server (Puerto 8080)                 │
+│ Ambiente: QA Desplegado (https://qa.quickpatch.internal)      │
 ├─────────────────────────┬──────────────────┬──────────────────┤
 │                         │         executed │           failed │
 ├─────────────────────────┼──────────────────┼──────────────────┤
 │              iterations │                1 │                0 │
 ├─────────────────────────┼──────────────────┼──────────────────┤
-│                requests │               15 │                0 │
+│                requests │               21 │                0 │
 ├─────────────────────────┼──────────────────┼──────────────────┤
-│            test-scripts │               15 │                0 │
+│            test-scripts │               21 │                0 │
 ├─────────────────────────┼──────────────────┼──────────────────┤
-│      prerequest-scripts │                1 │                0 │
+│      prerequest-scripts │                2 │                0 │
 ├─────────────────────────┼──────────────────┼──────────────────┤
-│              assertions │               35 │                0 │
+│              assertions │               43 │                0 │
 ├─────────────────────────┴──────────────────┴──────────────────┤
-│ Duración Total: 1291 ms (Promedio por petición: 5 ms)         │
-│ Tasa de Éxito (Pass Rate): 100.0% (35/35 aserciones exitosas) │
+│ Duración Total: 7.6 s (Tiempo promedio respuesta: 280 ms)     │
+│ Tasa de Éxito (Pass Rate): 100.0% (43/43 aserciones exitosas) │
 │ Evidencia almacenada: tests/e2e/evidencias/                   │
-│                       scrum-78-local-2026-10-18.txt           │
+│                       scrum-78-qa-2026-10-22.txt              │
 └───────────────────────────────────────────────────────────────┘
 ```
 
