@@ -38,9 +38,11 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 | **BUG-SP4-002** | Colisión de Scope en Newman entre Environment Estático y Colección Dinámica (`sufijo`) | SCRUM-395 / RF-01 | Media | P2 | Runner MVP (`run-mvp.js`) | `tests/e2e/run-mvp.js:L40` | **Verificado y Cerrado** |
 | **BUG-SP4-003** | Contaminación de Estado en Memoria entre Suites en Harness Local (SCRUM-108 vs SCRUM-111) | SCRUM-40 / RN-TP2 / DD §8.3.13 | Media (Harness) | P1 | Harness Local (`mock-gateway-local-simulacion.js`) | `tests/e2e/run-all-increment-suites.js:L50` | **Verificado y Cerrado** |
 | **BUG-SP4-004** | Fallo de Codificación `UnicodeEncodeError` en Consolas Windows con Símbolos y Emojis | INF-QA / PCI-DSS v4.0 | Baja | P3 | Scanner PCI (`pci_dss_scanner.py`) | `tests/security/run-pci-dss-suite.py:L20` | **Verificado y Cerrado** |
-| **BUG-SP4-005** | Discrepancia de Contrato en Suite E2E: Invocación `PUT /status` en vez de `POST /start` y `/complete` | SCRUM-31 / SCRUM-35 / RF-09 | Media | P2 | Suite E2E (`scrum-84`) / ServiceRequest | `tests/e2e/evidencias/scrum-84-qa-2026-10-18.txt` | **Corregido en Suite** |
-| **BUG-SP4-006** | Endpoint de Detalle de Solicitud con Contacto Resuelto no Desplegado en QA | SCRUM-34 / SCRUM-93 / RF-12 | Media | P2 | Backend ServiceRequest / Identity | `tests/e2e/evidencias/scrum-81-90-93-qa-2026-10-18.txt` | **Abierto (Reportado a Dev)** |
-| **BUG-SP4-007** | Dependencia de Usuarios Fijos en Colecciones E2E Ausentes en Base de Datos de QA | SCRUM-395 / SCRUM-56 / RF-02 | Media | P2 | Colecciones E2E / Seed QA | `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` | **En Corrección Dinámica** |
+| **BUG-SP4-005** | Discrepancia de Contrato en Suite E2E: Invocación `PUT /status` en vez de `POST /start` y `/complete` | SCRUM-31 / SCRUM-35 / RF-09 | Media | P2 | Suite E2E (`scrum-84`) / ServiceRequest | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt` | **Corregido en Suite** |
+| **BUG-SP4-006** | Endpoint de Detalle de Solicitud con Contacto Resuelto no Desplegado en QA | SCRUM-34 / SCRUM-93 / RF-12 | Media | P2 | Backend ServiceRequest / Identity | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` | **Abierto (Reportado a Dev)** |
+| **BUG-SP4-007** | Dependencia de Usuarios Fijos en Colecciones E2E Ausentes en Base de Datos de QA | SCRUM-395 / SCRUM-56 / RF-02 | Media | P2 | Colecciones E2E / Seed QA | `tests/e2e/evidencias/*-qa-2026-10-22.txt` | **Resuelto y Verificado (`preparacion()`)** |
+| **BUG-SP4-008** | Discrepancia de Aserción RFC 9457: Tipo `/validacion-solicitud` vs Estándar Identity `problems/validacion` | SCRUM-56 / IDN-017 / RFC 9457 | Baja | P3 | Suite E2E (`scrum-56`) / `generar-scrum56.py` | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt` | **Corregido en Suite (`validacion`)** |
+| **BUG-SP4-009** | Rechazo 400 por Campo Redundante `specialty` en Alta de Técnico (Violación `additionalProperties: false`) | SCRUM-99 / RF-16 / RN-TP3 | Media | P2 | Suite E2E (`scrum-99`) / `generar-scrum99.py` | `tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt` | **Corregido en Suite (`specialtyId`)** |
 
 ---
 
@@ -147,18 +149,52 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 
 ---
 
+### 3.8 BUG-SP4-008: Discrepancia en Aserción de Tipo de Error RFC 9457 en Suite SCRUM-56 (`problems/validacion` vs `/validacion-solicitud`)
+- **Historia / Requisito:** `SCRUM-56` / `IDN-017` / `RFC 9457`
+- **Estado del Defecto:** **CORREGIDO EN SUITE DE PRUEBAS**
+- **Severidad:** Baja (Discrepancia en diseño de prueba E2E) | **Prioridad:** P3
+- **Componente:** `tests/e2e/generar-scrum56.py` / `scrum-56-registro-tecnico.postman_collection.json`
+- **Descripción del Problema:**
+  En la petición 1.4 (*"Rechazo por documento ausente / clave corta → 400 Bad Request"*), la aserción de Postman fallaba al comparar el tipo de error devuelto por QA (`type: "https://quickpatch.internal/problems/validacion"`) contra la expresión regular esperada `/\/validacion-solicitud$/`.
+- **Causa Raíz:**
+  El contrato formal OpenAPI de Identity (`apps/api-gateway/openapi/identity.v1.yaml:L471, L1099`) define explícitamente el tipo `problems/validacion` para errores de validación de sintaxis y campos requeridos en solicitudes de autenticación/registro. La aserción en `generar-scrum56.py` invocaba erróneamente `tipo("validacion-solicitud")` (convención adoptada en otros microservicios como ServiceRequest).
+- **Solución Aplicada:**
+  Se ajustó la aserción en `tests/e2e/generar-scrum56.py` a `tipo("validacion")`, alineando la suite con la especificación contractual oficial de Identity v1.0. Se regeneró la colección Postman correspondiente.
+- **Verificación:**
+  Reejecución satisfactoria: la aserción valida correctamente el Problem Details devuelto por QA sin fallos.
+
+---
+
+### 3.9 BUG-SP4-009: Rechazo 400 por Campo Redundante `specialty` en Alta de Técnico de Equipo (`ProviderTechnicianRequest`)
+- **Historia / Requisito:** `SCRUM-99` / `RF-16` / `RN-TP3`
+- **Estado del Defecto:** **CORREGIDO EN SUITE DE PRUEBAS**
+- **Severidad:** Media (Discrepancia de Contrato en la Suite) | **Prioridad:** P2
+- **Componente:** `tests/e2e/generar-scrum99.py` / `scrum-99-equipo-proveedor.postman_collection.json`
+- **Descripción del Problema:**
+  Al dar de alta un técnico en el equipo del proveedor (`POST /v1/providers/me/technicians`), el API Gateway y microservicio Identity en QA respondían HTTP `400 Bad Request`.
+- **Causa Raíz:**
+  El esquema contractual `ProviderTechnicianRequest` en `identity.v1.yaml:L949-975` especifica `required: [email, fullName, phone, documentId, specialtyId]` y `additionalProperties: false`. La suite E2E transmitía `"specialty": "Plomería"` además de `"specialtyId"`, lo cual provocaba el rechazo por validación estricta de esquema OpenAPI en el Gateway.
+- **Solución Aplicada:**
+  Se eliminó el campo no admitido `"specialty"` de las peticiones de creación en `generar-scrum99.py`, preservando únicamente `"specialtyId"` (UUID referenciado a Catalog). Se regeneró la colección Postman.
+- **Verificación:**
+  Alineación total con el contrato oficial de Identity; el alta de técnicos en equipo de proveedor opera conforme a la especificación OpenAPI.
+
+---
+
 ## 4. Conclusión del Registro de Defectos
 
-- **Total de Reportes Analizados:** 7 reportes de prueba.
+- **Total de Reportes Analizados:** 9 reportes de prueba.
 - **Defectos Resueltos y Verificados:** **4**
   - `BUG-SP4-001` (Aislamiento intra-tenant en arnés local / verificado con RLS en PostgreSQL VM5).
   - `BUG-SP4-002` (Precedencia de sufijos aleatorios en variables de entorno Newman).
   - `BUG-SP4-003` (Aislamiento e idempotencia de estado en memoria en arnés local).
   - `BUG-SP4-004` (Encoding UTF-8 en harness de escáner en consolas Windows).
-- **Reportes Reclasificados y Ajustes Contractuales:** **3**
+- **Reportes Reclasificados y Ajustes Contractuales en Suites:** **5**
   - `BUG-SP4-005` (Alineación con endpoints contractuales `POST /start` y `POST /complete` de ServiceRequest v1.7.0 para SCRUM-35).
   - `BUG-SP4-006` (Ruta inexistente: contrato formal es `GET /v1/service-requests/{id}`).
-  - `BUG-SP4-007` (Colecciones ajustadas para creación dinámica de usuarios sin depender de seeds fijos).
+  - `BUG-SP4-007` (Colecciones ajustadas para creación dinámica de usuarios sin depender de seeds fijos vía `preparacion()`).
+  - `BUG-SP4-008` (Alineación de aserción RFC 9457 en SCRUM-56 con contrato oficial de Identity: `problems/validacion`).
+  - `BUG-SP4-009` (Remoción de campo redundante `specialty` en `ProviderTechnicianRequest` bajo `additionalProperties: false`).
 - **Defectos Críticos o Bloqueantes Abiertos en el Incremento:** **0**.
 - **Tasa de Resolución de Defectos:** **100.0%**.
 - **Dictamen Final de QA:** **APROBADO SIN DEFECTOS BLOQUEANTES** para merge del incremento técnico de Sprint 4.

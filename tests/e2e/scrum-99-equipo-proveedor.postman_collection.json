@@ -796,7 +796,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Pedro Ramirez (Equipo)\",\n  \"email\": \"pedro.ramirez.{{sufijo}}@quickpatch.test\",\n  \"documentId\": \"{{docTeamTech}}\",\n  \"phone\": \"+573105556677\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"specialty\": \"Plomería\"\n}"
+              "raw": "{\n  \"fullName\": \"Pedro Ramirez (Equipo)\",\n  \"email\": \"pedro.ramirez.{{sufijo}}@quickpatch.test\",\n  \"documentId\": \"{{docTeamTech}}\",\n  \"phone\": \"+573105556677\",\n  \"specialtyId\": \"{{specialtyId}}\"\n}"
             }
           },
           "event": [
@@ -1134,7 +1134,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Otro Tecnico\",\n  \"email\": \"otro.correo.{{sufijo}}@quickpatch.test\",\n  \"documentId\": \"{{docTeamTech}}\",\n  \"phone\": \"+573101112233\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"specialty\": \"Plomería\"\n}"
+              "raw": "{\n  \"fullName\": \"Otro Tecnico\",\n  \"email\": \"otro.correo.{{sufijo}}@quickpatch.test\",\n  \"documentId\": \"{{docTeamTech}}\",\n  \"phone\": \"+573101112233\",\n  \"specialtyId\": \"{{specialtyId}}\"\n}"
             }
           },
           "event": [
@@ -1196,7 +1196,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Otro Nombre\",\n  \"email\": \"pedro.ramirez.{{sufijo}}@quickpatch.test\",\n  \"documentId\": \"CC-999999999\",\n  \"phone\": \"+573101112233\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"specialty\": \"Plomería\"\n}"
+              "raw": "{\n  \"fullName\": \"Otro Nombre\",\n  \"email\": \"pedro.ramirez.{{sufijo}}@quickpatch.test\",\n  \"documentId\": \"CC-999999999\",\n  \"phone\": \"+573101112233\",\n  \"specialtyId\": \"{{specialtyId}}\"\n}"
             }
           },
           "event": [

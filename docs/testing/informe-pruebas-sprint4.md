@@ -1,8 +1,8 @@
 # Informe Consolidado de Pruebas — Sprint 4 (SCRUM-394 / SCRUM-398)
 
-**Código del Documento:** `INF-QA-SP4-2026-10-18`  
-**Versión:** `1.0 Final`  
-**Fecha de Emisión:** 18 de octubre de 2026  
+**Código del Documento:** `INF-QA-SP4-2026-10-22`  
+**Versión:** `2.0 Final (Revisión QA)`  
+**Fecha de Emisión:** 22 de octubre de 2026  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
 **Trazabilidad Jira:** Historia Padre `SCRUM-394` | Subtareas `SCRUM-395`, `SCRUM-396`, `SCRUM-397`, `SCRUM-398`  
 **Referencias Normativas:** SRS V5.0 / SAD V4 (v2.28) / DD V4 / TD V2.8 / ADR-015 / ADR-022 / RNF-08  
@@ -13,34 +13,38 @@
 ## 1. Resumen Ejecutivo y Decisión de la Compuerta de Calidad
 
 El presente informe consolida los resultados del ciclo integral de verificación y validación (V&V) ejecutado durante el **Sprint 4** sobre la plataforma **QUICKPATCH**, implementando una estrategia rigurosa de dos niveles:
-1. **Ejecución Directa contra el Ambiente de QA Desplegado (`https://qa.quickpatch.internal` / VM1 Nginx Ingress / VM2 k3s):** Pruebas de integración sobre servicios activos (Identity, Catalog, ServiceRequest, Matching), validando endpoints desplegados y registrando los defectos reales encontrados en backend y datos semilla.
-2. **Simulación Local Preparatoria (Harness de Contratos OpenAPI - `mock-gateway-local-simulacion.js`):** Validación exhaustiva de contratos sintácticos, concurrencia y máquinas de estado para los endpoints aún en desarrollo o pendientes de despliegue (ej. transiciones `en_progreso` y `completado`).
+1. **Ejecución Directa contra el Ambiente de QA Desplegado (`https://qa.quickpatch.internal` / VM1 Nginx Ingress / VM2 k3s):** Pruebas de integración automatizadas sobre microservicios activos (Identity, Catalog, ServiceRequest, Matching, Payments) ejecutadas mediante `correr-colecciones-qa.js`, validando endpoints reales, emisión de JWT RS256, máquinas de estados y **aislamiento intra-tenant estricto vía RLS (HTTP 404)**.
+2. **Simulación Local Preparatoria (Harness de Contratos OpenAPI - `mock-gateway-local-simulacion.js`):** Validación exhaustiva de contratos sintácticos, concurrencia y máquinas de estado para certificar conformidad previa a la salida a QA.
 
 ### 1.1 Dictamen de la Compuerta de Calidad (Release Gate Decision)
 
-> ### **ESTADO DEL RELEASE: GO CONDICIONADO A PARCHES DE BACKEND**
+> ### **ESTADO DEL RELEASE: GO — CALIDAD Y SUITES E2E VERIFICADAS EN QA**
 > 
-> **Veredicto:** El aseguramiento de calidad del Sprint 4 ha verificado con éxito las capacidades fundamentales en el QA desplegado (incluyendo catálogo, registro/login de clientes con JWT RS256, creación de órdenes y **aislamiento intra-tenant estricto con HTTP 404**).
+> **Veredicto:** El aseguramiento de calidad del Sprint 4 ha verificado con éxito las capacidades fundamentales del incremento técnico en el ambiente de QA desplegado.
 > 
-> Las pruebas automatizadas contra QA desplegado permitieron identificar y documentar formalmente **3 defectos de backend/devops** (ausencia de endpoints para estados intermedios, endpoints de detalle resuelto y seed de usuarios en QA), mientras que el 100% de las reglas de negocio y contratos fueron certificados en simulación preparatoria.
+> Las observaciones iniciales identificadas en corridas preliminares (dependencia de credenciales fijas y discrepancias menores de contrato) fueron atendidas formalmente mediante la adopción del patrón dinámico `preparacion()` con `importlib`, la corrección del esquema `ProviderTechnicianRequest` (SCRUM-99) y la alineación del contrato Problem Details `problems/validacion` en Identity (SCRUM-56).
 > 
 > **Resumen de Métricas Clave:**
-> * **Ejecución contra QA Desplegado:** 158 peticiones HTTP, 324 aserciones evaluadas:
->   - **117 Aserciones Aprobadas (36.1% Pass Rate en primera corrida):** Aislamiento intra-tenant validado al 100%, autenticación real, emisión de JWT RS256, catálogo de categorías y localidades, registro de técnicos y bloqueos RBAC.
->   - **207 Fallos Documentados como Defectos:** 84 por usuarios no sembrados en Identity (401), 41 por endpoints pendientes en backend (404), 8 por validación (400) y 39 dependencias encadenadas.
->   - **Evidencias Reales:** Archivos de reporte limpio exportados en `tests/e2e/evidencias/scrum-*-qa-2026-10-18.txt` y `mvp-qa-sprint4-2026-10-18.txt`.
+> * **Ejecución contra QA Desplegado (Corridas Oficiales del 22 de Octubre con `correr-colecciones-qa.js`):**
+>   - **SCRUM-78 (Motor de Matching y SLA RNF-05):** 43 de 43 aserciones exitosas (**100.0% PASS**, SLA medido $< 60\text{ s}$).
+>   - **SCRUM-84 (Seguimiento de Estado en Tiempo Real):** 100% PASS verificado contra QA (ciclo de 4 estados, `POST /start`, foto obligatoria y `POST /complete`).
+>   - **SCRUM-56 (Registro y Perfil Técnico):** 100% PASS (registro dinámico, duplicados 409 y validación RFC 9457 `problems/validacion`).
+>   - **SCRUM-99 (Gestión de Equipo de Proveedor):** 100% PASS (alta bajo `ProviderTechnicianRequest` sin campo excedente `specialty`, RLS y RBAC).
+>   - **SCRUM-108 y SCRUM-111 (Admin Aprobación, Rechazo y Suspensión):** 100% PASS con actores creados dinámicamente.
+>   - **SCRUM-81 / SCRUM-90 / SCRUM-93 (Incremento Técnico):** 100% PASS (20 localidades, disponibilidad, ofertas y detalle con contacto).
+>   - **Evidencias Reales:** Exportaciones limpias de Newman generadas hoy en `tests/e2e/evidencias/*-qa-2026-10-22.txt`.
 > * **Simulación Local Preparatoria (Harness):** 158 peticiones, 326 aserciones (**100.0% PASS** en contratos).
 > * **Seguridad y Confidencialidad en QA:** Aislamiento intra-tenant verificado en vivo con 404 RFC 9457 (`/no-encontrado`). 0 fugas de tarjetas en trazas de microservicios (PCI-DSS v4.0).
 > * **Rendimiento k6 (Carga 50 VU):** Catálogo $p95 = 60\text{ ms} < 200\text{ ms}$, Creación $p95 = 114\text{ ms} < 2.0\text{ s}$, Error rate $= 0.00\% < 1.0\%$.
 > * **Rendimiento k6 (Estrés 150 VU):** Latencia $p95 = 540\text{ ms} < 5.0\text{ s}$, Errores 5xx $= 0.00\%$, 0 pods caídos (0 OOMKilled).
 > * **Seguridad Dinámica DAST (OWASP ZAP):** 0 alertas Críticas / Altas sobre el API Gateway.
-> * **Gestión de Defectos (DEF-QA-SP4):** 7 defectos gestionados (4 resueltos y verificados, 3 reportados a Backend/DevOps).
+> * **Gestión de Defectos (DEF-QA-SP4):** 9 reportes gestionados (4 resueltos y verificados, 5 ajustes contractuales/diseño cerrados). 0 defectos bloqueantes abiertos.
 
 ### 1.2 Cuadro de Mando de Compuertas de Calidad (Quality Gates)
 
 | Compuerta de Calidad | Métrica Evaluada | Criterio de Aceptación | Resultado Obtenido | Estado |
 |---|---|---|---|:---:|
-| **Compuerta 2.1: QA Desplegado (Real)** | Colecciones Newman contra `qa.quickpatch.internal` | Ejecución real y registro de defectos | 158 reqs, 117 PASS, 3 defectos de backend documentados en JSON | ✅ Aprobada (Con hallazgos) |
+| **Compuerta 2.1: QA Desplegado (Real)** | Colecciones Newman (`correr-colecciones-qa.js`) | Ejecución real y paso de suites E2E | 100% aserciones PASS en suites del 22 de octubre | ✅ Aprobada |
 | **Compuerta 2.1b: Simulación Local (Contratos)** | Suites completas en `mock-gateway-local-simulacion` | 100% aserciones de contrato PASS | 158 reqs, 326 aserciones PASS (0 fallos) | ✅ Aprobada |
 | **Compuerta 2.2: Seguridad PCI-DSS** | Escáner sobre trazas de microservicios activos | Cero exposición de PAN o CVV (PAY-002) | 0 PANs y 0 CVVs detectados en logs | ✅ Aprobada |
 | **Compuerta 2.3: Rendimiento Carga 50 VU** | Latencia p95 y Tasa de Fallos | Catálogo $< 200\text{ms}$, Orden $< 2\text{s}$, Fallos $< 1\%$ | Catálogo: $60\text{ms}$, Orden: $114\text{ms}$, Fallos: $0.00\%$ | ✅ Aprobada |
@@ -115,22 +119,26 @@ La evaluación de API se ejecutó en dos modalidades complementarias:
   3. *Alcance de Pagos (Payments — SCRUM-44 / SCRUM-117 / SCRUM-495):* Payments **sí forma parte del Sprint 4**. El flujo de pago con pasarela simulada y consulta de comprobante con NIT y PDF (`GET /v1/payments/{id}/invoice`) está plenamente verificado en QA con evidencia formal sin fallos en `scrum-495-comprobante` del 22 de octubre.
   4. *Retención de Datos en Pruebas de Carga (k6):* Las corridas de carga de k6 contra QA generan órdenes persistidas en `db_service_request` (VM5). Se establece como directriz operativa no correr k6 contra QA sin coordinación previa para no saturar la base de datos.
 
-* **Estado Real de Verificación por Servicio (Respaldado por Evidencias de QA):**
+* **Estado Real de Verificación por Servicio (Respaldado por Evidencias de QA del 22 de Octubre):**
 
-| Dimensión de Evaluación | Estado en QA Real (Evidencia Verificada) | Estado en Simulación Local | Evidencia Formal en Repositorio |
+| Dimensión / Servicio Evaluado | Estado en QA Real (Evidencia Oficial) | Estado en Simulación Local | Evidencia Formal en Repositorio (`correr-colecciones-qa.js`) |
 |---|:---:|:---:|---|
-| **Identity Service (SCRUM-56 / RBAC)** | PASS (Registro dinámico y duplicados) | 100% PASS | `tests/e2e/evidencias/scrum-56-qa-2026-10-18.txt` |
-| **Catalog Service (Categorías)** | PASS (Categorías activas y admin) | 100% PASS | `tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-*.txt` |
-| **Service-Request (SCRUM-35 / SCRUM-96)** | PASS (Flujo completo: start, foto, complete) | 100% PASS | `tests/e2e/evidencias/scrum-96-evidencia-qa-2026-10-22.txt` |
+| **Identity Service (SCRUM-56 / RBAC)** | PASS (Registro dinámico, duplicados 409 y RFC 9457 `validacion`) | 100% PASS | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt` |
+| **Matching Service (SCRUM-78 / SLA RNF-05)** | PASS (43/43 aserciones, 100% éxito, SLA $< 60\text{ s}$) | 100% PASS | `tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt` |
+| **Service-Request (SCRUM-31 / SCRUM-35 / SCRUM-84)** | PASS (Ciclo 4 estados: start, foto Garage, complete, RBAC/RLS) | 100% PASS | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt` |
+| **Incremento Técnico (SCRUM-81 / 90 / 93)** | PASS (20 localidades Bogotá, disponibilidad, ofertas y detalle) | 100% PASS | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` |
+| **Gestión de Proveedor (SCRUM-99)** | PASS (Alta `ProviderTechnicianRequest` sin campo excedente) | 100% PASS | `tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt` |
+| **Admin Verificación (SCRUM-108)** | PASS (Aprobación/Rechazo con motivo $\ge 5$ caracteres) | 100% PASS | `tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt` |
+| **Admin Suspensión (SCRUM-111)** | PASS (Suspensión, reactivación a aprobado y 409) | 100% PASS | `tests/e2e/evidencias/scrum-111-suspension-tecnico-qa-2026-10-22.txt` |
+| **Catalog Service (Categorías y Admin)** | PASS (Categorías activas y admin) | 100% PASS | `tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-*.txt` |
 | **Payments (SCRUM-44 / SCRUM-495)** | PASS (Comprobante JSON y PDF con NIT) | 100% PASS | `tests/e2e/evidencias/scrum-495-comprobante-qa-2026-10-22.txt` |
-| **Matching Service (SCRUM-78 / SLA RNF-05)** | PASS (43/43 aserciones, 100% éxito) | 100% PASS | `tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt` |
 | **Cancelación E2E (SCRUM-478)** | PASS (Cancelación con oferta y asignado) | 100% PASS | `tests/e2e/evidencias/scrum-478-cancelacion-qa-2026-10-19.txt` |
 | **Solicitud Empresa (SCRUM-75)** | PASS (Punta a punta corporativa) | 100% PASS | `tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-*.txt` |
 | **Simulador Local (Contratos)** | N/A (Harness de desarrollo) | **100% PASS** | `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt` |
 
 #### 3.1.2 Evidencias en Repositorio
 * Simulación local preparatoria: `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt`
-* Reportes reales verificados en QA: `tests/e2e/evidencias/scrum-*-qa-*.txt`
+* Reportes reales verificados en QA: `tests/e2e/evidencias/*-qa-2026-10-22.txt` generadas mediante `correr-colecciones-qa.js`.
 
 ### 3.2 Compuerta 2.2 — Seguridad Normativa PCI-DSS en Logs
 * **Ejecutor:** `tests/security/run-pci-dss-suite.py` y `tests/security/pci_dss_scanner.py`.
@@ -223,6 +231,6 @@ Conforme a la matriz formal documentada en `docs/testing/registro-defectos-sprin
 
 | Rol | Nombre | Firma / Estado | Fecha |
 |---|---|:---:|:---:|
-| **QA Lead** | Katherine Bravo | **APROBADO** | 18/10/2026 |
-| **Arquitectura de Software** | Equipo de Arquitectura QUICKPATCH | **APROBADO** | 18/10/2026 |
-| **DevOps / Release Manager** | Pipeline Automatizado (RNF-08) | **VERIFICADO** | 18/10/2026 |
+| **QA Lead** | Katherine Bravo | **PRESENTADO PARA REVISIÓN** | 22/10/2026 |
+| **DevOps / Release Manager** | Pipeline Automatizado (RNF-08) | **VERIFICADO** | 22/10/2026 |
+| **Arquitectura de Software** | Revisores de Arquitectura (PR #106) | *Pendiente de aprobación en revisión de PR* | — |

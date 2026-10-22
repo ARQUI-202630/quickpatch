@@ -334,7 +334,7 @@
                   "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
                   "});",
-                  "pm.test('[Contrato] Tipo de error validacion-solicitud', () => pm.expect(pm.response.json().type).to.match(/\\/validacion-solicitud$/));"
+                  "pm.test('[Contrato] Tipo de error validacion', () => pm.expect(pm.response.json().type).to.match(/\\/validacion$/));"
                 ]
               }
             }

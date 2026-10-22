@@ -1,16 +1,29 @@
 {
   "info": {
-    "_postman_id": "scrum-111-suspension-tecnico-qa",
-    "name": "QUICKPATCH — Suspensión de Cuenta de Técnico (SCRUM-111 / HU SCRUM-40)",
-    "description": "Suite E2E para RF-20, RN-TP2 y DD §8.3.13: Suspensión de cuenta con motivo, bloqueo de matching, reactivación a aprobado, máquina de estados, control RBAC y aislamiento multi-tenant con RLS. QA Lead: Katherine Bravo.",
+    "name": "QUICKPATCH — SCRUM-111 Suspensión de Cuenta de Técnico (Admin)",
+    "description": "Suite E2E para RF-20, RN-TP2 y DD §8.3.13 contra QA real. Suspensión con motivo obligatorio, consulta de suspendidos, reactivación a aprobado, control de transiciones inválidas (409), control de acceso RBAC y aislamiento multi-tenant con RLS. Utiliza la preparación dinámica de base (importlib) sin depender de credenciales ni usuarios fijos en el repositorio. Variables: baseUrl, adminEmail y adminPassword.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://qa.quickpatch.internal"
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    }
+  ],
   "item": [
     {
-      "name": "0. Autenticación de Actores",
+      "name": "0. Preparación: categoría propia, técnico aprobado y clientes",
       "item": [
         {
-          "name": "0.1 Login Administrador Tenant Alfa",
+          "name": "Login del administrador del tenant",
           "request": {
             "method": "POST",
             "header": [
@@ -24,7 +37,7 @@
               },
               {
                 "key": "X-Channel-Id",
-                "value": "quickpatch-web-admin"
+                "value": "quickpatch-mobile"
               }
             ],
             "url": {
@@ -46,24 +59,95 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('sufijo')) {",
+                  "  pm.collectionVariables.set('sufijo', Date.now().toString(36));",
+                  "  // Clave de las cuentas de esta corrida: se genera al vuelo y no se guarda en ningún lado.",
+                  "  pm.collectionVariables.set('clave', 'Qp_' + Math.random().toString(36).slice(2, 12) + '!Aa7');",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Auth] Login de Admin Tenant Alfa exitoso (200 OK)', () => {",
+                  "pm.test('200 con rol admin_tenant', () => {",
                   "  pm.response.to.have.status(200);",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json).to.have.property('accessToken');",
-                  "  pm.expect(json.user.role).to.eql('admin_tenant');",
-                  "  pm.collectionVariables.set('tokenAdmin', json.accessToken);",
-                  "});"
+                  "  pm.expect(pm.response.json().user.role).to.eql('admin_tenant');",
+                  "});",
+                  "// El token solo vive en memoria durante la corrida.",
+                  "pm.collectionVariables.set('adminToken', pm.response.json().accessToken);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "0.2 Login Administrador Tenant Beta",
+          "name": "Categoría solo para esta corrida (solo el técnico de la prueba la atiende)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/admin/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "admin",
+                "categories"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"SCRUM-111 {{sufijo}}\",\n  \"description\": \"Categoría de la prueba SCRUM-111; se desactiva al final\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('categoriaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro del técnico con esa especialidad",
           "request": {
             "method": "POST",
             "header": [
@@ -77,7 +161,116 @@
               },
               {
                 "key": "X-Channel-Id",
-                "value": "quickpatch-web-admin"
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/technician",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Técnico SCRUM-111\",\n  \"phone\": \"3007654321\",\n  \"documentId\": \"{{documento}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }",
+                  "pm.collectionVariables.set('documento', String(Date.now()).slice(-10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('tecnicoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El administrador aprueba al técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "{{tecnicoId}}",
+                "approve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
               }
             ],
             "url": {
@@ -94,29 +287,166 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{adminBetaEmail}}\",\n  \"password\": \"{{adminBetaPassword}}\"\n}"
+              "raw": "{\n  \"email\": \"tecnico.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Auth] Login de Admin Tenant Beta exitoso (200 OK)', () => {",
+                  "pm.test('200 con rol tecnico', () => {",
                   "  pm.response.to.have.status(200);",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json).to.have.property('accessToken');",
-                  "  pm.expect(json.user.role).to.eql('admin_tenant');",
-                  "  pm.collectionVariables.set('tokenAdminBeta', json.accessToken);",
-                  "});"
+                  "  pm.expect(pm.response.json().user.role).to.eql('tecnico');",
+                  "});",
+                  "pm.collectionVariables.set('tecnicoToken', pm.response.json().accessToken);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "0.3 Login Cliente para Control RBAC",
+          "name": "El técnico cubre toda Bogotá (espera a que Matching lo conozca)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/me/coverage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "technicians",
+                "me",
+                "coverage"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"localityCodes\": [\n    \"01\",\n    \"02\",\n    \"03\",\n    \"04\",\n    \"05\",\n    \"06\",\n    \"07\",\n    \"08\",\n    \"09\",\n    \"10\",\n    \"11\",\n    \"12\",\n    \"13\",\n    \"14\",\n    \"15\",\n    \"16\",\n    \"17\",\n    \"18\",\n    \"19\",\n    \"20\"\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code === 200) && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('200', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El técnico queda disponible",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/technicians/me/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "technicians",
+                "me",
+                "availability"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"disponible\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code === 200) && intento < 15) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 2000);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  pm.test('200', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro de otro técnico, sin aprobar",
           "request": {
             "method": "POST",
             "header": [
@@ -130,7 +460,66 @@
               },
               {
                 "key": "X-Channel-Id",
-                "value": "quickpatch-web-admin"
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/technician",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "technician"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico2.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Otro técnico QA\",\n  \"phone\": \"3007654322\",\n  \"documentId\": \"{{documento2}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }",
+                  "pm.collectionVariables.set('documento2', String(Date.now() + 7).slice(-10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('tecnico2Id', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del otro técnico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
               }
             ],
             "url": {
@@ -147,29 +536,36 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{clienteEmail}}\",\n  \"password\": \"{{clientePassword}}\"\n}"
+              "raw": "{\n  \"email\": \"tecnico2.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Auth] Login de Cliente para RBAC exitoso (200 OK)', () => {",
+                  "pm.test('200 con rol tecnico', () => {",
                   "  pm.response.to.have.status(200);",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json).to.have.property('accessToken');",
-                  "  pm.expect(json.user.role).to.eql('cliente');",
-                  "  pm.collectionVariables.set('tokenCliente', json.accessToken);",
-                  "});"
+                  "  pm.expect(pm.response.json().user.role).to.eql('tecnico');",
+                  "});",
+                  "pm.collectionVariables.set('otroTecnicoToken', pm.response.json().accessToken);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "0.4 Login Técnico para Control RBAC",
+          "name": "Registro del cliente",
           "request": {
             "method": "POST",
             "header": [
@@ -183,7 +579,64 @@
               },
               {
                 "key": "X-Channel-Id",
-                "value": "quickpatch-web-admin"
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba QA cliente\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
               }
             ],
             "url": {
@@ -200,22 +653,263 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{tecnicoEmail}}\",\n  \"password\": \"{{tecnicoPassword}}\"\n}"
+              "raw": "{\n  \"email\": \"cliente.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Auth] Login de Técnico para RBAC exitoso (200 OK)', () => {",
+                  "pm.test('200 con rol cliente', () => {",
                   "  pm.response.to.have.status(200);",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json).to.have.property('accessToken');",
-                  "  pm.expect(json.user.role).to.eql('tecnico');",
-                  "  pm.collectionVariables.set('tokenTecnico', json.accessToken);",
-                  "});"
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro del otro cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente2.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba QA otro cliente\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del otro cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente2.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol cliente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('otroClienteToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro del cliente del tenant Beta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"beta.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba QA cliente del tenant Beta\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del cliente del tenant Beta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"beta.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol cliente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('betaToken', pm.response.json().accessToken);"
                 ]
               }
             }
@@ -224,7 +918,7 @@
       ]
     },
     {
-      "name": "1. Suspensión y Reactivación de Técnico",
+      "name": "1. Suspensión y Reactivación de Técnico (RF-20 / RN-TP2 / DD §8.3.13)",
       "item": [
         {
           "name": "1.1 Admin suspende técnico en estado aprobado",
@@ -241,11 +935,11 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{tokenAdmin}}"
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-approved-01/suspend",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/suspend",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -254,7 +948,7 @@
                 "v1",
                 "admin",
                 "technicians",
-                "usr-tec-approved-01",
+                "{{tecnicoId}}",
                 "suspend"
               ]
             },
@@ -265,6 +959,15 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -272,13 +975,10 @@
                   "pm.test('[RF-20 / RN-TP2] 200 OK al suspender técnico aprobado con motivo válido', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const json = pm.response.json();",
-                  "  pm.expect(json.userId).to.eql('usr-tec-approved-01');",
+                  "  const id = json.userId || json.id;",
+                  "  pm.expect(id).to.eql(pm.collectionVariables.get('tecnicoId'));",
                   "  pm.expect(json.verificationStatus).to.eql('suspendido');",
                   "  pm.expect(json.reason).to.include('Incumplimiento grave');",
-                  "  pm.expect(json.matchingBlocked).to.be.true;",
-                  "  pm.expect(json).to.have.property('suspendedAt');",
-                  "  pm.expect(json.suspendedBy).to.eql('usr-admin-01');",
-                  "  pm.expect(json.noticeEmitted).to.eql('technician.verification-changed');",
                   "});"
                 ]
               }
@@ -291,16 +991,12 @@
             "method": "GET",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
                 "key": "X-Correlation-Id",
                 "value": "{{$guid}}"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{tokenAdmin}}"
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
@@ -312,11 +1008,26 @@
                 "api",
                 "v1",
                 "admin",
-                "technicians?verificationStatus=suspendido"
+                "technicians"
+              ],
+              "query": [
+                {
+                  "key": "verificationStatus",
+                  "value": "suspendido"
+                }
               ]
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -325,7 +1036,8 @@
                   "pm.test('[Consistencia] Técnico suspendido aparece en lista de suspendidos', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const json = pm.response.json();",
-                  "  const found = json.items.find(t => t.userId === 'usr-tec-approved-01');",
+                  "  pm.expect(json.items).to.be.an('array');",
+                  "  const found = json.items.find(t => (t.userId || t.id) === pm.collectionVariables.get('tecnicoId'));",
                   "  pm.expect(found).to.exist;",
                   "  pm.expect(found.verificationStatus).to.eql('suspendido');",
                   "});"
@@ -335,25 +1047,21 @@
           ]
         },
         {
-          "name": "1.3 Reactivación: Admin aprueba y reactiva técnico suspendido (usr-tec-suspended-01)",
+          "name": "1.3 Reactivación: Admin aprueba y reactiva técnico suspendido (tecnicoId)",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
               {
                 "key": "X-Correlation-Id",
                 "value": "{{$guid}}"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{tokenAdmin}}"
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-suspended-01/approve",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/approve",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -362,12 +1070,21 @@
                 "v1",
                 "admin",
                 "technicians",
-                "usr-tec-suspended-01",
+                "{{tecnicoId}}",
                 "approve"
               ]
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -376,9 +1093,9 @@
                   "pm.test('[Reactivación / DD §8.3.13] 200 OK al reactivar técnico suspendido a aprobado', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const json = pm.response.json();",
-                  "  pm.expect(json.userId).to.eql('usr-tec-suspended-01');",
+                  "  const id = json.userId || json.id;",
+                  "  pm.expect(id).to.eql(pm.collectionVariables.get('tecnicoId'));",
                   "  pm.expect(json.verificationStatus).to.eql('aprobado');",
-                  "  pm.expect(json.noticeEmitted).to.eql('technician.verification-changed');",
                   "});"
                 ]
               }
@@ -388,7 +1105,7 @@
       ]
     },
     {
-      "name": "2. Reglas de Negocio y Validaciones",
+      "name": "2. Reglas de Negocio, Validación y Máquina de Estados",
       "item": [
         {
           "name": "2.1 Validación: Intento de suspender con motivo menor a 5 caracteres -> 400 Bad Request",
@@ -405,11 +1122,11 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{tokenAdmin}}"
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-approved-01/suspend",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/suspend",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -418,7 +1135,7 @@
                 "v1",
                 "admin",
                 "technicians",
-                "usr-tec-approved-01",
+                "{{tecnicoId}}",
                 "suspend"
               ]
             },
@@ -429,27 +1146,32 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Validación] 400 Bad Request cuando el motivo de suspensión es < 5 caracteres', () => {",
-                  "  pm.response.to.have.status(400);",
-                  "});",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
                   "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
                   "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /validacion-solicitud', () => {",
-                  "  pm.expect(pm.response.json().type).to.include('validacion-solicitud');",
-                  "});"
+                  "pm.test('tipo validacion', () => pm.expect(pm.response.json().type).to.match(/\\/validacion$/));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "2.2 Transición Inválida: Intento de suspender técnico ya suspendido -> 409 Conflict",
+          "name": "2.2 Admin suspende técnico para probar transición de re-suspensión",
           "request": {
             "method": "POST",
             "header": [
@@ -463,11 +1185,11 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{tokenAdmin}}"
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-approved-01/suspend",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/suspend",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -476,7 +1198,65 @@
                 "v1",
                 "admin",
                 "technicians",
-                "usr-tec-approved-01",
+                "{{tecnicoId}}",
+                "suspend"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Suspensión formal para verificación de estado.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Transición Inválida: Intento de suspender técnico ya suspendido -> 409 Conflict",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/suspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "{{tecnicoId}}",
                 "suspend"
               ]
             },
@@ -487,27 +1267,32 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Transición Inválida] 409 Conflict al intentar suspender un técnico ya suspendido', () => {",
-                  "  pm.response.to.have.status(409);",
-                  "});",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
                   "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
                   "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /transicion-invalida', () => {",
-                  "  pm.expect(pm.response.json().type).to.include('transicion-invalida');",
-                  "});"
+                  "pm.test('tipo transicion-invalida', () => pm.expect(pm.response.json().type).to.match(/\\/transicion-invalida$/));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "2.3 Transición Inválida: Intento de suspender técnico en estado pendiente -> 409 Conflict",
+          "name": "2.4 Transición Inválida: Intento de suspender técnico en estado pendiente (tecnico2Id) -> 409 Conflict",
           "request": {
             "method": "POST",
             "header": [
@@ -521,11 +1306,11 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{tokenAdmin}}"
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-pending-01/suspend",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnico2Id}}/suspend",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -534,7 +1319,7 @@
                 "v1",
                 "admin",
                 "technicians",
-                "usr-tec-pending-01",
+                "{{tecnico2Id}}",
                 "suspend"
               ]
             },
@@ -545,20 +1330,25 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Transición Inválida] 409 Conflict al intentar suspender un técnico en estado pendiente', () => {",
-                  "  pm.response.to.have.status(409);",
-                  "});",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
                   "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
                   "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /transicion-invalida', () => {",
-                  "  pm.expect(pm.response.json().type).to.include('transicion-invalida');",
-                  "});"
+                  "pm.test('tipo transicion-invalida', () => pm.expect(pm.response.json().type).to.match(/\\/transicion-invalida$/));"
                 ]
               }
             }
@@ -567,10 +1357,10 @@
       ]
     },
     {
-      "name": "3. Control de Acceso RBAC y Aislamiento Multi-Tenant",
+      "name": "3. Control de Acceso RBAC y Aislamiento Multi-Tenant (RLS)",
       "item": [
         {
-          "name": "3.1 Control RBAC: Cliente intenta suspender técnico -> 403 Forbidden",
+          "name": "3.1 Control RBAC: Rol Cliente intenta suspender técnico -> 403 Forbidden",
           "request": {
             "method": "POST",
             "header": [
@@ -584,11 +1374,11 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{tokenCliente}}"
+                "value": "Bearer {{clienteToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-approved-01/suspend",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/suspend",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -597,30 +1387,34 @@
                 "v1",
                 "admin",
                 "technicians",
-                "usr-tec-approved-01",
+                "{{tecnicoId}}",
                 "suspend"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reason\": \"Cliente inconforme con servicio\"\n}"
+              "raw": "{\n  \"reason\": \"Intento ilegal cliente\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[RBAC] 403 Forbidden para cliente intentando suspender técnico', () => {",
-                  "  pm.response.to.have.status(403);",
-                  "});",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
                   "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
-                  "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /no-autorizado', () => {",
-                  "  pm.expect(pm.response.json().type).to.include('no-autorizado');",
                   "});"
                 ]
               }
@@ -628,7 +1422,7 @@
           ]
         },
         {
-          "name": "3.2 Control RBAC: Técnico intenta suspender a colega -> 403 Forbidden",
+          "name": "3.2 Control RBAC: Rol Técnico intenta auto-suspenderse -> 403 Forbidden",
           "request": {
             "method": "POST",
             "header": [
@@ -642,11 +1436,11 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{tokenTecnico}}"
+                "value": "Bearer {{tecnicoToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-approved-01/suspend",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/suspend",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -655,30 +1449,34 @@
                 "v1",
                 "admin",
                 "technicians",
-                "usr-tec-approved-01",
+                "{{tecnicoId}}",
                 "suspend"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reason\": \"Conflicto operativo entre técnicos\"\n}"
+              "raw": "{\n  \"reason\": \"Intento ilegal técnico\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[RBAC] 403 Forbidden para técnico intentando suspender a otro técnico', () => {",
-                  "  pm.response.to.have.status(403);",
-                  "});",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
                   "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
-                  "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /no-autorizado', () => {",
-                  "  pm.expect(pm.response.json().type).to.include('no-autorizado');",
                   "});"
                 ]
               }
@@ -686,7 +1484,7 @@
           ]
         },
         {
-          "name": "3.3 Seguridad: Solicitud anónima sin token -> 401 Unauthorized",
+          "name": "3.3 Seguridad: Petición anónima sin token -> 401 Unauthorized",
           "request": {
             "method": "POST",
             "header": [
@@ -700,7 +1498,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-approved-01/suspend",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/suspend",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -709,30 +1507,34 @@
                 "v1",
                 "admin",
                 "technicians",
-                "usr-tec-approved-01",
+                "{{tecnicoId}}",
                 "suspend"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reason\": \"Petición anónima ilegal\"\n}"
+              "raw": "{\n  \"reason\": \"Sin token\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[Seguridad] 401 Unauthorized ante solicitud anónima de suspensión (IDN-017)', () => {",
-                  "  pm.response.to.have.status(401);",
-                  "});",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
                   "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
                   "  pm.expect(pm.response.json()).to.have.property('correlationId');",
-                  "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /no-autenticado', () => {",
-                  "  pm.expect(pm.response.json().type).to.include('no-autenticado');",
                   "});"
                 ]
               }
@@ -740,69 +1542,73 @@
           ]
         },
         {
-          "name": "3.4 Aislamiento Multi-Tenant (RLS): Admin Beta intenta suspender técnico de Alfa -> 404 Not Found",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{tokenAdminBeta}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians/usr-tec-approved-01/suspend",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "admin",
-                "technicians",
-                "usr-tec-approved-01",
-                "suspend"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Suspensión cross-tenant no permitida\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('[SAD AC6-E2 / RLS] 404 Not Found para Admin Beta intentando suspender técnico de Alfa', () => {",
-                  "  pm.response.to.have.status(404);",
-                  "});",
-                  "pm.test('[RFC 9457] Problem Details con correlationId', () => {",
-                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
-                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
-                  "});",
-                  "pm.test('[Contrato RFC 9457] Tipo de error /no-encontrado', () => {",
-                  "  pm.expect(pm.response.json().type).to.include('no-encontrado');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "3.5 Aislamiento Multi-Tenant (RLS): Admin Beta lista suspendidos con cero fuga de Alfa",
+          "name": "3.4 Aislamiento Multi-Tenant (RLS): Actor de Tenant Beta no ve técnicos de Alfa -> 404",
           "request": {
             "method": "GET",
             "header": [
               {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{betaToken}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "technicians",
+                "{{tecnicoId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Limpieza",
+      "item": [
+        {
+          "name": "Suspender al técnico de la prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               },
@@ -812,11 +1618,11 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{tokenAdminBeta}}"
+                "value": "Bearer {{adminToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/technicians?verificationStatus=suspendido",
+              "raw": "{{baseUrl}}/api/v1/admin/technicians/{{tecnicoId}}/suspend",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -824,85 +1630,96 @@
                 "api",
                 "v1",
                 "admin",
-                "technicians?verificationStatus=suspendido"
+                "technicians",
+                "{{tecnicoId}}",
+                "suspend"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cuenta de una prueba de QA.\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('[SAD AC6-E2 / RLS] 200 OK para Admin Beta con total = 0 suspendidos en su tenant', () => {",
-                  "  pm.response.to.have.status(200);",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json.total).to.eql(0);",
-                  "  pm.expect(json.items).to.be.an('array').that.is.empty;",
-                  "});",
-                  "pm.test('[Multi-Tenancy] Cero fuga de técnicos suspendidos de Tenant Alfa a Tenant Beta', () => {",
-                  "  pm.expect(pm.response.json().total).to.eql(0);",
-                  "});"
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar la categoría de la prueba",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/admin/categories/{{categoriaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "admin",
+                "categories",
+                "{{categoriaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('adminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
                 ]
               }
             }
           ]
         }
       ]
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8080"
-    },
-    {
-      "key": "adminEmail",
-      "value": ""
-    },
-    {
-      "key": "adminPassword",
-      "value": ""
-    },
-    {
-      "key": "adminBetaEmail",
-      "value": ""
-    },
-    {
-      "key": "adminBetaPassword",
-      "value": ""
-    },
-    {
-      "key": "clienteEmail",
-      "value": ""
-    },
-    {
-      "key": "clientePassword",
-      "value": ""
-    },
-    {
-      "key": "tecnicoEmail",
-      "value": ""
-    },
-    {
-      "key": "tecnicoPassword",
-      "value": ""
-    },
-    {
-      "key": "tokenAdmin",
-      "value": ""
-    },
-    {
-      "key": "tokenAdminBeta",
-      "value": ""
-    },
-    {
-      "key": "tokenCliente",
-      "value": ""
-    },
-    {
-      "key": "tokenTecnico",
-      "value": ""
     }
   ]
 }

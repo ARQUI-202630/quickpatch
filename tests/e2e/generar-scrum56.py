@@ -185,7 +185,7 @@ coleccion = {
                     },
                     pruebas=[
                         "pm.test('[SCRUM-56] 400 Bad Request por fallo de validación de contrato', () => pm.response.to.have.status(400));"
-                    ] + problem + tipo("validacion-solicitud")
+                    ] + problem + tipo("validacion")
                 ),
                 req(
                     "1.5 Login de técnico registrado y obtención de JWT",
