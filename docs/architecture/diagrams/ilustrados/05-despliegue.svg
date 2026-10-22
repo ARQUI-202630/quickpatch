@@ -1,0 +1,370 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1700 1290" width="1700" height="1290" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif">
+<defs><marker id="a-dark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2937"/></marker><marker id="a-ev" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7e22ce"/></marker><marker id="a-ws" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea580c"/></marker><marker id="a-gris" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9ca3af"/></marker><marker id="a-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0f766e"/></marker><marker id="a-verde" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#15803d"/></marker>
+<g id="laptop">
+      <rect x="-48" y="-40" width="96" height="62" rx="5" fill="#1f2937"/>
+      <rect x="-42" y="-34" width="84" height="50" rx="2" fill="#e0f2fe"/>
+      <rect x="-36" y="-28" width="44" height="10" rx="4" fill="#ffffff" stroke="#93c5fd"/>
+      <rect x="-6" y="-14" width="42" height="10" rx="4" fill="#fdba74"/>
+      <rect x="-36" y="0" width="36" height="10" rx="4" fill="#ffffff" stroke="#93c5fd"/>
+      <path d="M-60,22 L60,22 L52,32 L-52,32 z" fill="#374151"/>
+      <rect x="-12" y="22" width="24" height="3" fill="#9ca3af"/>
+    </g>
+<g id="servidor">
+      <rect x="-26" y="-30" width="52" height="17" rx="3" fill="#374151"/>
+      <rect x="-26" y="-9" width="52" height="17" rx="3" fill="#374151"/>
+      <rect x="-26" y="12" width="52" height="17" rx="3" fill="#374151"/>
+      <circle cx="-16" cy="-21.5" r="3" fill="#4ade80"/><circle cx="-16" cy="-0.5" r="3" fill="#4ade80"/><circle cx="-16" cy="20.5" r="3" fill="#4ade80"/>
+      <rect x="0" y="-23" width="18" height="3" fill="#9ca3af"/><rect x="0" y="-2" width="18" height="3" fill="#9ca3af"/><rect x="0" y="19" width="18" height="3" fill="#9ca3af"/>
+    </g>
+<g id="gateway">
+      <path d="M0,-48 L40,-32 L40,2 Q40,32 0,48 Q-40,32 -40,2 L-40,-32 z" fill="#7c3aed"/>
+      <path d="M-18,-14 L18,-14 M6,-24 L18,-14 L6,-4" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M18,12 L-18,12 M-6,2 L-18,12 L-6,22" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+<g id="docker">
+      <rect x="-16" y="-10" width="9" height="7" fill="#0ea5e9"/><rect x="-5" y="-10" width="9" height="7" fill="#0ea5e9"/><rect x="6" y="-10" width="9" height="7" fill="#0ea5e9"/>
+      <rect x="-5" y="-19" width="9" height="7" fill="#0ea5e9"/>
+      <path d="M-20,-1 L28,-1 Q26,13 4,13 Q-18,13 -20,-1 z" fill="#0ea5e9"/>
+    </g>
+<g id="t-nginx"><path d="M0,-18 L16,-9 L16,9 L0,18 L-16,9 L-16,-9 Z" fill="#009639"/><path d="M-6,8 L-6,-8 L6,8 L6,-8" stroke="#fff" stroke-width="3.6" fill="none" stroke-linejoin="miter"/></g>
+<g id="t-angular"><path d="M0,-18 L16,-12 L13,10 L0,18 L-13,10 L-16,-12 Z" fill="#dd0031"/><path d="M0,-18 L16,-12 L13,10 L0,18 Z" fill="#c3002f"/><path d="M0,-10 L-8,8 L-5.3,8 L-3.7,4 L3.7,4 L5.3,8 L8,8 Z" fill="#fff"/><path d="M0,-4.5 L2.6,1.5 L-2.6,1.5 Z" fill="#dd0031"/></g>
+<g id="t-k3s"><rect x="-19" y="-12" width="38" height="24" rx="6" fill="#ffc61c"/><text x="0" y="5" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1f2937" text-anchor="middle">k3s</text></g>
+<g id="t-traefik"><circle r="15" fill="#24a1c1"/><path d="M-8,-6 L8,-6 M0,-6 L0,9" stroke="#fff" stroke-width="3.6" stroke-linecap="round" fill="none"/></g>
+<g id="t-postgres"><circle r="16" fill="#336791"/><circle cx="1" cy="-2" r="8.5" fill="#fff"/><circle cx="-6" cy="-5" r="5.5" fill="#fff" stroke="#336791" stroke-width="1.3"/><path d="M6,3 Q12,9 7,13" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round"/><circle cx="3.5" cy="-4" r="1.4" fill="#336791"/></g>
+<g id="t-redis"><path d="M0,3 L16,9 L0,15 L-16,9 Z" fill="#a41e11"/><path d="M-16,9 L-16,5 L0,-1 L0,3 Z" fill="#7a1710" opacity=".0"/><path d="M0,-3 L16,3 L0,9 L-16,3 Z" fill="#d82c20"/><path d="M0,-9 L16,-3 L0,3 L-16,-3 Z" fill="#e8392d"/><path d="M0,-6 L6,-3.5 L0,-1 L-6,-3.5 Z" fill="#fff" opacity=".85"/></g>
+<g id="t-pin"><path d="M0,-16 C9,-16 13,-9 13,-3 C13,5 0,17 0,17 C0,17 -13,5 -13,-3 C-13,-9 -9,-16 0,-16 Z" fill="#7ebc6f" stroke="#4d8a3f" stroke-width="1.5"/><circle cx="0" cy="-5" r="5" fill="#fff"/></g>
+<g id="t-kafka"><circle r="20" fill="#fff" stroke="#231f20" stroke-width="1.5"/><path d="M-9,0 L6,-10 M-9,0 L6,10 M-9,0 L12,0" stroke="#231f20" stroke-width="2.4"/><circle cx="-9" cy="0" r="5.5" fill="#231f20"/><circle cx="6" cy="-10" r="4" fill="#231f20"/><circle cx="6" cy="10" r="4" fill="#231f20"/><circle cx="12" cy="0" r="3.4" fill="#231f20"/></g>
+<g id="t-garage"><path d="M-17,-3 L0,-17 L17,-3 L17,16 L-17,16 Z" fill="#15803d"/><rect x="-10" y="2" width="20" height="14" fill="#bbf7d0"/><path d="M-10,6 L10,6 M-10,10 L10,10" stroke="#15803d" stroke-width="1.6"/></g>
+<g id="t-github"><circle r="16" fill="#24292f"/><circle cx="0" cy="-1" r="8" fill="#fff"/><path d="M-7,-6 L-9,-13 L-2,-8 Z M7,-6 L9,-13 L2,-8 Z" fill="#fff"/><path d="M-3,7 Q0,13 3,7" fill="#fff"/></g>
+<g id="t-actions"><circle r="15" fill="#2088ff"/><path d="M-4,-7 L8,0 L-4,7 Z" fill="#fff"/></g>
+<g id="t-prometheus"><circle r="15" fill="#e6522c"/><path d="M0,-10 C7,-3 7,3 4,6 L-4,6 C-7,3 -7,-3 0,-10 Z" fill="#fff"/><path d="M-5,9.5 L5,9.5 M-3,12.5 L3,12.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g>
+<g id="t-loki"><rect x="-14" y="-14" width="28" height="28" rx="7" fill="#ffb000"/><path d="M-5,-8 L-5,6 L7,6" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="t-grafana"><circle r="15" fill="#f46800"/><circle r="7" fill="none" stroke="#fff" stroke-width="3"/><circle r="2.4" fill="#fff"/></g><marker id="a-ssh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#92400e"/></marker></defs>
+<rect width="1700" height="1290" fill="#fff"/>
+<text x="850.0" y="38" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="26" font-weight="bold" fill="#1f2937" text-anchor="middle" xml:space="preserve" >QuickPatch — Diagrama de despliegue</text>
+<text x="850.0" y="62" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >Dónde corre cada cosa, qué puertos expone y cómo llega el equipo · arquitectura objetivo en las 7 VMs del laboratorio</text>
+<rect x="15" y="330" width="220" height="330" rx="14" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+<text x="125" y="356" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1e40af" text-anchor="middle" xml:space="preserve" >Equipo de desarrollo</text>
+<g transform="translate(82,432) scale(1.2)"><use xlink:href="#laptop"/></g>
+<text x="150" y="448" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="40" font-weight="bold" fill="#1e40af" text-anchor="start" xml:space="preserve" >×7</text>
+<text x="125" y="505" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >7 integrantes, cada uno con</text>
+<text x="125" y="520" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >su PC y la VPN de la universidad</text>
+<text x="125" y="548" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#374151" text-anchor="middle" xml:space="preserve" >Navegador: panel web y Grafana</text>
+<text x="125" y="564" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#374151" text-anchor="middle" xml:space="preserve" >Flutter o emulador para la app</text>
+<text x="125" y="580" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#374151" text-anchor="middle" xml:space="preserve" >Despliegue por el pipeline</text>
+<text x="125" y="596" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#374151" text-anchor="middle" xml:space="preserve" >(sin acceso SSH a las VMs)</text>
+<text x="125" y="628" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#92400e" text-anchor="middle" xml:space="preserve" >Solo DevOps administra</text>
+<text x="125" y="643" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#92400e" text-anchor="middle" xml:space="preserve" >las VMs por SSH (Ansible)</text>
+<rect x="255" y="330" width="215" height="330" rx="14" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2" stroke-dasharray="8 5" />
+<text x="362" y="356" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="15" font-weight="bold" fill="#4c1d95" text-anchor="middle" xml:space="preserve" >Red universitaria</text>
+<g transform="translate(362,430) scale(0.9)"><use xlink:href="#gateway"/></g>
+<text x="362" y="494" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#4c1d95" text-anchor="middle" xml:space="preserve" >VPN + firewall perimetral</text>
+<text x="362" y="516" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#5b21b6" text-anchor="middle" xml:space="preserve" >Desde la VPN solo llega</text>
+<text x="362" y="531" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#5b21b6" text-anchor="middle" xml:space="preserve" >a VM1: el 443 (web) y</text>
+<text x="362" y="546" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#5b21b6" text-anchor="middle" xml:space="preserve" >el 22 (SSH, solo DevOps).</text>
+<text x="362" y="561" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#5b21b6" text-anchor="middle" xml:space="preserve" >Las demás VMs no son</text>
+<text x="362" y="576" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#5b21b6" text-anchor="middle" xml:space="preserve" >alcanzables (R9)</text>
+
+<rect x="15" y="745" width="455" height="285" rx="14" fill="#f3f4f6" stroke="#6b7280" stroke-width="2" />
+<text x="262" y="772" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="15" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >GitHub (en internet)</text>
+<g transform="translate(156,767) scale(0.7)"><use xlink:href="#t-github"/></g>
+<rect x="32" y="792" width="421" height="52" rx="8" fill="#fff" stroke="#9ca3af" stroke-width="1.4" />
+<g transform="translate(58,818) scale(0.8)"><use xlink:href="#t-github"/></g>
+<text x="86" y="814" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >13 repositorios</text>
+<text x="86" y="832" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >el principal, 8 servicios, Flutter, Angular, gateway y Kafka</text>
+<rect x="32" y="854" width="421" height="52" rx="8" fill="#fff" stroke="#9ca3af" stroke-width="1.4" />
+<g transform="translate(58,880) scale(0.8)"><use xlink:href="#t-actions"/></g>
+<text x="86" y="876" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >Actions</text>
+<text x="86" y="894" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >CI y CD: pruebas, imagen y despliegue por rama</text>
+<rect x="32" y="916" width="421" height="52" rx="8" fill="#fff" stroke="#9ca3af" stroke-width="1.4" />
+<g transform="translate(58,942) scale(0.8)"><use xlink:href="#docker"/></g>
+<text x="86" y="938" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >GHCR</text>
+<text x="86" y="956" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >imágenes de los servicios con etiqueta t-&lt;hash&gt;</text>
+<text x="242" y="990" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >El runner de VM1 se conecta hacia GitHub para recibir trabajos;</text>
+<text x="242" y="1005" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >GitHub nunca entra a la red del laboratorio.</text>
+<text x="242" y="1020" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >El k3s de cada ambiente baja las imágenes de GHCR.</text>
+<rect x="492" y="88" width="1198" height="1050" rx="14" fill="#fcfcfd" stroke="#6b7280" stroke-width="2" stroke-dasharray="12 7" />
+<text x="512" y="112" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="15" font-weight="bold" fill="#374151" text-anchor="start" xml:space="preserve" >Laboratorio · red 10.43.x.x · 7 VMs</text>
+
+<rect x="507" y="295" width="345" height="645" rx="14" fill="#faf5ff" stroke="#7c3aed" stroke-width="2.5" />
+<g transform="translate(541,331) scale(0.7)"><use xlink:href="#servidor"/></g>
+<text x="575" y="325" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#4c1d95" text-anchor="start" xml:space="preserve" >VM1 · herramientas</text>
+<text x="575" y="343" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >[Nodo: VM Linux · 10.43.100.168]</text>
+<rect x="517" y="361" width="325" height="372" rx="10" fill="#fff" stroke="#38bdf8" stroke-width="1.6" stroke-dasharray="6 4" />
+<g transform="translate(543,379)"><use xlink:href="#docker"/></g>
+<text x="577" y="383" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#0369a1" text-anchor="start" xml:space="preserve" >Docker Compose · red interna</text>
+<rect x="527" y="395" width="305" height="122" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.8" />
+<g transform="translate(551,414) scale(0.75)"><use xlink:href="#t-nginx"/></g>
+<text x="573" y="417" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="14" font-weight="bold" fill="#4c1d95" text-anchor="start" xml:space="preserve" >Nginx · API Gateway</text>
+<rect x="760" y="403" width="56" height="18" rx="9" fill="#fef08a" stroke="#ca8a04" stroke-width="1.3" /><text x="788.0" y="416" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#713f12" text-anchor="middle" xml:space="preserve" >:443</text>
+<text x="539" y="439" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Elige el destino por nombre:</text>
+<text x="539" y="455" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >quickpatch.internal → producción</text>
+<text x="539" y="471" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >qa.quickpatch.internal → QA</text>
+<text x="539" y="487" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >grafana.quickpatch.internal → Grafana</text>
+<text x="539" y="505" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#4c1d95" text-anchor="start" xml:space="preserve" >/api/ → Traefik :30080 de cada ambiente</text>
+<rect x="527" y="527" width="305" height="54" rx="8" fill="#fff" stroke="#dd0031" stroke-width="1.6" />
+<g transform="translate(551,546) scale(0.62)"><use xlink:href="#t-angular"/></g>
+<text x="573" y="549" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#9f1239" text-anchor="start" xml:space="preserve" >Panel web Angular</text>
+<text x="539" y="567" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >estáticos servidos por Nginx: panel y panel-qa</text>
+<rect x="527" y="591" width="305" height="130" rx="8" fill="#fff" stroke="#6b7280" stroke-width="1.6" />
+<text x="539" y="613" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >Observabilidad de los dos ambientes</text>
+<g transform="translate(553,634) scale(0.6)"><use xlink:href="#t-prometheus"/></g>
+<text x="573" y="638" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >Prometheus</text>
+<text x="667" y="638" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >v2.55.1</text>
+<rect x="766" y="625" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="792.0" y="638" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:9090</text>
+<g transform="translate(553,664) scale(0.6)"><use xlink:href="#t-loki"/></g>
+<text x="573" y="668" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >Loki</text>
+<text x="667" y="668" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >3.3.2</text>
+<rect x="766" y="655" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="792.0" y="668" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:3100</text>
+<g transform="translate(553,694) scale(0.6)"><use xlink:href="#t-grafana"/></g>
+<text x="573" y="698" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >Grafana</text>
+<text x="667" y="698" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >11.4.0</text>
+<rect x="766" y="685" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="792.0" y="698" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:3000</text>
+<rect x="517" y="745" width="325" height="184" rx="10" fill="#fff" stroke="#16a34a" stroke-width="1.8" />
+<g transform="translate(541,765) scale(0.62)"><use xlink:href="#t-actions"/></g>
+<text x="561" y="769" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Runner de GitHub (systemd)</text>
+<text x="529" y="791" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >vm1-despliegue 2.337.0</text>
+<text x="529" y="808" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >kubectl con el kubeconfig de QA y de</text>
+<text x="529" y="825" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >producción (no hay credenciales en GitHub)</text>
+<text x="529" y="842" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >k6: pruebas de carga contra QA</text>
+<text x="529" y="859" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >compuerta-qa: producción solo recibe lo</text>
+<text x="529" y="876" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >que corre en QA y pasó las pruebas (RNF-08)</text>
+<text x="529" y="895" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#b91c1c" text-anchor="start" xml:space="preserve" >⚠ si VM1 cae, no hay acceso a</text>
+<text x="529" y="910" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#b91c1c" text-anchor="start" xml:space="preserve" >producción, QA ni Grafana</text>
+<rect x="880" y="100" width="808" height="495" rx="14" fill="#fff7ed" stroke="#ea580c" stroke-width="2.5" />
+<text x="898" y="128" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#ea580c" text-anchor="start" xml:space="preserve" >PRODUCCIÓN · VM3, VM4 y VM6</text>
+<rect x="893" y="146" width="240" height="412" rx="12" fill="#fff" stroke="#4b5563" stroke-width="2" />
+<g transform="translate(921,176) scale(0.5)"><use xlink:href="#servidor"/></g>
+<text x="947" y="172" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >VM3 · aplicación</text>
+<text x="947" y="190" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >[VM Linux · 10.43.98.205]</text>
+<rect x="1163" y="146" width="240" height="412" rx="12" fill="#fff" stroke="#4b5563" stroke-width="2" />
+<g transform="translate(1191,176) scale(0.5)"><use xlink:href="#servidor"/></g>
+<text x="1217" y="172" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >VM4 · datos</text>
+<text x="1217" y="190" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >[VM Linux · 10.43.98.209]</text>
+<rect x="1433" y="146" width="240" height="412" rx="12" fill="#fff" stroke="#4b5563" stroke-width="2" />
+<g transform="translate(1461,176) scale(0.5)"><use xlink:href="#servidor"/></g>
+<text x="1487" y="172" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >VM6 · mensajería</text>
+<text x="1487" y="190" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >[VM Linux · 10.43.99.12]</text>
+<rect x="903" y="204" width="220" height="270" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.8" />
+<g transform="translate(931,220) scale(0.62)"><use xlink:href="#t-k3s"/></g>
+<text x="949" y="225" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1e3a8a" text-anchor="start" xml:space="preserve" >v1.31 · un solo nodo</text>
+
+<rect x="913" y="234" width="200" height="26" rx="6" fill="#fff" stroke="#2563eb" stroke-width="1.4" />
+<g transform="translate(931,247) scale(0.55)"><use xlink:href="#t-traefik"/></g>
+<text x="945" y="251" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#1e3a8a" text-anchor="start" xml:space="preserve" >Traefik</text>
+<rect x="1043" y="238" width="62" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1074.0" y="251" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:30080</text>
+<rect x="913" y="272" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="962" y="286" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >identity</text>
+<text x="962" y="299" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="1017" y="272" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="1066" y="286" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >catalog</text>
+<text x="1066" y="299" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="913" y="310" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="962" y="324" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >service-request</text>
+<text x="962" y="337" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="1017" y="310" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="1066" y="324" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >matching</text>
+<text x="1066" y="337" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="913" y="348" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="962" y="362" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >communication</text>
+<text x="962" y="375" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="1017" y="348" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="1066" y="362" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >payments</text>
+<text x="1066" y="375" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="913" y="386" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="962" y="400" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >actors</text>
+<text x="962" y="413" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="1017" y="386" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="1066" y="400" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >ranking</text>
+<text x="1066" y="413" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<text x="913" y="438" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Cada pod es un Deployment con</text>
+<text x="913" y="453" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >migraciones como init container</text>
+<text x="903" y="496" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#b91c1c" text-anchor="start" xml:space="preserve" >⚠ único nodo: si cae, cae el ambiente</text>
+<text x="903" y="514" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Recibe de VM1: :30080 (proxy) y</text>
+<text x="903" y="529" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >:6443 (kubectl del despliegue)</text>
+<text x="903" y="549" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >node_exporter :9100 · Promtail</text>
+<rect x="1173" y="204" width="220" height="296" rx="10" fill="#fff" stroke="#38bdf8" stroke-width="1.6" stroke-dasharray="6 4" />
+<g transform="translate(1199,222)"><use xlink:href="#docker"/></g>
+<text x="1233" y="226" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#0369a1" text-anchor="start" xml:space="preserve" >Docker Compose</text>
+<rect x="1183" y="238" width="200" height="84" rx="8" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.8" />
+<g transform="translate(1205,274) scale(1.1)"><use xlink:href="#t-postgres"/></g>
+<text x="1231" y="258" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold" fill="#115e59" text-anchor="start" xml:space="preserve" >PostgreSQL + PostGIS</text>
+<text x="1231" y="274" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >postgis:16-3.4</text>
+<text x="1231" y="288" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >una base por servicio</text>
+<rect x="1319" y="296" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1345.0" y="309" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:5432</text>
+
+<rect x="1183" y="330" width="200" height="54" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.8" />
+<g transform="translate(1205,358) scale(0.9)"><use xlink:href="#t-redis"/></g>
+<text x="1231" y="352" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#991b1b" text-anchor="start" xml:space="preserve" >Redis 7.4</text>
+<text x="1231" y="370" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >usuario ACL por servicio</text>
+<rect x="1319" y="338" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1345.0" y="351" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:6379</text>
+<rect x="1183" y="392" width="200" height="54" rx="8" fill="#fff" stroke="#16a34a" stroke-width="1.6" />
+<g transform="translate(1205,420) scale(0.9)"><use xlink:href="#t-pin"/></g>
+<text x="1231" y="414" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Nominatim</text>
+<text x="1231" y="432" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >solo el mapa de Bogotá</text>
+<rect x="1319" y="400" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1345.0" y="413" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:8088</text>
+<rect x="1183" y="454" width="200" height="40" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="1195" y="472" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Respaldo diario (pg_dump)</text>
+<text x="1195" y="487" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >a Garage de VM6</text>
+
+<text x="1173" y="522" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Solo acepta al k3s del ambiente</text>
+<text x="1173" y="537" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >(firewall por VM)</text>
+<text x="1173" y="553" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >node_exporter :9100 · Promtail</text>
+<rect x="1443" y="204" width="220" height="296" rx="10" fill="#fff" stroke="#38bdf8" stroke-width="1.6" stroke-dasharray="6 4" />
+<g transform="translate(1469,222)"><use xlink:href="#docker"/></g>
+<text x="1503" y="226" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#0369a1" text-anchor="start" xml:space="preserve" >Docker Compose</text>
+<rect x="1453" y="238" width="200" height="84" rx="8" fill="#faf5ff" stroke="#9333ea" stroke-width="1.8" />
+<g transform="translate(1475,280) scale(0.95)"><use xlink:href="#t-kafka"/></g>
+<text x="1505" y="258" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#581c87" text-anchor="start" xml:space="preserve" >Apache Kafka 3.8.1</text>
+<text x="1505" y="274" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >KRaft · 1 nodo · 17 topics</text>
+<text x="1505" y="288" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >(sin réplicas: factor 1)</text>
+<rect x="1589" y="296" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1615.0" y="309" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:9092</text>
+
+<rect x="1453" y="330" width="200" height="54" rx="8" fill="#fff" stroke="#9333ea" stroke-width="1.4" />
+<g transform="translate(1475,358) scale(0.55)"><use xlink:href="#t-kafka"/></g>
+<text x="1495" y="352" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#581c87" text-anchor="start" xml:space="preserve" >Kafka UI</text>
+<text x="1495" y="370" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >v0.7.2 · solo por túnel SSH</text>
+<rect x="1589" y="338" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1615.0" y="351" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:8080</text>
+<rect x="1453" y="392" width="200" height="84" rx="8" fill="#f0fdf4" stroke="#15803d" stroke-width="1.8" />
+<g transform="translate(1475,412) scale(0.8)"><use xlink:href="#t-garage"/></g>
+<text x="1499" y="414" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Garage</text>
+<rect x="1589" y="400" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1615.0" y="413" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:9000</text>
+
+<text x="1465" y="432" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >service-request-evidencias</text>
+<text x="1465" y="448" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >backups-postgres</text>
+<text x="1465" y="464" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >v2.4.1 · S3 · una llave por uso</text>
+<text x="1443" y="522" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Solo acepta al k3s del ambiente y</text>
+<text x="1443" y="537" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >a VM4 (respaldo)</text>
+<text x="1443" y="553" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >node_exporter :9100 · Promtail</text>
+<polyline points="1135,296 1160,296" fill="none" stroke="#0f766e" stroke-width="3" stroke-linejoin="round" marker-end="url(#a-teal)"/>
+<polyline points="1013,560 1013,574 1553,574 1553,561" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<text x="1283.0" y="570" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#6b21a8" text-anchor="middle" stroke="#fff" stroke-width="4" paint-order="stroke" xml:space="preserve" >Kafka :9092 y Garage :9000 (desde el k3s)</text>
+<polyline points="1405,474 1430,474" fill="none" stroke="#0f766e" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-teal)"/>
+<rect x="880" y="625" width="808" height="495" rx="14" fill="#f0fdf4" stroke="#16a34a" stroke-width="2.5" />
+<text x="898" y="653" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#16a34a" text-anchor="start" xml:space="preserve" >QA · VM2, VM5 y VM7</text>
+<rect x="893" y="671" width="240" height="412" rx="12" fill="#fff" stroke="#4b5563" stroke-width="2" />
+<g transform="translate(921,701) scale(0.5)"><use xlink:href="#servidor"/></g>
+<text x="947" y="697" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >VM2 · aplicación</text>
+<text x="947" y="715" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >[VM Linux · 10.43.98.15]</text>
+<rect x="1163" y="671" width="240" height="412" rx="12" fill="#fff" stroke="#4b5563" stroke-width="2" />
+<g transform="translate(1191,701) scale(0.5)"><use xlink:href="#servidor"/></g>
+<text x="1217" y="697" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >VM5 · datos</text>
+<text x="1217" y="715" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >[VM Linux · 10.43.98.29]</text>
+<rect x="1433" y="671" width="240" height="412" rx="12" fill="#fff" stroke="#4b5563" stroke-width="2" />
+<g transform="translate(1461,701) scale(0.5)"><use xlink:href="#servidor"/></g>
+<text x="1487" y="697" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >VM7 · mensajería</text>
+<text x="1487" y="715" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >[VM Linux · 10.43.99.8]</text>
+<rect x="903" y="729" width="220" height="270" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.8" />
+<g transform="translate(931,745) scale(0.62)"><use xlink:href="#t-k3s"/></g>
+<text x="949" y="750" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#1e3a8a" text-anchor="start" xml:space="preserve" >v1.31 · un solo nodo</text>
+<rect x="913" y="759" width="200" height="26" rx="6" fill="#fff" stroke="#2563eb" stroke-width="1.4" />
+<g transform="translate(931,772) scale(0.55)"><use xlink:href="#t-traefik"/></g>
+<text x="945" y="776" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#1e3a8a" text-anchor="start" xml:space="preserve" >Traefik</text>
+<rect x="1043" y="763" width="62" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1074.0" y="776" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:30080</text>
+<rect x="913" y="797" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="962" y="811" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >identity</text>
+<text x="962" y="824" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="1017" y="797" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="1066" y="811" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >catalog</text>
+<text x="1066" y="824" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="913" y="835" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="962" y="849" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >service-request</text>
+<text x="962" y="862" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="1017" y="835" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="1066" y="849" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >matching</text>
+<text x="1066" y="862" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="913" y="873" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="962" y="887" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >communication</text>
+<text x="962" y="900" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="1017" y="873" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="1066" y="887" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >payments</text>
+<text x="1066" y="900" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="913" y="911" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="962" y="925" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >actors</text>
+<text x="962" y="938" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<rect x="1017" y="911" width="98" height="32" rx="7" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.6" />
+<text x="1066" y="925" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#14532d" text-anchor="middle" xml:space="preserve" >ranking</text>
+<text x="1066" y="938" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >1 réplica</text>
+<text x="913" y="963" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Cada pod es un Deployment con</text>
+<text x="913" y="978" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >migraciones como init container</text>
+<text x="903" y="1021" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#b91c1c" text-anchor="start" xml:space="preserve" >⚠ único nodo: si cae, cae el ambiente</text>
+<text x="903" y="1039" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Recibe de VM1: :30080 (proxy) y</text>
+<text x="903" y="1054" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >:6443 (kubectl del despliegue)</text>
+<text x="903" y="1074" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >node_exporter :9100 · Promtail</text>
+<rect x="1173" y="729" width="220" height="296" rx="10" fill="#fff" stroke="#38bdf8" stroke-width="1.6" stroke-dasharray="6 4" />
+<g transform="translate(1199,747)"><use xlink:href="#docker"/></g>
+<text x="1233" y="751" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#0369a1" text-anchor="start" xml:space="preserve" >Docker Compose</text>
+<rect x="1183" y="763" width="200" height="84" rx="8" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.8" />
+<g transform="translate(1205,799) scale(1.1)"><use xlink:href="#t-postgres"/></g>
+<text x="1231" y="783" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="bold" fill="#115e59" text-anchor="start" xml:space="preserve" >PostgreSQL + PostGIS</text>
+<text x="1231" y="799" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >postgis:16-3.4</text>
+<text x="1231" y="813" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >una base por servicio</text>
+<rect x="1319" y="821" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1345.0" y="834" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:5432</text>
+
+<rect x="1183" y="855" width="200" height="54" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.8" />
+<g transform="translate(1205,883) scale(0.9)"><use xlink:href="#t-redis"/></g>
+<text x="1231" y="877" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#991b1b" text-anchor="start" xml:space="preserve" >Redis 7.4</text>
+<text x="1231" y="895" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >usuario ACL por servicio</text>
+<rect x="1319" y="863" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1345.0" y="876" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:6379</text>
+<rect x="1183" y="917" width="200" height="54" rx="8" fill="#fff" stroke="#16a34a" stroke-width="1.6" />
+<g transform="translate(1205,945) scale(0.9)"><use xlink:href="#t-pin"/></g>
+<text x="1231" y="939" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Nominatim</text>
+<text x="1231" y="957" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >solo el mapa de Bogotá</text>
+<rect x="1319" y="925" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1345.0" y="938" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:8088</text>
+<rect x="1183" y="979" width="200" height="40" rx="8" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="5 3" />
+<text x="1195" y="1004" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >sin respaldo en QA</text>
+
+<text x="1173" y="1047" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Solo acepta al k3s del ambiente</text>
+<text x="1173" y="1062" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >(firewall por VM)</text>
+<text x="1173" y="1078" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >node_exporter :9100 · Promtail</text>
+<rect x="1443" y="729" width="220" height="296" rx="10" fill="#fff" stroke="#38bdf8" stroke-width="1.6" stroke-dasharray="6 4" />
+<g transform="translate(1469,747)"><use xlink:href="#docker"/></g>
+<text x="1503" y="751" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#0369a1" text-anchor="start" xml:space="preserve" >Docker Compose</text>
+<rect x="1453" y="763" width="200" height="84" rx="8" fill="#faf5ff" stroke="#9333ea" stroke-width="1.8" />
+<g transform="translate(1475,805) scale(0.95)"><use xlink:href="#t-kafka"/></g>
+<text x="1505" y="783" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#581c87" text-anchor="start" xml:space="preserve" >Apache Kafka 3.8.1</text>
+<text x="1505" y="799" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >KRaft · 1 nodo · 17 topics</text>
+<text x="1505" y="813" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >(sin réplicas: factor 1)</text>
+<rect x="1589" y="821" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1615.0" y="834" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:9092</text>
+
+<rect x="1453" y="855" width="200" height="54" rx="8" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="5 3" />
+<text x="1465" y="886" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >sin Kafka UI en QA</text>
+<rect x="1453" y="917" width="200" height="84" rx="8" fill="#f0fdf4" stroke="#15803d" stroke-width="1.8" />
+<g transform="translate(1475,937) scale(0.8)"><use xlink:href="#t-garage"/></g>
+<text x="1499" y="939" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Garage</text>
+<rect x="1589" y="925" width="52" height="18" rx="9" fill="#e5e7eb" stroke="#6b7280" stroke-width="1.3" /><text x="1615.0" y="938" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" xml:space="preserve" >:9000</text>
+
+<text x="1465" y="957" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >service-request-evidencias</text>
+<text x="1465" y="973" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >(sin bucket de respaldo)</text>
+<text x="1465" y="989" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >v2.4.1 · S3 · una llave por uso</text>
+<text x="1443" y="1047" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Solo acepta al k3s del ambiente</text>
+<text x="1443" y="1062" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >(firewall por VM)</text>
+<text x="1443" y="1078" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >node_exporter :9100 · Promtail</text>
+<polyline points="1135,821 1160,821" fill="none" stroke="#0f766e" stroke-width="3" stroke-linejoin="round" marker-end="url(#a-teal)"/>
+<polyline points="1013,1085 1013,1099 1553,1099 1553,1086" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<text x="1283.0" y="1095" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#6b21a8" text-anchor="middle" stroke="#fff" stroke-width="4" paint-order="stroke" xml:space="preserve" >Kafka :9092 y Garage :9000 (desde el k3s)</text>
+<polyline points="238,450 252,450" fill="none" stroke="#1f2937" stroke-width="2.8" stroke-linejoin="round"/>
+<polyline points="473,450 504,450" fill="none" stroke="#1f2937" stroke-width="2.8" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="238,450 252,450" fill="none" stroke="#1f2937" stroke-width="2.8" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<text x="362" y="442" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" ></text>
+<text x="487" y="436" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#374151" text-anchor="middle" stroke="#fff" stroke-width="4" paint-order="stroke" xml:space="preserve" >HTTPS</text>
+
+<polyline points="238,585 504,585" fill="none" stroke="#92400e" stroke-width="2.2" stroke-linejoin="round" marker-end="url(#a-ssh)"/>
+<text x="487" y="577" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#92400e" text-anchor="middle" stroke="#fff" stroke-width="4" paint-order="stroke" xml:space="preserve" >SSH :22</text>
+<polyline points="125,663 125,742" fill="none" stroke="#1f2937" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<text x="135" y="705" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#374151" text-anchor="start" stroke="#fff" stroke-width="4" paint-order="stroke" xml:space="preserve" >git push · HTTPS</text>
+<polyline points="505,880 473,880" fill="none" stroke="#1f2937" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<text x="489" y="872" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151" text-anchor="middle" stroke="#fff" stroke-width="4" paint-order="stroke" xml:space="preserve" >HTTPS</text>
+<polyline points="854,520 868,520 868,236 891,236" fill="none" stroke="#1f2937" stroke-width="2.6" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="854,700 868,700 868,761 891,761" fill="none" stroke="#1f2937" stroke-width="2.6" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<rect x="15" y="1160" width="1670" height="105" rx="14" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5" />
+<text x="40" y="1190" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >Flechas</text>
+<polyline points="40,1214 135,1214" fill="none" stroke="#1f2937" stroke-width="2.8" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<text x="152" y="1218" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" >Web y proxy: HTTPS :443 del equipo a VM1; VM1 a Traefik :30080 y kubectl :6443</text>
+<polyline points="870,1214 965,1214" fill="none" stroke="#92400e" stroke-width="2.4" stroke-linejoin="round" marker-end="url(#a-ssh)"/>
+<text x="982" y="1218" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" >Administración por SSH :22, solo DevOps</text>
+<polyline points="40,1244 135,1244" fill="none" stroke="#0f766e" stroke-width="3" stroke-linejoin="round" marker-end="url(#a-teal)"/>
+<text x="152" y="1248" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" >Acceso a datos: PostgreSQL :5432, Redis :6379, Nominatim :8088</text>
+<polyline points="870,1244 965,1244" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<text x="982" y="1248" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" >Kafka :9092 y Garage :9000 (VM4 respalda a Garage)</text>
+</svg>

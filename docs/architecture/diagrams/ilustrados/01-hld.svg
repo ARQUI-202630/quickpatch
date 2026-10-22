@@ -1,0 +1,339 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1700 1185" width="1700" height="1185" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif">
+<defs><marker id="a-dark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2937"/></marker><marker id="a-ev" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7e22ce"/></marker><marker id="a-ws" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea580c"/></marker><marker id="a-gris" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9ca3af"/></marker><marker id="a-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0f766e"/></marker><marker id="a-verde" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#15803d"/></marker>
+<g id="persona-ilustrada">
+      <circle cx="0" cy="-34" r="17" fill="#fcd9b6" stroke="#1f2937" stroke-width="2"/>
+      <path d="M-15,-40 Q0,-60 15,-40 Q12,-50 0,-52 Q-12,-50 -15,-40 z" fill="#4b3621"/>
+      <path d="M-28,24 Q-28,-10 0,-12 Q28,-10 28,24 z" fill="#2563eb" stroke="#1f2937" stroke-width="2"/>
+    </g>
+<g id="laptop">
+      <rect x="-48" y="-40" width="96" height="62" rx="5" fill="#1f2937"/>
+      <rect x="-42" y="-34" width="84" height="50" rx="2" fill="#e0f2fe"/>
+      <rect x="-36" y="-28" width="44" height="10" rx="4" fill="#ffffff" stroke="#93c5fd"/>
+      <rect x="-6" y="-14" width="42" height="10" rx="4" fill="#fdba74"/>
+      <rect x="-36" y="0" width="36" height="10" rx="4" fill="#ffffff" stroke="#93c5fd"/>
+      <path d="M-60,22 L60,22 L52,32 L-52,32 z" fill="#374151"/>
+      <rect x="-12" y="22" width="24" height="3" fill="#9ca3af"/>
+    </g>
+<g id="celular">
+      <rect x="-22" y="-42" width="44" height="84" rx="8" fill="#1f2937"/>
+      <rect x="-17" y="-33" width="34" height="62" rx="2" fill="#e0f2fe"/>
+      <rect x="-13" y="-28" width="20" height="8" rx="3" fill="#ffffff" stroke="#93c5fd"/>
+      <rect x="-5" y="-16" width="18" height="8" rx="3" fill="#fdba74"/>
+      <rect x="-13" y="-4" width="22" height="8" rx="3" fill="#ffffff" stroke="#93c5fd"/>
+      <circle cx="0" cy="35" r="3" fill="#6b7280"/>
+    </g>
+<g id="servidor">
+      <rect x="-26" y="-30" width="52" height="17" rx="3" fill="#374151"/>
+      <rect x="-26" y="-9" width="52" height="17" rx="3" fill="#374151"/>
+      <rect x="-26" y="12" width="52" height="17" rx="3" fill="#374151"/>
+      <circle cx="-16" cy="-21.5" r="3" fill="#4ade80"/><circle cx="-16" cy="-0.5" r="3" fill="#4ade80"/><circle cx="-16" cy="20.5" r="3" fill="#4ade80"/>
+      <rect x="0" y="-23" width="18" height="3" fill="#9ca3af"/><rect x="0" y="-2" width="18" height="3" fill="#9ca3af"/><rect x="0" y="19" width="18" height="3" fill="#9ca3af"/>
+    </g>
+<g id="gateway">
+      <path d="M0,-48 L40,-32 L40,2 Q40,32 0,48 Q-40,32 -40,2 L-40,-32 z" fill="#7c3aed"/>
+      <path d="M-18,-14 L18,-14 M6,-24 L18,-14 L6,-4" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M18,12 L-18,12 M-6,2 L-18,12 L-6,22" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+<g id="i-grafica"><rect x="-16" y="-14" width="32" height="28" rx="3" fill="none" stroke="#6b7280" stroke-width="2"/><rect x="-10" y="2" width="5" height="8" fill="#6b7280"/><rect x="-2" y="-4" width="5" height="14" fill="#6b7280"/><rect x="6" y="-9" width="5" height="19" fill="#6b7280"/></g>
+<g id="t-flutter"><path d="M-13,1 L5,-17 L16,-17 L-2,1 Z" fill="#54c5f8"/><path d="M5,0 L16,0 L7,9 L-2,9 L-6,5 Z" fill="#54c5f8"/><path d="M-6,5 L-2,9 L7,9 L2,14 L-1,17 L-9,9 Z" fill="#01579b" opacity=".0"/><path d="M-9,9 L0,18 L11,18 L2,9 Z" fill="#01579b"/><path d="M-2,9 L2,13 L7,9 Z" fill="#29b6f6"/></g>
+<g id="t-angular"><path d="M0,-18 L16,-12 L13,10 L0,18 L-13,10 L-16,-12 Z" fill="#dd0031"/><path d="M0,-18 L16,-12 L13,10 L0,18 Z" fill="#c3002f"/><path d="M0,-10 L-8,8 L-5.3,8 L-3.7,4 L3.7,4 L5.3,8 L8,8 Z" fill="#fff"/><path d="M0,-4.5 L2.6,1.5 L-2.6,1.5 Z" fill="#dd0031"/></g>
+<g id="t-nginx"><path d="M0,-18 L16,-9 L16,9 L0,18 L-16,9 L-16,-9 Z" fill="#009639"/><path d="M-6,8 L-6,-8 L6,8 L6,-8" stroke="#fff" stroke-width="3.6" fill="none" stroke-linejoin="miter"/></g>
+<g id="t-dotnet"><rect x="-19" y="-12" width="38" height="24" rx="6" fill="#512bd4"/><text x="0" y="5" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">.NET</text></g>
+<g id="t-spring"><circle r="15" fill="#6db33f"/><path d="M-7,7 C-9,-5 2,-10 8,-8 C7,-1 3,3 -2,4 C-1,6 -4,8 -7,7 Z" fill="#fff"/><circle cx="-5" cy="9" r="1.5" fill="#fff"/></g>
+<g id="t-postgres"><circle r="16" fill="#336791"/><circle cx="1" cy="-2" r="8.5" fill="#fff"/><circle cx="-6" cy="-5" r="5.5" fill="#fff" stroke="#336791" stroke-width="1.3"/><path d="M6,3 Q12,9 7,13" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round"/><circle cx="3.5" cy="-4" r="1.4" fill="#336791"/></g>
+<g id="t-redis"><path d="M0,3 L16,9 L0,15 L-16,9 Z" fill="#a41e11"/><path d="M-16,9 L-16,5 L0,-1 L0,3 Z" fill="#7a1710" opacity=".0"/><path d="M0,-3 L16,3 L0,9 L-16,3 Z" fill="#d82c20"/><path d="M0,-9 L16,-3 L0,3 L-16,-3 Z" fill="#e8392d"/><path d="M0,-6 L6,-3.5 L0,-1 L-6,-3.5 Z" fill="#fff" opacity=".85"/></g>
+<g id="t-garage"><path d="M-17,-3 L0,-17 L17,-3 L17,16 L-17,16 Z" fill="#15803d"/><rect x="-10" y="2" width="20" height="14" fill="#bbf7d0"/><path d="M-10,6 L10,6 M-10,10 L10,10" stroke="#15803d" stroke-width="1.6"/></g>
+<g id="t-kafka"><circle r="20" fill="#fff" stroke="#231f20" stroke-width="1.5"/><path d="M-9,0 L6,-10 M-9,0 L6,10 M-9,0 L12,0" stroke="#231f20" stroke-width="2.4"/><circle cx="-9" cy="0" r="5.5" fill="#231f20"/><circle cx="6" cy="-10" r="4" fill="#231f20"/><circle cx="6" cy="10" r="4" fill="#231f20"/><circle cx="12" cy="0" r="3.4" fill="#231f20"/></g></defs>
+<rect width="1700" height="1185" fill="#fff"/>
+<text x="850.0" y="38" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="26" font-weight="bold" fill="#1f2937" text-anchor="middle" xml:space="preserve" >QuickPatch — Arquitectura de alto nivel (HLD)</text>
+<text x="850.0" y="62" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >EDA con microservicios · REST principal solo hacia Identity, ServiceRequest y Payments · Kafka solo entre los servicios que publican o consumen eventos</text>
+<rect x="15" y="92" width="170" height="823" rx="14" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+<text x="100" y="118" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1e40af" text-anchor="middle" xml:space="preserve" >Usuarios / actores</text>
+<g transform="translate(100,215) scale(0.7)"><use xlink:href="#persona-ilustrada"/></g>
+<text x="100" y="249" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#1f2937" text-anchor="middle" xml:space="preserve" >Administrador</text>
+<text x="100" y="264" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >del tenant y</text>
+<text x="100" y="278" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >de la plataforma</text>
+<g transform="translate(100,425) scale(0.7)"><use xlink:href="#persona-ilustrada"/></g>
+<text x="100" y="459" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#1f2937" text-anchor="middle" xml:space="preserve" >Cliente</text>
+<text x="100" y="474" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >solicita servicios</text>
+<text x="100" y="488" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >y paga</text>
+<g transform="translate(100,545) scale(0.7)"><use xlink:href="#persona-ilustrada"/></g>
+<text x="100" y="579" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#1f2937" text-anchor="middle" xml:space="preserve" >Empresa cliente</text>
+<text x="100" y="594" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >gestiona solicitudes</text>
+<text x="100" y="608" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >de su empresa</text>
+<g transform="translate(100,665) scale(0.7)"><use xlink:href="#persona-ilustrada"/></g>
+<text x="100" y="699" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#1f2937" text-anchor="middle" xml:space="preserve" >Técnico</text>
+<text x="100" y="714" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >atiende, cotiza y</text>
+<text x="100" y="728" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >sube evidencias</text>
+<g transform="translate(100,785) scale(0.7)"><use xlink:href="#persona-ilustrada"/></g>
+<text x="100" y="819" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#1f2937" text-anchor="middle" xml:space="preserve" >Proveedor</text>
+<text x="100" y="834" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >administra su equipo</text>
+<text x="100" y="848" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >de técnicos</text>
+<rect x="225" y="92" width="215" height="823" rx="14" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" />
+<text x="332" y="118" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1e40af" text-anchor="middle" xml:space="preserve" >Aplicaciones cliente</text>
+
+<rect x="240" y="140" width="185" height="240" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.8" />
+<g transform="translate(332,200) scale(1.0)"><use xlink:href="#laptop"/></g>
+<text x="332" y="262" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1f2937" text-anchor="middle" xml:space="preserve" >Panel web</text>
+<g transform="translate(298,278) scale(0.58)"><use xlink:href="#t-angular"/></g>
+<text x="311" y="283" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#dd0031" text-anchor="start" xml:space="preserve" >Angular</text>
+<text x="332" y="304" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >Solo administradores:</text>
+<text x="332" y="319" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >el del tenant y el de</text>
+<text x="332" y="334" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >la plataforma</text>
+<text x="332" y="349" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >(RF-21)</text>
+<text x="332" y="366" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="middle" xml:space="preserve" >Lo sirve Nginx en VM1</text>
+<rect x="240" y="420" width="185" height="400" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.8" />
+<g transform="translate(332,492) scale(1.2)"><use xlink:href="#celular"/></g>
+<text x="332" y="568" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1f2937" text-anchor="middle" xml:space="preserve" >App móvil</text>
+<g transform="translate(283,585) scale(0.58)"><use xlink:href="#t-flutter"/></g>
+<text x="297" y="589" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#0553b1" text-anchor="start" xml:space="preserve" >Flutter · Dart</text>
+<text x="332" y="612" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >Cliente, empresa cliente,</text>
+<text x="332" y="627" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >técnico y proveedor</text>
+<text x="332" y="642" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" ></text>
+<text x="332" y="657" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >Recibe los avisos en</text>
+<text x="332" y="672" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >tiempo real por el</text>
+<text x="332" y="687" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="middle" xml:space="preserve" >WebSocket del gateway</text>
+<polyline points="188,215 238,215" fill="none" stroke="#1f2937" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="188,425 238,425" fill="none" stroke="#1f2937" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="188,545 238,545" fill="none" stroke="#1f2937" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="188,665 238,665" fill="none" stroke="#1f2937" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="188,785 238,785" fill="none" stroke="#1f2937" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<rect x="468" y="450" width="150" height="250" rx="14" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2.5" />
+<g transform="translate(543.0,512)"><use xlink:href="#gateway"/></g>
+<text x="543.0" y="585" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#4c1d95" text-anchor="middle" xml:space="preserve" >API Gateway</text>
+<text x="543.0" y="605" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#5b21b6" text-anchor="middle" xml:space="preserve" >Nginx (VM1) y</text>
+<text x="543.0" y="620" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#5b21b6" text-anchor="middle" xml:space="preserve" >Traefik (k3s)</text>
+<text x="543.0" y="635" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#5b21b6" text-anchor="middle" xml:space="preserve" >única entrada</text>
+<text x="543.0" y="650" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#5b21b6" text-anchor="middle" xml:space="preserve" >HTTPS · REST/JSON</text>
+<text x="543.0" y="438" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#6d28d9" text-anchor="middle" xml:space="preserve" >Capa de integración</text>
+<g transform="translate(596,472) scale(0.7)"><use xlink:href="#t-nginx"/></g>
+<polyline points="425,300 446,300 446,500 465,500" fill="none" stroke="#1f2937" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="425,560 465,560" fill="none" stroke="#1f2937" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<text x="447" y="530" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#374151" text-anchor="start" stroke="#fff" stroke-width="4" paint-order="stroke" xml:space="preserve" >HTTPS</text>
+<polyline points="468,650 428,650" fill="none" stroke="#ea580c" stroke-width="3" stroke-dasharray="9 5" stroke-linejoin="round" marker-end="url(#a-ws)"/>
+<rect x="662" y="92" width="814" height="823" rx="14" fill="#f8fafc" stroke="#16a34a" stroke-width="2" stroke-dasharray="10 6" />
+<text x="680" y="116" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="15" font-weight="bold" fill="#166534" text-anchor="start" xml:space="preserve" >Servicios de negocio</text>
+<text x="680" y="134" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >.NET (ASP.NET Core) · Matching en Java + Spring Boot · k3s · cada servicio con su propia base</text>
+
+<rect x="682" y="150" width="776" height="84" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" />
+<g transform="translate(710,178) scale(0.55)"><use xlink:href="#servidor"/></g>
+<text x="744" y="175" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Identity</text>
+<text x="744" y="192" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Autenticación, tokens</text>
+<text x="744" y="206" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >y tenants</text>
+<g transform="translate(710,212) scale(0.78)" opacity="1"><use xlink:href="#t-dotnet"/></g>
+<text x="922" y="168" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#7e22ce" text-anchor="start" xml:space="preserve" >→ technician.registered</text>
+<text x="922" y="182.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#7e22ce" text-anchor="start" xml:space="preserve" >   technician.verification-changed</text>
+<text x="922" y="197.0" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >← no consume eventos</text>
+<text x="922" y="211.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#15803d" text-anchor="start" xml:space="preserve" >⇠ REST interno de ServiceRequest</text>
+<rect x="1234" y="166" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="182" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Redis</text>
+<g transform="translate(1251,178) scale(0.5)" opacity="0.4"><use xlink:href="#t-redis"/></g>
+<path d="M1326,170 L1326,214 A62.0,7 0 0 0 1450,214 L1450,170" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.8"/><ellipse cx="1388.0" cy="170" rx="62.0" ry="7" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.8"/>
+<g transform="translate(1444,163) scale(0.62)" opacity="1"><use xlink:href="#t-postgres"/></g>
+<text x="1388" y="198" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#115e59" text-anchor="middle" xml:space="preserve" >db_identity</text>
+<polyline points="1460,183.0 1497,183.0" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<rect x="682" y="244" width="776" height="84" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" />
+<g transform="translate(710,272) scale(0.55)"><use xlink:href="#servidor"/></g>
+<text x="744" y="269" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >ServiceRequest</text>
+<text x="744" y="286" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Solicitudes y</text>
+<text x="744" y="300" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >cotizaciones</text>
+<g transform="translate(710,306) scale(0.78)" opacity="1"><use xlink:href="#t-dotnet"/></g>
+<text x="922" y="262" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#7e22ce" text-anchor="start" xml:space="preserve" >→ service-request.* (8 eventos)</text>
+<text x="922" y="276.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6d28d9" text-anchor="start" xml:space="preserve" >← catalog.category-changed · matching.* (3)</text>
+<text x="922" y="291.0" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6d28d9" text-anchor="start" xml:space="preserve" >   payment.approved · payment.rejected</text>
+<text x="922" y="305.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#15803d" text-anchor="start" xml:space="preserve" >⇢ REST interno a Identity (nombres)</text>
+<rect x="1234" y="260" width="82" height="24" rx="7" fill="#fee2e2" stroke="#dc2626" stroke-width="1.8" />
+<text x="1266" y="276" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#dc2626" text-anchor="start" xml:space="preserve" >Redis</text>
+<g transform="translate(1251,272) scale(0.5)" opacity="1"><use xlink:href="#t-redis"/></g>
+<rect x="1234" y="290" width="82" height="24" rx="7" fill="#dcfce7" stroke="#15803d" stroke-width="1.8" />
+<text x="1266" y="306" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#15803d" text-anchor="start" xml:space="preserve" >Garage</text>
+<g transform="translate(1251,302) scale(0.5)" opacity="1"><use xlink:href="#t-garage"/></g>
+<path d="M1326,264 L1326,308 A62.0,7 0 0 0 1450,308 L1450,264" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.8"/><ellipse cx="1388.0" cy="264" rx="62.0" ry="7" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.8"/>
+<g transform="translate(1444,257) scale(0.62)" opacity="1"><use xlink:href="#t-postgres"/></g>
+<text x="1388" y="292" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#115e59" text-anchor="middle" xml:space="preserve" >db_service_request</text>
+<polyline points="1460,277.0 1497,277.0" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<polyline points="1500,298.0 1462,298.0" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<rect x="682" y="338" width="776" height="84" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" />
+<g transform="translate(710,366) scale(0.55)"><use xlink:href="#servidor"/></g>
+<text x="744" y="363" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Matching</text>
+<text x="744" y="380" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Asigna técnicos a</text>
+<text x="744" y="394" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >las solicitudes</text>
+<g transform="translate(710,400) scale(0.8)" opacity="1"><use xlink:href="#t-spring"/></g>
+<text x="922" y="356" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#7e22ce" text-anchor="start" xml:space="preserve" >→ matching.* (4 eventos)</text>
+<text x="922" y="370.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6d28d9" text-anchor="start" xml:space="preserve" >← service-request.created · cancelled ·</text>
+<text x="922" y="385.0" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6d28d9" text-anchor="start" xml:space="preserve" >   completed · catalog.category-changed ·</text>
+<text x="922" y="399.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6d28d9" text-anchor="start" xml:space="preserve" >   technician.* (2)</text>
+<rect x="1234" y="354" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="370" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Redis</text>
+<g transform="translate(1251,366) scale(0.5)" opacity="0.4"><use xlink:href="#t-redis"/></g>
+<rect x="1234" y="384" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="400" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Garage</text>
+<g transform="translate(1251,396) scale(0.5)" opacity="0.4"><use xlink:href="#t-garage"/></g>
+<path d="M1326,358 L1326,402 A62.0,7 0 0 0 1450,402 L1450,358" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.8"/><ellipse cx="1388.0" cy="358" rx="62.0" ry="7" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.8"/>
+<g transform="translate(1444,351) scale(0.62)" opacity="1"><use xlink:href="#t-postgres"/></g>
+<text x="1388" y="386" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#115e59" text-anchor="middle" xml:space="preserve" >db_matching</text>
+<polyline points="1460,371.0 1497,371.0" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<polyline points="1500,392.0 1462,392.0" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<rect x="682" y="432" width="776" height="84" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" />
+<g transform="translate(710,460) scale(0.55)"><use xlink:href="#servidor"/></g>
+<text x="744" y="457" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Catalog</text>
+<text x="744" y="474" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Categorías de</text>
+<text x="744" y="488" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >servicio</text>
+<g transform="translate(710,494) scale(0.78)" opacity="1"><use xlink:href="#t-dotnet"/></g>
+<text x="922" y="464" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#7e22ce" text-anchor="start" xml:space="preserve" >→ catalog.category-changed</text>
+<text x="922" y="478.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >← no consume eventos</text>
+<rect x="1234" y="448" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="464" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Redis</text>
+<g transform="translate(1251,460) scale(0.5)" opacity="0.4"><use xlink:href="#t-redis"/></g>
+<rect x="1234" y="478" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="494" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Garage</text>
+<g transform="translate(1251,490) scale(0.5)" opacity="0.4"><use xlink:href="#t-garage"/></g>
+<path d="M1326,452 L1326,496 A62.0,7 0 0 0 1450,496 L1450,452" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.8"/><ellipse cx="1388.0" cy="452" rx="62.0" ry="7" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.8"/>
+<g transform="translate(1444,445) scale(0.62)" opacity="1"><use xlink:href="#t-postgres"/></g>
+<text x="1388" y="480" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#115e59" text-anchor="middle" xml:space="preserve" >db_catalog</text>
+<polyline points="1460,465.0 1497,465.0" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<rect x="682" y="526" width="776" height="84" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" />
+<g transform="translate(710,554) scale(0.55)"><use xlink:href="#servidor"/></g>
+<text x="744" y="551" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Communication</text>
+<text x="744" y="568" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Buzón, chat y avisos</text>
+<text x="744" y="582" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >en tiempo real</text>
+<g transform="translate(710,588) scale(0.78)" opacity="1"><use xlink:href="#t-dotnet"/></g>
+<text x="922" y="544" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >→ no publica eventos</text>
+<text x="922" y="558.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6d28d9" text-anchor="start" xml:space="preserve" >← service-request.created · status-changed</text>
+<text x="922" y="573.0" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6d28d9" text-anchor="start" xml:space="preserve" >   quoted · quote-accepted · quote-rejected</text>
+<text x="922" y="587.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6d28d9" text-anchor="start" xml:space="preserve" >   technician.* (2) · matching.offer-created</text>
+<rect x="1234" y="542" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="558" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Redis</text>
+<g transform="translate(1251,554) scale(0.5)" opacity="0.4"><use xlink:href="#t-redis"/></g>
+<rect x="1234" y="572" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="588" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Garage</text>
+<g transform="translate(1251,584) scale(0.5)" opacity="0.4"><use xlink:href="#t-garage"/></g>
+<path d="M1326,546 L1326,590 A62.0,7 0 0 0 1450,590 L1450,546" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.8"/><ellipse cx="1388.0" cy="546" rx="62.0" ry="7" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.8"/>
+<g transform="translate(1444,539) scale(0.62)" opacity="1"><use xlink:href="#t-postgres"/></g>
+<text x="1388" y="574" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#115e59" text-anchor="middle" xml:space="preserve" >db_communication</text>
+<polyline points="1500,580.0 1462,580.0" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<rect x="682" y="620" width="776" height="84" rx="12" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2" stroke-dasharray="7 5" />
+<g transform="translate(710,648) scale(0.55)"><use xlink:href="#servidor"/></g>
+<text x="744" y="645" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#6b7280" text-anchor="start" xml:space="preserve" >Actors</text>
+<text x="744" y="662" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Proveedores, aliados</text>
+<text x="744" y="676" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >y clientes (evolutivo)</text>
+<g transform="translate(710,682) scale(0.78)" opacity="0.4"><use xlink:href="#t-dotnet"/></g>
+<text x="922" y="652" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >Sin topics todavía</text>
+<text x="922" y="666.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >(servicio evolutivo)</text>
+<rect x="1234" y="636" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="652" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Redis</text>
+<g transform="translate(1251,648) scale(0.5)" opacity="0.4"><use xlink:href="#t-redis"/></g>
+<rect x="1234" y="666" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="682" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Garage</text>
+<g transform="translate(1251,678) scale(0.5)" opacity="0.4"><use xlink:href="#t-garage"/></g>
+<path d="M1326,640 L1326,684 A62.0,7 0 0 0 1450,684 L1450,640" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.8" stroke-dasharray="5 4"/><ellipse cx="1388.0" cy="640" rx="62.0" ry="7" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.8" stroke-dasharray="5 4"/>
+<g transform="translate(1444,633) scale(0.62)" opacity="0.4"><use xlink:href="#t-postgres"/></g>
+<text x="1388" y="668" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#6b7280" text-anchor="middle" xml:space="preserve" >db_actors</text>
+<rect x="682" y="714" width="776" height="84" rx="12" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2" stroke-dasharray="7 5" />
+<g transform="translate(710,742) scale(0.55)"><use xlink:href="#servidor"/></g>
+<text x="744" y="739" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#6b7280" text-anchor="start" xml:space="preserve" >Ranking</text>
+<text x="744" y="756" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Reputación de</text>
+<text x="744" y="770" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >los técnicos</text>
+<g transform="translate(710,776) scale(0.78)" opacity="0.4"><use xlink:href="#t-dotnet"/></g>
+<text x="922" y="746" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >Sin topics todavía. Previsto:</text>
+<text x="922" y="760.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >consumir service-request.rated</text>
+<rect x="1234" y="730" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="746" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Redis</text>
+<g transform="translate(1251,742) scale(0.5)" opacity="0.4"><use xlink:href="#t-redis"/></g>
+<rect x="1234" y="760" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="776" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Garage</text>
+<g transform="translate(1251,772) scale(0.5)" opacity="0.4"><use xlink:href="#t-garage"/></g>
+<path d="M1326,734 L1326,778 A62.0,7 0 0 0 1450,778 L1450,734" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.8" stroke-dasharray="5 4"/><ellipse cx="1388.0" cy="734" rx="62.0" ry="7" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.8" stroke-dasharray="5 4"/>
+<g transform="translate(1444,727) scale(0.62)" opacity="0.4"><use xlink:href="#t-postgres"/></g>
+<text x="1388" y="762" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#6b7280" text-anchor="middle" xml:space="preserve" >db_ranking</text>
+<polyline points="1500,756.0 1462,756.0" fill="none" stroke="#9ca3af" stroke-width="3" stroke-dasharray="4 5" stroke-linejoin="round" marker-end="url(#a-gris)"/>
+<rect x="682" y="808" width="776" height="84" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" />
+<g transform="translate(710,836) scale(0.55)"><use xlink:href="#servidor"/></g>
+<text x="744" y="833" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#14532d" text-anchor="start" xml:space="preserve" >Payments</text>
+<text x="744" y="850" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >Cobros y</text>
+<text x="744" y="864" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12" font-weight="normal" fill="#4b5563" text-anchor="start" xml:space="preserve" >comprobantes</text>
+<g transform="translate(710,870) scale(0.78)" opacity="1"><use xlink:href="#t-dotnet"/></g>
+<text x="922" y="840" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#7e22ce" text-anchor="start" xml:space="preserve" >→ payment.approved · payment.rejected</text>
+<text x="922" y="854.5" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="normal" fill="#6d28d9" text-anchor="start" xml:space="preserve" >← service-request.completed</text>
+<rect x="1234" y="824" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="840" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Redis</text>
+<g transform="translate(1251,836) scale(0.5)" opacity="0.4"><use xlink:href="#t-redis"/></g>
+<rect x="1234" y="854" width="82" height="24" rx="7" fill="#fff" stroke="#9ca3af" stroke-width="1.4" stroke-dasharray="4 3" />
+<text x="1266" y="870" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#9ca3af" text-anchor="start" xml:space="preserve" >Garage</text>
+<g transform="translate(1251,866) scale(0.5)" opacity="0.4"><use xlink:href="#t-garage"/></g>
+<path d="M1326,828 L1326,872 A62.0,7 0 0 0 1450,872 L1450,828" fill="#f0fdfa" stroke="#0f766e" stroke-width="1.8"/><ellipse cx="1388.0" cy="828" rx="62.0" ry="7" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.8"/>
+<g transform="translate(1444,821) scale(0.62)" opacity="1"><use xlink:href="#t-postgres"/></g>
+<text x="1388" y="856" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" fill="#115e59" text-anchor="middle" xml:space="preserve" >db_payments</text>
+<polyline points="1460,841.0 1497,841.0" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<polyline points="1500,862.0 1462,862.0" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+
+
+
+
+<text x="680" y="906" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >Redis y Garage en gris punteado: existen para ese servicio pero todavía no los usa</text>
+<polyline points="620,500 646,500" fill="none" stroke="#1f2937" stroke-width="2.5" stroke-linejoin="round"/>
+<line x1="646" y1="178.0" x2="646" y2="836.0" stroke="#1f2937" stroke-width="2.5"/>
+<polyline points="646,178.0 680,178.0" fill="none" stroke="#1f2937" stroke-width="2.6" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="646,272.0 680,272.0" fill="none" stroke="#1f2937" stroke-width="2.6" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="646,366.0 680,366.0" fill="none" stroke="#1f2937" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="646,460.0 680,460.0" fill="none" stroke="#1f2937" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="646,554.0 680,554.0" fill="none" stroke="#1f2937" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<polyline points="646,836.0 680,836.0" fill="none" stroke="#1f2937" stroke-width="2.6" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+
+<polyline points="682,593.0 660,593.0 660,650 620,650" fill="none" stroke="#ea580c" stroke-width="3" stroke-dasharray="9 5" stroke-linejoin="round" marker-end="url(#a-ws)"/>
+<rect x="1500" y="92" width="186" height="823" rx="14" fill="#faf5ff" stroke="#9333ea" stroke-width="2.5" />
+<g transform="translate(1593,142) scale(1.15)"><use xlink:href="#t-kafka"/></g>
+<text x="1593" y="188" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="17" font-weight="bold" fill="#581c87" text-anchor="middle" xml:space="preserve" >Apache Kafka</text>
+<text x="1593" y="206" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#6b21a8" text-anchor="middle" xml:space="preserve" >bus de eventos</text>
+<text x="1593" y="222" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b21a8" text-anchor="middle" xml:space="preserve" >KRaft · 1 nodo</text>
+
+<text x="1593" y="262" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="13" font-weight="bold" fill="#581c87" text-anchor="middle" xml:space="preserve" >17 topics</text>
+<text x="1593" y="278" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b21a8" text-anchor="middle" xml:space="preserve" >uno por tipo de evento</text>
+<rect x="1510" y="312" width="166" height="44" rx="7" fill="#fff" stroke="#c084fc" stroke-width="1.3" />
+<text x="1512" y="330" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#581c87" text-anchor="start" xml:space="preserve" >technician.*</text>
+<text x="1512" y="347" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b21a8" text-anchor="start" xml:space="preserve" >2 · Identity</text>
+<rect x="1510" y="364" width="166" height="44" rx="7" fill="#fff" stroke="#c084fc" stroke-width="1.3" />
+<text x="1512" y="382" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#581c87" text-anchor="start" xml:space="preserve" >catalog.category-changed</text>
+<text x="1512" y="399" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b21a8" text-anchor="start" xml:space="preserve" >1 · Catalog</text>
+<rect x="1510" y="416" width="166" height="44" rx="7" fill="#fff" stroke="#c084fc" stroke-width="1.3" />
+<text x="1512" y="434" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#581c87" text-anchor="start" xml:space="preserve" >service-request.*</text>
+<text x="1512" y="451" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b21a8" text-anchor="start" xml:space="preserve" >8 · ServiceRequest</text>
+<rect x="1510" y="468" width="166" height="44" rx="7" fill="#fff" stroke="#c084fc" stroke-width="1.3" />
+<text x="1512" y="486" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#581c87" text-anchor="start" xml:space="preserve" >matching.*</text>
+<text x="1512" y="503" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b21a8" text-anchor="start" xml:space="preserve" >4 · Matching</text>
+<rect x="1510" y="520" width="166" height="44" rx="7" fill="#fff" stroke="#c084fc" stroke-width="1.3" />
+<text x="1512" y="538" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11" font-weight="bold" fill="#581c87" text-anchor="start" xml:space="preserve" >payment.*</text>
+<text x="1512" y="555" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b21a8" text-anchor="start" xml:space="preserve" >2 · Payments</text>
+<text x="1593" y="586" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b21a8" text-anchor="middle" xml:space="preserve" >El nombre del topic es</text>
+<text x="1593" y="601" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b21a8" text-anchor="middle" xml:space="preserve" >el tipo de evento</text>
+<rect x="1510" y="624" width="166" height="120" rx="8" fill="#f3e8ff" stroke="#a855f7" stroke-width="1.3" stroke-dasharray="5 3" />
+
+<text x="1593" y="650.0" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#581c87" text-anchor="middle" xml:space="preserve" >Outbox +</text>
+<text x="1593" y="663.5" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#581c87" text-anchor="middle" xml:space="preserve" >idempotencia:</text>
+<text x="1593" y="677.0" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#581c87" text-anchor="middle" xml:space="preserve" >el servicio guarda</text>
+<text x="1593" y="690.5" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#581c87" text-anchor="middle" xml:space="preserve" >el evento en su base</text>
+<text x="1593" y="704.0" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#581c87" text-anchor="middle" xml:space="preserve" >y lo publica después;</text>
+<text x="1593" y="717.5" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#581c87" text-anchor="middle" xml:space="preserve" >el consumidor</text>
+<text x="1593" y="731.0" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11" font-weight="normal" fill="#581c87" text-anchor="middle" xml:space="preserve" >descarta duplicados</text>
+<rect x="1010" y="950" width="440" height="62" rx="12" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2" stroke-dasharray="7 5" />
+<g transform="translate(1048,981) scale(0.9)"><use xlink:href="#i-grafica"/></g>
+<text x="1075" y="972" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="14.5" font-weight="bold" fill="#4b5563" text-anchor="start" xml:space="preserve" >Pasarela de pagos (simulada)</text>
+<text x="1075" y="990" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >Tokenizador en la app y adaptador dentro de Payments;</text>
+<text x="1075" y="1004" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b7280" text-anchor="start" xml:space="preserve" >única dependencia externa que admite R5</text>
+<polyline points="1230,894 1230,947" fill="none" stroke="#9ca3af" stroke-width="3" stroke-dasharray="4 5" stroke-linejoin="round" marker-end="url(#a-gris)"/>
+
+<rect x="15" y="1035" width="1670" height="125" rx="14" fill="#f9fafb" stroke="#d1d5db" stroke-width="1.5" />
+<text x="40" y="1065" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1f2937" text-anchor="start" xml:space="preserve" >Flechas</text>
+<polyline points="40,1097 135,1097" fill="none" stroke="#1f2937" stroke-width="3.2" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<text x="152" y="1101" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" >REST principal: Identity, ServiceRequest, Payments</text>
+<polyline points="595,1097 690,1097" fill="none" stroke="#1f2937" stroke-width="1.6" stroke-linejoin="round" marker-end="url(#a-dark)"/>
+<text x="707" y="1101" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" >REST de excepción: Matching, Catalog, Communication</text>
+<polyline points="1150,1097 1245,1097" fill="none" stroke="#15803d" stroke-width="3" stroke-linejoin="round" marker-end="url(#a-verde)"/>
+<text x="1262" y="1101" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" >REST interno: ServiceRequest → Identity (solo lectura)</text>
+<polyline points="40,1135 135,1135" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="8 5" stroke-linejoin="round" marker-end="url(#a-ev)"/>
+<text x="152" y="1139" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" >Evento de Kafka: la punta apunta a quien lo recibe</text>
+<polyline points="595,1135 690,1135" fill="none" stroke="#ea580c" stroke-width="3" stroke-dasharray="9 5" stroke-linejoin="round" marker-end="url(#a-ws)"/>
+<text x="707" y="1139" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" >Aviso en tiempo real (WebSocket) hacia la app</text>
+<polyline points="1150,1135 1245,1135" fill="none" stroke="#9ca3af" stroke-width="3" stroke-dasharray="4 5" stroke-linejoin="round" marker-end="url(#a-gris)"/>
+<text x="1262" y="1139" font-family="DejaVu Sans, Segoe UI, Arial, sans-serif" font-size="12.5" font-weight="normal" fill="#1f2937" text-anchor="start" xml:space="preserve" >Futuro, simulado o fuera del MVP</text>
+</svg>
