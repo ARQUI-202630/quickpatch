@@ -25,7 +25,9 @@ reintentar = base.reintentar
 WEB = {"key": "X-Channel-Id", "value": "quickpatch-web"}
 ESTADOS = ["asignado", "buscando_tecnico", "cancelado", "completado", "cotizacion_aceptada", "cotizado", "en_espera",
            "en_progreso", "pagado"]
-CAMPOS_LISTA = ["assignedAt", "categoryId", "clientId", "createdAt", "id", "status", "technicianId"]
+# Desde service-request 1.9.0 la lista suma clientType, companyId, siteName y description (SCRUM-73); sigue sin dirección ni ubicación.
+CAMPOS_LISTA = ["assignedAt", "categoryId", "clientId", "clientType", "companyId", "createdAt", "description", "id", "siteName", "status",
+                "technicianId"]
 CON_PLATAFORMA = ["if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }"]
 DIRECCION = "Calle 63 # 9-45, Chapinero"
 INEXISTENTE = "Avenida Zzqxw Inexistente 98765 # 999-99, Narnia"

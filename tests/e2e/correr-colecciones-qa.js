@@ -97,6 +97,8 @@ for (const nombre of colecciones) {
   const args = [
     '--yes', 'newman@6', 'run', archivo,
     '--insecure', '--reporters', 'cli', '--color', 'off',
+    // Las fotos de fixtures/ se resuelven desde aquí, como en pruebas-sistema.yml (/etc/newman = tests/e2e).
+    '--working-dir', aqui,
     '--env-var', `baseUrl=${baseUrl}`,
     '--env-var', `adminEmail=${process.env.QA_ADMIN_EMAIL}`,
     '--env-var', `adminPassword=${process.env.QA_ADMIN_PASSWORD}`,
