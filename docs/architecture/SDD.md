@@ -2,7 +2,7 @@
 
 **Proyecto:** QUICKPATCH - Plataforma multi-tenant de servicios técnicos  
 **Documento:** Descripción de Diseño de Software (SDD)  
-**Estado:** V3 en revisión (SCRUM-424; revisión funcional en SCRUM-428, sección 13) - organizada según el modelo C4 (sección 2.2). La V2 se aprobó en SCRUM-301 (sección 13.1)  
+**Estado:** V3 aprobada (SCRUM-424; revisión funcional en SCRUM-428, sección 13.3) - organizada según el modelo C4 (sección 2.2). La V2 se aprobó en SCRUM-301 (sección 13.1)  
 **Fecha:** Octubre de 2026
 
 ---
@@ -2027,20 +2027,20 @@ El proveedor registra técnicos de su equipo, que pasan por la misma verificaci�
 
 # 12. Trazabilidad entre diagramas
 
-Antes de consolidar una versión final del SDD se verifica la lista siguiente. Resultado de la revisión de la V3 contra `develop` del 17 de octubre de 2026 (SCRUM-424):
+Antes de consolidar una versión final del SDD se verifica la lista siguiente. Resultado de la revisión de la V3 contra `develop` del 22 de octubre de 2026 (SCRUM-424 y revisión funcional de SCRUM-428, sección 13.3):
 
 |Verificación|Resultado|Cómo se revisó y qué falta|
 |---|---|---|
-|Todo contenedor del diagrama de contenedores tiene repositorio, pipeline y despliegue (secciones 9 y 10).|🟡 Parcial|Los 8 microservicios, el API Gateway, las dos apps y Kafka tienen repositorio y pipeline. Redis, Garage, PostgreSQL y el Geocodificador se despliegan con Ansible desde `infrastructure/`. Actors, Ranking y Payments tienen pipeline pero no manifiestos: `primer-despliegue-servicios.yml` despliega solo Identity, Catalog, ServiceRequest, Matching y Communication. El Geocodificador está solo en QA.|
-|Todo contenedor desplegable aparece en los diagramas de despliegue de producción y QA.|🟡 Parcial|Todos aparecen en las Figuras 30 y 31, pero Actors, Ranking y Payments se dibujan corriendo en el k3s aunque no están desplegados, y el Geocodificador se dibuja en producción. Se marcan como planeados en la segunda entrega de la V3 (DSL y figuras).|
+|Todo contenedor del diagrama de contenedores tiene repositorio, pipeline y despliegue (secciones 9 y 10).|🟡 Parcial|Los 8 microservicios, el API Gateway, las dos apps y Kafka tienen repositorio y pipeline. Redis, Garage, PostgreSQL y el Geocodificador se despliegan con Ansible desde `infrastructure/`. Payments ya tiene manifiesto y corre en QA (0.1.1). Actors y Ranking siguen sin manifiesto: son los dos servicios planeados.|
+|Todo contenedor desplegable aparece en los diagramas de despliegue de producción y QA.|✅ Cumple|Todos aparecen en las Figuras 30 y 31. Actors y Ranking, y el Geocodificador de producción, se dibujan con borde punteado porque todavía no están desplegados.|
 |Los diagramas dinámicos usan solo contenedores y relaciones del modelo C4.|✅ Cumple|Las vistas dinámicas se definen en `quickpatch.dsl` sobre los elementos del modelo, y `structurizr validate` no da errores (SCRUM-468).|
-|Los escenarios de validación pueden seguirse en los diagramas de contenedores, componentes, dinámicos y de despliegue.|🟡 Parcial|Matriz 8.13.4: los escenarios 1, 2, 8 y 9 se siguen en todos; el 3 no tiene vista C4 dinámica propia, y del 4 al 7 los diagramas son de diseño.|
-|Los contratos REST coinciden con el DD y con `quickpatch-api-gateway`.|✅ Cumple|La sección 5.6.1 lista los contratos de la etiqueta `v0.6.0`, que son los del DD V5. Los endpoints sin contrato publicado (cotización, ejecución, pago, calificación y registro de empresa) se nombran como diseño.|
-|Los eventos coinciden con el DD y con `quickpatch-kafka`.|✅ Cumple|La sección 5.6.2 y la matriz 8.6 tienen los 9 eventos de `topics/topics.yaml` (con `service-request.status-changed`, SCRUM-466), con su productor y sus consumidores; los demás se marcan como diseño.|
-|Los estados de `ServiceRequest` son consistentes con SRS, DD y código.|✅ Cumple|Los nueve estados de la sección 6.7 coinciden con DD 7.4 y con `ServiceRequestStatus`; el código usa hoy los de la búsqueda.|
-|Los nombres de servicios son uniformes en SAD, SDD, repositorios y despliegue.|🟡 Parcial|Los 8 servicios se llaman igual en todos. Los clientes se nombran por su framework en algunos diagramas («Angular Web», «Flutter Mobile»); SCRUM-468 los cambia por «Panel web» y «App móvil».|
+|Los escenarios de validación pueden seguirse en los diagramas de contenedores, componentes, dinámicos y de despliegue.|🟡 Parcial|Matriz 8.13.4: los escenarios 1, 2, 4, 5, 6, 8 y 9 se siguen en las vistas estáticas, y la ejecución y el pago tienen evidencia de QA. El 3 no tiene vista C4 dinámica propia, las dinámicas de ejecución y pago siguen siendo de diseño y el 7 (calificación) está planeado.|
+|Los contratos REST coinciden con el DD y con `quickpatch-api-gateway`.|✅ Cumple|La sección 5.6.1 lista los contratos de la etiqueta `v0.17.0`, que son los del DD 5.13. Solo la calificación (`/rating`) sigue sin contrato y se nombra como diseño.|
+|Los eventos coinciden con el DD y con `quickpatch-kafka`.|✅ Cumple|La sección 5.6.2 y la matriz 8.6 tienen los 17 eventos de `quickpatch-kafka` `v0.9.0`; `service-request.evaluated` sigue planeado.|
+|Los estados de `ServiceRequest` son consistentes con SRS, DD y código.|✅ Cumple|Los nueve estados de la sección 6.7 coinciden con DD 7.4 y con `ServiceRequestStatus`, y el código ya los usa todos, de la búsqueda al pago.|
+|Los nombres de servicios son uniformes en SAD, SDD, repositorios y despliegue.|✅ Cumple|Los 8 servicios se llaman igual en todos, y los clientes se nombran «App móvil» y «Panel web», sin el framework (SCRUM-468).|
 |Ningún servicio modifica directamente datos propiedad de otro dominio.|✅ Cumple|Cada servicio tiene su base (ADR-014). ServiceRequest y Matching guardan réplicas propias alimentadas por eventos (ADR-017), y la consulta interna de Identity (`/internal/v1/users`) es de solo lectura.|
-|Las decisiones de seguridad multi-tenant aparecen de forma coherente en todos los diagramas.|✅ Cumple|Los servicios con base toman el tenant del JWT y usan RLS (sección 6.12); la única excepción, la gestión de tenants, está acotada y auditada (Figura 28). Communication, que todavía no tiene base, avisa solo a los usuarios conectados del tenant del evento.|
+|Las decisiones de seguridad multi-tenant aparecen de forma coherente en todos los diagramas.|✅ Cumple|Los servicios con base toman el tenant del JWT y usan RLS (sección 6.12), Communication incluido (buzón y chat en `db_communication`). La única excepción, la gestión de tenants, está acotada y auditada (Figura 28).|
 
 ---
 
@@ -2048,14 +2048,14 @@ Antes de consolidar una versión final del SDD se verifica la lista siguiente. R
 
 | Sección | Corresponde a | Estado |
 |---|---|---|
-| System Landscape, System Context y Container (3 a 5) | Arquitectura | **V3 - en revisión**; contratos de la sección 5.6 al día con `v0.6.0` y `quickpatch-kafka` |
-| Component y Code (6 y 7) | Backend + Frontend | **V3 - en revisión**; texto con el incremento del Sprint 4 (sección 13.2); figuras C4 pendientes de exportar con el DSL de la V3 |
-| Dynamic (8) | Backend + QA | **V3 - en revisión**; asignación y aceptación del técnico (SCRUM-427) |
-| Deployment (9) | DevOps | **V3 - en revisión**; falta marcar Actors, Ranking y Payments y el Geocodificador de producción como no desplegados (sección 12) |
+| System Landscape, System Context y Container (3 a 5) | Arquitectura | **V3 - aprobada** (SCRUM-428); contratos al día con `v0.17.0` y `quickpatch-kafka` `v0.9.0` |
+| Component y Code (6 y 7) | Backend + Frontend | **V3 - aprobada**; texto y figuras C4 exportadas con el DSL de la V3 (segunda entrega, sección 13.2) |
+| Dynamic (8) | Backend + QA | **V3 - aprobada**; asignación y aceptación del técnico (SCRUM-427) |
+| Deployment (9) | DevOps | **V3 - aprobada**; Actors, Ranking y el Geocodificador de producción marcados como no desplegados |
 | Organización del código (10) | Backend + Frontend | **Desarrollada - lista para revisión** |
 | Flujos de negocio (11) | Arquitectura | **Desarrollada - 15 BPMN** |
-| Escenarios de validación (8.13) | Equipo | **Matriz completa** (8.13.4): 4 escenarios validados, 1 sin vista dinámica propia y 4 en diseño |
-| Revisión funcional | Product Owner | **V2 aprobada** (SCRUM-301, sección 13.1); **V3 pendiente** (SCRUM-428) |
+| Escenarios de validación (8.13) | Equipo | **Matriz completa** (8.13.4): 7 escenarios seguidos en las vistas, 1 sin vista dinámica propia y 1 planeado |
+| Revisión funcional | Product Owner | **V2 aprobada** (SCRUM-301, sección 13.1); **V3 aprobada** (SCRUM-428, sección 13.3) |
 
 ## 13.1 Revisión funcional del SDD V2 (SCRUM-301)
 
@@ -2094,7 +2094,7 @@ La V3 lleva el documento al incremento del Sprint 4 implementado en `develop` ha
 
 **Pendiente para cerrar la V3:**
 
-1. Revisión funcional con el Product Owner (SCRUM-428).
+Ninguno: la revisión funcional con el Product Owner (SCRUM-428) queda en la sección 13.3.
 
 **Segunda entrega (22 de octubre de 2026).** Ya están hechos SCRUM-468 (clientes sin el framework), SCRUM-470 y SCRUM-471 (Figuras 4 y 5 con fuente PlantUML). En esta entrega:
 
@@ -2102,6 +2102,24 @@ La V3 lleva el documento al incremento del Sprint 4 implementado en `develop` ha
 - **Contratos y eventos (5.6):** etiqueta `v0.17.0` de `quickpatch-api-gateway` y los 17 esquemas de `quickpatch-kafka` `v0.9.0`.
 - **Servicios (6.2, 6.4, 6.7, 6.10 y 6.11):** cuenta corporativa, solicitud de empresa, cotización y ejecución, pago con la pasarela simulada, buzón y chat, como en `develop`.
 - **Validación (8.13.4):** los escenarios de ejecución y pago pasan a implementados, con su evidencia de QA.
+
+---
+
+## 13.3 Revisión funcional del SDD V3 (SCRUM-428)
+
+Revisión del 22 de octubre de 2026 sobre `develop`, con los mismos criterios de la V2 (sección 13.1) más la correspondencia con el código del Sprint 4.
+
+|Criterio|Cómo se verificó|Resultado|
+|---|---|---|
+|C4 reemplaza a 4+1|Búsqueda de "4+1" y de los nombres de sus vistas|Sin restos: solo aparece en la sección 13.1, que cuenta el reemplazo.|
+|Consistencia con el SRS, el DD y los ADR|Cada RF y RNF citado se buscó en el SRS, cada regla RN-* en el DD y cada ADR en `docs/architecture/adr/`|Todos existen.|
+|No inventa alcance|Contenedores, componentes y eventos comparados con el DD 5.13, `quickpatch-api-gateway` `v0.17.0` y `quickpatch-kafka` `v0.9.0`|Sin alcance nuevo. Lo no implementado (Actors, Ranking, calificación, caché de Matching y pasarela certificada) está marcado como planeado.|
+|Corresponde al código|Componentes de las secciones 6.2 a 6.11 comparados con `develop` de cada repositorio y con las colecciones corridas en QA (SAD 2.2)|Coincide. La tecnología de Matching se corrigió en el modelo C4 a Java 25 + Spring Boot 4.1 (`pom.xml`), como dice el DD.|
+|Imágenes|Cada `![...](...)` del documento apunta a un archivo existente|Sin enlaces rotos. Las 20 vistas C4 donde aparecen el gateway o los servicios se volvieron a exportar.|
+|Observación del profesor sobre la Figura 3|Forma del API Gateway y de los microservicios|El API Gateway pasa a rectángulo y los ocho microservicios a hexágono en todas las vistas.|
+|Comprensible para el PO|Lectura de las secciones 1 a 5 y 11|Se entiende: el System Context y los BPMN describen el negocio, y cada figura tiene su texto.|
+
+**Resultado:** la V3 queda aprobada. Lo que sigue abierto (despliegue de Communication 0.3.0 en QA, servicios planeados) está registrado en las secciones 12 y 6.14 y no bloquea el documento.
 
 ---
 
