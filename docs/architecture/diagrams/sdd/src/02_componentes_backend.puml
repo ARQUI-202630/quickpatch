@@ -1,0 +1,180 @@
+@startuml 02_componentes_backend
+' Figura 5 del SDD (sección 5.3): componentes lógicos principales del backend. Resume las secciones 6.4 a 6.11 y la
+' matriz de eventos 8.6 según el código de develop; lo que todavía no está implementado va en gris como «planeado».
+' Generar: docker run --rm -v "$PWD:/data" plantuml/plantuml:1.2026.8 -tsvg -charset UTF-8 -o .. /data/02_componentes_backend.puml
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam ArrowColor #555555
+skinparam ArrowFontSize 10
+skinparam ranksep 70
+hide stereotype
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BackgroundColor<<servicio>> #E8F5E9
+  BackgroundColor<<cliente>> #E3F2FD
+  BackgroundColor<<entrada>> #FFF3E0
+  BorderColor #607D8B
+  FontSize 11
+}
+skinparam rectangle<<planeado>> {
+  BorderStyle dashed
+  FontColor #546E7A
+}
+skinparam queue {
+  BackgroundColor #F3E5F5
+  BorderColor #607D8B
+}
+skinparam database {
+  BackgroundColor #ECEFF1
+  BorderColor #607D8B
+}
+skinparam package {
+  BackgroundColor #FAFAFA
+  BorderColor #607D8B
+}
+
+rectangle "**Clientes**\nApp móvil y Panel web" <<cliente>> as CLIENTES
+rectangle "**API Gateway**\nREST /api/v1/* y WebSocket /api/v1/realtime\nquita /api y enruta; cada servicio valida el JWT (ADR-018)" <<entrada>> as GW
+
+package "Servicios de negocio" as NEGOCIO {
+  rectangle IDENTITY <<servicio>> [
+    **Identity**
+    ----
+    Autenticación (login, JWT RS256)
+    Registro de clientes y técnicos
+    Empresas cliente y sus usuarios
+    Verificación de técnicos
+    Equipo del proveedor (invitación)
+    Tenants de la plataforma
+    Directorio interno de usuarios
+    Outbox y publicador
+  ]
+  rectangle CATALOG <<servicio>> [
+    **Catalog**
+    ----
+    Administración de categorías
+    Outbox y publicador
+  ]
+  rectangle SR <<servicio>> [
+    **ServiceRequest**
+    ----
+    API de solicitudes
+    Categorías y localidades (réplicas)
+    Panel operativo (lista y conteos)
+    Cancelación
+    Cotización y su vencimiento
+    Inicio, evidencia y cierre
+    Geocodificación y vista previa
+    Agregado y máquina de estados
+    Consumidores de Matching y de pagos
+    Réplica de categorías
+    Directorio de usuarios
+    Outbox y publicador
+    <color:#78909C><i>Calificación (planeado)</i></color>
+  ]
+  rectangle MATCHING <<servicio>> [
+    **Matching** (Java + Spring Boot)
+    ----
+    Disponibilidad y cobertura
+    Proyección del técnico
+    Búsqueda de candidatos (PostGIS)
+    Ofertas: vencimiento y reanudación
+    Retiro de la oferta al cancelar
+    Liberación al cerrar el servicio
+    Outbox y publicador
+    <color:#78909C><i>Réplica de categorías (planeado)</i></color>
+  ]
+  rectangle PAYMENTS <<servicio>> [
+    **Payments**
+    ----
+    Pago con token (ADR-009)
+    Pasarela simulada del MVP
+    Comprobante en PDF
+    Conciliación de pagos sin respuesta
+    Consumidor del cierre del servicio
+    Outbox y publicador
+  ]
+  rectangle COMM <<servicio>> [
+    **Communication**
+    ----
+    Canal en tiempo real (ADR-023)
+    Consumidor de eventos y avisos
+    Buzón de notificaciones (ADR-024)
+    Chat de la solicitud (ADR-026)
+  ]
+  rectangle ACTORS <<planeado>> [
+    **Actors** (planeado)
+    ----
+    Proveedores, aliados y clientes
+  ]
+  rectangle RANKING <<planeado>> [
+    **Ranking** (planeado)
+    ----
+    Reputación del técnico
+  ]
+}
+
+queue "**Apache Kafka**\nun topic por evento (Outbox)" as KAFKA
+database "**PostgreSQL + PostGIS**\nuna base por servicio (ADR-014)" as PG
+rectangle "**Geocodificador**\nNominatim (ADR-024)" as GEO
+rectangle "**Redis**\ncandados y caché" as REDIS
+rectangle "**Garage (S3)**\nevidencias (ADR-016)" as GARAGE
+rectangle "**Pasarela certificada**\nexterna, para producción (ADR-009)" <<planeado>> as PSP
+
+' Orden: Identity y Catalog a la izquierda, ServiceRequest y Matching al centro; debajo los demás
+IDENTITY -[hidden]right- CATALOG
+CATALOG -[hidden]right- SR
+SR -[hidden]right- MATCHING
+SR -[hidden]down- KAFKA
+KAFKA -[hidden]down- COMM
+COMM -[hidden]right- PAYMENTS
+PAYMENTS -[hidden]right- ACTORS
+ACTORS -[hidden]right- RANKING
+
+CLIENTES --> GW
+' ADR-025: REST principal solo hacia Identity, ServiceRequest y Payments; las punteadas son sus excepciones explícitas.
+GW --> IDENTITY : REST
+GW --> SR : REST
+GW --> PAYMENTS : REST
+GW ..> MATCHING : excepción:\nacciones del técnico
+GW ..> CATALOG : excepción:\nadministración
+GW ..> COMM : excepción: buzón,\nchat y WebSocket
+SR --> IDENTITY : REST interno\n(nombres)
+SR --> GEO : HTTP
+SR --> REDIS : candados\n(vencimiento de cotizaciones)
+SR --> GARAGE : S3
+NEGOCIO --> PG : cada servicio,\nsu propia base
+
+' Eventos (8.6): flechas sin texto; la tabla junto a Kafka dice qué publica y qué consume cada servicio
+IDENTITY -down-> KAFKA
+CATALOG -down-> KAFKA
+SR <-down-> KAFKA
+MATCHING <-down-> KAFKA
+PAYMENTS <-up-> KAFKA
+KAFKA -down-> COMM
+
+note right of KAFKA
+  |= Servicio |= Publica |= Consume |
+  | Identity | technician.registered\ntechnician.verification-changed | — |
+  | Catalog | catalog.category-changed | — |
+  | ServiceRequest | service-request.created, .status-changed,\n.cancelled, .quoted, .quote-accepted,\n.quote-rejected, .started, .completed | matching.technician-assigned,\n.no-technician-available, .search-resumed,\ncatalog.category-changed,\npayment.approved, payment.rejected |
+  | Matching | matching.offer-created, .technician-assigned,\n.no-technician-available, .search-resumed | service-request.created, .cancelled,\n.completed, technician.*\n<color:#78909C><i>planeado: catalog.category-changed</i></color> |
+  | Payments | payment.approved, payment.rejected | service-request.completed |
+  | Communication | — | service-request.created, .status-changed,\n.quoted, .quote-accepted, .quote-rejected,\nmatching.offer-created, technician.* |
+end note
+
+MATCHING ..> REDIS #90A4AE : <color:#78909C>caché\n<color:#78909C>(planeado)
+PAYMENTS ..> PSP #90A4AE : <color:#78909C>reemplaza la\n<color:#78909C>pasarela simulada
+
+legend right
+  |= Elemento |= Significado |
+  |<#E8F5E9>| Servicio con código en develop |
+  | borde punteado | Servicio o sistema planeado |
+  | <color:#78909C><i>gris (planeado)</i></color> | Componente diseñado, sin implementar |
+  Línea punteada desde el gateway: excepción del ADR-025.
+  Línea gris punteada: uso planeado.
+  Publica: por su Outbox (ADR-007). Consume: una vez por eventId.
+endlegend
+@enduml
