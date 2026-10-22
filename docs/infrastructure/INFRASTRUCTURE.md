@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 3.7 |
+| **Versión** | 3.8 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -446,20 +446,26 @@ VM3 tiene 4 vCPU y 11 GiB de RAM fijos (sección 3.1), compartidos entre el cont
 |---|---|---|---|
 | Sistema operativo, software del laboratorio y k3s (containerd, Traefik, CoreDNS) | — | — | 3,0 GiB medidos sin microservicios (sección 3.2): 2,5 del sistema y el laboratorio, 0,5 de k3s |
 | Matching Service (Spring Boot) | 1 / 1 vCPU | 1 / 1 GiB | Guaranteed |
-| Identity, Catalog y ServiceRequest (ASP.NET Core, c/u) | 50 m / 500 m | 64 MiB / 256 MiB; el init container de migraciones pide 160 MiB y llega a 384 MiB, solo mientras migra | Burstable |
-| Actors, Ranking, Payments y Communication (ASP.NET Core) | Sin manifiesto | Sin manifiesto | — |
+| Identity, Catalog, ServiceRequest y Payments (ASP.NET Core, c/u) | 50 m / 500 m | 64 MiB / 256 MiB; el init container de migraciones pide 160 MiB y llega a 384 MiB, solo mientras migra | Burstable |
+| Communication (ASP.NET Core) | 50 m / 500 m | 128 MiB / 512 MiB; el init container de migraciones, 64 MiB / 256 MiB | Burstable |
+| Actors y Ranking (ASP.NET Core) | Sin manifiesto | Sin manifiesto | — |
 
-Los límites históricos calculados para NestJS no se reutilizan para ASP.NET Core. Los manifiestos de los tres servicios .NET desplegados fijan un límite de 256 MiB y el de Matching, 1 GiB, con una réplica por servicio. Si los otros cuatro servicios .NET adoptan el mismo límite, la suma de límites en VM3 es 3,0 + 1,0 + 7 × 0,25 = 5,75 GiB. Es una cuenta de límites, no una medición: con Matching y tres servicios .NET en producción, VM3 usa el 29% de la RAM sin reinicios ni `OOMKilled`. Falta demostrar el conjunto de los 8 servicios, con el margen para rolling updates, dentro de los 4 vCPU y 11 GiB.
+Los límites históricos calculados para NestJS no se reutilizan para ASP.NET Core. Los manifiestos de Identity, Catalog, ServiceRequest y Payments fijan un límite de 256 MiB, el de Communication 512 MiB y el de Matching 1 GiB, con una réplica por servicio. Si Actors y Ranking adoptan 256 MiB, la suma de límites en VM3 es 3,0 + 1,0 + 6 × 0,25 + 0,5 = 6,0 GiB.
+
+**Por qué Communication tiene 512 MiB (QA, 22 de octubre).** Con 256 MiB terminó en `OOMKilled`: al desplegar la 0.3.0, sus tres grupos de consumidores tenían cientos de miles de eventos pendientes de las pruebas de k6, que Kafka guarda 168 horas, y al ponerse al día el pod usaba unos 330 MiB con la CPU al tope. En reposo usa unos 56 MiB. Los grupos del buzón y del chat arrancan desde el principio del topic cuando no tienen offset guardado (`auto.offset.reset = earliest`) porque no pueden perder eventos: el chat necesita conocer las solicitudes que ya tienen técnico (DD 5.23). Eso solo pasa la primera vez que se crea el grupo. Si un grupo nuevo aparece en un ambiente con tráfico viejo de carga, se mueve a mano al final del topic (`kafka-consumer-groups --reset-offsets --to-latest`) antes de arrancar el servicio, como se hizo en QA.
+
+La suma anterior es una cuenta de límites, no una medición: con Matching y tres servicios .NET en producción, VM3 usa el 29% de la RAM sin reinicios ni `OOMKilled`. Falta demostrar el conjunto de los 8 servicios, con el margen para rolling updates, dentro de los 4 vCPU y 11 GiB.
 
 ```mermaid
 pie title Presupuesto de RAM en VM3 (11 GiB)
     "Sistema, laboratorio y k3s (medido)" : 3
     "Matching Service (Guaranteed)" : 1
-    "7 servicios ASP.NET Core (límite de 256 MiB)" : 1.75
-    "Margen libre (rolling update / escalado)" : 5.25
+    "6 servicios ASP.NET Core (límite de 256 MiB)" : 1.5
+    "Communication (límite de 512 MiB)" : 0.5
+    "Margen libre (rolling update / escalado)" : 5
 ```
 
-> **Pendiente: comprobar el umbral de 6,5 GiB con los 8 servicios.** El escenario AC2-E5 del SAD y el caso PRF-005 del Documento de Pruebas fijan un máximo de 6,5 GiB de RAM en VM3, calculado con 2 GiB para el sistema. Medido el 3 de octubre, el sistema usa 3,0 GiB (el software del laboratorio no estaba en la estimación). Con el límite de 256 MiB por servicio .NET la suma de límites es 5,75 GiB y cabe, pero solo hay cuatro servicios corriendo. Si al sumar los otros cuatro no cabe, las salidas siguen siendo bajar el límite de los .NET o subir el umbral a 7,5 GiB (VM3 tiene 11,6 GiB).
+> **Pendiente: comprobar el umbral de 6,5 GiB con los 8 servicios.** El escenario AC2-E5 del SAD y el caso PRF-005 del Documento de Pruebas fijan un máximo de 6,5 GiB de RAM en VM3, calculado con 2 GiB para el sistema. Medido el 3 de octubre, el sistema usa 3,0 GiB (el software del laboratorio no estaba en la estimación). Con los límites actuales la suma es 6,0 GiB y cabe, pero Actors y Ranking todavía no corren. Si al sumar los otros cuatro no cabe, las salidas siguen siendo bajar el límite de los .NET o subir el umbral a 7,5 GiB (VM3 tiene 11,6 GiB).
 
 **Por qué el Matching queda en "Guaranteed":** cuando VM3 entra en presión de memoria, Kubernetes desaloja primero los pods en QoS "BestEffort" (sin límites) y luego los "Burstable" que más exceden su *request*; un pod "Guaranteed" (request = limit) es el último candidato a desalojo. AC2-E4 exige que el Matching siga respondiendo bajo pico de carga — dejarlo en la clase de QoS más protegida es lo que hace esa exigencia verificable, no solo declarada.
 
@@ -1062,3 +1068,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 3.5 | 14 oct 2026 | Tope del pool de conexiones por servicio (`Maximum Pool Size` en el `Secret`) tras la repetición del estrés de 150 usuarios, y playbook de solo lectura `diagnostico-carga.yml` (SCRUM-388). |
 | 3.6 | 14 oct 2026 | Nominatim con el mapa de Bogotá (ADR-024, SCRUM-454): sección 5.9, playbook `deploy-nominatim.yml`, regla de firewall del 8088 y desplegado en QA (VM5); producción pendiente. Incluye la medición de recursos y el hallazgo sobre la calidad de la geocodificación. |
 | 3.7 | 14 oct 2026 | Resultado de repetir la prueba de estrés con el tope de pool: pasa todos sus umbrales en QA (0 de 42.705 respuestas 5xx). La excepción al RNF-08 sigue en producción hasta aplicar el tope allí. |
+| 3.8 | 22 oct 2026 | Límite de memoria de Communication a 512 MiB tras el `OOMKilled` en QA, con su medición, y la nota operativa de los grupos de consumidores que arrancan desde el principio del topic (sección 5.6). Payments ya tiene manifiesto. |
