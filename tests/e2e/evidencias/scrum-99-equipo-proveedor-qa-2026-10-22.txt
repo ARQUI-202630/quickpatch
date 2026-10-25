@@ -1,6 +1,6 @@
 scrum-99-equipo-proveedor contra QA, 2026-10-22
 Colección: tests/e2e/scrum-99-equipo-proveedor.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
-Inicio: 2026-10-22T20:45:42.011Z. Duración: 20 s. Código de salida: 0.
+Inicio: 2026-10-22T21:12:04.087Z. Duración: 19 s. Código de salida: 0.
 Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
 
 newman
@@ -9,32 +9,32 @@ QUICKPATCH — Gestión de Equipo de Técnicos (SCRUM-99 / HU SCRUM-36)
 
 □ 0. Autenticación Dinámica de Actores y Catálogo
 └ 0.1 Consulta de Categoría Activa de Catálogo
-  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 1.74kB, 96ms]
+  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 1.74kB, 82ms]
   √  [Catalog] 200 OK en consulta de categorías activas
   √  [Catalog] Categoría disponible para especialidad
 
 └ 0.2 Registro Dinámico Proveedor Principal
-  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 446B, 890ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 446B, 886ms]
   √  [Auth] 201 Created registro proveedor 1
 
 └ 0.3 Login Proveedor Principal
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 924ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 878ms]
   √  [Auth] Login de Proveedor 1 exitoso (200 OK)
 
 └ 0.4 Registro Dinámico Proveedor 2 (Mismo Tenant)
-  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 438B, 919ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 438B, 959ms]
   √  [Auth] 201 Created registro proveedor 2
 
 └ 0.5 Login Proveedor 2 en Mismo Tenant
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 926ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 803ms]
   √  [Auth] Login de Proveedor 2 exitoso (200 OK)
 
 └ 0.6 Registro Dinámico Proveedor Tenant Beta
-  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 444B, 945ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 444B, 967ms]
   √  [Auth] 201 Created registro proveedor Beta
 
 └ 0.7 Login Proveedor Tenant Beta
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 1026ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 934ms]
   √  [Auth] Login de Proveedor Beta exitoso (200 OK)
 
 └ 0.8 Registro Dinámico Cliente para Control RBAC
@@ -42,28 +42,28 @@ QUICKPATCH — Gestión de Equipo de Técnicos (SCRUM-99 / HU SCRUM-36)
   √  [Auth] 201 Created registro cliente
 
 └ 0.9 Login Cliente para Control RBAC
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 931ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 865ms]
   √  [Auth] Login de Cliente para RBAC exitoso (200 OK)
 
 └ 0.10 Registro Dinámico Técnico para Control RBAC
-  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 440B, 971ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 440B, 877ms]
   √  [Auth] 201 Created registro técnico
 
 └ 0.11 Login Técnico para Control RBAC
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 980ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 935ms]
   √  [Auth] Login de Técnico para RBAC exitoso (200 OK)
 
 └ 0.12 Login Administrador de Tenant (Opcional)
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 987ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 922ms]
   √  [Auth] Login de administrador exitoso (200 OK)
 
 └ 0.13 Aprobación de Proveedor 1 por Administrador (Opcional)
-  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1655c-da5c-7825-b883-8e7ca0f914b5/approve [200 OK, 321B, 19ms]
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16574-fb08-76a0-a4a2-251618940ab2/approve [200 OK, 321B, 24ms]
   √  [Admin] Proveedor 1 aprobado exitosamente
 
 □ 1. Registro de Técnico en Equipo del Proveedor
 └ 1.1 Proveedor 1 registra un técnico en su equipo
-  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [201 Created, 650B, 1025ms]
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [201 Created, 649B, 909ms]
   √  [RN-TP3 / RF-16] 201 Created al dar de alta técnico en equipo
   √  [RN-TP3] El técnico hereda estado pendiente y rol técnico
 
@@ -74,59 +74,59 @@ QUICKPATCH — Gestión de Equipo de Técnicos (SCRUM-99 / HU SCRUM-36)
   √  [RF-16] Técnico registrado aparece en la lista con datos completos
 
 └ 2.2 Proveedor 1 filtra equipo por status=inactivo
-  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians?status=inactivo [200 OK, 443B, 21ms]
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians?status=inactivo [200 OK, 443B, 19ms]
   √  [Filtro status=inactivo] 200 OK y técnico pendiente listado
 
 └ 2.3 Proveedor 1 filtra equipo por status=activo
-  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians?status=activo [200 OK, 272B, 17ms]
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians?status=activo [200 OK, 272B, 20ms]
   √  [Filtro status=activo] 200 OK y técnico pendiente NO listado como activo
   √  [RN-TP1] Solo técnicos aprobados por admin_tenant pueden estar activos
 
 □ 3. Validaciones de Negocio y Errores
 └ 3.1 Validación: Proveedor envía solicitud incompleta -> 400 Bad Request
-  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [400 Bad Request, 724B, 14ms]
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [400 Bad Request, 724B, 13ms]
   √  [Validación] 400 Bad Request ante datos faltantes
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error validacion
 
 └ 3.2 Unicidad: Proveedor intenta registrar documento duplicado -> 409 Conflict
-  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [409 Conflict, 472B, 1083ms]
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [409 Conflict, 472B, 1000ms]
   √  [RN-U1] 409 Conflict ante documento de identidad duplicado
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error documento-registrado
 
 └ 3.3 Unicidad: Proveedor intenta registrar correo duplicado -> 409 Conflict
-  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [409 Conflict, 466B, 937ms]
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [409 Conflict, 466B, 902ms]
   √  [RN-U1] 409 Conflict ante correo electrónico duplicado
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error correo-registrado
 
 □ 4. Control de Acceso RBAC y Aislamiento Multi-Tenant
 └ 4.1 Control RBAC: Cliente intenta dar de alta técnico en equipo -> 403 Forbidden
-  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [403 Forbidden, 443B, 14ms]
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [403 Forbidden, 443B, 16ms]
   √  [RBAC] 403 Forbidden para cliente intentando gestionar equipo
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error no-autorizado
 
 └ 4.2 Control RBAC: Técnico intenta dar de alta técnico en equipo -> 403 Forbidden
-  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [403 Forbidden, 443B, 15ms]
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [403 Forbidden, 443B, 12ms]
   √  [RBAC] 403 Forbidden para técnico intentando registrar equipo
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error no-autorizado
 
 └ 4.3 Seguridad: Consulta anónima sin token -> 401 Unauthorized
-  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 476B, 13ms]
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians [401 Unauthorized, 476B, 12ms]
   √  [Seguridad] 401 Unauthorized ante solicitud anónima (IDN-017)
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error no-autenticado
 
 └ 4.4 Aislamiento Intra-Tenant (RN-TP4): Proveedor 2 no ve técnicos de Proveedor 1
-  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians [200 OK, 272B, 20ms]
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians [200 OK, 272B, 17ms]
   √  [RN-TP4 / Confidencialidad] 200 OK para Proveedor 2 sin ver técnicos de Proveedor 1
   √  [Aislamiento Intra-Tenant] Cero fuga de técnicos entre proveedores del mismo tenant
 
 └ 4.5 Aislamiento Multi-Tenant (RLS): Proveedor Beta no ve técnicos de Tenant Alfa
-  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians [200 OK, 272B, 21ms]
+  GET https://qa.quickpatch.internal/api/v1/providers/me/technicians [200 OK, 272B, 20ms]
   √  [SAD AC6-E2 / RLS] 200 OK para Proveedor Beta con cero técnicos de Tenant Alfa
   √  [Multi-Tenancy] Row-Level Security garantiza aislamiento estricto cross-tenant
 
@@ -143,11 +143,11 @@ QUICKPATCH — Gestión de Equipo de Técnicos (SCRUM-99 / HU SCRUM-36)
 ├─────────────────────────┼─────────────────────┼────────────────────┤
 │              assertions │                  43 │                  0 │
 ├─────────────────────────┴─────────────────────┴────────────────────┤
-│ total run duration: 15.9s                                          │
+│ total run duration: 15s                                            │
 ├────────────────────────────────────────────────────────────────────┤
 │ total data received: 11.25kB (approx)                              │
 ├────────────────────────────────────────────────────────────────────┤
-│ average response time: 549ms [min: 13ms, max: 1083ms, s.d.: 467ms] │
+│ average response time: 520ms [min: 12ms, max: 1000ms, s.d.: 442ms] │
 └────────────────────────────────────────────────────────────────────┘
-(node:31960) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(node:33096) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
 (Use `node --trace-deprecation ...` to show where the warning was created)

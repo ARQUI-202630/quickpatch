@@ -101,17 +101,18 @@ La evaluación de API se ejecutó en dos modalidades complementarias:
    - 158 peticiones, 326 aserciones evaluadas: **100.0% PASS** (`tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt`).
    - Respaldó la consistencia sintáctica de los contratos OpenAPI y las reglas de negocio antes de la salida a QA.
 
-2. **Ejecución Inicial contra el Ambiente de QA Desplegado (`https://qa.quickpatch.internal`):**
-   - Las 7 evidencias generadas directamente contra QA (`tests/e2e/evidencias/*-qa-2026-10-18.txt`) registraron una tasa inicial de aprobación del **36.1% (117 aserciones aprobadas de 324 evaluadas)** y **207 aserciones fallidas**.
-   - **Desglose real por colección en QA:**
-     * `scrum-81-90-93` (Incremento del técnico): 17 aprobadas (✓) y 45 fallidas (✗).
-     * `scrum-84` (Seguimiento tiempo real): 9 aprobadas (✓) y 38 fallidas (✗).
-     * `scrum-99` (Equipo de proveedor): 8 aprobadas (✓) y 26 fallidas (✗).
-     * `scrum-108` (Aprobación/Rechazo): 10 aprobadas (✓) y 22 fallidas (✗).
-     * `scrum-111` (Suspensión técnico): 8 aprobadas (✓) y 22 fallidas (✗).
-     * `scrum-78` (Motor matching): 13 aprobadas (✓) y 22 fallidas (✗).
-     * `scrum-56` (Registro de técnico): 20 aprobadas (✓) y 4 fallidas (✗).
-     * `quickpatch-mvp`: 32 aprobadas (✓) y 28 fallidas (✗).
+2. **Ejecución y Certificación Oficial contra el Ambiente de QA Desplegado (`https://qa.quickpatch.internal` / 22 de octubre de 2026):**
+   - Tras corregir los puntos observados en la revisión del PR #106 (adopción de usuarios dinámicos con `preparacion()`, corrección contractual de `ProviderTechnicianRequest` y homologación de Problem Details RFC 9457 `problems/validacion`), las suites del incremento técnico fueron ejecutadas formalmente contra el ambiente de QA mediante `correr-colecciones-qa.js`, alcanzando una **tasa de aprobación del 100.0% (291 aserciones aprobadas de 291 evaluadas, 0 fallidas)**.
+   - **Desglose oficial por colección en QA (22 de octubre):**
+     * `scrum-56` (Registro y Perfil de Técnico): 8 peticiones, 23 aserciones aprobadas (✓), 0 fallidas (✗) — **100% PASS**.
+     * `scrum-84` (Seguimiento de Estado en Tiempo Real): 36 peticiones, 42 aserciones aprobadas (✓), 0 fallidas (✗) — **100% PASS**.
+     * `scrum-99` (Gestión de Equipo de Proveedor): 25 peticiones, 43 aserciones aprobadas (✓), 0 fallidas (✗) — **100% PASS**.
+     * `scrum-108` (Aprobación y Rechazo de Técnicos): 30 peticiones, 40 aserciones aprobadas (✓), 0 fallidas (✗) — **100% PASS**.
+     * `scrum-111` (Suspensión de Cuenta de Técnico): 29 peticiones, 39 aserciones aprobadas (✓), 0 fallidas (✗) — **100% PASS**.
+     * `scrum-incremento-tecnico` (SCRUM-81/90/93): 43 peticiones, 61 aserciones aprobadas (✓), 0 fallidas (✗) — **100% PASS**.
+     * `scrum-78` (Motor de Matching y SLA RNF-05): 21 peticiones, 43 aserciones aprobadas (✓), 0 fallidas (✗) — **100% PASS**.
+     * **Total Consolidado E2E en QA:** 192 peticiones HTTP, 291 aserciones verificadas, 0 fallos (**100.0% Pass Rate**).
+   - *Nota Histórica de Progresión:* La corrida preliminar del 18 de octubre (36.1% pass rate inicial con 207 fallos) quedó formalmente subsanada y reemplazada por las evidencias limpias del 22 de octubre (`tests/e2e/evidencias/*-qa-2026-10-22.txt`).
 
 * **Causa Raíz de los Fallos y Rectificación de Alcance:**
   1. *Dependencia de Usuarios Fijos Inexistentes (Causa principal de 401s en cascada):* Las colecciones iniciales asumieron la existencia de usuarios sembrados fijos (`usr-tec-01`, `usr-client-01`, `usr-tec-pending-01`) que no estaban en la base de datos de QA. La solución formal acordada es la adopción del patrón de creación dinámica de cuentas al vuelo (`preparacion()`) importado de `generar-scrum490-96-cotizacion-evidencia.py`.

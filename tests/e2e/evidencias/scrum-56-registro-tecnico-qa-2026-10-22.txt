@@ -1,6 +1,6 @@
 scrum-56-registro-tecnico contra QA, 2026-10-22
 Colección: tests/e2e/scrum-56-registro-tecnico.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
-Inicio: 2026-10-22T20:45:11.754Z. Duración: 7 s. Código de salida: 0.
+Inicio: 2026-10-22T21:10:57.088Z. Duración: 6 s. Código de salida: 0.
 Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
 
 newman
@@ -9,26 +9,26 @@ QUICKPATCH — Registro y Perfil de Técnico (SCRUM-56)
 
 □ 0. Semillas y Datos de Referencia
 └ 0.1 Obtener Especialidad Real de Catálogo
-  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 1.74kB, 94ms]
+  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 1.74kB, 91ms]
   √  [Catalog] 200 OK en consulta de categorías activas
   √  [Catalog] Existe al menos una categoría en el tenant
 
 □ 1. SCRUM-56 — Registro y Perfil de Técnico (Identity)
 └ 1.1 Registro exitoso de técnico (verificationStatus: pendiente)
-  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 452B, 1008ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 452B, 954ms]
   √  [SCRUM-56] 201 Created para registro legítimo
   √  [SCRUM-56] Rol verificado como tecnico
   √  [SCRUM-56 / RN-U1] verificationStatus inicial es pendiente
   √  [Auditoría] Correlation ID presente en cabecera
 
 └ 1.2 Rechazo por documento de identidad repetido → 409 Conflict
-  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [409 Conflict, 472B, 20ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [409 Conflict, 472B, 17ms]
   √  [SCRUM-56] 409 Conflict ante documento repetido
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error documento-registrado
 
 └ 1.3 Rechazo por correo electrónico repetido → 409 Conflict
-  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [409 Conflict, 466B, 16ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [409 Conflict, 466B, 19ms]
   √  [SCRUM-56] 409 Conflict ante correo repetido
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error correo-registrado
@@ -40,40 +40,40 @@ QUICKPATCH — Registro y Perfil de Técnico (SCRUM-56)
   √  [Contrato] Tipo de error validacion
 
 └ 1.5 Login de técnico registrado y obtención de JWT
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 1059ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 819ms]
   √  [Auth] Login de técnico registrado exitoso (200 OK)
   √  [RBAC] Rol del usuario es tecnico
 
 └ 1.6 Consulta de perfil propio (/v1/users/me) con verificationStatus
-  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 447B, 20ms]
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 447B, 23ms]
   √  [SCRUM-56] 200 OK en consulta de perfil
   √  [SCRUM-56] verificationStatus visible como pendiente
   √  [SCRUM-56] Rol verificado como tecnico
 
 └ 1.7 Control RBAC: Técnico no puede crear solicitudes de cliente → 403 Forbidden
-  POST https://qa.quickpatch.internal/api/v1/service-requests [403 Forbidden, 443B, 13ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests [403 Forbidden, 443B, 11ms]
   √  [RBAC / IDN-012] 403 Forbidden para rol tecnico creando solicitud
   √  [RFC 9457] Problem Details con correlationId
   √  [Contrato] Tipo de error no-autorizado
 
-┌─────────────────────────┬─────────────────────┬────────────────────┐
-│                         │            executed │             failed │
-├─────────────────────────┼─────────────────────┼────────────────────┤
-│              iterations │                   1 │                  0 │
-├─────────────────────────┼─────────────────────┼────────────────────┤
-│                requests │                   8 │                  0 │
-├─────────────────────────┼─────────────────────┼────────────────────┤
-│            test-scripts │                   8 │                  0 │
-├─────────────────────────┼─────────────────────┼────────────────────┤
-│      prerequest-scripts │                   3 │                  0 │
-├─────────────────────────┼─────────────────────┼────────────────────┤
-│              assertions │                  23 │                  0 │
-├─────────────────────────┴─────────────────────┴────────────────────┤
-│ total run duration: 2.9s                                           │
-├────────────────────────────────────────────────────────────────────┤
-│ total data received: 4.18kB (approx)                               │
-├────────────────────────────────────────────────────────────────────┤
-│ average response time: 280ms [min: 12ms, max: 1059ms, s.d.: 435ms] │
-└────────────────────────────────────────────────────────────────────┘
-(node:17580) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+┌─────────────────────────┬────────────────────┬────────────────────┐
+│                         │           executed │             failed │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              iterations │                  1 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│                requests │                  8 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│            test-scripts │                  8 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│      prerequest-scripts │                  3 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              assertions │                 23 │                  0 │
+├─────────────────────────┴────────────────────┴────────────────────┤
+│ total run duration: 2.5s                                          │
+├───────────────────────────────────────────────────────────────────┤
+│ total data received: 4.18kB (approx)                              │
+├───────────────────────────────────────────────────────────────────┤
+│ average response time: 243ms [min: 11ms, max: 954ms, s.d.: 373ms] │
+└───────────────────────────────────────────────────────────────────┘
+(node:10488) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
 (Use `node --trace-deprecation ...` to show where the warning was created)

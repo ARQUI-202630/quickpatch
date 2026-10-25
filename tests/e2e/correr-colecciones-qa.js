@@ -125,6 +125,10 @@ for (const nombre of colecciones) {
   ].join('\n');
   fs.writeFileSync(evidencia, `${encabezado}\n${salida}`, 'utf8');
   console.log(`${corrida.status === 0 ? 'OK' : 'CON FALLOS'}  ${path.relative(process.cwd(), evidencia)}`);
+  const tablaMatch = salida.match(/┌─+[\s\S]*?└─+/);
+  if (tablaMatch) {
+    console.log(tablaMatch[0]);
+  }
   if (corrida.status !== 0) fallidas++;
 }
 
