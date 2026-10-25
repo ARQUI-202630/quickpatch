@@ -2,7 +2,7 @@
 
 **Proyecto:** QUICKPATCH - Plataforma multi-tenant de servicios técnicos  
 **Documento:** Descripción de Diseño de Software (SDD)  
-**Estado:** V3 en revisión (SCRUM-424; revisión funcional en SCRUM-428, sección 13) - organizada según el modelo C4 (sección 2.2). La V2 se aprobó en SCRUM-301 (sección 13.1)  
+**Estado:** V3 aprobada (SCRUM-424; revisión funcional en SCRUM-428, sección 13.3) - organizada según el modelo C4 (sección 2.2). La V2 se aprobó en SCRUM-301 (sección 13.1)  
 **Fecha:** Octubre de 2026
 
 ---
@@ -143,15 +143,15 @@ Cada microservicio tiene su propia base de datos dentro de una única instancia 
 
 **Figura 4. Vista lógica general por capas de QUICKPATCH.**
 
-La representación organiza los contenedores de la Figura 3 en cinco capas, sin nombrar el framework de los clientes. En la **capa de cliente** están la App móvil (clientes, empresas cliente, técnicos y proveedores) y el Panel web (administradores). En la **capa de entrada**, el API Gateway recibe REST en `/api/v1/*` y el canal en tiempo real por WebSocket en `/api/v1/realtime` (ADR-023), quita `/api` y enruta por el contrato; cada servicio valida el JWT (ADR-018). Las flechas sólidas son el REST principal hacia Identity, ServiceRequest y Payments, y las punteadas, las excepciones del ADR-025. La **capa de servicios de negocio** reúne los ocho microservicios. En la **capa de integración** están Apache Kafka, por donde los servicios publican y consumen eventos de dominio con el patrón Outbox; el Geocodificador (Nominatim con el mapa de Bogotá, ADR-024), que usa ServiceRequest para ubicar la dirección; y la pasarela de pagos PCI-DSS, el único sistema externo, que usa Payments. En la **capa de datos**, PostgreSQL + PostGIS es una sola instancia con una base por servicio (ADR-014), Redis guarda la caché de Matching y Garage (S3) las evidencias y los respaldos (ADR-016). La fuente de la figura es `diagrams/sdd/src/01_vista_logica_capas.puml`.
+La representación organiza los contenedores de la Figura 3 en cinco capas, sin nombrar el framework de los clientes. En la **capa de cliente** están la App móvil (clientes, empresas cliente, técnicos y proveedores) y el Panel web (administradores). En la **capa de entrada**, el API Gateway recibe REST en `/api/v1/*` y el canal en tiempo real por WebSocket en `/api/v1/realtime` (ADR-023), quita `/api` y enruta por el contrato; cada servicio valida el JWT (ADR-018). Las flechas sólidas son el REST principal hacia Identity, ServiceRequest y Payments, y las punteadas, las excepciones del ADR-025. La **capa de servicios de negocio** reúne los ocho microservicios. En la **capa de integración** están Apache Kafka, por donde los servicios publican y consumen eventos de dominio con el patrón Outbox; el Geocodificador (Nominatim con el mapa de Bogotá, ADR-024), que usa ServiceRequest para ubicar la dirección; y la pasarela de pagos PCI-DSS, el único sistema externo, que usa Payments. En la **capa de datos**, PostgreSQL + PostGIS es una sola instancia con una base por servicio (ADR-014), Redis guarda los candados con los que ServiceRequest coordina el vencimiento de las cotizaciones, y la caché de Matching queda planeada (línea gris punteada); Garage (S3) guarda las evidencias y los respaldos (ADR-016). La fuente de la figura es `diagrams/sdd/src/01_vista_logica_capas.puml`.
 
 ## 5.3 Componentes lógicos principales del backend (complementaria)
 
-![Diagrama de componentes del backend](diagrams/sdd/02_componentes_backend.png)
+![Diagrama de componentes del backend](diagrams/sdd/02_componentes_backend.svg)
 
 **Figura 5. Componentes lógicos principales del backend.**
 
-El API Gateway concentra la entrada de solicitudes síncronas. ServiceRequest, Matching, Payments, Ranking y Communication participan en los flujos de eventos por Kafka. Cada servicio conserva su límite funcional y su propiedad de datos.
+La figura resume en una sola vista los componentes de cada servicio (secciones 6.4 a 6.11) y los eventos de la matriz 8.6, según el código de `develop`; lo que todavía no está implementado aparece en gris como «planeado». El API Gateway recibe el REST y el WebSocket de los clientes; cada servicio valida el JWT (ADR-018). Según ADR-025, el REST principal va a Identity, ServiceRequest y Payments, y las líneas punteadas son sus excepciones: las acciones del técnico en Matching, la administración del catálogo y el buzón, el chat y el canal en tiempo real de Communication. Identity, Catalog, ServiceRequest, Matching y Payments publican sus eventos por un Outbox propio (ADR-007); la tabla junto a Kafka dice qué publica y qué consume cada uno. El ciclo de la solicitud pasa de ServiceRequest a Matching para buscar al técnico, vuelve con su resultado, y al cerrar el servicio llega a Payments, que responde con el pago aprobado o rechazado; Communication convierte esos eventos en avisos del canal en tiempo real (ADR-023) y en notificaciones del buzón (ADR-024), y además atiende el chat de la solicitud (ADR-026). ServiceRequest también pide a Identity los nombres por la consulta interna, ubica la dirección con el geocodificador (ADR-024), coordina en Redis el vencimiento de las cotizaciones y guarda las evidencias en Garage (ADR-016). En el MVP, Payments cobra con una pasarela simulada detrás del mismo puerto que usará la pasarela certificada (ADR-009). Actors y Ranking siguen planeados. Cada servicio conserva su límite funcional y su propia base de datos (ADR-014). La fuente de la figura es `diagrams/sdd/src/02_componentes_backend.puml`.
 
 ## 5.4 Principios de organización
 
@@ -213,19 +213,20 @@ Un servicio no ejecuta escrituras directas sobre tablas propietarias de otro dom
 
 ### 5.6.1 REST
 
-Los contratos publicados están en `quickpatch-api-gateway` (etiqueta `v0.6.0`); el DD los detalla (catálogo en la sección 8.2 y especificación en la 8.3). Cada servicio expone solo los suyos y el API Gateway enruta `/api/<servicio>` sin reglas propias. Desde ADR-025 solo Identity, ServiceRequest y Payments tienen REST principal; las categorías y las localidades las sirve ServiceRequest (service-request 1.8.0), y las rutas de Matching, Catalog y Communication que siguen en el gateway son las excepciones que el ADR lista.
+Los contratos publicados están en `quickpatch-api-gateway` (etiqueta `v0.17.0`); el DD los detalla (catálogo en la sección 8.2 y especificación en la 8.3). Cada servicio expone solo los suyos y el API Gateway enruta `/api/<servicio>` sin reglas propias. Desde ADR-025 solo Identity, ServiceRequest y Payments tienen REST principal; las categorías y las localidades las sirve ServiceRequest (service-request 1.8.0), y las rutas de Matching, Catalog y Communication que siguen en el gateway son las excepciones que el ADR lista.
 
 | Contrato | Versión | Servicio | Rutas |
 |---|---|---|---|
-| `identity.v1.yaml` | 1.7.0 | Identity | `/v1/auth/register/client`, `/v1/auth/register/technician`, `/v1/auth/login`, `/v1/auth/password/setup`, `/v1/users/me`, `/v1/platform/tenants`, `/v1/admin/technicians` (aprobar, rechazar y suspender), `/v1/providers/me/technicians` (alta e invitación) |
+| `identity.v1.yaml` | 1.8.0 | Identity | `/v1/auth/register/client`, `/register/technician` y `/register/company`, `/v1/auth/login`, `/v1/auth/password/setup`, `/v1/users/me`, `/v1/platform/tenants`, `/v1/admin/technicians` (aprobar, rechazar y suspender), `/v1/providers/me/technicians` (alta e invitación), `/v1/companies/me` y sus usuarios |
 | `identity-internal.v1.yaml` | 1.0.0 | Identity | `/internal/v1/users` (nombres por lote, solo entre servicios; no pasa por el API Gateway) |
-| `catalog.v1.yaml` | 1.2.0 | Catalog | `/v1/catalog/categories`, `/v1/catalog/admin/categories` |
-| `service-request.v1.yaml` | 1.3.0 | ServiceRequest | `/v1/service-requests`, `/v1/service-requests/location-preview`, `/v1/service-requests/{id}`, `/v1/technicians/me/service-requests` |
-| `matching.v1.yaml` | 1.0.0 | Matching | `/v1/localities`, `/v1/technicians/me/availability`, `/v1/technicians/me/coverage`, `/v1/matching/offers` (aceptar y rechazar) |
-| `communication.v1.yaml` | 1.0.0 | Communication | `/v1/notifications`, `/v1/notifications/{id}/read` |
-| `asyncapi/realtime.v1.yaml` | 1.0.0 | Communication | `/v1/realtime` (WebSocket, ADR-023) |
+| `catalog.v1.yaml` | 1.3.0 | Catalog | `/v1/catalog/admin/categories` (excepción de ADR-025; las categorías para crear solicitudes las sirve ServiceRequest) |
+| `service-request.v1.yaml` | 1.9.0 | ServiceRequest | `/v1/service-requests` (crear, listar por rol y detalle), `/location-preview`, `/categories` y `/localities` (ADR-025), `/{id}/cancel`, `/{id}/quotes` (emitir, aceptar y rechazar), `/{id}/start`, `/{id}/evidence`, `/{id}/complete`, `/v1/technicians/me/service-requests`, `/v1/admin/service-requests/summary` y `/v1/platform/service-requests/summary` |
+| `matching.v1.yaml` | 1.1.0 | Matching | `/v1/localities`, `/v1/technicians/me/availability`, `/v1/technicians/me/coverage`, `/v1/matching/offers` (aceptar y rechazar); excepción de ADR-025 |
+| `communication.v1.yaml` | 1.3.0 | Communication | `/v1/notifications` y `/{id}/read` (buzón, ADR-024), `/v1/service-requests/{id}/messages` (chat, ADR-026); excepción de ADR-025 |
+| `payments.v1.yaml` | 1.1.0 | Payments | `/v1/service-requests/{id}/payment`, `/v1/payments/{id}/invoice` (JSON o PDF) |
+| `asyncapi/realtime.v1.yaml` | 1.1.0 | Communication | `/v1/realtime` (WebSocket, ADR-023), con la trama `chat.message` desde la 1.1.0 |
 
-La cotización, la cancelación, el inicio y el cierre del servicio, las evidencias, la calificación y el pago (`/v1/service-requests/{id}/quotes`, `/cancel`, `/start`, `/complete`, `/evidence`, `/rating` y `/payment`) están en el DD 8.2 y en el diseño de las secciones 8.4 y 8.5, pero todavía no tienen contrato publicado. `POST /v1/auth/register/company` tampoco está en `identity.v1.yaml` (SCRUM-26).
+La calificación (`/v1/service-requests/{id}/rating`, RF-12) sigue en el DD 8.2 sin contrato publicado; el resto del ciclo, el pago y la cuenta corporativa ya tienen contrato.
 
 ### 5.6.2 Eventos de dominio
 
@@ -241,9 +242,17 @@ matching.technician-assigned
 matching.no-technician-available
 matching.search-resumed
 service-request.status-changed
+service-request.cancelled
+service-request.quoted
+service-request.quote-accepted
+service-request.quote-rejected
+service-request.started
+service-request.completed
+payment.approved
+payment.rejected
 ```
 
-Los eventos de cotización, ejecución, pago y calificación (`service-request.quoted`, `.started`, `.completed`, `.cancelled`, `.evaluated`, `payment.approved` y `payment.rejected`) están en el DD 8.4 y se publican en `quickpatch-kafka` cuando se implementen sus historias.
+Son los 17 esquemas de `quickpatch-kafka` `v0.9.0`. `service-request.evaluated` (calificación, RF-12) sigue planeado en el DD 8.4.
 
 **Sobre común del evento:**
 
@@ -346,8 +355,12 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Equipo del proveedor | `features/equipo` | Técnicos del equipo con filtro y paginación, alta sin contraseña y enlace de invitación para compartir, con uno nuevo si se perdió o venció (`/v1/providers/me/technicians`, identity 1.7.0). El técnico dado de alta queda pendiente de verificación (RN-TP1). | SCRUM-36 / SCRUM-98 |
 | Mapa de localidades | `features/disponibilidad` (`assets/geo`) | Límites de las 20 localidades desde un GeoJSON dentro de la app (capa «Localidad» de la SDP publicada por IDECA, CC BY 4.0, con los mismos códigos de `GET /v1/localities`); los proyecta, abre encuadrado en la zona urbana y resuelve qué localidad se tocó. Sin mapa de fondo ni servicios externos (R5, ADR-024). | SCRUM-33 / SCRUM-89 |
 | Estado en tiempo real | `core/realtime` | Canal `/v1/realtime` (ADR-023): envía el token en la primera trama, reconecta con espera creciente y expone si está conectado. El aviso no trae datos: cada pantalla vuelve a pedir el detalle por REST, y si el canal no está conectado consulta cada 30 s (RF-11, RNF-06). | SCRUM-31 / SCRUM-83 |
-| Ofertas *(planeado)* | `features/ofertas` | Oferta pendiente arriba de Servicios, con localidad, distancia y cuenta regresiva, sin la dirección (RN-SR13); aceptar o rechazar (`matching.v1.yaml` 1.0.0) y aviso con `offer.created`. | SCRUM-30 / SCRUM-80 |
-| Buzón de notificaciones *(planeado)* | — | Lista las notificaciones del usuario con el contador de no leídas y las marca como leídas (`communication.v1.yaml` 1.0.0, RIE-03, ADR-024). La geocodificación de la dirección no está en la app: la hace ServiceRequest (ADR-024). | SCRUM-452 / SCRUM-459 |
+| Ofertas | `features/ofertas` | Oferta pendiente arriba de Servicios, con localidad, distancia y cuenta regresiva, sin la dirección (RN-SR13); aceptar o rechazar (`matching.v1.yaml` 1.0.0) y aviso con `offer.created`. | SCRUM-30 / SCRUM-80 |
+| Buzón de notificaciones | `features/notificaciones` | Lista las notificaciones del usuario con el contador de no leídas, las marca como leídas y abre su solicitud (`communication.v1.yaml` 1.2.0, RIE-03, ADR-024). | SCRUM-459 |
+| Chat de la solicitud | `features/chat` | Historial paginado, envío y mensajes nuevos por la trama `chat.message`; solo lectura al completar, pagar o cancelar (RF-37, ADR-026). | SCRUM-482 |
+| Cuenta corporativa | `features/autenticacion`, `features/empresa` | Registro de la empresa cliente con su primer usuario y alta de otros usuarios con invitación (RF-06, identity 1.8.0). | SCRUM-67 |
+| Solicitudes del cliente y de la empresa | `features/solicitudes` | Lista de las propias o de la empresa con filtro y paginación, sede en la solicitud de empresa y solo lectura para la de otro usuario de la empresa (RF-08, RF-11, RN-SR14). | SCRUM-74 |
+| Pago y comprobante | `features/pagos` | Pago con la pasarela simulada (la tarjeta se tokeniza en el teléfono) y comprobante en PDF para compartir (RF-22 a RF-24). | SCRUM-116 / SCRUM-494 |
 
 Reglas comunes a las dos aplicaciones:
 
@@ -391,7 +404,7 @@ El Gateway no contiene reglas propias de matching, solicitudes, pagos, ranking n
 | `Role` | Concepto de autorización | Conjunto de permisos para cada tipo de usuario. |
 | `AuthenticatedContext` | Objeto lógico | Propaga `userId`, `tenantId` y rol. |
 
-**Datos documentados:** `tenants`, `users`, `technician_profiles`, `password_setup_tokens`, `audit_logs` y `outbox_events` (DD V5).
+**Datos documentados:** `tenants`, `users`, `client_companies`, `technician_profiles`, `password_setup_tokens`, `audit_logs` y `outbox_events` (DD 5.12).
 
 **Componentes (C4).**
 
@@ -406,6 +419,7 @@ En el incremento del Sprint 4, Identity suma:
 - **Verificación de técnicos** (RF-19, RF-20; SCRUM-106): el `admin_tenant` aprueba, rechaza o suspende con motivo (`/v1/admin/technicians`), y cada cambio publica `technician.verification-changed` por el Outbox (ADR-007), igual que el registro publica `technician.registered`. Matching arma con ellos su proyección del técnico (P-01).
 - **Equipo del proveedor** (RF-16; SCRUM-97, SCRUM-461): el proveedor da de alta técnicos sin contraseña (`/v1/providers/me/technicians`) y recibe un enlace de invitación de un solo uso; el técnico define su contraseña con `POST /v1/auth/password/setup`. En `password_setup_tokens` solo se guarda el hash del token, y el enlace apunta al panel de cada ambiente (`Invitations__LinkBase`).
 - **Creación de tenants** (RF-21; SCRUM-462): `POST /v1/platform/tenants` crea la empresa oferente activa en `PlatformUnitOfWork` y registra `crear_tenant` en `audit_logs`; un NIT repetido responde `409 nit-registrado`.
+- **Cuenta corporativa** (RF-06; SCRUM-66): `POST /v1/auth/register/company` crea en una transacción la empresa cliente (`client_companies`) y su primer `empresa_contacto` en el tenant del canal; la empresa es una cuenta dentro del tenant, no un tenant (DEP-13). Los demás usuarios entran con la misma invitación de un solo uso del equipo del proveedor, y el token del `empresa_contacto` lleva `company_id`.
 - **Consulta interna de nombres** (SCRUM-91): `GET /internal/v1/users` (`identity-internal.v1.yaml`) devuelve por lote el nombre y el contacto de usuarios del tenant a otros servicios dentro del clúster; el servicio que llama reenvía el JWT del usuario, así que el tenant sigue saliendo del token. No pasa por el API Gateway ni tiene ruta en el Ingress. ServiceRequest la usa en el detalle de la solicitud para mostrar el cliente al técnico asignado y el técnico al cliente.
 
 ## 6.5 Actors Service
@@ -494,7 +508,7 @@ completado       -> pagado (payment.rejected no cambia el estado, RN-SR5)
 
 El código ya define los nueve estados (`ServiceRequestStatus`). Hoy se usan los de la búsqueda: la creación deja la solicitud en `buscando_tecnico` y los eventos de Matching la pasan a `asignado`, a `en_espera` o de vuelta a `buscando_tecnico` (SCRUM-29). Cada cambio guarda `matching_updated_at` para descartar un evento más viejo que el último aplicado (SCRUM-460). Las demás transiciones llegan con sus historias (RF-34, RF-35, RF-36, RF-14 y RF-22).
 
-**Datos documentados:** `service_requests`, `service_request_categories` (réplica), `outbox_events`, `processed_events` y `ratings` (planeado). `service_categories` es de Catalog Service (DD 5.4); la réplica es la tabla 5.20.
+**Datos documentados:** `service_requests`, `service_request_categories` (réplica), `outbox_events`, `processed_events` y `quotes`, `service_evidence`, `audit_logs`, `localities` (copia) y `ratings` (planeado). `service_categories` es de Catalog Service (DD 5.4); la réplica es la tabla 5.20.
 
 **Referencias lógicas externas:** `client_id`, `technician_id`, `tenant_id`.
 
@@ -502,14 +516,14 @@ El código ya define los nueve estados (`ServiceRequestStatus`). Hoy se usan los
 
 - produce `service-request.created`;
 - produce `service-request.status-changed` cuando aplica un cambio de estado (SCRUM-466);
-- produce `service-request.completed`;
+- produce `service-request.cancelled`, `.quoted`, `.quote-accepted`, `.quote-rejected`, `.started` y `.completed`;
 - consume `matching.technician-assigned`;
 - consume `matching.no-technician-available`;
 - consume `matching.search-resumed`;
 - consume `payment.approved`;
-- consume `payment.rejected` cuando corresponda al flujo.
+- consume `payment.rejected`, que no cambia el estado (RN-SR5).
 
-Los demás eventos de la solicitud (cotización, inicio, cancelación y calificación) y sus consumidores están en el DD 8.4.
+`service-request.evaluated` (calificación) queda planeado; los consumidores de cada evento están en la matriz 8.6.
 
 **Componentes (C4).**
 
@@ -522,7 +536,7 @@ El diagrama reúne las decisiones de diseño que los demás servicios repiten: r
 | Componente | Responsabilidad | Regla/contrato |
 |---|---|---|
 | Contexto autenticado | Toma usuario (`sub`), tenant (`tenant_id`) y rol de los claims del JWT. Nunca lee el tenant del cuerpo. | RN-U3; DD 10.3 |
-| API REST de solicitudes | Creación y detalle; solo el rol `cliente` crea (403). El técnico asignado ve en el detalle la dirección, la ubicación y el contacto del cliente solo entre `asignado` y `completado` (RN-SR13), y lista sus servicios sin esos datos (`/v1/technicians/me/service-requests`, SCRUM-464). Responde `problem+json` con `X-Correlation-Id`. | `service-request.v1.yaml` 1.2.0 |
+| API REST de solicitudes | Creación, lista y detalle; crean el `cliente` y el `empresa_contacto` (con sede; `client_type` y `company_id` salen del token, RN-SR12), y los demás usuarios de la empresa ven la solicitud (RN-SR14). El técnico asignado ve en el detalle la dirección, la ubicación y el contacto del cliente solo entre `asignado` y `completado` (RN-SR13), y lista sus servicios sin esos datos (`/v1/technicians/me/service-requests`, SCRUM-464). Responde `problem+json` con `X-Correlation-Id`. | `service-request.v1.yaml` 1.2.0 |
 | Casos de uso de la solicitud | Al crear, coordina validación, agregado, persistencia y outbox en una transacción local. | RF-07; ADR-007 |
 | Reglas de creación | Ubicación en el área de Bogotá (422), categoría activa (422) y longitudes. | RN-SR1, RN-SR9 a RN-SR11 |
 | Agregado ServiceRequest | Crea en `buscando_tecnico` y solo admite transiciones válidas. | RN-SR2 a RN-SR7; DD 7.4 |
@@ -531,9 +545,11 @@ El diagrama reúne las decisiones de diseño que los demás servicios repiten: r
 | Consumidor de `catalog.category-changed` y réplica | Aplica cada evento una vez por `eventId` y mantiene `service_request_categories`. | RN-EV1; ADR-017 |
 | Directorio de usuarios | Pide a Identity el nombre y el contacto del cliente y del técnico para el detalle (`GET /internal/v1/users`), con un plazo corto: si Identity no responde, el detalle sale sin esos datos. | `identity-internal.v1.yaml`; SCRUM-91 |
 | Consumidor de matching | Aplica `matching.technician-assigned`, `.no-technician-available` y `.search-resumed` al estado, una vez por `eventId` y descartando eventos viejos. Si aplica el cambio, registra `service-request.status-changed` en el outbox en la misma transacción; si lo descarta, no. | Sección 8.6; SCRUM-29, SCRUM-466 |
-| Consumidor de pagos *(planeado)* | Aplica `payment.approved` y `payment.rejected` al estado. | Sección 8.6 |
-| Geocodificación de la dirección *(planeado)* | Si la solicitud llega sin coordenadas, busca la dirección en el geocodificador (Nominatim con el mapa de Bogotá) y responde `422 direccion-no-encontrada` si no la encuentra; `location-preview` deja confirmar el punto antes de crear. | ADR-024; contrato 1.3.0; SCRUM-456 |
-| Evidencias y calificación *(planeado)* | Fotos en Garage (RF-15) y calificación; publica `service-request.completed` y `.evaluated`. | RF-12, RF-15 |
+| Consumidor de pagos | Aplica `payment.approved` (pasa a `pagado`) una vez por `eventId`; `payment.rejected` no cambia el estado (RN-SR5). | Sección 8.6 |
+| Geocodificación de la dirección | Si la solicitud llega sin coordenadas, busca la dirección en el geocodificador (Nominatim con el mapa de Bogotá) y responde `422 direccion-no-encontrada` si no la encuentra; `location-preview` deja confirmar el punto (ADR-024). | RIE-02; service-request 1.3.0 |
+| Cotización y cancelación | Emite, acepta y rechaza cotizaciones (máximo 3, con vencimiento) y cancela antes de iniciar. | RF-34 a RF-36; 1.5.0 y 1.6.0 |
+| Ejecución y evidencias | Inicia, guarda las fotos en Garage y completa con al menos una; publica `.started` y `.completed`. | RF-14, RF-15; 1.7.0 |
+| Calificación *(planeado)* | Calificación del cliente después del pago; publicará `service-request.evaluated`. | RF-12 |
 
 ## 6.8 Matching Service
 
@@ -619,7 +635,7 @@ Todos los componentes están planeados: el servicio es hoy un esqueleto.
 | Concepto | Persistencia | Responsabilidad |
 |---|---|---|
 | `Payment` | `payments` | Estado de una operación de pago sin almacenar PAN/CVV. |
-| `Invoice` | `invoices` | Factura asociada al pago o servicio. |
+| `Invoice` | `invoices` | Comprobante del pago aprobado, con el NIT si el pagador es una empresa; el PDF se genera al pedirlo. |
 | `PaymentTokenReference` | Value Object | Referencia al token suministrado por el PSP. |
 | `PaymentStatus` | Value Object / Enum conceptual | Estado controlado de la transacción. |
 
@@ -629,9 +645,9 @@ Todos los componentes están planeados: el servicio es hoy un esqueleto.
 
 ![Componentes de Payments Service](diagrams/c4/C4-04-Componentes-Payments.png)
 
-**Figura 17. Componentes de Payments Service (C4 · Component; diseño). Vista `C4-04-Componentes-Payments`.**
+**Figura 17. Componentes de Payments Service (C4 · Component). Vista `C4-04-Componentes-Payments`.**
 
-Todos los componentes están planeados. El servicio nunca recibe PAN ni CVV: la app tokeniza con la pasarela y el adaptador cobra con la referencia del token (ADR-009, RNF-01).
+Implementado en el MVP con la pasarela simulada (ADR-009 modificado; SCRUM-115 y SCRUM-493): la app tokeniza la tarjeta y a Payments solo llega el token (RNF-01). El adaptador cobra detrás del mismo puerto que usará la pasarela certificada, que sigue planeada junto con su receptor de webhooks; mientras tanto, una conciliación programada cierra los pagos que quedaron sin respuesta. El pago se abre al consumir `service-request.completed`, publica `payment.approved` o `payment.rejected` por el Outbox y emite el comprobante en JSON o PDF, sin validez fiscal (RF-24). Payments 0.1.1 está en QA (SAD 2.2, RNF-01).
 
 ## 6.11 Communication Service
 
@@ -653,11 +669,11 @@ Todos los componentes están planeados. El servicio nunca recibe PAN ni CVV: la 
 
 ![Componentes de Communication Service](diagrams/c4/C4-04-Componentes-Communication.png)
 
-**Figura 18. Componentes de Communication Service (C4 · Component; diseño). Vista `C4-04-Componentes-Communication`.**
+**Figura 18. Componentes de Communication Service (C4 · Component). Vista `C4-04-Componentes-Communication`.**
 
 El canal en tiempo real está implementado (ADR-023): `/v1/realtime` valida el token de la primera trama y cierra con el código del contrato si no llega a tiempo (4002), si es inválido (4001) o cuando vence (4004; corregido con Kestrel en SCRUM-469). Un consumidor de `service-request.created`, `service-request.status-changed` y `matching.offer-created` decide a quién avisar con los datos del propio evento (`clientId`, `technicianId`) y avisa a cada usuario conectado dentro de su tenant. El aviso de estado sale de ServiceRequest, que solo publica `status-changed` cuando aplicó el cambio; antes salía de los eventos de Matching, y uno que ServiceRequest descartaba por viejo producía un aviso falso (SCRUM-466). El aviso no trae datos: la app vuelve a pedir el detalle por REST. Como Communication todavía no tiene base de datos, recuerda en memoria los últimos `eventId` para no repetir un aviso; un aviso repetido tras un reinicio no hace daño, porque la app solo vuelve a pedir el mismo detalle.
 
-Está planeado el buzón de notificaciones (ADR-024; SCRUM-456): la tabla `notifications` en `db_communication`, `GET /v1/notifications` y `POST /v1/notifications/{id}/read` (`communication.v1.yaml` 1.0.0), y `processed_events` en lugar de la memoria. También están planeadas las plantillas de los avisos de cotización, ejecución y pago. No hay adaptador de un proveedor externo: el correo y el push quedan fuera del MVP (R5).
+El buzón de notificaciones también está implementado (ADR-024; SCRUM-456 y SCRUM-488): la tabla `notifications` en `db_communication`, `GET /v1/notifications` y `POST /v1/notifications/{id}/read` (`communication.v1.yaml` 1.2.0), con `processed_events` para no repetir avisos. El chat de la solicitud (ADR-026) completa el servicio; su despliegue en QA es la versión 0.3.0.
 
 ## 6.12 Reglas transversales del backend
 
@@ -925,7 +941,7 @@ sequenceDiagram
 
 ---
 
-**Vista C4.** El flujo de pago a nivel de contenedores. Payments es hoy un esqueleto, así que el diagrama es de diseño.
+**Vista C4.** El flujo de pago a nivel de contenedores. Payments está implementado con la pasarela simulada; la pasarela certificada del diagrama sigue planeada.
 
 ![Pago tokenizado y facturación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Pago.png)
 
@@ -1331,9 +1347,9 @@ sequenceDiagram
 | 1 | Registro y creación de solicitud | Identity, Catalog, ServiceRequest | ✅ Figuras 3, 9, 10, 12 y 13 | ✅ Figuras 21, 22 y 25 | ✅ Secciones 6.2, 10.2 y 10.3 | ✅ Figuras 30 y 31 |
 | 2 | Matching y asignación | Matching, ServiceRequest, Communication | ✅ Figuras 3, 13, 15 y 18 | ✅ Figuras 21, 22 y 22b | ✅ Secciones 6.8 y 10.8 | ✅ Figuras 30 y 31 |
 | 3 | Sin técnico disponible | Matching, ServiceRequest | ✅ Figuras 13 y 15 | 🟡 Figura 21 (rama sin candidatos), sin vista C4 propia | ✅ Secciones 6.7 y 6.8 | ✅ Figuras 30 y 31 |
-| 4 | Ejecución del servicio | ServiceRequest, Communication | 🟡 Figura 13 (evidencias planeadas) | 🟡 Figura 23 (diseño) | ⏳ Sin implementar | ✅ Figuras 30 y 31 (Garage) |
-| 5 | Pago | Payments, ServiceRequest | 🟡 Figura 17 (diseño) | 🟡 Figuras 23 y 24 (diseño) | ⏳ Sin implementar | ⏳ Sin la pasarela (proveedor por definir) |
-| 6 | Aprobación/rechazo PSP | Payments, ServiceRequest | 🟡 Figura 17 (diseño) | 🟡 Figuras 23 y 24 (diseño) | ⏳ Sin implementar | ⏳ Sin la pasarela (proveedor por definir) |
+| 4 | Ejecución del servicio | ServiceRequest, Communication | ✅ Figura 13 | 🟡 Figura 23 (diseño) | ✅ Secciones 6.7 y 10.2 (evidencia en QA: `scrum-96-evidencia`) | ✅ Figuras 30 y 31 (Garage) |
+| 5 | Pago | Payments, ServiceRequest | ✅ Figura 17 (pasarela simulada) | 🟡 Figuras 23 y 24 (diseño) | ✅ Sección 6.10 (evidencia en QA: `scrum-495-comprobante`) | 🟡 Sin la pasarela certificada (proveedor por definir) |
+| 6 | Aprobación/rechazo PSP | Payments, ServiceRequest | ✅ Figura 17 (aprobado y rechazado con la pasarela simulada) | 🟡 Figuras 23 y 24 (diseño) | ✅ Sección 6.10 | 🟡 Sin la pasarela certificada (proveedor por definir) |
 | 7 | Calificación | ServiceRequest, Ranking | 🟡 Figuras 13 y 16 (diseño) | 🟡 Figura 27 (diseño) | ⏳ Sin implementar | ✅ Figuras 30 y 31 |
 | 8 | Aislamiento multi-tenant | API Gateway, todos los servicios | ✅ Figura 3 y sección 6.12 | ✅ Figuras 25 y 28; Figura 20 (C4 · Code) | ✅ Secciones 6.12 y 10.3 | ✅ Figuras 30, 31 y 33 |
 | 9 | Falla temporal de Kafka | Cualquier productor, Kafka | ✅ Figura 3 y sección 6.12 | ✅ Figura 29; Figura 19 (C4 · Code) | ✅ Secciones 8.10 y 10.3 | ✅ Figuras 30 y 31 |
@@ -2011,20 +2027,20 @@ El proveedor registra técnicos de su equipo, que pasan por la misma verificaci�
 
 # 12. Trazabilidad entre diagramas
 
-Antes de consolidar una versión final del SDD se verifica la lista siguiente. Resultado de la revisión de la V3 contra `develop` del 17 de octubre de 2026 (SCRUM-424):
+Antes de consolidar una versión final del SDD se verifica la lista siguiente. Resultado de la revisión de la V3 contra `develop` del 22 de octubre de 2026 (SCRUM-424 y revisión funcional de SCRUM-428, sección 13.3):
 
 |Verificación|Resultado|Cómo se revisó y qué falta|
 |---|---|---|
-|Todo contenedor del diagrama de contenedores tiene repositorio, pipeline y despliegue (secciones 9 y 10).|🟡 Parcial|Los 8 microservicios, el API Gateway, las dos apps y Kafka tienen repositorio y pipeline. Redis, Garage, PostgreSQL y el Geocodificador se despliegan con Ansible desde `infrastructure/`. Actors, Ranking y Payments tienen pipeline pero no manifiestos: `primer-despliegue-servicios.yml` despliega solo Identity, Catalog, ServiceRequest, Matching y Communication. El Geocodificador está solo en QA.|
-|Todo contenedor desplegable aparece en los diagramas de despliegue de producción y QA.|🟡 Parcial|Todos aparecen en las Figuras 30 y 31, pero Actors, Ranking y Payments se dibujan corriendo en el k3s aunque no están desplegados, y el Geocodificador se dibuja en producción. Se marcan como planeados en la segunda entrega de la V3 (DSL y figuras).|
+|Todo contenedor del diagrama de contenedores tiene repositorio, pipeline y despliegue (secciones 9 y 10).|🟡 Parcial|Los 8 microservicios, el API Gateway, las dos apps y Kafka tienen repositorio y pipeline. Redis, Garage, PostgreSQL y el Geocodificador se despliegan con Ansible desde `infrastructure/`. Payments ya tiene manifiesto y corre en QA (0.1.1). Actors y Ranking siguen sin manifiesto: son los dos servicios planeados.|
+|Todo contenedor desplegable aparece en los diagramas de despliegue de producción y QA.|✅ Cumple|Todos aparecen en las Figuras 30 y 31. Actors y Ranking, y el Geocodificador de producción, se dibujan con borde punteado porque todavía no están desplegados.|
 |Los diagramas dinámicos usan solo contenedores y relaciones del modelo C4.|✅ Cumple|Las vistas dinámicas se definen en `quickpatch.dsl` sobre los elementos del modelo, y `structurizr validate` no da errores (SCRUM-468).|
-|Los escenarios de validación pueden seguirse en los diagramas de contenedores, componentes, dinámicos y de despliegue.|🟡 Parcial|Matriz 8.13.4: los escenarios 1, 2, 8 y 9 se siguen en todos; el 3 no tiene vista C4 dinámica propia, y del 4 al 7 los diagramas son de diseño.|
-|Los contratos REST coinciden con el DD y con `quickpatch-api-gateway`.|✅ Cumple|La sección 5.6.1 lista los contratos de la etiqueta `v0.6.0`, que son los del DD V5. Los endpoints sin contrato publicado (cotización, ejecución, pago, calificación y registro de empresa) se nombran como diseño.|
-|Los eventos coinciden con el DD y con `quickpatch-kafka`.|✅ Cumple|La sección 5.6.2 y la matriz 8.6 tienen los 9 eventos de `topics/topics.yaml` (con `service-request.status-changed`, SCRUM-466), con su productor y sus consumidores; los demás se marcan como diseño.|
-|Los estados de `ServiceRequest` son consistentes con SRS, DD y código.|✅ Cumple|Los nueve estados de la sección 6.7 coinciden con DD 7.4 y con `ServiceRequestStatus`; el código usa hoy los de la búsqueda.|
-|Los nombres de servicios son uniformes en SAD, SDD, repositorios y despliegue.|🟡 Parcial|Los 8 servicios se llaman igual en todos. Los clientes se nombran por su framework en algunos diagramas («Angular Web», «Flutter Mobile»); SCRUM-468 los cambia por «Panel web» y «App móvil».|
+|Los escenarios de validación pueden seguirse en los diagramas de contenedores, componentes, dinámicos y de despliegue.|🟡 Parcial|Matriz 8.13.4: los escenarios 1, 2, 4, 5, 6, 8 y 9 se siguen en las vistas estáticas, y la ejecución y el pago tienen evidencia de QA. El 3 no tiene vista C4 dinámica propia, las dinámicas de ejecución y pago siguen siendo de diseño y el 7 (calificación) está planeado.|
+|Los contratos REST coinciden con el DD y con `quickpatch-api-gateway`.|✅ Cumple|La sección 5.6.1 lista los contratos de la etiqueta `v0.17.0`, que son los del DD 5.13. Solo la calificación (`/rating`) sigue sin contrato y se nombra como diseño.|
+|Los eventos coinciden con el DD y con `quickpatch-kafka`.|✅ Cumple|La sección 5.6.2 y la matriz 8.6 tienen los 17 eventos de `quickpatch-kafka` `v0.9.0`; `service-request.evaluated` sigue planeado.|
+|Los estados de `ServiceRequest` son consistentes con SRS, DD y código.|✅ Cumple|Los nueve estados de la sección 6.7 coinciden con DD 7.4 y con `ServiceRequestStatus`, y el código ya los usa todos, de la búsqueda al pago.|
+|Los nombres de servicios son uniformes en SAD, SDD, repositorios y despliegue.|✅ Cumple|Los 8 servicios se llaman igual en todos, y los clientes se nombran «App móvil» y «Panel web», sin el framework (SCRUM-468).|
 |Ningún servicio modifica directamente datos propiedad de otro dominio.|✅ Cumple|Cada servicio tiene su base (ADR-014). ServiceRequest y Matching guardan réplicas propias alimentadas por eventos (ADR-017), y la consulta interna de Identity (`/internal/v1/users`) es de solo lectura.|
-|Las decisiones de seguridad multi-tenant aparecen de forma coherente en todos los diagramas.|✅ Cumple|Los servicios con base toman el tenant del JWT y usan RLS (sección 6.12); la única excepción, la gestión de tenants, está acotada y auditada (Figura 28). Communication, que todavía no tiene base, avisa solo a los usuarios conectados del tenant del evento.|
+|Las decisiones de seguridad multi-tenant aparecen de forma coherente en todos los diagramas.|✅ Cumple|Los servicios con base toman el tenant del JWT y usan RLS (sección 6.12), Communication incluido (buzón y chat en `db_communication`). La única excepción, la gestión de tenants, está acotada y auditada (Figura 28).|
 
 ---
 
@@ -2032,14 +2048,14 @@ Antes de consolidar una versión final del SDD se verifica la lista siguiente. R
 
 | Sección | Corresponde a | Estado |
 |---|---|---|
-| System Landscape, System Context y Container (3 a 5) | Arquitectura | **V3 - en revisión**; contratos de la sección 5.6 al día con `v0.6.0` y `quickpatch-kafka` |
-| Component y Code (6 y 7) | Backend + Frontend | **V3 - en revisión**; texto con el incremento del Sprint 4 (sección 13.2); figuras C4 pendientes de exportar con el DSL de la V3 |
-| Dynamic (8) | Backend + QA | **V3 - en revisión**; asignación y aceptación del técnico (SCRUM-427) |
-| Deployment (9) | DevOps | **V3 - en revisión**; falta marcar Actors, Ranking y Payments y el Geocodificador de producción como no desplegados (sección 12) |
+| System Landscape, System Context y Container (3 a 5) | Arquitectura | **V3 - aprobada** (SCRUM-428); contratos al día con `v0.17.0` y `quickpatch-kafka` `v0.9.0` |
+| Component y Code (6 y 7) | Backend + Frontend | **V3 - aprobada**; texto y figuras C4 exportadas con el DSL de la V3 (segunda entrega, sección 13.2) |
+| Dynamic (8) | Backend + QA | **V3 - aprobada**; asignación y aceptación del técnico (SCRUM-427) |
+| Deployment (9) | DevOps | **V3 - aprobada**; Actors, Ranking y el Geocodificador de producción marcados como no desplegados |
 | Organización del código (10) | Backend + Frontend | **Desarrollada - lista para revisión** |
 | Flujos de negocio (11) | Arquitectura | **Desarrollada - 15 BPMN** |
-| Escenarios de validación (8.13) | Equipo | **Matriz completa** (8.13.4): 4 escenarios validados, 1 sin vista dinámica propia y 4 en diseño |
-| Revisión funcional | Product Owner | **V2 aprobada** (SCRUM-301, sección 13.1); **V3 pendiente** (SCRUM-428) |
+| Escenarios de validación (8.13) | Equipo | **Matriz completa** (8.13.4): 7 escenarios seguidos en las vistas, 1 sin vista dinámica propia y 1 planeado |
+| Revisión funcional | Product Owner | **V2 aprobada** (SCRUM-301, sección 13.1); **V3 aprobada** (SCRUM-428, sección 13.3) |
 
 ## 13.1 Revisión funcional del SDD V2 (SCRUM-301)
 
@@ -2065,7 +2081,7 @@ Revisión del 8 de octubre de 2026 con los criterios de SCRUM-301: que el docume
 
 ## 13.2 Cambios del SDD V3 (SCRUM-424)
 
-La V3 lleva el documento al incremento del Sprint 4 implementado en `develop` hasta el 17 de octubre de 2026:
+La V3 lleva el documento al incremento del Sprint 4 implementado en `develop` hasta el 17 de octubre de 2026, y la segunda entrega (al final de esta sección) hasta el 22 de octubre:
 
 - **Contratos (5.6):** los contratos REST de la etiqueta `v0.6.0` de `quickpatch-api-gateway` (Identity 1.7.0 e interno 1.0.0, Catalog 1.2.0, ServiceRequest 1.3.0, Matching 1.0.0, Communication 1.0.0 y el canal en tiempo real) y los eventos de `quickpatch-kafka`, con `service-request.status-changed` (SCRUM-466). Lo que todavía no tiene contrato se nombra como diseño.
 - **Aplicaciones cliente (6.2):** en el panel, la activación de la cuenta del técnico de un equipo; en la app, los servicios del técnico, el equipo del proveedor, la activación de cuenta y el canal en tiempo real, que deja de estar planeado. Las ofertas (SCRUM-80) y el buzón (SCRUM-459) siguen planeados.
@@ -2078,10 +2094,32 @@ La V3 lleva el documento al incremento del Sprint 4 implementado en `develop` ha
 
 **Pendiente para cerrar la V3:**
 
-1. Actualizar `quickpatch.dsl` con los componentes implementados y los que faltan, y volver a exportar las vistas (segunda entrega de SCRUM-424, después de SCRUM-468).
-2. Nombrar los clientes sin el framework en los diagramas (SCRUM-468).
-3. Rehacer la Figura 4 con archivo fuente en el repositorio (SCRUM-470).
-4. Revisión funcional con el Product Owner (SCRUM-428).
+Ninguno: la revisión funcional con el Product Owner (SCRUM-428) queda en la sección 13.3.
+
+**Segunda entrega (22 de octubre de 2026).** Ya están hechos SCRUM-468 (clientes sin el framework), SCRUM-470 y SCRUM-471 (Figuras 4 y 5 con fuente PlantUML). En esta entrega:
+
+- **Modelo C4:** `quickpatch.dsl` deja de marcar como planeados la búsqueda y las ofertas de Matching, el pago y el comprobante de Payments, el canal, el buzón y el chat de Communication, la geocodificación y el Geocodificador, y el estado en tiempo real y el buzón de la app. Suma la cuenta corporativa en Identity, la cotización y la ejecución en ServiceRequest, y el chat, la empresa y el pago en la app. Siguen planeados Actors, Ranking, la calificación, la caché de Matching en Redis y la pasarela certificada con sus webhooks. Se volvieron a exportar las Figuras 3, 9, 10, 13, 15, 17, 18, 30 y 31.
+- **Contratos y eventos (5.6):** etiqueta `v0.17.0` de `quickpatch-api-gateway` y los 17 esquemas de `quickpatch-kafka` `v0.9.0`.
+- **Servicios (6.2, 6.4, 6.7, 6.10 y 6.11):** cuenta corporativa, solicitud de empresa, cotización y ejecución, pago con la pasarela simulada, buzón y chat, como en `develop`.
+- **Validación (8.13.4):** los escenarios de ejecución y pago pasan a implementados, con su evidencia de QA.
+
+---
+
+## 13.3 Revisión funcional del SDD V3 (SCRUM-428)
+
+Revisión del 22 de octubre de 2026 sobre `develop`, con los mismos criterios de la V2 (sección 13.1) más la correspondencia con el código del Sprint 4.
+
+|Criterio|Cómo se verificó|Resultado|
+|---|---|---|
+|C4 reemplaza a 4+1|Búsqueda de "4+1" y de los nombres de sus vistas|Sin restos: solo aparece en la sección 13.1, que cuenta el reemplazo.|
+|Consistencia con el SRS, el DD y los ADR|Cada RF y RNF citado se buscó en el SRS, cada regla RN-* en el DD y cada ADR en `docs/architecture/adr/`|Todos existen.|
+|No inventa alcance|Contenedores, componentes y eventos comparados con el DD 5.13, `quickpatch-api-gateway` `v0.17.0` y `quickpatch-kafka` `v0.9.0`|Sin alcance nuevo. Lo no implementado (Actors, Ranking, calificación, caché de Matching y pasarela certificada) está marcado como planeado.|
+|Corresponde al código|Componentes de las secciones 6.2 a 6.11 comparados con `develop` de cada repositorio y con las colecciones corridas en QA (SAD 2.2)|Coincide. La tecnología de Matching se corrigió en el modelo C4 a Java 25 + Spring Boot 4.1 (`pom.xml`), como dice el DD.|
+|Imágenes|Cada `![...](...)` del documento apunta a un archivo existente|Sin enlaces rotos. Las 20 vistas C4 donde aparecen el gateway o los servicios se volvieron a exportar.|
+|Observación del profesor sobre la Figura 3|Forma del API Gateway y de los microservicios|El API Gateway pasa a rectángulo y los ocho microservicios a hexágono en todas las vistas.|
+|Comprensible para el PO|Lectura de las secciones 1 a 5 y 11|Se entiende: el System Context y los BPMN describen el negocio, y cada figura tiene su texto.|
+
+**Resultado:** la V3 queda aprobada. Lo que sigue abierto (despliegue de Communication 0.3.0 en QA, servicios planeados) está registrado en las secciones 12 y 6.14 y no bloquea el documento.
 
 ---
 

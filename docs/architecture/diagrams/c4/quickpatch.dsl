@@ -15,7 +15,7 @@
  *   C4-07  Code                         fuera de Structurizr: ver los .puml de esta carpeta
  *
  * Etiqueta "Planeado": elemento o relación diseñado en el SDD/DD que todavía no está en el
- * código de develop (12 de octubre de 2026). Se dibuja con borde punteado.
+ * código de develop (22 de octubre de 2026). Se dibuja con borde punteado.
  *
  * Fuentes: SRS (roles y RIE-01 a RIE-03), SAD (4.1, ADR-003 a ADR-024), SDD (secciones 3 a 9),
  * DD (5, 7.2, 10) y el código de los 12 repositorios. Integra el C4-L1 del
@@ -56,7 +56,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     mobConfig = component "Configuración del ambiente" "URL base, Host del gateway y huella SHA-256 del certificado de QA (pinning)." "Dart · core/config"
                     mobHttp = component "Cliente HTTP" "Adjunta JWT y X-Correlation-Id, valida el certificado y traduce problem+json en errores de la app." "Dio · core/network"
                     mobSesion = component "Sesión" "Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol." "Almacenamiento seguro del dispositivo · core/session"
-                    mobAuth = component "Autenticación" "Login, registro de cliente hogar y registro de técnico o proveedor con su especialidad (SCRUM-55); el registro de empresa está oculto hasta SCRUM-26." "Riverpod · features/autenticacion"
+                    mobAuth = component "Autenticación" "Login, registro de cliente hogar y registro de técnico o proveedor con su especialidad (SCRUM-55); registro de empresa con razón social, NIT y primer usuario (SCRUM-67)." "Riverpod · features/autenticacion"
                     mobInicio = component "Inicio por rol" "Acceso a la nueva solicitud y categorías de Catalog para el cliente; opciones (Disponibilidad y cobertura) y aviso de verificación para técnico y proveedor (SCRUM-441)." "Riverpod · features/inicio"
                     mobCuenta = component "Cuenta" "Datos de la sesión, licencias y cierre de sesión (SCRUM-441)." "Pantalla móvil · features/inicio"
                     mobDiseno = component "Sistema de diseño" "Tema azul con tokens y tipografía, y componentes compartidos: tarjeta de solicitud, chip de estado, selector de categoría, botones y estados vacío, de error y de carga (SCRUM-439)." "Componentes móviles · app/theme y shared/widgets"
@@ -64,8 +64,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     mobUbicacion = component "Ubicación del dispositivo" "Permiso y lectura del GPS con respaldo en LocationManager y límite de 15 s." "geolocator · features/solicitudes/data"
                     mobDisponibilidad = component "Disponibilidad y cobertura" "Interruptor de disponibilidad (bloqueado si está ocupado, RN-M6) y elección de las localidades en el mapa o con chips sincronizados (RF-13, RN-M9; SCRUM-89)." "Riverpod · features/disponibilidad"
                     mobMapa = component "Mapa de localidades" "Límites de las 20 localidades desde un GeoJSON de IDECA dentro de la app, con los códigos de GET /v1/localities; proyección, encuadre urbano y toque por localidad, sin mapa de fondo (R5, ADR-024)." "CustomPainter · features/disponibilidad"
-                    mobTiempoReal = component "Estado en tiempo real" "WebSocket /v1/realtime con el token en la primera trama; si se cae, consulta el detalle cada 30 s (RF-11, RNF-06, ADR-023)." "Dart · core/realtime" "Planeado"
-                    mobNotificaciones = component "Buzón de notificaciones" "Lista las notificaciones del usuario (RIE-03, ADR-024)." "Pantalla móvil" "Planeado"
+                    mobTiempoReal = component "Estado en tiempo real" "WebSocket /v1/realtime con el token en la primera trama; si se cae, consulta el detalle cada 30 s (RF-11, RNF-06, ADR-023)." "Dart · core/realtime"
+                    mobNotificaciones = component "Buzón de notificaciones" "Lista las notificaciones del usuario, las marca leídas y abre su solicitud (RIE-03, ADR-024; SCRUM-459)." "Riverpod · features/notificaciones"
+                    mobChat = component "Chat de la solicitud" "Historial paginado, envío y mensajes nuevos por la trama chat.message; solo lectura al cerrar (RF-37, ADR-026; SCRUM-482)." "Riverpod · features/chat"
+                    mobEmpresa = component "Usuarios de la empresa" "Empresa cliente del usuario y alta de otros usuarios con invitación (RF-06; SCRUM-67)." "Riverpod · features/empresa"
+                    mobPagos = component "Pago y comprobante" "Pago con la pasarela simulada (la tarjeta se tokeniza en el teléfono) y comprobante en PDF (RF-22 a RF-24)." "Riverpod · features/pagos"
                 }
                 web = container "Panel web" "Panel de administración del tenant y de la plataforma." "SPA web + TypeScript" "Web Browser" {
                     webShell = component "Shell y rutas" "Rutas, layout con barra lateral y encabezado, y redirección a login o al inicio del rol (SCRUM-435)." "Enrutador web · app.routes y layout"
@@ -85,7 +88,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             gateway = container "API Gateway" "Única entrada HTTP: quita /api y enruta al servicio por la ruta del contrato; cada servicio valida el JWT (ADR-018, SDD 6.3)." "Nginx (quickpatch-api-gateway)" "Gateway"
 
             group "Microservicios" {
-                identity = container "Identity Service" "Autenticación, usuarios, tenants y auditoría." "ASP.NET Core (.NET 10)" {
+                identity = container "Identity Service" "Autenticación, usuarios, tenants y auditoría." "ASP.NET Core (.NET 10)" "Microservicio" {
                     idApi = component "API de autenticación y usuarios" "POST /v1/auth/register/client, /register/technician y /login; GET /v1/users/me." "Minimal API · Endpoints"
                     idPlatformApi = component "API de plataforma" "GET y PATCH /v1/platform/tenants; solo admin_plataforma." "Minimal API · Endpoints"
                     idSeguridad = component "Autorización y auditoría de 403" "Valida rol y tenant del JWT y registra cada acceso denegado (RNF-04)." "ASP.NET Core · Security"
@@ -96,16 +99,17 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idDominio = component "Dominio de identidad" "Tenant, User, TechnicianProfile, Roles y AuditEntry." "Domain"
                     idTokens = component "Emisor de tokens RS256" "Firma el JWT con la llave privada (ADR-018)." "RsaTokenIssuer · Infrastructure"
                     idHasher = component "Hasher BCrypt" "Hash de contraseñas con factor configurable (RNF-03)." "BCryptPasswordHasher · Infrastructure"
+                    idEmpresas = component "Cuenta corporativa" "Registro de la empresa cliente con su primer empresa_contacto, usuarios de la empresa con invitación y claim company_id (RF-06, identity 1.8.0)." "Minimal API + Application · Companies"
                     idPersistencia = component "Persistencia con RLS" "TenantUnitOfWork (set_config app.current_tenant) y PlatformUnitOfWork (SET LOCAL ROLE identity_platform)." "EF Core + Npgsql · Infrastructure"
                 }
-                actors = container "Actors Service" "Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" {
+                actors = container "Actors Service" "Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     acApi = component "API de actores" "Consulta y mantenimiento de actores del tenant." "Minimal API" "Planeado"
                     acProveedores = component "Proveedores de materiales" "Supplier: proveedor de materiales o repuestos (concepto evolutivo)." "Domain" "Planeado"
                     acAliados = component "Aliados" "Ally: técnico, profesional o empresa aliada." "Domain" "Planeado"
                     acClientes = component "Clientes" "Client: cliente hogar o empresarial." "Domain" "Planeado"
                     acPersistencia = component "Persistencia con RLS" "Repositorios de actores por tenant." "EF Core + Npgsql" "Planeado"
                 }
-                catalog = container "Catalog Service" "Categorías y especialidades de servicio." "ASP.NET Core (.NET 10)" {
+                catalog = container "Catalog Service" "Categorías y especialidades de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     catApi = component "API de categorías" "GET /v1/catalog/categories (con token o, sin token, con el tenant del canal para el registro de técnicos); POST y PATCH /v1/catalog/admin/categories (contrato 1.2.0)." "Minimal API · Endpoints"
                     catSeguridad = component "Contexto autenticado y auditoría de 403" "Toma usuario, tenant y rol del JWT; registra los 403." "ASP.NET Core · Security"
                     catCasos = component "Casos de uso de categorías" "Crear, actualizar y listar; nombre único por tenant (409)." "Application · Categories"
@@ -114,9 +118,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     catOutbox = component "Registro en outbox" "Encola catalog.category-changed en la misma transacción (ADR-007)." "EF Core · Infrastructure"
                     catPublicador = component "Publicador del outbox" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure"
                 }
-                serviceRequest = container "ServiceRequest Service" "Ciclo de vida de la solicitud de servicio." "ASP.NET Core (.NET 10)" {
+                serviceRequest = container "ServiceRequest Service" "Ciclo de vida de la solicitud de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     srContexto = component "Contexto autenticado" "Toma usuario, tenant y rol de los claims del JWT; nunca del cuerpo (RN-U3)." "ASP.NET Core · Security"
-                    srApi = component "API REST de solicitudes" "POST /v1/service-requests y GET /v1/service-requests/{id}; solo el rol cliente crea (403)." "Minimal API · Endpoints"
+                    srApi = component "API REST de solicitudes" "POST, GET y lista de /v1/service-requests para cliente y empresa_contacto (con su sede, RN-SR12 y RN-SR14), detalle por rol, categorías y localidades (ADR-025)." "Minimal API · Endpoints"
                     srCasos = component "Casos de uso de la solicitud" "Crear y consultar; al crear coordina validación, agregado, persistencia y outbox en una transacción." "Application"
                     srReglas = component "Reglas de creación" "Ubicación en Bogotá (422), categoría activa (422) y longitudes (RN-SR1, RN-SR9 a RN-SR11)." "Domain"
                     srAgregado = component "Agregado ServiceRequest" "Crea en buscando_tecnico y solo admite transiciones válidas (RN-SR2 a RN-SR7)." "Domain"
@@ -125,39 +129,42 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     srPublicador = component "Publicador del outbox" "Lotes con FOR UPDATE SKIP LOCKED; publica y marca published_at; reintenta si Kafka falla." "BackgroundService · Infrastructure"
                     srConsumidorCategorias = component "Consumidor de catalog.category-changed" "Aplica cada evento una vez por eventId y descarta versiones viejas (RN-EV1)." "Kafka consumer · Infrastructure"
                     srReplica = component "Réplica de categorías" "service_request_categories; solo la escribe el consumidor (ADR-017)." "EF Core · Infrastructure"
-                    srConsumidorResultados = component "Consumidor de matching y pagos" "Aplica matching.technician-assigned, matching.no-technician-available y payment.* al estado." "Kafka consumer" "Planeado"
-                    srGeocodificacion = component "Geocodificación de la dirección" "Si la solicitud llega sin coordenadas, busca la dirección en el geocodificador dentro de Bogotá (RIE-02, ADR-024)." "Cliente HTTP" "Planeado"
-                    srEvidencias = component "Evidencias y calificación" "Fotos del servicio (RF-15) y calificación del cliente; publica service-request.completed y .evaluated." "Application" "Planeado"
+                    srConsumidorResultados = component "Consumidor de matching y pagos" "Aplica matching.technician-assigned, matching.no-technician-available y payment.* al estado." "Kafka consumer"
+                    srGeocodificacion = component "Geocodificación de la dirección" "Si la solicitud llega sin coordenadas, busca la dirección en el geocodificador dentro de Bogotá (RIE-02, ADR-024)." "Cliente HTTP"
+                    srCotizacion = component "Cotización y cancelación" "Emite, acepta y rechaza cotizaciones (máximo 3, vencimiento) y cancela antes de iniciar; publica .quoted, .quote-accepted, .quote-rejected y .cancelled (RF-34 a RF-36)." "Application"
+                    srEvidencias = component "Ejecución y evidencias" "Inicia, guarda las fotos en Garage y completa con al menos una; publica .started y .completed (RF-14, RF-15)." "Application"
+                    srCalificacion = component "Calificación" "Calificación del cliente después del pago; publicará service-request.evaluated (RF-12)." "Application" "Planeado"
                 }
-                matching = container "Matching Service" "Asignación geoespacial de técnicos." "Java 21 + Spring Boot" {
+                matching = container "Matching Service" "Asignación geoespacial de técnicos." "Java 25 + Spring Boot 4.1" "Microservicio" {
                     maListener = component "Listener de service-request.created" "Valida el contrato, descarta mensajes inválidos y propaga correlationId en el MDC." "@KafkaListener · infrastructure/messaging"
                     maHandler = component "Manejador del evento" "En una transacción por tenant registra el evento y, si es nuevo, inicia el matching (APPLIED o DUPLICATE)." "application/events"
                     maProcesados = component "Registro de eventos procesados" "INSERT ... ON CONFLICT (event_id) DO NOTHING en processed_events." "JDBC · infrastructure/persistence"
                     maTransaccion = component "Transacción por tenant" "set_config app.current_tenant antes de cada trabajo (RLS)." "JDBC · infrastructure/persistence"
-                    maBusqueda = component "Búsqueda de candidatos" "Técnicos aprobados, disponibles, de la especialidad, con cobertura en la ubicación y sin otra oferta pendiente; los ordena por distancia (RN-M9, PostGIS)." "PostGIS" "Planeado"
-                    maOfertas = component "Ofertas y asignación" "Registra la oferta con vencimiento a 3 min (RN-M1, RN-M8) y publica matching.offer-created; al aceptar, el técnico pasa a ocupado y publica matching.technician-assigned (RN-M2, RN-M4, RN-M6, RN-M7); si rechaza o vence, ofrece al siguiente (RN-M3); sin candidatos publica matching.no-technician-available." "Outbox" "Planeado"
-                    maApi = component "API de técnicos y ofertas" "Localidades; disponibilidad y cobertura del técnico; ofertas pendientes, aceptar y rechazar (matching.v1.yaml 1.0.0)." "Spring MVC" "Planeado"
-                    maProyeccion = component "Proyección del técnico" "Consume technician.registered y technician.verification-changed y guarda especialidad y verificación (P-01, ADR-017); reanuda solicitudes en espera (RN-M10)." "@KafkaListener" "Planeado"
+                    maBusqueda = component "Búsqueda de candidatos" "Técnicos aprobados, disponibles, de la especialidad, con cobertura en la ubicación y sin otra oferta pendiente; los ordena por distancia (RN-M9, PostGIS)." "PostGIS"
+                    maOfertas = component "Ofertas y asignación" "Registra la oferta con vencimiento a 3 min (RN-M1, RN-M8) y publica matching.offer-created; al aceptar, el técnico pasa a ocupado y publica matching.technician-assigned (RN-M2, RN-M4, RN-M6, RN-M7); si rechaza o vence, ofrece al siguiente (RN-M3); sin candidatos publica matching.no-technician-available." "Outbox"
+                    maApi = component "API de técnicos y ofertas" "Localidades; disponibilidad y cobertura del técnico; ofertas pendientes, aceptar y rechazar (matching.v1.yaml 1.0.0)." "Spring MVC"
+                    maProyeccion = component "Proyección del técnico" "Consume technician.registered y technician.verification-changed y guarda especialidad y verificación (P-01, ADR-017); reanuda solicitudes en espera (RN-M10)." "@KafkaListener"
                 }
-                ranking = container "Ranking Service" "Reputación de técnicos." "ASP.NET Core (.NET 10)" {
+                ranking = container "Ranking Service" "Reputación de técnicos." "ASP.NET Core (.NET 10)" "Microservicio" {
                     raConsumidor = component "Consumidor de service-request.evaluated" "Recibe cada calificación, una vez por eventId." "Kafka consumer" "Planeado"
                     raCalculo = component "Cálculo de reputación" "Recalcula el promedio del técnico (RF-12)." "Domain" "Planeado"
                     raApi = component "API de reputación" "Consulta de la reputación del técnico." "Minimal API" "Planeado"
                     raPersistencia = component "Persistencia con RLS" "Reputación agregada por tenant." "EF Core + Npgsql" "Planeado"
                 }
-                payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" {
-                    paApi = component "API de pagos" "Inicia el pago con el token de la tarjeta; nunca recibe PAN ni CVV (RNF-01)." "Minimal API" "Planeado"
-                    paProcesamiento = component "Procesamiento de pagos" "Estados del pago y reintentos idempotentes." "Application" "Planeado"
-                    paAdaptadorPsp = component "Adaptador del PSP" "Cobra con la pasarela usando la referencia del token (ADR-009)." "HTTPS" "Planeado"
+                payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" "Microservicio" {
+                    paApi = component "API de pagos" "Inicia el pago con el token de la tarjeta; nunca recibe PAN ni CVV (RNF-01)." "Minimal API"
+                    paProcesamiento = component "Procesamiento de pagos" "Estados del pago y reintentos idempotentes." "Application"
+                    paAdaptadorPsp = component "Adaptador del PSP" "Cobra con la referencia del token; en el MVP es la pasarela simulada, detrás del mismo puerto que usará la certificada (ADR-009 modificado)." "Application"
                     paWebhook = component "Receptor de webhooks del PSP" "Confirma el resultado de forma idempotente." "Minimal API" "Planeado"
-                    paFacturacion = component "Facturación" "Emite el comprobante a nombre de la plataforma (D4)." "Application" "Planeado"
-                    paOutbox = component "Outbox de pagos" "Publica payment.approved y payment.rejected." "BackgroundService" "Planeado"
+                    paFacturacion = component "Facturación" "Emite el comprobante del pago aprobado en JSON o PDF, sin validez fiscal (RF-24, payments 1.1.0)." "Application"
+                    paOutbox = component "Outbox de pagos" "Publica payment.approved y payment.rejected." "BackgroundService"
                 }
-                communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" {
-                    coConsumidores = component "Consumidores de eventos" "service-request.*, matching.* y payment.*, una vez por eventId." "Kafka consumer" "Planeado"
-                    coPlantillas = component "Plantillas de notificación" "Arma el mensaje según el evento y el destinatario." "Application" "Planeado"
-                    coCanal = component "Canal en tiempo real" "WebSocket /v1/realtime: valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant (ADR-023)." "ASP.NET Core WebSockets" "Planeado"
-                    coBuzon = component "Buzón de notificaciones" "Guarda cada notificación por usuario y tenant y la expone a la app (ADR-024)." "Minimal API" "Planeado"
+                communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" "Microservicio" {
+                    coConsumidores = component "Consumidores de eventos" "service-request.*, matching.* y payment.*, una vez por eventId." "Kafka consumer"
+                    coPlantillas = component "Plantillas de notificación" "Arma el mensaje según el evento y el destinatario." "Application"
+                    coCanal = component "Canal en tiempo real" "WebSocket /v1/realtime: valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant (ADR-023)." "ASP.NET Core WebSockets"
+                    coChat = component "Chat de la solicitud" "Réplica de participantes desde service-request.status-changed, mensajes en chat_messages y GET y POST /v1/service-requests/{id}/messages; entrega chat.message por el canal (RF-37, ADR-026)." "Minimal API + Kafka consumer"
+                    coBuzon = component "Buzón de notificaciones" "Guarda cada notificación por usuario y tenant y la expone a la app (ADR-024)." "Minimal API"
                 }
             }
 
@@ -167,17 +174,17 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 garage = container "Garage" "Evidencias fotográficas y respaldos de PostgreSQL (ADR-016)." "Garage (S3)" "Database"
             }
 
-            geocodificador = container "Geocodificador" "Convierte direcciones de Bogotá en coordenadas; solo el mapa de Bogotá y su propio PostgreSQL (RIE-02, ADR-024, excepción a ADR-014)." "Nominatim (OpenStreetMap)" "Planeado"
+            geocodificador = container "Geocodificador" "Convierte direcciones de Bogotá en coordenadas; solo el mapa de Bogotá y su propio PostgreSQL (RIE-02, ADR-024, excepción a ADR-014)." "Nominatim (OpenStreetMap)"
 
             group "PostgreSQL + PostGIS (una instancia, una base por servicio, ADR-014)" {
-                dbIdentity = container "db_identity" "tenants, users, technician_profiles, audit_logs." "PostgreSQL" "Database"
+                dbIdentity = container "db_identity" "tenants, users, client_companies, technician_profiles, password_setup_tokens y audit_logs." "PostgreSQL" "Database"
                 dbActors = container "db_actors" "Actores de negocio." "PostgreSQL" "Database"
                 dbCatalog = container "db_catalog" "service_categories y outbox_events." "PostgreSQL" "Database"
                 dbServiceRequest = container "db_service_request" "service_requests, service_request_categories, outbox_events y processed_events." "PostgreSQL + PostGIS" "Database"
                 dbMatching = container "db_matching" "Disponibilidad, cobertura, intentos y processed_events." "PostgreSQL + PostGIS" "Database"
                 dbRanking = container "db_ranking" "Reputación agregada." "PostgreSQL" "Database"
-                dbPayments = container "db_payments" "payments e invoices, sin PAN ni CVV." "PostgreSQL" "Database"
-                dbCommunication = container "db_communication" "Notificaciones por usuario (buzón)." "PostgreSQL" "Database"
+                dbPayments = container "db_payments" "payments e invoices, sin PAN ni CVV; outbox_events y processed_events." "PostgreSQL" "Database"
+                dbCommunication = container "db_communication" "Buzón por usuario y chat de la solicitud." "PostgreSQL" "Database"
             }
         }
 
@@ -199,7 +206,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         mobNavegacion -> mobSolicitudes "Abre"
         mobNavegacion -> mobCuenta "Abre"
         mobNavegacion -> mobDisponibilidad "Abre"
-        mobNavegacion -> mobNotificaciones "Abre" "" "Planeado"
+        mobNavegacion -> mobNotificaciones "Abre"
+        mobNavegacion -> mobEmpresa "Abre"
+        mobSolicitudes -> mobChat "Abre el chat de la solicitud en"
+        mobSolicitudes -> mobPagos "Abre el pago y el comprobante en"
+        mobChat -> mobHttp "GET y POST mensajes con"
+        mobChat -> mobTiempoReal "Recibe chat.message de"
+        mobEmpresa -> mobHttp "GET y POST /v1/companies/me con"
+        mobPagos -> mobHttp "GET y POST el pago y GET el comprobante con"
         mobInicio -> mobHttp "GET categorías con"
         mobInicio -> mobDiseno "Arma las pantallas con"
         mobSolicitudes -> mobDiseno "Arma las pantallas con"
@@ -210,15 +224,15 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         mobAuth -> mobHttp "POST /v1/auth/* con"
         mobSolicitudes -> mobUbicacion "Obtiene las coordenadas con"
         mobSolicitudes -> mobHttp "GET categorías, POST y GET solicitudes con"
-        mobSolicitudes -> mobTiempoReal "Escucha cambios de estado en" "" "Planeado"
-        mobNotificaciones -> mobHttp "GET el buzón con" "" "Planeado"
+        mobSolicitudes -> mobTiempoReal "Escucha cambios de estado en"
+        mobNotificaciones -> mobHttp "GET el buzón con"
         mobHttp -> mobConfig "Lee URL base y certificado de"
         mobHttp -> mobSesion "Lee el token de"
         # Primero la relación HTTPS: Structurizr crea una sola relación implícita entre dos contenedores.
         mobHttp -> gateway "Llama a la API" "HTTPS/JSON"
         # El canal de ADR-023 es otra conexión entre los mismos contenedores: se declara explícita.
-        mobile -> gateway "Abre /api/v1/realtime" "WebSocket (wss)" "Planeado"
-        mobTiempoReal -> gateway "Abre /api/v1/realtime" "WebSocket (wss)" "Planeado"
+        mobile -> gateway "Abre /api/v1/realtime" "WebSocket (wss)"
+        mobTiempoReal -> gateway "Abre /api/v1/realtime" "WebSocket (wss)"
 
         # Panel web
         webShell -> webGuards "Protege las rutas con"
@@ -242,14 +256,15 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         # API Gateway → servicios
         gateway -> idApi "Enruta /api/v1/auth y /api/v1/users" "HTTP"
         gateway -> idPlatformApi "Enruta /api/v1/platform" "HTTP"
+        gateway -> idEmpresas "Enruta /api/v1/auth/register/company y /api/v1/companies" "HTTP"
         gateway -> catApi "Enruta /api/v1/catalog" "HTTP"
         gateway -> srContexto "Enruta /api/v1/service-requests" "HTTP"
         gateway -> acApi "Enruta /api/v1/actors" "HTTP" "Planeado"
         gateway -> raApi "Enruta /api/v1/ranking" "HTTP" "Planeado"
-        gateway -> paApi "Enruta /api/v1/payments" "HTTP" "Planeado"
-        gateway -> maApi "Enruta /api/v1/matching, /api/v1/technicians y /api/v1/localities" "HTTP" "Planeado"
-        gateway -> coCanal "Enruta /api/v1/realtime" "WebSocket" "Planeado"
-        gateway -> coBuzon "Enruta /api/v1/notifications" "HTTP" "Planeado"
+        gateway -> paApi "Enruta /api/v1/payments" "HTTP"
+        gateway -> maApi "Enruta /api/v1/matching, /api/v1/technicians y /api/v1/localities" "HTTP"
+        gateway -> coCanal "Enruta /api/v1/realtime" "WebSocket"
+        gateway -> coBuzon "Enruta /api/v1/notifications" "HTTP"
 
         # Identity
         idApi -> idHttp "Usa"
@@ -262,6 +277,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         idAuthCasos -> idPersistencia "Lee y guarda en la transacción del tenant con"
         idPlatformCasos -> idPersistencia "Lee y cambia tenants en la transacción de plataforma con"
         idBootstrap -> idAuthCasos "Asegura los administradores iniciales con"
+        idEmpresas -> idPersistencia "Guarda client_companies y usuarios en la transacción del tenant con"
+        idEmpresas -> idTokens "El token del empresa_contacto lleva company_id de"
         idPersistencia -> dbIdentity "Lee y escribe (RLS)" "SQL"
 
         # Actors
@@ -297,32 +314,36 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         srConsumidorCategorias -> kafka "Consume catalog.category-changed" "Kafka"
         srConsumidorCategorias -> srReplica "Reemplaza la categoría si es más reciente"
         srReplica -> dbServiceRequest "Lee y escribe service_request_categories y processed_events" "SQL"
-        srConsumidorResultados -> kafka "Consume matching.* y payment.*" "Kafka" "Planeado"
-        srConsumidorResultados -> srAgregado "Aplica la transición con" "" "Planeado"
-        srCasos -> srGeocodificacion "Obtiene las coordenadas de la dirección con" "" "Planeado"
-        srGeocodificacion -> geocodificador "Busca la dirección en Bogotá" "HTTP" "Planeado"
-        srApi -> srEvidencias "Invoca" "" "Planeado"
-        srEvidencias -> garage "Guarda las fotos del servicio" "S3/HTTPS" "Planeado"
-        srEvidencias -> srOutbox "Registra service-request.completed y .evaluated con" "" "Planeado"
+        srConsumidorResultados -> kafka "Consume matching.* y payment.*" "Kafka"
+        srConsumidorResultados -> srAgregado "Aplica la transición con"
+        srCasos -> srGeocodificacion "Obtiene las coordenadas de la dirección con"
+        srGeocodificacion -> geocodificador "Busca la dirección en Bogotá" "HTTP"
+        srApi -> srCotizacion "Invoca"
+        srCotizacion -> srOutbox "Registra los eventos de la cotización con"
+        srApi -> srEvidencias "Invoca"
+        srApi -> srCalificacion "Invoca" "" "Planeado"
+        srEvidencias -> garage "Guarda las fotos del servicio" "S3/HTTPS"
+        srEvidencias -> srOutbox "Registra service-request.started y .completed con"
+        srCalificacion -> srOutbox "Registrará service-request.evaluated con" "" "Planeado"
 
         # Matching
         maListener -> kafka "Consume service-request.created" "Kafka"
         maListener -> maHandler "Entrega el evento válido a"
         maHandler -> maTransaccion "Abre la transacción del tenant con"
         maHandler -> maProcesados "Registra el eventId en"
-        maHandler -> maBusqueda "Inicia el matching con" "" "Planeado"
-        maBusqueda -> maOfertas "Entrega el candidato más cercano a" "" "Planeado"
+        maHandler -> maBusqueda "Inicia el matching con"
+        maBusqueda -> maOfertas "Entrega el candidato más cercano a"
         maBusqueda -> redis "Cachea disponibilidad en" "RESP" "Planeado"
-        maOfertas -> kafka "Publica matching.offer-created, .technician-assigned, .no-technician-available y .search-resumed" "Kafka" "Planeado"
-        maOfertas -> dbMatching "Registra el intento y su respuesta en matching_attempts (RLS)" "SQL" "Planeado"
-        maApi -> maOfertas "Acepta o rechaza la oferta con" "" "Planeado"
-        maApi -> dbMatching "Lee y cambia disponibilidad y cobertura (RLS)" "SQL" "Planeado"
-        maProyeccion -> kafka "Consume technician.registered y technician.verification-changed" "Kafka" "Planeado"
-        maProyeccion -> dbMatching "Actualiza la proyección en technician_availability" "SQL" "Planeado"
-        maProyeccion -> maBusqueda "Reanuda las solicitudes en espera con (RN-M10)" "" "Planeado"
+        maOfertas -> kafka "Publica matching.offer-created, .technician-assigned, .no-technician-available y .search-resumed" "Kafka"
+        maOfertas -> dbMatching "Registra el intento y su respuesta en matching_attempts (RLS)" "SQL"
+        maApi -> maOfertas "Acepta o rechaza la oferta con"
+        maApi -> dbMatching "Lee y cambia disponibilidad y cobertura (RLS)" "SQL"
+        maProyeccion -> kafka "Consume technician.registered y technician.verification-changed" "Kafka"
+        maProyeccion -> dbMatching "Actualiza la proyección en technician_availability" "SQL"
+        maProyeccion -> maBusqueda "Reanuda las solicitudes en espera con (RN-M10)"
         maProcesados -> dbMatching "INSERT en processed_events" "SQL"
         maTransaccion -> dbMatching "set_config app.current_tenant" "SQL"
-        maBusqueda -> dbMatching "Consulta disponibilidad y cobertura (PostGIS)" "SQL" "Planeado"
+        maBusqueda -> dbMatching "Consulta disponibilidad y cobertura (PostGIS)" "SQL"
 
         # Ranking
         raConsumidor -> kafka "Consume service-request.evaluated" "Kafka" "Planeado"
@@ -332,22 +353,26 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         raPersistencia -> dbRanking "Lee y escribe (RLS)" "SQL" "Planeado"
 
         # Payments
-        paApi -> paProcesamiento "Invoca" "" "Planeado"
-        paProcesamiento -> paAdaptadorPsp "Cobra con" "" "Planeado"
-        paAdaptadorPsp -> pasarela "Tokeniza y cobra" "HTTPS" "Planeado"
+        paApi -> paProcesamiento "Invoca"
+        paProcesamiento -> paAdaptadorPsp "Cobra con"
+        paAdaptadorPsp -> pasarela "Cobrará con la pasarela certificada" "HTTPS" "Planeado"
         pasarela -> paWebhook "Notifica el resultado del cobro" "HTTPS" "Planeado"
         paWebhook -> paProcesamiento "Confirma el pago con" "" "Planeado"
-        paProcesamiento -> paFacturacion "Emite la factura con" "" "Planeado"
-        paProcesamiento -> paOutbox "Registra payment.approved o payment.rejected con" "" "Planeado"
-        paProcesamiento -> dbPayments "Lee y escribe payments e invoices (RLS)" "SQL" "Planeado"
-        paOutbox -> kafka "Publica payment.*" "Kafka" "Planeado"
+        paProcesamiento -> paFacturacion "Emite la factura con"
+        paProcesamiento -> paOutbox "Registra payment.approved o payment.rejected con"
+        paProcesamiento -> dbPayments "Lee y escribe payments e invoices (RLS)" "SQL"
+        paOutbox -> kafka "Publica payment.*" "Kafka"
 
         # Communication
-        coConsumidores -> kafka "Consume service-request.*, matching.* y payment.*" "Kafka" "Planeado"
-        coConsumidores -> coPlantillas "Arma el mensaje con" "" "Planeado"
-        coPlantillas -> coCanal "Avisa a los usuarios conectados con" "" "Planeado"
-        coPlantillas -> coBuzon "Guarda la notificación con" "" "Planeado"
-        coBuzon -> dbCommunication "Lee y escribe el buzón (RLS)" "SQL" "Planeado"
+        coConsumidores -> kafka "Consume service-request.*, matching.* y payment.*" "Kafka"
+        coConsumidores -> coPlantillas "Arma el mensaje con"
+        coPlantillas -> coCanal "Avisa a los usuarios conectados con"
+        coPlantillas -> coBuzon "Guarda la notificación con"
+        coBuzon -> dbCommunication "Lee y escribe el buzón (RLS)" "SQL"
+        coChat -> kafka "Consume service-request.status-changed" "Kafka"
+        coChat -> coCanal "Entrega chat.message con"
+        coChat -> dbCommunication "Lee y escribe chat_participants y chat_messages (RLS)" "SQL"
+        gateway -> coChat "Enruta /api/v1/service-requests/{id}/messages (excepción de ADR-025)" "HTTP"
 
         # Soporte
         github -> quickpatch "Construye imágenes y despliega con el runner de VM1" "HTTPS"
@@ -373,11 +398,15 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         traefikProd = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
                         gatewayProd = containerInstance gateway
                         identityProd = containerInstance identity
-                        actorsProd = containerInstance actors
+                        actorsProd = containerInstance actors {
+                            tags "Planeado"
+                        }
                         catalogProd = containerInstance catalog
                         serviceRequestProd = containerInstance serviceRequest
                         matchingProd = containerInstance matching
-                        rankingProd = containerInstance ranking
+                        rankingProd = containerInstance ranking {
+                            tags "Planeado"
+                        }
                         paymentsProd = containerInstance payments
                         communicationProd = containerInstance communication
                     }
@@ -394,7 +423,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         dbCommunicationProd = containerInstance dbCommunication
                     }
                     redisProd = containerInstance redis
-                    geocodificadorProd = containerInstance geocodificador
+                    geocodificadorProd = containerInstance geocodificador {
+                            tags "Planeado"
+                        }
                 }
                 deploymentNode "VM6 · Mensajería y almacenamiento · 10.43.99.12" "Recibe 9092 y 9000 desde VM3 y 9000 desde VM4." "4 vCPU · 11 GiB RAM · 68 GB" {
                     kafkaProd = containerInstance kafka
@@ -425,11 +456,15 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         traefikQa = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
                         gatewayQa = containerInstance gateway
                         identityQa = containerInstance identity
-                        actorsQa = containerInstance actors
+                        actorsQa = containerInstance actors {
+                            tags "Planeado"
+                        }
                         catalogQa = containerInstance catalog
                         serviceRequestQa = containerInstance serviceRequest
                         matchingQa = containerInstance matching
-                        rankingQa = containerInstance ranking
+                        rankingQa = containerInstance ranking {
+                            tags "Planeado"
+                        }
                         paymentsQa = containerInstance payments
                         communicationQa = containerInstance communication
                     }
@@ -517,11 +552,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             include *
             autoLayout tb 150 80
         }
-        component payments "C4-04-Componentes-Payments" "Componentes de Payments Service (diseño; el servicio es un esqueleto)." {
+        component payments "C4-04-Componentes-Payments" "Componentes de Payments Service: pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado)." {
             include *
             autoLayout lr
         }
-        component communication "C4-04-Componentes-Communication" "Componentes de Communication Service: canal en tiempo real y buzón (diseño, ADR-023 y ADR-024; el servicio es un esqueleto)." {
+        component communication "C4-04-Componentes-Communication" "Componentes de Communication Service: canal en tiempo real, buzón y chat de la solicitud (ADR-023, ADR-024 y ADR-026)." {
             include *
             autoLayout tb 150 80
         }
@@ -682,7 +717,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             element "Mobile App" {
                 shape MobileDevicePortrait
             }
+            # Observación del profesor (22 de octubre): el API Gateway es un rectángulo y los microservicios, hexágonos.
             element "Gateway" {
+                shape Box
+            }
+            element "Microservicio" {
                 shape Hexagon
             }
             element "Planeado" {

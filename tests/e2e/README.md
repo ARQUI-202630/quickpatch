@@ -101,6 +101,8 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scru
 
 Necesita a Payments desplegado en QA, ServiceRequest con el consumidor de `payment.*` y los topics de quickpatch-kafka v0.9.0. Igual que las demás: `adminEmail` y `adminPassword` desde el entorno y salida con `--reporters cli` en un `.txt`.
 
+**Evidencia:** `evidencias/scrum-117-pago-qa-2026-10-22.txt`, contra QA el 22 de octubre de 2026: 69 peticiones y 57 aserciones, sin fallos.
+
 ## Comprobante del pago de punta a punta (SCRUM-495)
 
 `scrum-495-comprobante.postman_collection.json` la genera `generar-scrum495-comprobante.py`, que reutiliza los pasos de SCRUM-117 hasta el servicio completado. Contrato: `payments.v1.yaml` 1.1.0 (`GET /v1/payments/{id}/invoice`). El comprobante no tiene validez fiscal (SRS DR-03).
@@ -120,6 +122,8 @@ Necesita a Payments con el comprobante desplegado en QA (quickpatch-payments#8).
   - **Geocodificación:** `location-preview` con una dirección de Bogotá y con una inexistente (422 `direccion-no-encontrada`), y la solicitud creada solo con la dirección.
   - **Buzón:** `solicitud-creada` para el cliente y `oferta-recibida` para el técnico. Otro cliente, el administrador y el cliente de Beta no las ven y no pueden marcarlas como leídas (404). Marcar como leída es idempotente.
   - El caso del geocodificador sin respuesta no se provoca en QA: lo cubren las pruebas de ServiceRequest.
+
+**Evidencia de SCRUM-458:** `evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt`, contra QA el 22 de octubre de 2026 con Communication 0.3.1: 34 peticiones y 44 aserciones, sin fallos. La primera corrida, con la 0.3.0, dio 43 de 44: «mismo readAt» fallaba porque la primera respuesta de `POST /v1/notifications/{id}/read` llevaba 7 decimales y las siguientes 6 (quickpatch-communication#17).
 
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
@@ -171,6 +175,8 @@ $env:NODE_TLS_REJECT_UNAUTHORIZED = '0'; node tests/e2e/scrum-483-chat-tiempo-re
 ```
 
 Necesita a Communication con el chat desplegado en QA (quickpatch-communication#16): migración `ChatDeLaSolicitud`, `aplicar-roles-db.yml` y el `IngressRoute` `communication-chat`.
+
+**Evidencia:** `evidencias/scrum-483-chat-qa-2026-10-22.txt` (43 peticiones y 69 aserciones, sin fallos) y `evidencias/scrum-483-chat-tiempo-real-qa-2026-10-22.txt` (23 de 23 pasos), contra QA el 22 de octubre de 2026 con Communication 0.3.1.
 
 ## Correr colecciones contra QA y guardar la evidencia
 

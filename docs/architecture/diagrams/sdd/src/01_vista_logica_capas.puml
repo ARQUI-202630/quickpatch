@@ -90,7 +90,8 @@ COMMUNICATION --> KAFKA
 
 SR --> GEO : HTTP
 PAYMENTS --> PASARELA : HTTPS
-MATCHING --> REDIS : caché
+SR --> REDIS : candados
+MATCHING ..> REDIS #90A4AE : <color:#78909C>caché\n<color:#78909C>(planeado)
 SR --> GARAGE : S3
 NEGOCIO --> PG : cada servicio,\nsu propia base
 
@@ -103,5 +104,6 @@ legend right
   |<#ECEFF1>| Datos |
   Flechas a Kafka: publica o consume eventos.
   Línea punteada desde el gateway: excepción del ADR-025.
+  Línea gris punteada: uso planeado.
 endlegend
 @enduml
