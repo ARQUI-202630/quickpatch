@@ -34,9 +34,9 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
 
 | ID | Resumen del Defecto | Requisito / HU | Severidad | Prioridad | Componente Afectado | Evidencia en Repositorio | Estado Final |
 |---|---|:---:|:---:|:---:|---|---|:---:|
-| **BUG-SP4-001** | Emulación de Aislamiento en Harness Local por Excepción Residual (`reqId !== 'sr-qa-001'`) | SCRUM-31 / RN-SR13 / RF-09 | Media (Harness) | P1 | Harness Local (`mock-gateway-local-simulacion.js`) | `tests/e2e/mock-gateway-local-simulacion.js:L564` | **Verificado y Cerrado** |
+| **BUG-SP4-001** | Emulación de Aislamiento en Harness Local por Excepción Residual (`reqId !== 'sr-qa-001'`) | SCRUM-31 / RN-SR13 / RF-09 | Media (Falla de Arnés) | P1 | Harness Local (`mock-gateway-local-simulacion.js`) | Commit `f6db3e7` / [`mock-gateway-local-simulacion.js:L564`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/mock-gateway-local-simulacion.js#L564) / Corrida: `tests/e2e/evidencias/scrum-81-90-93-local-2026-10-17.txt` | **Verificado y Cerrado** |
 | **BUG-SP4-002** | Colisión de Scope en Newman entre Environment Estático y Colección Dinámica (`sufijo`) | SCRUM-395 / RF-01 | Media | P2 | Runner MVP (`run-mvp.js`) | `tests/e2e/run-mvp.js:L40` | **Verificado y Cerrado** |
-| **BUG-SP4-003** | Contaminación de Estado en Memoria entre Suites en Harness Local (SCRUM-108 vs SCRUM-111) | SCRUM-40 / RN-TP2 / DD §8.3.13 | Media (Harness) | P1 | Harness Local (`mock-gateway-local-simulacion.js`) | `tests/e2e/run-all-increment-suites.js:L50` | **Verificado y Cerrado** |
+| **BUG-SP4-003** | Contaminación de Estado en Memoria entre Suites en Harness Local (SCRUM-108 vs SCRUM-111) | SCRUM-40 / RN-TP2 / DD §8.3.13 | Media (Falla de Arnés) | P1 | Harness Local (`mock-gateway-local-simulacion.js`) | Commit `743d06c` / [`run-all-increment-suites.js:L50`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/run-all-increment-suites.js#L50) / Corrida: `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt` | **Verificado y Cerrado** |
 | **BUG-SP4-004** | Fallo de Codificación `UnicodeEncodeError` en Consolas Windows con Símbolos y Emojis | INF-QA / PCI-DSS v4.0 | Baja | P3 | Scanner PCI (`pci_dss_scanner.py`) | `tests/security/run-pci-dss-suite.py:L20` | **Verificado y Cerrado** |
 | **BUG-SP4-005** | Discrepancia de Contrato en Suite E2E: Invocación `PUT /status` en vez de `POST /start` y `/complete` | SCRUM-31 / SCRUM-35 / RF-09 | Media | P2 | Suite E2E (`scrum-84`) / ServiceRequest | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt` | **Corregido en Suite** |
 | **BUG-SP4-006** | Endpoint de Detalle de Solicitud con Contacto Resuelto no Desplegado en QA | SCRUM-34 / SCRUM-93 / RF-12 | Media | P2 | Backend ServiceRequest / Identity | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` | **Abierto (Reportado a Dev)** |
@@ -197,5 +197,5 @@ Durante el ciclo de ejecución de la suite MVP, suites E2E del incremento técni
   - `BUG-SP4-009` (Remoción de campo redundante `specialty` en `ProviderTechnicianRequest` bajo `additionalProperties: false`).
 - **Defectos Críticos o Bloqueantes Abiertos en el Incremento:** **0**.
 - **Tasa de Resolución de Defectos:** **100.0%**.
-- **Dictamen Final de QA:** **APROBADO SIN DEFECTOS BLOQUEANTES** para merge del incremento técnico de Sprint 4.
+- **Dictamen Final de QA:** **LISTO PARA MERGE / SIN DEFECTOS BLOQUEANTES** para integración del incremento técnico de Sprint 4.
 
