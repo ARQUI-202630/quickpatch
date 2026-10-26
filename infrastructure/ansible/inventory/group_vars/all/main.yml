@@ -55,7 +55,7 @@ gateway_hosts:
 # atiende ese ambiente por sí mismo, como antes (marcha atrás); se cambia a true cuando `verificar-gateway-ambiente.yml` pasa.
 gateway_puerto: 8080
 gateway_propio:
-  qa: false
+  qa: true             # QA se atiende por el gateway de VM2 (verificado el 2026-10-25)
   produccion: false
 
 # --- Versiones fijadas ---------------------------------------------------------
