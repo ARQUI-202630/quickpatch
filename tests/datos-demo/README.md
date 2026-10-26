@@ -21,7 +21,7 @@ Las credenciales van en el entorno, nunca en el repositorio ni en este archivo:
 
 | Variable | Qué es |
 |---|---|
-| `QP_ADMIN_EMAIL`, `QP_ADMIN_PASSWORD` | Administrador de la plataforma del ambiente (`vault_identity_admins` del vault de Ansible) |
+| `QP_ADMIN_EMAIL`, `QP_ADMIN_PASSWORD` | Administrador **del tenant** del ambiente, rol `admin_tenant` (`vault_identity_admins` del vault de Ansible). Aprobar técnicos es solo de `admin_tenant`; el administrador de la plataforma recibiría 403 |
 | `QP_DEMO_PASSWORD` | Contraseña de las cuentas de demostración, entre 8 y 128 caracteres (política de Identity) |
 
 ```bash
@@ -43,4 +43,4 @@ Al terminar imprime el conteo de creados, ya existentes, aplicados y con error. 
 
 - No crea tenants de proveedores ni administradores de tenant.
 - Las solicitudes quedan en estado inicial; no simula cotizaciones, pagos ni chat.
-- Solo se probó contra un servidor simulado en local (flujo, idempotencia y validaciones). La primera corrida real contra QA debe hacerse con `--simular` y luego sin él, revisando el conteo.
+- Se probó contra un servidor simulado en local (flujo, paginación, producción y fallos de aprobación) y contra QA real el 26 de octubre de 2026: la primera corrida creó 2 clientes, 1 empresa, 2 técnicos (aprobados, con cobertura y disponibles) y 2 solicitudes, sin errores; la segunda dejó todo como «ya existía». **En producción todavía no se ha corrido**: primero `--simular`, y los técnicos quedan sin marcar disponibles.
