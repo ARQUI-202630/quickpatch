@@ -16,7 +16,9 @@ firewall_by_host:
   vm2:   # QA, aplicación (ADR-022): k3s de QA. Producción no acepta conexiones desde QA ni al revés.
     - { port: 30080, from: ["{{ ip.vm1 }}"], comment: "Proxy de VM1 -> Traefik de QA (HTTP)" }
     - { port: 6443, from: ["{{ ip.vm1 }}"], comment: "Runner -> API de k3s de QA" }
+    - { port: "{{ gateway_puerto }}", from: ["{{ ip.vm1 }}"], comment: "Entrada de VM1 -> gateway de QA (Nginx)" }
   vm3:
+    - { port: "{{ gateway_puerto }}", from: ["{{ ip.vm1 }}"], comment: "Entrada de VM1 -> gateway de producción (Nginx)" }
     - { port: 30080, from: ["{{ ip.vm1 }}"], comment: "Gateway -> Traefik (HTTP)" }
     - { port: 30443, from: ["{{ ip.vm1 }}"], comment: "Gateway -> Traefik (HTTPS)" }
     - { port: 6443, from: ["{{ ip.vm1 }}"], comment: "Runner -> API de k3s" }
