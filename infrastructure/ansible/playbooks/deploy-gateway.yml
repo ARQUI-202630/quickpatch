@@ -1,11 +1,126 @@
-# VM1: Nginx como punto único de entrada (secciones 5.2 y 10.1).
-# También sirve el panel Angular como archivos estáticos, el de producción desde panel/ y el de QA desde panel-qa/
-# (ADR-015: VM2 pasó a ser QA; el panel de QA se sirve desde VM1 como el de producción, no desde el k3s de VM2).
-# HTTPS con certificado autofirmado: sin dominio público no hay CA pública (K9).
-- name: Gateway
+# Gateway por ambiente (SCRUM-573, secciones 5.2 y 10.1):
+#   1. Un Nginx en cada ambiente: VM3 (producción) y VM2 (QA). Reenvía la API al Traefik de su k3s y sirve el panel Angular de
+#      su carpeta panel/. Escucha en HTTP por gateway_puerto, abierto solo a VM1 (firewall.yml).
+#   2. VM1 queda como entrada TLS: termina el HTTPS (certificado autofirmado, sin dominio público no hay CA pública, K9), aplica la
+#      lista de redes del equipo y reenvía por nombre al gateway del ambiente. Con gateway_propio.<ambiente> en false, VM1 atiende
+#      ese ambiente por sí misma (API a Traefik y panel en panel/ o panel-qa/), como antes: es la marcha atrás.
+# Orden de un cambio de ambiente: desplegar el gateway del ambiente, probarlo (verificar-gateway-ambiente.yml), copiar el panel actual
+# (-e copiar_panel=qa|produccion) y recién entonces poner gateway_propio.<ambiente> en true y aplicar la entrada.
+# Uso por partes: --limit vm2 | vm3 (gateway de un ambiente) o --limit vm1 (entrada).
+- name: Gateway de cada ambiente (VM3 producción, VM2 QA)
+  hosts: backend:qa_app
+  vars:
+    dir: "{{ stack_dir }}/gateway"
+  tasks:
+    - name: Carpetas
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ item.owner | default('root') }}"
+      loop:
+        - { path: "{{ dir }}" }
+        - { path: "{{ dir }}/panel", owner: "{{ deploy_user }}" }   # panel del ambiente: lo escribe el runner (quickpatch-web)
+
+    - name: Página provisional del panel (hasta el primer build de Angular)
+      ansible.builtin.copy:
+        dest: "{{ dir }}/panel/index.html"
+        mode: "0644"
+        owner: "{{ deploy_user }}"
+        force: false
+        content: "<!doctype html><title>QUICKPATCH</title><p>Panel administrativo: pendiente del primer build de Angular.</p>\n"
+
+    - name: Imagen de Nginx
+      community.docker.docker_image:
+        name: "{{ images.nginx }}"
+        source: pull
+
+    - name: Configuración de Nginx del ambiente ({{ entorno }})
+      ansible.builtin.template:
+        # La configuración es de quickpatch-api-gateway (submódulo apps/api-gateway, SCRUM-338).
+        src: "{{ playbook_dir }}/../../../apps/api-gateway/nginx/gateway-ambiente-nginx.conf.j2"
+        dest: "{{ dir }}/nginx.conf"
+        # Una configuración rota no se escribe. `z` etiqueta el archivo para SELinux (VM2 es Rocky); en Ubuntu no hace nada.
+        validate: >-
+          docker run --rm --network host --entrypoint nginx -v %s:/tmp/nginx.conf:ro,z
+          {{ images.nginx }} -t -c /tmp/nginx.conf
+        mode: "0644"
+      notify: Recargar gateway
+
+    - name: Compose del gateway del ambiente
+      ansible.builtin.copy:
+        dest: "{{ dir }}/compose.yml"
+        mode: "0644"
+        content: |
+          services:
+            nginx:
+              image: {{ images.nginx }}
+              network_mode: host
+              restart: unless-stopped
+              volumes:
+                - ./nginx.conf:/etc/nginx/nginx.conf:ro,z
+                - ./panel:/usr/share/nginx/panel:ro,z
+
+    - name: Levantar el gateway del ambiente
+      community.docker.docker_compose_v2: { project_src: "{{ dir }}", state: present }
+
+    - name: Aplicar los cambios pendientes antes de comprobar
+      ansible.builtin.meta: flush_handlers
+
+    - name: El gateway del ambiente responde
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:{{ gateway_puerto }}/gateway-salud"
+        return_content: true
+      register: salud
+      until: salud.status == 200
+      retries: 10
+      delay: 3
+
+  handlers:
+    - name: Recargar gateway
+      community.docker.docker_compose_v2: { project_src: "{{ dir }}", state: restarted }
+
+# Copia única del panel que hoy sirve VM1 al gateway del ambiente: sin esto, al cambiar la entrada el ambiente mostraría la página
+# provisional hasta el siguiente release. Solo con -e copiar_panel=qa o -e copiar_panel=produccion. Usa la llave del runner
+# (deploy-runner.yml --tags llave-runner la autoriza en VM2 y VM3).
+- name: Copiar el panel actual de VM1 al gateway del ambiente
+  hosts: gateway
+  gather_facts: false
+  vars:
+    dir: "{{ stack_dir }}/gateway"
+  tasks:
+    - name: Panel de {{ copiar_panel | default('ninguno') }}
+      ansible.builtin.shell: |
+        set -o pipefail
+        tar -C {{ dir }}/{{ item.carpeta }} -cf - . | ssh -o StrictHostKeyChecking=accept-new {{ deploy_user }}@{{ item.ip }} \
+          "find {{ dir }}/panel -mindepth 1 -delete && tar -m -C {{ dir }}/panel -xf -"
+      args:
+        executable: /bin/bash
+      become_user: "{{ deploy_user }}"
+      loop:
+        - { ambiente: qa, carpeta: panel-qa, ip: "{{ ip.vm2 }}" }
+        - { ambiente: produccion, carpeta: panel, ip: "{{ ip.vm3 }}" }
+      loop_control:
+        label: "{{ item.ambiente }}"
+      when: (copiar_panel | default('')) == item.ambiente
+      changed_when: true
+
+- name: Entrada TLS (VM1)
   hosts: gateway
   vars:
     dir: "{{ stack_dir }}/gateway"
+  pre_tasks:
+    # Apuntar la entrada a un gateway que no responde dejaría el ambiente caído: se comprueba antes de escribir la configuración.
+    - name: El gateway de cada ambiente con gateway_propio responde
+      ansible.builtin.uri:
+        url: "http://{{ item.ip }}:{{ gateway_puerto }}/gateway-salud"
+        status_code: 200
+      loop:
+        - { ambiente: qa, ip: "{{ ip.vm2 }}" }
+        - { ambiente: produccion, ip: "{{ ip.vm3 }}" }
+      loop_control:
+        label: "{{ item.ambiente }}"
+      when: gateway_propio[item.ambiente]
   tasks:
     - name: Carpetas
       ansible.builtin.file:
@@ -16,8 +131,8 @@
       loop:
         - { path: "{{ dir }}", mode: "0755" }
         - { path: "{{ dir }}/certs", mode: "0750" }
-        - { path: "{{ dir }}/panel", mode: "0755", owner: "{{ deploy_user }}" }   # panel de producción: lo escribe el runner (quickpatch-web)
-        - { path: "{{ dir }}/panel-qa", mode: "0755", owner: "{{ deploy_user }}" }   # panel de QA: lo escribe el runner (rama release/*)
+        - { path: "{{ dir }}/panel", mode: "0755", owner: "{{ deploy_user }}" }   # panel de producción mientras gateway_propio.produccion sea false
+        - { path: "{{ dir }}/panel-qa", mode: "0755", owner: "{{ deploy_user }}" }   # panel de QA mientras gateway_propio.qa sea false
 
     - name: Página provisional de cada panel (hasta el primer build de Angular)
       ansible.builtin.copy:
@@ -45,19 +160,20 @@
       changed_when: true   # solo corre cuando el certificado hay que regenerarlo
       notify: Recargar gateway
 
-    - name: Configuración de Nginx
+    - name: Configuración de Nginx de la entrada
       ansible.builtin.template:
         # La configuración es de quickpatch-api-gateway (submódulo apps/api-gateway, SCRUM-338).
-        src: "{{ playbook_dir }}/../../../apps/api-gateway/nginx/gateway-nginx.conf.j2"
+        src: "{{ playbook_dir }}/../../../apps/api-gateway/nginx/entrada-nginx.conf.j2"
         dest: "{{ dir }}/nginx.conf"
         # Nginx es la única entrada: una configuración rota no se escribe. Se prueba con los certificados reales de VM1.
         validate: >-
           docker run --rm --network host --entrypoint nginx -v %s:/tmp/nginx.conf:ro -v {{ dir }}/certs:/etc/nginx/certs:ro
           {{ images.nginx }} -t -c /tmp/nginx.conf
         mode: "0644"
+        backup: true   # deja nginx.conf.<fecha>~ al lado: copia para volver atrás sin esperar a git
       notify: Recargar gateway
 
-    - name: Compose del gateway
+    - name: Compose de la entrada
       ansible.builtin.copy:
         dest: "{{ dir }}/compose.yml"
         mode: "0644"
@@ -73,7 +189,7 @@
                 - ./panel:/usr/share/nginx/panel:ro
                 - ./panel-qa:/usr/share/nginx/panel-qa:ro
 
-    - name: Levantar el gateway
+    - name: Levantar la entrada
       community.docker.docker_compose_v2: { project_src: "{{ dir }}", state: present }
 
   handlers:

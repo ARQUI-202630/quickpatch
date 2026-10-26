@@ -50,6 +50,14 @@ gateway_hosts:
   qa_beta: "beta.qa.{{ gateway_domain }}"   # tenant Beta de QA (SCRUM-62): el Nginx fija el canal quickpatch-beta por este nombre
   grafana: "grafana.{{ gateway_domain }}"
 
+# Gateway de cada ambiente (SCRUM-573): un Nginx en VM3 (producción) y otro en VM2 (QA), en HTTP por gateway_puerto, al que solo llega
+# VM1 (firewall.yml). VM1 queda como entrada TLS. gateway_propio dice qué ambientes ya se atienden así: con false el Nginx de VM1
+# atiende ese ambiente por sí mismo, como antes (marcha atrás); se cambia a true cuando `verificar-gateway-ambiente.yml` pasa.
+gateway_puerto: 8080
+gateway_propio:
+  qa: false
+  produccion: false
+
 # --- Versiones fijadas ---------------------------------------------------------
 images:
   postgis: postgis/postgis:16-3.4
