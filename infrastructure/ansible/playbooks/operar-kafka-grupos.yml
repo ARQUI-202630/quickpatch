@@ -1,0 +1,79 @@
+# Operación de los grupos de consumidores de Kafka: lag, retención y reinicio de offsets
+# (SCRUM-555, INFRASTRUCTURE.md 5.10). Producción (VM6) y QA (VM7) con el mismo playbook.
+#
+#   ./ap playbooks/operar-kafka-grupos.yml                      solo lectura: grupos, lag y retención de cada topic
+#   ./ap playbooks/operar-kafka-grupos.yml --limit vm7          lo mismo, solo QA
+#
+#   ./ap playbooks/operar-kafka-grupos.yml --limit vm7 \
+#     -e grupo=communication-service -e topic=matching.no-technician-available -e destino=latest
+#                                                               simula el reinicio de offsets (--dry-run): muestra
+#                                                               a qué offset quedaría el grupo; no cambia nada
+#   (lo mismo con -e ejecutar=si)                               aplica el reinicio
+#
+# destino: latest (descarta lo pendiente), earliest (relee todo lo que retiene el topic) o datetime
+# (con -e fecha=AAAA-MM-DDThh:mm:ss.sss, en UTC). Kafka rechaza el reinicio si el grupo tiene consumidores activos:
+# antes se baja el servicio (kubectl scale deployment/<servicio> --replicas=0) y después se vuelve a subir.
+- name: Grupos de consumidores de Kafka
+  hosts: messaging:qa_mensajeria
+  gather_facts: false
+  become: true
+  vars:
+    dir: "{{ stack_dir }}/kafka"
+    kafka_bin: "docker compose -f {{ dir }}/compose.yml exec -T kafka /opt/kafka/bin"
+    broker: "--bootstrap-server {{ ansible_host }}:9092"
+    reiniciar: "{{ grupo is defined and topic is defined and destino is defined }}"
+    destinos:
+      latest: --to-latest
+      earliest: --to-earliest
+      datetime: "--to-datetime {{ fecha | default('') }}"
+  tasks:
+    - name: Grupos, estado y lag
+      ansible.builtin.shell: |
+        set -o pipefail
+        {{ kafka_bin }}/kafka-consumer-groups.sh {{ broker }} --describe --all-groups --state 2>&1 | awk 'NF>=4' | cut -c1-150
+        echo "--- lag por grupo y topic"
+        {{ kafka_bin }}/kafka-consumer-groups.sh {{ broker }} --describe --all-groups 2>&1 \
+          | awk 'NF>=6 && $1!="GROUP" && $6 ~ /^[0-9]+$/ {l[$1" "$2]+=$6} END {for (k in l) print l[k], k}' | sort -rn
+      args: { executable: /bin/bash }
+      register: grupos
+      changed_when: false
+
+    - name: Retención de cada topic (retention.ms, en horas)
+      ansible.builtin.shell: |
+        set -o pipefail
+        {{ kafka_bin }}/kafka-topics.sh {{ broker }} --describe 2>&1 | grep -E '^Topic:' | grep -v __consumer_offsets \
+          | sed -E 's/Topic: ([^[:space:]]+).*PartitionCount: ([0-9]+).*Configs: (.*)/\1 particiones=\2 \3/' \
+          | awk '{ h="por defecto del broker"; for (i = 1; i <= NF; i++) if ($i ~ /retention.ms=/) { split($i, a, "="); sub(/,.*/, "", a[2]); h = a[2] / 3600000 " h" } print $1, $2, h }'
+      args: { executable: /bin/bash }
+      register: retencion
+      changed_when: false
+
+    - name: Resultado
+      ansible.builtin.debug:
+        msg:
+          - "{{ inventory_hostname }} ({{ ansible_host }})"
+          - "{{ grupos.stdout_lines }}"
+          - "Retención por topic:"
+          - "{{ retencion.stdout_lines }}"
+
+    - name: Datos del reinicio
+      ansible.builtin.assert:
+        that:
+          - destino in destinos
+          - destino != 'datetime' or fecha is defined
+        fail_msg: "-e destino=latest|earliest|datetime (datetime pide -e fecha=AAAA-MM-DDThh:mm:ss.sss en UTC)"
+      when: reiniciar | bool
+
+    - name: Reinicio de offsets (simulación; con ejecutar=si lo aplica)
+      ansible.builtin.command: >-
+        {{ kafka_bin }}/kafka-consumer-groups.sh {{ broker }} --reset-offsets
+        --group {{ grupo }} --topic {{ topic }} {{ destinos[destino] }}
+        {{ '--execute' if (ejecutar | default('no')) == 'si' else '--dry-run' }}
+      register: reinicio
+      changed_when: (ejecutar | default('no')) == 'si'
+      when: reiniciar | bool
+
+    - name: Resultado del reinicio
+      ansible.builtin.debug:
+        msg: "{{ reinicio.stdout_lines }}"
+      when: reiniciar | bool
