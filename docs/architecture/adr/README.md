@@ -15,18 +15,19 @@ Cada decisión de arquitectura tiene su propio archivo en esta carpeta, con cont
 | [ADR-012](ADR-012-stack-tecnologico-polyglot.md) | Stack polyglot | AC7 | Aceptado |
 | [ADR-013](ADR-013-estrategia-de-repositorios.md) | Un repositorio por componente | AC7 | Aceptado; modificado por ADR-021 |
 | [ADR-014](ADR-014-postgresql-instancia-unica.md) | Una instancia de PostgreSQL, una base por servicio | AC7 | Aceptado |
-| [ADR-015](ADR-015-ambiente-qa-en-vm2.md) | QA en VM2 y acceso por VM1 | AC7 | Aceptado; modificado por ADR-022 |
+| [ADR-015](ADR-015-ambiente-qa-en-vm2.md) | QA en VM2 y acceso por VM1 | AC7 | Aceptado; modificado por ADR-022 y ADR-028 |
 | [ADR-016](ADR-016-garage-storage-objetos.md) | Garage como almacenamiento de objetos | AC6, AC2 | Aceptado |
 | [ADR-017](ADR-017-replicas-locales-por-eventos.md) | Réplicas locales alimentadas por eventos | AC5, AC2 | Aceptado |
 | [ADR-018](ADR-018-jwt-rs256-identity.md) | JWT RS256 firmado solo por Identity | AC6 | Aceptado |
 | [ADR-019](ADR-019-roles-base-de-datos.md) | Roles de base de datos por responsabilidad | AC6 | Propuesto |
 | [ADR-020](ADR-020-codigo-transversal-compartido.md) | Código transversal compartido (.NET) | AC7 | Propuesto |
 | [ADR-021](ADR-021-doce-repositorios.md) | Doce repositorios por componente de la solución | AC7 | Aceptado |
-| [ADR-022](ADR-022-redistribucion-vms.md) | 7 VMs: 3 de producción, 3 de QA y 1 de herramientas | AC7 | Aceptado; implementación en curso |
+| [ADR-022](ADR-022-redistribucion-vms.md) | 7 VMs: 3 de producción, 3 de QA y 1 de herramientas | AC7 | Aceptado; implementación en curso; gateway y panel precisados por ADR-028 |
 | [ADR-023](ADR-023-canal-tiempo-real-websocket.md) | Canal de estado en tiempo real por WebSocket hacia Communication Service, con respaldo por REST | AC4, AC2 | Aceptado |
 | [ADR-024](ADR-024-dependencias-externas-r5.md) | R5 sin cambios: geocodificación con Nominatim propio (Bogotá) y notificaciones dentro de la app | AC6, AC5 | Aceptado; excepción a ADR-014 |
 | [ADR-025](ADR-025-rest-solo-identity-service-request-payments.md) | REST desde el gateway solo hacia Identity, ServiceRequest y Payments; el resto por Kafka, con excepciones explícitas | AC7, AC5 | Aceptado |
 | [ADR-026](ADR-026-chat-de-la-solicitud.md) | Chat de la solicitud en Communication, sobre el canal en tiempo real; historial y envío como excepción de ADR-025 | AC4, AC6 | Propuesto (SCRUM-473) |
+| [ADR-028](ADR-028-gateway-por-ambiente.md) | Gateway Nginx propio en cada ambiente (VM3 y VM2), con VM1 como entrada TLS compartida | AC7, AC5 | Aceptado; implementado en QA y producción (SCRUM-573) |
 
 **Números sin asignar.** ADR-001 y ADR-010 nunca se usaron. ADR-008 aparecía en versiones anteriores del SAD como referencia a una decisión que no existía y se retiró en la versión 2.0. No se reutilizan, para no confundir referencias históricas.
 
