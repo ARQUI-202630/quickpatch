@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.0 |
+| **Versión** | 4.1 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -244,7 +244,7 @@ Las 7 VMs corren `node_exporter` y Promtail (unos 40 MiB entre los dos).
 | VM6 | 3,8 GiB | 20 GB | |
 | VM7 | 3,4 GiB | 19 GB | |
 
-Después de los despliegues del 8 de octubre, VM2 quedó en 32% de la RAM tras la prueba de carga completa y VM3, con los cuatro servicios de producción, en 29%, sin reinicios de pods ni `OOMKilled`. **Falta medir VM3 con los 8 servicios**, que es lo que decide el umbral de la sección 5.6.
+Después de los despliegues del 8 de octubre, VM2 quedó en 32% de la RAM tras la prueba de carga completa y VM3, con los cuatro servicios de producción, en 29%, sin reinicios de pods ni `OOMKilled`. **Falta medir con los 8 servicios**: el escenario AC2-E5 se mide en QA contra los límites de cada pod y la capacidad de VM3 se vigila aparte (sección 5.6).
 
 **Consumo de los pods el 12 de octubre** (`kubectl top pods`, cuatro días después del despliegue, cada `Deployment` con `1/1` disponible):
 
@@ -509,9 +509,9 @@ pie title Presupuesto de RAM en VM3 (11 GiB)
 
 - **En VM3 los dos instrumentos coinciden** (4.194 y 4.220 MiB). En VM2 difieren en 1,6 GiB: `kubectl top` cuenta más memoria que `free`, y esa diferencia no se investigó.
 - **Sistema, laboratorio y k3s ocupan unos 3,5 GiB en VM3** (4.194 MiB menos los 595 de los pods), no los 3,0 GiB de la medición del 3 de octubre.
-- **Proyección para los 8 servicios en VM3**, no una medición: a los 4.194 MiB de hoy se suman Payments (135 MiB) y Communication (124 MiB) medidos en QA y, por no existir, 150 MiB supuestos para cada uno de Actors y Ranking. Resultan unos 4.750 MiB (4,6 GiB), 1,9 GiB por debajo del umbral de 6,5 GiB.
+- **Proyección para los 8 servicios en VM3**, no una medición: a los 4.194 MiB de hoy se suman Payments (135 MiB) y Communication (124 MiB) medidos en QA y, por no existir, 150 MiB supuestos para cada uno de Actors y Ranking. Resultan unos 4.750 MiB (4,6 GiB). Es una cifra de capacidad de VM3, no la medida de AC2-E5 (ver la nota siguiente).
 
-> **Pendiente: medir los 8 servicios en VM3.** El escenario AC2-E5 del SAD y el caso PRF-005 del Documento de Pruebas fijan un máximo de 6,5 GiB de RAM en VM3. Con 4 servicios el uso real es 4,1 GiB y la proyección con 8 es 4,6 GiB; **pero la suma de límites llega a 6,5 o 6,75 GiB, y el SAD no dice si el umbral se compara con el uso o con los límites.** Hay que decidirlo (el equipo de arquitectura) y repetir la medición cuando estén desplegados Payments y Communication en producción y existan Actors y Ranking. Si se decide comparar con los límites y no caben, las salidas son bajar el límite de los .NET o subir el umbral a 7,5 GiB (VM3 tiene 11,6 GiB).
+> **AC2-E5 se mide en QA, no contra 6,5 GiB en VM3.** Desde la versión 2.15 del SAD (5 de octubre), el escenario AC2-E5 se mide en el ambiente de QA con los 8 servicios y los mismos `requests` y `limits` de producción. La medida es 0 reinicios por `OOMKilled` y cada pod dentro de sus `limits`, con `kubectl` y Grafana durante la prueba de carga con k6, y el consumo de CPU y RAM queda como línea base. El SAD dice que el total de RAM **no** se compara con el presupuesto de VM3, porque en QA todos los componentes comparten una sola VM. Esta sección había tomado el umbral de 6,5 GiB de la tarea SCRUM-554 y del caso PRF-005 del Documento de Pruebas, que siguen escritos con la comparación anterior; el documento de pruebas y la tarea deben alinearse con el SAD. Lo medido el 26 de octubre queda como dato de **capacidad de VM3**: con 4 servicios el uso real es 4,1 GiB, la proyección con 8 es 4,6 GiB y la suma de límites llega a 6,5 o 6,75 GiB de los 11,6 GiB de la VM. **Falta para AC2-E5:** desplegar Actors y Ranking en QA (hoy hay 6 servicios) y repetir la carga con k6 mirando reinicios y consumo por pod. En QA, el 26 de octubre, ningún pod había sido terminado por `OOMKilled`: el único reinicio (Communication, 24 de octubre) fue un cierre limpio (`Completed`, código 0). Si en producción se quiere además un tope de RAM total para VM3, hay que decidirlo como requisito aparte (el equipo de arquitectura).
 
 **Por qué el Matching queda en "Guaranteed":** cuando VM3 entra en presión de memoria, Kubernetes desaloja primero los pods en QoS "BestEffort" (sin límites) y luego los "Burstable" que más exceden su *request*; un pod "Guaranteed" (request = limit) es el último candidato a desalojo. AC2-E4 exige que el Matching siga respondiendo bajo pico de carga — dejarlo en la clase de QoS más protegida es lo que hace esa exigencia verificable, no solo declarada.
 
@@ -1027,7 +1027,7 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | VM1 es la única entrada desde la VPN a producción, QA y Grafana | R9 | SAD, ADR-015; sección 2.3 |
 | Las 7 VMs tienen la misma especificación sin importar el rol, y el software del laboratorio ya usa unos 2,3 GiB de RAM en cada una | Laboratorio de la Javeriana | Sección 3.1 |
 | La prueba de carga en QA es una aproximación: sus VMs tienen la misma especificación que las de producción, pero con datos de prueba y sin tráfico real | R10 | SAD, ADR-015; sección 6.2 |
-| El umbral de 6,5 GiB de RAM en VM3 no está comprobado con los 8 servicios: el uso medido con 4 es 4,1 GiB (proyección con 8: 4,6 GiB), pero la suma de límites es 6,5 a 6,75 GiB | Medición del 26 de octubre | Sección 5.6 |
+| AC2-E5 no se ha medido con los 8 servicios en QA (hoy hay 6; faltan Actors y Ranking), y el caso PRF-005 y la tarea SCRUM-554 siguen comparando con 6,5 GiB en VM3, lo que el SAD 2.15 ya no hace | Medición del 26 de octubre | Sección 5.6 |
 | `kubectl rollout undo` solo revierte la imagen del contenedor, no las migraciones de esquema: exige expand-contract | Diseño de Kubernetes | Secciones 5.8 y 6.2 |
 | Evidencias en Garage sin copia en otra VM | R10 | Sección 9.5 |
 | El vault y su contraseña existen en un solo computador | R11 | Sección 9.4 |
@@ -1178,3 +1178,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 3.8 | 22 oct 2026 | Límite de memoria de Communication a 512 MiB tras el `OOMKilled` en QA, con su medición, y la nota operativa de los grupos de consumidores que arrancan desde el principio del topic (sección 5.6). Payments ya tiene manifiesto. |
 | 3.9 | 25 oct 2026 | Gateway propio en cada ambiente (ADR-028, SCRUM-573, revisión del Sprint 4): un Nginx en VM3 (producción) y otro en VM2 (QA), cada uno con su panel y su despliegue, y VM1 como entrada TLS que reenvía por nombre. Cambian la vista general (2.1, diagrama incluido), el inventario (3.2), las conexiones y reglas de firewall del puerto 8080 (3.3 y 10.3), los playbooks (5.2 y 5.5, con `verificar-gateway-ambiente.yml`), el runner (6.3), TLS (10.1), los nombres lógicos (11.2) y el orden de despliegue. Aplicado en QA y producción el 25 de octubre. |
 | 4.0 | 26 oct 2026 | Revisión de cierre del Sprint 5 (SCRUM-552 a 555 y SCRUM-506): sección 4.3 con el estado real de QA y producción; sección 5.6 corregida con los límites de los manifiestos (384 MiB) y con la medición de VM3; sección 5.10 con la operación de Kafka (retención, grupos, lag y reinicio de offsets) y el playbook `operar-kafka-grupos.yml`; sección 10.5 con el estado del cifrado en tránsito y en reposo. |
+| 4.1 | 26 oct 2026 | AC2-E5 aclarado (secciones 3.2, 5.6 y 13): se mide en QA con los 8 servicios y los límites de cada pod, no contra 6,5 GiB en VM3, como dice el SAD desde la versión 2.15; los 4,6 GiB quedan como proyección de capacidad de VM3. Se registra que el reinicio de Communication en QA no fue `OOMKilled`. |
