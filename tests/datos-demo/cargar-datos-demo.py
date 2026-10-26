@@ -5,7 +5,8 @@ Usa solo la API pública (el mismo camino de la app y del panel), así que respe
 Un registro que ya existe responde 409 y se deja como está: se puede repetir sin duplicar nada.
 
 Sin credenciales en el repositorio: se leen del entorno.
-  QP_ADMIN_EMAIL, QP_ADMIN_PASSWORD   administrador de la plataforma del ambiente (vault_identity_admins)
+  QP_ADMIN_EMAIL, QP_ADMIN_PASSWORD   administrador del tenant del ambiente, rol admin_tenant (vault_identity_admins);
+                                      aprobar técnicos es solo de admin_tenant
   QP_DEMO_PASSWORD                    contraseña de las cuentas de demostración (entre 8 y 128 caracteres)
 
   python3 cargar-datos-demo.py --ambiente qa --simular        muestra el plan y no escribe nada
