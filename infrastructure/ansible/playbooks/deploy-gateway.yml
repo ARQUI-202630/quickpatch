@@ -97,6 +97,7 @@
           "find {{ dir }}/panel -mindepth 1 -delete && tar -m -C {{ dir }}/panel -xf -"
       args:
         executable: /bin/bash
+      become: true
       become_user: "{{ deploy_user }}"
       loop:
         - { ambiente: qa, carpeta: panel-qa, ip: "{{ ip.vm2 }}" }
