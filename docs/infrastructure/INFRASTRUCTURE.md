@@ -1,9 +1,9 @@
-# Documento de Infraestructura V3 — QUICKPATCH
+# Documento de Infraestructura V4 — QUICKPATCH
 
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 3.9 |
+| **Versión** | 4.0 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -335,6 +335,34 @@ El toolchain está fijado por `docs/governance/TOOLCHAIN.md`: .NET SDK 10.0.401,
 
 ---
 
+### 4.3 Estado real de QA y de producción (medido el 26 de octubre de 2026)
+
+Foto de lo que corre hoy, tomada con comandos de solo lectura desde VM1 (SCRUM-553). Sirve para saber qué falta en producción antes de promover el MVP (SCRUM-518).
+
+| | Producción (VM3, VM4, VM6) | QA (VM2, VM5, VM7) |
+|---|---|---|
+| Microservicios en k3s | 4: Catalog, Identity, Matching y ServiceRequest | 6: los 4 anteriores, Communication y Payments |
+| Pods | 4 de 4 en `1/1 Running`, 0 reinicios | 6 de 6 en `1/1 Running`; Communication con 1 reinicio |
+| `Secret` y `ConfigMap` | Los de los 4 servicios | Los de los 6 servicios |
+| Ingress | Catalog, Identity y ServiceRequest | Catalog, Communication, Identity, Matching y ServiceRequest |
+| Bases de PostgreSQL | Las 8 bases de servicio, incluidas `db_payments` y `db_communication`, con sus roles `*_migrator` y `*_app` | Las mismas 8 |
+| Nominatim | No desplegado (VM4 solo corre PostgreSQL y Redis) | VM5: `nominatim` y `proxy`, en servicio |
+| Kafka | 2 topics (`catalog.category-changed` y `service-request.created`) y 2 grupos de consumidores | 17 topics y 6 grupos de consumidores |
+| Garage | En servicio (VM6) | En servicio (VM7) |
+| Panel Angular | Página provisional | Build real de `release/0.5.2` |
+| Gateway | Nginx propio en VM3 (ADR-028) | Nginx propio en VM2 (ADR-028) |
+
+Lo que falta para que producción iguale a QA:
+
+- **Payments y Communication.** Las bases y los roles ya existen en VM4, pero faltan sus `Secret`, `ConfigMap`, Ingress, Deployment y los topics de Kafka que usan (SCRUM-519).
+- **Nominatim** en VM4, con el mapa de Bogotá (SCRUM-520, sección 5.9).
+- **Actors y Ranking** no están desplegados en ningún ambiente: sus bases y roles existen, pero no tienen manifiesto (sección 5.3).
+- **Topics de Kafka** del incremento (15 más en producción) con `deploy-kafka.yml`.
+- **Panel real** de producción: el job de `quickpatch-web` en `main` no existe todavía.
+- **Respaldo previo y tope de pool** antes de migrar (SCRUM-521, secciones 5.7 y 9.2).
+
+Las imágenes de los servicios se etiquetan por el hash de su contenido (`t-<árbol>`, sección 6.1), así que la versión de cada servicio se ve en el release de su repositorio y no en el nombre de la imagen.
+
 ## 5. Contenedores y orquestación
 
 La infraestructura está implementada con Ansible en la carpeta `infrastructure/ansible/` del repositorio principal (antes el repositorio `quickpatch-infrastructure`, archivado en SCRUM-338) y aplicada en las 7 VMs. Ansible corre dentro de un contenedor de Docker (`ansible/Dockerfile` y el wrapper `ap`), así que todo el equipo usa la misma versión (ansible-core 2.18). Los playbooks pasan `ansible-lint` con el perfil `production` en el CI del repositorio principal (sección 6.1).
@@ -368,6 +396,7 @@ Los grupos `produccion` (VM3, VM4 y VM6) y `qa` (VM2, VM5 y VM7) reúnen los de 
 | `deploy-cache.yml` | VM4 y VM5 | Redis con un usuario ACL por servicio, restringido a su prefijo |
 | `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá (ADR-024): contenedor con su propio PostgreSQL, proxy en la red del host en el 8088 y extracto copiado desde el controlador; solo QA por ahora |
 | `deploy-kafka.yml` | VM6 y VM7 | Kafka en modo KRaft; en VM6, también Kafka UI |
+| `operar-kafka-grupos.yml` | VM6 y VM7 | Solo lectura por defecto: grupos de consumidores, su lag y la retención de cada topic. Con `-e grupo`, `-e topic` y `-e destino` simula el reinicio de offsets, y con `-e ejecutar=si` lo aplica (sección 5.10) |
 | `deploy-k3s.yml` | VM3 y VM2 | k3s de un nodo con los rangos de red de abajo, Traefik en la red del host (puertos 30080 y 30443), namespace `quickpatch` y kubeconfig para el runner |
 | `deploy-gateway.yml` | VM3 y VM2; VM1 | En cada VM de aplicación, el Nginx del gateway del ambiente con su carpeta de panel; en VM1, la entrada TLS con los tres nombres (sección 11) y el certificado. `--limit vm2`, `--limit vm3` o `--limit vm1`; `-e copiar_panel=qa|produccion` copia el panel que sirve VM1 al gateway del ambiente |
 | `verificar-gateway-ambiente.yml` | VM1 | Solo lectura: compara, para cada ambiente, el gateway, Traefik, el panel y la entrada de VM1 por nombre y por IP |
@@ -449,11 +478,11 @@ VM3 tiene 4 vCPU y 11 GiB de RAM fijos (sección 3.1), compartidos entre el cont
 |---|---|---|---|
 | Sistema operativo, software del laboratorio y k3s (containerd, Traefik, CoreDNS) | — | — | 3,0 GiB medidos sin microservicios (sección 3.2): 2,5 del sistema y el laboratorio, 0,5 de k3s |
 | Matching Service (Spring Boot) | 1 / 1 vCPU | 1 / 1 GiB | Guaranteed |
-| Identity, Catalog, ServiceRequest y Payments (ASP.NET Core, c/u) | 50 m / 500 m | 64 MiB / 256 MiB; el init container de migraciones pide 160 MiB y llega a 384 MiB, solo mientras migra | Burstable |
-| Communication (ASP.NET Core) | 50 m / 500 m | 128 MiB / 512 MiB; el init container de migraciones, 64 MiB / 256 MiB | Burstable |
+| Identity, Catalog, ServiceRequest y Payments (ASP.NET Core, c/u) | 100 m / 500 m | 160 MiB / 384 MiB; el init container de migraciones pide 64 MiB y llega a 256 MiB, solo mientras migra | Burstable |
+| Communication (ASP.NET Core) | 50 m / 500 m | 128 MiB / 512 MiB (el manifiesto de `develop`; en QA corre con 192 MiB de request); el init container de migraciones, 64 MiB / 256 MiB | Burstable |
 | Actors y Ranking (ASP.NET Core) | Sin manifiesto | Sin manifiesto | — |
 
-Los límites históricos calculados para NestJS no se reutilizan para ASP.NET Core. Los manifiestos de Identity, Catalog, ServiceRequest y Payments fijan un límite de 256 MiB, el de Communication 512 MiB y el de Matching 1 GiB, con una réplica por servicio. Si Actors y Ranking adoptan 256 MiB, la suma de límites en VM3 es 3,0 + 1,0 + 6 × 0,25 + 0,5 = 6,0 GiB.
+Los límites históricos calculados para NestJS no se reutilizan para ASP.NET Core. Los manifiestos de Identity, Catalog, ServiceRequest y Payments fijan un límite de 384 MiB para el contenedor de la aplicación, el de Communication 512 MiB y el de Matching 1 GiB, con una réplica por servicio. Antes de la revisión del 26 de octubre de 2026 este documento decía 256 MiB para los servicios .NET (con una suma de 6,0 GiB); los manifiestos ya tenían 384 MiB. Con los límites reales, la suma en VM3 es 3,0 + 1,0 + 4 × 0,375 + 0,5 = 6,0 GiB para los 6 servicios que existen, y **6,5 GiB con Actors y Ranking en 256 MiB, o 6,75 GiB si adoptan 384 MiB** como los demás: queda en el umbral de 6,5 GiB o por encima. Es una cuenta de límites, el peor caso; el uso medido es mucho menor (más abajo).
 
 **Por qué Communication tiene 512 MiB (QA, 22 de octubre).** Con 256 MiB terminó en `OOMKilled`: al desplegar la 0.3.0, sus tres grupos de consumidores tenían cientos de miles de eventos pendientes de las pruebas de k6, que Kafka guarda 168 horas, y al ponerse al día el pod usaba unos 330 MiB con la CPU al tope. En reposo usa unos 56 MiB. Los grupos del buzón y del chat arrancan desde el principio del topic cuando no tienen offset guardado (`auto.offset.reset = earliest`) porque no pueden perder eventos: el chat necesita conocer las solicitudes que ya tienen técnico (DD 5.23). Eso solo pasa la primera vez que se crea el grupo. Si un grupo nuevo aparece en un ambiente con tráfico viejo de carga, se mueve a mano al final del topic (`kafka-consumer-groups --reset-offsets --to-latest`) antes de arrancar el servicio, como se hizo en QA.
 
@@ -468,7 +497,21 @@ pie title Presupuesto de RAM en VM3 (11 GiB)
     "Margen libre (rolling update / escalado)" : 5
 ```
 
-> **Pendiente: comprobar el umbral de 6,5 GiB con los 8 servicios.** El escenario AC2-E5 del SAD y el caso PRF-005 del Documento de Pruebas fijan un máximo de 6,5 GiB de RAM en VM3, calculado con 2 GiB para el sistema. Medido el 3 de octubre, el sistema usa 3,0 GiB (el software del laboratorio no estaba en la estimación). Con los límites actuales la suma es 6,0 GiB y cabe, pero Actors y Ranking todavía no corren. Si al sumar los otros cuatro no cabe, las salidas siguen siendo bajar el límite de los .NET o subir el umbral a 7,5 GiB (VM3 tiene 11,6 GiB).
+**Medición del 26 de octubre de 2026 (SCRUM-554).** Con `kubectl top` y `free`, sin carga de prueba en ese momento:
+
+| | VM3 (producción, 4 servicios) | VM2 (QA, 6 servicios) |
+|---|---|---|
+| RAM usada por la VM (`free`) | 4.194 MiB de 11.913 (35 %), 7.365 MiB disponibles | 4.551 MiB de 11.668 (39 %), 7.116 MiB disponibles |
+| RAM del nodo según `kubectl top` | 4.220 MiB (35 %) | 6.178 MiB (52 %) |
+| CPU del nodo | 816 m de 4.000 (20 %) | 478 m de 4.000 (11 %) |
+| Pods (RAM) | Catalog 127, Identity 110, Matching 235, ServiceRequest 123: 595 MiB | Catalog 149, Communication 124, Identity 155, Matching 285, Payments 135, ServiceRequest 248: 1.096 MiB |
+| Reinicios | 0 | 1 (Communication) |
+
+- **En VM3 los dos instrumentos coinciden** (4.194 y 4.220 MiB). En VM2 difieren en 1,6 GiB: `kubectl top` cuenta más memoria que `free`, y esa diferencia no se investigó.
+- **Sistema, laboratorio y k3s ocupan unos 3,5 GiB en VM3** (4.194 MiB menos los 595 de los pods), no los 3,0 GiB de la medición del 3 de octubre.
+- **Proyección para los 8 servicios en VM3**, no una medición: a los 4.194 MiB de hoy se suman Payments (135 MiB) y Communication (124 MiB) medidos en QA y, por no existir, 150 MiB supuestos para cada uno de Actors y Ranking. Resultan unos 4.750 MiB (4,6 GiB), 1,9 GiB por debajo del umbral de 6,5 GiB.
+
+> **Pendiente: medir los 8 servicios en VM3.** El escenario AC2-E5 del SAD y el caso PRF-005 del Documento de Pruebas fijan un máximo de 6,5 GiB de RAM en VM3. Con 4 servicios el uso real es 4,1 GiB y la proyección con 8 es 4,6 GiB; **pero la suma de límites llega a 6,5 o 6,75 GiB, y el SAD no dice si el umbral se compara con el uso o con los límites.** Hay que decidirlo (el equipo de arquitectura) y repetir la medición cuando estén desplegados Payments y Communication en producción y existan Actors y Ranking. Si se decide comparar con los límites y no caben, las salidas son bajar el límite de los .NET o subir el umbral a 7,5 GiB (VM3 tiene 11,6 GiB).
 
 **Por qué el Matching queda en "Guaranteed":** cuando VM3 entra en presión de memoria, Kubernetes desaloja primero los pods en QoS "BestEffort" (sin límites) y luego los "Burstable" que más exceden su *request*; un pod "Guaranteed" (request = limit) es el último candidato a desalojo. AC2-E4 exige que el Matching siga respondiendo bajo pico de carga — dejarlo en la clase de QoS más protegida es lo que hace esa exigencia verificable, no solo declarada.
 
@@ -504,6 +547,34 @@ Nominatim convierte en coordenadas la dirección que escribe el Cliente cuando n
 - **Acceso comprobado.** Desde VM2 y desde un pod del k3s de QA, `GET /status` y `/search` responden 200. Desde VM1 y VM7 la conexión al 8088 no responde (la rechaza el firewall).
 - **Cómo se actualiza el mapa.** Manual y poco frecuente: se regenera el extracto y se corre `deploy-nominatim.yml -e reimportar=true`, que borra la base de Nominatim y vuelve a importar (unos 7 minutos sin servicio de geocodificación).
 - **Calidad de la geocodificación (hallazgo del 14 de octubre).** Con 14 direcciones de prueba, Nominatim resuelve bien nombres de vía y lugares (Calle 63, Calle 26, Calle 72, Calle 100, Diagonal 40, Avenida Carrera 68, Plaza de Bolívar y la localidad Chapinero), pero **no usa el número de casa ni la calle transversal de la nomenclatura de Bogotá**: "Carrera 7 # 72-41" devuelve una calle llamada Carrera 7 en la localidad de San Cristóbal, no el cruce con la Calle 72 en Chapinero; "Transversal 93 # 53-32" y "Parque de la 93" devuelven puntos en otras localidades, y "Avenida Caracas # 26-50" no devuelve nada. La coordenada puede quedar a kilómetros de la dirección y caer en otra localidad, lo que cambia qué técnicos cubren la solicitud. Por eso conviene que el GPS siga siendo la primera opción (ADR-024) y que, cuando se use la dirección, la app muestre al Cliente el punto encontrado para confirmarlo. Es una decisión del equipo de ServiceRequest y de la app, no de DevOps.
+
+### 5.10 Operación de Kafka: retención, grupos de consumidores y reinicio de offsets (SCRUM-555)
+
+Kafka corre en un solo nodo por ambiente (VM6 en producción, VM7 en QA; R10), con `replicationFactor = 1`. El playbook `operar-kafka-grupos.yml` reúne las tres operaciones del día a día.
+
+**Retención.** Cada topic se crea con `retention.ms` propio, tomado de `topics.yaml` del repositorio `quickpatch-kafka`: hoy 168 horas (7 días) en los 17 topics de QA y en los 2 de producción, medido el 26 de octubre de 2026. La variable `kafka_retencion_horas` de `group_vars` (168 en producción, 24 en QA) es solo el valor por defecto del broker y aplica a un topic creado sin `retention.ms`. Cambiar la retención de un topic existente se hace a mano con `kafka-configs.sh --alter` y se refleja en `topics.yaml`; `deploy-kafka.yml` no modifica los topics que ya existen.
+
+**Grupos de consumidores y lag.** Un grupo por servicio y función. El lag de un grupo es la diferencia entre el último offset del topic y el que el grupo ya confirmó.
+
+| Ambiente | Grupos (miembros) |
+|---|---|
+| Producción (VM6) | `matching-service` (1), `service-request-service` (1); los dos estables |
+| QA (VM7) | `communication-chat` (1), `communication-inbox` (1), `communication-service` (1), `matching-service` (5), `payments-service` (1), `service-request-service` (3); todos estables |
+
+- **Cómo verlos:** `./ap playbooks/operar-kafka-grupos.yml` (solo lectura), o con `--limit vm7` para QA. Muestra el estado de cada grupo, el lag sumado por grupo y topic, y la retención de cada topic.
+- **Lectura del 26 de octubre en QA:** lag 0 en todos los grupos salvo `communication-service`, con 22 mensajes en `matching.no-technician-available`, 6 en `matching.search-resumed` y 5 en `matching.technician-assigned`. Se repitió igual en dos lecturas separadas por varios minutos, así que no es tráfico en tránsito: el consumidor no confirma esos offsets. Falta saber si Communication descarta esos eventos sin confirmarlos o si falla al procesarlos; es una revisión para el equipo de Communication.
+- **Producción:** sin lag, porque casi no hay tráfico (2 topics).
+
+**Reiniciar los offsets de un grupo.** Sirve cuando un grupo nuevo va a leer tráfico viejo (como el de las pruebas de carga que causó el `OOMKilled` de Communication, sección 5.6) o cuando hay que descartar o repetir eventos.
+
+1. Bajar el servicio dueño del grupo, porque Kafka solo permite reiniciar un grupo sin miembros activos: `kubectl scale deployment/<servicio> --replicas=0`.
+2. Simular: `./ap playbooks/operar-kafka-grupos.yml --limit vm7 -e grupo=<grupo> -e topic=<topic> -e destino=latest`. Muestra el offset al que quedaría cada partición y no cambia nada. El `--limit` es obligatorio (`vm7` para QA, `vm6` para producción): sin él el playbook se niega a reiniciar, para no tocar los dos ambientes a la vez.
+3. Aplicar el mismo comando con `-e ejecutar=si`. `destino` puede ser `latest` (descarta lo pendiente), `earliest` (relee todo lo que retiene el topic) o `datetime` (con `-e fecha=AAAA-MM-DDThh:mm:ss.sss`, en UTC).
+4. Volver a subir el servicio con el número de réplicas que tenía y revisar el lag con el comando del primer punto.
+
+Con `earliest`, o con un grupo nuevo (`auto.offset.reset = earliest`), el servicio vuelve a procesar hasta 7 días de eventos: los consumidores deben ser idempotentes (DD 5.23) y Communication necesita su límite de 512 MiB (sección 5.6).
+
+> **Pendiente de probar en QA.** La lectura (grupos, lag y retención) se ejecutó en QA y producción el 26 de octubre. El reinicio de offsets todavía no se ha probado de punta a punta: exige bajar un servicio de QA y aplicar el reinicio, algo que debe correr DevOps con el equipo avisado.
 
 ## 6. CI/CD
 
@@ -844,6 +915,36 @@ Lo que sí está configurado:
 
 ---
 
+### 10.5 Cifrado en tránsito y en reposo (SCRUM-506)
+
+Estado medido el 26 de octubre de 2026 en las 7 VMs, con comandos de solo lectura.
+
+| Tramo o dato | Estado | Evidencia |
+|---|---|---|
+| Cliente a VM1 (VPN) | **Cifrado**: HTTPS con TLS 1.2 y 1.3; TLS 1.0 y 1.1 se rechazan; HSTS de un año en el bloque de producción | `openssl s_client` por versión y cabecera `Strict-Transport-Security: max-age=31536000` |
+| HTTP (puerto 80) en VM1 | **Rechazado**: el puerto 80 no escucha y `ufw` solo abre el 443 | La conexión por la IP de VM1 no responde |
+| VM1 al gateway de cada ambiente (8080) | Sin cifrar (HTTP); el firewall deja pasar solo a VM1 | ADR-028 |
+| Gateway, Traefik y pods del mismo k3s | Sin cifrar (HTTP), dentro de la misma VM | Sección 2.1 |
+| Servicios a PostgreSQL (VM4 y VM5) | **Sin cifrar**: `ssl = off`. La autenticación es `scram-sha-256` y `pg_hba.conf` solo admite la IP de la VM de aplicación por rol | `show ssl` y `pg_hba.conf` |
+| Servicios a Kafka (VM6 y VM7) | **Sin cifrar ni autenticar**: listeners `PLAINTEXT` | `KAFKA_LISTENER_SECURITY_PROTOCOL_MAP` del `compose.yml` |
+| Servicios a Garage (VM6 y VM7) | Sin cifrar: API S3 por HTTP en el puerto 9000 de la IP de la VM | `garage.toml` (`api_bind_addr`) |
+| Discos de las 7 VMs | **Sin cifrado visible**: no hay volúmenes LUKS ni dispositivos `crypt` en `lsblk`. El cifrado que aplique el hipervisor de la universidad no se ve desde las VMs | `lsblk` en las 7 VMs |
+| Datos de PostgreSQL | Sin cifrado en reposo (PostgreSQL no lo trae de serie); los volúmenes de Docker están en el disco sin cifrar | Misma evidencia de discos |
+| Contraseñas de los roles | Guardadas con `scram-sha-256` | `password_encryption` |
+| Respaldos de PostgreSQL | **Sin cifrar**: `pg_dump -Fc` queda en disco en VM4 y se sube a Garage por HTTP | `pg-backup.sh.j2` (sin `gpg` ni `age`) |
+| Secretos de la infraestructura | **Cifrados**: Ansible Vault, AES-256 (sección 8) | `vault.yml` |
+
+**No se pudo verificar:** si los `Secret` de Kubernetes están cifrados en reposo en el k3s (`k3s secrets-encrypt status`) ni la configuración de TLS y autenticación de Redis. Quedan para revisar con acceso a VM3, VM2, VM4 y VM5.
+
+**Riesgos y decisión.** El tráfico sin cifrar viaja entre VMs de la red privada del laboratorio (`10.43.x.x`), con firewall por IP de origen (sección 10.2), y no sale a Internet; por eso se aceptó (sección 10.1). Lo que queda expuesto es el contenido de los discos y de los respaldos ante quien tenga acceso al almacenamiento o a una VM. Opciones, de menor a mayor esfuerzo:
+
+1. **Cifrar los respaldos** antes de subirlos a Garage (por ejemplo con `age`), con la llave en el vault.
+2. **Activar `secrets-encryption` en k3s** para los `Secret` (reinicia k3s; se aplica en VM3 y VM2).
+3. **TLS de PostgreSQL** (`ssl = on`, certificado autofirmado, `hostssl` en `pg_hba.conf` y `sslmode=require` en las cadenas de conexión de los 8 servicios): exige cambiar el `Secret` de cada servicio.
+4. **Cifrado de disco**: no se puede añadir a las VMs ya creadas sin reinstalarlas; depende de lo que ofrezca el laboratorio.
+
+No se aplicó ninguna: cambian componentes en producción y QA y requieren la decisión del equipo. Mientras tanto la limitación queda registrada en la sección 13.
+
 ## 11. Dominio y DNS
 
 ### 11.1 Alcance: sin dominio público
@@ -926,7 +1027,7 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | VM1 es la única entrada desde la VPN a producción, QA y Grafana | R9 | SAD, ADR-015; sección 2.3 |
 | Las 7 VMs tienen la misma especificación sin importar el rol, y el software del laboratorio ya usa unos 2,3 GiB de RAM en cada una | Laboratorio de la Javeriana | Sección 3.1 |
 | La prueba de carga en QA es una aproximación: sus VMs tienen la misma especificación que las de producción, pero con datos de prueba y sin tráfico real | R10 | SAD, ADR-015; sección 6.2 |
-| El umbral de 6,5 GiB de RAM en VM3 solo está comprobado como suma de límites (5,75 GiB); falta medirlo con los 8 servicios | Medición del 3 de octubre | Sección 5.6 |
+| El umbral de 6,5 GiB de RAM en VM3 no está comprobado con los 8 servicios: el uso medido con 4 es 4,1 GiB (proyección con 8: 4,6 GiB), pero la suma de límites es 6,5 a 6,75 GiB | Medición del 26 de octubre | Sección 5.6 |
 | `kubectl rollout undo` solo revierte la imagen del contenedor, no las migraciones de esquema: exige expand-contract | Diseño de Kubernetes | Secciones 5.8 y 6.2 |
 | Evidencias en Garage sin copia en otra VM | R10 | Sección 9.5 |
 | El vault y su contraseña existen en un solo computador | R11 | Sección 9.4 |
@@ -937,6 +1038,7 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | La rama `main` no tiene protección; la aprobación del ambiente `produccion` es la única compuerta | Decisión pendiente del equipo | Sección 6.2 |
 | Actors, Ranking, Payments y Communication no tienen manifiesto ni `roles.sql`: no están desplegados | Dependen del código de los equipos | Sección 5.3 |
 | Certificados TLS autofirmados, sin CA reconocida | R9 | Secciones 10.1 y 11 |
+| Sin cifrado en reposo (discos, PostgreSQL, Garage y respaldos) y tráfico interno sin TLS (PostgreSQL, Kafka, Garage) | Decisión pendiente del equipo | Sección 10.5 |
 | SSH con contraseña, la misma en las 7 VMs | Decisión del equipo | Sección 10.4 |
 | Kafka UI sin login: solo se usa por túnel SSH desde el equipo de DevOps | Decisión de DevOps | Sección 10.3 |
 
@@ -1075,3 +1177,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 3.7 | 14 oct 2026 | Resultado de repetir la prueba de estrés con el tope de pool: pasa todos sus umbrales en QA (0 de 42.705 respuestas 5xx). La excepción al RNF-08 sigue en producción hasta aplicar el tope allí. |
 | 3.8 | 22 oct 2026 | Límite de memoria de Communication a 512 MiB tras el `OOMKilled` en QA, con su medición, y la nota operativa de los grupos de consumidores que arrancan desde el principio del topic (sección 5.6). Payments ya tiene manifiesto. |
 | 3.9 | 25 oct 2026 | Gateway propio en cada ambiente (ADR-028, SCRUM-573, revisión del Sprint 4): un Nginx en VM3 (producción) y otro en VM2 (QA), cada uno con su panel y su despliegue, y VM1 como entrada TLS que reenvía por nombre. Cambian la vista general (2.1, diagrama incluido), el inventario (3.2), las conexiones y reglas de firewall del puerto 8080 (3.3 y 10.3), los playbooks (5.2 y 5.5, con `verificar-gateway-ambiente.yml`), el runner (6.3), TLS (10.1), los nombres lógicos (11.2) y el orden de despliegue. Aplicado en QA y producción el 25 de octubre. |
+| 4.0 | 26 oct 2026 | Revisión de cierre del Sprint 5 (SCRUM-552 a 555 y SCRUM-506): sección 4.3 con el estado real de QA y producción; sección 5.6 corregida con los límites de los manifiestos (384 MiB) y con la medición de VM3; sección 5.10 con la operación de Kafka (retención, grupos, lag y reinicio de offsets) y el playbook `operar-kafka-grupos.yml`; sección 10.5 con el estado del cifrado en tránsito y en reposo. |
