@@ -33,11 +33,11 @@ QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a 
 
 ### Compuerta RNF-08 (SCRUM-415)
 
-Producción solo recibe una versión que **corre hoy en QA** y que **pasó las pruebas de sistema después de llegar a QA**. El job `desplegar` de cada repositorio llama, solo en producción, a `compuerta-qa` (script de `infrastructure/ansible/files/compuerta-qa.sh`, que `deploy-runner.yml` instala en `/usr/local/bin` de VM1):
+Producción solo recibe una versión que **corre hoy en QA** y que **pasó las pruebas de sistema y la prueba de humo después de llegar a QA**. El job `desplegar` de cada repositorio llama, solo en producción, a `compuerta-qa` (script de `infrastructure/ansible/files/compuerta-qa.sh`, que `deploy-runner.yml` instala en `/usr/local/bin` de VM1):
 
 - **Servicios:** `compuerta-qa servicio <deployment> <imagen>` compara la imagen con la del Deployment en el k3s de QA y toma la fecha del ReplicaSet de su revisión actual.
 - **Panel:** `compuerta-qa panel <build>` compara la huella del build con la carpeta del panel del gateway de QA (VM2, por SSH con la llave del runner) y toma la fecha de su último archivo.
-- En los dos casos, la última ejecución de `pruebas-sistema.yml` del repositorio `quickpatch` debe terminar en éxito y haber empezado después de esa fecha. Si no, el despliegue se detiene con el motivo.
+- En los dos casos, la última ejecución de `pruebas-sistema.yml` **y la de `humo-frontends.yml`** del repositorio `quickpatch` deben terminar en éxito y haber empezado después de esa fecha (SCRUM-505). Si alguna falla, es anterior o no existe, el despliegue se detiene con el motivo. Los dos workflows corren al empujar un `release/*` de `quickpatch` (o a mano, y el de humo también con una rama `humo/*`), así que se lanzan juntos; la variable `WORKFLOWS_PRUEBAS` de la compuerta cambia la lista.
 - **Excepción:** la variable del repositorio `COMPUERTA_RNF08_EXCEPCION` (Settings → Variables), con el motivo y la fecha, deja pasar con un aviso en la ejecución. Se borra al terminar el despliegue; así quedó registrada la excepción de la release 0.2.0.
 
 La aprobación del ambiente `produccion` sigue existiendo: es una segunda compuerta, manual, encima de la automática.
