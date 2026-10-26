@@ -568,7 +568,7 @@ Kafka corre en un solo nodo por ambiente (VM6 en producción, VM7 en QA; R10), c
 **Reiniciar los offsets de un grupo.** Sirve cuando un grupo nuevo va a leer tráfico viejo (como el de las pruebas de carga que causó el `OOMKilled` de Communication, sección 5.6) o cuando hay que descartar o repetir eventos.
 
 1. Bajar el servicio dueño del grupo, porque Kafka solo permite reiniciar un grupo sin miembros activos: `kubectl scale deployment/<servicio> --replicas=0`.
-2. Simular: `./ap playbooks/operar-kafka-grupos.yml --limit vm7 -e grupo=<grupo> -e topic=<topic> -e destino=latest`. Muestra el offset al que quedaría cada partición y no cambia nada.
+2. Simular: `./ap playbooks/operar-kafka-grupos.yml --limit vm7 -e grupo=<grupo> -e topic=<topic> -e destino=latest`. Muestra el offset al que quedaría cada partición y no cambia nada. El `--limit` es obligatorio (`vm7` para QA, `vm6` para producción): sin él el playbook se niega a reiniciar, para no tocar los dos ambientes a la vez.
 3. Aplicar el mismo comando con `-e ejecutar=si`. `destino` puede ser `latest` (descarta lo pendiente), `earliest` (relee todo lo que retiene el topic) o `datetime` (con `-e fecha=AAAA-MM-DDThh:mm:ss.sss`, en UTC).
 4. Volver a subir el servicio con el número de réplicas que tenía y revisar el lag con el comando del primer punto.
 

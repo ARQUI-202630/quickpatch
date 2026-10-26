@@ -10,6 +10,7 @@
 #                                                               a qué offset quedaría el grupo; no cambia nada
 #   (lo mismo con -e ejecutar=si)                               aplica el reinicio
 #
+# El reinicio exige --limit a un solo host (vm6 o vm7); la lectura sí recorre los dos ambientes.
 # destino: latest (descarta lo pendiente), earliest (relee todo lo que retiene el topic) o datetime
 # (con -e fecha=AAAA-MM-DDThh:mm:ss.sss, en UTC). Kafka rechaza el reinicio si el grupo tiene consumidores activos:
 # antes se baja el servicio (kubectl scale deployment/<servicio> --replicas=0) y después se vuelve a subir.
@@ -43,7 +44,11 @@
         set -o pipefail
         {{ kafka_bin }}/kafka-topics.sh {{ broker }} --describe 2>&1 | grep -E '^Topic:' | grep -v __consumer_offsets \
           | sed -E 's/Topic: ([^[:space:]]+).*PartitionCount: ([0-9]+).*Configs: (.*)/\1 particiones=\2 \3/' \
-          | awk '{ h="por defecto del broker"; for (i = 1; i <= NF; i++) if ($i ~ /retention.ms=/) { split($i, a, "="); sub(/,.*/, "", a[2]); h = a[2] / 3600000 " h" } print $1, $2, h }'
+          | awk '{
+              h = "por defecto del broker"
+              for (i = 1; i <= NF; i++)
+                if ($i ~ /retention.ms=/) { split($i, a, "="); sub(/,.*/, "", a[2]); h = a[2] / 3600000 " h" }
+              print $1, $2, h }'
       args: { executable: /bin/bash }
       register: retencion
       changed_when: false
@@ -61,7 +66,10 @@
         that:
           - destino in destinos
           - destino != 'datetime' or fecha is defined
-        fail_msg: "-e destino=latest|earliest|datetime (datetime pide -e fecha=AAAA-MM-DDThh:mm:ss.sss en UTC)"
+          - ansible_play_hosts | length == 1
+        fail_msg: >-
+          -e destino=latest|earliest|datetime (datetime pide -e fecha=AAAA-MM-DDThh:mm:ss.sss en UTC).
+          El reinicio se aplica a un solo ambiente: agregar --limit vm7 (QA) o --limit vm6 (producción).
       when: reiniciar | bool
 
     - name: Reinicio de offsets (simulación; con ejecutar=si lo aplica)
