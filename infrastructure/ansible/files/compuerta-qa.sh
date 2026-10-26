@@ -4,8 +4,9 @@
 #
 # Producción solo recibe una versión que:
 #   1. está desplegada hoy en QA (la misma imagen, o el mismo build del panel), y
-#   2. pasó las pruebas de sistema contra QA: la última ejecución de pruebas-sistema.yml del repositorio
-#      quickpatch terminó en éxito y empezó DESPUÉS de que esa versión llegó a QA.
+#   2. pasó las pruebas de sistema y la prueba de humo contra QA: la última ejecución de pruebas-sistema.yml y la de
+#      humo-frontends.yml del repositorio quickpatch terminaron en éxito y empezaron DESPUÉS de que esa versión
+#      llegó a QA (SCRUM-505).
 #
 # Uso:
 #   compuerta-qa servicio <deployment> <imagen>      p. ej. compuerta-qa servicio catalog ghcr.io/...:t-abc
@@ -15,13 +16,15 @@
 #   GH_TOKEN                token de Actions para leer las ejecuciones (el repositorio quickpatch es público)
 #   COMPUERTA_EXCEPCION     si trae texto, deja pasar con un aviso: excepción registrada al RNF-08 (por ejemplo,
 #                           "release 0.2.0: QA sin datos, aprobada por el equipo el 7 de octubre"). Vacía, bloquea.
+#   WORKFLOWS_PRUEBAS       workflows de quickpatch que deben haber pasado, separados por espacio (por omisión
+#                           "pruebas-sistema.yml humo-frontends.yml")
 #   KUBECONFIG_QA           por omisión ~/.kube/config-qa (lo deja deploy-runner.yml)
 #   PANEL_QA_SSH            usuario@host de la VM que sirve el panel de QA (por omisión quickpatch@VM2, con la llave del runner).
 #                           Vacío: la carpeta PANEL_QA es de este mismo equipo.
 set -euo pipefail
 
 REPO_PRUEBAS="${REPO_PRUEBAS:-ARQUI-202630/quickpatch}"
-WORKFLOW_PRUEBAS="${WORKFLOW_PRUEBAS:-pruebas-sistema.yml}"
+WORKFLOWS_PRUEBAS="${WORKFLOWS_PRUEBAS:-pruebas-sistema.yml humo-frontends.yml}"
 KUBECONFIG_QA="${KUBECONFIG_QA:-$HOME/.kube/config-qa}"
 PANEL_QA="${PANEL_QA:-/opt/quickpatch/gateway/panel}"
 PANEL_QA_SSH="${PANEL_QA_SSH-quickpatch@10.43.98.15}"
@@ -73,19 +76,24 @@ case "$modo" in
     ;;
 esac
 
-# Última ejecución terminada de las pruebas de sistema contra QA.
-ejecucion=$(curl -fsS -H "Authorization: Bearer ${GH_TOKEN:?falta GH_TOKEN}" -H "Accept: application/vnd.github+json" \
-  "https://api.github.com/repos/${REPO_PRUEBAS}/actions/workflows/${WORKFLOW_PRUEBAS}/runs?status=completed&per_page=1") \
-  || falla "no se pudo consultar ${WORKFLOW_PRUEBAS} en ${REPO_PRUEBAS}."
-conclusion=$(jq -r '.workflow_runs[0].conclusion // "ninguna"' <<<"$ejecucion")
-inicio=$(jq -r '.workflow_runs[0].run_started_at // ""' <<<"$ejecucion")
-url=$(jq -r '.workflow_runs[0].html_url // ""' <<<"$ejecucion")
+# Última ejecución terminada de cada prueba contra QA (pruebas de sistema y prueba de humo): todas deben haber pasado
+# después de que la versión llegó a QA.
+pasaron=""
+for workflow in $WORKFLOWS_PRUEBAS; do
+  ejecucion=$(curl -fsS -H "Authorization: Bearer ${GH_TOKEN:?falta GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/${REPO_PRUEBAS}/actions/workflows/${workflow}/runs?status=completed&per_page=1") \
+    || falla "no se pudo consultar ${workflow} en ${REPO_PRUEBAS}."
+  conclusion=$(jq -r '.workflow_runs[0].conclusion // "ninguna"' <<<"$ejecucion")
+  inicio=$(jq -r '.workflow_runs[0].run_started_at // ""' <<<"$ejecucion")
+  url=$(jq -r '.workflow_runs[0].html_url // ""' <<<"$ejecucion")
 
-[ "$conclusion" = "success" ] \
-  || falla "la última ejecución de las pruebas de sistema contra QA terminó en '$conclusion' ($url)."
-# Fechas ISO 8601 en UTC: se comparan como texto.
-if [ -z "$inicio" ] || [[ ! "$inicio" > "$en_qa_desde" ]]; then
-  falla "las pruebas de sistema ($inicio, $url) son anteriores a la llegada de esta versión a QA ($en_qa_desde): hay que correrlas de nuevo."
-fi
+  [ "$conclusion" = "success" ] \
+    || falla "la última ejecución de ${workflow} contra QA terminó en '$conclusion' (${url:-sin ejecuciones})."
+  # Fechas ISO 8601 en UTC: se comparan como texto.
+  if [ -z "$inicio" ] || [[ ! "$inicio" > "$en_qa_desde" ]]; then
+    falla "${workflow} ($inicio, $url) es anterior a la llegada de esta versión a QA ($en_qa_desde): hay que correrlo de nuevo."
+  fi
+  pasaron="${pasaron} ${workflow} ($inicio)"
+done
 
-echo "::notice::Compuerta RNF-08 superada: la versión está en QA desde $en_qa_desde y las pruebas de sistema pasaron después ($inicio, $url)."
+echo "::notice::Compuerta RNF-08 superada: la versión está en QA desde $en_qa_desde y pasaron después:${pasaron}."
