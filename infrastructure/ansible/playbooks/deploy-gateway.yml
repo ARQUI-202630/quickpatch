@@ -30,10 +30,11 @@
         force: false
         content: "<!doctype html><title>QUICKPATCH</title><p>Panel administrativo: pendiente del primer build de Angular.</p>\n"
 
+    # Con la CLI de Docker: el módulo docker_image pide la librería `requests` de Python, que las VMs no traen.
     - name: Imagen de Nginx
-      community.docker.docker_image:
-        name: "{{ images.nginx }}"
-        source: pull
+      ansible.builtin.shell: docker image inspect {{ images.nginx }} > /dev/null 2>&1 || docker pull {{ images.nginx }}
+      register: imagen
+      changed_when: imagen.stdout | length > 0
 
     - name: Configuración de Nginx del ambiente ({{ entorno }})
       ansible.builtin.template:
