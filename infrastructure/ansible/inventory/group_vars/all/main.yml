@@ -56,7 +56,7 @@ gateway_hosts:
 gateway_puerto: 8080
 gateway_propio:
   qa: true             # QA se atiende por el gateway de VM2 (verificado el 2026-10-25)
-  produccion: false
+  produccion: true     # producción se atiende por el gateway de VM3 (verificado el 2026-10-25)
 
 # --- Versiones fijadas ---------------------------------------------------------
 images:
