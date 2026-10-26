@@ -87,14 +87,23 @@ def registrar(api, resumen, tipo, nombre, ruta, cuerpo):
     return st, r
 
 
-def id_tecnico(api, token, email, creado):
-    if isinstance(creado, dict) and creado.get("id"):
-        return creado["id"]
-    st, r = api.llamar("GET", "/v1/admin/technicians", token=token)
-    return next((u["id"] for u in lista(r) if u.get("email") == email), None)
+def buscar_tecnico(api, token, email):
+    """Busca el técnico por correo en todas las páginas de GET /v1/admin/technicians (máximo 100 por página)."""
+    pagina = 1
+    while True:
+        st, r = api.llamar("GET", f"/v1/admin/technicians?page={pagina}&size=100", token=token)
+        if st != 200 or not isinstance(r, dict):
+            return None
+        items = lista(r)
+        for u in items:
+            if u.get("email") == email:
+                return u
+        if not items or pagina * 100 >= r.get("totalItems", 0):
+            return None
+        pagina += 1
 
 
-def cargar(api, juego, clave, admin, resumen):
+def cargar(api, juego, clave, admin, resumen, disponibles):
     st, tok = api.login(*admin)
     if st != 200:
         sys.exit(f"Inicio de sesión del administrador: HTTP {st}. No se cambió nada.")
@@ -123,9 +132,22 @@ def cargar(api, juego, clave, admin, resumen):
         st, r = registrar(api, resumen, "técnico", t["email"], "/v1/auth/register/technician", {
             "email": t["email"], "password": clave, "fullName": t["nombre"], "phone": t["telefono"],
             "documentId": t["documento"], "specialtyId": categorias[t["categoria"]], "role": "tecnico"})
-        uid = id_tecnico(api, tok, t["email"], r if st == 201 else None)
-        if uid:
-            api.llamar("POST", f"/v1/admin/technicians/{uid}/approve", token=tok)
+        if st == 201 and isinstance(r, dict) and r.get("id"):
+            uid, estado = r["id"], "pendiente"
+        else:
+            u = buscar_tecnico(api, tok, t["email"]) or {}
+            uid, estado = u.get("userId"), u.get("verificationStatus")
+        if not uid:
+            resumen.anotar("técnico (aprobación)", "error", f"{t['email']}: no aparece en el listado de Identity")
+            continue
+        if estado == "aprobado":
+            resumen.anotar("técnico (aprobación)", "ya existía", t["email"])
+        else:
+            st_a, r_a = api.llamar("POST", f"/v1/admin/technicians/{uid}/approve", token=tok)
+            if st_a != 200:
+                resumen.anotar("técnico (aprobación)", "error", f"{t['email']} (HTTP {st_a}: {str(r_a)[:120]})")
+                continue
+            resumen.anotar("técnico (aprobación)", "aplicado", t["email"])
         st, ttok = api.login(t["email"], clave)
         if not ttok:
             resumen.anotar("técnico (cobertura)", "error", f"{t['email']}: no inicia sesión (HTTP {st})")
@@ -135,8 +157,12 @@ def cargar(api, juego, clave, admin, resumen):
             if st == 200:
                 break
             time.sleep(3)
-        st2, _r = api.llamar("PUT", "/v1/technicians/me/availability", {"status": "disponible"}, ttok)
-        resumen.anotar("técnico (cobertura y disponibilidad)", "aplicado" if st == 200 and st2 == 200 else "error", t["email"])
+        resumen.anotar("técnico (cobertura)", "aplicado" if st == 200 else "error",
+                       t["email"] if st == 200 else f"{t['email']} (HTTP {st})")
+        if disponibles:
+            st, _r = api.llamar("PUT", "/v1/technicians/me/availability", {"status": "disponible"}, ttok)
+            resumen.anotar("técnico (disponibilidad)", "aplicado" if st == 200 else "error",
+                           t["email"] if st == 200 else f"{t['email']} (HTTP {st})")
 
     print("Solicitudes de ejemplo")
     for s in juego["solicitudes"]:
@@ -192,7 +218,11 @@ def main():
     amb = AMBIENTES[a.ambiente]
     api = Api(a.base_url or f"https://{amb['ip']}", amb["host"])
     resumen = Resumen()
-    cargar(api, juego, clave, (os.environ["QP_ADMIN_EMAIL"], os.environ["QP_ADMIN_PASSWORD"]), resumen)
+    disponibles = a.ambiente != "produccion"
+    if not disponibles:
+        print("Producción: los técnicos quedan aprobados y con cobertura, pero no se marcan disponibles "
+              "(Matching podría ofrecerles trabajo de clientes reales).")
+    cargar(api, juego, clave, (os.environ["QP_ADMIN_EMAIL"], os.environ["QP_ADMIN_PASSWORD"]), resumen, disponibles)
 
     print("\nConteo final")
     for tipo, c in resumen.cuenta.items():

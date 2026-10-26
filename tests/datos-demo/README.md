@@ -9,7 +9,7 @@ Script idempotente que carga en QA o en producción un juego de datos de demostr
 
 ## Qué carga
 
-- 2 clientes, 1 empresa cliente con su usuario y 2 técnicos (aprobados, con cobertura en las 20 localidades de Bogotá y disponibles).
+- 2 clientes, 1 empresa cliente con su usuario y 2 técnicos, aprobados y con cobertura en las 20 localidades de Bogotá. En QA los técnicos quedan además `disponible`. **En producción no se marcan disponibles** (siguen en `no_disponible`): marcarlos haría que Matching les ofreciera trabajo de clientes reales y reintentara solicitudes en espera (RN-M10). Para una demostración en producción se ponen disponibles a mano justo antes y se vuelven a bajar después.
 - 2 solicitudes de ejemplo con direcciones de Bogotá, con la descripción `[DEMO] …`.
 - Los correos usan el dominio `demo.quickpatch.test`. Las categorías se buscan por nombre en el catálogo del ambiente; si falta alguna, el script se detiene y lista las que existen.
 
