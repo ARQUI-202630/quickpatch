@@ -9,19 +9,22 @@
 #
 # Uso:
 #   compuerta-qa servicio <deployment> <imagen>      p. ej. compuerta-qa servicio catalog ghcr.io/...:t-abc
-#   compuerta-qa panel <carpeta-del-build>           compara con /opt/quickpatch/gateway/panel-qa
+#   compuerta-qa panel <carpeta-del-build>           compara con el panel que sirve el gateway de QA (VM2:/opt/quickpatch/gateway/panel)
 #
 # Variables:
 #   GH_TOKEN                token de Actions para leer las ejecuciones (el repositorio quickpatch es público)
 #   COMPUERTA_EXCEPCION     si trae texto, deja pasar con un aviso: excepción registrada al RNF-08 (por ejemplo,
 #                           "release 0.2.0: QA sin datos, aprobada por el equipo el 7 de octubre"). Vacía, bloquea.
 #   KUBECONFIG_QA           por omisión ~/.kube/config-qa (lo deja deploy-runner.yml)
+#   PANEL_QA_SSH            usuario@host de la VM que sirve el panel de QA (por omisión quickpatch@VM2, con la llave del runner).
+#                           Vacío: la carpeta PANEL_QA es de este mismo equipo.
 set -euo pipefail
 
 REPO_PRUEBAS="${REPO_PRUEBAS:-ARQUI-202630/quickpatch}"
 WORKFLOW_PRUEBAS="${WORKFLOW_PRUEBAS:-pruebas-sistema.yml}"
 KUBECONFIG_QA="${KUBECONFIG_QA:-$HOME/.kube/config-qa}"
-PANEL_QA="${PANEL_QA:-/opt/quickpatch/gateway/panel-qa}"
+PANEL_QA="${PANEL_QA:-/opt/quickpatch/gateway/panel}"
+PANEL_QA_SSH="${PANEL_QA_SSH-quickpatch@10.43.98.15}"
 NS="${NS:-quickpatch}"
 
 falla() {
@@ -54,11 +57,15 @@ case "$modo" in
     ;;
   panel)
     build="${2:?falta la carpeta del build}"
-    huella() { (cd "$1" && find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1); }
-    [ -d "$PANEL_QA" ] || falla "no existe $PANEL_QA."
-    [ "$(huella "$build")" = "$(huella "$PANEL_QA")" ] \
+    huella_cmd="find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1"
+    # El panel de QA lo sirve el gateway de QA en VM2 (SCRUM-573): se lee por SSH con la llave del runner.
+    en_qa() { if [ -n "$PANEL_QA_SSH" ]; then ssh -o BatchMode=yes -o ConnectTimeout=10 "$PANEL_QA_SSH" "$1"; else bash -c "$1"; fi; }
+    huella_build=$(cd "$build" && bash -c "$huella_cmd")
+    huella_qa=$(en_qa "cd '$PANEL_QA' && $huella_cmd") || falla "no se pudo leer $PANEL_QA en ${PANEL_QA_SSH:-este equipo}."
+    [ "$huella_build" = "$huella_qa" ] \
       || falla "el panel de QA no es este build: publícalo primero en QA (release/*)."
-    en_qa_desde=$(find "$PANEL_QA" -type f -printf '%T@\n' | sort -n | tail -n 1 | xargs -I{} date -u -d @{} +%Y-%m-%dT%H:%M:%SZ)
+    ultimo=$(en_qa "find '$PANEL_QA' -type f -printf '%T@\\n'" | sort -n | tail -n 1) || falla "no se pudo leer la fecha del panel de QA."
+    en_qa_desde=$(date -u -d "@$ultimo" +%Y-%m-%dT%H:%M:%SZ)
     ;;
   *)
     echo "Uso: compuerta-qa servicio <deployment> <imagen> | compuerta-qa panel <carpeta-del-build>" >&2

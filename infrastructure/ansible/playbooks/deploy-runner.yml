@@ -99,6 +99,7 @@
         src: "{{ playbook_dir }}/../files/compuerta-qa.sh"
         dest: /usr/local/bin/compuerta-qa
         mode: "0755"
+      tags: [compuerta]   # solo esta parte: --tags compuerta
 
     - name: Carpeta del runner
       ansible.builtin.file:
