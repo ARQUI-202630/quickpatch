@@ -89,18 +89,25 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
             group "Microservicios" {
                 identity = container "Identity Service" "Autenticación, usuarios, tenants y auditoría." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    idApi = component "API de autenticación y usuarios" "POST /v1/auth/register/client, /register/technician y /login; GET /v1/users/me." "Minimal API · Endpoints"
-                    idPlatformApi = component "API de plataforma" "GET y PATCH /v1/platform/tenants; solo admin_plataforma." "Minimal API · Endpoints"
-                    idSeguridad = component "Autorización y auditoría de 403" "Valida rol y tenant del JWT y registra cada acceso denegado (RNF-04)." "ASP.NET Core · Security"
-                    idHttp = component "Correlación y Problem Details" "Propaga X-Correlation-Id y responde application/problem+json." "ASP.NET Core · Http"
-                    idAuthCasos = component "Casos de uso de autenticación" "Login con bloqueo por intentos, registro de cliente y técnico, usuario actual." "Application · Auth"
-                    idPlatformCasos = component "Casos de uso de plataforma" "Lista tenants y cambia su estado con auditoría en la misma transacción." "Application · Platform"
-                    idBootstrap = component "Bootstrap de administradores" "Crea al arrancar el admin del tenant y el de plataforma desde el Secret; solo en Development, un usuario de prueba por rol (SCRUM-450)." "Hosted service · Bootstrap"
-                    idDominio = component "Dominio de identidad" "Tenant, User, TechnicianProfile, Roles y AuditEntry." "Domain"
-                    idTokens = component "Emisor de tokens RS256" "Firma el JWT con la llave privada (ADR-018)." "RsaTokenIssuer · Infrastructure"
-                    idHasher = component "Hasher BCrypt" "Hash de contraseñas con factor configurable (RNF-03)." "BCryptPasswordHasher · Infrastructure"
-                    idEmpresas = component "Cuenta corporativa" "Registro de la empresa cliente con su primer empresa_contacto, usuarios de la empresa con invitación y claim company_id (RF-06, identity 1.8.0)." "Minimal API + Application · Companies"
-                    idPersistencia = component "Persistencia con RLS" "TenantUnitOfWork (set_config app.current_tenant) y PlatformUnitOfWork (SET LOCAL ROLE identity_platform)." "EF Core + Npgsql · Infrastructure"
+                    # Api
+                    idEndpoints = component "IdentityEndpoints" "POST /v1/auth/register/client, /register/technician, /login y /password/setup; GET /v1/users/me; /v1/platform/tenants; /v1/admin/technicians (aprobar, rechazar, suspender); /v1/providers/me/technicians; GET /internal/v1/users (solo dentro del clúster)." "Minimal API · Api/Endpoints"
+                    idCompanyEndpoints = component "CompanyEndpoints" "POST /v1/auth/register/company; GET /v1/companies/me y POST /v1/companies/me/users (RF-06)." "Minimal API · Api/Endpoints"
+                    idSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Lee usuario, tenant, rol y company_id del JWT y registra cada 403 (RNF-04)." "ASP.NET Core · Api/Security"
+                    idHttp = component "CorrelationId y Problems" "Propaga X-Correlation-Id y responde application/problem+json." "ASP.NET Core · Api/Http"
+                    idBootstrap = component "TenantAdminBootstrap" "Al arrancar crea el admin del tenant y el de plataforma desde el Secret (SCRUM-450)." "Hosted service · Api/Bootstrap"
+                    # Application
+                    idAuth = component "Auth" "LoginHandler (bloqueo tras 5 intentos), RegisterClientHandler, RegisterTechnicianHandler y EnsureTenantAdminHandler." "Casos de uso · Application/Auth"
+                    idCompanies = component "Companies" "RegisterCompanyHandler, GetMyCompanyHandler y CreateCompanyUserHandler (RF-06)." "Casos de uso · Application/Companies"
+                    idTechnicians = component "Technicians" "ChangeVerificationHandler y ListTechniciansHandler (RF-19, RF-20); CreateTeamTechnicianHandler y ListTeamHandler (RF-16); SetupPasswordHandler y RenewInvitationHandler." "Casos de uso · Application/Technicians"
+                    idPlatform = component "Platform" "ListTenantsHandler, CreateTenantHandler y UpdateTenantStatusHandler con auditoría (RF-21)." "Casos de uso · Application/Platform"
+                    idUsers = component "Users" "GetCurrentUserHandler y LookupUsersHandler (nombres por lote para otros servicios)." "Casos de uso · Application/Users"
+                    # Domain
+                    idDomain = component "Dominio de identidad" "User (LockoutPolicy), Tenant, TechnicianProfile (VerificationStatus), ClientCompany, PasswordSetupToken, AuditEntry y Roles." "Domain"
+                    # Infrastructure
+                    idPersistence = component "TenantUnitOfWork, PlatformUnitOfWork y repositorios" "UserRepository, TenantRepository, TechnicianProfileRepository, ClientCompanyRepository, PasswordSetupTokenRepository y AuditLog; RLS con app.current_tenant o SET LOCAL ROLE identity_platform." "EF Core + Npgsql · Infrastructure/Persistence"
+                    idSecurityAdapters = component "RsaTokenIssuer y BCryptPasswordHasher" "Firma el JWT RS256 (ADR-018) y hace el hash de las contraseñas (RNF-03)." "Infrastructure/Security"
+                    idOutbox = component "EfOutbox" "Guarda technician.registered y technician.verification-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Messaging"
+                    idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
                 }
                 actors = container "Actors Service" "Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     acApi = component "API de actores" "Consulta y mantenimiento de actores del tenant." "Minimal API" "Planeado"
@@ -110,30 +117,48 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     acPersistencia = component "Persistencia con RLS" "Repositorios de actores por tenant." "EF Core + Npgsql" "Planeado"
                 }
                 catalog = container "Catalog Service" "Categorías y especialidades de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    catApi = component "API de categorías" "GET /v1/catalog/categories (con token o, sin token, con el tenant del canal para el registro de técnicos); POST y PATCH /v1/catalog/admin/categories (contrato 1.2.0)." "Minimal API · Endpoints"
-                    catSeguridad = component "Contexto autenticado y auditoría de 403" "Toma usuario, tenant y rol del JWT; registra los 403." "ASP.NET Core · Security"
-                    catCasos = component "Casos de uso de categorías" "Crear, actualizar y listar; nombre único por tenant (409)." "Application · Categories"
-                    catDominio = component "Agregado Category" "Nombre normalizado, descripción, estado activo y updatedAt." "Domain"
-                    catRepositorio = component "Repositorio de categorías" "service_categories bajo RLS." "EF Core + Npgsql · Infrastructure"
-                    catOutbox = component "Registro en outbox" "Encola catalog.category-changed en la misma transacción (ADR-007)." "EF Core · Infrastructure"
-                    catPublicador = component "Publicador del outbox" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure"
+                    # Api
+                    catEndpoints = component "CategoryEndpoints" "GET /v1/catalog/categories (obsoleta por ADR-025); POST y PATCH /v1/catalog/admin/categories." "Minimal API · Api/Endpoints"
+                    catSecurity = component "AuthenticatedUser, ChannelOptions y ForbiddenAuditHandler" "Usuario, tenant y rol del JWT; sin token, el tenant del canal. Registra los 403." "ASP.NET Core · Api/Security"
+                    catHttp = component "CorrelationId y Problems" "Propaga X-Correlation-Id y responde application/problem+json." "ASP.NET Core · Api/Http"
+                    # Application
+                    catHandlers = component "Categories" "ListCategoriesHandler, CreateCategoryHandler y UpdateCategoryHandler; nombre único por tenant (409)." "Casos de uso · Application/Categories"
+                    # Domain
+                    catDomain = component "Category" "Nombre normalizado, descripción, estado activo y updatedAt." "Domain/Categories"
+                    # Infrastructure
+                    catPersistence = component "TenantUnitOfWork y CategoryRepository" "service_categories bajo RLS (app.current_tenant)." "EF Core + Npgsql · Infrastructure/Persistence"
+                    catOutbox = component "EfOutbox" "Guarda catalog.category-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
+                    catResync = component "CategoryResync" "Vuelve a publicar todas las categorías una vez, con la descripción, para la réplica de ServiceRequest (ADR-025)." "Infrastructure/Persistence"
+                    catPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
                 }
                 serviceRequest = container "ServiceRequest Service" "Ciclo de vida de la solicitud de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    srContexto = component "Contexto autenticado" "Toma usuario, tenant y rol de los claims del JWT; nunca del cuerpo (RN-U3)." "ASP.NET Core · Security"
-                    srApi = component "API REST de solicitudes" "POST, GET y lista de /v1/service-requests para cliente y empresa_contacto (con su sede, RN-SR12 y RN-SR14), detalle por rol, categorías y localidades (ADR-025)." "Minimal API · Endpoints"
-                    srCasos = component "Casos de uso de la solicitud" "Crear y consultar; al crear coordina validación, agregado, persistencia y outbox en una transacción." "Application"
-                    srReglas = component "Reglas de creación" "Ubicación en Bogotá (422), categoría activa (422) y longitudes (RN-SR1, RN-SR9 a RN-SR11)." "Domain"
-                    srAgregado = component "Agregado ServiceRequest" "Crea en buscando_tecnico y solo admite transiciones válidas (RN-SR2 a RN-SR7)." "Domain"
-                    srRepositorio = component "Repositorio de solicitudes" "service_requests en transacción con app.current_tenant (RLS)." "EF Core + Npgsql · Infrastructure"
-                    srOutbox = component "Registro en outbox" "Inserta service-request.created en outbox_events en la misma transacción." "EF Core · Infrastructure"
-                    srPublicador = component "Publicador del outbox" "Lotes con FOR UPDATE SKIP LOCKED; publica y marca published_at; reintenta si Kafka falla." "BackgroundService · Infrastructure"
-                    srConsumidorCategorias = component "Consumidor de catalog.category-changed" "Aplica cada evento una vez por eventId y descarta versiones viejas (RN-EV1)." "Kafka consumer · Infrastructure"
-                    srReplica = component "Réplica de categorías" "service_request_categories; solo la escribe el consumidor (ADR-017)." "EF Core · Infrastructure"
-                    srConsumidorResultados = component "Consumidor de matching y pagos" "Aplica matching.technician-assigned, matching.no-technician-available y payment.* al estado." "Kafka consumer"
-                    srGeocodificacion = component "Geocodificación de la dirección" "Si la solicitud llega sin coordenadas, busca la dirección en el geocodificador dentro de Bogotá (RIE-02, ADR-024)." "Cliente HTTP"
-                    srCotizacion = component "Cotización y cancelación" "Emite, acepta y rechaza cotizaciones (máximo 3, vencimiento) y cancela antes de iniciar; publica .quoted, .quote-accepted, .quote-rejected y .cancelled (RF-34 a RF-36)." "Application"
-                    srEvidencias = component "Ejecución y evidencias" "Inicia, guarda las fotos en Garage y completa con al menos una; publica .started y .completed (RF-14, RF-15)." "Application"
-                    srCalificacion = component "Calificación" "Calificación del cliente después del pago; publicará service-request.evaluated (RF-12)." "Application" "Planeado"
+                    # Api
+                    srRequestEndpoints = component "ServiceRequestEndpoints" "POST, GET y lista de /v1/service-requests, POST /location-preview, POST /{id}/cancel y GET /v1/technicians/me/service-requests." "Minimal API · Api/Endpoints"
+                    srReferenceEndpoints = component "ReferenceEndpoints" "GET /v1/service-requests/categories y /localities desde las réplicas (ADR-025)." "Minimal API · Api/Endpoints"
+                    srQuoteEndpoints = component "QuoteEndpoints" "GET y POST /v1/service-requests/{id}/quotes, accept y reject (RF-34, RF-35)." "Minimal API · Api/Endpoints"
+                    srExecutionEndpoints = component "ExecutionEndpoints" "POST /start, /evidence y /complete; GET de las evidencias (RF-14, RF-15)." "Minimal API · Api/Endpoints"
+                    srAdminEndpoints = component "AdminServiceRequestEndpoints" "Lista y resumen por estado del admin del tenant y de plataforma (RF-18)." "Minimal API · Api/Endpoints"
+                    srSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Usuario, tenant, rol y company_id de los claims del JWT, nunca del cuerpo (RN-U3); registra los 403." "ASP.NET Core · Api/Security"
+                    # Application
+                    srRequests = component "ServiceRequests" "CreateServiceRequestHandler, GetServiceRequestHandler, CancelServiceRequestHandler, PreviewLocationHandler, ListTechnicianServiceRequestsHandler y los de administración." "Casos de uso · Application/ServiceRequests"
+                    srReferences = component "References" "ListCategoriesHandler y ListLocalitiesHandler." "Casos de uso · Application/References"
+                    srQuotes = component "Quotes" "IssueQuoteHandler, RespondQuoteHandler y ExpireQuoteHandler (máximo 3, vencimiento)." "Casos de uso · Application/Quotes"
+                    srExecution = component "Execution" "StartServiceHandler, UploadEvidenceHandler y CompleteServiceHandler." "Casos de uso · Application/Execution"
+                    srEventHandlers = component "Manejadores de eventos" "ApplyCategoryChangedHandler, MatchingStatusHandler y PaymentEventsHandler: aplican cada evento una vez por eventId." "Casos de uso · Application/Categories, Matching y Payments"
+                    srRating = component "Calificación" "Calificación del cliente tras el pago y service-request.rated (RF-12, ADR-027)." "Casos de uso" "Planeado"
+                    # Domain
+                    srDomain = component "Dominio de la solicitud" "ServiceRequest (transiciones RN-SR2 a RN-SR7), Quote, ServiceEvidence, CategoryReplica, GeoPoint, CoverageArea y Locality." "Domain"
+                    # Infrastructure
+                    srPersistence = component "TenantUnitOfWork y repositorios" "ServiceRequestRepository, QuoteRepository, EvidenceRepository, CategoryReplicaRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                    srOutbox = component "EfOutbox" "Guarda los eventos de la solicitud en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
+                    srPublisher = component "OutboxPublisher" "Lotes con FOR UPDATE SKIP LOCKED; publica y marca published_at." "BackgroundService · Infrastructure/Messaging"
+                    srCategoryConsumer = component "CategoryChangedConsumer" "Consume catalog.category-changed." "Kafka consumer · Infrastructure/Messaging"
+                    srMatchingConsumer = component "MatchingEventsConsumer" "Consume matching.technician-assigned, .no-technician-available y .search-resumed." "Kafka consumer · Infrastructure/Messaging"
+                    srPaymentConsumer = component "PaymentEventsConsumer" "Consume payment.approved y payment.rejected." "Kafka consumer · Infrastructure/Messaging"
+                    srGeocoder = component "NominatimGeocoder" "Convierte la dirección en coordenadas dentro de Bogotá (RIE-02, ADR-024)." "HttpClient · Infrastructure/Geocoding"
+                    srStorage = component "GarageEvidenceStorage" "Guarda y sirve las fotos de la evidencia (ADR-016)." "S3 · Infrastructure/Storage"
+                    srUserDirectory = component "IdentityUserDirectory" "Nombres y contacto por lote con GET /internal/v1/users; si falla, devuelve vacío (ADR-025)." "HttpClient · Infrastructure/Identity"
+                    srScheduling = component "QuoteExpirer y RedisDistributedLock" "Vence las cotizaciones sin respuesta; una sola réplica a la vez (RN-Q6)." "BackgroundService · Infrastructure/Scheduling"
                 }
                 matching = container "Matching Service" "Asignación geoespacial de técnicos." "Java 25 + Spring Boot 4.1" "Microservicio" {
                     maListener = component "Listener de service-request.created" "Valida el contrato, descarta mensajes inválidos y propaga correlationId en el MDC." "@KafkaListener · infrastructure/messaging"
@@ -152,12 +177,25 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     raPersistencia = component "Persistencia con RLS" "Reputación agregada por tenant." "EF Core + Npgsql" "Planeado"
                 }
                 payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    paApi = component "API de pagos" "Inicia el pago con el token de la tarjeta; nunca recibe PAN ni CVV (RNF-01)." "Minimal API"
-                    paProcesamiento = component "Procesamiento de pagos" "Estados del pago y reintentos idempotentes." "Application"
-                    paAdaptadorPsp = component "Adaptador del PSP" "Cobra con la referencia del token; en el MVP es la pasarela simulada, detrás del mismo puerto que usará la certificada (ADR-009 modificado)." "Application"
-                    paWebhook = component "Receptor de webhooks del PSP" "Confirma el resultado de forma idempotente." "Minimal API" "Planeado"
-                    paFacturacion = component "Facturación" "Emite el comprobante del pago aprobado en JSON o PDF, sin validez fiscal (RF-24, payments 1.1.0)." "Application"
-                    paOutbox = component "Outbox de pagos" "Publica payment.approved y payment.rejected." "BackgroundService"
+                    # Api
+                    paPaymentEndpoints = component "PaymentEndpoints" "GET y POST /v1/service-requests/{id}/payment con el token de la tarjeta; nunca recibe PAN ni CVV (RNF-01)." "Minimal API · Api/Endpoints"
+                    paInvoiceEndpoints = component "InvoiceEndpoints" "GET /v1/payments/{id}/invoice en JSON o PDF (RF-24)." "Minimal API · Api/Endpoints"
+                    paSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Usuario, tenant, rol y company_id del JWT; registra los 403." "ASP.NET Core · Api/Security"
+                    # Application
+                    paPayments = component "Payments" "GetPaymentHandler, PayHandler y ReconcilePaymentsHandler." "Casos de uso · Application/Payments"
+                    paCompletedHandler = component "ServiceRequestCompletedHandler" "Crea el pago pendiente con el total de la cotización aceptada (RN-P4)." "Casos de uso · Application/Payments"
+                    paInvoices = component "Invoices" "GetInvoiceHandler: solo el pagador lee el comprobante." "Casos de uso · Application/Invoices"
+                    # Domain
+                    paDomain = component "Dominio de pagos" "Payment (estados y RejectionReasons), Invoice y Billing." "Domain/Payments"
+                    # Infrastructure
+                    paPersistence = component "TenantUnitOfWork y repositorios" "PaymentRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                    paOutbox = component "EfOutbox" "Guarda payment.approved o payment.rejected en outbox_events en la misma transacción." "EF Core · Infrastructure/Persistence"
+                    paPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
+                    paCompletedConsumer = component "ServiceRequestCompletedConsumer" "Consume service-request.completed." "Kafka consumer · Infrastructure/Messaging"
+                    paReconciliation = component "ReconciliationJob" "Cierra los pagos que la pasarela dejó sin respuesta (AC9-E5)." "BackgroundService · Infrastructure/Messaging"
+                    paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado)." "Infrastructure/Providers"
+                    paPdf = component "InvoicePdfRenderer" "Arma el PDF del comprobante, sin validez fiscal." "Infrastructure/Documents"
+                    paWebhook = component "Receptor de webhooks del PSP" "Confirmará el resultado de forma idempotente con la pasarela certificada." "Minimal API" "Planeado"
                 }
                 communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" "Microservicio" {
                     coConsumidores = component "Consumidores de eventos" "service-request.*, matching.* y payment.*, una vez por eventId." "Kafka consumer"
@@ -254,32 +292,48 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         webInterceptor -> gateway "Llama a la API" "HTTPS/JSON"
 
         # API Gateway → servicios
-        gateway -> idApi "Enruta /api/v1/auth y /api/v1/users" "HTTP"
-        gateway -> idPlatformApi "Enruta /api/v1/platform" "HTTP"
-        gateway -> idEmpresas "Enruta /api/v1/auth/register/company y /api/v1/companies" "HTTP"
-        gateway -> catApi "Enruta /api/v1/catalog" "HTTP"
-        gateway -> srContexto "Enruta /api/v1/service-requests" "HTTP"
+        gateway -> idEndpoints "Enruta /api/v1/auth, /users, /platform, /admin/technicians y /providers" "HTTP"
+        gateway -> idCompanyEndpoints "Enruta /api/v1/auth/register/company y /api/v1/companies" "HTTP"
+        gateway -> catEndpoints "Enruta /api/v1/catalog" "HTTP"
+        gateway -> srRequestEndpoints "Enruta /api/v1/service-requests y /api/v1/technicians/me/service-requests" "HTTP"
+        gateway -> srReferenceEndpoints "Enruta /api/v1/service-requests/categories y /localities" "HTTP"
+        gateway -> srQuoteEndpoints "Enruta /api/v1/service-requests/{id}/quotes" "HTTP"
+        gateway -> srExecutionEndpoints "Enruta /start, /evidence y /complete" "HTTP"
+        gateway -> srAdminEndpoints "Enruta /api/v1/admin y /api/v1/platform/service-requests" "HTTP"
         gateway -> acApi "Enruta /api/v1/actors" "HTTP" "Planeado"
         gateway -> raApi "Enruta /api/v1/ranking" "HTTP" "Planeado"
-        gateway -> paApi "Enruta /api/v1/payments" "HTTP"
+        gateway -> paPaymentEndpoints "Enruta /api/v1/service-requests/{id}/payment" "HTTP"
+        gateway -> paInvoiceEndpoints "Enruta /api/v1/payments" "HTTP"
         gateway -> maApi "Enruta /api/v1/matching, /api/v1/technicians y /api/v1/localities" "HTTP"
         gateway -> coCanal "Enruta /api/v1/realtime" "WebSocket"
         gateway -> coBuzon "Enruta /api/v1/notifications" "HTTP"
 
         # Identity
-        idApi -> idHttp "Usa"
-        idApi -> idAuthCasos "Invoca"
-        idPlatformApi -> idSeguridad "Exige admin_plataforma con"
-        idPlatformApi -> idPlatformCasos "Invoca"
-        idAuthCasos -> idDominio "Aplica reglas de"
-        idAuthCasos -> idHasher "Verifica y genera hashes con"
-        idAuthCasos -> idTokens "Emite el JWT con"
-        idAuthCasos -> idPersistencia "Lee y guarda en la transacción del tenant con"
-        idPlatformCasos -> idPersistencia "Lee y cambia tenants en la transacción de plataforma con"
-        idBootstrap -> idAuthCasos "Asegura los administradores iniciales con"
-        idEmpresas -> idPersistencia "Guarda client_companies y usuarios en la transacción del tenant con"
-        idEmpresas -> idTokens "El token del empresa_contacto lleva company_id de"
-        idPersistencia -> dbIdentity "Lee y escribe (RLS)" "SQL"
+        idEndpoints -> idSecurity "Autoriza por rol con"
+        idEndpoints -> idHttp "Responde errores con"
+        idCompanyEndpoints -> idSecurity "Autoriza por rol con"
+        idEndpoints -> idAuth "Invoca"
+        idEndpoints -> idTechnicians "Invoca"
+        idEndpoints -> idPlatform "Invoca"
+        idEndpoints -> idUsers "Invoca"
+        idCompanyEndpoints -> idCompanies "Invoca"
+        idBootstrap -> idAuth "Asegura los administradores iniciales con"
+        idAuth -> idDomain "Aplica las reglas de"
+        idCompanies -> idDomain "Aplica las reglas de"
+        idTechnicians -> idDomain "Aplica las reglas de"
+        idAuth -> idSecurityAdapters "Verifica la contraseña y emite el JWT con"
+        idCompanies -> idSecurityAdapters "Emite el token con company_id con"
+        idAuth -> idPersistence "Lee y guarda por ITenantUnitOfWork con"
+        idCompanies -> idPersistence "Guarda la empresa y sus usuarios con"
+        idTechnicians -> idPersistence "Cambia la verificación y el equipo con"
+        idUsers -> idPersistence "Consulta usuarios del tenant con"
+        idPlatform -> idPersistence "Cambia tenants por IPlatformUnitOfWork con"
+        idAuth -> idOutbox "Registra technician.registered con"
+        idTechnicians -> idOutbox "Registra technician.registered y technician.verification-changed con"
+        idPersistence -> dbIdentity "Lee y escribe (RLS)" "SQL"
+        idOutbox -> dbIdentity "INSERT en outbox_events" "SQL"
+        idPublisher -> dbIdentity "Lee pendientes y marca published_at" "SQL"
+        idPublisher -> kafka "Publica technician.registered y technician.verification-changed" "Kafka"
 
         # Actors
         acApi -> acProveedores "Usa" "" "Planeado"
@@ -289,42 +343,58 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         acPersistencia -> dbActors "Lee y escribe (RLS)" "SQL" "Planeado"
 
         # Catalog
-        catApi -> catSeguridad "Autoriza con"
-        catApi -> catCasos "Invoca"
-        catCasos -> catDominio "Aplica reglas de"
-        catCasos -> catRepositorio "Guarda y lista con"
-        catCasos -> catOutbox "Registra catalog.category-changed con"
-        catRepositorio -> dbCatalog "Lee y escribe service_categories (RLS)" "SQL"
+        catEndpoints -> catSecurity "Autoriza con"
+        catEndpoints -> catHttp "Responde errores con"
+        catEndpoints -> catHandlers "Invoca"
+        catHandlers -> catDomain "Aplica las reglas de"
+        catHandlers -> catPersistence "Guarda y lista por ITenantUnitOfWork con"
+        catHandlers -> catOutbox "Registra catalog.category-changed con"
+        catResync -> catOutbox "Registra el estado completo de cada categoría con"
+        catPersistence -> dbCatalog "Lee y escribe service_categories (RLS)" "SQL"
         catOutbox -> dbCatalog "INSERT en outbox_events" "SQL"
-        catPublicador -> dbCatalog "Lee pendientes y marca published_at" "SQL"
-        catPublicador -> kafka "Publica catalog.category-changed" "Kafka"
+        catPublisher -> dbCatalog "Lee pendientes y marca published_at" "SQL"
+        catPublisher -> kafka "Publica catalog.category-changed" "Kafka"
 
         # ServiceRequest
-        srContexto -> srApi "Entrega usuario, tenant y rol a"
-        srApi -> srCasos "Invoca"
-        srCasos -> srReglas "Valida con"
-        srCasos -> srAgregado "Crea la solicitud con"
-        srCasos -> srRepositorio "Guarda y consulta con"
-        srCasos -> srOutbox "Registra service-request.created con"
-        srReglas -> srReplica "Consulta si la categoría está activa en"
-        srRepositorio -> dbServiceRequest "Lee y escribe service_requests (RLS)" "SQL"
+        srRequestEndpoints -> srSecurity "Toma el usuario autenticado de"
+        srRequestEndpoints -> srRequests "Invoca"
+        srReferenceEndpoints -> srReferences "Invoca"
+        srQuoteEndpoints -> srQuotes "Invoca"
+        srExecutionEndpoints -> srExecution "Invoca"
+        srAdminEndpoints -> srRequests "Invoca los casos de administración de"
+        srRequestEndpoints -> srRating "Invocará" "" "Planeado"
+        srRequests -> srDomain "Crea y cambia el estado con"
+        srQuotes -> srDomain "Aplica las reglas de la cotización con"
+        srExecution -> srDomain "Inicia y completa con"
+        srEventHandlers -> srDomain "Aplica la transición con"
+        srRequests -> srGeocoder "Obtiene las coordenadas de la dirección con"
+        srRequests -> srUserDirectory "Pide nombres y contacto con"
+        srExecution -> srStorage "Guarda las fotos con"
+        srRequests -> srPersistence "Guarda y consulta por ITenantUnitOfWork con"
+        srReferences -> srPersistence "Lee las réplicas con"
+        srQuotes -> srPersistence "Guarda las cotizaciones con"
+        srExecution -> srPersistence "Guarda las evidencias con"
+        srEventHandlers -> srPersistence "Registra el eventId y aplica el cambio con"
+        srRequests -> srOutbox "Registra .created, .status-changed y .cancelled con"
+        srQuotes -> srOutbox "Registra .quoted, .quote-accepted y .quote-rejected con"
+        srExecution -> srOutbox "Registra .started y .completed con"
+        srRating -> srOutbox "Registrará service-request.rated con" "" "Planeado"
+        srCategoryConsumer -> kafka "Consume catalog.category-changed" "Kafka"
+        srMatchingConsumer -> kafka "Consume matching.*" "Kafka"
+        srPaymentConsumer -> kafka "Consume payment.*" "Kafka"
+        srCategoryConsumer -> srEventHandlers "Entrega el evento a"
+        srMatchingConsumer -> srEventHandlers "Entrega el evento a"
+        srPaymentConsumer -> srEventHandlers "Entrega el evento a"
+        srScheduling -> srQuotes "Vence las cotizaciones con"
+        srScheduling -> redis "Toma el candado de la tarea" "RESP"
+        srPersistence -> dbServiceRequest "Lee y escribe service_requests, réplicas y processed_events (RLS)" "SQL"
         srOutbox -> dbServiceRequest "INSERT en outbox_events" "SQL"
-        srPublicador -> dbServiceRequest "Lee pendientes y marca published_at" "SQL"
-        srPublicador -> kafka "Publica service-request.created" "Kafka"
-        srConsumidorCategorias -> kafka "Consume catalog.category-changed" "Kafka"
-        srConsumidorCategorias -> srReplica "Reemplaza la categoría si es más reciente"
-        srReplica -> dbServiceRequest "Lee y escribe service_request_categories y processed_events" "SQL"
-        srConsumidorResultados -> kafka "Consume matching.* y payment.*" "Kafka"
-        srConsumidorResultados -> srAgregado "Aplica la transición con"
-        srCasos -> srGeocodificacion "Obtiene las coordenadas de la dirección con"
-        srGeocodificacion -> geocodificador "Busca la dirección en Bogotá" "HTTP"
-        srApi -> srCotizacion "Invoca"
-        srCotizacion -> srOutbox "Registra los eventos de la cotización con"
-        srApi -> srEvidencias "Invoca"
-        srApi -> srCalificacion "Invoca" "" "Planeado"
-        srEvidencias -> garage "Guarda las fotos del servicio" "S3/HTTPS"
-        srEvidencias -> srOutbox "Registra service-request.started y .completed con"
-        srCalificacion -> srOutbox "Registrará service-request.evaluated con" "" "Planeado"
+        srPublisher -> dbServiceRequest "Lee pendientes y marca published_at" "SQL"
+        srPublisher -> kafka "Publica service-request.*" "Kafka"
+        srGeocoder -> geocodificador "Busca la dirección en Bogotá" "HTTP"
+        srStorage -> garage "Guarda y lee las fotos del servicio" "S3/HTTPS"
+        srUserDirectory -> idEndpoints "GET /internal/v1/users con el JWT del usuario" "HTTP"
+        idEndpoints -> idUsers "Resuelve la consulta interna con"
 
         # Matching
         maListener -> kafka "Consume service-request.created" "Kafka"
@@ -353,15 +423,28 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         raPersistencia -> dbRanking "Lee y escribe (RLS)" "SQL" "Planeado"
 
         # Payments
-        paApi -> paProcesamiento "Invoca"
-        paProcesamiento -> paAdaptadorPsp "Cobra con"
-        paAdaptadorPsp -> pasarela "Cobrará con la pasarela certificada" "HTTPS" "Planeado"
+        paPaymentEndpoints -> paSecurity "Toma el usuario autenticado de"
+        paInvoiceEndpoints -> paSecurity "Toma el usuario autenticado de"
+        paPaymentEndpoints -> paPayments "Invoca"
+        paInvoiceEndpoints -> paInvoices "Invoca"
+        paCompletedConsumer -> kafka "Consume service-request.completed" "Kafka"
+        paCompletedConsumer -> paCompletedHandler "Entrega el evento a"
+        paReconciliation -> paPayments "Concilia los pagos sin respuesta con"
+        paPayments -> paDomain "Aplica los estados del pago con"
+        paCompletedHandler -> paDomain "Crea el pago pendiente con"
+        paPayments -> paProvider "Cobra por IPaymentProvider con"
+        paProvider -> pasarela "Cobrará con la pasarela certificada" "HTTPS" "Planeado"
         pasarela -> paWebhook "Notifica el resultado del cobro" "HTTPS" "Planeado"
-        paWebhook -> paProcesamiento "Confirma el pago con" "" "Planeado"
-        paProcesamiento -> paFacturacion "Emite la factura con"
-        paProcesamiento -> paOutbox "Registra payment.approved o payment.rejected con"
-        paProcesamiento -> dbPayments "Lee y escribe payments e invoices (RLS)" "SQL"
-        paOutbox -> kafka "Publica payment.*" "Kafka"
+        paWebhook -> paPayments "Confirmará el pago con" "" "Planeado"
+        paInvoices -> paPdf "Arma el PDF con"
+        paPayments -> paPersistence "Guarda el pago y la factura por ITenantUnitOfWork con"
+        paCompletedHandler -> paPersistence "Registra el eventId y el pago con"
+        paInvoices -> paPersistence "Lee el comprobante con"
+        paPayments -> paOutbox "Registra payment.approved o payment.rejected con"
+        paPersistence -> dbPayments "Lee y escribe payments, invoices y processed_events (RLS)" "SQL"
+        paOutbox -> dbPayments "INSERT en outbox_events" "SQL"
+        paPublisher -> dbPayments "Lee pendientes y marca published_at" "SQL"
+        paPublisher -> kafka "Publica payment.*" "Kafka"
 
         # Communication
         coConsumidores -> kafka "Consume service-request.*, matching.* y payment.*" "Kafka"
@@ -528,21 +611,27 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             include *
             autoLayout lr
         }
-        component identity "C4-04-Componentes-Identity" "Componentes de Identity Service." {
+        component identity "C4-04-Componentes-Identity" "Componentes de Identity Service por capa: Api, Application, Domain e Infrastructure (SDD 10.3.1)." {
             include *
+            # ServiceRequest aparece por la consulta interna; sus otras relaciones no son de esta vista.
+            exclude "serviceRequest -> kafka"
+            exclude "gateway -> serviceRequest"
             autoLayout lr
         }
         component actors "C4-04-Componentes-Actors" "Componentes de Actors Service (diseño; el servicio es un esqueleto)." {
             include *
             autoLayout lr
         }
-        component catalog "C4-04-Componentes-Catalog" "Componentes de Catalog Service." {
+        component catalog "C4-04-Componentes-Catalog" "Componentes de Catalog Service por capa: Api, Application, Domain e Infrastructure (SDD 10.3.1)." {
             include *
             autoLayout lr
         }
-        component serviceRequest "C4-04-Componentes-ServiceRequest" "Componentes de ServiceRequest Service." {
+        component serviceRequest "C4-04-Componentes-ServiceRequest" "Componentes de ServiceRequest Service por capa: Api, Application, Domain e Infrastructure (SDD 10.3.1)." {
             include *
-            autoLayout tb 150 80
+            # Identity aparece por la consulta interna; su publicación a Kafka no es de esta vista.
+            exclude "identity -> kafka"
+            exclude "gateway -> identity"
+            autoLayout tb 100 60
         }
         component matching "C4-04-Componentes-Matching" "Componentes de Matching Service." {
             include *
@@ -552,7 +641,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             include *
             autoLayout tb 150 80
         }
-        component payments "C4-04-Componentes-Payments" "Componentes de Payments Service: pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado)." {
+        component payments "C4-04-Componentes-Payments" "Componentes de Payments Service por capa (SDD 10.3.1): pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado)." {
             include *
             autoLayout lr
         }
@@ -584,6 +673,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
 
         dynamic quickpatch "C4-05-Dinamico-CrearSolicitud" "Creación de una solicitud, búsqueda del técnico y oferta (RF-07, RF-09, RN-M9, ADR-007, ADR-023). La aceptación está en C4-05-Dinamico-AsignacionTecnico." {
+            title "Escenario: creación de una solicitud y búsqueda del técnico"
             mobile -> gateway "Abre el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
             gateway -> communication "Enruta el WebSocket; Communication valida el token"
             mobile -> gateway "POST /api/v1/service-requests" "HTTPS/JSON"
@@ -594,7 +684,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             matching -> dbMatching "Registra el eventId, busca candidatos (RN-M9, PostGIS) y registra la oferta con vencimiento a 3 min"
             matching -> kafka "Publica matching.offer-created o, sin candidatos, matching.no-technician-available"
             serviceRequest -> kafka "Sin candidatos, consume el resultado y pasa la solicitud a en_espera"
-            communication -> kafka "Consume la oferta o el resultado"
+            communication -> kafka "Consume matching.offer-created o, sin candidatos, service-request.status-changed (en_espera)"
             communication -> dbCommunication "Guarda la notificación en el buzón del destinatario"
             communication -> gateway "Avisa por el WebSocket abierto: al técnico, la oferta (ADR-023)"
             gateway -> mobile "Entrega el aviso; la app pide el detalle por REST" "WebSocket (wss)"
@@ -604,21 +694,28 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-AsignacionTecnico" "Aceptación de la oferta por el técnico y aviso al cliente (RF-10, RN-M2, RN-M4, RN-M6, RN-M7; SCRUM-30, SCRUM-427)." {
-            mobile -> gateway "El técnico abre el WebSocket /api/v1/realtime" "WebSocket (wss)"
+        dynamic quickpatch "C4-05-Dinamico-AsignacionTecnico" "Desde que se crea la solicitud hasta que el cliente ve a su técnico (RF-09, RF-10, RF-11; RN-M2, RN-M6, RN-M9; ADR-007, ADR-023). Si el técnico rechaza o la oferta vence a los 3 min, Matching repite los pasos 5 a 9 con el siguiente candidato (RN-M3)." {
+            title "Escenario: asignación de técnico a una solicitud"
+            mobile -> gateway "Las apps del técnico y del cliente abren el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
             gateway -> communication "Enruta el WebSocket; Communication valida el token"
-            mobile -> gateway "GET /api/v1/matching/offers?status=pendiente: localidad y distancia, sin la dirección (RN-SR13)" "HTTPS/JSON"
+            serviceRequest -> kafka "Publica service-request.created desde el Outbox (la solicitud quedó en buscando_tecnico)"
+            matching -> kafka "Consume service-request.created (una vez por eventId)"
+            matching -> dbMatching "Busca candidatos aprobados, disponibles, de la especialidad y con cobertura, por cercanía (RN-M9, PostGIS), y registra la oferta con vencimiento a 3 min"
+            matching -> kafka "Publica matching.offer-created"
+            communication -> kafka "Consume matching.offer-created"
+            communication -> gateway "Avisa al técnico por su WebSocket /v1/realtime"
+            gateway -> mobile "La app del técnico muestra la oferta: localidad y distancia, sin la dirección (RN-SR13)" "WebSocket (wss)"
+            mobile -> gateway "El técnico acepta: POST /api/v1/matching/offers/{attemptId}/accept" "HTTPS/JSON"
             gateway -> matching "Enruta con el JWT del técnico"
-            mobile -> gateway "POST /api/v1/matching/offers/{attemptId}/accept" "HTTPS/JSON"
-            gateway -> matching "Enruta con el JWT del técnico"
-            matching -> dbMatching "Acepta solo si la oferta sigue pendiente, es del técnico y no venció; el técnico pasa a ocupado (una transacción)"
+            matching -> dbMatching "Acepta solo si la oferta sigue pendiente, es suya y no venció; el técnico pasa a ocupado (RN-M2, RN-M6; una transacción con el Outbox)"
             matching -> kafka "Publica matching.technician-assigned"
-            serviceRequest -> kafka "Consume la asignación y pasa la solicitud a asignado"
-            communication -> kafka "Consume la asignación"
-            communication -> dbCommunication "Guarda la notificación del cliente y del técnico"
+            serviceRequest -> kafka "Consume matching.technician-assigned"
+            serviceRequest -> dbServiceRequest "Pasa la solicitud a asignado y guarda service-request.status-changed en el Outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.status-changed"
+            communication -> kafka "Consume service-request.status-changed"
             communication -> gateway "Avisa al cliente por su WebSocket"
-            gateway -> mobile "Entrega el aviso; la app del cliente pide el detalle con el técnico asignado" "WebSocket (wss)"
-            autoLayout lr 200 100
+            gateway -> mobile "La app del cliente pide el detalle por REST y muestra al técnico asignado" "WebSocket (wss)"
+            autoLayout lr 250 120
             properties {
                 "structurizr.groups" false
             }

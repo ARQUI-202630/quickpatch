@@ -311,6 +311,8 @@ Infrastructure -> Application / Domain mediante interfaces
 
 El detalle definitivo de proyectos, carpetas y paquetes debe quedar sincronizado con la sección 10.
 
+**Cómo leer los diagramas de componentes (SCRUM-581, SCRUM-582).** Los diagramas de Identity, Catalog, ServiceRequest y Payments (secciones 6.4, 6.6, 6.7 y 6.10) muestran el servicio por dentro, capa por capa: el endpoint (`Api/Endpoints`), el caso de uso (`Application/<agregado>`), el dominio, el repositorio con su `TenantUnitOfWork` y la base, y en Kafka el `EfOutbox`, el `OutboxPublisher` y los consumidores. Cada componente lleva el nombre de su clase o carpeta en `develop`, y la tecnología indica la ruta (por ejemplo, `Minimal API · Api/Endpoints`), así que se puede ir del diagrama al código sin traducir nombres. Lo que todavía no existe (la calificación de ServiceRequest y el webhook de la pasarela certificada) aparece punteado como «Planeado».
+
 ## 6.2 Aplicaciones cliente
 
 Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componente indica la carpeta del repositorio donde vive (sección 10.2) y corresponde al código de `develop`; los componentes con borde punteado están planeados.
@@ -864,7 +866,7 @@ sequenceDiagram
 
 ---
 
-**Vista C4.** Los diagramas dinámicos muestran el flujo a nivel de contenedores y numerado: la Figura 22 va de la solicitud a la oferta, y la Figura 22b, de la aceptación al aviso al cliente.
+**Vista C4.** Los diagramas dinámicos muestran el flujo a nivel de contenedores y numerado: cada uno lleva como título el escenario que representa, y sus pasos nombran el evento de Kafka que viaja en cada uno. La Figura 22 va de la solicitud a la oferta, y la Figura 22b recorre el escenario completo de la asignación, desde `service-request.created` hasta que el cliente ve a su técnico (SCRUM-590).
 
 ![Creación de solicitud y matching (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-CrearSolicitud.png)
 
@@ -872,11 +874,11 @@ sequenceDiagram
 
 ### 8.3.1 Aceptación de la oferta por el técnico (SCRUM-30)
 
-El técnico ve sus ofertas pendientes con la localidad y la distancia, pero no la dirección, que solo recibe al quedar asignado (RN-SR13; `GET /v1/matching/offers?status=pendiente`). Al aceptar (`POST /v1/matching/offers/{attemptId}/accept`), Matching Service verifica en una sola transacción que la oferta siga `pendiente`, sea de ese técnico y no haya vencido, y que el técnico siga `disponible`. Si no, responde `409 oferta-no-disponible` o `409 tecnico-no-disponible`. Si todo se cumple, marca al técnico `ocupado` y publica `matching.technician-assigned` por el Outbox. ServiceRequest pasa la solicitud a `asignado`, y Communication guarda la notificación en el buzón y avisa al cliente por su WebSocket.
+El técnico ve sus ofertas pendientes con la localidad y la distancia, pero no la dirección, que solo recibe al quedar asignado (RN-SR13; `GET /v1/matching/offers?status=pendiente`). Al aceptar (`POST /v1/matching/offers/{attemptId}/accept`), Matching Service verifica en una sola transacción que la oferta siga `pendiente`, sea de ese técnico y no haya vencido, y que el técnico siga `disponible`. Si no, responde `409 oferta-no-disponible` o `409 tecnico-no-disponible`. Si todo se cumple, marca al técnico `ocupado` y publica `matching.technician-assigned` por el Outbox. ServiceRequest la consume, pasa la solicitud a `asignado` y publica `service-request.status-changed` en la misma transacción; Communication consume ese evento (no el de Matching, SCRUM-466), guarda la notificación en el buzón y avisa al cliente por su WebSocket.
 
 ![Aceptación del técnico (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-AsignacionTecnico.png)
 
-**Figura 22b. Aceptación de la oferta por el técnico y aviso al cliente (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-AsignacionTecnico`.**
+**Figura 22b. Escenario: asignación de técnico a una solicitud (C4 · Dynamic). Vista `C4-05-Dinamico-AsignacionTecnico`.**
 
 ## 8.4 Secuencia de pago y facturación
 
@@ -1686,6 +1688,67 @@ Infrastructure
 La capa `Domain` concentra las reglas de negocio y no debe depender directamente de mecanismos externos como Kafka, PostgreSQL, Redis o proveedores de pago.
 
 Los siete servicios ASP.NET Core y `Matching Service` mantienen la misma separación conceptual, aunque cada tecnología utilice mecanismos propios para implementarla.
+
+### 10.3.1 Convención de paquetes por capa (SCRUM-586)
+
+Las cuatro capas son **proyectos** separados en .NET y **paquetes raíz** en Java, de modo que la dependencia entre capas la controla el compilador: `Domain` no referencia a nadie, `Application` solo a `Domain`, e `Infrastructure` y `Api` implementan o consumen los puertos de `Application`. Dentro de cada capa, el código se agrupa **por agregado o caso de uso**, no por tipo técnico: todo lo de los pagos está en `Payments/` y no repartido entre `Commands/`, `Handlers/` y `Results/`. Los nombres de carpeta son fijos para que un servicio se lea igual que los demás.
+
+```text
+src/
+├── QuickPatch.<Servicio>.Api/              # Interfaz: lo que entra por HTTP o WebSocket
+│   ├── Endpoints/                          #   <Recurso>Endpoints.cs: rutas, validación de entrada y mapeo a resultados HTTP
+│   ├── Http/                               #   Problems (RFC 9457), CorrelationId, middleware
+│   ├── Security/                           #   AuthenticatedUser (claims del JWT), políticas por rol
+│   ├── Bootstrap/                          #   (opcional) semillas y tareas de arranque
+│   └── Program.cs
+├── QuickPatch.<Servicio>.Application/      # Casos de uso; no conoce EF Core, Kafka ni HTTP
+│   ├── Abstractions/                       #   Puertos: repositorios, ITenantUnitOfWork, IOutbox, relojes, adaptadores externos
+│   ├── <Agregado o caso de uso>/           #   Comando o consulta, su handler y su resultado, juntos
+│   ├── Events/                             #   Contratos de los eventos que publica y consume, y los handlers de consumo
+│   └── DependencyInjection.cs
+├── QuickPatch.<Servicio>.Domain/           # Reglas de negocio puras
+│   ├── <Agregado>/                         #   Entidad raíz, value objects, enums y reglas del agregado
+│   └── Common/                             #   Tipos base compartidos dentro del servicio
+└── QuickPatch.<Servicio>.Infrastructure/   # Adaptadores de los puertos
+    ├── Persistence/                        #   DbContext, configuraciones, repositorios, Migrations/ (RLS, ADR-005)
+    ├── Messaging/                          #   Publicador del Outbox y consumidores de Kafka (ADR-007)
+    ├── Options/                            #   Opciones tipadas de configuración
+    ├── <Sistema externo>/                  #   Un adaptador por sistema: Geocoding, Storage, Providers, Documents, Scheduling...
+    └── DependencyInjection.cs
+tests/
+├── unit/QuickPatch.<Servicio>.UnitTests/   # Api/, Application/, Domain/, Infrastructure/ y Support/ (dobles de prueba)
+└── integration/QuickPatch.<Servicio>.IntegrationTests/   # Testcontainers contra PostgreSQL y Kafka reales
+```
+
+En Matching (Java + Spring Boot) se aplica la misma regla con paquetes bajo `co.quickpatch.matching`:
+
+```text
+api/              controllers/ (un @RestController por recurso), http/ (Problems, CorrelationIdFilter, manejador de errores), security/
+application/      <caso de uso>/ (matching, technicians), events/ (contratos y handlers de consumo)
+domain/           <agregado>/ (matching, technicians), events/ (eventos de dominio)
+infrastructure/   persistence/, messaging/, scheduling/, config/ (configuración de Spring que no es seguridad)
+```
+
+**Reglas:**
+
+1. Una clase va en la capa que cumple su responsabilidad, no en la carpeta de la funcionalidad de otra capa: un consumidor de Kafka es `Infrastructure/Messaging`, aunque sirva solo al chat; el registro de conexiones de WebSocket es un adaptador, no un endpoint.
+2. Las carpetas de primer nivel de `Application` y `Domain` llevan el nombre del agregado o caso de uso en el vocabulario del glosario (`Payments`, `Quotes`, `Inbox`), no un nombre técnico (`Services`, `Helpers`, `Utils`).
+3. Los puertos se declaran en `Application/Abstractions`; la implementación vive en `Infrastructure` y se registra en su `DependencyInjection.cs`.
+4. Los contratos de eventos (`Application/Events`) reproducen los esquemas de `contracts/kafka/`; ningún servicio referencia el código de otro (ADR-020 solo comparte código transversal).
+5. Las pruebas reflejan la capa que prueban (`tests/unit/.../<Capa>/`).
+6. Reorganizar paquetes no cambia contratos REST ni eventos: el refactor se acepta solo con el CI en verde.
+
+**Estado al 25 de octubre de 2026** (revisión sobre `develop` de cada repositorio):
+
+| Servicio | Cumple | Diferencias por corregir | Subtarea |
+|---|---|---|---|
+| Identity | Sí | — | SCRUM-587 (verificación) |
+| Catalog | Sí | — | SCRUM-587 (verificación) |
+| ServiceRequest | Sí | — | SCRUM-587 (verificación) |
+| Payments | Sí | `Domain/AssemblyMarker.cs` suelto en la raíz del proyecto (se puede mover a `Common/`) | SCRUM-588 |
+| Communication | No | `Api` está organizado por funcionalidad (`Chat/`, `Inbox/`, `Realtime/`) en lugar de `Endpoints/`, `Http/` y `Security/`. `Api/Realtime` mezcla el endpoint con adaptadores (`ConnectionRegistry`, `WebSocketClient`, `TokenValidator`). `Application` no tiene `Abstractions/` ni `Events/` (los puertos están junto a los casos de uso y `EventEnvelope` en `Realtime/`). Las pruebas unitarias están por funcionalidad y no por capa. | SCRUM-588 |
+| Matching | Parcial | `api/` es plano: controllers, `Problems`, `CorrelationIdFilter`, `ApiExceptionHandler` y `SecurityConfig` en el mismo paquete; van a `controllers/`, `http/` y `security/`. | SCRUM-588 |
+| Actors y Ranking | — | Esqueletos: siguen la convención cuando se implementen (Ranking con ADR-027). | — |
 
 ---
 
