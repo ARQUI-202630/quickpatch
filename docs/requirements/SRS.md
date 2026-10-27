@@ -5,8 +5,8 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 5.6 (MVP, incremento del Sprint 4) |
-| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598 |
+| **Versión del documento** | 5.7 (MVP, incremento del Sprint 4) |
+| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598; 5.7: capacidad de interacción, SCRUM-568 |
 | **Responsable** | Angy Bautista (Product Owner) |
 | **Estado** | Aprobado por el Product Owner el 14 de octubre de 2026 (SCRUM-406). Línea base de la sección 1.3 revisada el 14 de octubre de 2026 (Sebastián Sánchez). Pendiente: el PR a `develop` |
 | **Estándar de referencia** | IEEE Std 830-1998 |
@@ -451,7 +451,7 @@ Cada RNF indica el escenario de calidad del SAD que lo mide y el estado de su va
 | **Escalabilidad y Arquitectura Multi-tenant** | | | |
 | RNF-09 | La arquitectura debe permitir incorporar nuevos tenants (nuevas empresas o zonas geográficas) sin afectar el aislamiento de datos de los tenants existentes. | AC8-E1 | Parcial |
 | RNF-10 | Las consultas a base de datos deben filtrar automáticamente por el *tenant_id* de la sesión activa. | AC6-E2 | Cubierto |
-| **Usabilidad** | | | |
+| **Capacidad de interacción (ISO/IEC 25010:2023)** | | | |
 | RNF-11 | El flujo de creación de una solicitud de servicio (Cliente) debe poder completarse en un máximo de 3 pasos. | AC4-E1 | Cubierto |
 | RNF-12 | La app móvil debe funcionar en teléfonos Android e iOS de distintos tamaños de pantalla, y el panel web debe adaptarse a pantallas de escritorio y portátil (diseño responsivo). | AC4-E2 | Parcial |
 | **Gestión del Proyecto y Documentación** | | | |
@@ -666,6 +666,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | 5.4 | 21 oct 2026 | Comprobante de pago (SCRUM-44). La decisión pendiente P3 pasa a DR-03 (sección 7.4.1): en el MVP, RF-24 se cumple con un comprobante de pago sin validez fiscal, rotulado como tal; la factura electrónica validada por la DIAN queda para producción real (SAD 2.33, killer K14; DD 5.10). No cambia la redacción de RF-24. |
 | 5.5 | 21 oct 2026 | Chat de la solicitud (SCRUM-473, subtarea SCRUM-479). Nuevo RF-37 en F2.3: el Cliente dueño y el Técnico asignado se escriben dentro de la solicitud, con historial y entrega en tiempo real, y el chat queda de solo lectura al terminar o cancelar. La sección 2.3 saca el chat de lo que queda fuera del MVP (los adjuntos siguen fuera) y la matriz de trazabilidad agrega RF-37 (SAD 2.34, ADR-026; DD 5.11). |
 | 5.6 | 26 oct 2026 | Alcance geográfico (SCRUM-598, subtarea SCRUM-599; revisión del Sprint 4). Nueva sección 2.3.1: la restricción a Bogotá como regla de negocio, con lo que valida el sistema en cada momento (RN-SR9, RN-M9, RF-07, RF-13), las 20 localidades seleccionables, su efecto en el matching y la evidencia de la prueba fuera de Bogotá. Nueva decisión pendiente P10: Sumapaz y la parte rural de Usme y Ciudad Bolívar quedan fuera del área de cobertura. |
+| 5.7 | 27 oct 2026 | El grupo de RNF-11 y RNF-12 se llama **Capacidad de interacción**, como la característica de ISO/IEC 25010:2023 (antes se nombraba con el término de la versión 2011). Corrección del profesor en la revisión del Sprint 4 (SCRUM-567, subtarea SCRUM-568). Los requisitos no cambian. |
 
 ---
 
