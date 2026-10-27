@@ -1,19 +1,19 @@
 # Cuadro de Mando de Estadísticas de Pruebas — Sprint 5 (SCRUM-604)
 
-**Código del Documento:** `MET-QA-SP5-2026-10-25`  
-**Versión:** `2.0 Dinámica Oficial`  
-**Fecha de Generación:** 25 de octubre de 2026  
+**Código del Documento:** `MET-QA-SP5-2026-10-27`  
+**Versión:** `2.1 Dinámica Oficial (Sincronizada con Matriz UAT Excel)`  
+**Fecha de Generación:** 27 de octubre de 2026  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
 **Trazabilidad Jira:** Tarea `SCRUM-604` | Requisito RNF-08 | Documento de Pruebas `TD.md` V3.0  
-**Principio Metodológico:** Toda cifra reportada proviene directamente de archivos de resultados de CI (.trx/surefire), evidencias Newman en QA, resúmenes JSON de k6 y el registro formal de defectos. Cero cifras escritas a mano.
+**Principio Metodológico:** Toda cifra reportada proviene directamente de archivos de resultados de CI (.trx/surefire), evidencias Newman en QA, resúmenes JSON de k6 y la Matriz de Avance UAT en Excel. Cero cifras escritas a mano.
 
 ---
 
-## 1. Pruebas Automatizadas de Microservicios en CI
+## 1. Pruebas Automatizadas de Microservicios en CI y App Móvil
 
-Las pruebas reales ejecutadas por los pipelines de CI en cada microservicio se extraen directamente de los reportes generados en sus respectivos flujos de integración continua:
+Las pruebas reales ejecutadas por los pipelines de CI en cada microservicio y en la App Móvil Flutter se extraen directamente de los reportes generados en sus respectivos flujos:
 
-| Microservicio | Último Run CI | Unitarias | Integración | Total Pruebas | Pasan | Fallan | Cobertura de Código |
+| Componente / Repositorio | Último Run / Tag | Unitarias | Integración | Total Pruebas | Pasan | Fallan | Cobertura de Código |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **quickpatch-identity** | Run #57 | 229 | 32 | **261** | 261 | 0 | *Pendiente (SCRUM-602)* |
 | **quickpatch-actors** | Run #12 | 6 | 2 | **8** | 8 | 0 | *Pendiente (SCRUM-602)* |
@@ -23,7 +23,8 @@ Las pruebas reales ejecutadas por los pipelines de CI en cada microservicio se e
 | **quickpatch-payments** | Run #25 | 54 | 0 | **54** | 54 | 0 | *Pendiente (SCRUM-602)* |
 | **quickpatch-ranking** | Run #12 | 6 | 2 | **8** | 8 | 0 | *Pendiente (SCRUM-602)* |
 | **quickpatch-servicerequest** | Run #68 | 324 | 48 | **372** | 372 | 0 | *Pendiente (SCRUM-602)* |
-| **TOTAL MICROSERVICIOS** | — | **906** | **126** | **1,032** | **1,032** | **0** | *Pendiente (SCRUM-602)* |
+| **quickpatch-mobile (app flutter)** | Run #Tag v0.5.1 | 462 | 31 | **493** | 493 | 0 | *Pendiente (SCRUM-602)* |
+| **TOTAL UNITARIAS E INTEGRACIÓN** | — | **1,368** | **157** | **1,525** | **1,525** | **0** | *Pendiente (SCRUM-602)* |
 
 > **Nota sobre Cobertura:** La publicación de reportes de cobertura en CI se encuentra en desarrollo bajo la tarea `SCRUM-602` (responsable: Sebastián). Mientras dicha tarea no finalice, la columna permanece en estado formal **Pendiente**, sin estimaciones porcentuales ficticias.
 
@@ -49,12 +50,13 @@ Evaluación oficial de las colecciones de prueba automatizadas ejecutadas contra
 | **SCRUM-483: Mensajería y Chat Bidireccional** | `quickpatch-communication` | 43 | 69 | 69 | 0 | `tests/e2e/evidencias/scrum-483-chat-qa-2026-10-22.txt` |
 | **SCRUM-490: Cotización con Tarifa Base** | `quickpatch-service-request` | 61 | 76 | 76 | 0 | `tests/e2e/evidencias/scrum-490-cotizacion-qa-2026-10-22.txt` |
 | **SCRUM-495: Comprobante Digital de Pago** | `quickpatch-payments` | 39 | 42 | 42 | 0 | `tests/e2e/evidencias/scrum-495-comprobante-qa-2026-10-22.txt` |
+| **SCRUM-496: Pago Centralizado Empresa** | `quickpatch-payments` | 59 | 59 | 59 | 0 | `tests/e2e/evidencias/scrum-496-pago-empresa-qa-2026-10-27.txt` |
 | **SCRUM-68: Cuentas Corporativas e Invitaciones** | `quickpatch-identity` | 32 | 68 | 68 | 0 | `tests/e2e/evidencias/scrum-68-cuenta-corporativa-qa-2026-10-22.txt` |
 | **SCRUM-75: Solicitud Corporativa Centro de Costos** | `quickpatch-service-request` | 44 | 56 | 56 | 0 | `tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-2026-10-22.txt` |
 | **SCRUM-96: Carga de Evidencia Fotográfica S3** | `quickpatch-service-request` | 46 | 71 | 71 | 0 | `tests/e2e/evidencias/scrum-96-evidencia-qa-2026-10-22.txt` |
 | **Auditoría PCI-DSS v4.0 (Trazas Loki)** | `quickpatch-security` | — | 12 | 12 | 0 | `tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt` |
 | **Escaneo Dinámico DAST (OWASP ZAP Baseline)** | `quickpatch-api-gateway` | — | 1 | 1 | 0 | `tests/security/evidencias/zap-dast-baseline-qa-2026-10-18.txt` |
-| **TOTAL SUITES DE SISTEMA** | — | **637** | **885** | **885** | **0** | — |
+| **TOTAL SUITES DE SISTEMA** | — | **696** | **944** | **944** | **0** | — |
 
 ---
 
@@ -71,31 +73,35 @@ Conforme a la directriz técnica de QA, las peticiones masivas de carga no se co
 
 ## 4. Registro Consolidado de Defectos (SCRUM-603)
 
-* **Total de Defectos Registrados:** **14 anomalías**.
-* **Defectos Corregidos y Verificados:** **9 (64.3%)**.
-* **Defectos Descartados / Retractados:** **1 (7.1%)**.
-* **Defectos en Mitigación en Sprint 5:** **4 (28.6%)** (ninguno bloqueante).
+* **Total de Defectos Registrados:** **19 anomalías**.
+* **Defectos Corregidos y Verificados:** **15 (78.9%)**.
+* **Defectos Descartados / Retractados:** **0 (0.0%)**.
+* **Defectos en Mitigación en Sprint 5:** **4 (21.1%)** (ninguno bloqueante).
 * **Defectos Críticos o Bloqueantes Abiertos:** **0 (0.0%)**.
 
-Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-defectos-sprint4-sprint5.md).
+Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/registro-defectos-sprint4-sprint5.md) y en la hoja `Defectos` de la Matriz UAT Excel.
 
 ---
 
 ## 5. Resumen Ejecutivo y Gráficas de Calidad
 
-* **Total de Pruebas Reales Automatizadas:** **1,917 pruebas / aserciones**.
+* **Total de Pruebas Reales Automatizadas:** **2,469 pruebas / aserciones** (1,525 unitarias/integración + 931 E2E + 13 seguridad).
 * **Tasa de Aprobación de Pruebas:** **100.0% PASS (0 fallos en runs oficiales)**.
 * **Capacidad de Carga k6:** **44,631 peticiones procesadas** con 0.00% de errores y p95 de 415.39 ms bajo 150 VU.
 * **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.
+* **Avance Preliminar del Producto (Matriz Excel UAT):** **74.36%** (Meta Sprint 4: 80% / Brecha: -5.64%).
+* **% Funcionalidades Implementadas (Develop):** **92.65%** (31.5 / 34 pts).
+* **% Funcionalidades Probadas por QA:** **86.03%** (29.25 / 34 pts con evidencia).
+* **% Escenarios de Calidad (SAD §3):** **47.12%** (52 escenarios evaluados: 20 Cumple, 9 Parcial, 2 No cumple, 21 No medido).
 
 ### Gráfica 1: Distribución de Pruebas por Tipo
-![Gráfica 1: Distribución por Tipo](img/grafica-1-pruebas-por-tipo.png)
+![Gráfica 1: Distribución por Tipo](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-1-pruebas-por-tipo.png)
 
-### Gráfica 2: Tasa de Éxito de Pruebas
-![Gráfica 2: Torta de Éxito](img/grafica-2-torta-exito-pruebas.png)
+### Gráfica 2: Tasa de Éxito de Pruebas (100% PASS)
+![Gráfica 2: Torta de Éxito](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-2-torta-exito-pruebas.png)
 
 ### Gráfica 3: Estado y Severidad de Defectos
-![Gráfica 3: Defectos](img/grafica-3-barras-defectos.png)
+![Gráfica 3: Defectos](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-3-barras-defectos.png)
 
 ### Gráfica 4: Pruebas Reales de CI por Microservicio
-![Gráfica 4: Pruebas de CI por Microservicio](img/grafica-4-cobertura-por-servicio.png)
+![Gráfica 4: Pruebas de CI por Microservicio](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-4-cobertura-por-servicio.png)
