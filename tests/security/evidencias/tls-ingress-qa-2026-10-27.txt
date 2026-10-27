@@ -1,6 +1,6 @@
 Verificacion TLS Ingress en QA (qa.quickpatch.internal:443) - 2026-10-27
 Comando: openssl s_client -connect qa.quickpatch.internal:443 -servername qa.quickpatch.internal
-Destino: 10.43.100.168:443 (Nginx Ingress Controller k3s VM2/VM1)
+Destino: 10.43.100.168:443 (entrada Nginx de VM1, ADR-028)
 --------------------------------------------------------------------------------
 Connecting to 10.43.100.168
 depth=0 CN=quickpatch.internal

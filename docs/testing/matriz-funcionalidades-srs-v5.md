@@ -1,17 +1,17 @@
-# Matriz de Funcionalidades y Cobertura SRS V5.5 (SCRUM-561)
+# Matriz de Funcionalidades y Cobertura SRS V5.6 (SCRUM-561)
 
-**Código del Documento:** `MTX-FUNC-SRS-V5.5-2026-10-26`  
+**Código del Documento:** `MTX-FUNC-SRS-V5.6-2026-10-26`  
 **Versión:** `3.0 Final Sincronizada`  
 **Fecha:** 26 de octubre de 2026  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
-**Trazabilidad Jira:** Tarea `SCRUM-561` | SRS v5.5 (33 RFs canónicos: RF-01 a RF-29 y RF-34 a RF-37) | `TD.md` V3.0  
+**Trazabilidad Jira:** Tarea `SCRUM-561` | SRS v5.6 (33 RFs canónicos: RF-01 a RF-29 y RF-34 a RF-37) | `TD.md` V3.0  
 **Ambiente:** QA Desplegado (`https://qa.quickpatch.internal` en VM2 k3s)  
 
 ---
 
 ## 1. Convenciones y Estándar de Clasificación
 
-Conforme a la directriz de arquitectura y el estándar del SRS v5.5:
+Conforme a la directriz de arquitectura y el estándar del SRS v5.6:
 * **Implementado / Aprobado (E2E QA):** Funcionalidad desplegada en el clúster de QA y certificada mediante suites automáticas con archivo de corrida en el repositorio.
 * **Implementado (mock) / Aprobado:** Funcionalidad validada en flujos de prueba contra pasarela simulada o sandbox (ej. Pagos conforme a RN-P6 y ADR-009).
 * **Parcial / Aprobado con observaciones:** Flujo verificado en componentes principales con alguna sub-acción o integración pendiente de completar.
@@ -20,9 +20,9 @@ Conforme a la directriz de arquitectura y el estándar del SRS v5.5:
 
 ---
 
-## 2. Matriz Oficial de Cobertura de Requisitos Funcionales (SRS v5.5)
+## 2. Matriz Oficial de Cobertura de Requisitos Funcionales (SRS v5.6)
 
-| ID | Módulo | Descripción del Requisito Funcional (SRS v5.5 §5) | Estado Desarrollo | Resultado QA | Archivo de Evidencia (Ruta Relativa del Repositorio) | Observaciones Técnicas |
+| ID | Módulo | Descripción del Requisito Funcional (SRS v5.6 §5) | Estado Desarrollo | Resultado QA | Archivo de Evidencia (Ruta Relativa del Repositorio) | Observaciones Técnicas |
 |:---:|---|---|:---:|:---:|---|---|
 | **RF-01** | Usuarios y Cuentas | Registro de Cliente (correo, contraseña $\ge 8$, correo único en el tenant) | Implementado | Aprobado | `tests/e2e/evidencias/tenant-beta-qa-2026-10-15.txt`; `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` | Creación de cuenta, hashing BCrypt y unicidad validada. |
 | **RF-02** | Usuarios y Cuentas | Registro de Técnico/Proveedor con documentos $\to$ 'Pendiente de verificación' | Implementado | Aprobado | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt` (23 aserciones) | Registro validado contra QA desplegado con RFC 9457 Problem Details. |
@@ -65,7 +65,7 @@ Conforme a la directriz de arquitectura y el estándar del SRS v5.5:
 
 ## 3. Resumen Cuantitativo Consolidado
 
-* **Total de Requisitos Funcionales Oficiales (SRS v5.5):** **33 Requisitos Funcionales**.
+* **Total de Requisitos Funcionales Oficiales (SRS v5.6):** **33 Requisitos Funcionales**.
 * **Requisitos Aprobados en QA:** **26 RFs (78.8%)** (incluye pagos corporativos SCRUM-496 y pasarela simulada ADR-009).
 * **Requisitos Aprobados con Observaciones:** **3 RFs (9.1%)** (RF-10 vencimiento 3 min, RF-27 flujo E2E sin calificación, RF-28 alertas).
 * **Requisitos Sin Probar / No Implementados:** **4 RFs (12.1%)** (RF-12 Calificación, RF-17 Historial técnico, RF-21 Activar/Desactivar tenant, RF-25 Registro de Pagos).
