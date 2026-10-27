@@ -1,0 +1,45 @@
+================================================================================
+EVIDENCIA FORMAL DE ESCANEO PCI-DSS EN LOGS DE QA (SCRUM-397)
+Fecha de Ejecución: 19 de octubre de 2026 (17:45 COT)
+Ambiente: QA Desplegado (VM2 Microservicios k3s / Loki VM1)
+Origen de Datos: Exportación oficial de Grafana Loki API (loki_qa_k3s.json)
+Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
+Estándares y Normas: PCI-DSS v4.0 (Req 3.4, 3.5), PAY-002, K2, SAD V4 (v2.28)
+================================================================================
+
+1. METODOLOGÍA Y CRITERIOS DE INSPECCIÓN
+   - Algoritmo de Detección: Algoritmo de Luhn (Módulo 10) con validación estricta
+     de rangos IIN/BIN de franquicias financieras internacionales:
+     * Visa: Prefijo 4 (13, 16 o 19 dígitos).
+     * Mastercard: Prefijos 51-55 y 2221-2720 (16 dígitos).
+     * American Express: Prefijos 34 y 37 (15 dígitos).
+     * Discover: Prefijos 6011 y 65 (16 dígitos).
+   - Detección de Códigos de Autenticación: Regex con palabras clave contextuales
+     (cvv, cvc, security_code) seguidas de 3 o 4 dígitos aislados.
+   - Filtrado de Falsos Positivos: Descarte de timestamps ISO 8601, UUIDs,
+     números de teléfono colombianos (+57300...), códigos de estado HTTP,
+     cédulas de ciudadanía (CC-...) y hashes SHA256.
+
+2. RESULTADOS DE PRUEBAS UNITARIAS DE ROBUSTEZ:
+   - Tarjetas válidas detectadas: 6/6 (100% sensibilidad).
+   - Casos de borde y falsos positivos descartados: 16/16 (100% especificidad).
+   - Detección de patrones CVV/CVC: 3/3 casos positivos detectados, 4/4 casos normales descartados.
+   - Manejo de caracteres especiales, inyecciones (SQLi, XSS) y emojis UTF-8: Aprobado.
+
+3. RESULTADOS DEL ESCANEO SOBRE EXPORTACIÓN REAL DE LOKI (VM2 / K3S):
+   - Archivo Fuente: tests/security/evidencias/loki_qa_k3s.json (17 KB)
+   - Filtro de Consulta en Loki: {entorno="qa", job="k3s", namespace="quickpatch"}
+   - Streams Auditados: 5 streams reales de pods en ejecución (Matching, Communication, etc.)
+   - Total de registros de logs auditados: 100 entradas JSON (.NET AddJsonConsole)
+   - Ventana de Tiempo: Logs generados y recolectados el 19 de octubre de 2026.
+   - Nota de Alcance Sprint 4: La pasarela de pagos (Wompi) y el microservicio de Payments
+     están planificados para Sprint 5 (no desplegados en QA en este sprint).
+     La auditoría valida que los microservicios activos en QA no expongan datos sensibles
+     de pago, números PAN ni códigos CVV en los logs estructurados centralizados.
+   - Números de Tarjeta (PAN) en texto plano encontrados: 0
+   - Códigos de Seguridad (CVV/CVC) encontrados: 0
+   - Contraseñas o credenciales en texto plano encontradas: 0
+
+================================================================================
+DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.2 DE QA (PCI-DSS).
+================================================================================

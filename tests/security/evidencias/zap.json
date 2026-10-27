@@ -1,0 +1,74 @@
+{
+	"@programName": "ZAP",
+	"@version": "2.17.0",
+	"@generated": "Mon, 19 Oct 2026 04:55:05",
+	"@created": "2026-10-19T04:55:05.304360733Z",
+	"site": [
+		{
+			"@name": "https://qa.quickpatch.internal",
+			"@host": "qa.quickpatch.internal",
+			"@port": "443",
+			"@ssl": "true",
+			"alerts": [
+				{
+					"pluginid": "10038",
+					"alertRef": "10038-1",
+					"alert": "Content Security Policy (CSP) Header Not Set",
+					"name": "Content Security Policy (CSP) Header Not Set",
+					"riskcode": "2",
+					"confidence": "3",
+					"riskdesc": "Medium (High)",
+					"desc": "Content Security Policy (CSP) is an added layer of security that helps to detect and mitigate certain types of attacks, including Cross Site Scripting (XSS) and data injection attacks.",
+					"count": "3",
+					"solution": "Ensure that your web server, application server, load balancer, etc. is configured to set the Content-Security-Policy header.",
+					"instances": [
+						{
+							"uri": "https://qa.quickpatch.internal",
+							"method": "GET",
+							"param": ""
+						},
+						{
+							"uri": "https://qa.quickpatch.internal/robots.txt",
+							"method": "GET",
+							"param": ""
+						},
+						{
+							"uri": "https://qa.quickpatch.internal/sitemap.xml",
+							"method": "GET",
+							"param": ""
+						}
+					]
+				},
+				{
+					"pluginid": "10035",
+					"alertRef": "10035-1",
+					"alert": "Strict-Transport-Security Header Not Set",
+					"name": "Strict-Transport-Security Header Not Set",
+					"riskcode": "1",
+					"confidence": "3",
+					"riskdesc": "Low (High)",
+					"desc": "HTTP Strict Transport Security (HSTS) is a web security policy mechanism which helps to protect websites against protocol downgrade attacks and cookie hijacking.",
+					"count": "3",
+					"solution": "Ensure that your web server, application server, load balancer, etc. is configured to enforce Strict-Transport-Security.",
+					"instances": [
+						{
+							"uri": "https://qa.quickpatch.internal",
+							"method": "GET",
+							"param": ""
+						},
+						{
+							"uri": "https://qa.quickpatch.internal/robots.txt",
+							"method": "GET",
+							"param": ""
+						},
+						{
+							"uri": "https://qa.quickpatch.internal/sitemap.xml",
+							"method": "GET",
+							"param": ""
+						}
+					]
+				}
+			]
+		}
+	]
+}

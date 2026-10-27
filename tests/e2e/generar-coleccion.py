@@ -67,6 +67,7 @@ coleccion = {
         {"key": "adminPassword", "value": ""},
         {"key": "platformAdminEmail", "value": ""},
         {"key": "platformAdminPassword", "value": ""},
+        {"key": "userPassword", "value": ""},
     ],
     "item": [
         {
@@ -82,7 +83,10 @@ coleccion = {
                     ]),
                 req("Crear categoría", "POST", "/v1/catalog/admin/categories", [JSON, CORR, auth("adminToken")],
                     {"name": "Plomería {{sufijo}}", "description": "Fugas, grifería y tuberías"},
-                    previo=["pm.collectionVariables.set('sufijo', Date.now().toString(36));"],
+                    previo=[
+                        "pm.collectionVariables.set('sufijo', Date.now().toString(36));",
+                        "if (!pm.collectionVariables.get('userPassword')) pm.collectionVariables.set('userPassword', 'Qp_' + Date.now() + '_User9!');"
+                    ],
                     pruebas=[
                         "pm.test('201 creada y activa', () => {",
                         "  pm.response.to.have.status(201);",
@@ -99,10 +103,10 @@ coleccion = {
             "name": "2. Cliente",
             "item": [
                 req("Registro de cliente", "POST", "/v1/auth/register/client", [JSON, CORR, CANAL],
-                    {"email": "cliente.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Cliente de prueba", "phone": "3001234567"},
+                    {"email": "cliente.{{sufijo}}@quickpatch.test", "password": "{{userPassword}}", "fullName": "Cliente de prueba", "phone": "3001234567"},
                     pruebas=["pm.test('201 registrado', () => pm.response.to.have.status(201));"]),
                 req("Login del cliente", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
-                    {"email": "cliente.{{sufijo}}@quickpatch.test", "password": "Segura123"},
+                    {"email": "cliente.{{sufijo}}@quickpatch.test", "password": "{{userPassword}}"},
                     pruebas=[
                         "pm.test('200 con rol cliente', () => {",
                         "  pm.response.to.have.status(200);",
@@ -121,7 +125,7 @@ coleccion = {
                         "});",
                     ]),
                 req("Correo repetido → 409", "POST", "/v1/auth/register/client", [JSON, CORR, CANAL],
-                    {"email": "cliente.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Cliente repetido"},
+                    {"email": "cliente.{{sufijo}}@quickpatch.test", "password": "{{userPassword}}", "fullName": "Cliente repetido"},
                     pruebas=["pm.test('409', () => pm.response.to.have.status(409));"] + problem + tipo("correo-registrado")),
                 req("Categorías del tenant incluyen la nueva", "GET", "/v1/catalog/categories", [CORR, auth("clienteToken")],
                     pruebas=[
@@ -199,7 +203,7 @@ coleccion = {
                     {"email": "cliente.{{sufijo}}@quickpatch.test", "password": "Incorrecta123"},
                     pruebas=["pm.test('401', () => pm.response.to.have.status(401));"] + problem + tipo("credenciales-invalidas")),
                 req("Registro de un cliente para el bloqueo", "POST", "/v1/auth/register/client", [JSON, CORR, CANAL],
-                    {"email": "bloqueo.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Cliente bloqueo"},
+                    {"email": "bloqueo.{{sufijo}}@quickpatch.test", "password": "{{userPassword}}", "fullName": "Cliente bloqueo"},
                     pruebas=["pm.test('201 registrado', () => pm.response.to.have.status(201));"]),
                 req("Intentos fallidos hasta el bloqueo → 423", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
                     {"email": "bloqueo.{{sufijo}}@quickpatch.test", "password": "Incorrecta123"},
@@ -216,13 +220,13 @@ coleccion = {
                         "}",
                     ]),
                 req("Contraseña correcta durante el bloqueo → 423", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
-                    {"email": "bloqueo.{{sufijo}}@quickpatch.test", "password": "Segura123"},
+                    {"email": "bloqueo.{{sufijo}}@quickpatch.test", "password": "{{userPassword}}"},
                     pruebas=["pm.test('423', () => pm.response.to.have.status(423));"] + problem + tipo("cuenta-bloqueada")),
                 req("Registro de un segundo cliente", "POST", "/v1/auth/register/client", [JSON, CORR, CANAL],
-                    {"email": "otro.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Otro cliente"},
+                    {"email": "otro.{{sufijo}}@quickpatch.test", "password": "{{userPassword}}", "fullName": "Otro cliente"},
                     pruebas=["pm.test('201 registrado', () => pm.response.to.have.status(201));"]),
                 req("Login del segundo cliente", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
-                    {"email": "otro.{{sufijo}}@quickpatch.test", "password": "Segura123"},
+                    {"email": "otro.{{sufijo}}@quickpatch.test", "password": "{{userPassword}}"},
                     pruebas=[
                         "pm.test('200', () => pm.response.to.have.status(200));",
                         "pm.collectionVariables.set('otroToken', pm.response.json().accessToken);",
@@ -319,7 +323,7 @@ coleccion = {
             "name": "7. Técnico (SCRUM-287)",
             "item": [
                 req("Registro de técnico", "POST", "/v1/auth/register/technician", [JSON, CORR, CANAL],
-                    {"email": "tecnico.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Técnico de prueba",
+                    {"email": "tecnico.{{sufijo}}@quickpatch.test", "password": "{{userPassword}}", "fullName": "Técnico de prueba",
                      "phone": "3007654321", "documentId": "{{documento}}", "specialtyId": "{{categoriaId}}", "role": "tecnico"},
                     previo=["pm.collectionVariables.set('documento', String(Date.now()).slice(-10));"],
                     pruebas=[
@@ -330,11 +334,11 @@ coleccion = {
                         "});",
                     ]),
                 req("Documento repetido → 409", "POST", "/v1/auth/register/technician", [JSON, CORR, CANAL],
-                    {"email": "tecnico2.{{sufijo}}@quickpatch.test", "password": "Segura123", "fullName": "Técnico repetido",
+                    {"email": "tecnico2.{{sufijo}}@quickpatch.test", "password": "{{userPassword}}", "fullName": "Técnico repetido",
                      "phone": "3007654321", "documentId": "{{documento}}", "specialtyId": "{{categoriaId}}", "role": "tecnico"},
                     pruebas=["pm.test('409', () => pm.response.to.have.status(409));"] + problem + tipo("documento-registrado")),
                 req("Login del técnico", "POST", "/v1/auth/login", [JSON, CORR, CANAL],
-                    {"email": "tecnico.{{sufijo}}@quickpatch.test", "password": "Segura123"},
+                    {"email": "tecnico.{{sufijo}}@quickpatch.test", "password": "{{userPassword}}"},
                     pruebas=[
                         "pm.test('200 con rol tecnico', () => {",
                         "  pm.response.to.have.status(200);",
