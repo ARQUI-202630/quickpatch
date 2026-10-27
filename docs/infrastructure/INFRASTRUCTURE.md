@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.1 |
+| **Versión** | 4.2 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -562,7 +562,7 @@ Kafka corre en un solo nodo por ambiente (VM6 en producción, VM7 en QA; R10), c
 | QA (VM7) | `communication-chat` (1), `communication-inbox` (1), `communication-service` (1), `matching-service` (5), `payments-service` (1), `service-request-service` (3); todos estables |
 
 - **Cómo verlos:** `./ap playbooks/operar-kafka-grupos.yml` (solo lectura), o con `--limit vm7` para QA. Muestra el estado de cada grupo, el lag sumado por grupo y topic, y la retención de cada topic.
-- **Lectura del 26 de octubre en QA:** lag 0 en todos los grupos salvo `communication-service`, con 22 mensajes en `matching.no-technician-available`, 6 en `matching.search-resumed` y 5 en `matching.technician-assigned`. Se repitió igual en dos lecturas separadas por varios minutos, así que no es tráfico en tránsito: el consumidor no confirma esos offsets. Falta saber si Communication descarta esos eventos sin confirmarlos o si falla al procesarlos; es una revisión para el equipo de Communication.
+- **Lectura del 26 de octubre en QA:** lag 0 en todos los grupos salvo `communication-service`, con 22 mensajes en `matching.no-technician-available`, 6 en `matching.search-resumed` y 5 en `matching.technician-assigned`. Se repitió igual en dos lecturas separadas por varios minutos, así que no es tráfico en tránsito: el consumidor no confirma esos offsets. Falta saber si Communication descarta esos eventos sin confirmarlos o si falla al procesarlos; es una revisión para el equipo de Communication. **Lectura del 27 de octubre:** el lag creció a 32, 10 y 8 mensajes (50 en total) en esos mismos tres topics, tras las nuevas solicitudes que hubo en QA ese día (pruebas de sistema y datos de demostración). No es un lag fijo: `communication-service` no está consumiendo los eventos `matching.*` y lo que llega se acumula. Reiniciar el grupo a `latest` lo oculta pero no lo arregla; primero hay que ver por qué no los procesa.
 - **Producción:** sin lag, porque casi no hay tráfico (2 topics).
 
 **Reiniciar los offsets de un grupo.** Sirve cuando un grupo nuevo va a leer tráfico viejo (como el de las pruebas de carga que causó el `OOMKilled` de Communication, sección 5.6) o cuando hay que descartar o repetir eventos.
@@ -574,7 +574,7 @@ Kafka corre en un solo nodo por ambiente (VM6 en producción, VM7 en QA; R10), c
 
 Con `earliest`, o con un grupo nuevo (`auto.offset.reset = earliest`), el servicio vuelve a procesar hasta 7 días de eventos: los consumidores deben ser idempotentes (DD 5.23) y Communication necesita su límite de 512 MiB (sección 5.6).
 
-> **Pendiente de probar en QA.** La lectura (grupos, lag y retención) se ejecutó en QA y producción el 26 de octubre. El reinicio de offsets todavía no se ha probado de punta a punta: exige bajar un servicio de QA y aplicar el reinicio, algo que debe correr DevOps con el equipo avisado.
+> **Probado en QA (27 de octubre de 2026, SCRUM-555).** El reinicio se ensayó con un grupo de prueba (`prueba-offsets-scrum555`) creado leyendo un mensaje de `matching.technician-assigned`, para no bajar ningún servicio de QA: un grupo sin miembros activos es lo que Kafka exige y es el estado en que deja a un grupo el paso 1. Resultado: sin `--limit`, el playbook se niega en vm6 y vm7 antes de reiniciar nada; con `--limit vm7`, la simulación (`--dry-run`) muestra la partición 2 pasando del offset 1 al 0 y no cambia nada; con `-e ejecutar=si` el offset queda en 0 (confirmado con `--describe`). El grupo de prueba se borró al terminar (los 6 grupos de QA quedaron como antes). **No se ejercitó** el paso 1 (`kubectl scale ... --replicas=0`) sobre un servicio real ni el reinicio de un grupo de un servicio: hacerlo con `communication-service` descartaría sus eventos pendientes, que conviene diagnosticar antes (ver la lectura del 27 de octubre más arriba).
 
 ## 6. CI/CD
 
@@ -1179,3 +1179,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 3.9 | 25 oct 2026 | Gateway propio en cada ambiente (ADR-028, SCRUM-573, revisión del Sprint 4): un Nginx en VM3 (producción) y otro en VM2 (QA), cada uno con su panel y su despliegue, y VM1 como entrada TLS que reenvía por nombre. Cambian la vista general (2.1, diagrama incluido), el inventario (3.2), las conexiones y reglas de firewall del puerto 8080 (3.3 y 10.3), los playbooks (5.2 y 5.5, con `verificar-gateway-ambiente.yml`), el runner (6.3), TLS (10.1), los nombres lógicos (11.2) y el orden de despliegue. Aplicado en QA y producción el 25 de octubre. |
 | 4.0 | 26 oct 2026 | Revisión de cierre del Sprint 5 (SCRUM-552 a 555 y SCRUM-506): sección 4.3 con el estado real de QA y producción; sección 5.6 corregida con los límites de los manifiestos (384 MiB) y con la medición de VM3; sección 5.10 con la operación de Kafka (retención, grupos, lag y reinicio de offsets) y el playbook `operar-kafka-grupos.yml`; sección 10.5 con el estado del cifrado en tránsito y en reposo. |
 | 4.1 | 26 oct 2026 | AC2-E5 aclarado (secciones 3.2, 5.6 y 13): se mide en QA con los 8 servicios y los límites de cada pod, no contra 6,5 GiB en VM3, como dice el SAD desde la versión 2.15; los 4,6 GiB quedan como proyección de capacidad de VM3. Se registra que el reinicio de Communication en QA no fue `OOMKilled`. |
+| 4.2 | 27 oct 2026 | Operación de Kafka (SCRUM-555): el reinicio de offsets se probó en QA con un grupo de prueba (simulación, aplicación, verificación y borrado) y la sección 5.10 lo registra; el lag de `communication-service` no es fijo sino creciente (50 mensajes el 27 de octubre) y apunta a que no consume los eventos `matching.*`. |
