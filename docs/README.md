@@ -17,6 +17,8 @@ Este archivo es el punto de entrada a la documentación formal del proyecto.
 | `Documento Politicas y Herramientas.md` | GitFlow, colaboración, herramientas, calidad y uso de IA. |
 | `testing/TD.md` | Documento de Pruebas (TD V1): Estrategia de pruebas automatizadas, compuertas de calidad, RTM y catálogo de pruebas. |
 | `testing/evidencias-sprint4.md` | Evidencias del Sprint 4 en QA (SCRUM-449): versiones y pipelines, pruebas de sistema, humo de los frontends, evidencias por historia y capturas. Insumo del informe (SCRUM-394) y la presentación (SCRUM-429). |
+| `testing/inventario-funcionalidades-por-usuario.md` | Inventario de 78 funcionalidades por tipo de usuario, con su RF y su HU (SCRUM-560). |
+| `testing/avance-real-sprint5.md` | Avance real del producto con fórmula, fecha de corte y clasificación de cada funcionalidad con su evidencia (SCRUM-562). |
 
 ## Documento histórico
 
