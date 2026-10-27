@@ -1,0 +1,97 @@
+# Solo lectura (SCRUM-573): comprueba desde VM1 el gateway de cada ambiente y la entrada. Se corre antes de poner
+# gateway_propio.<ambiente> en true (el gateway del ambiente ya responde, aunque la entrada aún no le reenvíe) y después, para
+# confirmar que la entrada por nombre y por IP da lo mismo que el gateway.
+# Sin credenciales: pide /v1/catalog/categories sin token. Un servicio vivo contesta 401 (o 200/403); 404, 502 y 504 son un fallo
+# de ruta. El canal del cliente (X-Channel-Id) lo cubren humo-frontends.yml y pruebas-sistema.yml, que entran por la entrada.
+#   ./ap playbooks/verificar-gateway-ambiente.yml
+- name: Verificar el gateway de cada ambiente
+  hosts: gateway
+  gather_facts: false
+  become: false
+  vars:
+    ruta_api: /api/v1/catalog/categories
+    ambientes:
+      - { nombre: qa, ip: "{{ ip.vm2 }}", host: "{{ gateway_hosts.qa }}" }
+      - { nombre: produccion, ip: "{{ ip.vm3 }}", host: "{{ gateway_hosts.produccion }}" }
+    aceptables: [200, 401, 403]
+  tasks:
+    - name: Salud del gateway del ambiente
+      ansible.builtin.uri:
+        url: "http://{{ item.ip }}:{{ gateway_puerto }}/gateway-salud"
+        status_code: [200]
+      loop: "{{ ambientes }}"
+      loop_control: { label: "{{ item.nombre }}" }
+
+    - name: API por el gateway del ambiente
+      ansible.builtin.uri:
+        url: "http://{{ item.ip }}:{{ gateway_puerto }}{{ ruta_api }}"
+        headers: { Host: "{{ item.host }}" }
+        status_code: [200, 401, 403, 404, 502, 503, 504]
+      loop: "{{ ambientes }}"
+      loop_control: { label: "{{ item.nombre }}" }
+      register: por_gateway
+
+    - name: API directo en el Traefik del ambiente (referencia)
+      ansible.builtin.uri:
+        url: "http://{{ item.ip }}:30080{{ ruta_api | regex_replace('^/api', '') }}"
+        status_code: [200, 401, 403, 404, 502, 503, 504]
+      loop: "{{ ambientes }}"
+      loop_control: { label: "{{ item.nombre }}" }
+      register: por_traefik
+
+    - name: Panel por el gateway del ambiente
+      ansible.builtin.uri:
+        url: "http://{{ item.ip }}:{{ gateway_puerto }}/"
+        headers: { Host: "{{ item.host }}" }
+        return_content: true
+      loop: "{{ ambientes }}"
+      loop_control: { label: "{{ item.nombre }}" }
+      register: panel
+
+    - name: Entrada de VM1 por nombre (como la abre una persona, con -k por el certificado autofirmado)
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}{{ ruta_api }}"
+        headers: { Host: "{{ item.host }}" }
+        validate_certs: false
+        status_code: [200, 401, 403, 404, 502, 503, 504]
+      loop: "{{ ambientes }}"
+      loop_control: { label: "{{ item.nombre }}" }
+      register: por_entrada
+
+    - name: Entrada de VM1 por IP, sin nombre (como la app móvil de QA, con IP y Host de QA)
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}{{ ruta_api }}"
+        headers: { Host: "{{ gateway_hosts.qa }}" }
+        validate_certs: false
+        status_code: [200, 401, 403, 404, 502, 503, 504]
+      register: por_ip
+
+    - name: Resultado
+      ansible.builtin.debug:
+        msg: >-
+          {{ item.nombre }}: gateway {{ por_gateway.results[idx].status }}, Traefik {{ por_traefik.results[idx].status }},
+          entrada {{ por_entrada.results[idx].status }}; panel {{ panel.results[idx].status }}
+          ({{ 'PROVISIONAL' if 'pendiente del primer build' in panel.results[idx].content else 'build real' }})
+      loop: "{{ ambientes }}"
+      loop_control: { label: "{{ item.nombre }}", index_var: idx }
+
+    - name: El gateway contesta lo mismo que Traefik y el panel responde
+      ansible.builtin.assert:
+        that:
+          - por_gateway.results[idx].status in aceptables
+          - por_gateway.results[idx].status == por_traefik.results[idx].status
+          - panel.results[idx].status == 200
+        fail_msg: "{{ item.nombre }}: el gateway no contesta como Traefik o el panel no responde."
+        quiet: true
+      loop: "{{ ambientes }}"
+      loop_control: { label: "{{ item.nombre }}", index_var: idx }
+
+    - name: La entrada contesta lo mismo que el gateway (si falla, la entrada aún no reenvía a ese ambiente o lo rompe)
+      ansible.builtin.assert:
+        that:
+          - por_entrada.results[idx].status == por_gateway.results[idx].status
+          - por_ip.status == por_gateway.results[0].status
+        fail_msg: "La entrada de VM1 contesta distinto que el gateway de {{ item.nombre }}."
+        quiet: true
+      loop: "{{ ambientes }}"
+      loop_control: { label: "{{ item.nombre }}", index_var: idx }

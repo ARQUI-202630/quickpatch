@@ -11,6 +11,7 @@ Este archivo es el punto de entrada a la documentación formal del proyecto.
 | `SRS.md` | Requisitos funcionales, no funcionales, interfaces y alcance. |
 | `SAD.md` | Arquitectura, drivers, killers, atributos de calidad, escenarios y ADR. |
 | `SDD.md` | Diseño por vistas y relación entre componentes, procesos y despliegue. |
+| `architecture/mapa-arquitectonico.md` | Mapa de la arquitectura documentada frente a la implementada, con la decisión de cada diferencia (SCRUM-570). |
 | `design/DD.md` | Documento de Diseño vigente temporal: datos y contratos. |
 | `Documento de Infraestructura.md` | Topología, ambientes, despliegue, observabilidad y operación. |
 | `Documento Politicas y Herramientas.md` | GitFlow, colaboración, herramientas, calidad y uso de IA. |

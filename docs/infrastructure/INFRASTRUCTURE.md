@@ -1,9 +1,9 @@
-# Documento de Infraestructura V3 — QUICKPATCH
+# Documento de Infraestructura V4 — QUICKPATCH
 
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 3.8 |
+| **Versión** | 4.5 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -46,7 +46,7 @@ Este documento describe cómo se construye, despliega y opera la infraestructura
 
 Qué corre en cada VM, cómo se conectan y por dónde entra el tráfico. El inventario está en la sección 3 y las reglas exactas de firewall en la sección 10.
 
-> **Reparto del ADR-022, aplicado el 7 de octubre de 2026, y servicios desplegados desde el 8 de octubre.** Producción son VM3, VM4 y VM6; QA son VM2, VM5 y VM7; VM1 es de herramientas. En los dos k3s corren Identity, Catalog, ServiceRequest y Matching; Actors, Ranking, Payments y Communication esperan su manifiesto (sección 5.3). El API Gateway y el panel todavía los sirve VM1, hasta que tengan imagen para correr en el k3s (sección 3.2).
+> **Reparto del ADR-022, aplicado el 7 de octubre de 2026, y servicios desplegados desde el 8 de octubre.** Producción son VM3, VM4 y VM6; QA son VM2, VM5 y VM7; VM1 es de herramientas. En los dos k3s corren Identity, Catalog, ServiceRequest y Matching; Actors, Ranking, Payments y Communication esperan su manifiesto (sección 5.3). Desde el 25 de octubre de 2026 (ADR-028) cada ambiente tiene su propio gateway Nginx con su panel, en VM3 y en VM2; VM1 es solo la entrada TLS (sección 3.2).
 
 ```mermaid
 flowchart TB
@@ -57,19 +57,18 @@ flowchart TB
     subgraph LAB["Red del laboratorio 10.43.x.x"]
         subgraph VM1["VM1 · Herramientas"]
             direction LR
-            NGX["Nginx :443<br/>elige destino por nombre"]
-            PANEL["Panel Angular"]
+            NGX["Nginx :443 · entrada TLS<br/>reenvía por nombre"]
             RUN["Runner de GitHub<br/>kubectl y k6"]
             OBS["Prometheus, Loki<br/>y Grafana :3000"]
         end
         subgraph PROD["Producción"]
             subgraph VM3["VM3 · k3s, un nodo"]
                 direction LR
-                TRF["Traefik :30080"] --> MS["Microservicios<br/>(4 de 8 desplegados)"]
+                GWP["Nginx gateway :8080<br/>y panel de producción"] --> TRF["Traefik :30080"] --> MS["Microservicios<br/>(4 de 8 desplegados)"]
             end
             PG[("VM4 · PostgreSQL + PostGIS :5432<br/>una base por servicio")]
             RD[("VM4 · Redis :6379")]
-            NOM[("VM4 · Nominatim :8088<br/>mapa de Bogotá (pendiente)")]
+            NOM[("VM4 · Nominatim :8088<br/>mapa de Bogotá (ADR-024)")]
             subgraph VM6["VM6 · Mensajería y almacenamiento"]
                 direction LR
                 KF["Kafka :9092"]
@@ -79,7 +78,7 @@ flowchart TB
         subgraph QAENV["QA (ADR-015 y ADR-022)"]
             subgraph VM2["VM2 · k3s, un nodo"]
                 direction LR
-                TRFQ["Traefik :30080"] --> MSQ["Microservicios<br/>(4 de 8 desplegados)"]
+                GWQ["Nginx gateway :8080<br/>y panel de QA"] --> TRFQ["Traefik :30080"] --> MSQ["Microservicios<br/>(4 de 8 desplegados)"]
             end
             PGQ[("VM5 · PostgreSQL + Redis")]
             NOMQ[("VM5 · Nominatim :8088<br/>mapa de Bogotá (ADR-024)")]
@@ -92,9 +91,8 @@ flowchart TB
     end
 
     EQ -->|"443"| PERIM -->|"443"| NGX
-    NGX --- PANEL
-    NGX -->|"quickpatch.internal /api/"| TRF
-    NGX -->|"qa.quickpatch.internal"| TRFQ
+    NGX -->|"quickpatch.internal"| GWP
+    NGX -->|"qa.quickpatch.internal"| GWQ
     NGX -->|"grafana.quickpatch.internal"| OBS
     MS --> PG
     MS --> RD
@@ -108,13 +106,15 @@ flowchart TB
     MSQ -->|"evidencias"| GARQ
     RUN -->|"despliegue :6443"| TRF
     RUN -->|"despliegue :6443 y pruebas"| TRFQ
+    RUN -.->|"panel por SSH :22"| GWP
+    RUN -.->|"panel por SSH :22"| GWQ
     GH <-.->|"trabajos, conexión saliente"| RUN
     MSQ -. "bloqueado" .-x PG
 ```
 
-- **Una sola entrada.** Desde la VPN, el firewall de la universidad solo deja pasar el 443 de VM1 (sección 10.2). El Nginx de VM1 reenvía según el nombre: `quickpatch.internal` a producción (el panel, servido en la misma VM1, y `/api/` al Traefik de VM3), `qa.quickpatch.internal` al Traefik de VM2 y `grafana.quickpatch.internal` a Grafana, en VM1.
-- **Canal en tiempo real (SCRUM-451, ADR-023).** El WebSocket de seguimiento entra por `https://<ambiente>/api/v1/realtime`: el Nginx de VM1 lo reenvía al Ingress `/v1/realtime` de Communication en el k3s del ambiente (quita `/api`, como el resto de la API). La `location` fija `proxy_read_timeout` y `proxy_send_timeout` en 75 s, porque Communication envía un ping cada 30 s (`Realtime__KeepAliveSeconds`) y el valor por defecto de Nginx (60 s) cortaría una conexión inactiva, y desactiva `proxy_buffering` para que las tramas lleguen de inmediato. `Upgrade` y `Connection` los hereda del bloque `http`. Communication corre con una réplica.
-- **Canal del cliente (`X-Channel-Id`, DD 10.3, SCRUM-388).** El Nginx de VM1 fija `X-Channel-Id` en cada petición y descarta el que mande el cliente. Un `map` sobre `Origin` y `Referer` da `quickpatch-web` cuando vienen del panel de producción o de QA, y `quickpatch-mobile` en cualquier otro caso. Cada servicio traduce el canal a tenant con `Channel__Tenants__*` en su ConfigMap (Identity y Catalog). Límite: un cliente que no sea navegador puede escribir `Origin` y `Referer`; con un solo tenant los dos canales dan el mismo tenant, y con más de uno hace falta DEP-09 (DD 14.3).
+- **Una sola entrada y un gateway por ambiente (ADR-028).** Desde la VPN, el firewall de la universidad solo deja pasar el 443 de VM1 (sección 10.2). El Nginx de VM1 termina el HTTPS y reenvía según el nombre: `quickpatch.internal` al Nginx del gateway de producción (VM3, puerto 8080), `qa.quickpatch.internal` y `beta.qa.quickpatch.internal` al de QA (VM2, puerto 8080) y `grafana.quickpatch.internal` a Grafana, en VM1. Cada gateway sirve el panel de su ambiente y reenvía `/api/` al Traefik de su propio k3s; solo VM1 llega a su puerto 8080. VM1 sigue siendo el único camino y el punto único de falla de los dos ambientes (R9, R10).
+- **Canal en tiempo real (SCRUM-451, ADR-023).** El WebSocket de seguimiento entra por `https://<ambiente>/api/v1/realtime`: la entrada de VM1 lo reenvía al gateway del ambiente, que lo envía al Ingress `/v1/realtime` de Communication en el k3s (quita `/api`, como el resto de la API). La `location` de cada uno de los dos Nginx fija `proxy_read_timeout` y `proxy_send_timeout` en 75 s, porque Communication envía un ping cada 30 s (`Realtime__KeepAliveSeconds`) y el valor por defecto de Nginx (60 s) cortaría una conexión inactiva, y desactiva `proxy_buffering` para que las tramas lleguen de inmediato. `Upgrade` y `Connection` los hereda del bloque `http`. Communication corre con una réplica.
+- **Canal del cliente (`X-Channel-Id`, DD 10.3, SCRUM-388).** El Nginx del gateway de cada ambiente (VM3 o VM2) fija `X-Channel-Id` en cada petición y descarta el que mande el cliente o el que ponga VM1, que no lo toca. Un `map` sobre `Origin` y `Referer` da `quickpatch-web` cuando vienen del panel de producción o de QA, y `quickpatch-mobile` en cualquier otro caso. Cada servicio traduce el canal a tenant con `Channel__Tenants__*` en su ConfigMap (Identity y Catalog). Límite: un cliente que no sea navegador puede escribir `Origin` y `Referer`; con un solo tenant los dos canales dan el mismo tenant, y con más de uno hace falta DEP-09 (DD 14.3).
 - **Producción** son VM3, VM4 y VM6. Los microservicios corren en el k3s de VM3 (hoy Identity, Catalog, ServiceRequest y Matching) y usan PostgreSQL y Redis (VM4), y Kafka y Garage (VM6).
 - **QA** son VM2, VM5 y VM7, con la misma forma que producción y datos y secretos propios. No puede conectarse a los servicios de producción.
 - **El runner de VM1** despliega en los dos k3s y corre las pruebas de sistema contra QA. Se conecta hacia GitHub para recibir trabajos; GitHub nunca entra a la red del laboratorio.
@@ -123,7 +123,7 @@ flowchart TB
 ### 2.2 Principios de la arquitectura de despliegue
 
 - **Sin servicios administrados en la nube (R5, R10):** todo el sistema corre en las 7 VMs propias asignadas por el laboratorio de la Javeriana; no hay bases de datos, colas ni cómputo administrado por un proveedor cloud.
-- **Cada VM tiene un rol (ADR-022):** VM1 es de herramientas y combina el gateway, el panel Angular, el runner de despliegue y la observabilidad de los dos ambientes; cada ambiente tiene una VM de aplicación en k3s (VM3 en producción, VM2 en QA, ADR-011), una de datos con PostgreSQL y Redis (VM4 y VM5) y una de mensajería y almacenamiento con Kafka y Garage (VM6 y VM7, ADR-016).
+- **Cada VM tiene un rol (ADR-022):** VM1 es de herramientas y combina la entrada TLS, el runner de despliegue y la observabilidad de los dos ambientes; cada ambiente tiene una VM de aplicación en k3s (VM3 en producción, VM2 en QA, ADR-011) con su propio gateway Nginx y su panel (ADR-028), una de datos con PostgreSQL y Redis (VM4 y VM5) y una de mensajería y almacenamiento con Kafka y Garage (VM6 y VM7, ADR-016).
 - **Kubernetes solo donde corren los microservicios:** VM3 (producción) y VM2 (QA) usan k3s, porque los servicios necesitan rolling updates y auto-healing independientes. El resto de componentes usa Docker Compose por simplicidad operativa (sección 5).
 - **Automatizado, no manual:** el aprovisionamiento de las 7 VMs y el despliegue de cada componente se hacen con Ansible (sección 5), no a mano, dado que una sola persona (DevOps) administra las 7 máquinas (SAD, sección 5.3).
 - **Red cerrada por defecto:** ninguna VM acepta tráfico entrante salvo las rutas explícitas de la sección 10.3; el único punto de entrada desde fuera de la red del laboratorio es VM1.
@@ -137,8 +137,8 @@ flowchart TB
 
 | Punto | Mecanismo | Alcance |
 |---|---|---|
-| Entrada (VM1) | Nginx enruta por nombre (producción, QA, Grafana) y por ruta (`/api/` hacia VM3) | Una sola instancia: enruta, pero no reparte entre varios servidores |
-| VM1 → VM3 y VM2 | Nginx envía la API al Traefik de k3s, que escucha en la red del host (puerto 30080) | Un solo nodo por ambiente |
+| Entrada (VM1) | Nginx termina el HTTPS y enruta por nombre (producción, QA, Grafana) hacia el gateway de cada ambiente | Una sola instancia: enruta, pero no reparte entre varios servidores |
+| Gateway de cada ambiente (VM3 y VM2) | El Nginx de la propia VM envía la API al Traefik de k3s, que escucha en la red del host (puerto 30080) | Un solo nodo por ambiente |
 | Dentro de k3s | Cada servicio de Kubernetes reparte las peticiones entre las réplicas (pods) de su Deployment | **Escalado horizontal real**, limitado por la RAM de VM3 (sección 5.6) |
 | Eventos (Kafka) | Las réplicas de un consumidor comparten las particiones de un tópico (grupo de consumidores) | Reparte el procesamiento de eventos, por ejemplo del Matching bajo pico (AC2-E4) |
 
@@ -160,7 +160,7 @@ k3s trae `metrics-server`, así que un servicio puede escalar sus réplicas auto
 - **Reinicio automático de contenedores:** los servicios en Docker Compose (PostgreSQL, Redis, Kafka, Garage, observabilidad y Nginx) usan `restart: unless-stopped`, así que vuelven solos después de una caída o de un reinicio de la VM. El runner de VM1 también corre como servicio del sistema.
 - **Recuperación por código:** cualquier VM se reconstruye con sus playbooks de Ansible, en la ventana de 12 a 24 horas aceptada (R7, sección 9.4).
 
-**Por qué no hay alta disponibilidad entre máquinas:** exigiría duplicar cada componente en otra VM (dos gateways, un clúster de k3s de varios nodos, réplicas de PostgreSQL y Kafka), y el laboratorio solo asigna 7 VMs, que ya están ocupadas (R10). Sin operación 24/7 (R7), una caída se atiende en horario del equipo, lo que el SAD acepta en el escenario AC5-E1.
+**Por qué no hay alta disponibilidad entre máquinas:** exigiría duplicar cada componente en otra VM (dos entradas desde la VPN, un clúster de k3s de varios nodos, réplicas de PostgreSQL y Kafka), y el laboratorio solo asigna 7 VMs, que ya están ocupadas (R10). Sin operación 24/7 (R7), una caída se atiende en horario del equipo, lo que el SAD acepta en el escenario AC5-E1.
 
 ---
 
@@ -207,11 +207,11 @@ flowchart LR
 
 | VM | Ambiente | Rol | IP | Software del proyecto |
 |---|---|---|---|---|
-| VM1 | Herramientas | Entrada y herramientas | `10.43.100.168` | Nginx :443 por nombre (`quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal`) y el panel Angular; runner de GitHub, kubectl y k6; Prometheus, Loki y Grafana de los dos ambientes |
-| VM3 | Producción | Aplicación | `10.43.98.205` | k3s de un nodo con Identity, Catalog, ServiceRequest y Matching desplegados desde el 8 de octubre; los otros cuatro microservicios, el API Gateway y el panel pasarán aquí al tener manifiesto o imagen |
+| VM1 | Herramientas | Entrada y herramientas | `10.43.100.168` | Nginx :443 como entrada TLS: reenvía por nombre (`quickpatch.internal` al gateway de VM3, `qa.quickpatch.internal` al de VM2) y atiende `grafana.quickpatch.internal`; runner de GitHub, kubectl y k6; Prometheus, Loki y Grafana de los dos ambientes |
+| VM3 | Producción | Aplicación | `10.43.98.205` | k3s de un nodo con Identity, Catalog, ServiceRequest y Matching desplegados desde el 8 de octubre; los otros cuatro microservicios pasarán aquí al tener manifiesto o imagen. Fuera de k3s, el Nginx del gateway de producción (contenedor en la red del host, puerto 8080, solo desde VM1) con el panel Angular en `/opt/quickpatch/gateway/panel` (ADR-028) |
 | VM4 | Producción | Datos | `10.43.98.209` | PostgreSQL + PostGIS (una base por servicio), respaldo diario y Redis |
 | VM6 | Producción | Mensajería y almacenamiento | `10.43.99.12` | Kafka y Kafka UI (`quickpatch-kafka`); Garage (evidencias y respaldos) |
-| VM2 | QA | Aplicación | `10.43.98.15` | k3s de un nodo, igual que VM3, con los mismos cuatro servicios |
+| VM2 | QA | Aplicación | `10.43.98.15` | k3s de un nodo, igual que VM3, con los mismos cuatro servicios y, fuera de k3s, el Nginx del gateway de QA (puerto 8080, solo desde VM1) con el panel de QA (ADR-028) |
 | VM5 | QA | Datos | `10.43.98.29` | PostgreSQL + PostGIS y Redis, igual que VM4, sin respaldo |
 | VM7 | QA | Mensajería y almacenamiento | `10.43.99.8` | Kafka y Garage, igual que VM6, sin Kafka UI |
 
@@ -228,7 +228,7 @@ Las 7 VMs corren `node_exporter` y Promtail (unos 40 MiB entre los dos).
 | Garage | `dxflrs/garage:v2.4.1` | VM6 y VM7 |
 | AWS CLI (respaldo de PostgreSQL) | `amazon/aws-cli:2.37.9` | VM4 |
 | Prometheus, Loki y Grafana | `v2.55.1`, `3.3.2` y `11.4.0` | VM1 |
-| Nginx | `nginx:1.27-alpine` | VM1 |
+| Nginx | `nginx:1.27-alpine` | VM1, VM2 y VM3 |
 | `node_exporter` y Promtail | `v1.8.2` y `3.3.2` | Las 7 VMs |
 | Runner de GitHub (`vm1-despliegue`) | 2.337.0 | VM1 |
 
@@ -244,7 +244,7 @@ Las 7 VMs corren `node_exporter` y Promtail (unos 40 MiB entre los dos).
 | VM6 | 3,8 GiB | 20 GB | |
 | VM7 | 3,4 GiB | 19 GB | |
 
-Después de los despliegues del 8 de octubre, VM2 quedó en 32% de la RAM tras la prueba de carga completa y VM3, con los cuatro servicios de producción, en 29%, sin reinicios de pods ni `OOMKilled`. **Falta medir VM3 con los 8 servicios**, que es lo que decide el umbral de la sección 5.6.
+Después de los despliegues del 8 de octubre, VM2 quedó en 32% de la RAM tras la prueba de carga completa y VM3, con los cuatro servicios de producción, en 29%, sin reinicios de pods ni `OOMKilled`. **Falta medir con los 8 servicios**: el escenario AC2-E5 se mide en QA contra los límites de cada pod y la capacidad de VM3 se vigila aparte (sección 5.6).
 
 **Consumo de los pods el 12 de octubre** (`kubectl top pods`, cuatro días después del despliegue, cada `Deployment` con `1/1` disponible):
 
@@ -257,9 +257,9 @@ Después de los despliegues del 8 de octubre, VM2 quedó en 32% de la RAM tras l
 
 Los servicios .NET usan entre 105 y 158 MiB frente al límite de 256 MiB, y Matching 232-251 MiB frente a 1 GiB. Es consumo en reposo, sin carga.
 
-**Pendiente del reparto:** el API Gateway y el panel todavía no corren en el k3s porque aún no tienen imagen. Mientras tanto los sirve el Nginx de VM1; cuando existan, pasan a VM3 (producción) y VM2 (QA) y el proxy de VM1 cambia (paso 4 del ADR-022).
+**Gateway y panel por ambiente (ADR-028, 25 de octubre de 2026).** El API Gateway y el panel no corren en el k3s porque aún no tienen imagen. Los sirve un Nginx por ambiente, en VM3 (producción) y en VM2 (QA), como contenedor de Docker en la red del host (puerto 8080, abierto solo a VM1), con la misma plantilla (`gateway-ambiente-nginx.conf.j2`) y la carpeta `/opt/quickpatch/gateway/panel`. VM1 queda como entrada TLS (`entrada-nginx.conf.j2`) y reenvía por nombre. Reemplaza lo que sigue, que se conserva como historia.
 
-**Decisión del 12 de octubre de 2026 (SCRUM-446): el panel de QA se sirve desde VM1, como el de producción.** El ADR-022 ubica el panel en el k3s de cada ambiente, pero ese destino no existe todavía en ninguno: el panel de producción se publica desde el runner en `/opt/quickpatch/gateway/panel` y lo sirve el Nginx de VM1. El primer despliegue del panel de QA (rama `release/0.3.0` de `quickpatch-web`) falló porque el workflow copiaba el build por SSH a una carpeta de VM2 que nadie sirve, y el bloque de QA del Nginx enviaba `/` al Traefik de VM2, que responde 404.
+**Decisión del 12 de octubre de 2026 (SCRUM-446), reemplazada por ADR-028 el 25 de octubre: el panel de QA se sirve desde VM1, como el de producción.** El ADR-022 ubica el panel en el k3s de cada ambiente, pero ese destino no existe todavía en ninguno: el panel de producción se publica desde el runner en `/opt/quickpatch/gateway/panel` y lo sirve el Nginx de VM1. El primer despliegue del panel de QA (rama `release/0.3.0` de `quickpatch-web`) falló porque el workflow copiaba el build por SSH a una carpeta de VM2 que nadie sirve, y el bloque de QA del Nginx enviaba `/` al Traefik de VM2, que responde 404.
 
 | Opción | Qué implica | Decisión |
 |---|---|---|
@@ -268,6 +268,8 @@ Los servicios .NET usan entre 105 y 158 MiB frente al límite de 256 MiB, y Matc
 
 Razones de la B: QA ensaya lo que producción hace de verdad, no requiere imagen ni consume RAM de k3s, el cambio se reduce a la plantilla de Nginx (`quickpatch-api-gateway`), el playbook `deploy-gateway.yml` y el workflow de `quickpatch-web`, y se revierte con una línea. Consecuencias: el panel de QA y el de producción comparten el Nginx de VM1, así que aplicar `deploy-gateway.yml` reinicia la entrada de los dos ambientes (corte de segundos; la configuración se valida con `nginx -t` antes de escribirse); y el panel de QA depende de VM1, no de VM2. Cuando el panel tenga imagen y pase a los k3s, se hace en los dos ambientes a la vez (paso 4 del ADR-022) y esta decisión se reemplaza.
 
+**Cómo quedó (ADR-028, SCRUM-573).** El profesor observó en el Sprint 4 que producción y QA parecían compartir gateway. Cada ambiente tiene ahora su propio Nginx de gateway, con su configuración, su panel y su despliegue (`deploy-gateway.yml --limit vm2` o `--limit vm3`), y VM1 solo termina el HTTPS y reenvía por nombre, para no cambiar el certificado ni la entrada por IP de la app móvil. `gateway_propio.qa` y `gateway_propio.produccion` (inventario) permiten cambiar un ambiente a la vez y volver atrás; `verificar-gateway-ambiente.yml` compara el gateway, Traefik, el panel y la entrada. El panel de cada ambiente depende ahora de su propia VM (VM2 o VM3) y no de VM1. Aplicado el 25 de octubre en QA y en producción. Límite: aplicar `deploy-gateway.yml` en VM1 reinicia la entrada de los dos ambientes (corte de segundos); cambiar el gateway de un ambiente solo afecta a ese ambiente.
+
 ### 3.3 Conexiones permitidas
 
 Las reglas exactas están en `firewall.yml` (sección 10.3). Ninguna VM de QA acepta conexiones de una VM de producción ni al revés.
@@ -275,8 +277,8 @@ Las reglas exactas están en `firewall.yml` (sección 10.3). Ninguna VM de QA ac
 | Origen | Destino | Puertos | Para qué |
 |---|---|---|---|
 | VPN de la universidad | VM1 | 443 | Única entrada (R9) |
-| VM1 | VM3 y VM2 | 30080, 6443 | Proxy hacia el Traefik de cada ambiente; despliegue con kubectl |
-| VM3 | VM4 | 5432, 6379, 8088 | Servicios de producción → PostgreSQL, Redis y Nominatim (el 8088, pendiente de desplegar) |
+| VM1 | VM3 y VM2 | 8080, 30080, 6443, 22 | Entrada hacia el gateway Nginx de cada ambiente (8080); comprobaciones contra Traefik (30080); despliegue con kubectl (6443); publicación del panel por SSH con la llave del runner (22) |
+| VM3 | VM4 | 5432, 6379, 8088 | Servicios de producción → PostgreSQL, Redis y Nominatim |
 | VM3 | VM6 | 9092, 9000 | Servicios de producción → Kafka y Garage (evidencias) |
 | VM4 | VM6 | 9000 | Respaldo diario de PostgreSQL a Garage |
 | VM2 | VM5 | 5432, 6379, 8088 | Servicios de QA → PostgreSQL, Redis y Nominatim |
@@ -333,6 +335,33 @@ El toolchain está fijado por `docs/governance/TOOLCHAIN.md`: .NET SDK 10.0.401,
 
 ---
 
+### 4.3 Estado real de QA y de producción (medido el 26 de octubre de 2026)
+
+Foto de lo que corre hoy, tomada con comandos de solo lectura desde VM1 (SCRUM-553). Sirve para saber qué falta en producción antes de promover el MVP (SCRUM-518).
+
+| | Producción (VM3, VM4, VM6) | QA (VM2, VM5, VM7) |
+|---|---|---|
+| Microservicios en k3s | 4: Catalog, Identity, Matching y ServiceRequest | 6: los 4 anteriores, Communication y Payments |
+| Pods | 4 de 4 en `1/1 Running`, 0 reinicios | 6 de 6 en `1/1 Running`; Communication con 1 reinicio |
+| `Secret` y `ConfigMap` | Los de los 4 servicios, más los `Secret` de Payments y Communication (sin Deployment ni `ConfigMap`) | Los de los 6 servicios |
+| Ingress | Catalog, Identity y ServiceRequest | Catalog, Communication, Identity, Matching y ServiceRequest |
+| Bases de PostgreSQL | Las 8 bases de servicio, incluidas `db_payments` y `db_communication`, con sus roles `*_migrator` y `*_app` | Las mismas 8 |
+| Nominatim | VM4: `nominatim` y `proxy`, en servicio desde el 27 de octubre (el mismo mapa que QA) | VM5: `nominatim` y `proxy`, en servicio |
+| Kafka | 2 topics (`catalog.category-changed` y `service-request.created`) y 2 grupos de consumidores | 17 topics y 6 grupos de consumidores |
+| Garage | En servicio (VM6) | En servicio (VM7) |
+| Panel Angular | Página provisional | Build real de `release/0.5.2` |
+| Gateway | Nginx propio en VM3 (ADR-028) | Nginx propio en VM2 (ADR-028) |
+
+Lo que falta para que producción iguale a QA:
+
+- **Payments y Communication.** Las bases, los roles y los `Secret` ya existen en producción (SCRUM-519, 27 de octubre); faltan sus `ConfigMap`, Ingress, Deployment y los topics de Kafka que usan, que llegan con la promoción (SCRUM-518).
+- **Actors y Ranking** no están desplegados en ningún ambiente: sus bases y roles existen, pero no tienen manifiesto (sección 5.3).
+- **Topics de Kafka** del incremento (15 más en producción) con `deploy-kafka.yml`.
+- **Panel real** de producción: el job de `quickpatch-web` en `main` no existe todavía.
+- **Respaldo previo y tope de pool** antes de migrar (SCRUM-521, secciones 5.7 y 9.2).
+
+Las imágenes de los servicios se etiquetan por el hash de su contenido (`t-<árbol>`, sección 6.1), así que la versión de cada servicio se ve en el release de su repositorio y no en el nombre de la imagen.
+
 ## 5. Contenedores y orquestación
 
 La infraestructura está implementada con Ansible en la carpeta `infrastructure/ansible/` del repositorio principal (antes el repositorio `quickpatch-infrastructure`, archivado en SCRUM-338) y aplicada en las 7 VMs. Ansible corre dentro de un contenedor de Docker (`ansible/Dockerfile` y el wrapper `ap`), así que todo el equipo usa la misma versión (ansible-core 2.18). Los playbooks pasan `ansible-lint` con el perfil `production` en el CI del repositorio principal (sección 6.1).
@@ -364,11 +393,14 @@ Los grupos `produccion` (VM3, VM4 y VM6) y `qa` (VM2, VM5 y VM7) reúnen los de 
 | `deploy-db.yml` | VM4 y VM5 | PostgreSQL + PostGIS, una base por servicio con sus roles `_migrator` y `_app` (DD 10.2); en VM4, el respaldo diario a Garage |
 | `aplicar-roles-db.yml` | VM4 y VM5 | Aplica el `db/roles.sql` de cada servicio (permisos de `_app`, `_outbox`, `identity_platform`); va después de las migraciones del servicio |
 | `deploy-cache.yml` | VM4 y VM5 | Redis con un usuario ACL por servicio, restringido a su prefijo |
-| `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá (ADR-024): contenedor con su propio PostgreSQL, proxy en la red del host en el 8088 y extracto copiado desde el controlador; solo QA por ahora |
+| `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá (ADR-024): contenedor con su propio PostgreSQL, proxy en la red del host en el 8088 y extracto copiado desde el controlador; en QA y en producción |
 | `deploy-kafka.yml` | VM6 y VM7 | Kafka en modo KRaft; en VM6, también Kafka UI |
+| `operar-kafka-grupos.yml` | VM6 y VM7 | Solo lectura por defecto: grupos de consumidores, su lag y la retención de cada topic. Con `-e grupo`, `-e topic` y `-e destino` simula el reinicio de offsets, y con `-e ejecutar=si` lo aplica (sección 5.10) |
+| `probar-restauracion-pg.yml` | VM4 | Baja de Garage la copia de un día, restaura las 8 bases en bases de prueba `prueba_restauracion_*` de la misma instancia, compara tablas y filas con las reales y borra todo. No toca las bases `db_*` (sección 9.3) |
 | `deploy-k3s.yml` | VM3 y VM2 | k3s de un nodo con los rangos de red de abajo, Traefik en la red del host (puertos 30080 y 30443), namespace `quickpatch` y kubeconfig para el runner |
-| `deploy-gateway.yml` | VM1 | Nginx con los tres nombres (sección 11), el panel Angular y el certificado |
-| `deploy-runner.yml` | VM1 | kubectl, k6, kubeconfig de QA y producción, llave SSH hacia VM2, la compuerta de producción `compuerta-qa` (RNF-08) y el runner de GitHub como servicio |
+| `deploy-gateway.yml` | VM3 y VM2; VM1 | En cada VM de aplicación, el Nginx del gateway del ambiente con su carpeta de panel; en VM1, la entrada TLS con los tres nombres (sección 11) y el certificado. `--limit vm2`, `--limit vm3` o `--limit vm1`; `-e copiar_panel=qa|produccion` copia el panel que sirve VM1 al gateway del ambiente |
+| `verificar-gateway-ambiente.yml` | VM1 | Solo lectura: compara, para cada ambiente, el gateway, Traefik, el panel y la entrada de VM1 por nombre y por IP |
+| `deploy-runner.yml` | VM1 | kubectl, k6, kubeconfig de QA y producción, llave SSH hacia VM2 y VM3 (`--tags llave-runner`), la compuerta de producción `compuerta-qa` (RNF-08) y el runner de GitHub como servicio |
 | `primer-despliegue-servicios.yml` | VM1, hacia el k3s de VM2 y VM3 | Crea el `Secret` de cada servicio desde el vault y aplica su `deploy/k8s/<servicio>.yaml` con la IP de Kafka del ambiente (los manifiestos salen de `develop` en QA y de `main` en producción, para no publicar en producción la configuración de `develop` sobre una imagen de `main`; `-e ref=` lo cambia); se puede repetir sin cambiar la imagen que corre. No forma parte de `site.yml` |
 | `reiniciar-servicio.yml` | VM1, hacia el k3s de VM2 y VM3 | `rollout restart` de un servicio y espera a que el pod nuevo esté listo; sirve para que lea un `Secret` o un `ConfigMap` que cambió. No forma parte de `site.yml` |
 | `migrar-adr-022.yml` | VM1 a VM7 | Pasa un ambiente del reparto anterior al del ADR-022, por fases con etiquetas; solo borra lo viejo con `-e confirmar_borrado=true` |
@@ -432,7 +464,7 @@ quickpatch/
 │   ├── plantillas/hooks/pre-push
 │   ├── CI-CD.md
 │   └── README.md
-├── apps/api-gateway/nginx/   gateway-nginx.conf.j2 (submódulo quickpatch-api-gateway)
+├── apps/api-gateway/nginx/   gateway-ambiente-nginx.conf.j2 y entrada-nginx.conf.j2 (submódulo quickpatch-api-gateway)
 └── apps/kafka/deploy/        deploy-kafka.yml y compose.yml.j2 (submódulo quickpatch-kafka)
 ```
 
@@ -446,11 +478,11 @@ VM3 tiene 4 vCPU y 11 GiB de RAM fijos (sección 3.1), compartidos entre el cont
 |---|---|---|---|
 | Sistema operativo, software del laboratorio y k3s (containerd, Traefik, CoreDNS) | — | — | 3,0 GiB medidos sin microservicios (sección 3.2): 2,5 del sistema y el laboratorio, 0,5 de k3s |
 | Matching Service (Spring Boot) | 1 / 1 vCPU | 1 / 1 GiB | Guaranteed |
-| Identity, Catalog, ServiceRequest y Payments (ASP.NET Core, c/u) | 50 m / 500 m | 64 MiB / 256 MiB; el init container de migraciones pide 160 MiB y llega a 384 MiB, solo mientras migra | Burstable |
-| Communication (ASP.NET Core) | 50 m / 500 m | 128 MiB / 512 MiB; el init container de migraciones, 64 MiB / 256 MiB | Burstable |
+| Identity, Catalog, ServiceRequest y Payments (ASP.NET Core, c/u) | 100 m / 500 m | 160 MiB / 384 MiB; el init container de migraciones pide 64 MiB y llega a 256 MiB, solo mientras migra | Burstable |
+| Communication (ASP.NET Core) | 50 m / 500 m | 128 MiB / 512 MiB (el manifiesto de `develop`; en QA corre con 192 MiB de request); el init container de migraciones, 64 MiB / 256 MiB | Burstable |
 | Actors y Ranking (ASP.NET Core) | Sin manifiesto | Sin manifiesto | — |
 
-Los límites históricos calculados para NestJS no se reutilizan para ASP.NET Core. Los manifiestos de Identity, Catalog, ServiceRequest y Payments fijan un límite de 256 MiB, el de Communication 512 MiB y el de Matching 1 GiB, con una réplica por servicio. Si Actors y Ranking adoptan 256 MiB, la suma de límites en VM3 es 3,0 + 1,0 + 6 × 0,25 + 0,5 = 6,0 GiB.
+Los límites históricos calculados para NestJS no se reutilizan para ASP.NET Core. Los manifiestos de Identity, Catalog, ServiceRequest y Payments fijan un límite de 384 MiB para el contenedor de la aplicación, el de Communication 512 MiB y el de Matching 1 GiB, con una réplica por servicio. Antes de la revisión del 26 de octubre de 2026 este documento decía 256 MiB para los servicios .NET (con una suma de 6,0 GiB); los manifiestos ya tenían 384 MiB. Con los límites reales, la suma en VM3 es 3,0 + 1,0 + 4 × 0,375 + 0,5 = 6,0 GiB para los 6 servicios que existen, y **6,5 GiB con Actors y Ranking en 256 MiB, o 6,75 GiB si adoptan 384 MiB** como los demás: queda en el umbral de 6,5 GiB o por encima. Es una cuenta de límites, el peor caso; el uso medido es mucho menor (más abajo).
 
 **Por qué Communication tiene 512 MiB (QA, 22 de octubre).** Con 256 MiB terminó en `OOMKilled`: al desplegar la 0.3.0, sus tres grupos de consumidores tenían cientos de miles de eventos pendientes de las pruebas de k6, que Kafka guarda 168 horas, y al ponerse al día el pod usaba unos 330 MiB con la CPU al tope. En reposo usa unos 56 MiB. Los grupos del buzón y del chat arrancan desde el principio del topic cuando no tienen offset guardado (`auto.offset.reset = earliest`) porque no pueden perder eventos: el chat necesita conocer las solicitudes que ya tienen técnico (DD 5.23). Eso solo pasa la primera vez que se crea el grupo. Si un grupo nuevo aparece en un ambiente con tráfico viejo de carga, se mueve a mano al final del topic (`kafka-consumer-groups --reset-offsets --to-latest`) antes de arrancar el servicio, como se hizo en QA.
 
@@ -465,7 +497,21 @@ pie title Presupuesto de RAM en VM3 (11 GiB)
     "Margen libre (rolling update / escalado)" : 5
 ```
 
-> **Pendiente: comprobar el umbral de 6,5 GiB con los 8 servicios.** El escenario AC2-E5 del SAD y el caso PRF-005 del Documento de Pruebas fijan un máximo de 6,5 GiB de RAM en VM3, calculado con 2 GiB para el sistema. Medido el 3 de octubre, el sistema usa 3,0 GiB (el software del laboratorio no estaba en la estimación). Con los límites actuales la suma es 6,0 GiB y cabe, pero Actors y Ranking todavía no corren. Si al sumar los otros cuatro no cabe, las salidas siguen siendo bajar el límite de los .NET o subir el umbral a 7,5 GiB (VM3 tiene 11,6 GiB).
+**Medición del 26 de octubre de 2026 (SCRUM-554).** Con `kubectl top` y `free`, sin carga de prueba en ese momento:
+
+| | VM3 (producción, 4 servicios) | VM2 (QA, 6 servicios) |
+|---|---|---|
+| RAM usada por la VM (`free`) | 4.194 MiB de 11.913 (35 %), 7.365 MiB disponibles | 4.551 MiB de 11.668 (39 %), 7.116 MiB disponibles |
+| RAM del nodo según `kubectl top` | 4.220 MiB (35 %) | 6.178 MiB (52 %) |
+| CPU del nodo | 816 m de 4.000 (20 %) | 478 m de 4.000 (11 %) |
+| Pods (RAM) | Catalog 127, Identity 110, Matching 235, ServiceRequest 123: 595 MiB | Catalog 149, Communication 124, Identity 155, Matching 285, Payments 135, ServiceRequest 248: 1.096 MiB |
+| Reinicios | 0 | 1 (Communication) |
+
+- **En VM3 los dos instrumentos coinciden** (4.194 y 4.220 MiB). En VM2 difieren en 1,6 GiB: `kubectl top` cuenta más memoria que `free`, y esa diferencia no se investigó.
+- **Sistema, laboratorio y k3s ocupan unos 3,5 GiB en VM3** (4.194 MiB menos los 595 de los pods), no los 3,0 GiB de la medición del 3 de octubre.
+- **Proyección para los 8 servicios en VM3**, no una medición: a los 4.194 MiB de hoy se suman Payments (135 MiB) y Communication (124 MiB) medidos en QA y, por no existir, 150 MiB supuestos para cada uno de Actors y Ranking. Resultan unos 4.750 MiB (4,6 GiB). Es una cifra de capacidad de VM3, no la medida de AC2-E5 (ver la nota siguiente).
+
+> **AC2-E5 se mide en QA, no contra 6,5 GiB en VM3.** Desde la versión 2.15 del SAD (5 de octubre), el escenario AC2-E5 se mide en el ambiente de QA con los 8 servicios y los mismos `requests` y `limits` de producción. La medida es 0 reinicios por `OOMKilled` y cada pod dentro de sus `limits`, con `kubectl` y Grafana durante la prueba de carga con k6, y el consumo de CPU y RAM queda como línea base. El SAD dice que el total de RAM **no** se compara con el presupuesto de VM3, porque en QA todos los componentes comparten una sola VM. Esta sección había tomado el umbral de 6,5 GiB de la tarea SCRUM-554 y del caso PRF-005 del Documento de Pruebas, que siguen escritos con la comparación anterior; el documento de pruebas y la tarea deben alinearse con el SAD. Lo medido el 26 de octubre queda como dato de **capacidad de VM3**: con 4 servicios el uso real es 4,1 GiB, la proyección con 8 es 4,6 GiB y la suma de límites llega a 6,5 o 6,75 GiB de los 11,6 GiB de la VM. **Falta para AC2-E5:** desplegar Actors y Ranking en QA (hoy hay 6 servicios) y repetir la carga con k6 mirando reinicios y consumo por pod. En QA, el 26 de octubre, ningún pod había sido terminado por `OOMKilled`: el único reinicio (Communication, 24 de octubre) fue un cierre limpio (`Completed`, código 0). Si en producción se quiere además un tope de RAM total para VM3, hay que decidirlo como requisito aparte (el equipo de arquitectura).
 
 **Por qué el Matching queda en "Guaranteed":** cuando VM3 entra en presión de memoria, Kubernetes desaloja primero los pods en QoS "BestEffort" (sin límites) y luego los "Burstable" que más exceden su *request*; un pod "Guaranteed" (request = limit) es el último candidato a desalojo. AC2-E4 exige que el Matching siga respondiendo bajo pico de carga — dejarlo en la clase de QoS más protegida es lo que hace esa exigencia verificable, no solo declarada.
 
@@ -473,7 +519,7 @@ pie title Presupuesto de RAM en VM3 (11 GiB)
 
 VM4 mantiene PostgreSQL como almacén común de infraestructura con ownership lógico por servicio. Los siete servicios ASP.NET Core utilizan EF Core + Npgsql, cuyo pool de conexiones debe configurarse explícitamente; Matching utiliza el pool HikariCP de Spring. Los tamaños definitivos de ambos pools se establecerán mediante pruebas de integración/carga y deberán mantener margen sobre `max_connections`, incluyendo escenarios de rolling update y escalado del Matching. No se conserva como supuesto el cálculo previo basado en Prisma porque corresponde al stack descartado.
 
-**Hallazgo de la prueba de carga (8 de octubre).** Los servicios todavía no tienen tope de pool y PostgreSQL de QA tiene `max_connections` = 100. Con 50 usuarios concurrentes en k6 se cumplen todos los umbrales (catálogo p95 de 24 ms frente a 200 ms; crear solicitud p95 de 37 ms frente a 2 s; 0% de errores). Con 150 usuarios no: PostgreSQL rechazó conexiones 501 veces (`remaining connection slots are reserved`), el registro de Nginx muestra 534 respuestas 500 en esa ventana, y `errores_5xx` llegó a 1,87% y `http_req_failed` a 27%. No hubo reinicios de pods ni `OOMKilled`. El equipo decidió no ajustar nada para que pase y dejarlo como mejora: agregar `Maximum Pool Size` a las cadenas de conexión (unos 25 en ServiceRequest, 10 en Catalog, 10 más 2 de plataforma en Identity y 10 en el Hikari de Matching) para sumar menos de 70 de las 100 conexiones, reaplicar los `Secret`, reiniciar y repetir k6. Producción se desplegó con una excepción escrita al RNF-08 mientras tanto (sección 6.2).
+**Hallazgo de la prueba de carga (8 de octubre).** Los servicios todavía no tienen tope de pool y PostgreSQL de QA tiene `max_connections` = 100. Con 50 usuarios concurrentes en k6 se cumplen todos los umbrales (catálogo p95 de 24 ms frente a 200 ms; crear solicitud p95 de 37 ms frente a 2 s; 0% de errores). Con 150 usuarios no: PostgreSQL rechazó conexiones 501 veces (`remaining connection slots are reserved`), el registro de Nginx muestra 534 respuestas 500 en esa ventana, y `errores_5xx` llegó a 1,87% y `http_req_failed` a 27%. No hubo reinicios de pods ni `OOMKilled`. El equipo decidió no ajustar nada para que pase y dejarlo como mejora: agregar `Maximum Pool Size` a las cadenas de conexión (unos 25 en ServiceRequest, 10 en Catalog, 10 más 2 de plataforma en Identity y 10 en el Hikari de Matching) para sumar menos de 70 de las 100 conexiones, reaplicar los `Secret`, reiniciar y repetir k6. Producción se desplegó con una excepción escrita al RNF-08 mientras tanto (sección 6.2); el tope quedó aplicado en producción y la excepción se levantó el 27 de octubre.
 
 **Repetición del 14 de octubre y tope aplicado.** La repetición del estrés con el incremento desplegado dio `errores_5xx` de 0,16% (63 de 37.770) y `http_req_failed` de 0,16%, y seguía sin cumplir `errores_5xx` igual a 0. El diagnóstico de la ventana (`diagnostico-carga.yml`) muestra la misma causa: el registro de PostgreSQL tiene 63 `FATAL: remaining connection slots are reserved` y 20 `sorry, too many clients already`, y el Nginx de VM1 registra exactamente 63 respuestas 500 a `POST /api/v1/service-requests`; no hubo 404 ni reinicios de pods. Se aplica el tope de pool en el `Secret` de cada servicio .NET (`Maximum Pool Size`, variable `pool_conexiones`: ServiceRequest 25, Catalog 15, Identity 12; Matching sigue en 10 de HikariCP): suma 62 de las 97 conexiones útiles. Con más de una réplica, el tope se multiplica por las réplicas. **Resultado de repetir k6 con el tope (14 de octubre, run 38639068866 de `pruebas-sistema`, una sola variable cambiada: el tope).** El estrés de 150 usuarios **pasa todos sus umbrales**: `errores_5xx` 0,00% (0 de 42.705), `http_req_failed` 0,00% (0 de 42.707), p95 de 295 ms y 177 peticiones por segundo (la corrida anterior con los mismos 150 usuarios: 0,16% de 5xx, 37.770 peticiones y 157 por segundo). El diagnóstico de la ventana confirma la causa: el registro de PostgreSQL no tiene ningún `FATAL` ni `ERROR`, el Nginx registra 45.635 `201` y ningún error a `POST /api/v1/service-requests`, y al terminar `service_request_app` mantiene 25 conexiones, el tope. El 50 usuarios sigue pasando (5.862 peticiones, 0,00% fallidas, p95 de 41 ms); E2E y seguridad también pasan. Matices: es una sola corrida; los tres pods se reiniciaron al aplicar el tope, así que no se separa del todo el efecto del reinicio; hubo un solo fallo de `readiness` de service-request durante la carga (timeout), que no llegó a sacar al pod ni produjo 404.
 
@@ -493,14 +539,43 @@ VM4 mantiene PostgreSQL como almacén común de infraestructura con ownership l�
 
 ### 5.9 Nominatim: geocodificación de Bogotá (ADR-024, SCRUM-454)
 
-Nominatim convierte en coordenadas la dirección que escribe el Cliente cuando no comparte su ubicación (RIE-02); lo llamará ServiceRequest. Corre en la VM de datos de cada ambiente: **VM5 en QA (desplegado el 14 de octubre de 2026)** y VM4 en producción (pendiente).
+Nominatim convierte en coordenadas la dirección que escribe el Cliente cuando no comparte su ubicación (RIE-02); lo llamará ServiceRequest. Corre en la VM de datos de cada ambiente: **VM5 en QA (desplegado el 14 de octubre de 2026)** y **VM4 en producción (desplegado el 27 de octubre de 2026)**.
 
 - **Cómo corre.** `deploy-nominatim.yml` levanta dos contenedores con Docker Compose en `/opt/quickpatch/nominatim`: `nominatim` (imagen `mediagis/nominatim` con versión fija, PostgreSQL 16 propio dentro del contenedor, excepción a ADR-014 porque solo guarda el mapa público) y `proxy` (Nginx en la red del host). El contenedor de Nominatim **no usa la red del host**, porque su PostgreSQL interno choca con el 5432 de la base de los servicios; publica su API solo en `127.0.0.1:8081` y no publica el 5432. El proxy escucha en la IP de la VM, puerto 8088, y solo acepta a la VM del k3s de ese ambiente (VM2 en QA, VM3 en producción): la regla está en el firewall de la VM (`firewall.yml`) y se repite en el `allow` del Nginx. Así se mantiene la convención de que ufw o firewalld controlen el acceso, sin depender de la cadena `DOCKER-USER`.
 - **Extracto.** El mapa se genera con `tools/nominatim-extracto.sh`: baja Colombia de Geofabrik y lo recorta con osmium al rectángulo de cobertura del MVP (RN-SR9 del DD: latitud 4,45 a 4,85 y longitud −74,25 a −73,98). Resultado: 20 MB. El archivo no va en Git: se deja en `infrastructure/ansible/files/nominatim/` y el playbook lo copia a la VM. La importación usa el estilo `address` y 2 hilos.
 - **Medición en QA (VM5, 4 vCPU y 11,4 GiB).** Importación de unos 7 minutos con el contenedor limitado a 3 GiB. En servicio usa unos 374 MiB de RAM, el volumen ocupa 1,42 GB y la VM mantiene unos 8,5 GiB de RAM disponible y 62 GB de disco libre. El playbook exige 5 GB de RAM y 15 GB de disco libres antes de importar.
-- **Acceso comprobado.** Desde VM2 y desde un pod del k3s de QA, `GET /status` y `/search` responden 200. Desde VM1 y VM7 la conexión al 8088 no responde (la rechaza el firewall).
+- **Medición en producción (VM4, 4 vCPU y 11,6 GiB; 27 de octubre de 2026).** Se desplegó con el mismo extracto de QA (20,7 MB del 14 de octubre, copiado de VM5, misma huella), así que los dos ambientes geocodifican con el mismo mapa. Importación de unos 6 minutos. En servicio, `nominatim` usa unos 368 MiB de sus 3 GiB y 1,2 % de CPU, y el proxy 2 MiB. La VM pasó de 9,0 a 8,7 GiB de RAM disponible y de 20 a 23 GB de disco usado (imagen de 1,5 GB más la base de Nominatim), con 42 GB libres; las conexiones de PostgreSQL de producción siguen en 19 de 100. El swap ya tenía unos 800 MB en uso antes del despliegue. El firewall solo permite el 8088 desde VM3: la regla se aplicó sola con `ufw`, sin reaplicar `setup-base.yml` (que repite toda la base de la VM), y es la misma que declara `firewall.yml`.
+- **Acceso comprobado.** Desde VM2 y desde un pod del k3s de QA, `GET /status` y `/search` responden 200. Desde VM1 y VM7 la conexión al 8088 no responde (la rechaza el firewall). En producción, desde VM3 `GET /status` y `/search` responden 200 y desde VM1 la conexión no responde (`curl` agota el tiempo); no se probó desde un pod del k3s de producción, solo desde el nodo, que es la IP de origen que el firewall permite.
 - **Cómo se actualiza el mapa.** Manual y poco frecuente: se regenera el extracto y se corre `deploy-nominatim.yml -e reimportar=true`, que borra la base de Nominatim y vuelve a importar (unos 7 minutos sin servicio de geocodificación).
 - **Calidad de la geocodificación (hallazgo del 14 de octubre).** Con 14 direcciones de prueba, Nominatim resuelve bien nombres de vía y lugares (Calle 63, Calle 26, Calle 72, Calle 100, Diagonal 40, Avenida Carrera 68, Plaza de Bolívar y la localidad Chapinero), pero **no usa el número de casa ni la calle transversal de la nomenclatura de Bogotá**: "Carrera 7 # 72-41" devuelve una calle llamada Carrera 7 en la localidad de San Cristóbal, no el cruce con la Calle 72 en Chapinero; "Transversal 93 # 53-32" y "Parque de la 93" devuelven puntos en otras localidades, y "Avenida Caracas # 26-50" no devuelve nada. La coordenada puede quedar a kilómetros de la dirección y caer en otra localidad, lo que cambia qué técnicos cubren la solicitud. Por eso conviene que el GPS siga siendo la primera opción (ADR-024) y que, cuando se use la dirección, la app muestre al Cliente el punto encontrado para confirmarlo. Es una decisión del equipo de ServiceRequest y de la app, no de DevOps.
+
+### 5.10 Operación de Kafka: retención, grupos de consumidores y reinicio de offsets (SCRUM-555)
+
+Kafka corre en un solo nodo por ambiente (VM6 en producción, VM7 en QA; R10), con `replicationFactor = 1`. El playbook `operar-kafka-grupos.yml` reúne las tres operaciones del día a día.
+
+**Retención.** Cada topic se crea con `retention.ms` propio, tomado de `topics.yaml` del repositorio `quickpatch-kafka`: hoy 168 horas (7 días) en los 17 topics de QA y en los 2 de producción, medido el 26 de octubre de 2026. La variable `kafka_retencion_horas` de `group_vars` (168 en producción, 24 en QA) es solo el valor por defecto del broker y aplica a un topic creado sin `retention.ms`. Cambiar la retención de un topic existente se hace a mano con `kafka-configs.sh --alter` y se refleja en `topics.yaml`; `deploy-kafka.yml` no modifica los topics que ya existen.
+
+**Grupos de consumidores y lag.** Un grupo por servicio y función. El lag de un grupo es la diferencia entre el último offset del topic y el que el grupo ya confirmó.
+
+| Ambiente | Grupos (miembros) |
+|---|---|
+| Producción (VM6) | `matching-service` (1), `service-request-service` (1); los dos estables |
+| QA (VM7) | `communication-chat` (1), `communication-inbox` (1), `communication-service` (1), `matching-service` (5), `payments-service` (1), `service-request-service` (3); todos estables |
+
+- **Cómo verlos:** `./ap playbooks/operar-kafka-grupos.yml` (solo lectura), o con `--limit vm7` para QA. Muestra el estado de cada grupo, el lag sumado por grupo y topic, y la retención de cada topic.
+- **Lectura del 26 de octubre en QA:** lag 0 en todos los grupos salvo `communication-service`, con 22 mensajes en `matching.no-technician-available`, 6 en `matching.search-resumed` y 5 en `matching.technician-assigned`. Se repitió igual en dos lecturas separadas por varios minutos, así que no es tráfico en tránsito: el consumidor no confirma esos offsets. Falta saber si Communication descarta esos eventos sin confirmarlos o si falla al procesarlos; es una revisión para el equipo de Communication. **Lectura del 27 de octubre:** el lag creció a 32, 10 y 8 mensajes (50 en total) en esos mismos tres topics, tras las nuevas solicitudes que hubo en QA ese día (pruebas de sistema y datos de demostración). No es un lag fijo: `communication-service` no está consumiendo los eventos `matching.*` y lo que llega se acumula. Reiniciar el grupo a `latest` lo oculta pero no lo arregla; primero hay que ver por qué no los procesa.
+- **Producción:** sin lag, porque casi no hay tráfico (2 topics).
+
+**Reiniciar los offsets de un grupo.** Sirve cuando un grupo nuevo va a leer tráfico viejo (como el de las pruebas de carga que causó el `OOMKilled` de Communication, sección 5.6) o cuando hay que descartar o repetir eventos.
+
+1. Bajar el servicio dueño del grupo, porque Kafka solo permite reiniciar un grupo sin miembros activos: `kubectl scale deployment/<servicio> --replicas=0`.
+2. Simular: `./ap playbooks/operar-kafka-grupos.yml --limit vm7 -e grupo=<grupo> -e topic=<topic> -e destino=latest`. Muestra el offset al que quedaría cada partición y no cambia nada. El `--limit` es obligatorio (`vm7` para QA, `vm6` para producción): sin él el playbook se niega a reiniciar, para no tocar los dos ambientes a la vez.
+3. Aplicar el mismo comando con `-e ejecutar=si`. `destino` puede ser `latest` (descarta lo pendiente), `earliest` (relee todo lo que retiene el topic) o `datetime` (con `-e fecha=AAAA-MM-DDThh:mm:ss.sss`, en UTC).
+4. Volver a subir el servicio con el número de réplicas que tenía y revisar el lag con el comando del primer punto.
+
+Con `earliest`, o con un grupo nuevo (`auto.offset.reset = earliest`), el servicio vuelve a procesar hasta 7 días de eventos: los consumidores deben ser idempotentes (DD 5.23) y Communication necesita su límite de 512 MiB (sección 5.6).
+
+> **Probado en QA (27 de octubre de 2026, SCRUM-555).** El reinicio se ensayó con un grupo de prueba (`prueba-offsets-scrum555`) creado leyendo un mensaje de `matching.technician-assigned`, para no bajar ningún servicio de QA: un grupo sin miembros activos es lo que Kafka exige y es el estado en que deja a un grupo el paso 1. Resultado: sin `--limit`, el playbook se niega en vm6 y vm7 antes de reiniciar nada; con `--limit vm7`, la simulación (`--dry-run`) muestra la partición 2 pasando del offset 1 al 0 y no cambia nada; con `-e ejecutar=si` el offset queda en 0 (confirmado con `--describe`). El grupo de prueba se borró al terminar (los 6 grupos de QA quedaron como antes). **No se ejercitó** el paso 1 (`kubectl scale ... --replicas=0`) sobre un servicio real ni el reinicio de un grupo de un servicio: hacerlo con `communication-service` descartaría sus eventos pendientes, que conviene diagnosticar antes (ver la lectura del 27 de octubre más arriba).
 
 ## 6. CI/CD
 
@@ -559,9 +634,11 @@ flowchart LR
 
 QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a `develop`, para que se mantenga estable mientras se prueba.
 
-**Compuerta a producción.** El job `desplegar` usa el ambiente de GitHub `produccion` en los repositorios de servicios: exige la aprobación de un revisor (el responsable de DevOps), solo admite la rama `main` y los administradores no pueden saltársela. Esa aprobación es la compuerta manual. Desde el 12 de octubre hay además una **compuerta automática (RNF-08, SCRUM-415)**: antes de cambiar la imagen en producción, el job `desplegar` corre `compuerta-qa` en VM1, que exige que la misma imagen (o el mismo build del panel) corra en QA y que la última ejecución de `pruebas-sistema.yml` haya pasado después de que llegó a QA; una excepción solo se admite con la variable `COMPUERTA_RNF08_EXCEPCION` del repositorio (detalle en `infrastructure/CI-CD.md`). La rama `main` de los repositorios sigue sin protección.
+**Compuerta a producción.** El job `desplegar` usa el ambiente de GitHub `produccion` en los repositorios de servicios: exige la aprobación de un revisor (el responsable de DevOps), solo admite la rama `main` y los administradores no pueden saltársela. Esa aprobación es la compuerta manual. Desde el 12 de octubre hay además una **compuerta automática (RNF-08, SCRUM-415)**: antes de cambiar la imagen en producción, el job `desplegar` corre `compuerta-qa` en VM1, que exige que la misma imagen (o el mismo build del panel) corra en QA y que la última ejecución de `pruebas-sistema.yml` y la de la prueba de humo (`humo-frontends.yml`, SCRUM-505) hayan pasado después de que llegó a QA; una excepción solo se admite con la variable `COMPUERTA_RNF08_EXCEPCION` del repositorio (detalle en `infrastructure/CI-CD.md`). La rama `main` de los repositorios sigue sin protección.
 
 **Excepción al RNF-08 (8 de octubre).** La prueba de estrés de 150 usuarios no pasa en QA por las conexiones agotadas de PostgreSQL (sección 5.7); la de 50 usuarios sí. El responsable de DevOps decidió desplegar a producción igualmente, con una excepción escrita que se cita en la descripción de los cuatro pull requests de `release/0.2.0` a `main` y que la aprobación del ambiente `produccion` acepta. Producción corre desde ese día con las mismas imágenes probadas en QA (Identity, Catalog, ServiceRequest y Matching); el límite de carga conocido queda como hallazgo para la próxima iteración, sin ajustar los resultados. **Actualización del 14 de octubre:** con el tope de pool el estrés de 150 usuarios pasa en QA (sección 5.7). La excepción sigue vigente para producción hasta aplicar el mismo tope en el `Secret` de producción y medir allí; después se levanta por escrito.
+
+**Excepción levantada el 27 de octubre de 2026 (SCRUM-521).** Ya no hay ninguna excepción al RNF-08 vigente. Razones: (1) el estrés de 150 usuarios pasa en QA con el tope de pool (14 de octubre, run 38639068866 de `pruebas-sistema`: 0 de 42.705 respuestas 5xx); (2) el mismo tope está aplicado en producción desde el 27 de octubre: `Maximum Pool Size` de 12 en Identity, 15 en Catalog y 25 en ServiceRequest (Matching conserva los 10 de Hikari), con los tres servicios reiniciados y las imágenes sin cambios; (3) producción tiene 19 de 100 conexiones, sin tráfico. **No se midió la carga en producción**, y es una decisión: RNF-08 y el SAD usan QA como el ambiente de pruebas de carga (ADR-015), y correr k6 contra la plataforma real no corresponde. Desde ahora la compuerta de cada despliegue exige que `pruebas-sistema.yml` y `humo-frontends.yml` hayan pasado después de que la versión llegó a QA. Un `release/*` corre también la carga de k6 (a mano solo con la casilla `carga`): si el estrés vuelve a fallar, el run termina en fallo y la compuerta bloquea la promoción. Cualquier excepción nueva debe escribirse otra vez, con motivo y fecha.
 
 **Producción despliega exactamente la imagen probada en QA.** El job `imagen` de cada repositorio etiqueta cada imagen con el hash del contenido del repositorio, no con el del commit. Al fusionar `release/x.y.z` en `main` sin otros cambios, el contenido es el mismo, la imagen ya existe y no se vuelve a construir. Si `main` trae algo que no pasó por `release/*`, el workflow construye una imagen nueva y deja un aviso.
 
@@ -573,10 +650,10 @@ QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a 
 
 Los runners de GitHub corren en la nube y no llegan a la red del laboratorio (`10.43.x.x`). Los despliegues y las pruebas de sistema corren en un **runner self-hosted en VM1**: `vm1-despliegue`, versión 2.337.0, registrado en la organización con las etiquetas `self-hosted`, `vm1` y `red-laboratorio`. Corre como servicio del sistema con el usuario `quickpatch` y arranca solo si VM1 se reinicia (`deploy-runner.yml`).
 
-- **Credenciales:** el runner usa los kubeconfig de QA y producción que deja `deploy-runner.yml` en el propio VM1, así que no hay credenciales de Kubernetes guardadas en GitHub. El panel, tanto el de QA como el de producción, se publica copiando el build en una carpeta local de VM1 (`panel-qa` o `panel`); la llave SSH de VM1 a VM2 que deja `deploy-runner.yml` ya no la usa el panel.
+- **Credenciales:** el runner usa los kubeconfig de QA y producción que deja `deploy-runner.yml` en el propio VM1, así que no hay credenciales de Kubernetes guardadas en GitHub. El panel de cada ambiente se publica por SSH en su gateway (VM2 en QA, VM3 en producción, carpeta `/opt/quickpatch/gateway/panel`) con la llave del runner que deja `deploy-runner.yml`, y la compuerta RNF-08 lee el panel de QA en VM2 por esa misma llave (ADR-028).
 - **Por qué en VM1:** está dentro de la red del laboratorio y llega a VM2 y VM3 sin túneles; no compite con los microservicios por los recursos de VM3, y está siempre encendido, a diferencia del computador de una persona.
 - **Seguridad:** los repositorios son públicos, y GitHub advierte que un PR desde un fork podría ejecutar código ajeno en un runner self-hosted. Por eso los workflows que usan el runner solo se disparan con `push` o a mano, nunca con `pull_request`. Además, en la organización se exige aprobación para los workflows de colaboradores externos, y el grupo del runner tiene permitidos los repositorios públicos para que los componentes lo puedan usar.
-- **Costo:** mientras corre una prueba de carga, k6 comparte la CPU de VM1 con el gateway de producción (riesgo aceptado en el SAD, ADR-015).
+- **Costo:** mientras corre una prueba de carga, k6 comparte la CPU de VM1 con la entrada TLS de los dos ambientes (riesgo aceptado en el SAD, ADR-015).
 
 ---
 
@@ -708,7 +785,7 @@ Ningún secreto (contraseñas, llaves de Garage, tokens de la pasarela de pagos,
 | Contenido | Roles y permisos (`pg_dumpall --globals-only`) y un `pg_dump -Fc` por cada una de las 8 bases de servicio |
 | Destino | Bucket `backups-postgres` de Garage en VM6 (ADR-016), una carpeta por día. VM distinta de VM4: una falla de VM4 no se lleva su propio respaldo |
 | Credenciales | Llave `backups` de Garage, que solo tiene acceso a ese bucket |
-| Retención | 7 días en Garage y 2 días en el disco de VM4 (copia local para restaurar sin depender de VM6) |
+| Retención | 7 días en Garage y unos 2 días en el disco de VM4, que en la práctica son 3 carpetas (el borrado local usa `-mtime +2`), como copia local para restaurar sin depender de VM6 |
 | Registro | `/var/log/quickpatch-pg-backup.log` en VM4 |
 
 ### 9.3 Cómo restaurar una base
@@ -724,6 +801,10 @@ La restauración es **manual**, por R7 (sin operación 24/7), dentro de la venta
 4. Volver a levantar el servicio (`--replicas` al valor anterior) y revisar sus logs en Grafana.
 
 Cada base se restaura por separado, porque cada servicio tiene la suya: un problema en una base no obliga a restaurar las demás.
+
+**Probar que la restauración funciona (SCRUM-521).** `./ap playbooks/probar-restauracion-pg.yml --limit vm4` baja de Garage la copia más reciente (o la del día de `-e dia=AAAA-MM-DD`), compara el tamaño de cada archivo con la copia local, restaura las 8 bases en bases de prueba `prueba_restauracion_<servicio>`, compara con la base real el conjunto de tablas y las filas, y al terminar borra las bases de prueba y la carpeta temporal aunque algo falle. No toca las bases `db_*` ni los servicios. Las filas de la base real son de ahora y las del respaldo son de las 2:00, así que pueden diferir; lo que debe coincidir es el conjunto de tablas. El total de filas no cuenta `spatial_ref_sys`, la tabla de referencia de PostGIS (8.500 filas en cada base con esa extensión).
+
+**Resultado del 27 de octubre de 2026 (copia del 26 de octubre).** Los 9 archivos de Garage tienen el mismo tamaño que la copia local; las 8 bases restauraron sin errores y con las mismas tablas que las reales. El respaldo se completó cada noche del 15 al 26 de octubre (`/var/log/quickpatch-pg-backup.log`). Producción tiene hoy muy pocos datos: `db_identity` con 1 tenant y 2 usuarios, `db_catalog` con 0 categorías de servicio, `db_service_request` y `db_matching` con 0 solicitudes, y `db_payments`, `db_communication`, `db_actors` y `db_ranking` sin tablas. La prueba se ejecutó con la variante que contaba `spatial_ref_sys`; la exclusión de esa tabla del total solo se probó en local. Conviene repetir la prueba cada mes y después de cualquier cambio en el script de respaldo.
 
 ### 9.4 Recuperación ante desastres
 
@@ -762,9 +843,9 @@ En su lugar, se usan **certificados autofirmados** con vigencia de 10 años:
 
 | Dónde | Nombres que cubre | Lo genera |
 |---|---|---|
-| VM1 (gateway) | `quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal` y la IP de VM1 | `deploy-gateway.yml`, que lo regenera si a la lista de nombres le falta alguno |
+| VM1 (entrada) | `quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal` y la IP de VM1 | `deploy-gateway.yml`, que lo regenera si a la lista de nombres le falta alguno |
 
-El TLS de QA termina también en VM1, así que QA no tiene certificado propio.
+El TLS de producción y el de QA terminan en VM1, así que ningún ambiente tiene certificado propio: los gateways de VM3 y VM2 reciben HTTP por el 8080 solo desde VM1 (ADR-028).
 
 Esto cumple RNF-02 (el tráfico va cifrado), aunque el navegador muestre una advertencia la primera vez porque el certificado no viene de una CA reconocida. Es una limitación aceptada (sección 13): no hay CA pública sin dominio público (R9) ni presupuesto para una comercial (R5).
 
@@ -803,13 +884,15 @@ Las reglas están en `ansible/inventory/group_vars/all/firewall.yml`. "Equipo" e
 
 | VM | Puerto | Desde | Para qué |
 |---|---|---|---|
-| VM1 | 443 | Cualquiera | Gateway: producción, QA y Grafana por nombre |
+| VM1 | 443 | Cualquiera | Entrada TLS: producción, QA y Grafana por nombre |
 | VM1 | 3100 | Las demás VMs | Promtail envía los logs a Loki |
-| VM2 | 30080 | VM1 | Traefik de QA: proxy por nombre y pruebas de sistema |
+| VM2 | 8080 | VM1 | Nginx del gateway de QA (ADR-028) |
+| VM2 | 30080 | VM1 | Traefik de QA: comprobaciones de VM1 y pruebas de sistema (el gateway de la propia VM2 llega por la red del host) |
 | VM2 | 6443 | VM1 | API de k3s de QA, para los despliegues del runner |
-| VM3 | 30080 y 30443 | VM1 | Traefik de producción (entrada a los servicios) |
+| VM3 | 8080 | VM1 | Nginx del gateway de producción (ADR-028) |
+| VM3 | 30080 y 30443 | VM1 | Traefik de producción: comprobaciones de VM1 (el gateway de la propia VM3 llega por la red del host) |
 | VM3 | 6443 | VM1 | API de k3s de producción, para los despliegues del runner |
-| VM4 | 5432, 6379 y 8088 | VM3 | PostgreSQL, Redis y Nominatim de producción (el 8088, pendiente de desplegar) |
+| VM4 | 5432, 6379 y 8088 | VM3 | PostgreSQL, Redis y Nominatim de producción (el 8088, aplicado el 27 de octubre) |
 | VM5 | 5432, 6379 y 8088 | VM2 | PostgreSQL, Redis y Nominatim de QA |
 | VM6 | 9092 | VM3 | Kafka de producción |
 | VM6 | 9000 | VM3 y VM4 | Garage de producción (S3): evidencias de los servicios y respaldo de PostgreSQL |
@@ -832,12 +915,42 @@ El acceso es **con contraseña**, con la cuenta que entrega el laboratorio (`est
 Lo que sí está configurado:
 
 - **El login como `root` por SSH está desactivado** en las 7 VMs (`PermitRootLogin no`).
-- **Usuario de despliegue `quickpatch`**, sin contraseña y en el grupo de Docker. Lo usa el runner de VM1, que además tiene una llave SSH hacia VM2 para publicar el panel de QA mientras el panel no pase al k3s (SCRUM-338).
+- **Usuario de despliegue `quickpatch`**, sin contraseña y en el grupo de Docker. Lo usa el runner de VM1, que además tiene una llave SSH hacia VM2 y VM3 para publicar el panel de cada ambiente en su gateway (ADR-028, SCRUM-573).
 - `setup-base.yml` ya permite agregar llaves públicas del equipo (`deploy_user_pubkeys`) y desactivar la contraseña (`ssh_disable_password_auth`) si en el futuro se decide hacerlo.
 
 **Riesgo aceptado:** la contraseña es la misma en las 7 VMs. Cualquiera dentro de la red de la universidad que la conozca puede entrar a todas.
 
 ---
+
+### 10.5 Cifrado en tránsito y en reposo (SCRUM-506)
+
+Estado medido el 26 de octubre de 2026 en las 7 VMs, con comandos de solo lectura.
+
+| Tramo o dato | Estado | Evidencia |
+|---|---|---|
+| Cliente a VM1 (VPN) | **Cifrado**: HTTPS con TLS 1.2 y 1.3; TLS 1.0 y 1.1 se rechazan; HSTS de un año en el bloque de producción | `openssl s_client` por versión y cabecera `Strict-Transport-Security: max-age=31536000` |
+| HTTP (puerto 80) en VM1 | **Rechazado**: el puerto 80 no escucha y `ufw` solo abre el 443 | La conexión por la IP de VM1 no responde |
+| VM1 al gateway de cada ambiente (8080) | Sin cifrar (HTTP); el firewall deja pasar solo a VM1 | ADR-028 |
+| Gateway, Traefik y pods del mismo k3s | Sin cifrar (HTTP), dentro de la misma VM | Sección 2.1 |
+| Servicios a PostgreSQL (VM4 y VM5) | **Sin cifrar**: `ssl = off`. La autenticación es `scram-sha-256` y `pg_hba.conf` solo admite la IP de la VM de aplicación por rol | `show ssl` y `pg_hba.conf` |
+| Servicios a Kafka (VM6 y VM7) | **Sin cifrar ni autenticar**: listeners `PLAINTEXT` | `KAFKA_LISTENER_SECURITY_PROTOCOL_MAP` del `compose.yml` |
+| Servicios a Garage (VM6 y VM7) | Sin cifrar: API S3 por HTTP en el puerto 9000 de la IP de la VM | `garage.toml` (`api_bind_addr`) |
+| Discos de las 7 VMs | **Sin cifrado visible**: no hay volúmenes LUKS ni dispositivos `crypt` en `lsblk`. El cifrado que aplique el hipervisor de la universidad no se ve desde las VMs | `lsblk` en las 7 VMs |
+| Datos de PostgreSQL | Sin cifrado en reposo (PostgreSQL no lo trae de serie); los volúmenes de Docker están en el disco sin cifrar | Misma evidencia de discos |
+| Contraseñas de los roles | Guardadas con `scram-sha-256` | `password_encryption` |
+| Respaldos de PostgreSQL | **Sin cifrar**: `pg_dump -Fc` queda en disco en VM4 y se sube a Garage por HTTP | `pg-backup.sh.j2` (sin `gpg` ni `age`) |
+| Secretos de la infraestructura | **Cifrados**: Ansible Vault, AES-256 (sección 8) | `vault.yml` |
+
+**No se pudo verificar:** si los `Secret` de Kubernetes están cifrados en reposo en el k3s (`k3s secrets-encrypt status`) ni la configuración de TLS y autenticación de Redis. Quedan para revisar con acceso a VM3, VM2, VM4 y VM5.
+
+**Riesgos y decisión.** El tráfico sin cifrar viaja entre VMs de la red privada del laboratorio (`10.43.x.x`), con firewall por IP de origen (sección 10.2), y no sale a Internet; por eso se aceptó (sección 10.1). Lo que queda expuesto es el contenido de los discos y de los respaldos ante quien tenga acceso al almacenamiento o a una VM. Opciones, de menor a mayor esfuerzo:
+
+1. **Cifrar los respaldos** antes de subirlos a Garage (por ejemplo con `age`), con la llave en el vault.
+2. **Activar `secrets-encryption` en k3s** para los `Secret` (reinicia k3s; se aplica en VM3 y VM2).
+3. **TLS de PostgreSQL** (`ssl = on`, certificado autofirmado, `hostssl` en `pg_hba.conf` y `sslmode=require` en las cadenas de conexión de los 8 servicios): exige cambiar el `Secret` de cada servicio.
+4. **Cifrado de disco**: no se puede añadir a las VMs ya creadas sin reinstalarlas; depende de lo que ofrezca el laboratorio.
+
+No se aplicó ninguna: cambian componentes en producción y QA y requieren la decisión del equipo. Mientras tanto la limitación queda registrada en la sección 13.
 
 ## 11. Dominio y DNS
 
@@ -847,12 +960,12 @@ Las 7 VMs del proyecto viven en el rango privado `10.43.x.x` del laboratorio de 
 
 ### 11.2 Nombres lógicos y resolución interna
 
-Para no escribir IPs en todos lados, el sistema usa tres nombres lógicos. Los tres apuntan a VM1, y el Nginx de VM1 elige el destino según el nombre pedido (SAD, ADR-015):
+Para no escribir IPs en todos lados, el sistema usa tres nombres lógicos. Los tres apuntan a VM1, y el Nginx de VM1 elige el destino según el nombre pedido (SAD, ADR-015 y ADR-028):
 
 | Nombre | Destino |
 |---|---|
-| `quickpatch.internal` (o la IP de VM1) | Producción: el panel (servido en VM1 hasta que pase al k3s) y `/api/` hacia el Traefik de VM3 |
-| `qa.quickpatch.internal` | Ambiente de QA: el Traefik de VM2 |
+| `quickpatch.internal` (o la IP de VM1) | Producción: el gateway Nginx de VM3 (el panel y `/api/` hacia el Traefik de VM3) |
+| `qa.quickpatch.internal` | Ambiente de QA: el gateway Nginx de VM2 (el panel y `/api/` hacia el Traefik de VM2) |
 | `grafana.quickpatch.internal` | Grafana en VM1 |
 
 - **No hay DNS:** cada persona agrega una vez esta línea a su archivo `hosts` (`/etc/hosts`, o `C:\Windows\System32\drivers\etc\hosts` en Windows, editado como administrador):
@@ -921,17 +1034,18 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | VM1 es la única entrada desde la VPN a producción, QA y Grafana | R9 | SAD, ADR-015; sección 2.3 |
 | Las 7 VMs tienen la misma especificación sin importar el rol, y el software del laboratorio ya usa unos 2,3 GiB de RAM en cada una | Laboratorio de la Javeriana | Sección 3.1 |
 | La prueba de carga en QA es una aproximación: sus VMs tienen la misma especificación que las de producción, pero con datos de prueba y sin tráfico real | R10 | SAD, ADR-015; sección 6.2 |
-| El umbral de 6,5 GiB de RAM en VM3 solo está comprobado como suma de límites (5,75 GiB); falta medirlo con los 8 servicios | Medición del 3 de octubre | Sección 5.6 |
+| AC2-E5 no se ha medido con los 8 servicios en QA (hoy hay 6; faltan Actors y Ranking), y el caso PRF-005 y la tarea SCRUM-554 siguen comparando con 6,5 GiB en VM3, lo que el SAD 2.15 ya no hace | Medición del 26 de octubre | Sección 5.6 |
 | `kubectl rollout undo` solo revierte la imagen del contenedor, no las migraciones de esquema: exige expand-contract | Diseño de Kubernetes | Secciones 5.8 y 6.2 |
 | Evidencias en Garage sin copia en otra VM | R10 | Sección 9.5 |
 | El vault y su contraseña existen en un solo computador | R11 | Sección 9.4 |
 | Recuperación manual entre 12 y 24 horas ante una falla de infraestructura | R7 | SAD, escenario AC5-E1; sección 9.4 |
 | QoS "Guaranteed" del Matching protege contra desalojo, pero le quita capacidad de ráfaga | Trade-off de diseño | Sección 5.6 |
 | Probes con valores iniciales, sin `startupProbe` ni ajuste con arranques medidos | Falta de datos medidos | Sección 5.8 |
-| Producción se desplegó con una excepción escrita al RNF-08: la prueba de 50 usuarios pasa y la de 150 no (conexiones de PostgreSQL agotadas) | Hallazgo del 8 de octubre | Secciones 5.7 y 6.2 |
+| La excepción escrita al RNF-08 del despliegue del 8 de octubre (la prueba de 150 usuarios no pasaba por las conexiones de PostgreSQL) **está levantada desde el 27 de octubre**: el tope de pool está en producción y el estrés pasa en QA. La carga no se midió en producción | Hallazgo del 8 de octubre; levantada el 27 de octubre | Secciones 5.7 y 6.2 |
 | La rama `main` no tiene protección; la aprobación del ambiente `produccion` es la única compuerta | Decisión pendiente del equipo | Sección 6.2 |
 | Actors, Ranking, Payments y Communication no tienen manifiesto ni `roles.sql`: no están desplegados | Dependen del código de los equipos | Sección 5.3 |
 | Certificados TLS autofirmados, sin CA reconocida | R9 | Secciones 10.1 y 11 |
+| Sin cifrado en reposo (discos, PostgreSQL, Garage y respaldos) y tráfico interno sin TLS (PostgreSQL, Kafka, Garage) | Decisión pendiente del equipo | Sección 10.5 |
 | SSH con contraseña, la misma en las 7 VMs | Decisión del equipo | Sección 10.4 |
 | Kafka UI sin login: solo se usa por túnel SSH desde el equipo de DevOps | Decisión de DevOps | Sección 10.3 |
 
@@ -997,11 +1111,11 @@ La primera vez conviene simular la base en una VM, aplicarla ahí, comprobar que
 | 3 | `deploy-garage.yml` | VM6 y VM7 | Garage, buckets y llaves de cada ambiente | El respaldo de VM4 escribe en Garage |
 | 4 | `deploy-db.yml` | VM4 y VM5 | PostgreSQL + PostGIS y una base por servicio; el respaldo diario solo en producción | |
 | 5 | `deploy-cache.yml` | VM4 y VM5 | Redis con un usuario por servicio | |
-| 5b | `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá | Antes hay que generar el extracto con `tools/nominatim-extracto.sh`; hoy solo en QA |
+| 5b | `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá | Antes hay que generar el extracto con `tools/nominatim-extracto.sh` (o copiar el de QA); desplegado en QA y en producción |
 | 6 | `deploy-kafka.yml` | VM6 y VM7 | Kafka (en VM6, también Kafka UI) | |
 | 7 | `deploy-k3s.yml` | VM3 y VM2 | k3s de producción y de QA, y sus kubeconfig | El runner los necesita |
-| 8 | `deploy-gateway.yml` | VM1 | Nginx con los tres nombres, el panel y el certificado | |
-| 9 | `deploy-runner.yml` | VM1 | kubectl, k6, llave SSH hacia VM2 y el runner | Va al final porque usa los kubeconfig del paso 7 |
+| 8 | `deploy-gateway.yml` | VM3, VM2 y VM1 | El Nginx del gateway de cada ambiente con su panel y, en VM1, la entrada TLS con los tres nombres y el certificado | Primero los gateways de los ambientes y después la entrada (`--limit`) |
+| 9 | `deploy-runner.yml` | VM1 | kubectl, k6, llave SSH hacia VM2 y VM3 y el runner | Va al final porque usa los kubeconfig del paso 7 |
 
 Cada playbook de la tabla se aplica a los dos ambientes: el grupo `produccion` (VM3, VM4 y VM6) y el grupo `qa` (VM2, VM5 y VM7) toman sus valores de `inventory/group_vars/produccion.yml` y `qa.yml` (memoria de Redis, retención de Kafka, capacidad de Garage, contraseñas). Para llevar un ambiente del reparto anterior al actual existe `migrar-adr-022.yml`, con una fase por etiqueta; no hace falta en una instalación desde cero y solo borra lo viejo con `-e confirmar_borrado=true`.
 
@@ -1069,3 +1183,10 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 3.6 | 14 oct 2026 | Nominatim con el mapa de Bogotá (ADR-024, SCRUM-454): sección 5.9, playbook `deploy-nominatim.yml`, regla de firewall del 8088 y desplegado en QA (VM5); producción pendiente. Incluye la medición de recursos y el hallazgo sobre la calidad de la geocodificación. |
 | 3.7 | 14 oct 2026 | Resultado de repetir la prueba de estrés con el tope de pool: pasa todos sus umbrales en QA (0 de 42.705 respuestas 5xx). La excepción al RNF-08 sigue en producción hasta aplicar el tope allí. |
 | 3.8 | 22 oct 2026 | Límite de memoria de Communication a 512 MiB tras el `OOMKilled` en QA, con su medición, y la nota operativa de los grupos de consumidores que arrancan desde el principio del topic (sección 5.6). Payments ya tiene manifiesto. |
+| 3.9 | 25 oct 2026 | Gateway propio en cada ambiente (ADR-028, SCRUM-573, revisión del Sprint 4): un Nginx en VM3 (producción) y otro en VM2 (QA), cada uno con su panel y su despliegue, y VM1 como entrada TLS que reenvía por nombre. Cambian la vista general (2.1, diagrama incluido), el inventario (3.2), las conexiones y reglas de firewall del puerto 8080 (3.3 y 10.3), los playbooks (5.2 y 5.5, con `verificar-gateway-ambiente.yml`), el runner (6.3), TLS (10.1), los nombres lógicos (11.2) y el orden de despliegue. Aplicado en QA y producción el 25 de octubre. |
+| 4.0 | 26 oct 2026 | Revisión de cierre del Sprint 5 (SCRUM-552 a 555 y SCRUM-506): sección 4.3 con el estado real de QA y producción; sección 5.6 corregida con los límites de los manifiestos (384 MiB) y con la medición de VM3; sección 5.10 con la operación de Kafka (retención, grupos, lag y reinicio de offsets) y el playbook `operar-kafka-grupos.yml`; sección 10.5 con el estado del cifrado en tránsito y en reposo. |
+| 4.1 | 26 oct 2026 | AC2-E5 aclarado (secciones 3.2, 5.6 y 13): se mide en QA con los 8 servicios y los límites de cada pod, no contra 6,5 GiB en VM3, como dice el SAD desde la versión 2.15; los 4,6 GiB quedan como proyección de capacidad de VM3. Se registra que el reinicio de Communication en QA no fue `OOMKilled`. |
+| 4.2 | 27 oct 2026 | Operación de Kafka (SCRUM-555): el reinicio de offsets se probó en QA con un grupo de prueba (simulación, aplicación, verificación y borrado) y la sección 5.10 lo registra; el lag de `communication-service` no es fijo sino creciente (50 mensajes el 27 de octubre) y apunta a que no consume los eventos `matching.*`. |
+| 4.3 | 27 oct 2026 | Prueba de restauración del respaldo de PostgreSQL de producción (SCRUM-521): playbook `probar-restauracion-pg.yml`, sección 9.3 con el resultado y la retención local real (3 carpetas) en 9.2. |
+| 4.4 | 27 oct 2026 | Tope de pool aplicado en producción y excepción al RNF-08 levantada (SCRUM-521): `Maximum Pool Size` en los Secret de Identity, Catalog y ServiceRequest, sección 6.2 con el motivo, la evidencia y lo que no se midió, y notas de 5.7 y de las limitaciones. |
+| 4.5 | 27 oct 2026 | Secret de Payments y Communication y Nominatim en producción (SCRUM-519 y SCRUM-520): sección 4.3 y la tabla de lo que falta, sección 5.9 con la medición en VM4 y el acceso comprobado, regla del 8088 aplicada y tabla de playbooks. |

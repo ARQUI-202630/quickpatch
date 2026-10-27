@@ -21,8 +21,8 @@ Todos los PR exigen el check `quality-gate`, que reúne los jobs del pipeline de
 |---|---|---|---|
 | PR a `develop` | Lint, pruebas unitarias, cobertura y dependency review | Lint, pruebas, cobertura, build y dependency review | Formato, análisis, pruebas, cobertura y dependency review |
 | Push a `develop` | Además, pruebas de integración (Testcontainers) | Lo mismo | Lo mismo |
-| Push a `release/*` | Además, imagen en GHCR y **despliegue en QA** (k3s de VM2) | Además, **publica el panel en QA** (VM1, carpeta `panel-qa`) | Además, APK de release |
-| Push a `main` | **Despliegue en producción** (k3s de VM3) con la misma imagen de QA | **Publica el panel en producción** (VM1) | APK de release |
+| Push a `release/*` | Además, imagen en GHCR y **despliegue en QA** (k3s de VM2) | Además, **publica el panel en QA** (gateway de VM2) | Además, APK de release |
+| Push a `main` | **Despliegue en producción** (k3s de VM3) con la misma imagen de QA | **Publica el panel en producción** (gateway de VM3) | APK de release |
 
 QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a `develop`.
 
@@ -33,16 +33,16 @@ QA solo cambia cuando se prepara una versión (`release/*`), no con cada push a 
 
 ### Compuerta RNF-08 (SCRUM-415)
 
-Producción solo recibe una versión que **corre hoy en QA** y que **pasó las pruebas de sistema después de llegar a QA**. El job `desplegar` de cada repositorio llama, solo en producción, a `compuerta-qa` (script de `infrastructure/ansible/files/compuerta-qa.sh`, que `deploy-runner.yml` instala en `/usr/local/bin` de VM1):
+Producción solo recibe una versión que **corre hoy en QA** y que **pasó las pruebas de sistema y la prueba de humo después de llegar a QA**. El job `desplegar` de cada repositorio llama, solo en producción, a `compuerta-qa` (script de `infrastructure/ansible/files/compuerta-qa.sh`, que `deploy-runner.yml` instala en `/usr/local/bin` de VM1):
 
 - **Servicios:** `compuerta-qa servicio <deployment> <imagen>` compara la imagen con la del Deployment en el k3s de QA y toma la fecha del ReplicaSet de su revisión actual.
-- **Panel:** `compuerta-qa panel <build>` compara la huella del build con la carpeta `panel-qa` de VM1 y toma la fecha de su último archivo.
-- En los dos casos, la última ejecución de `pruebas-sistema.yml` del repositorio `quickpatch` debe terminar en éxito y haber empezado después de esa fecha. Si no, el despliegue se detiene con el motivo.
-- **Excepción:** la variable del repositorio `COMPUERTA_RNF08_EXCEPCION` (Settings → Variables), con el motivo y la fecha, deja pasar con un aviso en la ejecución. Se borra al terminar el despliegue; así quedó registrada la excepción de la release 0.2.0.
+- **Panel:** `compuerta-qa panel <build>` compara la huella del build con la carpeta del panel del gateway de QA (VM2, por SSH con la llave del runner) y toma la fecha de su último archivo.
+- En los dos casos, la última ejecución de `pruebas-sistema.yml` **y la de `humo-frontends.yml`** del repositorio `quickpatch` deben terminar en éxito y haber empezado después de esa fecha (SCRUM-505). Si alguna falla, es anterior o no existe, el despliegue se detiene con el motivo. Los dos workflows corren al empujar un `release/*` de `quickpatch` (o a mano, y el de humo también con una rama `humo/*`), así que se lanzan juntos; la variable `WORKFLOWS_PRUEBAS` de la compuerta cambia la lista. Cada workflow tiene su propio grupo de `concurrency` (`pruebas-sistema` y `humo-frontends`). Aun así, si empujas varias veces seguidas a `release/*`, GitHub cancela los runs pendientes de cada grupo y la compuerta bloquea con «terminó en 'cancelled'»; no es un fallo de la versión: relanza el workflow a mano (Actions, Run workflow) sobre el último commit.
+- **Excepción:** la variable del repositorio `COMPUERTA_RNF08_EXCEPCION` (Settings → Variables), con el motivo y la fecha, deja pasar con un aviso en la ejecución. Se borra al terminar el despliegue; así quedó registrada la excepción de la release 0.2.0. Esa excepción se levantó el 27 de octubre de 2026 y hoy no hay ninguna vigente (Documento de Infraestructura, sección 6.2).
 
 La aprobación del ambiente `produccion` sigue existiendo: es una segunda compuerta, manual, encima de la automática.
 
-El panel tiene un único job `desplegar`, que copia el build en VM1: en `panel` (producción) o en `panel-qa` (QA). Los dos los sirve el Nginx de VM1; no hay SSH ni imagen. Decisión del 12 de octubre (SCRUM-446) en `docs/infrastructure/INFRASTRUCTURE.md`, sección 3.2.
+El panel tiene un único job `desplegar`, que copia el build por SSH, con la llave del runner, a `/opt/quickpatch/gateway/panel` de VM2 (QA, rama `release/*`) o de VM3 (producción, rama `main`). Lo sirve el Nginx del gateway de cada ambiente (ADR-028, SCRUM-573); VM1 ya no guarda ningún panel. No hay imagen. Decisión en `docs/infrastructure/INFRASTRUCTURE.md`, sección 3.2.
 
 ## Dónde corre cada cosa
 
@@ -89,7 +89,7 @@ Los repositorios son públicos, así que un PR desde un fork no debe ejecutar c�
 - Prueba de humo después de desplegar en producción.
 - Pruebas de contrato con Pact entre servicios (el Documento de Pruebas las menciona en CAT-011 y ACT-013).
 - Limpieza de los datos del tenant de prueba después de k6 (PRF-006).
-- Mover el panel (QA y producción) al k3s cuando tenga imagen; hoy lo sirve el Nginx de VM1.
+- Mover el panel y el gateway (QA y producción) al k3s cuando tengan imagen; hoy los sirve un Nginx por ambiente, en VM2 y VM3 (ADR-028).
 
 ## Ruta del canal en tiempo real (SCRUM-451)
 

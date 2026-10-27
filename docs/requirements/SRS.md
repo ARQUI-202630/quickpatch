@@ -5,8 +5,8 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 5.5 (MVP, incremento del Sprint 4) |
-| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473 |
+| **Versión del documento** | 5.6 (MVP, incremento del Sprint 4) |
+| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598 |
 | **Responsable** | Angy Bautista (Product Owner) |
 | **Estado** | Aprobado por el Product Owner el 14 de octubre de 2026 (SCRUM-406). Línea base de la sección 1.3 revisada el 14 de octubre de 2026 (Sebastián Sánchez). Pendiente: el PR a `develop` |
 | **Estándar de referencia** | IEEE Std 830-1998 |
@@ -130,6 +130,43 @@ A alto nivel, el MVP debe permitir:
 - La única dependencia externa de producción es la pasarela de pagos (SAD, R5). La geocodificación de direcciones (RIE-02) corre dentro de las VMs y las notificaciones del MVP (RIE-03) se entregan dentro de la app, sin proveedores externos (SAD, ADR-024).
 - El sistema debe cumplir la normativa colombiana que aplica al producto: protección de datos personales (Ley 1581 de 2012), protección al consumidor (Ley 1480 de 2011) y facturación electrónica (SAD, killers K12 a K14).
 - El técnico no es subordinado de la plataforma: el sistema no impone turnos, exclusividad ni sanciones por rechazar una solicitud (SAD, restricción R12).
+
+#### 2.3.1 Alcance geográfico: Bogotá D.C. y sus localidades (SCRUM-598)
+
+La restricción geográfica es a la vez una **regla de negocio** del producto y una **restricción de arquitectura** (SAD, R6). En la revisión del Sprint 4 (24 de octubre de 2026), el profesor la aceptó como el alcance con el que se prueba el sistema.
+
+**Regla de negocio.** QUICKPATCH solo atiende solicitudes cuya ubicación esté dentro del área urbana de Bogotá D.C. El sistema la aplica así:
+
+| Momento | Qué valida el sistema | Si no se cumple | Regla |
+|---|---|---|---|
+| El Cliente crea una solicitud con la ubicación del GPS | Que el punto esté dentro del área de cobertura: latitud de 4,45 a 4,85 y longitud de −74,25 a −73,98 (configurable en ServiceRequest, sección `Coverage`) | `422 ubicacion-fuera-de-cobertura`; la solicitud no se crea | DD RN-SR9 |
+| El Cliente escribe la dirección sin compartir el GPS | El geocodificador, que solo tiene el mapa de Bogotá (ADR-024), la convierte en coordenadas, y se aplica la misma validación de cobertura | `422 direccion-no-encontrada` si no la encuentra o no responde a tiempo; la app le pide compartir la ubicación | RF-07, RIE-02 |
+| El sistema busca técnico | Que la ubicación caiga en una de las localidades de cobertura del técnico | El técnico no es candidato; si nadie la cubre, la solicitud queda `en_espera` | DD RN-M9 |
+| El Técnico elige su zona | Que las zonas sean localidades del catálogo de 20 | `400 validacion` | RF-13 |
+
+**Zonas disponibles.** El técnico elige su cobertura entre las 20 localidades de Bogotá, con los límites de IDECA (DD, tabla `localities`), en un mapa dentro de la app sin mapa de fondo externo.
+
+| Código | Localidad | Código | Localidad |
+|---|---|---|---|
+| 01 | Usaquén | 11 | Suba |
+| 02 | Chapinero | 12 | Barrios Unidos |
+| 03 | Santa Fe | 13 | Teusaquillo |
+| 04 | San Cristóbal | 14 | Los Mártires |
+| 05 | Usme | 15 | Antonio Nariño |
+| 06 | Tunjuelito | 16 | Puente Aranda |
+| 07 | Bosa | 17 | La Candelaria |
+| 08 | Kennedy | 18 | Rafael Uribe Uribe |
+| 09 | Fontibón | 19 | Ciudad Bolívar |
+| 10 | Engativá | 20 | Sumapaz |
+
+**Cómo afecta al matching.** La localidad de la solicitud sale de su ubicación y define qué técnicos la pueden atender: solo los que tienen esa localidad en su cobertura (RN-M9). Entre ellos, el sistema ofrece primero al más cercano (RF-09). Si un técnico cambia su cobertura, el sistema vuelve a buscar técnico para las solicitudes en espera (sección 5.5.3).
+
+**Limitación conocida: el área urbana no cubre toda la ciudad.** El área de cobertura es un rectángulo sobre el área urbana. Comparado con los límites de IDECA, **Sumapaz queda completamente fuera**, y también la parte rural de **Usme** y de **Ciudad Bolívar**. Un técnico puede elegir Sumapaz como zona, pero nunca recibirá solicitudes de ahí, porque se rechazan al crearlas. Queda como la decisión pendiente P10 (sección 7.4.2).
+
+**Prueba y datos.**
+- La prueba de una ubicación fuera de Bogotá está en `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`: Villavicencio, latitud 4,15, responde `422 ubicacion-fuera-de-cobertura` en QA.
+- La de una dirección que no existe está en `tests/e2e/evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt` (`422 direccion-no-encontrada`).
+- Los datos de demostración (`tests/datos-demo/juego-datos.json`, SCRUM-632) usan direcciones dentro de Bogotá y dan a los técnicos cobertura en las 20 localidades.
 
 **Fuera del alcance del MVP:** modo sin conexión en la app móvil, sitio web público más allá de la página de presentación (sin SEO ni redes sociales) y módulo de reclamos (SAD, sección 1.3). El chat entre el Cliente y el Técnico asignado sí entra desde la versión 5.5 (RF-37, SCRUM-473); los adjuntos en el chat siguen fuera.
 
@@ -607,6 +644,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | P7 | RNF-14 | La validación del SAD contra los RNF (sección 2.2) cubre 13 RNF y no incluye RNF-14 (Ley 1581). | Agregar RNF-14 a la validación del SAD V4, con su escenario o como restricción ligada al killer K12. |
 | P8 | RF-19, RF-20 | El DD solo define la verificación para técnicos (`technician_profiles`), aunque RF-19 habla de técnicos y proveedores. Además, el caso ACT-005 del TD suspende automáticamente a un técnico con calificación menor a 3.0, algo que ningún RF define y que habría que revisar frente a R12 (sin sanciones al técnico). | (a) Extender la verificación del DD V4 a los proveedores, o limitar RF-19 a técnicos; (b) retirar ACT-005 o crear un RF para la suspensión automática y validarlo frente a R12. |
 | P9 | RF-21 | El DD (sección 8.3.2) dice que el token de acceso dura 15 minutos; SCRUM-348 dice que la configuración de Identity (`Jwt:Lifetime`) es de 60 minutos. Es el tiempo durante el cual un tenant desactivado puede seguir creando solicitudes. | Alinear la configuración con el DD (15 minutos) o el DD con la configuración, y cerrar la brecha con SCRUM-348. |
+| P10 | RF-13, RN-SR9 | El técnico puede elegir Sumapaz (y la parte rural de Usme y Ciudad Bolívar), pero el área de cobertura de las solicitudes es el rectángulo urbano, así que esas zonas nunca reciben solicitudes (sección 2.3.1). | (a) Dejar el rectángulo y que la app avise que Sumapaz no tiene servicio en el MVP; (b) quitar Sumapaz del catálogo de cobertura; (c) validar la cobertura con los polígonos de las localidades en lugar del rectángulo. |
 
 ### 7.5 Control de Versiones del Documento
 
@@ -627,6 +665,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | 5.3 | 20 oct 2026 | Página de presentación pública (SCRUM-491), pedida por el profesor en la revisión del 20 de octubre de 2026. La sección 2.1 suma la página al panel web y la 2.3 acota el «sitio web público» fuera de alcance: solo entra esa página, sin SEO ni redes sociales (SAD 2.31, FA2). No cambia ningún RF ni RNF. |
 | 5.4 | 21 oct 2026 | Comprobante de pago (SCRUM-44). La decisión pendiente P3 pasa a DR-03 (sección 7.4.1): en el MVP, RF-24 se cumple con un comprobante de pago sin validez fiscal, rotulado como tal; la factura electrónica validada por la DIAN queda para producción real (SAD 2.33, killer K14; DD 5.10). No cambia la redacción de RF-24. |
 | 5.5 | 21 oct 2026 | Chat de la solicitud (SCRUM-473, subtarea SCRUM-479). Nuevo RF-37 en F2.3: el Cliente dueño y el Técnico asignado se escriben dentro de la solicitud, con historial y entrega en tiempo real, y el chat queda de solo lectura al terminar o cancelar. La sección 2.3 saca el chat de lo que queda fuera del MVP (los adjuntos siguen fuera) y la matriz de trazabilidad agrega RF-37 (SAD 2.34, ADR-026; DD 5.11). |
+| 5.6 | 26 oct 2026 | Alcance geográfico (SCRUM-598, subtarea SCRUM-599; revisión del Sprint 4). Nueva sección 2.3.1: la restricción a Bogotá como regla de negocio, con lo que valida el sistema en cada momento (RN-SR9, RN-M9, RF-07, RF-13), las 20 localidades seleccionables, su efecto en el matching y la evidencia de la prueba fuera de Bogotá. Nueva decisión pendiente P10: Sumapaz y la parte rural de Usme y Ciudad Bolívar quedan fuera del área de cobertura. |
 
 ---
 
