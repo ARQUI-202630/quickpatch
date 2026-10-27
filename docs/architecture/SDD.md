@@ -252,7 +252,7 @@ payment.approved
 payment.rejected
 ```
 
-Son los 17 esquemas de `quickpatch-kafka` `v0.9.0`. `service-request.rated` (calificación, RF-12) y `ranking.technician-reputation-changed` siguen planeados (DD 8.4, ADR-027).
+Son los 17 esquemas de `quickpatch-kafka` `v0.9.0`. `service-request.rated` (calificación, RF-12) y `ranking.technician-reputation-changed` ya los publican ServiceRequest y Ranking (ADR-027, SCRUM-85 y SCRUM-498); su esquema en `quickpatch-kafka` llega con SCRUM-497.
 
 **Sobre común del evento:**
 
@@ -525,7 +525,7 @@ El código ya define los nueve estados (`ServiceRequestStatus`). Hoy se usan los
 - consume `payment.approved`;
 - consume `payment.rejected`, que no cambia el estado (RN-SR5).
 
-`service-request.rated` (calificación, ADR-027) queda planeado; los consumidores de cada evento están en la matriz 8.6.
+`service-request.rated` (calificación, ADR-027) sale por el mismo Outbox; los consumidores de cada evento están en la matriz 8.6.
 
 **Componentes (C4).**
 
@@ -551,7 +551,7 @@ El diagrama reúne las decisiones de diseño que los demás servicios repiten: r
 | Geocodificación de la dirección | Si la solicitud llega sin coordenadas, busca la dirección en el geocodificador (Nominatim con el mapa de Bogotá) y responde `422 direccion-no-encontrada` si no la encuentra; `location-preview` deja confirmar el punto (ADR-024). | RIE-02; service-request 1.3.0 |
 | Cotización y cancelación | Emite, acepta y rechaza cotizaciones (máximo 3, con vencimiento) y cancela antes de iniciar. | RF-34 a RF-36; 1.5.0 y 1.6.0 |
 | Ejecución y evidencias | Inicia, guarda las fotos en Garage y completa con al menos una; publica `.started` y `.completed`. | RF-14, RF-15; 1.7.0 |
-| Calificación *(planeado)* | Calificación del cliente después del pago; publicará `service-request.rated` (ADR-027). | RF-12 |
+| Calificación | `RatingEndpoints` y `RateServiceRequestHandler`: el dueño califica la solicitud pagada una sola vez (RN-R1 a RN-R3); la fila de `ratings` y `service-request.rated` van en la misma transacción (ADR-027, SCRUM-85). | RF-12 |
 
 ## 6.8 Matching Service
 
@@ -603,23 +603,23 @@ Matching no usa la geocodificación: recibe la solicitud con coordenadas.
 
 **Tecnología asignada:** ASP.NET Core / .NET.
 
-**Dominio:** reputación y evaluación agregada.
+**Dominio:** reputación de los técnicos a partir de sus calificaciones (ADR-027, driver D3).
 
 **Responsabilidades:**
 
-- recalcular reputación de técnicos/aliados;
-- mantener ranking de servicio y, cuando aplique, ranking de materiales/proveedores;
-- consumir resultados y evaluaciones del ciclo de servicio.
+- consumir `service-request.rated` y sumar cada calificación a la reputación del técnico en su tenant, una sola vez por `eventId` y por solicitud;
+- mantener la cantidad, la suma, el promedio redondeado a un decimal y la marca de reputación baja (5 o más calificaciones con promedio menor a 3.0, AC9-E2);
+- publicar `ranking.technician-reputation-changed` por Outbox, para que Identity lo proyecte en `technician_profiles`.
 
-Los modelos persistentes definitivos de ranking permanecen sujetos a evolución del DD.
+No tiene endpoints de negocio: el gateway no le enruta nada (ADR-025). Si Ranking está caído, la calificación igual queda guardada en ServiceRequest y la reputación se pone al día cuando vuelve (AC5-E3). El ranking de materiales y proveedores sigue fuera del MVP (D3).
 
 **Componentes (C4).**
 
 ![Componentes de Ranking Service](diagrams/c4/C4-04-Componentes-Ranking.png)
 
-**Figura 16. Componentes de Ranking Service según ADR-027 (C4 · Component; planeado): consume `service-request.rated` y publica `ranking.technician-reputation-changed` con Outbox; sin API REST desde el gateway (ADR-025). Vista `C4-04-Componentes-Ranking`.**
+**Figura 16. Componentes de Ranking Service según ADR-027 (C4 · Component; implementado en SCRUM-498, sin desplegar hasta SCRUM-512): consume `service-request.rated` y publica `ranking.technician-reputation-changed` con Outbox; sin API REST desde el gateway (ADR-025). Vista `C4-04-Componentes-Ranking`.**
 
-Todos los componentes están planeados: el servicio es hoy un esqueleto.
+Implementado en `quickpatch-ranking` (SCRUM-498), con su base `db_ranking` bajo RLS; todavía no está desplegado en ningún ambiente (SCRUM-512).
 
 ## 6.10 Payments Service
 
@@ -969,7 +969,7 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 ![Calificación y reputación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Calificacion.png)
 
-**Figura 27. Escenario: calificación del servicio y reputación del técnico (C4 · Dynamic; planeado, ADR-027). ServiceRequest guarda la calificación y publica `service-request.rated`; Ranking recalcula y publica `ranking.technician-reputation-changed`, que Identity proyecta en `technician_profiles`. Vista `C4-05-Dinamico-Calificacion`.**
+**Figura 27. Escenario: calificación del servicio y reputación del técnico (C4 · Dynamic; ADR-027, implementado en SCRUM-85 y SCRUM-498). ServiceRequest guarda la calificación y publica `service-request.rated`; Ranking recalcula y publica `ranking.technician-reputation-changed`, que Identity proyecta en `technician_profiles`. Vista `C4-05-Dinamico-Calificacion`.**
 
 **Gestión de tenants.** La única operación que omite RLS, acotada a una transacción con el rol `identity_platform` y auditada (RF-21, SCRUM-112).
 
@@ -995,8 +995,8 @@ La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 
 | `service-request.completed` | `ServiceRequest Service` | `Payments Service`, `Communication Service` | Habilitar el proceso de pago y notificar al cliente que el servicio finalizó. |
 | `payment.approved` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Cambiar estado de solicitud a `pagado` y enviar comprobante/factura al cliente. |
 | `payment.rejected` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Informar rechazo de cobro y habilitar reintento de pago. |
-| `service-request.rated` *(planeado, ADR-027)* | `ServiceRequest Service` | `Ranking Service` | Disparar el recálculo asíncrono de la reputación promedio del técnico, una vez por calificación. |
-| `ranking.technician-reputation-changed` *(planeado, ADR-027)* | `Ranking Service` | `Identity Service` | Actualizar `technician_profiles.average_rating` y la marca de reputación baja (AC9-E2). |
+| `service-request.rated` (ADR-027) | `ServiceRequest Service` | `Ranking Service` | Disparar el recálculo asíncrono de la reputación promedio del técnico, una vez por calificación. |
+| `ranking.technician-reputation-changed` (ADR-027) | `Ranking Service` | `Identity Service` | Actualizar `technician_profiles.average_rating` y la marca de reputación baja (AC9-E2). |
 
 ## 8.7 Consumer Groups
 

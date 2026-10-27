@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.42 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.43 — QUICKPATCH
 
 ---
 
@@ -955,12 +955,14 @@ Cada servicio es responsable de un dominio de negocio, con su propio ciclo de de
 |Actors Service|Suppliers, Allies, Clients|**Planeado**: esqueleto sin persistencia; sus conceptos son evolutivos (SDD 6.14)|No desplegado|No desplegado|
 |Catalog Service|Catalog (especialidades, servicios publicados)|Implementado|Desplegado|Desplegado|
 |Matching Service|Matching, CoverageZone|Implementado; falta consumir `catalog.category-changed` para el nombre de la categoría en la oferta|Desplegado|Desplegado|
-|ServiceRequest Service|ServiceRequest (orquesta cotización → prestación → evaluación)|Implementado hasta el pago; la calificación (RF-12) está **planeada** (ADR-027)|Desplegado|Desplegado|
-|Ranking Service|Ranking (servicio prestado; el de materiales queda fuera del MVP, ver D3)|**Planeado**: esqueleto; se construye con ADR-027|No desplegado|No desplegado|
+|ServiceRequest Service|ServiceRequest (orquesta cotización → prestación → evaluación)|Implementado, incluida la calificación (RF-12, ADR-027, SCRUM-85)|Desplegado|Desplegado|
+|Ranking Service|Ranking (servicio prestado; el de materiales queda fuera del MVP, ver D3)|Implementado (ADR-027, SCRUM-498): reputación del técnico desde `service-request.rated`; sin endpoints de negocio|No desplegado (SCRUM-512)|No desplegado|
 |Payments Service|Payments, Billing, Payroll-lite|Pago con la pasarela simulada, pago de la empresa (RN-P6) y comprobante implementados; los pagos recibidos del técnico (RF-25) están **planeados**|Desplegado|Pendiente (SCRUM-518)|
 |Communication Service|Notifications y Chat de la solicitud (ADR-026); Complaints planificado para el roadmap 1.x, fuera del alcance del MVP|Implementado|Desplegado|Pendiente (SCRUM-518)|
 
 Producción iguala a QA antes de promover el MVP (SCRUM-518 a SCRUM-521): faltan Payments, Communication, Nominatim y los topics de Kafka del incremento (Documento de Infraestructura, sección 4.3).
+
+El interior de cada servicio (capas, componentes con los nombres reales de las clases y sus relaciones con la base, Kafka y el gateway) está en el SDD, sección 6 (diagramas C4 de componentes, figuras 10 a 18; SCRUM-580).
 
 #### 4.2.3 Persistencia
 
@@ -1279,5 +1281,6 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.40|26 oct 2026|Restricción R6 (SCRUM-598, subtarea SCRUM-599; revisión del Sprint 4): explica cómo se aplica dentro de la ciudad (área urbana de RN-SR9, mapa de Bogotá de ADR-024 y localidades de RN-M9) y remite al SRS 2.3.1, con la lista de zonas, la prueba fuera de Bogotá y la decisión pendiente P10 sobre Sumapaz. La 2.39 es el ADR-027 (SCRUM-542).|
 |2.41|27 oct 2026|Estado de los servicios planeados y de producción (SCRUM-544, revisión del Sprint 4), con las decisiones del mapa arquitectónico: la tabla 4.2.2 marca qué servicio está implementado o planeado y dónde está desplegado (Actors y Ranking son esqueletos; producción todavía no tiene Payments ni Communication); 4.2.3 dice para qué se usa Redis de verdad (coordinación de vencimientos, no caché); 4.2.4 usa los nombres reales de los eventos y el aviso del pago por `service-request.status-changed`; 4.2.1 reconoce la página de presentación del panel; 5.1 registra que ADR-022 se aplicó el 7 de octubre.|
 |2.42|27 oct 2026|Validación de los RNF con la evidencia del Sprint 5 (SCRUM-543), sección 2.2: RNF-01 y RNF-10 con el pago de la empresa contra QA (`scrum-496-pago-empresa`, 59/59); RNF-02 con la prueba de TLS de la entrada y la huella del certificado que fija la app; RNF-03 con la prueba de integración del hash BCrypt; RNF-07 con los despliegues del 27 de octubre; RNF-08 sigue sin ejercerse porque no ha habido promociones a producción. Ningún estado cambia: lo que falta es escenario (RNF-02 y RNF-03) o una medición (RNF-01, RNF-08, RNF-09 y RNF-12).|
+|2.43|27 oct 2026|Tabla 4.2.2: la calificación de ServiceRequest (SCRUM-85) y Ranking (SCRUM-498) pasan a implementados según ADR-027; Ranking sigue sin desplegar (SCRUM-512). La sección remite a los diagramas de componentes del SDD, sección 6 (SCRUM-580, SCRUM-584).|
 |2.27|12 oct 2026|Dependencias externas frente a R5 (SCRUM-413 y SCRUM-405). Se acepta ADR-024: R5 no cambia; la geocodificación (RIE-02) corre con un Nominatim propio con el mapa de Bogotá en VM4 y VM5, usado por ServiceRequest cuando la solicitud llega sin coordenadas, y las notificaciones (RIE-03) del MVP se entregan dentro de la app (canal de ADR-023 y buzón en Communication). El diagrama de contexto (4.1) pasa el geocodificador adentro del sistema y retira el proveedor de correo y push, y la nota de sistemas externos lo explica. ADR-024 entra a la tabla 5.5 y a la matriz 6.1 como excepción a ADR-014.|
 |2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|
