@@ -108,7 +108,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idSecurityAdapters = component "RsaTokenIssuer y BCryptPasswordHasher" "Firma el JWT RS256 (ADR-018) y hace el hash de las contraseñas (RNF-03)." "Infrastructure/Security"
                     idOutbox = component "EfOutbox" "Guarda technician.registered y technician.verification-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Messaging"
                     idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
-                    idReputationConsumer = component "Consumidor de ranking.technician-reputation-changed" "Actualiza technician_profiles.average_rating y la marca de reputación baja; descarta eventos más viejos por changedAt (ADR-027, ADR-017)." "Kafka consumer · Infrastructure/Messaging" "Planeado"
+                    idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta average_rating, rating_count y low_reputation en technician_profiles; descarta lo atrasado por changedAt (ADR-027, ADR-017)." "Kafka consumer · Infrastructure/Messaging"
                 }
                 actors = container "Actors Service" "Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     acApi = component "API de actores" "Consulta y mantenimiento de actores del tenant." "Minimal API" "Planeado"
@@ -138,6 +138,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     srReferenceEndpoints = component "ReferenceEndpoints" "GET /v1/service-requests/categories y /localities desde las réplicas (ADR-025)." "Minimal API · Api/Endpoints"
                     srQuoteEndpoints = component "QuoteEndpoints" "GET y POST /v1/service-requests/{id}/quotes, accept y reject (RF-34, RF-35)." "Minimal API · Api/Endpoints"
                     srExecutionEndpoints = component "ExecutionEndpoints" "POST /start, /evidence y /complete; GET de las evidencias (RF-14, RF-15)." "Minimal API · Api/Endpoints"
+                    srRatingEndpoints = component "RatingEndpoints" "POST /v1/service-requests/{id}/rating: dueño de la solicitud pagada; 403, 404 y 409 (RF-12, DD 8.3.11)." "Minimal API · Api/Endpoints"
                     srAdminEndpoints = component "AdminServiceRequestEndpoints" "Lista y resumen por estado del admin del tenant y de plataforma (RF-18)." "Minimal API · Api/Endpoints"
                     srSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Usuario, tenant, rol y company_id de los claims del JWT, nunca del cuerpo (RN-U3); registra los 403." "ASP.NET Core · Api/Security"
                     # Application
@@ -146,11 +147,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     srQuotes = component "Quotes" "IssueQuoteHandler, RespondQuoteHandler y ExpireQuoteHandler (máximo 3, vencimiento)." "Casos de uso · Application/Quotes"
                     srExecution = component "Execution" "StartServiceHandler, UploadEvidenceHandler y CompleteServiceHandler." "Casos de uso · Application/Execution"
                     srEventHandlers = component "Manejadores de eventos" "ApplyCategoryChangedHandler, MatchingStatusHandler y PaymentEventsHandler: aplican cada evento una vez por eventId." "Casos de uso · Application/Categories, Matching y Payments"
-                    srRating = component "Calificación" "Calificación del cliente tras el pago y service-request.rated (RF-12, ADR-027)." "Casos de uso" "Planeado"
+                    srRating = component "Ratings" "RateServiceRequestHandler: valida dueño, estado pagado y que no esté calificada (RN-R1 a RN-R3) y deja service-request.rated en el Outbox (ADR-027)." "Casos de uso · Application/Ratings"
                     # Domain
-                    srDomain = component "Dominio de la solicitud" "ServiceRequest (transiciones RN-SR2 a RN-SR7), Quote, ServiceEvidence, CategoryReplica, GeoPoint, CoverageArea y Locality." "Domain"
+                    srDomain = component "Dominio de la solicitud" "ServiceRequest (transiciones RN-SR2 a RN-SR7), Quote, ServiceEvidence, Rating, CategoryReplica, GeoPoint, CoverageArea y Locality." "Domain"
                     # Infrastructure
-                    srPersistence = component "TenantUnitOfWork y repositorios" "ServiceRequestRepository, QuoteRepository, EvidenceRepository, CategoryReplicaRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                    srPersistence = component "TenantUnitOfWork y repositorios" "ServiceRequestRepository, QuoteRepository, EvidenceRepository, RatingRepository, CategoryReplicaRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
                     srOutbox = component "EfOutbox" "Guarda los eventos de la solicitud en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
                     srPublisher = component "OutboxPublisher" "Lotes con FOR UPDATE SKIP LOCKED; publica y marca published_at." "BackgroundService · Infrastructure/Messaging"
                     srCategoryConsumer = component "CategoryChangedConsumer" "Consume catalog.category-changed." "Kafka consumer · Infrastructure/Messaging"
@@ -171,12 +172,16 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     maApi = component "API de técnicos y ofertas" "Localidades; disponibilidad y cobertura del técnico; ofertas pendientes, aceptar y rechazar (matching.v1.yaml 1.0.0)." "Spring MVC"
                     maProyeccion = component "Proyección del técnico" "Consume technician.registered y technician.verification-changed y guarda especialidad y verificación (P-01, ADR-017); reanuda solicitudes en espera (RN-M10)." "@KafkaListener"
                 }
-                ranking = container "Ranking Service" "Reputación de técnicos." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    raConsumidor = component "Consumidor de service-request.rated" "Aplica cada calificación una sola vez, por eventId y serviceRequestId (ADR-027)." "Kafka consumer" "Planeado"
-                    raCalculo = component "Cálculo de reputación" "Cantidad, suma y promedio por técnico; reputación baja con 5 o más calificaciones y promedio menor a 3.0 (RF-12, AC9-E2)." "Domain" "Planeado"
-                    raPersistencia = component "Persistencia con RLS" "Reputación por técnico y calificaciones aplicadas, por tenant." "EF Core + Npgsql" "Planeado"
-                    raOutbox = component "Outbox" "Guarda ranking.technician-reputation-changed en la misma transacción (ADR-007)." "EF Core" "Planeado"
-                    raPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService" "Planeado"
+                ranking = container "Ranking Service" "Reputación de técnicos desde las calificaciones (ADR-027)." "ASP.NET Core (.NET 10)" "Microservicio" {
+                    # Application
+                    raHandler = component "ServiceRequestRatedHandler" "Suma la calificación bajo el tenant del evento, una vez por eventId y por solicitud, y deja ranking.technician-reputation-changed en el Outbox." "Casos de uso · Application/Reputation"
+                    # Domain
+                    raDomain = component "Dominio de reputación" "TechnicianReputation (cantidad, suma, promedio NUMERIC(2,1) y reputación baja con 5 o más calificaciones y promedio menor a 3.0, AC9-E2) y AppliedRating." "Domain/Reputation"
+                    # Infrastructure
+                    raPersistence = component "TenantUnitOfWork y repositorios" "ReputationRepository (FOR UPDATE por técnico) y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                    raOutbox = component "EfOutbox" "Guarda ranking.technician-reputation-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
+                    raPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol ranking_outbox y marca published_at." "BackgroundService · Infrastructure/Messaging"
+                    raConsumer = component "ServiceRequestRatedConsumer" "Consume service-request.rated; confirma el offset después de aplicar y descarta lo que no cumple el contrato." "Kafka consumer · Infrastructure/Messaging"
                 }
                 payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
@@ -223,7 +228,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 dbCatalog = container "db_catalog" "service_categories y outbox_events." "PostgreSQL" "Database"
                 dbServiceRequest = container "db_service_request" "service_requests, service_request_categories, outbox_events y processed_events." "PostgreSQL + PostGIS" "Database"
                 dbMatching = container "db_matching" "Disponibilidad, cobertura, intentos y processed_events." "PostgreSQL + PostGIS" "Database"
-                dbRanking = container "db_ranking" "Reputación agregada." "PostgreSQL" "Database"
+                dbRanking = container "db_ranking" "technician_reputations, applied_ratings, processed_events y outbox_events." "PostgreSQL" "Database"
                 dbPayments = container "db_payments" "payments e invoices, sin PAN ni CVV; outbox_events y processed_events." "PostgreSQL" "Database"
                 dbCommunication = container "db_communication" "Buzón por usuario y chat de la solicitud." "PostgreSQL" "Database"
             }
@@ -302,6 +307,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         gateway -> srReferenceEndpoints "Enruta /api/v1/service-requests/categories y /localities" "HTTP"
         gateway -> srQuoteEndpoints "Enruta /api/v1/service-requests/{id}/quotes" "HTTP"
         gateway -> srExecutionEndpoints "Enruta /start, /evidence y /complete" "HTTP"
+        gateway -> srRatingEndpoints "Enruta /api/v1/service-requests/{id}/rating" "HTTP"
         gateway -> srAdminEndpoints "Enruta /api/v1/admin y /api/v1/platform/service-requests" "HTTP"
         gateway -> acApi "Enruta /api/v1/actors" "HTTP" "Planeado"
         gateway -> paPaymentEndpoints "Enruta /api/v1/service-requests/{id}/payment" "HTTP"
@@ -337,8 +343,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         idOutbox -> dbIdentity "INSERT en outbox_events" "SQL"
         idPublisher -> dbIdentity "Lee pendientes y marca published_at" "SQL"
         idPublisher -> kafka "Publica technician.registered y technician.verification-changed" "Kafka"
-        idReputationConsumer -> kafka "Consume ranking.technician-reputation-changed" "Kafka" "Planeado"
-        idReputationConsumer -> idPersistence "Actualiza el promedio del técnico con" "" "Planeado"
+        idReputationConsumer -> kafka "Consume ranking.technician-reputation-changed" "Kafka"
+        idReputationConsumer -> idPersistence "Actualiza la reputación del técnico con"
 
         # Actors
         acApi -> acProveedores "Usa" "" "Planeado"
@@ -367,7 +373,6 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         srQuoteEndpoints -> srQuotes "Invoca"
         srExecutionEndpoints -> srExecution "Invoca"
         srAdminEndpoints -> srRequests "Invoca los casos de administración de"
-        srRequestEndpoints -> srRating "Invocará" "" "Planeado"
         srRequests -> srDomain "Crea y cambia el estado con"
         srQuotes -> srDomain "Aplica las reglas de la cotización con"
         srExecution -> srDomain "Inicia y completa con"
@@ -383,7 +388,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         srRequests -> srOutbox "Registra .created, .status-changed y .cancelled con"
         srQuotes -> srOutbox "Registra .quoted, .quote-accepted y .quote-rejected con"
         srExecution -> srOutbox "Registra .started y .completed con"
-        srRating -> srOutbox "Registrará service-request.rated con" "" "Planeado"
+        srRating -> srOutbox "Registra service-request.rated con"
+        srRating -> srPersistence "Guarda la calificación con"
+        srRating -> srDomain "Valida el puntaje y el comentario con"
+        srRatingEndpoints -> srSecurity "Toma el usuario autenticado de"
+        srRatingEndpoints -> srRating "Invoca"
         srCategoryConsumer -> kafka "Consume catalog.category-changed" "Kafka"
         srMatchingConsumer -> kafka "Consume matching.*" "Kafka"
         srPaymentConsumer -> kafka "Consume payment.*" "Kafka"
@@ -421,14 +430,15 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         maBusqueda -> dbMatching "Consulta disponibilidad y cobertura (PostGIS)" "SQL"
 
         # Ranking
-        raConsumidor -> kafka "Consume service-request.rated" "Kafka" "Planeado"
-        raConsumidor -> raCalculo "Entrega la calificación a" "" "Planeado"
-        raCalculo -> raPersistencia "Guarda la reputación con" "" "Planeado"
-        raCalculo -> raOutbox "Registra ranking.technician-reputation-changed con" "" "Planeado"
-        raPersistencia -> dbRanking "Lee y escribe (RLS)" "SQL" "Planeado"
-        raOutbox -> dbRanking "INSERT en outbox_events" "SQL" "Planeado"
-        raPublisher -> dbRanking "Lee pendientes y marca published_at" "SQL" "Planeado"
-        raPublisher -> kafka "Publica ranking.technician-reputation-changed" "Kafka" "Planeado"
+        raConsumer -> kafka "Consume service-request.rated" "Kafka"
+        raConsumer -> raHandler "Entrega la calificación a"
+        raHandler -> raDomain "Recalcula la reputación con"
+        raHandler -> raPersistence "Registra el eventId y guarda la reputación con"
+        raHandler -> raOutbox "Registra ranking.technician-reputation-changed con"
+        raPersistence -> dbRanking "Lee y escribe technician_reputations, applied_ratings y processed_events (RLS)" "SQL"
+        raOutbox -> dbRanking "INSERT en outbox_events" "SQL"
+        raPublisher -> dbRanking "Lee pendientes y marca published_at" "SQL"
+        raPublisher -> kafka "Publica ranking.technician-reputation-changed" "Kafka"
 
         # Payments
         paPaymentEndpoints -> paSecurity "Toma el usuario autenticado de"
@@ -650,7 +660,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             include *
             autoLayout tb 150 80
         }
-        component ranking "C4-04-Componentes-Ranking" "Componentes de Ranking Service según ADR-027 (planeados; hoy el servicio es un esqueleto): consume service-request.rated y publica ranking.technician-reputation-changed." {
+        component ranking "C4-04-Componentes-Ranking" "Componentes de Ranking Service por capa (ADR-027): consume service-request.rated y publica ranking.technician-reputation-changed con Outbox; sin API REST desde el gateway (ADR-025). Implementado; todavía sin desplegar (SCRUM-512)." {
             include *
             autoLayout tb 150 80
         }
@@ -749,7 +759,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-Calificacion" "Escenario: calificación del servicio y reputación del técnico (RF-12, RF-20, AC9-E2; ADR-027, planeado)." {
+        dynamic quickpatch "C4-05-Dinamico-Calificacion" "Escenario: calificación del servicio y reputación del técnico (RF-12, RF-20, AC9-E2; ADR-027; Ranking todavía sin desplegar, SCRUM-512)." {
             title "Escenario: calificación del servicio y reputación del técnico"
             mobile -> gateway "POST /v1/service-requests/{id}/rating con score y comment opcional" "HTTPS/JSON"
             gateway -> serviceRequest "Enruta con el JWT del cliente"
