@@ -866,7 +866,7 @@ sequenceDiagram
 
 ---
 
-**Vista C4.** Los diagramas dinámicos muestran el flujo a nivel de contenedores y numerado: la Figura 22 va de la solicitud a la oferta, y la Figura 22b, de la aceptación al aviso al cliente.
+**Vista C4.** Los diagramas dinámicos muestran el flujo a nivel de contenedores y numerado: cada uno lleva como título el escenario que representa, y sus pasos nombran el evento de Kafka que viaja en cada uno. La Figura 22 va de la solicitud a la oferta, y la Figura 22b recorre el escenario completo de la asignación, desde `service-request.created` hasta que el cliente ve a su técnico (SCRUM-590).
 
 ![Creación de solicitud y matching (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-CrearSolicitud.png)
 
@@ -874,11 +874,11 @@ sequenceDiagram
 
 ### 8.3.1 Aceptación de la oferta por el técnico (SCRUM-30)
 
-El técnico ve sus ofertas pendientes con la localidad y la distancia, pero no la dirección, que solo recibe al quedar asignado (RN-SR13; `GET /v1/matching/offers?status=pendiente`). Al aceptar (`POST /v1/matching/offers/{attemptId}/accept`), Matching Service verifica en una sola transacción que la oferta siga `pendiente`, sea de ese técnico y no haya vencido, y que el técnico siga `disponible`. Si no, responde `409 oferta-no-disponible` o `409 tecnico-no-disponible`. Si todo se cumple, marca al técnico `ocupado` y publica `matching.technician-assigned` por el Outbox. ServiceRequest pasa la solicitud a `asignado`, y Communication guarda la notificación en el buzón y avisa al cliente por su WebSocket.
+El técnico ve sus ofertas pendientes con la localidad y la distancia, pero no la dirección, que solo recibe al quedar asignado (RN-SR13; `GET /v1/matching/offers?status=pendiente`). Al aceptar (`POST /v1/matching/offers/{attemptId}/accept`), Matching Service verifica en una sola transacción que la oferta siga `pendiente`, sea de ese técnico y no haya vencido, y que el técnico siga `disponible`. Si no, responde `409 oferta-no-disponible` o `409 tecnico-no-disponible`. Si todo se cumple, marca al técnico `ocupado` y publica `matching.technician-assigned` por el Outbox. ServiceRequest la consume, pasa la solicitud a `asignado` y publica `service-request.status-changed` en la misma transacción; Communication consume ese evento (no el de Matching, SCRUM-466), guarda la notificación en el buzón y avisa al cliente por su WebSocket.
 
 ![Aceptación del técnico (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-AsignacionTecnico.png)
 
-**Figura 22b. Aceptación de la oferta por el técnico y aviso al cliente (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-AsignacionTecnico`.**
+**Figura 22b. Escenario: asignación de técnico a una solicitud (C4 · Dynamic). Vista `C4-05-Dinamico-AsignacionTecnico`.**
 
 ## 8.4 Secuencia de pago y facturación
 
