@@ -1,0 +1,166 @@
+scrum-108-aprobacion-rechazo contra QA, 2026-10-22
+Colección: tests/e2e/scrum-108-aprobacion-rechazo.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-10-22T21:12:38.177Z. Duración: 17 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-108 Aprobación y Rechazo de Técnicos (Admin)
+
+□ 0. Preparación: categoría propia, técnico aprobado y clientes
+└ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 992ms]
+  √  200 con rol admin_tenant
+
+└ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 438B, 19ms]
+  √  201
+
+└ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 442B, 913ms]
+  √  201
+
+└ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16575-833c-7fd0-85ce-a725c269f928/approve [200 OK, 321B, 17ms]
+  √  200
+
+└ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 922ms]
+  √  200 con rol tecnico
+
+└ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 28ms]
+  √  200
+
+└ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 18ms]
+  √  200
+
+└ Registro de otro técnico, sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 960ms]
+  √  201
+
+└ Login del otro técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1001ms]
+  √  200 con rol tecnico
+
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 916ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 941ms]
+  √  200 con rol cliente
+
+└ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 432B, 922ms]
+  √  201
+
+└ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 919ms]
+  √  200 con rol cliente
+
+└ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 439B, 923ms]
+  √  201
+
+└ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 919ms]
+  √  200 con rol cliente
+
+□ 1. Consulta y Filtros de Verificación (RF-19 / DD §8.2.1)
+└ 1.1 Admin lista técnicos pendientes de verificación
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians?verificationStatus=pendiente&size=100 [200 OK, 31.62kB, 19ms]
+  √  [RF-19] 200 OK al listar técnicos pendientes
+
+└ 1.2 Admin lista técnicos aprobados
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians?verificationStatus=aprobado [200 OK, 5.2kB, 22ms]
+  √  [Filtro status=aprobado] 200 OK y técnico aprobado listado
+
+□ 2. Aprobación de Técnico (RF-19 / RN-TP1 / DD §8.3.13)
+└ 2.1 Admin aprueba técnico pendiente (tecnico2Id)
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16575-8c5d-75b4-9518-55ad336309a8/approve [200 OK, 321B, 19ms]
+  √  [RF-19 / RN-TP1] 200 OK al aprobar perfil técnico
+
+└ 2.2 Admin verifica que técnico aprobado ya no está en pendientes
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians?verificationStatus=pendiente [200 OK, 7.28kB, 23ms]
+  √  [Consistencia] El técnico aprobado ya no aparece en pendientes
+
+└ 2.3 Transición Inválida: Intento de aprobar técnico ya aprobado -> 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16575-833c-7fd0-85ce-a725c269f928/approve [409 Conflict, 491B, 14ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+□ 3. Rechazo de Técnico con Motivo (RF-19 / DD §8.3.13)
+└ 3.0 Registro dinámico de técnico para prueba de rechazo
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 444B, 939ms]
+  √  201
+
+└ 3.1 Validación: Intento de rechazar sin motivo válido (< 5 caracteres) -> 400 Bad Request
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16575-adfa-7042-9385-fc1d6f281b89/reject [400 Bad Request, 556B, 18ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo validacion
+
+└ 3.2 Admin rechaza técnico con motivo válido
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16575-adfa-7042-9385-fc1d6f281b89/reject [200 OK, 383B, 18ms]
+  √  [RF-19] 200 OK al rechazar técnico con motivo fundamentado
+
+└ 3.3 Transición Inválida: Intento de rechazar técnico aprobado -> 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16575-833c-7fd0-85ce-a725c269f928/reject [409 Conflict, 491B, 14ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+□ 4. Control de Acceso RBAC y Aislamiento Multi-Tenant (RLS)
+└ 4.1 Control RBAC: Cliente intenta aprobar técnico -> 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16575-833c-7fd0-85ce-a725c269f928/approve [403 Forbidden, 443B, 7ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ 4.2 Control RBAC: Técnico intenta auto-aprobarse -> 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16575-833c-7fd0-85ce-a725c269f928/approve [403 Forbidden, 443B, 8ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ 4.3 Seguridad: Consulta anónima sin token -> 401 Unauthorized
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians [401 Unauthorized, 476B, 9ms]
+  √  401
+  √  Problem Details (RFC 9457) con correlationId
+
+└ 4.4 Aislamiento Multi-Tenant (RLS): Actor de Tenant Beta no ve técnicos de Alfa -> 404
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians/01a16575-833c-7fd0-85ce-a725c269f928 [404 Not Found, 443B, 8ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+□ Limpieza
+└ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16575-833c-7fd0-85ce-a725c269f928/suspend [200 OK, 348B, 23ms]
+  √  200
+
+└ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a16575-82c9-78bc-91ad-03adbd3aca9d [200 OK, 434B, 20ms]
+  √  200
+
+┌─────────────────────────┬────────────────────┬────────────────────┐
+│                         │           executed │             failed │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              iterations │                  1 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│                requests │                 30 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│            test-scripts │                 30 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│      prerequest-scripts │                 30 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              assertions │                 40 │                  0 │
+├─────────────────────────┴────────────────────┴────────────────────┤
+│ total run duration: 13.9s                                         │
+├───────────────────────────────────────────────────────────────────┤
+│ total data received: 53.99kB (approx)                             │
+├───────────────────────────────────────────────────────────────────┤
+│ average response time: 385ms [min: 7ms, max: 1001ms, s.d.: 452ms] │
+└───────────────────────────────────────────────────────────────────┘
+(node:3004) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
