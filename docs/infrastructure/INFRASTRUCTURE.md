@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.2 |
+| **Versión** | 4.3 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -397,6 +397,7 @@ Los grupos `produccion` (VM3, VM4 y VM6) y `qa` (VM2, VM5 y VM7) reúnen los de 
 | `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá (ADR-024): contenedor con su propio PostgreSQL, proxy en la red del host en el 8088 y extracto copiado desde el controlador; solo QA por ahora |
 | `deploy-kafka.yml` | VM6 y VM7 | Kafka en modo KRaft; en VM6, también Kafka UI |
 | `operar-kafka-grupos.yml` | VM6 y VM7 | Solo lectura por defecto: grupos de consumidores, su lag y la retención de cada topic. Con `-e grupo`, `-e topic` y `-e destino` simula el reinicio de offsets, y con `-e ejecutar=si` lo aplica (sección 5.10) |
+| `probar-restauracion-pg.yml` | VM4 | Baja de Garage la copia de un día, restaura las 8 bases en bases de prueba `prueba_restauracion_*` de la misma instancia, compara tablas y filas con las reales y borra todo. No toca las bases `db_*` (sección 9.3) |
 | `deploy-k3s.yml` | VM3 y VM2 | k3s de un nodo con los rangos de red de abajo, Traefik en la red del host (puertos 30080 y 30443), namespace `quickpatch` y kubeconfig para el runner |
 | `deploy-gateway.yml` | VM3 y VM2; VM1 | En cada VM de aplicación, el Nginx del gateway del ambiente con su carpeta de panel; en VM1, la entrada TLS con los tres nombres (sección 11) y el certificado. `--limit vm2`, `--limit vm3` o `--limit vm1`; `-e copiar_panel=qa|produccion` copia el panel que sirve VM1 al gateway del ambiente |
 | `verificar-gateway-ambiente.yml` | VM1 | Solo lectura: compara, para cada ambiente, el gateway, Traefik, el panel y la entrada de VM1 por nombre y por IP |
@@ -782,7 +783,7 @@ Ningún secreto (contraseñas, llaves de Garage, tokens de la pasarela de pagos,
 | Contenido | Roles y permisos (`pg_dumpall --globals-only`) y un `pg_dump -Fc` por cada una de las 8 bases de servicio |
 | Destino | Bucket `backups-postgres` de Garage en VM6 (ADR-016), una carpeta por día. VM distinta de VM4: una falla de VM4 no se lleva su propio respaldo |
 | Credenciales | Llave `backups` de Garage, que solo tiene acceso a ese bucket |
-| Retención | 7 días en Garage y 2 días en el disco de VM4 (copia local para restaurar sin depender de VM6) |
+| Retención | 7 días en Garage y unos 2 días en el disco de VM4, que en la práctica son 3 carpetas (el borrado local usa `-mtime +2`), como copia local para restaurar sin depender de VM6 |
 | Registro | `/var/log/quickpatch-pg-backup.log` en VM4 |
 
 ### 9.3 Cómo restaurar una base
@@ -798,6 +799,10 @@ La restauración es **manual**, por R7 (sin operación 24/7), dentro de la venta
 4. Volver a levantar el servicio (`--replicas` al valor anterior) y revisar sus logs en Grafana.
 
 Cada base se restaura por separado, porque cada servicio tiene la suya: un problema en una base no obliga a restaurar las demás.
+
+**Probar que la restauración funciona (SCRUM-521).** `./ap playbooks/probar-restauracion-pg.yml --limit vm4` baja de Garage la copia más reciente (o la del día de `-e dia=AAAA-MM-DD`), compara el tamaño de cada archivo con la copia local, restaura las 8 bases en bases de prueba `prueba_restauracion_<servicio>`, compara con la base real el conjunto de tablas y las filas, y al terminar borra las bases de prueba y la carpeta temporal aunque algo falle. No toca las bases `db_*` ni los servicios. Las filas de la base real son de ahora y las del respaldo son de las 2:00, así que pueden diferir; lo que debe coincidir es el conjunto de tablas. El total de filas no cuenta `spatial_ref_sys`, la tabla de referencia de PostGIS (8.500 filas en cada base con esa extensión).
+
+**Resultado del 27 de octubre de 2026 (copia del 26 de octubre).** Los 9 archivos de Garage tienen el mismo tamaño que la copia local; las 8 bases restauraron sin errores y con las mismas tablas que las reales. El respaldo se completó cada noche del 15 al 26 de octubre (`/var/log/quickpatch-pg-backup.log`). Producción tiene hoy muy pocos datos: `db_identity` con 1 tenant y 2 usuarios, `db_catalog` con 0 categorías de servicio, `db_service_request` y `db_matching` con 0 solicitudes, y `db_payments`, `db_communication`, `db_actors` y `db_ranking` sin tablas. La prueba se ejecutó con la variante que contaba `spatial_ref_sys`; la exclusión de esa tabla del total solo se probó en local. Conviene repetir la prueba cada mes y después de cualquier cambio en el script de respaldo.
 
 ### 9.4 Recuperación ante desastres
 
@@ -1180,3 +1185,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.0 | 26 oct 2026 | Revisión de cierre del Sprint 5 (SCRUM-552 a 555 y SCRUM-506): sección 4.3 con el estado real de QA y producción; sección 5.6 corregida con los límites de los manifiestos (384 MiB) y con la medición de VM3; sección 5.10 con la operación de Kafka (retención, grupos, lag y reinicio de offsets) y el playbook `operar-kafka-grupos.yml`; sección 10.5 con el estado del cifrado en tránsito y en reposo. |
 | 4.1 | 26 oct 2026 | AC2-E5 aclarado (secciones 3.2, 5.6 y 13): se mide en QA con los 8 servicios y los límites de cada pod, no contra 6,5 GiB en VM3, como dice el SAD desde la versión 2.15; los 4,6 GiB quedan como proyección de capacidad de VM3. Se registra que el reinicio de Communication en QA no fue `OOMKilled`. |
 | 4.2 | 27 oct 2026 | Operación de Kafka (SCRUM-555): el reinicio de offsets se probó en QA con un grupo de prueba (simulación, aplicación, verificación y borrado) y la sección 5.10 lo registra; el lag de `communication-service` no es fijo sino creciente (50 mensajes el 27 de octubre) y apunta a que no consume los eventos `matching.*`. |
+| 4.3 | 27 oct 2026 | Prueba de restauración del respaldo de PostgreSQL de producción (SCRUM-521): playbook `probar-restauracion-pg.yml`, sección 9.3 con el resultado y la retención local real (3 carpetas) en 9.2. |
