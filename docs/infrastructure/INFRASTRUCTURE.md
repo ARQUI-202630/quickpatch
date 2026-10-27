@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.5 |
+| **Versión** | 4.6 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -119,6 +119,13 @@ flowchart TB
 - **QA** son VM2, VM5 y VM7, con la misma forma que producción y datos y secretos propios. No puede conectarse a los servicios de producción.
 - **El runner de VM1** despliega en los dos k3s y corre las pruebas de sistema contra QA. Se conecta hacia GitHub para recibir trabajos; GitHub nunca entra a la red del laboratorio.
 - **Monitoreo:** las 7 VMs envían métricas (`node_exporter`, 9100) y logs (Promtail, 3100) a VM1 (sección 7). No se dibuja para no cruzar todas las flechas.
+
+**Vista formal por ambiente.** Este esquema resume la red. Las vistas de despliegue C4 dibujan cada ambiente por separado, con sus nodos, su gateway, sus bases, su Kafka y su Garage, y con VM1 como infraestructura auxiliar. Se generan desde `docs/architecture/diagrams/c4/quickpatch.dsl` y son las mismas del SAD (figuras 5.1 y 5.2) y del SDD (figuras 30 y 31):
+
+- Producción: `docs/architecture/diagrams/c4/C4-06-Despliegue-Produccion.png`
+- QA: `docs/architecture/diagrams/c4/C4-06-Despliegue-QA.png`
+
+Cuando cambie lo desplegado (sección 4.3), se actualizan el DSL y las dos imágenes junto con este documento.
 
 ### 2.2 Principios de la arquitectura de despliegue
 
@@ -1190,3 +1197,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.3 | 27 oct 2026 | Prueba de restauración del respaldo de PostgreSQL de producción (SCRUM-521): playbook `probar-restauracion-pg.yml`, sección 9.3 con el resultado y la retención local real (3 carpetas) en 9.2. |
 | 4.4 | 27 oct 2026 | Tope de pool aplicado en producción y excepción al RNF-08 levantada (SCRUM-521): `Maximum Pool Size` en los Secret de Identity, Catalog y ServiceRequest, sección 6.2 con el motivo, la evidencia y lo que no se midió, y notas de 5.7 y de las limitaciones. |
 | 4.5 | 27 oct 2026 | Secret de Payments y Communication y Nominatim en producción (SCRUM-519 y SCRUM-520): sección 4.3 y la tabla de lo que falta, sección 5.9 con la medición en VM4 y el acceso comprobado, regla del 8088 aplicada y tabla de playbooks. |
+| 4.6 | 27 oct 2026 | Sección 2.1 remite a las vistas de despliegue C4 por ambiente (producción y QA), las mismas del SAD y el SDD (SCRUM-576). |
