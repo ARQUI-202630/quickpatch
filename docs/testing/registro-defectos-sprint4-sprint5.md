@@ -27,10 +27,10 @@ La siguiente tabla consolida los defectos identificados en los ciclos de prueba 
 
 | ID Jira | Severidad | Servicio | Detectado en (prueba) | Estado | Sprint en que se corrigió | Evidencia / Enlace |
 |:---:|:---:|---|---|:---:|:---:|---|
-| **BUG-SP4-001** | Media (Falla de Arnés) | Test Harness Local | Simulación Local E2E (Orden ajena) | **Corregido** | Sprint 4 | Commit `f6db3e7` / [`mock-gateway-local-simulacion.js:L564`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/mock-gateway-local-simulacion.js#L564) / Corrida: `tests/e2e/evidencias/scrum-81-90-93-local-2026-10-17.txt` |
-| **BUG-SP4-002** | Media | Runner Newman | E2E MVP (`run-mvp.js` login cliente) | **Corregido** | Sprint 4 | Commit `308f245` / [`run-mvp.js:L40`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/run-mvp.js#L40) / Corrida: `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` |
-| **BUG-SP4-003** | Media (Falla de Arnés) | Test Harness Local | Simulación Local E2E (SCRUM-108 vs 111) | **Corregido** | Sprint 4 | Commit `743d06c` / [`run-all-increment-suites.js:L50`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/run-all-increment-suites.js#L50) / Corrida: `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt` |
-| **BUG-SP4-004** | Baja | Scanner PCI | Consola Windows cp1252 (stdout encoding) | **Corregido** | Sprint 4 | Commit `308f245` / [`run-pci-dss-suite.py:L20`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/security/run-pci-dss-suite.py#L20) / Evidencia: `tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt` |
+| **BUG-SP4-001** | Media (Falla de Arnés) | Test Harness Local | Simulación Local E2E (Orden ajena) | **Corregido** | Sprint 4 | Commit `f6db3e7` / [`mock-gateway-local-simulacion.js:564`](../../tests/e2e/mock-gateway-local-simulacion.js#L564) / Corrida: `tests/e2e/evidencias/scrum-81-90-93-local-2026-10-17.txt` |
+| **BUG-SP4-002** | Media | Runner Newman | E2E MVP (`run-mvp.js` login cliente) | **Corregido** | Sprint 4 | Commit `308f245` / [`run-mvp.js:40`](../../tests/e2e/run-mvp.js#L40) / Corrida: `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` |
+| **BUG-SP4-003** | Media (Falla de Arnés) | Test Harness Local | Simulación Local E2E (SCRUM-108 vs 111) | **Corregido** | Sprint 4 | Commit `743d06c` / [`run-all-increment-suites.js:50`](../../tests/e2e/run-all-increment-suites.js#L50) / Corrida: `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt` |
+| **BUG-SP4-004** | Baja | Scanner PCI | Consola Windows cp1252 (stdout encoding) | **Corregido** | Sprint 4 | Commit `308f245` / [`run-pci-dss-suite.py:20`](../../tests/security/run-pci-dss-suite.py#L20) / Evidencia: `tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt` |
 | **BUG-SP4-005** | Media | `quickpatch-service-request` | E2E QA (`scrum-84-seguimiento-estado`) | **Corregido** | Sprint 4 | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt` |
 | **BUG-SP4-006** | Media (Inválido) | `quickpatch-service-request` | E2E QA (Ruta `/assigned-detail`) | **Descartado** | Sprint 4 | Contrato OpenAPI canónico es `GET /api/v1/service-requests/{id}` |
 | **BUG-SP4-007** | Media | Runner Newman / Seed | E2E QA (Cuentas fijas omitidas) | **Corregido** | Sprint 4 | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt` (patrón `preparacion()`) |
@@ -71,7 +71,7 @@ La siguiente tabla consolida los defectos identificados en los ciclos de prueba 
 * **Causa Raíz:** Cláusula de excepción hardcodeada `&& reqId !== 'sr-qa-001'` que puenteaba la validación de pertenencia.
 * **Evidencia en Repositorio:**
   - Commit de corrección: `f6db3e7` (*"fix(qa): resolver observaciones de revision PR #106..."*).
-  - Archivo modificado: [`mock-gateway-local-simulacion.js:L564`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/mock-gateway-local-simulacion.js#L564).
+  - Archivo modificado: [`mock-gateway-local-simulacion.js:564`](../../tests/e2e/mock-gateway-local-simulacion.js#L564).
   - Corrida de verificación: `tests/e2e/evidencias/scrum-81-90-93-local-2026-10-17.txt`.
 * **Estado:** Corregido y Verificado.
 
@@ -83,7 +83,7 @@ La siguiente tabla consolida los defectos identificados en los ciclos de prueba 
 * **Causa Raíz:** La suite anterior `SCRUM-108` aprobaba al técnico en el diccionario estático en memoria de Node.js, dejando el estado mutado para la suite siguiente.
 * **Evidencia en Repositorio:**
   - Commit de corrección: `743d06c` (*"fix(qa): atender feedback pr106, reclasificar defectos..."*).
-  - Archivo instrumentado: [`run-all-increment-suites.js:L50`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/tests/e2e/run-all-increment-suites.js#L50) implementando invocación a `resetState()`.
+  - Archivo instrumentado: [`run-all-increment-suites.js:50`](../../tests/e2e/run-all-increment-suites.js#L50) implementando invocación a `resetState()`.
   - Corrida de verificación: `tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt`.
 * **Estado:** Corregido y Verificado.
 

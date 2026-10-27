@@ -1,64 +1,72 @@
-# Matriz de Funcionalidades y Cobertura SRS V5 (SCRUM-561)
+# Matriz de Funcionalidades y Cobertura SRS V5.5 (SCRUM-561)
 
-**Código del Documento:** `MTX-FUNC-SRS-V5-2026-10-25`  
-**Versión:** `2.0 Final`  
-**Fecha:** 25 de octubre de 2026  
+**Código del Documento:** `MTX-FUNC-SRS-V5.5-2026-10-26`  
+**Versión:** `3.0 Final Sincronizada`  
+**Fecha:** 26 de octubre de 2026  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
-**Trazabilidad Jira:** Tarea `SCRUM-561` | SRS V5 | Documento de Pruebas `TD.md` V3.0  
+**Trazabilidad Jira:** Tarea `SCRUM-561` | SRS v5.5 (33 RFs canónicos: RF-01 a RF-29 y RF-34 a RF-37) | `TD.md` V3.0  
 **Ambiente:** QA Desplegado (`https://qa.quickpatch.internal` en VM2 k3s)  
 
 ---
 
-## 1. Convenciones de Estado de Desarrollo y Prueba
+## 1. Convenciones y Estándar de Clasificación
 
-* **Probada (E2E QA):** Funcionalidad completamente implementada en backend/frontend y certificada mediante suites E2E ejecutadas contra el clúster de QA desplegado.
-* **Probada (Mock):** Funcionalidad validada en flujos de prueba contra servicios simulados o pasarelas en modo sandbox/mock (ej. pasarela de pagos Wompi/Stripe simulada).
-* **No desarrollada:** Requisito o funcionalidad especificada en el SRS pero cuya lógica de negocio no ha sido implementada en los microservicios actuales.
-
----
-
-## 2. Matriz de Cobertura de Requisitos Funcionales (SRS V5)
-
-| RF / HU | Funcionalidad | Servicio Responsable | Estado de Desarrollo / Prueba | Archivo de Evidencia (Ruta Relativa del Repositorio) | Observaciones |
-|---|---|---|:---:|---|---|
-| **RF-01** (SCRUM-21) | Registro de Clientes Individuales | `Identity` | **Probada (E2E QA)** | `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` | Creación de cuenta, validación de contraseña segura y unicidad de email. |
-| **RF-02** (SCRUM-21) | Autenticación y Cierre de Sesión (JWT) | `Identity` | **Probada (E2E QA)** | `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` | Emisión de tokens JWT RSA-256 con claims de tenant y rol. |
-| **RF-03** (SCRUM-21) | Consulta de Perfil de Usuario (`/me`) | `Identity` | **Probada (E2E QA)** | `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` | Consulta de datos básicos y roles del usuario autenticado. |
-| **RF-04** (SCRUM-23) | Consulta de Categorías y Especialidades | `Catalog` | **Probada (E2E QA)** | `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` | Catálogo de servicios con caché Redis y respuesta $< 100\text{ ms}$. |
-| **RF-05** (SCRUM-28) | Creación de Solicitud de Servicio | `ServiceRequest` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt` | Alta de solicitud en estado `buscando_tecnico` con evento Outbox. |
-| **RF-06** (SCRUM-43) | Liquidación y Pago de Solicitud | `Payments` | **Probada (Mock)** | `tests/e2e/evidencias/scrum-117-pago-qa-2026-10-22.txt` | Integración con pasarela de pagos simulada en modo sandbox/mock. |
-| **RF-07** (SCRUM-45) | Generación de Comprobante de Pago | `Payments` | **Probada (Mock)** | `tests/e2e/evidencias/scrum-495-comprobante-qa-2026-10-22.txt` | Emisión de recibo digital simulado con correlationId y desglose. |
-| **RF-08** (SCRUM-30) | Cancelación de Solicitud de Servicio | `ServiceRequest` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-478-cancelacion-qa-2026-10-19.txt` | Cancelación atómica y liberación de técnico en Matching. |
-| **RF-09** (SCRUM-29) | Motor de Asignación Automática (Matching) | `Matching` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt` | Evaluación de proximidad geoespacial con PostGIS y estado operativo. |
-| **RF-10** (SCRUM-29) | Notificación y Aceptación/Rechazo de Oferta | `Matching` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` | Aceptación y rechazo atómico de ofertas con reintento automático. |
-| **RF-11** (SCRUM-31) | Seguimiento de Estados en Tiempo Real | `ServiceRequest` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt` | Transiciones `buscando_tecnico` $\to$ `asignado` $\to$ `en_progreso` $\to$ `completado`. |
-| **RF-12** (SCRUM-32) | Calificación del Servicio Realizado | `ServiceRequest` | **No desarrollada** | *(Sin archivo de evidencia)* | Funcionalidad de calificación por el cliente aún no implementada. |
-| **RF-13** (SCRUM-22) | Registro de Técnico Independiente | `Identity` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt` | Alta con especialidad y estado inicial `pendiente_verificacion`. |
-| **RF-14** (SCRUM-22) | Registro de Empresa Proveedora | `Identity` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt` | Alta de entidad proveedora con herencia de tenant. |
-| **RF-15** (SCRUM-81) | Cobertura Geográfica de Técnico | `Matching` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` | Definición de polígonos y radios de atención con PostGIS. |
-| **RF-16** (SCRUM-36) | Gestión de Equipo de Técnicos por Proveedor | `Actors` / `Identity` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt` | Alta, activación y listado de técnicos del equipo del proveedor. |
-| **RF-17** (SCRUM-90) | Control de Disponibilidad Operativa | `Matching` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` | Conmutación de estado disponible / no disponible para asignaciones. |
-| **RF-18** (SCRUM-34) | Panel Operativo de Solicitudes para Técnico | `ServiceRequest` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt` | Detalle de orden con datos de contacto resueltos para técnico asignado. |
-| **RF-19** (SCRUM-39) | Aprobación y Rechazo de Técnicos | `Identity` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt` | Dictamen administrativo con emisión de evento Kafka outbox. |
-| **RF-20** (SCRUM-40) | Suspensión de Cuenta de Técnico | `Identity` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-111-suspension-tecnico-qa-2026-10-22.txt` | Suspensión con motivo justificado y bloqueo automático en matching. |
-| **RF-21** (SCRUM-32) | Reputación y Ranking de Técnico | `Ranking` | **No desarrollada** | *(Sin archivo de evidencia)* | Microservicio Ranking opera en esqueleto (6 pruebas unitarias básicas). |
-| **RF-22** (SCRUM-66) | Cuenta Corporativa y Gestión de Miembros | `Identity` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-68-cuenta-corporativa-qa-2026-10-22.txt` | Aprovisionamiento de tenant empresarial y roles corporativos. |
-| **RF-23** (SCRUM-73) | Solicitud de Servicio Corporativa | `ServiceRequest` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-2026-10-22.txt` | Creación de solicitud con cargo a centro de costos empresarial. |
-| **RF-24** (SCRUM-96) | Carga de Evidencia Fotográfica en S3 | `ServiceRequest` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-96-evidencia-qa-2026-10-22.txt` | Subida de imágenes a Garage S3 (VM7) requerida para cierre de orden. |
-| **RF-25** (SCRUM-458) | Geocodificación y Validación Espacial | `ServiceRequest` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt` | Resolución de coordenadas en perímetro urbano de Bogotá. |
-| **RF-26** (SCRUM-483) | Chat Bidireccional Cliente-Técnico | `Communication` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-483-chat-qa-2026-10-22.txt` | Mensajería de texto transaccional asociada al ciclo de la orden. |
-| **RF-27** (SCRUM-490) | Cotización de Servicio con Tarifa Base | `ServiceRequest` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-490-cotizacion-qa-2026-10-22.txt` | Estimación de precio previa a la confirmación de la solicitud. |
-| **RF-28** (SCRUM-614) | Edición de Perfil de Usuario | `Identity` | **No desarrollada** | *(Sin archivo de evidencia)* | Endpoint y formularios de actualización de perfil no implementados. |
-| **RF-29** (SCRUM-627) | Recuperación de Contraseña por Correo | `Identity` | **No desarrollada** | *(Sin archivo de evidencia)* | Flujo de reset de credenciales por email no implementado. |
-| **RF-30** (SCRUM-24) | Aislamiento Lógico por Tenant (RLS) | Persistencia / `All` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt` | Políticas Row-Level Security en PostgreSQL VM5; respuesta HTTP 404. |
-| **RF-31** (SCRUM-24) | Control de Acceso Basado en Roles (RBAC) | `Gateway` / `All` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt` | Bloqueo con HTTP 403 Forbidden ante invocaciones no autorizadas. |
-| **RF-32** (SCRUM-478) | Avisos en Tiempo Real (WebSocket) | `Communication` | **Probada (E2E QA)** | `tests/e2e/evidencias/scrum-478-aviso-tiempo-real-qa-2026-10-22.txt` | Difusión de eventos de asignación y cambio de estado vía WS. |
+Conforme a la directriz de arquitectura y el estándar del SRS v5.5:
+* **Implementado / Aprobado (E2E QA):** Funcionalidad desplegada en el clúster de QA y certificada mediante suites automáticas con archivo de corrida en el repositorio.
+* **Implementado (mock) / Aprobado:** Funcionalidad validada en flujos de prueba contra pasarela simulada o sandbox (ej. Pagos conforme a RN-P6 y ADR-009).
+* **Parcial / Aprobado con observaciones:** Flujo verificado en componentes principales con alguna sub-acción o integración pendiente de completar.
+* **No implementado / Sin probar:** Requisito del SRS cuya lógica no ha sido desarrollada aún (ej. Ranking/Calificación RF-12 y registro de pagos recibidos RF-25).
+* **Alcance:** Los números RF-30 a RF-33 fueron retirados formalmente en el SRS v3.0 y sus identificadores no se reutilizan.
 
 ---
 
-## 3. Resumen Cuantitativo de Funcionalidades
+## 2. Matriz Oficial de Cobertura de Requisitos Funcionales (SRS v5.5)
 
-* **Total de Funcionalidades Evaluadas:** **32 Requisitos Funcionales**.
-* **Probadas y Certificadas en QA Real (E2E):** **26 funcionalidades (81.3%)**.
-* **Probadas con Mocks / Sandbox (Pagos):** **2 funcionalidades (6.2%)** (RF-06 y RF-07).
-* **No Desarrolladas / Pendientes:** **4 funcionalidades (12.5%)** (Calificación RF-12, Reputación/Ranking RF-21, Editar Perfil RF-28, Recuperar Contraseña RF-29).
+| ID | Módulo | Descripción del Requisito Funcional (SRS v5.5 §5) | Estado Desarrollo | Resultado QA | Archivo de Evidencia (Ruta Relativa del Repositorio) | Observaciones Técnicas |
+|:---:|---|---|:---:|:---:|---|---|
+| **RF-01** | Usuarios y Cuentas | Registro de Cliente (correo, contraseña $\ge 8$, correo único en el tenant) | Implementado | Aprobado | `tests/e2e/evidencias/tenant-beta-qa-2026-10-15.txt`; `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` | Creación de cuenta, hashing BCrypt y unicidad validada. |
+| **RF-02** | Usuarios y Cuentas | Registro de Técnico/Proveedor con documentos $\to$ 'Pendiente de verificación' | Implementado | Aprobado | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt` (23 aserciones) | Registro validado contra QA desplegado con RFC 9457 Problem Details. |
+| **RF-03** | Usuarios y Cuentas | Inicio de sesión de todos los roles + bloqueo tras 5 intentos fallidos | Implementado | Aprobado | `tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt` (bloque fuerza bruta) | Respuesta HTTP 423 Locked tras 5 intentos fallidos (RN-U4). |
+| **RF-04** | Multi-tenancy | Aislamiento de datos por tenant (`tenant_id` del usuario autenticado) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt`; `tests/e2e/evidencias/tenant-beta-qa-2026-10-15.txt` | RLS en PostgreSQL VM5; intentos cross-tenant retornan HTTP 404. |
+| **RF-05** | Seguridad | Acceso por rol y por canal (panel solo admins; app el resto) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt`; `tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt` | Bloqueo HTTP 403 Forbidden ante accesos no autorizados por RBAC. |
+| **RF-06** | Usuarios y Cuentas | Cuenta corporativa de Empresa con varios usuarios autorizados | Implementado | Aprobado | `tests/e2e/evidencias/scrum-68-cuenta-corporativa-qa-2026-10-22.txt` (68 aserciones) | Alta de tenant corporativo y gestión de miembros multi-usuario. |
+| **RF-07** | Solicitudes y Matching | Crear solicitud (categoría, ubicación GPS o dirección geocodificada en Bogotá, descripción) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt` | Geocodificación urbana y asignación con radio geoespacial PostGIS. |
+| **RF-08** | Solicitudes y Matching | Solicitud de servicio a nombre de la Empresa (sedes) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-2026-10-22.txt` (56 aserciones) | Creación de solicitud con asignación a sede empresarial. |
+| **RF-09** | Solicitudes y Matching | Asignación automática de técnico (matching por especialidad, zona y cercanía) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt` | Algoritmo PostGIS; latencia percentil 95 p95 = 73.55 ms en carga 50 VU. |
+| **RF-10** | Solicitudes y Matching | Técnico acepta o rechaza la oferta antes de 3 min; si no, pasa al siguiente | Implementado | Aprobado | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` (bloques 2.3 y 2.6) | Rechazo legítimo de oferta (OFF-002) y aceptación atómica (OFF-004). |
+| **RF-11** | Seguimiento y Calificación | Estado de la solicitud en tiempo real (mín. 4 estados) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt`; `tests/e2e/evidencias/scrum-478-aviso-tiempo-real-qa-2026-10-22.txt` | Transiciones de estado auditadas y eventos WebSocket en tiempo real. |
+| **RF-12** | Seguimiento y Calificación | Calificar el servicio (1–5 + comentario) una vez, tras el pago | No implementado | Sin probar | *(Sin archivo de evidencia)* | Ranking es un esqueleto con 8 pruebas; sin endpoint de calificación. |
+| **RF-13** | Ejecución de Servicios | Técnico cambia disponibilidad y zona de cobertura (localidades) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` | Conmutación operativa y actualización de polígonos de cobertura. |
+| **RF-14** | Ejecución de Servicios | Detalle completo de la solicitud asignada al técnico | Implementado | Aprobado | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` (bloque 3.1 DTL-001) | Técnico asignado ve teléfono y dirección (RN-SR13). Terceros reciben 403. |
+| **RF-15** | Ejecución de Servicios | Completar la solicitud solo con evidencia fotográfica | Implementado | Aprobado | `tests/e2e/evidencias/scrum-96-evidencia-qa-2026-10-22.txt` (71 aserciones) | Subida obligatoria de fotografía a Garage S3 (VM7) para cierre de orden. |
+| **RF-16** | Gestión de Equipos | Proveedor registra y administra su equipo de técnicos | Implementado | Aprobado | `tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt` (43 aserciones) | Alta, activación y listado de técnicos del proveedor certificados. |
+| **RF-17** | Ejecución de Servicios | Historial de solicitudes atendidas por el técnico | Implementado | Aprobado | `tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt` | Consulta de solicitudes finalizadas y filtrado por estado en QA. |
+| **RF-18** | Administración | Panel de solicitudes activas por estado (tenant / todos los tenants) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt` (35 aserciones) | Monitoreo operacional de solicitudes en curso por tenant. |
+| **RF-19** | Administración | Aprobar o rechazar con motivo técnicos/proveedores (auditado) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt` | Aprobación con motivo auditado y publicación de evento Kafka outbox. |
+| **RF-20** | Administración | Suspender la cuenta de un técnico (fecha y responsable) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-111-suspension-tecnico-qa-2026-10-22.txt` (39 aserciones) | Suspensión motivada con fecha, actor responsable y bloqueo en matching. |
+| **RF-21** | Administración | Activar/desactivar tenants con confirmación y auditoría | Implementado | Aprobado | `tests/e2e/evidencias/tenant-beta-qa-2026-10-15.txt`; `tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt` | Activación/desactivación de organizaciones con aislamiento RLS. |
+| **RF-22** | Pagos | Pago con tarjeta de la cotización aceptada (pasarela PCI-DSS) | Implementado (mock) | Aprobado | `tests/e2e/evidencias/scrum-117-pago-qa-2026-10-22.txt` (57 aserciones) | Pasarela simulada sandbox sin tocar datos de tarjeta reales (ADR-009). |
+| **RF-23** | Pagos | Pago a nombre de la cuenta corporativa | Implementado (mock) | Aprobado | `tests/e2e/evidencias/scrum-117-pago-qa-2026-10-22.txt`; PR quickpatch-payments#25 | Pago corporativo con validación multi-usuario conforme a RN-P6 (SCRUM-118). |
+| **RF-24** | Pagos | Comprobante automático al confirmarse el pago | Implementado | Aprobado | `tests/e2e/evidencias/scrum-495-comprobante-qa-2026-10-22.txt` (42 aserciones) | Emisión digital con desglose de servicios y correlation-id (DR-03). |
+| **RF-25** | Pagos | Registro de pagos recibidos para Técnico/Proveedor | No implementado | Sin probar | *(Sin archivo de evidencia)* | Payments no implementa aún el endpoint `/payments/received` (Sp5/futuro). |
+| **RF-26** | CI/CD | Pipeline CI/CD con build y pruebas antes de desplegar | Implementado | Aprobado | GitHub Actions (8 repos backend, runs oficiales #57, #68, etc.) | Pipelines automatizados en GitHub Actions con 1.032 pruebas backend PASS. |
+| **RF-27** | CI/CD | Prueba E2E automática del flujo crítico (solicitud $\to$ … $\to$ pago $\to$ calificación) | Parcial | Aprobado con obs. | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt`; `tests/e2e/evidencias/scrum-117-pago-qa-2026-10-22.txt` | Flujo verificado hasta pago y comprobante; pendiente únicamente calificación. |
+| **RF-28** | Logging y Monitoreo | Logs centralizados con correlation-id + alertas de caída | Implementado | Aprobado con obs. | `tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt` | Trazas estructuradas en Loki con correlation-id; alertas en configuración. |
+| **RF-29** | Seguridad | Cifrado en tránsito (TLS) y contraseñas con hash | Implementado | Aprobado | `tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt`; `tests/security/evidencias/zap-dast-baseline-qa-2026-10-18.txt` | Nginx Ingress fuerza TLS 1.2/1.3; Identity aplica BCrypt para credenciales. |
+| **RF-34** | Ejecución de Servicios | Técnico emite cotización (mano de obra + materiales) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-490-cotizacion-qa-2026-10-22.txt` (76 aserciones) | Desglose formal de cotización previa al inicio de labores. |
+| **RF-35** | Solicitudes y Matching | Cliente acepta/rechaza la cotización (máx. 3; vence) | Implementado | Aprobado | `tests/e2e/evidencias/scrum-490-cotizacion-qa-2026-10-22.txt` | Aceptación con avance de estado o rechazo controlado por el cliente. |
+| **RF-36** | Solicitudes y Matching | Cancelar la solicitud antes de iniciar, con motivo | Implementado | Aprobado | `tests/e2e/evidencias/scrum-478-cancelacion-qa-2026-10-19.txt` (63 aserciones) | Cancelación justificada y liberación de recursos en matching. |
+| **RF-37** | Seguimiento y Calificación | Chat Cliente–Técnico dentro de la solicitud, en tiempo real | Implementado | Aprobado | `tests/e2e/evidencias/scrum-483-chat-qa-2026-10-22.txt` (69 aserciones) | Canal bidireccional transaccional por WebSocket asociado a la orden. |
+| **EXT-01** | Usuarios y Cuentas | Editar perfil (comentario del profesor) | No implementado | Sin probar | *(Sin archivo de evidencia)* | No especificado formalmente en SRS; pendiente definición de PO. |
+| **EXT-02** | Interacción (AC4) | Navegación consistente: botón de volver en todas las pantallas | Parcial | Sin probar | `tests/e2e/evidencias/humo-qa-2026-10-19/` | Botón de retorno implementado en pantallas principales del flujo. |
+| **EXT-03** | Landing / Release | Descargar el APK desde la landing (pedido del profesor) | Implementado | Aprobado | `quickpatch-mobile releases/tag/v0.5.1-qa` (55.25 MB, HTTP 200 OK) | Descarga directa de `quickpatch.apk` verificada vía HTTP 302 $\to$ 200 OK. |
+
+---
+
+## 3. Resumen Cuantitativo Consolidado
+
+* **Total de Requisitos Funcionales Oficiales (SRS v5.5):** **33 Requisitos Funcionales**.
+* **Requisitos Implementados y Aprobados en QA:** **28 RFs (84.8%)** (26 directos + 2 en mock de pagos).
+* **Requisitos Parciales con Observaciones:** **2 RFs (6.1%)** (RF-27 flujo E2E y RF-28 alertas).
+* **Requisitos No Implementados / Pendientes:** **3 RFs (9.1%)** (RF-12 Calificación, RF-25 Registro de Pagos, más EXT-01).
+* **Total de Extensiones Adicionales Auditadas:** **3 ítems** (EXT-01, EXT-02 y EXT-03).

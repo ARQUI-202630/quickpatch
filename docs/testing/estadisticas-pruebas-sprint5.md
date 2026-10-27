@@ -77,25 +77,25 @@ Conforme a la directriz técnica de QA, las peticiones masivas de carga no se co
 * **Defectos en Mitigación en Sprint 5:** **4 (28.6%)** (ninguno bloqueante).
 * **Defectos Críticos o Bloqueantes Abiertos:** **0 (0.0%)**.
 
-Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/registro-defectos-sprint4-sprint5.md).
+Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-defectos-sprint4-sprint5.md).
 
 ---
 
 ## 5. Resumen Ejecutivo y Gráficas de Calidad
 
 * **Total de Pruebas Reales Automatizadas:** **1,917 pruebas / aserciones**.
-* **Tasa de Aprobación de Pruebas:** **100.0% PASS (0 fallos)**.
+* **Tasa de Aprobación de Pruebas:** **100.0% PASS (0 fallos en runs oficiales)**.
 * **Capacidad de Carga k6:** **44,631 peticiones procesadas** con 0.00% de errores y p95 de 415.39 ms bajo 150 VU.
 * **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.
 
 ### Gráfica 1: Distribución de Pruebas por Tipo
-![Gráfica 1: Distribución por Tipo](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-1-pruebas-por-tipo.png)
+![Gráfica 1: Distribución por Tipo](img/grafica-1-pruebas-por-tipo.png)
 
-### Gráfica 2: Tasa de Éxito de Pruebas (100% PASS)
-![Gráfica 2: Torta de Éxito](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-2-torta-exito-pruebas.png)
+### Gráfica 2: Tasa de Éxito de Pruebas
+![Gráfica 2: Torta de Éxito](img/grafica-2-torta-exito-pruebas.png)
 
 ### Gráfica 3: Estado y Severidad de Defectos
-![Gráfica 3: Defectos](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-3-barras-defectos.png)
+![Gráfica 3: Defectos](img/grafica-3-barras-defectos.png)
 
 ### Gráfica 4: Pruebas Reales de CI por Microservicio
-![Gráfica 4: Pruebas de CI por Microservicio](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-4-cobertura-por-servicio.png)
+![Gráfica 4: Pruebas de CI por Microservicio](img/grafica-4-cobertura-por-servicio.png)
