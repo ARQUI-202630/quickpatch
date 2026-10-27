@@ -22,119 +22,119 @@ Una funcionalidad que comparten varios usuarios se repite en cada uno, porque el
 
 | ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
 |---|---|---|---|---|---|---|---|---|---|---|
-| V-01 | Presentación | Ver la página de presentación de QUICKPATCH | — (SRS 5.3) | SCRUM-491 | Panel: ruta `''` (`presentacion`) | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | No | No | No |
-| V-02 | Presentación | Descargar el APK de la app | — | SCRUM-628 | Panel: botón de descarga de `presentacion` hacia el último release | Sí | No | No | No | Sí (prueba E2E de descarga) |
+| V-01 | Presentación | Ver la página de presentación de QUICKPATCH | — (SRS 5.3) | SCRUM-491 | Panel: ruta `''` (`presentacion`) | Sí | No | No | No | Sí (pendiente de prueba de interfaz en QA; scrum-105 prueba API del panel) |
+| V-02 | Presentación | Descargar el APK de la app | — | SCRUM-628 | Panel: botón de descarga de `presentacion` hacia el último release | Sí | No | No | No | Sí (SCRUM-628 descarga existe sin prueba en QA) |
 
 ## 2. Cliente hogar (app móvil)
 
 | ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
 |---|---|---|---|---|---|---|---|---|---|---|
-| C-01 | Cuenta | Registrarse con correo y contraseña | RF-01 | SCRUM-21 | `registro_page` → `POST /v1/auth/register/client` | Sí | Sí ([tenant-beta-qa-2026-10-15.txt](../../tests/e2e/evidencias/tenant-beta-qa-2026-10-15.txt)) | Sí | No | No |
-| C-02 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` → `POST /v1/auth/login` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | Sí | No | No |
-| C-03 | Cuenta | Cerrar sesión | — | — | `cuenta_page`, botón "Cerrar sesión" | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | Sí | No | No |
-| C-04 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla; contrato `PATCH /v1/users/me` en diseño (SCRUM-610) | No | No | No | No | Sí (contrato SCRUM-610 y pantalla UI) |
-| C-05 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla; contrato en diseño (SCRUM-624) | No | No | No | No | Sí (contrato SCRUM-624 y pantalla UI) |
-| C-06 | Solicitudes | Crear una solicitud con GPS o dirección escrita | RF-07 | SCRUM-27 | `nueva_solicitud_page` → `location-preview` y `POST /v1/service-requests` | Sí | Sí ([scrum-75-solicitud-empresa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-2026-10-22.txt)) | Sí | No | No |
-| C-07 | Solicitudes | Ver sus solicitudes y el estado en tiempo real | RF-11 | SCRUM-31 | `mis_solicitudes_page`, `detalle_solicitud_page` y canal `/v1/realtime` | Sí | Sí ([scrum-84-seguimiento-estado-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt)) | Sí | No | No |
-| C-08 | Solicitudes | Aceptar o rechazar la cotización | RF-35 | SCRUM-486 | `detalle_solicitud_page` → `quotes/{id}/accept` y `reject` | Sí | Sí ([scrum-490-cotizacion-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-490-cotizacion-qa-2026-10-22.txt)) | Sí | No | No |
-| C-09 | Solicitudes | Cancelar la solicitud con motivo | RF-36 | SCRUM-472 | `detalle_solicitud_page` → `POST /v1/service-requests/{id}/cancel` | Sí | Sí ([scrum-478-cancelacion-qa-2026-10-19.txt](../../tests/e2e/evidencias/scrum-478-cancelacion-qa-2026-10-19.txt)) | Sí | No | No |
+| C-01 | Cuenta | Registrarse con correo y contraseña | RF-01 | SCRUM-21 | `registro_page` → `POST /v1/auth/register/client` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | No | No | No |
+| C-02 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` → `POST /v1/auth/login` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | No | No | No |
+| C-03 | Cuenta | Cerrar sesión | — | — | `cuenta_page`, botón "Cerrar sesión" | Sí | No | No | No | Sí (cerrar sesión es de la app, sin prueba de interfaz en QA) |
+| C-04 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla; contrato `PATCH /v1/users/me` en diseño (SCRUM-610) | No | No | No | No | Sí (SCRUM-609; contrato SCRUM-610 y pantalla UI) |
+| C-05 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla; contrato en diseño (SCRUM-624) | No | No | No | No | Sí (SCRUM-623; contrato SCRUM-624 y pantalla UI) |
+| C-06 | Solicitudes | Crear una solicitud con GPS o dirección escrita | RF-07 | SCRUM-27 | `nueva_solicitud_page` → `location-preview` y `POST /v1/service-requests` | Sí | Sí ([scrum-75-solicitud-empresa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-2026-10-22.txt)) | No | No | No |
+| C-07 | Solicitudes | Ver sus solicitudes y el estado en tiempo real | RF-11 | SCRUM-31 | `mis_solicitudes_page`, `detalle_solicitud_page` y canal `/v1/realtime` | Sí | Sí ([scrum-84-seguimiento-estado-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt)) | No | No | No |
+| C-08 | Solicitudes | Aceptar o rechazar la cotización | RF-35 | SCRUM-486 | `detalle_solicitud_page` → `quotes/{id}/accept` y `reject` | Sí | Sí ([scrum-490-cotizacion-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-490-cotizacion-qa-2026-10-22.txt)) | No | No | No |
+| C-09 | Solicitudes | Cancelar la solicitud con motivo | RF-36 | SCRUM-472 | `detalle_solicitud_page` → `POST /v1/service-requests/{id}/cancel` | Sí | Sí ([scrum-478-cancelacion-qa-2026-10-19.txt](../../tests/e2e/evidencias/scrum-478-cancelacion-qa-2026-10-19.txt)) | No | No | No |
 | C-10 | Solicitudes | Chatear con el técnico asignado | RF-37 | SCRUM-473 | `chat_page` → `/v1/service-requests/{id}/messages` y canal en tiempo real | Sí | Sí ([scrum-483-chat-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-483-chat-qa-2026-10-22.txt)) | No | No | No |
 | C-11 | Notificaciones | Ver el buzón de notificaciones | RF-11 | — | `notificaciones_page` → `/v1/notifications` | Sí | Sí ([scrum-458-geocodificacion-buzon-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt)) | No | No | No |
 | C-12 | Pagos | Pagar con tarjeta | RF-22 | SCRUM-42 | `pagar_page` → `POST /v1/service-requests/{id}/payment` (pasarela simulada) | Sí | Sí ([scrum-117-pago-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-117-pago-qa-2026-10-22.txt)) | No | Sí | No |
 | C-13 | Pagos | Ver el comprobante del pago | RF-24 | SCRUM-44 | `comprobante_page` → `GET /v1/payments/{id}/invoice` | Sí | Sí ([scrum-495-comprobante-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-495-comprobante-qa-2026-10-22.txt)) | No | No | No |
-| C-14 | Calificación | Calificar el servicio (1 a 5, una vez, después del pago) | RF-12 | SCRUM-32 | Ruta declarada en `api_endpoints.dart`, sin pantalla; backend planeado (ADR-027) | No | No | No | No | Sí (backend Ranking ADR-027 y pantalla UI) |
+| C-14 | Calificación | Calificar el servicio (1 a 5, una vez, después del pago) | RF-12 | SCRUM-32 | Ruta declarada en `api_endpoints.dart`, sin pantalla; backend planeado (ADR-027) | Parcial | No | No | No | Sí (backend fusionado SCRUM-85; faltan pantalla SCRUM-86 y QA SCRUM-87) |
 
 ## 3. Empresa cliente (usuario `empresa_contacto`, app móvil)
 
 | ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
 |---|---|---|---|---|---|---|---|---|---|---|
-| E-01 | Cuenta | Registrar la cuenta corporativa (razón social, NIT y contacto) | RF-06 | SCRUM-26 | `registro_page` → `POST /v1/auth/register/company` | Sí | Sí ([scrum-68-cuenta-corporativa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-68-cuenta-corporativa-qa-2026-10-22.txt)) | Sí | No | No |
-| E-02 | Cuenta | Agregar usuarios autorizados de la empresa | RF-06 | SCRUM-26 | `usuarios_empresa_page` y `agregar_usuario_empresa_page` → `/v1/companies/me/users` | Sí | Sí ([scrum-68-cuenta-corporativa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-68-cuenta-corporativa-qa-2026-10-22.txt)) | Sí | No | No |
-| E-03 | Cuenta | Activar la cuenta por invitación (definir la contraseña) | RF-06 | SCRUM-26 | `activar_cuenta_page` → `POST /v1/auth/password/setup` | Sí | Sí ([scrum-68-cuenta-corporativa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-68-cuenta-corporativa-qa-2026-10-22.txt)) | Sí | No | No |
-| E-04 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | Sí | No | No |
-| E-05 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | Sí | No | No |
-| E-06 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | No | No | No | No | Sí (contrato SCRUM-610 y pantalla UI) |
-| E-07 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | No | No | No | No | Sí (contrato SCRUM-624 y pantalla UI) |
-| E-08 | Solicitudes | Crear una solicitud para una sede, a nombre de la empresa | RF-08 | SCRUM-28 | `nueva_solicitud_page` con el nombre de la sede | Sí | Sí ([scrum-75-solicitud-empresa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-2026-10-22.txt)) | Sí | No | No |
-| E-09 | Solicitudes | Ver las solicitudes y el estado en tiempo real | RF-11 | SCRUM-31 | Las mismas pantallas de C-07 | Sí | Sí ([scrum-84-seguimiento-estado-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt)) | Sí | No | No |
-| E-10 | Solicitudes | Aceptar o rechazar la cotización | RF-35 | SCRUM-486 | Igual que C-08 | Sí | Sí ([scrum-490-cotizacion-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-490-cotizacion-qa-2026-10-22.txt)) | Sí | No | No |
-| E-11 | Solicitudes | Cancelar la solicitud con motivo | RF-36 | SCRUM-472 | Igual que C-09 | Sí | Sí ([scrum-478-cancelacion-qa-2026-10-19.txt](../../tests/e2e/evidencias/scrum-478-cancelacion-qa-2026-10-19.txt)) | Sí | No | No |
+| E-01 | Cuenta | Registrar la cuenta corporativa (razón social, NIT y contacto) | RF-06 | SCRUM-26 | `registro_page` → `POST /v1/auth/register/company` | Sí | Sí ([scrum-68-cuenta-corporativa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-68-cuenta-corporativa-qa-2026-10-22.txt)) | No | No | No |
+| E-02 | Cuenta | Agregar usuarios autorizados de la empresa | RF-06 | SCRUM-26 | `usuarios_empresa_page` y `agregar_usuario_empresa_page` → `/v1/companies/me/users` | Sí | Sí ([scrum-68-cuenta-corporativa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-68-cuenta-corporativa-qa-2026-10-22.txt)) | No | No | No |
+| E-03 | Cuenta | Activar la cuenta por invitación (definir la contraseña) | RF-06 | SCRUM-26 | `activar_cuenta_page` → `POST /v1/auth/password/setup` | Sí | Sí ([scrum-68-cuenta-corporativa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-68-cuenta-corporativa-qa-2026-10-22.txt)) | No | No | No |
+| E-04 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | No | No | No |
+| E-05 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | Sí | No | No | No | Sí (cerrar sesión es de la app, sin prueba de interfaz en QA) |
+| E-06 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | No | No | No | No | Sí (SCRUM-609; contrato SCRUM-610 y pantalla UI) |
+| E-07 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | No | No | No | No | Sí (SCRUM-623; contrato SCRUM-624 y pantalla UI) |
+| E-08 | Solicitudes | Crear una solicitud para una sede, a nombre de la empresa | RF-08 | SCRUM-28 | `nueva_solicitud_page` con el nombre de la sede | Sí | Sí ([scrum-75-solicitud-empresa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-2026-10-22.txt)) | No | No | No |
+| E-09 | Solicitudes | Ver las solicitudes y el estado en tiempo real | RF-11 | SCRUM-31 | Las mismas pantallas de C-07 | Sí | Sí ([scrum-84-seguimiento-estado-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt)) | No | No | No |
+| E-10 | Solicitudes | Aceptar o rechazar la cotización | RF-35 | SCRUM-486 | Igual que C-08 | Sí | Sí ([scrum-496-pago-empresa-qa-2026-10-27.txt](../../tests/e2e/evidencias/scrum-496-pago-empresa-qa-2026-10-27.txt)) | No | No | No |
+| E-11 | Solicitudes | Cancelar la solicitud con motivo | RF-36 | SCRUM-472 | Igual que C-09 | Sí | Sí ([scrum-478-cancelacion-qa-2026-10-19.txt](../../tests/e2e/evidencias/scrum-478-cancelacion-qa-2026-10-19.txt)) | No | No | No |
 | E-12 | Solicitudes | Chatear con el técnico asignado | RF-37 | SCRUM-473 | Igual que C-10 | Sí | Sí ([scrum-483-chat-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-483-chat-qa-2026-10-22.txt)) | No | No | No |
 | E-13 | Notificaciones | Ver el buzón de notificaciones | RF-11 | — | `notificaciones_page` | Sí | Sí ([scrum-458-geocodificacion-buzon-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt)) | No | No | No |
 | E-14 | Pagos | Pagar a nombre de la cuenta corporativa | RF-23 | SCRUM-43 | `pagar_page`; paga cualquier usuario de la empresa (RN-P6) | Sí | Sí ([scrum-496-pago-empresa-qa-2026-10-27.txt](../../tests/e2e/evidencias/scrum-496-pago-empresa-qa-2026-10-27.txt)) | No | Sí | No |
-| E-15 | Pagos | Ver el comprobante del pago | RF-24 | SCRUM-44 | `comprobante_page` | Sí | Sí ([scrum-495-comprobante-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-495-comprobante-qa-2026-10-22.txt)) | No | No | No |
-| E-16 | Calificación | Calificar el servicio | RF-12 | SCRUM-32 | Igual que C-14 | No | No | No | No | Sí (backend Ranking ADR-027 y pantalla UI) |
+| E-15 | Pagos | Ver el comprobante del pago | RF-24 | SCRUM-44 | `comprobante_page` | Sí | Sí ([scrum-496-pago-empresa-qa-2026-10-27.txt](../../tests/e2e/evidencias/scrum-496-pago-empresa-qa-2026-10-27.txt)) | No | No | No |
+| E-16 | Calificación | Calificar el servicio | RF-12 | SCRUM-32 | Igual que C-14 | Parcial | No | No | No | Sí (backend fusionado SCRUM-85; faltan pantalla SCRUM-86 y QA SCRUM-87) |
 
 ## 4. Técnico (app móvil)
 
 | ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
 |---|---|---|---|---|---|---|---|---|---|---|
-| T-01 | Cuenta | Registrarse con datos y documentos, en estado pendiente de verificación | RF-02 | SCRUM-22 | `registro_tecnico_page` → `POST /v1/auth/register/technician` | Sí | Sí ([scrum-56-registro-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt)) | Sí | No | No |
-| T-02 | Cuenta | Activar la cuenta creada por su proveedor | RF-16 | SCRUM-36 | `activar_cuenta_page` | Sí | Sí ([scrum-99-equipo-proveedor-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt)) | Sí | No | No |
-| T-03 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | Sí | No | No |
-| T-04 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | Sí | No | No |
-| T-05 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | No | No | No | No | Sí (contrato SCRUM-610 y pantalla UI) |
-| T-06 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | No | No | No | No | Sí (contrato SCRUM-624 y pantalla UI) |
-| T-07 | Disponibilidad | Cambiar la disponibilidad y la cobertura por localidades | RF-13 | SCRUM-33 | `disponibilidad_page` → `/v1/technicians/me/availability` y `coverage` | Sí | Sí ([scrum-incremento-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt)) | Sí | No | No |
-| T-08 | Ofertas | Recibir la oferta y aceptarla o rechazarla antes de 3 minutos | RF-10 | SCRUM-30 | `/v1/matching/offers`, `accept` y `reject` | Sí | Sí ([scrum-78-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt)) | Sí | No | No |
-| T-09 | Servicio | Ver el detalle de la solicitud asignada | RF-14 | SCRUM-34 | `solicitud_asignada_page` | Sí | Sí ([scrum-incremento-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt)) | Sí | No | No |
-| T-10 | Servicio | Emitir la cotización de mano de obra y materiales | RF-34 | SCRUM-486 | `solicitud_asignada_page` → `POST /v1/service-requests/{id}/quotes` | Sí | Sí ([scrum-490-cotizacion-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-490-cotizacion-qa-2026-10-22.txt)) | Sí | No | No |
-| T-11 | Servicio | Iniciar, subir la foto de evidencia y completar | RF-15 | SCRUM-35 | `solicitud_asignada_page` → `start`, `evidence` y `complete` | Sí | Sí ([scrum-96-evidencia-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-96-evidencia-qa-2026-10-22.txt)) | Sí | No | No |
+| T-01 | Cuenta | Registrarse con datos y documentos, en estado pendiente de verificación | RF-02 | SCRUM-22 | `registro_tecnico_page` → `POST /v1/auth/register/technician` | Sí | Sí ([scrum-56-registro-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt)) | No | No | No |
+| T-02 | Cuenta | Activar la cuenta creada por su proveedor | RF-16 | SCRUM-36 | `activar_cuenta_page` | Sí | No | No | No | Sí (scrum-99 no llama a activación /v1/auth/password/setup en QA) |
+| T-03 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | No | No | No |
+| T-04 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | Sí | No | No | No | Sí (cerrar sesión es de la app, sin prueba de interfaz en QA) |
+| T-05 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | No | No | No | No | Sí (SCRUM-609; contrato SCRUM-610 y pantalla UI) |
+| T-06 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | No | No | No | No | Sí (SCRUM-623; contrato SCRUM-624 y pantalla UI) |
+| T-07 | Disponibilidad | Cambiar la disponibilidad y la cobertura por localidades | RF-13 | SCRUM-33 | `disponibilidad_page` → `/v1/technicians/me/availability` y `coverage` | Sí | Sí ([scrum-incremento-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt)) | No | No | No |
+| T-08 | Ofertas | Recibir la oferta y aceptarla o rechazarla antes de 3 minutos | RF-10 | SCRUM-30 | `/v1/matching/offers`, `accept` y `reject` | Sí | Sí ([scrum-78-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt)) | No | No | No |
+| T-09 | Servicio | Ver el detalle de la solicitud asignada | RF-14 | SCRUM-34 | `solicitud_asignada_page` | Sí | Sí ([scrum-incremento-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt)) | No | No | No |
+| T-10 | Servicio | Emitir la cotización de mano de obra y materiales | RF-34 | SCRUM-486 | `solicitud_asignada_page` → `POST /v1/service-requests/{id}/quotes` | Sí | Sí ([scrum-490-cotizacion-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-490-cotizacion-qa-2026-10-22.txt)) | No | No | No |
+| T-11 | Servicio | Iniciar, subir la foto de evidencia y completar | RF-15 | SCRUM-35 | `solicitud_asignada_page` → `start`, `evidence` y `complete` | Sí | Sí ([scrum-96-evidencia-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-96-evidencia-qa-2026-10-22.txt)) | No | No | No |
 | T-12 | Servicio | Chatear con el cliente | RF-37 | SCRUM-473 | `chat_page` | Sí | Sí ([scrum-483-chat-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-483-chat-qa-2026-10-22.txt)) | No | No | No |
 | T-13 | Notificaciones | Ver el buzón de notificaciones | RF-11 | — | `notificaciones_page` | Sí | Sí ([scrum-458-geocodificacion-buzon-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt)) | No | No | No |
-| T-14 | Historial | Ver el historial de solicitudes atendidas | RF-17 | SCRUM-37 | `servicios_tecnico_page` → `GET /v1/technicians/me/service-requests` | Sí | Sí ([scrum-incremento-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt)) | Sí | No | No |
-| T-15 | Pagos | Ver los pagos recibidos | RF-25 | SCRUM-45 | Ruta `/v1/payments/received` declarada en `api_endpoints.dart`, sin pantalla ni backend | No | No | No | No | Sí (endpoint backend SCRUM-45 y pantalla UI) |
+| T-14 | Historial | Ver el historial de solicitudes atendidas | RF-17 | SCRUM-37 | `servicios_tecnico_page` → `GET /v1/technicians/me/service-requests` | Sí | No | No | No | Sí (ninguna evidencia llama a GET /v1/technicians/me/service-requests; SCRUM-102) |
+| T-15 | Pagos | Ver los pagos recibidos | RF-25 | SCRUM-45 | Ruta `/v1/payments/received` declarada en `api_endpoints.dart`, sin pantalla ni backend | No | No | No | No | Sí (SCRUM-45; backend Payments y pantalla UI) |
 
 ## 5. Proveedor (app móvil)
 
 | ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
 |---|---|---|---|---|---|---|---|---|---|---|
-| P-01 | Cuenta | Registrarse con datos y documentos, en estado pendiente de verificación | RF-02 | SCRUM-22 | `registro_tecnico_page` | Sí | Sí ([scrum-56-registro-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt)) | Sí | No | No |
-| P-02 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | Sí | No | No |
-| P-03 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | Sí | No | No |
-| P-04 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | No | No | No | No | Sí (contrato SCRUM-610 y pantalla UI) |
-| P-05 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | No | No | No | No | Sí (contrato SCRUM-624 y pantalla UI) |
-| P-06 | Equipo | Registrar técnicos de su equipo | RF-16 | SCRUM-36 | `alta_tecnico_page` → `POST /v1/providers/me/technicians` e invitación | Sí | Sí ([scrum-99-equipo-proveedor-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt)) | Sí | No | No |
-| P-07 | Equipo | Ver y administrar su equipo | RF-16 | SCRUM-36 | `equipo_page` | Sí | Sí ([scrum-99-equipo-proveedor-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt)) | Sí | No | No |
+| P-01 | Cuenta | Registrarse con datos y documentos, en estado pendiente de verificación | RF-02 | SCRUM-22 | `registro_tecnico_page` | Sí | Sí ([scrum-56-registro-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt)) | No | No | No |
+| P-02 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | No | No | No |
+| P-03 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | Sí | No | No | No | Sí (cerrar sesión es de la app, sin prueba de interfaz en QA) |
+| P-04 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | No | No | No | No | Sí (SCRUM-609; contrato SCRUM-610 y pantalla UI) |
+| P-05 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | No | No | No | No | Sí (SCRUM-623; contrato SCRUM-624 y pantalla UI) |
+| P-06 | Equipo | Registrar técnicos de su equipo | RF-16 | SCRUM-36 | `alta_tecnico_page` → `POST /v1/providers/me/technicians` e invitación | Sí | Sí ([scrum-99-equipo-proveedor-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt)) | No | No | No |
+| P-07 | Equipo | Ver y administrar su equipo | RF-16 | SCRUM-36 | `equipo_page` | Sí | Sí ([scrum-99-equipo-proveedor-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt)) | No | No | No |
 | P-08 | Notificaciones | Ver el buzón de notificaciones | RF-11 | — | `notificaciones_page` | Sí | Sí ([scrum-458-geocodificacion-buzon-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt)) | No | No | No |
-| P-09 | Pagos | Ver los pagos recibidos | RF-25 | SCRUM-45 | Igual que T-15 | No | No | No | No | Sí (endpoint backend SCRUM-45 y pantalla UI) |
+| P-09 | Pagos | Ver los pagos recibidos | RF-25 | SCRUM-45 | Igual que T-15 | No | No | No | No | Sí (SCRUM-45; backend Payments y pantalla UI) |
 
 ## 6. Administrador del tenant (panel web)
 
 | ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
 |---|---|---|---|---|---|---|---|---|---|---|
-| A-01 | Cuenta | Iniciar sesión en el panel (solo administradores) | RF-03, RF-05 | SCRUM-23, SCRUM-25 | Ruta `iniciar-sesion` | Sí | Sí ([scrum-108-aprobacion-rechazo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt)) | Sí | No | No |
-| A-02 | Cuenta | Activar la cuenta (definir la contraseña) | — | — | Ruta `activar` → `POST /v1/auth/password/setup` | Sí | Sí ([scrum-108-aprobacion-rechazo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt)) | Sí | No | No |
-| A-03 | Cuenta | Cerrar sesión | — | — | Botón del layout del panel (`app.html`) | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | Sí | No | No |
-| A-04 | Operación | Ver el tablero operativo | RF-18 | SCRUM-38 | Ruta `inicio` | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | Sí | No | No |
-| A-05 | Operación | Ver las solicitudes activas por estado | RF-18 | SCRUM-38 | Ruta `solicitudes` | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | Sí | No | No |
-| A-06 | Operación | Cancelar una solicitud con motivo | RF-36 | SCRUM-472 | Ruta `solicitudes` → `POST /v1/service-requests/{id}/cancel` | Sí | Sí ([scrum-478-cancelacion-qa-2026-10-19.txt](../../tests/e2e/evidencias/scrum-478-cancelacion-qa-2026-10-19.txt)) | Sí | No | No |
-| A-07 | Técnicos | Aprobar o rechazar con motivo a técnicos y proveedores | RF-19 | SCRUM-39 | Ruta `tecnicos` → cambio de verificación | Sí | Sí ([scrum-108-aprobacion-rechazo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt)) | Sí | No | No |
-| A-08 | Técnicos | Suspender a un técnico | RF-20 | SCRUM-40 | Ruta `tecnicos` | Sí | Sí ([scrum-111-suspension-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-111-suspension-tecnico-qa-2026-10-22.txt)) | Sí | No | No |
-| A-09 | Técnicos | Ver la reputación y la marca de reputación baja | RF-20 | SCRUM-32 | Sin pantalla; llega a Identity por evento (ADR-027, planeado) | No | No | No | No | Sí (evento reputación ADR-027 y vista en panel) |
+| A-01 | Cuenta | Iniciar sesión en el panel (solo administradores) | RF-03, RF-05 | SCRUM-23, SCRUM-25 | Ruta `iniciar-sesion` | Sí | Sí ([scrum-108-aprobacion-rechazo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt)) | No | No | No |
+| A-02 | Cuenta | Activar la cuenta (definir la contraseña) | — | — | Ruta `activar` → `POST /v1/auth/password/setup` | Sí | No | No | No | Sí (activación probada solo para empresa, no para admin de tenant en QA) |
+| A-03 | Cuenta | Cerrar sesión | — | — | Botón del layout del panel (`app.html`) | Sí | No | No | No | Sí (cerrar sesión es del panel web, sin prueba de interfaz en QA) |
+| A-04 | Operación | Ver el tablero operativo | RF-18 | SCRUM-38 | Ruta `inicio` | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | No | No | No |
+| A-05 | Operación | Ver las solicitudes activas por estado | RF-18 | SCRUM-38 | Ruta `solicitudes` | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | No | No | No |
+| A-06 | Operación | Cancelar una solicitud con motivo | RF-36 | SCRUM-472 | Ruta `solicitudes` → `POST /v1/service-requests/{id}/cancel` | Sí | Sí ([scrum-478-cancelacion-qa-2026-10-19.txt](../../tests/e2e/evidencias/scrum-478-cancelacion-qa-2026-10-19.txt)) | No | No | No |
+| A-07 | Técnicos | Aprobar o rechazar con motivo a técnicos y proveedores | RF-19 | SCRUM-39 | Ruta `tecnicos` → cambio de verificación | Sí | Sí ([scrum-108-aprobacion-rechazo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt)) | No | No | No |
+| A-08 | Técnicos | Suspender a un técnico | RF-20 | SCRUM-40 | Ruta `tecnicos` | Sí | Sí ([scrum-111-suspension-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-111-suspension-tecnico-qa-2026-10-22.txt)) | No | No | No |
+| A-09 | Técnicos | Ver la reputación y la marca de reputación baja | RF-20 | SCRUM-32 | Sin pantalla; llega a Identity por evento (ADR-027, planeado) | Parcial | No | No | No | Sí (reputación llega a Identity; falta exponer en API y panel SCRUM-497, SCRUM-86) |
 
 ## 7. Administrador de plataforma (panel web)
 
 | ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
 |---|---|---|---|---|---|---|---|---|---|---|
-| AP-01 | Cuenta | Iniciar sesión en el panel | RF-03, RF-05 | SCRUM-23, SCRUM-25 | Ruta `iniciar-sesion` | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | Sí | No | No |
-| AP-02 | Cuenta | Cerrar sesión | — | — | Botón del layout del panel | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | Sí | No | No |
-| AP-03 | Tenants | Crear tenants | RF-21 | SCRUM-41 | Ruta `tenants` → `POST /v1/platform/tenants` | Sí | Sí ([tenant-beta-qa-2026-10-15.txt](../../tests/e2e/evidencias/tenant-beta-qa-2026-10-15.txt)) | Sí | No | No |
-| AP-04 | Tenants | Activar y desactivar tenants, con confirmación y auditoría | RF-21 | SCRUM-41 | Ruta `tenants` | Sí | Sí ([tenant-beta-qa-2026-10-15.txt](../../tests/e2e/evidencias/tenant-beta-qa-2026-10-15.txt)) | Sí | No | No |
-| AP-05 | Operación | Ver las solicitudes de todos los tenants, filtrables por tenant | RF-18 | SCRUM-38 | Ruta `solicitudes` → `/v1/platform/service-requests` | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | Sí | No | No |
-| AP-06 | Operación | Ver el tablero operativo | RF-18 | SCRUM-38 | Ruta `inicio` | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | Sí | No | No |
+| AP-01 | Cuenta | Iniciar sesión en el panel | RF-03, RF-05 | SCRUM-23, SCRUM-25 | Ruta `iniciar-sesion` | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | No | No | No |
+| AP-02 | Cuenta | Cerrar sesión | — | — | Botón del layout del panel | Sí | No | No | No | Sí (cerrar sesión es del panel web, sin prueba de interfaz en QA) |
+| AP-03 | Tenants | Crear tenants | RF-21 | SCRUM-41 | Ruta `tenants` → `POST /v1/platform/tenants` | Sí | No | No | No | Sí (sin POST /v1/platform/tenants en evidencias de QA) |
+| AP-04 | Tenants | Activar y desactivar tenants, con confirmación y auditoría | RF-21 | SCRUM-41 | Ruta `tenants` | Sí | No | No | No | Sí (activación/desactivación tenant en QA solo muestra 401) |
+| AP-05 | Operación | Ver las solicitudes de todos los tenants, filtrables por tenant | RF-18 | SCRUM-38 | Ruta `solicitudes` → `/v1/platform/service-requests` | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | No | No | No |
+| AP-06 | Operación | Ver el tablero operativo | RF-18 | SCRUM-38 | Ruta `inicio` | Sí | Sí ([scrum-105-panel-operativo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt)) | No | No | No |
 
 ## 8. Transversal (sistema, todos los usuarios)
 
 | ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
 |---|---|---|---|---|---|---|---|---|---|---|
-| X-01 | Seguridad | Aislamiento de los datos por tenant | RF-04 | SCRUM-24 | RLS en los servicios con base (SAD 2.2, RNF-10) | Sí | Sí ([scrum-108-aprobacion-rechazo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt)) | Sí | No | No |
-| X-02 | Seguridad | Acceso según el rol y el canal | RF-05 | SCRUM-25 | Roles del JWT en cada servicio; el panel solo admite administradores | Sí | Sí ([scrum-108-aprobacion-rechazo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt)) | Sí | No | No |
-| X-03 | Matching | Asignación automática del técnico | RF-09 | SCRUM-29 | Matching Service (Kafka) | Sí | Sí ([scrum-78-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt)) | Sí | No | No |
-| X-04 | Calidad | CI/CD con build y pruebas antes de desplegar | RF-26 | SCRUM-46 | Workflows de cada repositorio y compuerta de QA | Sí | Sí ([suites-e2e-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt)) | Sí | No | No |
-| X-05 | Calidad | Prueba automatizada de punta a punta del flujo crítico | RF-27 | SCRUM-47 | Colecciones de `tests/e2e/`; la calificación del final del flujo todavía no existe | Sí | Sí ([scrum-incremento-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt)) | Sí | No | Sí (incorporar calificación al E2E cuando exista Ranking) |
-| X-06 | Operación | Logs centralizados con correlación y alertas de caída | RF-28 | SCRUM-48 | Loki, Prometheus y Grafana en VM1 | Sí | Sí ([loki_qa_k3s.json](../../tests/security/evidencias/loki_qa_k3s.json)) | Sí | No | No |
-| X-07 | Seguridad | TLS en tránsito y contraseñas con hash | RF-29 | SCRUM-49 | Entrada TLS 1.2/1.3 y BCrypt (SAD 2.2, RNF-02 y RNF-03) | Sí | Sí ([tls-entrada-qa-2026-10-27.txt](../../tests/security/evidencias/tls-entrada-qa-2026-10-27.txt)) | Sí | No | No |
+| X-01 | Seguridad | Aislamiento de los datos por tenant | RF-04 | SCRUM-24 | RLS en los servicios con base (SAD 2.2, RNF-10) | Sí | Sí ([scrum-108-aprobacion-rechazo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt)) | No | No | No |
+| X-02 | Seguridad | Acceso según el rol y el canal | RF-05 | SCRUM-25 | Roles del JWT en cada servicio; el panel solo admite administradores | Sí | Sí ([scrum-108-aprobacion-rechazo-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt)) | No | No | No |
+| X-03 | Matching | Asignación automática del técnico | RF-09 | SCRUM-29 | Matching Service (Kafka) | Sí | Sí ([scrum-78-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt)) | No | No | No |
+| X-04 | Calidad | CI/CD con build y pruebas antes de desplegar | RF-26 | SCRUM-46 | Workflows de cada repositorio y compuerta de QA | Sí | Sí ([suites-e2e-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/suites-e2e-qa-sprint4-2026-10-18.txt)) | No | No | No |
+| X-05 | Calidad | Prueba automatizada de punta a punta del flujo crítico | RF-27 | SCRUM-47 | Colecciones de `tests/e2e/`; la calificación del final del flujo todavía no existe | Parcial | Parcial ([scrum-incremento-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt)) | No | No | Sí (flujo crítico termina en calificación, pendiente en E2E) |
+| X-06 | Operación | Logs centralizados con correlación y alertas de caída | RF-28 | SCRUM-48 | Loki, Prometheus y Grafana en VM1 | Sí | Sí ([loki_qa_k3s.json](../../tests/security/evidencias/loki_qa_k3s.json)) | No | No | No |
+| X-07 | Seguridad | TLS en tránsito y contraseñas con hash | RF-29 | SCRUM-49 | Entrada TLS 1.2/1.3 y BCrypt (SAD 2.2, RNF-02 y RNF-03) | Sí | Sí ([tls-entrada-qa-2026-10-27.txt](../../tests/security/evidencias/tls-entrada-qa-2026-10-27.txt)) | No | No | No |
 
 ## Cobertura del SRS
 
@@ -191,16 +191,19 @@ Los 33 RF del SRS V5.6 quedan en al menos una fila.
 | **Total** | **78** |
 
 
-### Resumen de Estado de Funcionalidades (SCRUM-561)
+
+### Resumen de Estado de Funcionalidades (SCRUM-561 / SCRUM-562)
 
 | Métrica de Calidad | Total | Porcentaje | Criterio de Auditoría |
 |---|:---:|:---:|---|
 | **Funcionalidades en Inventario** | **78** | 100.0% | 8 perfiles de usuario cubriendo los 33 RF del SRS V5.6 |
-| **Desarrolladas** | **65** | 83.3% | Implementadas en Frontend (App Flutter / Panel Web) y Backend |
-| **Probadas (con evidencia en repo)** | **64** | 82.1% | 100% enlazadas a archivos .txt / .trx / .json en 	ests/ |
-| **En Producción (VM3)** | **52** | 66.7% | Servicios core desplegados: Identity, Catalog, ServiceRequest y Matching (Infraestructura §4.3) |
-| **Con Mock (Pasarela de pagos)** | **2** | 2.6% | Pagos de cliente hogar (C-12) y corporativo (E-14) bajo sandbox Wompi |
-| **Pendientes de completar** | **15** | 19.2% | Rutas sin pantalla UI (perfil, password, pagos recibidos), backend Ranking (ADR-027) o pruebas de descarga |
+| **Implementadas y Verificadas (Avance Real)** | **51** | **65.4%** | Con evidencia real en QA que llama y comprueba la funcionalidad (`tests/`) |
+| **Implementadas, Pendientes de QA** | **13** | 16.7% | Código implementado; pendiente corrida o prueba de interfaz en QA |
+| **Parciales** | **4** | 5.1% | Backend fusionado sin UI completa (C-14, E-16, A-09) o flujo E2E sin paso final (X-05) |
+| **No Implementadas** | **10** | 12.8% | Sin código implementado (perfil propio, recuperar password, pagos recibidos) |
+| **Cobertura de Implementación (Verificadas + Pendientes)** | **64** | **82.1%** | Total de funcionalidades ya desarrolladas en el sistema |
+| **En Producción (VM3)** | **0** | **0.0%** | Producción opera con `main` del 8 de octubre; 0 funcionalidades finales utilizables |
+| **Con Mock (Pasarela simulada)** | **2** | 2.6% | Pagos de cliente hogar (C-12) y corporativo (E-14) bajo sandbox Wompi |
 
 ## Hallazgos del inventario
 
