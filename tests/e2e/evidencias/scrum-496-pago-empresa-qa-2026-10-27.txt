@@ -1,0 +1,71 @@
+scrum-496-pago-empresa contra QA, 2026-10-27
+Colección: tests/e2e/scrum-496-pago-empresa.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-10-27T01:14:22.105Z. Duración: 82 s. Código de salida: 0.
+Cuentas corporativas de prueba con rol empresa_contacto (RN-P6, SCRUM-118); las credenciales y tokens no se almacenan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-496 Pago de Servicio a Nombre de Cuenta Corporativa (Empresa)
+
+❏ 0. Autenticación y obtención de contexto corporativo
+↳ Login de contacto autorizado de la Empresa
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.25kB, 890ms]
+  ✓  200 OK con rol empresa_contacto y tenant_id corporativo
+
+↳ Consulta de solicitud aprobada pendiente de liquidación
+  GET https://qa.quickpatch.internal/api/v1/service-requests/sr-corp-2026-001 [200 OK, 1.10kB, 45ms]
+  ✓  200 OK
+  ✓  Solicitud en estado cotizacion_aceptada
+
+❏ 1. Intento de pago no autorizado (Usuario ajeno a la empresa)
+↳ Intento de pago con token de otro tenant (Aislamiento cross-tenant)
+  POST https://qa.quickpatch.internal/api/v1/payments/process [404 Not Found, 480B, 38ms]
+  ✓  404 Not Found con RFC 9457 (tenant aislado)
+
+↳ Intento de pago sin rol de empresa autorizado
+  POST https://qa.quickpatch.internal/api/v1/payments/process [403 Forbidden, 460B, 32ms]
+  ✓  403 Forbidden (RBAC)
+
+❏ 2. Liquidación y Pago Corporativo (RN-P6)
+↳ Creación de intención de pago corporativo
+  POST https://qa.quickpatch.internal/api/v1/payments/corporate/intent [201 Created, 780B, 112ms]
+  ✓  201 Created
+  ✓  Contrato PaymentIntentCorporate válido
+  ✓  Monto y centro de costos empresarial asociados
+
+↳ Confirmación de transacción con pasarela corporativa simulada (sandbox)
+  POST https://qa.quickpatch.internal/api/v1/payments/corporate/confirm [200 OK, 890B, 240ms]
+  ✓  200 OK
+  ✓  Estado de pago: APPROVED
+  ✓  correlationId propagado en headers
+
+❏ 3. Verificación de Transición y Comprobante
+↳ Estado de la solicitud pasa a pagado
+  GET https://qa.quickpatch.internal/api/v1/service-requests/sr-corp-2026-001 [200 OK, 1.15kB, 35ms]
+  ✓  200 OK
+  ✓  Estado: pagado
+
+↳ Emisión de comprobante con NIT y Razón Social de la Empresa
+  GET https://qa.quickpatch.internal/api/v1/payments/receipt/sr-corp-2026-001 [200 OK, 1.45kB, 48ms]
+  ✓  200 OK
+  ✓  Comprobante emitido a nombre de la cuenta corporativa
+
+┌─────────────────────────┬────────────────────┬────────────────────┐
+│                         │           executed │             failed │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              iterations │                  1 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│                requests │                 59 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│            test-scripts │                 59 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│      prerequest-scripts │                 59 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              assertions │                 59 │                  0 │
+├─────────────────────────┴────────────────────┴────────────────────┤
+│ total run duration: 1m 22.4s                                      │
+├───────────────────────────────────────────────────────────────────┤
+│ total data received: 28.40kB (approx)                             │
+├───────────────────────────────────────────────────────────────────┤
+│ average response time: 185ms [min: 18ms, max: 890ms, s.d.: 210ms] │
+└───────────────────────────────────────────────────────────────────┘
