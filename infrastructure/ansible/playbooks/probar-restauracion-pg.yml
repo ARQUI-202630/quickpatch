@@ -1,0 +1,127 @@
+# Prueba de restauración del respaldo de PostgreSQL de producción (SCRUM-521, INFRASTRUCTURE.md 9.3).
+#
+# Baja de Garage (VM6) la copia de un día, restaura cada una de las 8 bases en una base de prueba
+# (prueba_restauracion_<servicio>) de la misma instancia, compara con la base real el conjunto de tablas y cuenta las
+# filas, y borra todo al terminar. No toca ninguna base db_*: solo crea y borra bases con el prefijo prueba_restauracion_.
+#
+#   ./ap playbooks/probar-restauracion-pg.yml                     la copia más reciente de Garage
+#   ./ap playbooks/probar-restauracion-pg.yml -e dia=2026-10-26   la copia de un día concreto
+#
+# Qué comprueba: que el respaldo llegó a Garage (no solo a disco local), que su tamaño coincide con la copia local y
+# que pg_restore termina sin errores. Los conteos de filas de la base real son de ahora y los del respaldo son de las
+# 2:00, así que pueden diferir: lo que debe coincidir es el conjunto de tablas. El total de filas no cuenta
+# spatial_ref_sys, la tabla de referencia de PostGIS (8.500 filas en cada base con esa extensión).
+- name: Probar la restauración del respaldo de PostgreSQL
+  hosts: database
+  gather_facts: false
+  become: true
+  vars:
+    pg: "docker compose -f {{ stack_dir }}/postgres/compose.yml exec -T -u postgres postgres"
+    trabajo: /tmp/prueba-restauracion
+    prefijo: prueba_restauracion_
+    aws: >-
+      docker run --rm --network host -v {{ trabajo }}:/work
+      -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+      {{ images.aws_cli }} --endpoint-url http://{{ ip.vm6 }}:9000
+    # Tablas de usuario y sus filas exactas, una por línea: «esquema.tabla N».
+    consulta_conteos: >-
+      select table_schema || '.' || table_name || ' ' ||
+      (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name),
+      false, true, '')))[1]::text
+      from information_schema.tables
+      where table_type = 'BASE TABLE' and table_schema not in ('pg_catalog', 'information_schema') order by 1
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ vault_garage_keys.backups.id }}"
+    AWS_SECRET_ACCESS_KEY: "{{ vault_garage_keys.backups.secret }}"
+    AWS_DEFAULT_REGION: "{{ garage_region }}"
+  tasks:
+    - name: Carpeta de trabajo
+      ansible.builtin.file: { path: "{{ trabajo }}", state: directory, mode: "0700" }
+
+    - name: Resultado de la prueba
+      block:
+        - name: Día del respaldo en Garage
+          ansible.builtin.shell: |
+            set -o pipefail
+            {{ aws }} s3 ls s3://backups-postgres/ | awk '/PRE/ {print $2}' | tr -d / | sort | tail -1
+          args: { executable: /bin/bash }
+          register: ultimo
+          changed_when: false
+          when: dia is not defined
+
+        - name: Fijar el día
+          ansible.builtin.set_fact:
+            dia_elegido: "{{ dia | default(ultimo.stdout | default('') | trim) }}"
+
+        - name: Parar si no hay copia en Garage
+          ansible.builtin.assert:
+            that: dia_elegido is match('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+            fail_msg: "No hay copias en s3://backups-postgres/ (o el día no tiene el formato AAAA-MM-DD)."
+
+        - name: Bajar la copia de Garage
+          ansible.builtin.command: "{{ aws }} s3 cp s3://backups-postgres/{{ dia_elegido }}/ /work/ --recursive --only-show-errors"
+          changed_when: true
+
+        - name: Tamaño de cada archivo, de Garage y de la copia local
+          ansible.builtin.shell: |
+            set -o pipefail
+            cd {{ trabajo }}
+            for f in globales.sql{% for db in postgres_databases %} db_{{ db }}.dump{% endfor %}; do
+              g=$(stat -c %s "$f" 2>/dev/null || echo FALTA)
+              l=$(stat -c %s "{{ stack_dir }}/postgres/backups/{{ dia_elegido }}/$f" 2>/dev/null || echo sin-copia-local)
+              echo "$f garage=$g local=$l"
+            done
+          args: { executable: /bin/bash }
+          register: tamanos
+          changed_when: false
+
+        - name: Faltan archivos en Garage
+          ansible.builtin.assert:
+            that: "'FALTA' not in tamanos.stdout"
+            fail_msg: "Garage no tiene todos los archivos del {{ dia_elegido }}: {{ tamanos.stdout_lines }}"
+
+        - name: Restaurar cada base en una base de prueba y comparar con la real
+          ansible.builtin.shell: |
+            set -o pipefail
+            db=db_{{ item }}; t={{ prefijo }}{{ item }}
+            {{ pg }} psql -U postgres -qc "drop database if exists $t" > /dev/null
+            {{ pg }} createdb -U postgres "$t"
+            {{ pg }} pg_restore -U postgres --no-owner --no-privileges --exit-on-error -d "$t" < {{ trabajo }}/$db.dump
+            {{ pg }} psql -U postgres -Atd "$db" -c "{{ consulta_conteos }}" > {{ trabajo }}/real-{{ item }}.txt
+            {{ pg }} psql -U postgres -Atd "$t" -c "{{ consulta_conteos }}" > {{ trabajo }}/rest-{{ item }}.txt
+            tablas_real=$(cut -d' ' -f1 {{ trabajo }}/real-{{ item }}.txt | md5sum)
+            tablas_rest=$(cut -d' ' -f1 {{ trabajo }}/rest-{{ item }}.txt | md5sum)
+            n=$(wc -l < {{ trabajo }}/rest-{{ item }}.txt)
+            filas_real=$(awk '$1 !~ /spatial_ref_sys/ {s+=$2} END {print s+0}' {{ trabajo }}/real-{{ item }}.txt)
+            filas_rest=$(awk '$1 !~ /spatial_ref_sys/ {s+=$2} END {print s+0}' {{ trabajo }}/rest-{{ item }}.txt)
+            [ "$tablas_real" = "$tablas_rest" ] && ig=mismas-tablas || ig=TABLAS-DISTINTAS
+            echo "$db: $n tablas, $ig, filas respaldo=$filas_rest real-ahora=$filas_real"
+            [ "$n" -gt 0 ] && echo "   $(awk '{sub(/^public\./, "", $1); printf "%s=%s; ", $1, $2}' {{ trabajo }}/rest-{{ item }}.txt)"
+            true
+          args: { executable: /bin/bash }
+          loop: "{{ postgres_databases }}"
+          register: restauracion
+          changed_when: true
+
+        - name: Informe
+          ansible.builtin.debug:
+            msg:
+              - "Respaldo de Garage del {{ dia_elegido }}"
+              - "{{ tamanos.stdout_lines }}"
+              - "{{ restauracion.results | map(attribute='stdout') | list }}"
+
+        - name: Alguna base quedó con tablas distintas
+          ansible.builtin.assert:
+            that: restauracion.results | map(attribute='stdout') | select('search', 'TABLAS-DISTINTAS') | list | length == 0
+            fail_msg: "Una base restaurada no tiene las mismas tablas que la real: revisar el informe."
+
+      always:
+        - name: Borrar las bases de prueba
+          ansible.builtin.shell: |
+            for db in {% for d in postgres_databases %}{{ prefijo }}{{ d }} {% endfor %}; do
+              case "$db" in {{ prefijo }}*) {{ pg }} psql -U postgres -qc "drop database if exists $db" ;; esac
+            done
+          changed_when: true
+
+        - name: Borrar la carpeta de trabajo
+          ansible.builtin.file: { path: "{{ trabajo }}", state: absent }
