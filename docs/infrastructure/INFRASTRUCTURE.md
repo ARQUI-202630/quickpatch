@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.4 |
+| **Versión** | 4.5 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -68,7 +68,7 @@ flowchart TB
             end
             PG[("VM4 · PostgreSQL + PostGIS :5432<br/>una base por servicio")]
             RD[("VM4 · Redis :6379")]
-            NOM[("VM4 · Nominatim :8088<br/>mapa de Bogotá (pendiente)")]
+            NOM[("VM4 · Nominatim :8088<br/>mapa de Bogotá (ADR-024)")]
             subgraph VM6["VM6 · Mensajería y almacenamiento"]
                 direction LR
                 KF["Kafka :9092"]
@@ -278,7 +278,7 @@ Las reglas exactas están en `firewall.yml` (sección 10.3). Ninguna VM de QA ac
 |---|---|---|---|
 | VPN de la universidad | VM1 | 443 | Única entrada (R9) |
 | VM1 | VM3 y VM2 | 8080, 30080, 6443, 22 | Entrada hacia el gateway Nginx de cada ambiente (8080); comprobaciones contra Traefik (30080); despliegue con kubectl (6443); publicación del panel por SSH con la llave del runner (22) |
-| VM3 | VM4 | 5432, 6379, 8088 | Servicios de producción → PostgreSQL, Redis y Nominatim (el 8088, pendiente de desplegar) |
+| VM3 | VM4 | 5432, 6379, 8088 | Servicios de producción → PostgreSQL, Redis y Nominatim |
 | VM3 | VM6 | 9092, 9000 | Servicios de producción → Kafka y Garage (evidencias) |
 | VM4 | VM6 | 9000 | Respaldo diario de PostgreSQL a Garage |
 | VM2 | VM5 | 5432, 6379, 8088 | Servicios de QA → PostgreSQL, Redis y Nominatim |
@@ -343,10 +343,10 @@ Foto de lo que corre hoy, tomada con comandos de solo lectura desde VM1 (SCRUM-5
 |---|---|---|
 | Microservicios en k3s | 4: Catalog, Identity, Matching y ServiceRequest | 6: los 4 anteriores, Communication y Payments |
 | Pods | 4 de 4 en `1/1 Running`, 0 reinicios | 6 de 6 en `1/1 Running`; Communication con 1 reinicio |
-| `Secret` y `ConfigMap` | Los de los 4 servicios | Los de los 6 servicios |
+| `Secret` y `ConfigMap` | Los de los 4 servicios, más los `Secret` de Payments y Communication (sin Deployment ni `ConfigMap`) | Los de los 6 servicios |
 | Ingress | Catalog, Identity y ServiceRequest | Catalog, Communication, Identity, Matching y ServiceRequest |
 | Bases de PostgreSQL | Las 8 bases de servicio, incluidas `db_payments` y `db_communication`, con sus roles `*_migrator` y `*_app` | Las mismas 8 |
-| Nominatim | No desplegado (VM4 solo corre PostgreSQL y Redis) | VM5: `nominatim` y `proxy`, en servicio |
+| Nominatim | VM4: `nominatim` y `proxy`, en servicio desde el 27 de octubre (el mismo mapa que QA) | VM5: `nominatim` y `proxy`, en servicio |
 | Kafka | 2 topics (`catalog.category-changed` y `service-request.created`) y 2 grupos de consumidores | 17 topics y 6 grupos de consumidores |
 | Garage | En servicio (VM6) | En servicio (VM7) |
 | Panel Angular | Página provisional | Build real de `release/0.5.2` |
@@ -354,8 +354,7 @@ Foto de lo que corre hoy, tomada con comandos de solo lectura desde VM1 (SCRUM-5
 
 Lo que falta para que producción iguale a QA:
 
-- **Payments y Communication.** Las bases y los roles ya existen en VM4, pero faltan sus `Secret`, `ConfigMap`, Ingress, Deployment y los topics de Kafka que usan (SCRUM-519).
-- **Nominatim** en VM4, con el mapa de Bogotá (SCRUM-520, sección 5.9).
+- **Payments y Communication.** Las bases, los roles y los `Secret` ya existen en producción (SCRUM-519, 27 de octubre); faltan sus `ConfigMap`, Ingress, Deployment y los topics de Kafka que usan, que llegan con la promoción (SCRUM-518).
 - **Actors y Ranking** no están desplegados en ningún ambiente: sus bases y roles existen, pero no tienen manifiesto (sección 5.3).
 - **Topics de Kafka** del incremento (15 más en producción) con `deploy-kafka.yml`.
 - **Panel real** de producción: el job de `quickpatch-web` en `main` no existe todavía.
@@ -394,7 +393,7 @@ Los grupos `produccion` (VM3, VM4 y VM6) y `qa` (VM2, VM5 y VM7) reúnen los de 
 | `deploy-db.yml` | VM4 y VM5 | PostgreSQL + PostGIS, una base por servicio con sus roles `_migrator` y `_app` (DD 10.2); en VM4, el respaldo diario a Garage |
 | `aplicar-roles-db.yml` | VM4 y VM5 | Aplica el `db/roles.sql` de cada servicio (permisos de `_app`, `_outbox`, `identity_platform`); va después de las migraciones del servicio |
 | `deploy-cache.yml` | VM4 y VM5 | Redis con un usuario ACL por servicio, restringido a su prefijo |
-| `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá (ADR-024): contenedor con su propio PostgreSQL, proxy en la red del host en el 8088 y extracto copiado desde el controlador; solo QA por ahora |
+| `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá (ADR-024): contenedor con su propio PostgreSQL, proxy en la red del host en el 8088 y extracto copiado desde el controlador; en QA y en producción |
 | `deploy-kafka.yml` | VM6 y VM7 | Kafka en modo KRaft; en VM6, también Kafka UI |
 | `operar-kafka-grupos.yml` | VM6 y VM7 | Solo lectura por defecto: grupos de consumidores, su lag y la retención de cada topic. Con `-e grupo`, `-e topic` y `-e destino` simula el reinicio de offsets, y con `-e ejecutar=si` lo aplica (sección 5.10) |
 | `probar-restauracion-pg.yml` | VM4 | Baja de Garage la copia de un día, restaura las 8 bases en bases de prueba `prueba_restauracion_*` de la misma instancia, compara tablas y filas con las reales y borra todo. No toca las bases `db_*` (sección 9.3) |
@@ -540,12 +539,13 @@ VM4 mantiene PostgreSQL como almacén común de infraestructura con ownership l�
 
 ### 5.9 Nominatim: geocodificación de Bogotá (ADR-024, SCRUM-454)
 
-Nominatim convierte en coordenadas la dirección que escribe el Cliente cuando no comparte su ubicación (RIE-02); lo llamará ServiceRequest. Corre en la VM de datos de cada ambiente: **VM5 en QA (desplegado el 14 de octubre de 2026)** y VM4 en producción (pendiente).
+Nominatim convierte en coordenadas la dirección que escribe el Cliente cuando no comparte su ubicación (RIE-02); lo llamará ServiceRequest. Corre en la VM de datos de cada ambiente: **VM5 en QA (desplegado el 14 de octubre de 2026)** y **VM4 en producción (desplegado el 27 de octubre de 2026)**.
 
 - **Cómo corre.** `deploy-nominatim.yml` levanta dos contenedores con Docker Compose en `/opt/quickpatch/nominatim`: `nominatim` (imagen `mediagis/nominatim` con versión fija, PostgreSQL 16 propio dentro del contenedor, excepción a ADR-014 porque solo guarda el mapa público) y `proxy` (Nginx en la red del host). El contenedor de Nominatim **no usa la red del host**, porque su PostgreSQL interno choca con el 5432 de la base de los servicios; publica su API solo en `127.0.0.1:8081` y no publica el 5432. El proxy escucha en la IP de la VM, puerto 8088, y solo acepta a la VM del k3s de ese ambiente (VM2 en QA, VM3 en producción): la regla está en el firewall de la VM (`firewall.yml`) y se repite en el `allow` del Nginx. Así se mantiene la convención de que ufw o firewalld controlen el acceso, sin depender de la cadena `DOCKER-USER`.
 - **Extracto.** El mapa se genera con `tools/nominatim-extracto.sh`: baja Colombia de Geofabrik y lo recorta con osmium al rectángulo de cobertura del MVP (RN-SR9 del DD: latitud 4,45 a 4,85 y longitud −74,25 a −73,98). Resultado: 20 MB. El archivo no va en Git: se deja en `infrastructure/ansible/files/nominatim/` y el playbook lo copia a la VM. La importación usa el estilo `address` y 2 hilos.
 - **Medición en QA (VM5, 4 vCPU y 11,4 GiB).** Importación de unos 7 minutos con el contenedor limitado a 3 GiB. En servicio usa unos 374 MiB de RAM, el volumen ocupa 1,42 GB y la VM mantiene unos 8,5 GiB de RAM disponible y 62 GB de disco libre. El playbook exige 5 GB de RAM y 15 GB de disco libres antes de importar.
-- **Acceso comprobado.** Desde VM2 y desde un pod del k3s de QA, `GET /status` y `/search` responden 200. Desde VM1 y VM7 la conexión al 8088 no responde (la rechaza el firewall).
+- **Medición en producción (VM4, 4 vCPU y 11,6 GiB; 27 de octubre de 2026).** Se desplegó con el mismo extracto de QA (20,7 MB del 14 de octubre, copiado de VM5, misma huella), así que los dos ambientes geocodifican con el mismo mapa. Importación de unos 6 minutos. En servicio, `nominatim` usa unos 368 MiB de sus 3 GiB y 1,2 % de CPU, y el proxy 2 MiB. La VM pasó de 9,0 a 8,7 GiB de RAM disponible y de 20 a 23 GB de disco usado (imagen de 1,5 GB más la base de Nominatim), con 42 GB libres; las conexiones de PostgreSQL de producción siguen en 19 de 100. El swap ya tenía unos 800 MB en uso antes del despliegue. El firewall solo permite el 8088 desde VM3: la regla se aplicó sola con `ufw`, sin reaplicar `setup-base.yml` (que repite toda la base de la VM), y es la misma que declara `firewall.yml`.
+- **Acceso comprobado.** Desde VM2 y desde un pod del k3s de QA, `GET /status` y `/search` responden 200. Desde VM1 y VM7 la conexión al 8088 no responde (la rechaza el firewall). En producción, desde VM3 `GET /status` y `/search` responden 200 y desde VM1 la conexión no responde (`curl` agota el tiempo); no se probó desde un pod del k3s de producción, solo desde el nodo, que es la IP de origen que el firewall permite.
 - **Cómo se actualiza el mapa.** Manual y poco frecuente: se regenera el extracto y se corre `deploy-nominatim.yml -e reimportar=true`, que borra la base de Nominatim y vuelve a importar (unos 7 minutos sin servicio de geocodificación).
 - **Calidad de la geocodificación (hallazgo del 14 de octubre).** Con 14 direcciones de prueba, Nominatim resuelve bien nombres de vía y lugares (Calle 63, Calle 26, Calle 72, Calle 100, Diagonal 40, Avenida Carrera 68, Plaza de Bolívar y la localidad Chapinero), pero **no usa el número de casa ni la calle transversal de la nomenclatura de Bogotá**: "Carrera 7 # 72-41" devuelve una calle llamada Carrera 7 en la localidad de San Cristóbal, no el cruce con la Calle 72 en Chapinero; "Transversal 93 # 53-32" y "Parque de la 93" devuelven puntos en otras localidades, y "Avenida Caracas # 26-50" no devuelve nada. La coordenada puede quedar a kilómetros de la dirección y caer en otra localidad, lo que cambia qué técnicos cubren la solicitud. Por eso conviene que el GPS siga siendo la primera opción (ADR-024) y que, cuando se use la dirección, la app muestre al Cliente el punto encontrado para confirmarlo. Es una decisión del equipo de ServiceRequest y de la app, no de DevOps.
 
@@ -892,7 +892,7 @@ Las reglas están en `ansible/inventory/group_vars/all/firewall.yml`. "Equipo" e
 | VM3 | 8080 | VM1 | Nginx del gateway de producción (ADR-028) |
 | VM3 | 30080 y 30443 | VM1 | Traefik de producción: comprobaciones de VM1 (el gateway de la propia VM3 llega por la red del host) |
 | VM3 | 6443 | VM1 | API de k3s de producción, para los despliegues del runner |
-| VM4 | 5432, 6379 y 8088 | VM3 | PostgreSQL, Redis y Nominatim de producción (el 8088, pendiente de desplegar) |
+| VM4 | 5432, 6379 y 8088 | VM3 | PostgreSQL, Redis y Nominatim de producción (el 8088, aplicado el 27 de octubre) |
 | VM5 | 5432, 6379 y 8088 | VM2 | PostgreSQL, Redis y Nominatim de QA |
 | VM6 | 9092 | VM3 | Kafka de producción |
 | VM6 | 9000 | VM3 y VM4 | Garage de producción (S3): evidencias de los servicios y respaldo de PostgreSQL |
@@ -1111,7 +1111,7 @@ La primera vez conviene simular la base en una VM, aplicarla ahí, comprobar que
 | 3 | `deploy-garage.yml` | VM6 y VM7 | Garage, buckets y llaves de cada ambiente | El respaldo de VM4 escribe en Garage |
 | 4 | `deploy-db.yml` | VM4 y VM5 | PostgreSQL + PostGIS y una base por servicio; el respaldo diario solo en producción | |
 | 5 | `deploy-cache.yml` | VM4 y VM5 | Redis con un usuario por servicio | |
-| 5b | `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá | Antes hay que generar el extracto con `tools/nominatim-extracto.sh`; hoy solo en QA |
+| 5b | `deploy-nominatim.yml` | VM4 y VM5 | Nominatim con el mapa de Bogotá | Antes hay que generar el extracto con `tools/nominatim-extracto.sh` (o copiar el de QA); desplegado en QA y en producción |
 | 6 | `deploy-kafka.yml` | VM6 y VM7 | Kafka (en VM6, también Kafka UI) | |
 | 7 | `deploy-k3s.yml` | VM3 y VM2 | k3s de producción y de QA, y sus kubeconfig | El runner los necesita |
 | 8 | `deploy-gateway.yml` | VM3, VM2 y VM1 | El Nginx del gateway de cada ambiente con su panel y, en VM1, la entrada TLS con los tres nombres y el certificado | Primero los gateways de los ambientes y después la entrada (`--limit`) |
@@ -1189,3 +1189,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.2 | 27 oct 2026 | Operación de Kafka (SCRUM-555): el reinicio de offsets se probó en QA con un grupo de prueba (simulación, aplicación, verificación y borrado) y la sección 5.10 lo registra; el lag de `communication-service` no es fijo sino creciente (50 mensajes el 27 de octubre) y apunta a que no consume los eventos `matching.*`. |
 | 4.3 | 27 oct 2026 | Prueba de restauración del respaldo de PostgreSQL de producción (SCRUM-521): playbook `probar-restauracion-pg.yml`, sección 9.3 con el resultado y la retención local real (3 carpetas) en 9.2. |
 | 4.4 | 27 oct 2026 | Tope de pool aplicado en producción y excepción al RNF-08 levantada (SCRUM-521): `Maximum Pool Size` en los Secret de Identity, Catalog y ServiceRequest, sección 6.2 con el motivo, la evidencia y lo que no se midió, y notas de 5.7 y de las limitaciones. |
+| 4.5 | 27 oct 2026 | Secret de Payments y Communication y Nominatim en producción (SCRUM-519 y SCRUM-520): sección 4.3 y la tabla de lo que falta, sección 5.9 con la medición en VM4 y el acceso comprobado, regla del 8088 aplicada y tabla de playbooks. |
