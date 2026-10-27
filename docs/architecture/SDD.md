@@ -311,6 +311,8 @@ Infrastructure -> Application / Domain mediante interfaces
 
 El detalle definitivo de proyectos, carpetas y paquetes debe quedar sincronizado con la sección 10.
 
+**Cómo leer los diagramas de componentes (SCRUM-581, SCRUM-582).** Los diagramas de Identity, Catalog, ServiceRequest y Payments (secciones 6.4, 6.6, 6.7 y 6.10) muestran el servicio por dentro, capa por capa: el endpoint (`Api/Endpoints`), el caso de uso (`Application/<agregado>`), el dominio, el repositorio con su `TenantUnitOfWork` y la base, y en Kafka el `EfOutbox`, el `OutboxPublisher` y los consumidores. Cada componente lleva el nombre de su clase o carpeta en `develop`, y la tecnología indica la ruta (por ejemplo, `Minimal API · Api/Endpoints`), así que se puede ir del diagrama al código sin traducir nombres. Lo que todavía no existe (la calificación de ServiceRequest y el webhook de la pasarela certificada) aparece punteado como «Planeado».
+
 ## 6.2 Aplicaciones cliente
 
 Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componente indica la carpeta del repositorio donde vive (sección 10.2) y corresponde al código de `develop`; los componentes con borde punteado están planeados.
