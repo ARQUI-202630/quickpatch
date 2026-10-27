@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.40 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.41 — QUICKPATCH
 
 ---
 
@@ -938,7 +938,7 @@ flowchart LR
 
 #### 4.2.1 Clientes (frontend)
 
-- **Angular (Web)**: panel de los dos administradores — el del tenant (aprueba y suspende técnicos, gestiona empleados, aliados y reportes de su tenant) y el de plataforma (administra los tenants, RF-21). Exclusivamente backoffice, sin sitio público indexable (ver FA2).
+- **Angular (Web)**: panel de los dos administradores — el del tenant (aprueba y suspende técnicos, gestiona empleados, aliados y reportes de su tenant) y el de plataforma (administra los tenants, RF-21). Es un backoffice: la única página pública es la de presentación, sin datos ni indexación, con el botón para descargar la app (SRS, versión 5.3: SCRUM-491; descarga del APK: SCRUM-628; ver FA2).
 - **Flutter (iOS/Android)**: aplicación para clientes, empresas cliente, técnicos/aliados en campo y proveedores (el rol que administra un equipo de técnicos, RF-16). El proveedor de materiales o repuestos (`SUPPLIER`, sección 7.2) no es un rol del MVP.
 
 Ambos clientes se comunican con el sistema a través del **API Gateway** de su ambiente (un Nginx en VM3 y otro en VM2, detrás de la entrada TLS de VM1; ADR-028), que resuelve autenticación y rate limiting de forma centralizada. Desde ADR-025, el gateway enruta REST principal solo hacia **Identity, ServiceRequest y Payments**; los demás servicios se integran por Kafka, salvo las excepciones explícitas del ADR (acciones del técnico en Matching, administración del catálogo, buzón y canal en tiempo real de Communication) y el chat de la solicitud de ADR-026.
@@ -947,33 +947,35 @@ Ambos clientes se comunican con el sistema a través del **API Gateway** de su a
 
 #### 4.2.2 Microservicios
 
-Cada servicio es responsable de un dominio de negocio, con su propio ciclo de despliegue:
+Cada servicio es responsable de un dominio de negocio, con su propio ciclo de despliegue. La columna de estado separa lo implementado de lo planeado, para que lo que se muestra coincida con lo que hay en `develop` y en cada ambiente (mapa arquitectónico, `docs/architecture/mapa-arquitectonico.md`, SCRUM-544). Los diagramas dibujan lo planeado con borde punteado.
 
-|Servicio|Módulos que agrupa|
-|---|---|
-|Identity Service|Auth, Tenants, Users|
-|Actors Service|Suppliers, Allies, Clients|
-|Catalog Service|Catalog (especialidades, servicios publicados)|
-|Matching Service|Matching, CoverageZone|
-|ServiceRequest Service|ServiceRequest (orquesta cotización → prestación → evaluación)|
-|Ranking Service|Ranking (servicio prestado; el de materiales queda fuera del MVP, ver D3)|
-|Payments Service|Payments, Billing, Payroll-lite|
-|Communication Service|Notifications y Chat de la solicitud (ADR-026); Complaints planificado para el roadmap 1.x, fuera del alcance del MVP|
+|Servicio|Módulos que agrupa|Estado al 27 de octubre de 2026|QA|Producción|
+|---|---|---|---|---|
+|Identity Service|Auth, Tenants, Users; también el equipo del proveedor (RF-16) mientras Actors no tenga persistencia (DD, P-02)|Implementado|Desplegado|Desplegado|
+|Actors Service|Suppliers, Allies, Clients|**Planeado**: esqueleto sin persistencia; sus conceptos son evolutivos (SDD 6.14)|No desplegado|No desplegado|
+|Catalog Service|Catalog (especialidades, servicios publicados)|Implementado|Desplegado|Desplegado|
+|Matching Service|Matching, CoverageZone|Implementado; falta consumir `catalog.category-changed` para el nombre de la categoría en la oferta|Desplegado|Desplegado|
+|ServiceRequest Service|ServiceRequest (orquesta cotización → prestación → evaluación)|Implementado hasta el pago; la calificación (RF-12) está **planeada** (ADR-027)|Desplegado|Desplegado|
+|Ranking Service|Ranking (servicio prestado; el de materiales queda fuera del MVP, ver D3)|**Planeado**: esqueleto; se construye con ADR-027|No desplegado|No desplegado|
+|Payments Service|Payments, Billing, Payroll-lite|Pago con la pasarela simulada, pago de la empresa (RN-P6) y comprobante implementados; los pagos recibidos del técnico (RF-25) están **planeados**|Desplegado|Pendiente (SCRUM-519)|
+|Communication Service|Notifications y Chat de la solicitud (ADR-026); Complaints planificado para el roadmap 1.x, fuera del alcance del MVP|Implementado|Desplegado|Pendiente (SCRUM-519)|
+
+Producción iguala a QA antes de promover el MVP (SCRUM-518 a SCRUM-521): faltan Payments, Communication, Nominatim y los topics de Kafka del incremento (Documento de Infraestructura, sección 4.3).
 
 #### 4.2.3 Persistencia
 
 - **PostgreSQL + PostGIS**: cada servicio gestiona su propia base o esquema, evitando acoplamiento a nivel de datos entre servicios. PostGIS resuelve las consultas geoespaciales del Matching Service.
-- **Redis**: cache y colas de corta duración, compartido como infraestructura de soporte.
+- **Redis**: coordinación temporal de procesos programados, compartido como infraestructura de soporte. Hoy solo lo usa ServiceRequest, para que una sola réplica venza las cotizaciones (DD, RN-Q6); ningún servicio lo usa como caché en el MVP, y cada servicio tiene su usuario limitado a sus claves (Documento de Infraestructura, sección 3.4).
 
 #### 4.2.4 Comunicación entre servicios (Event-Driven)
 
-**Apache Kafka** deja de ser solo un mecanismo de procesamiento en segundo plano y pasa a ser el **canal principal de comunicación entre microservicios**: cada servicio publica eventos de su dominio (por ejemplo, `SERVICE_REQUESTED`, `QUOTE_ACCEPTED`, `PAYMENT_APPROVED`) y los demás servicios interesados los consumen de forma asíncrona, sin acoplarse directamente entre sí vía llamadas REST síncronas.
+**Apache Kafka** deja de ser solo un mecanismo de procesamiento en segundo plano y pasa a ser el **canal principal de comunicación entre microservicios**: cada servicio publica eventos de su dominio (por ejemplo, `service-request.created`, `service-request.quote-accepted`, `payment.approved`; la lista completa, con productor y consumidores, está en `quickpatch-kafka/topics/topics.yaml`) y los demás servicios interesados los consumen de forma asíncrona, sin acoplarse directamente entre sí vía llamadas REST síncronas.
 
 Ejemplos de flujo de eventos:
 
-- `ServiceRequest Service` publica `SERVICE_REQUESTED` → lo consume `Matching Service` (busca candidatos) y `Communication Service` (notifica)
+- `ServiceRequest Service` publica `service-request.created` → lo consume `Matching Service` (busca candidatos) y `Communication Service` (notifica)
 - `ServiceRequest Service` publica `service-request.rated` → lo consume `Ranking Service`, que recalcula la reputación y publica `ranking.technician-reputation-changed` para Identity (ADR-027)
-- `Payments Service` publica `PAYMENT_APPROVED` → lo consume `ServiceRequest Service` (libera el servicio) y `Communication Service` (notifica al cliente)
+- `Payments Service` publica `payment.approved` → lo consume `ServiceRequest Service`, que pasa la solicitud a `pagado` y publica `service-request.status-changed`; con ese evento `Communication Service` avisa al cliente (SCRUM-466)
 
 ### 4.3 Principio rector: comunicación por eventos, no por llamadas directas
 
@@ -997,7 +999,7 @@ Esta sección describe cómo se distribuye el sistema sobre las 7 VMs propias (R
 |VM5|10.43.98.29|QA — datos|Igual que VM4|
 |VM7|10.43.99.8|QA — mensajería y almacenamiento|Igual que VM6|
 
-> **Distribución aprobada en la versión 2.22 (ADR-022), implementación en curso (SCRUM-334).** Hasta que termine la migración, la distribución operativa es la de ADR-015: QA completo en VM2, Redis en VM5 y Garage con la observabilidad en VM7 (Documento de Infraestructura, sección 3.2).
+> **Distribución aprobada en la versión 2.22 (ADR-022) y aplicada el 7 de octubre de 2026 (SCRUM-334).** Los servicios corren así desde el 8 de octubre. Lo que hoy corre en cada ambiente está en el Documento de Infraestructura, sección 4.3: QA tiene 6 microservicios y producción 4; Actors y Ranking no están desplegados porque son esqueletos (sección 4.2.2).
 
 > **Nota sobre storage de evidencias (self-hosted vs. Cloudflare R2):** confirmado con el equipo que la evidencia fotográfica sí está en el alcance del MVP. El storage se aprovisiona **self-hosted en VM6** (VM7 en QA, ADR-022), consistente con R5: primero MinIO y, desde la versión 2.13, Garage (ADR-016), porque MinIO dejó de distribuir su edición comunitaria. El diagrama de la presentación de Sprint 1 mostraba "MinIO / Cloudflare R2" como si fueran intercambiables; se descarta Cloudflare R2 para esta versión por R5: guardaría datos de usuarios en producción (las evidencias) fuera de las 7 VMs, aunque su capa gratuita no tenga costo. GitHub Container Registry sí se usa porque solo guarda imágenes de contenedor, no datos de usuarios. Si en el futuro se reconsidera, debe evaluarse explícitamente contra R5 antes de adoptarlo.
 
@@ -1275,5 +1277,6 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.38|25 oct 2026|Gateway propio en cada ambiente (SCRUM-573, revisión del Sprint 4). Se acepta ADR-028: un Nginx de gateway en VM3 (producción) y otro en VM2 (QA), cada uno con su panel y su despliegue, y VM1 como entrada TLS que reenvía por nombre al gateway del ambiente; precisa la regla 3 de ADR-022, que ubicaba el gateway y el panel en el k3s. Cambian las secciones 4.1 (frontera y gateway), 5.1 (VM1 y VM3), 5.2, 5.3, 5.5 (ADR-028 y nota en ADR-015), 6.1 (matriz), el RNF-02 de la sección 2.2 y el artefacto del escenario AC7-E6.|
 |2.39|26 oct 2026|ADR-027 (SCRUM-542): la calificación vive en ServiceRequest y Ranking calcula la reputación por eventos, de forma idempotente, y la devuelve a Identity con `ranking.technician-reputation-changed`; cierra DEP-04 del DD. El evento de la calificación se llama `service-request.rated`, como en el DD (antes `SERVICE_EVALUATED`). Se agrega a D3, a la lista de ADR y a la matriz de trade-offs.|
 |2.40|26 oct 2026|Restricción R6 (SCRUM-598, subtarea SCRUM-599; revisión del Sprint 4): explica cómo se aplica dentro de la ciudad (área urbana de RN-SR9, mapa de Bogotá de ADR-024 y localidades de RN-M9) y remite al SRS 2.3.1, con la lista de zonas, la prueba fuera de Bogotá y la decisión pendiente P10 sobre Sumapaz. La 2.39 es el ADR-027 (SCRUM-542).|
+|2.41|27 oct 2026|Estado de los servicios planeados y de producción (SCRUM-544, revisión del Sprint 4), con las decisiones del mapa arquitectónico: la tabla 4.2.2 marca qué servicio está implementado o planeado y dónde está desplegado (Actors y Ranking son esqueletos; producción todavía no tiene Payments ni Communication); 4.2.3 dice para qué se usa Redis de verdad (coordinación de vencimientos, no caché); 4.2.4 usa los nombres reales de los eventos y el aviso del pago por `service-request.status-changed`; 4.2.1 reconoce la página de presentación del panel; 5.1 registra que ADR-022 se aplicó el 7 de octubre.|
 |2.27|12 oct 2026|Dependencias externas frente a R5 (SCRUM-413 y SCRUM-405). Se acepta ADR-024: R5 no cambia; la geocodificación (RIE-02) corre con un Nominatim propio con el mapa de Bogotá en VM4 y VM5, usado por ServiceRequest cuando la solicitud llega sin coordenadas, y las notificaciones (RIE-03) del MVP se entregan dentro de la app (canal de ADR-023 y buzón en Communication). El diagrama de contexto (4.1) pasa el geocodificador adentro del sistema y retira el proveedor de correo y push, y la nota de sistemas externos lo explica. ADR-024 entra a la tabla 5.5 y a la matriz 6.1 como excepción a ADR-014.|
 |2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|
