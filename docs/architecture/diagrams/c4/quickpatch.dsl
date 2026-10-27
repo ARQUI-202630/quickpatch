@@ -584,6 +584,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
 
         dynamic quickpatch "C4-05-Dinamico-CrearSolicitud" "Creación de una solicitud, búsqueda del técnico y oferta (RF-07, RF-09, RN-M9, ADR-007, ADR-023). La aceptación está en C4-05-Dinamico-AsignacionTecnico." {
+            title "Escenario: creación de una solicitud y búsqueda del técnico"
             mobile -> gateway "Abre el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
             gateway -> communication "Enruta el WebSocket; Communication valida el token"
             mobile -> gateway "POST /api/v1/service-requests" "HTTPS/JSON"
@@ -594,7 +595,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             matching -> dbMatching "Registra el eventId, busca candidatos (RN-M9, PostGIS) y registra la oferta con vencimiento a 3 min"
             matching -> kafka "Publica matching.offer-created o, sin candidatos, matching.no-technician-available"
             serviceRequest -> kafka "Sin candidatos, consume el resultado y pasa la solicitud a en_espera"
-            communication -> kafka "Consume la oferta o el resultado"
+            communication -> kafka "Consume matching.offer-created o, sin candidatos, service-request.status-changed (en_espera)"
             communication -> dbCommunication "Guarda la notificación en el buzón del destinatario"
             communication -> gateway "Avisa por el WebSocket abierto: al técnico, la oferta (ADR-023)"
             gateway -> mobile "Entrega el aviso; la app pide el detalle por REST" "WebSocket (wss)"
@@ -604,21 +605,28 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-AsignacionTecnico" "Aceptación de la oferta por el técnico y aviso al cliente (RF-10, RN-M2, RN-M4, RN-M6, RN-M7; SCRUM-30, SCRUM-427)." {
-            mobile -> gateway "El técnico abre el WebSocket /api/v1/realtime" "WebSocket (wss)"
+        dynamic quickpatch "C4-05-Dinamico-AsignacionTecnico" "Desde que se crea la solicitud hasta que el cliente ve a su técnico (RF-09, RF-10, RF-11; RN-M2, RN-M6, RN-M9; ADR-007, ADR-023). Si el técnico rechaza o la oferta vence a los 3 min, Matching repite los pasos 5 a 9 con el siguiente candidato (RN-M3)." {
+            title "Escenario: asignación de técnico a una solicitud"
+            mobile -> gateway "Las apps del técnico y del cliente abren el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
             gateway -> communication "Enruta el WebSocket; Communication valida el token"
-            mobile -> gateway "GET /api/v1/matching/offers?status=pendiente: localidad y distancia, sin la dirección (RN-SR13)" "HTTPS/JSON"
+            serviceRequest -> kafka "Publica service-request.created desde el Outbox (la solicitud quedó en buscando_tecnico)"
+            matching -> kafka "Consume service-request.created (una vez por eventId)"
+            matching -> dbMatching "Busca candidatos aprobados, disponibles, de la especialidad y con cobertura, por cercanía (RN-M9, PostGIS), y registra la oferta con vencimiento a 3 min"
+            matching -> kafka "Publica matching.offer-created"
+            communication -> kafka "Consume matching.offer-created"
+            communication -> gateway "Avisa al técnico por su WebSocket /v1/realtime"
+            gateway -> mobile "La app del técnico muestra la oferta: localidad y distancia, sin la dirección (RN-SR13)" "WebSocket (wss)"
+            mobile -> gateway "El técnico acepta: POST /api/v1/matching/offers/{attemptId}/accept" "HTTPS/JSON"
             gateway -> matching "Enruta con el JWT del técnico"
-            mobile -> gateway "POST /api/v1/matching/offers/{attemptId}/accept" "HTTPS/JSON"
-            gateway -> matching "Enruta con el JWT del técnico"
-            matching -> dbMatching "Acepta solo si la oferta sigue pendiente, es del técnico y no venció; el técnico pasa a ocupado (una transacción)"
+            matching -> dbMatching "Acepta solo si la oferta sigue pendiente, es suya y no venció; el técnico pasa a ocupado (RN-M2, RN-M6; una transacción con el Outbox)"
             matching -> kafka "Publica matching.technician-assigned"
-            serviceRequest -> kafka "Consume la asignación y pasa la solicitud a asignado"
-            communication -> kafka "Consume la asignación"
-            communication -> dbCommunication "Guarda la notificación del cliente y del técnico"
+            serviceRequest -> kafka "Consume matching.technician-assigned"
+            serviceRequest -> dbServiceRequest "Pasa la solicitud a asignado y guarda service-request.status-changed en el Outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.status-changed"
+            communication -> kafka "Consume service-request.status-changed"
             communication -> gateway "Avisa al cliente por su WebSocket"
-            gateway -> mobile "Entrega el aviso; la app del cliente pide el detalle con el técnico asignado" "WebSocket (wss)"
-            autoLayout lr 200 100
+            gateway -> mobile "La app del cliente pide el detalle por REST y muestra al técnico asignado" "WebSocket (wss)"
+            autoLayout lr 250 120
             properties {
                 "structurizr.groups" false
             }
