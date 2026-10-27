@@ -1,0 +1,23 @@
+{
+  "_comentario": "Juego de datos de demostración (SCRUM-632). Sin contraseñas: la de las cuentas va en QP_DEMO_PASSWORD. Correos con el dominio demo.quickpatch.test. Las categorías se buscan por nombre en el catálogo del ambiente.",
+  "clientes": [
+    { "email": "demo.cliente1@demo.quickpatch.test", "nombre": "Cliente Demo Uno", "telefono": "3001230001" },
+    { "email": "demo.cliente2@demo.quickpatch.test", "nombre": "Cliente Demo Dos", "telefono": "3001230002" }
+  ],
+  "empresas": [
+    {
+      "razonSocial": "Empresa Demo S.A.S.",
+      "nit": "900123456-7",
+      "usuario": { "email": "demo.empresa@demo.quickpatch.test", "nombre": "Contacto Empresa Demo", "telefono": "3001230010" }
+    }
+  ],
+  "tecnicos": [
+    { "email": "demo.tecnico1@demo.quickpatch.test", "nombre": "Técnico Demo Plomería", "telefono": "3001230021", "documento": "1000000021", "categoria": "Plomería" },
+    { "email": "demo.tecnico2@demo.quickpatch.test", "nombre": "Técnico Demo Segundo", "telefono": "3001230022", "documento": "1000000022", "categoria": "Plomería" }
+  ],
+  "cobertura": ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
+  "solicitudes": [
+    { "cliente": "demo.cliente1@demo.quickpatch.test", "categoria": "Plomería", "descripcion": "[DEMO] Fuga de agua en el lavamanos del baño principal", "direccion": "Calle 63 # 9-45, Bogotá" },
+    { "cliente": "demo.cliente2@demo.quickpatch.test", "categoria": "Plomería", "descripcion": "[DEMO] Revisión de la presión del agua en la cocina", "direccion": "Avenida Carrera 68 # 24-30, Bogotá" }
+  ]
+}
