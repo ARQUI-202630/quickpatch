@@ -1,0 +1,22 @@
+{
+  "service": "quickpatch-matching",
+  "run_number": 41,
+  "head_branch": "release/0.6.0",
+  "framework": "Maven / JUnit 5",
+  "unit_tests": {
+    "total": 89,
+    "passed": 89,
+    "failed": 0,
+    "skipped": 0
+  },
+  "integration_tests": {
+    "total": 26,
+    "passed": 26,
+    "failed": 0,
+    "skipped": 0
+  },
+  "total": 115,
+  "passed": 115,
+  "failed": 0,
+  "status": "success"
+}

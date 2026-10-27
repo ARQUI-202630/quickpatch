@@ -1,0 +1,73 @@
+Verificacion TLS Ingress en QA (qa.quickpatch.internal:443) - 2026-10-27
+Comando: openssl s_client -connect qa.quickpatch.internal:443 -servername qa.quickpatch.internal
+Destino: 10.43.100.168:443 (entrada Nginx de VM1, ADR-028)
+--------------------------------------------------------------------------------
+Connecting to 10.43.100.168
+depth=0 CN=quickpatch.internal
+verify error:num=18:self-signed certificate
+verify return:1
+depth=0 CN=quickpatch.internal
+verify return:1
+CONNECTED(00000004)
+---
+Certificate chain
+ 0 s:CN=quickpatch.internal
+   i:CN=quickpatch.internal
+   a:PKEY: RSA, 4096 (bit); sigalg: sha256WithRSAEncryption
+   v:NotBefore: Oct 16 03:35:55 2026 GMT; NotAfter: Oct 13 03:35:55 2036 GMT
+---
+Server certificate
+-----BEGIN CERTIFICATE-----
+MIIFlzCCA3+gAwIBAgIUIDUT68NtbEq/oxAJQtkRBpO8f7wwDQYJKoZIhvcNAQEL
+BQAwHjEcMBoGA1UEAwwTcXVpY2twYXRjaC5pbnRlcm5hbDAeFw0yNjEwMTYwMzM1
+NTVaFw0zNjEwMTMwMzM1NTVaMB4xHDAaBgNVBAMME3F1aWNrcGF0Y2guaW50ZXJu
+YWwwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQDggVrn8jTZUNgo5Y7g
+JTIb7ULx6OotojWOwFoFxB8ccwQRQcvLfTVMkddtD222h1PdXbtrKHyO3nf3uq/B
+9wL7q47cNzEi+fA61Pre/52Ry/IKI3f+oeC5oC5dEcguOXtEcV/mGluj8En4bT0o
+wvPnDuJhsfKWbV008ZrjfNunosG1TTg9h3X8X6MB3rP6qJ2XLaCjHRInMJWFyUQ2
+RfKRw1G38qVJtvIRT4opnJk4udioFgTAWkUUJEvnMJ1RkaMoDmHOalSeOzFFmFMZ
+vw5uPYYWgErXoCvc8NTUeIwAo9+gRK1D471zQ6eOGyBJWFSa7k+Q/morE3FYNxmp
+GHdrAFDRZW0OIbBLKL9+vbXAFB23/DLek/bQWuenLNsy2bAwk+6uRk0J6Jl92y/Q
+5p5HU2dr3MEdKjMuDBvot0QQ83sbUgOldoXa3VQA74Kf57YsRso0iBIOJeo6xU7j
+MaP7lr6AdkRVaU+6SgsJobZ80c6eqvJfEyw585RahD6A7GYAAVZ9dPF6Vfi64ut9
+xJ142jWxDg/n+Po85D8ciniqgjF7HD8EA7GiXErwOzcAmola3btqyYLf/BaicB+w
+v8LreMJSnFDcZhcZ3YrZX6RPWImaJriMxLqldFAGo+ZNmDnydg7Y40ScyUuKJ4qr
+XCcgjQqB+7C4q9KNJ6S7oEIf/wIDAQABo4HMMIHJMB0GA1UdDgQWBBRDw8YJgGit
+EOtgwmKLbFAhEHQPcDAfBgNVHSMEGDAWgBRDw8YJgGitEOtgwmKLbFAhEHQPcDAP
+BgNVHRMBAf8EBTADAQH/MHYGA1UdEQRvMG2CE3F1aWNrcGF0Y2guaW50ZXJuYWyC
+FnFhLnF1aWNrcGF0Y2guaW50ZXJuYWyCG2JldGEucWEucXVpY2twYXRjaC5pbnRl
+cm5hbIIbZ3JhZmFuYS5xdWlja3BhdGNoLmludGVybmFshwQKK2SoMA0GCSqGSIb3
+DQEBCwUAA4ICAQAI6YYnF0c+wbCIY3K2yAAn0sXxiEYorvPV4RZG8Rz8YtuLREgg
+itAZMGUfsUey3zZYCqatNRdYOAyg/0vdoQH8EOYNd0G5doOTyYeOp0M8ZGXeZz6K
+bKvUZAvJcOE6QxfxYyHIqTkT1SHyVTbeCoH6YAbUfD+zIhTXSI10ne3yRD0EQ2B/
+0yH81KaLXBj+MvTpttHKM620dnmBzezXGLJL4lbWDEezbkzOswGzNQ8/G6rtFY8z
+k1o+Wnbz28BiKSO8u8fIWE4WREKKW60Nsq94VN5dzpUfEDbkVqdL7NNbu5WxTiUO
+n09E/W6W892pzi3O7k02j9fnG0qJjBmEQ2IiGlRgdZLxqd5soTmOnw0pESdbq0kG
+e2CEZ8xzttorS1/2c30EfUp2ZTGXy/vqV07baVxo6D9E3MkWUlL3gx8yXkPVwNHy
+D4rj/zeRPZHVk+5gjoCxdo5Caqzm3ehiZGagwgi/BrhVa68CwI2kvPKZzxTUF+po
+MvtspHLDRe8rEromXBLO/XdC5oz7eqxoMCPid0fG0GOuGQg6lCY/4hnnr3l4sGwZ
+z+a2/qZBCoOd20mLD1y6j30yjRtdbhLX9vGmPAtHjFCwVPQYfb8eEKDpx5RXz+b8
+1Yv8EjfFGCNXOWaGj2z3n/D9jlFxnzYHA9U76yiugw1Y1WWTjZNWc+slgA==
+-----END CERTIFICATE-----
+subject=CN=quickpatch.internal
+issuer=CN=quickpatch.internal
+---
+No client certificate CA names sent
+Peer signing digest: SHA256
+Peer signature type: rsa_pss_rsae_sha256
+Peer Temp Key: X25519, 253 bits
+---
+SSL handshake has read 2251 bytes and written 1635 bytes
+Verification error: self-signed certificate
+---
+New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
+Protocol: TLSv1.3
+Server public key is 4096 bit
+This TLS version forbids renegotiation.
+Compression: NONE
+Expansion: NONE
+No ALPN negotiated
+Early data was not sent
+Verify return code: 18 (self-signed certificate)
+---
+DONE
