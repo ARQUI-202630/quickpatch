@@ -108,6 +108,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idSecurityAdapters = component "RsaTokenIssuer y BCryptPasswordHasher" "Firma el JWT RS256 (ADR-018) y hace el hash de las contraseñas (RNF-03)." "Infrastructure/Security"
                     idOutbox = component "EfOutbox" "Guarda technician.registered y technician.verification-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Messaging"
                     idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
+                    idReputationConsumer = component "Consumidor de ranking.technician-reputation-changed" "Actualiza technician_profiles.average_rating y la marca de reputación baja; descarta eventos más viejos por changedAt (ADR-027, ADR-017)." "Kafka consumer · Infrastructure/Messaging" "Planeado"
                 }
                 actors = container "Actors Service" "Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     acApi = component "API de actores" "Consulta y mantenimiento de actores del tenant." "Minimal API" "Planeado"
@@ -171,10 +172,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     maProyeccion = component "Proyección del técnico" "Consume technician.registered y technician.verification-changed y guarda especialidad y verificación (P-01, ADR-017); reanuda solicitudes en espera (RN-M10)." "@KafkaListener"
                 }
                 ranking = container "Ranking Service" "Reputación de técnicos." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    raConsumidor = component "Consumidor de service-request.evaluated" "Recibe cada calificación, una vez por eventId." "Kafka consumer" "Planeado"
-                    raCalculo = component "Cálculo de reputación" "Recalcula el promedio del técnico (RF-12)." "Domain" "Planeado"
-                    raApi = component "API de reputación" "Consulta de la reputación del técnico." "Minimal API" "Planeado"
-                    raPersistencia = component "Persistencia con RLS" "Reputación agregada por tenant." "EF Core + Npgsql" "Planeado"
+                    raConsumidor = component "Consumidor de service-request.rated" "Aplica cada calificación una sola vez, por eventId y serviceRequestId (ADR-027)." "Kafka consumer" "Planeado"
+                    raCalculo = component "Cálculo de reputación" "Cantidad, suma y promedio por técnico; reputación baja con 5 o más calificaciones y promedio menor a 3.0 (RF-12, AC9-E2)." "Domain" "Planeado"
+                    raPersistencia = component "Persistencia con RLS" "Reputación por técnico y calificaciones aplicadas, por tenant." "EF Core + Npgsql" "Planeado"
+                    raOutbox = component "Outbox" "Guarda ranking.technician-reputation-changed en la misma transacción (ADR-007)." "EF Core" "Planeado"
+                    raPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService" "Planeado"
                 }
                 payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
@@ -195,6 +197,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     paReconciliation = component "ReconciliationJob" "Cierra los pagos que la pasarela dejó sin respuesta (AC9-E5)." "BackgroundService · Infrastructure/Messaging"
                     paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado)." "Infrastructure/Providers"
                     paPdf = component "InvoicePdfRenderer" "Arma el PDF del comprobante, sin validez fiscal." "Infrastructure/Documents"
+                    paReceived = component "Pagos recibidos" "GET /v1/payments/received?page=&size= para el técnico (RF-25, DD 8)." "Minimal API" "Planeado"
                     paWebhook = component "Receptor de webhooks del PSP" "Confirmará el resultado de forma idempotente con la pasarela certificada." "Minimal API" "Planeado"
                 }
                 communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" "Microservicio" {
@@ -208,7 +211,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
             group "Mensajería y almacenamiento" {
                 kafka = container "Apache Kafka" "Bus de eventos: un topic por tipo de evento (quickpatch-kafka/topics)." "Apache Kafka (KRaft)" "Queue"
-                redis = container "Redis" "Caché y colas cortas; un usuario por servicio limitado a <servicio>:*." "Redis" "Database"
+                redis = container "Redis" "Coordinación temporal: hoy solo el bloqueo con el que una réplica de ServiceRequest vence las cotizaciones; sin caché en el MVP. Un usuario por servicio limitado a <servicio>:*." "Redis" "Database"
                 garage = container "Garage" "Evidencias fotográficas y respaldos de PostgreSQL (ADR-016)." "Garage (S3)" "Database"
             }
 
@@ -301,9 +304,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         gateway -> srExecutionEndpoints "Enruta /start, /evidence y /complete" "HTTP"
         gateway -> srAdminEndpoints "Enruta /api/v1/admin y /api/v1/platform/service-requests" "HTTP"
         gateway -> acApi "Enruta /api/v1/actors" "HTTP" "Planeado"
-        gateway -> raApi "Enruta /api/v1/ranking" "HTTP" "Planeado"
         gateway -> paPaymentEndpoints "Enruta /api/v1/service-requests/{id}/payment" "HTTP"
         gateway -> paInvoiceEndpoints "Enruta /api/v1/payments" "HTTP"
+        gateway -> paReceived "Enrutará /api/v1/payments/received" "HTTP" "Planeado"
         gateway -> maApi "Enruta /api/v1/matching, /api/v1/technicians y /api/v1/localities" "HTTP"
         gateway -> coCanal "Enruta /api/v1/realtime" "WebSocket"
         gateway -> coBuzon "Enruta /api/v1/notifications" "HTTP"
@@ -334,6 +337,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         idOutbox -> dbIdentity "INSERT en outbox_events" "SQL"
         idPublisher -> dbIdentity "Lee pendientes y marca published_at" "SQL"
         idPublisher -> kafka "Publica technician.registered y technician.verification-changed" "Kafka"
+        idReputationConsumer -> kafka "Consume ranking.technician-reputation-changed" "Kafka" "Planeado"
+        idReputationConsumer -> idPersistence "Actualiza el promedio del técnico con" "" "Planeado"
 
         # Actors
         acApi -> acProveedores "Usa" "" "Planeado"
@@ -416,11 +421,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         maBusqueda -> dbMatching "Consulta disponibilidad y cobertura (PostGIS)" "SQL"
 
         # Ranking
-        raConsumidor -> kafka "Consume service-request.evaluated" "Kafka" "Planeado"
+        raConsumidor -> kafka "Consume service-request.rated" "Kafka" "Planeado"
         raConsumidor -> raCalculo "Entrega la calificación a" "" "Planeado"
         raCalculo -> raPersistencia "Guarda la reputación con" "" "Planeado"
-        raApi -> raPersistencia "Consulta con" "" "Planeado"
+        raCalculo -> raOutbox "Registra ranking.technician-reputation-changed con" "" "Planeado"
         raPersistencia -> dbRanking "Lee y escribe (RLS)" "SQL" "Planeado"
+        raOutbox -> dbRanking "INSERT en outbox_events" "SQL" "Planeado"
+        raPublisher -> dbRanking "Lee pendientes y marca published_at" "SQL" "Planeado"
+        raPublisher -> kafka "Publica ranking.technician-reputation-changed" "Kafka" "Planeado"
 
         # Payments
         paPaymentEndpoints -> paSecurity "Toma el usuario autenticado de"
@@ -441,6 +449,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         paCompletedHandler -> paPersistence "Registra el eventId y el pago con"
         paInvoices -> paPersistence "Lee el comprobante con"
         paPayments -> paOutbox "Registra payment.approved o payment.rejected con"
+        paReceived -> paPersistence "Leerá los pagos aprobados del técnico con" "" "Planeado"
         paPersistence -> dbPayments "Lee y escribe payments, invoices y processed_events (RLS)" "SQL"
         paOutbox -> dbPayments "INSERT en outbox_events" "SQL"
         paPublisher -> dbPayments "Lee pendientes y marca published_at" "SQL"
@@ -467,19 +476,21 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 mobProd = containerInstance mobile
             }
             deploymentNode "Navegador del administrador" "" "Chrome, Edge o Firefox" {
-                webBrowserProd = infrastructureNode "Navegador" "Ejecuta el panel web descargado de VM1." "HTML + JS"
+                webBrowserProd = infrastructureNode "Navegador" "Ejecuta el panel web que sirve el gateway de VM3." "HTML + JS"
             }
             deploymentNode "Red privada del laboratorio 10.43.x.x" "Solo el 443 de VM1 es alcanzable desde la VPN (R9); firewall default deny incoming." "" {
                 deploymentNode "VM1 · Herramientas · 10.43.100.168" "Entrada única y herramientas compartidas por los dos ambientes." "4 vCPU · 11 GiB RAM · 68 GB" {
-                    proxyProd = infrastructureNode "Proxy Nginx :443" "Termina TLS (autofirmado) y elige destino por nombre: quickpatch.internal → / al panel y /api a VM3:30080; grafana.quickpatch.internal → Grafana." "Nginx"
-                    webProd = containerInstance web
+                    proxyProd = infrastructureNode "Entrada Nginx :443" "Termina TLS 1.2/1.3 (autofirmado) y reenvía por nombre, sin cambiar Host: quickpatch.internal al gateway de VM3; grafana.quickpatch.internal a Grafana (ADR-028)." "Nginx"
                     runnerProd = infrastructureNode "Runner de GitHub Actions" "kubectl y k6; despliega la imagen de main." "GitHub Actions runner"
                     observabilidadProd = softwareSystemInstance observabilidad
                 }
                 deploymentNode "VM3 · Aplicación · 10.43.98.205" "Los servicios llegan a VM4 (PostgreSQL 5432, Redis 6379) y a VM6 (Kafka 9092, Garage 9000)." "4 vCPU · 11 GiB RAM · 68 GB" {
+                    deploymentNode "Docker, red del host" "Nginx del gateway de producción en el puerto 8080, abierto solo a VM1 (ADR-028): /api va a Traefik y / sirve el panel desde /opt/quickpatch/gateway/panel (hoy, página provisional)." "Docker" {
+                        gatewayProd = containerInstance gateway
+                        webProd = containerInstance web
+                    }
                     deploymentNode "k3s (un nodo)" "" "k3s + Traefik" {
                         traefikProd = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
-                        gatewayProd = containerInstance gateway
                         identityProd = containerInstance identity
                         actorsProd = containerInstance actors {
                             tags "Planeado"
@@ -490,8 +501,12 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         rankingProd = containerInstance ranking {
                             tags "Planeado"
                         }
-                        paymentsProd = containerInstance payments
-                        communicationProd = containerInstance communication
+                        paymentsProd = containerInstance payments {
+                            tags "Planeado"
+                        }
+                        communicationProd = containerInstance communication {
+                            tags "Planeado"
+                        }
                     }
                 }
                 deploymentNode "VM4 · Datos · 10.43.98.209" "Recibe 5432 y 6379 desde VM3; respaldo diario a Garage de VM6." "4 vCPU · 11 GiB RAM · 68 GB" {
@@ -506,9 +521,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         dbCommunicationProd = containerInstance dbCommunication
                     }
                     redisProd = containerInstance redis
-                    geocodificadorProd = containerInstance geocodificador {
-                            tags "Planeado"
-                        }
+                    geocodificadorProd = containerInstance geocodificador
                 }
                 deploymentNode "VM6 · Mensajería y almacenamiento · 10.43.99.12" "Recibe 9092 y 9000 desde VM3 y 9000 desde VM4." "4 vCPU · 11 GiB RAM · 68 GB" {
                     kafkaProd = containerInstance kafka
@@ -516,10 +529,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 }
             }
             webBrowserProd -> proxyProd "Abre https://quickpatch.internal" "HTTPS"
-            mobProd -> proxyProd "Llama a https://quickpatch.internal/api" "HTTPS"
-            proxyProd -> traefikProd "Reenvía al gateway de producción" "HTTP"
-            traefikProd -> gatewayProd "Enruta /api" "HTTP"
-            proxyProd -> webProd "Sirve el panel (archivos estáticos de la carpeta panel)" "HTTPS"
+            mobProd -> proxyProd "Llama a https://quickpatch.internal/api (certificado fijado)" "HTTPS"
+            proxyProd -> gatewayProd "Reenvía quickpatch.internal a VM3:8080" "HTTP"
+            gatewayProd -> traefikProd "Envía /api a :30080" "HTTP"
             runnerProd -> traefikProd "kubectl apply de la imagen de main" "HTTPS"
         }
 
@@ -529,15 +541,17 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
             deploymentNode "Red privada del laboratorio 10.43.x.x" "QA no se conecta con producción; solo VM1 llega a los dos (ADR-022)." "" {
                 deploymentNode "VM1 · Herramientas · 10.43.100.168" "Misma VM1 de producción." "4 vCPU · 11 GiB RAM · 68 GB" {
-                    proxyQa = infrastructureNode "Proxy Nginx :443" "qa.quickpatch.internal → / al panel de QA (carpeta panel-qa) y /api a VM2:30080 (INFRASTRUCTURE 3.2)." "Nginx"
-                    webQa = containerInstance web
+                    proxyQa = infrastructureNode "Entrada Nginx :443" "La misma entrada: qa.quickpatch.internal al gateway de VM2, solo desde las redes del equipo (ADR-028)." "Nginx"
                     runnerQa = infrastructureNode "Runner de GitHub Actions" "Despliega release/* y corre Newman, Playwright, ZAP y k6 contra QA." "GitHub Actions runner"
                     observabilidadQa = softwareSystemInstance observabilidad
                 }
                 deploymentNode "VM2 · Aplicación · 10.43.98.15" "Los servicios llegan a VM5 (5432, 6379) y a VM7 (9092, 9000)." "4 vCPU · 11 GiB RAM · 68 GB" {
+                    deploymentNode "Docker, red del host" "Nginx del gateway de QA en el puerto 8080, abierto solo a VM1 (ADR-028): /api va a Traefik y / sirve el panel de QA (build de release/*)." "Docker" {
+                        gatewayQa = containerInstance gateway
+                        webQa = containerInstance web
+                    }
                     deploymentNode "k3s (un nodo)" "" "k3s + Traefik" {
                         traefikQa = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
-                        gatewayQa = containerInstance gateway
                         identityQa = containerInstance identity
                         actorsQa = containerInstance actors {
                             tags "Planeado"
@@ -572,9 +586,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 }
             }
             mobQa -> proxyQa "Llama a https://qa.quickpatch.internal/api (certificado fijado)" "HTTPS"
-            proxyQa -> traefikQa "Reenvía al gateway de QA" "HTTP"
-            traefikQa -> gatewayQa "Enruta /api" "HTTP"
-            proxyQa -> webQa "Sirve el panel de QA (archivos estáticos de la carpeta panel-qa)" "HTTPS"
+            proxyQa -> gatewayQa "Reenvía qa.quickpatch.internal a VM2:8080" "HTTP"
+            gatewayQa -> traefikQa "Envía /api a :30080" "HTTP"
             runnerQa -> traefikQa "Despliega release/* y ejecuta las pruebas del sistema" "HTTPS"
         }
     }
@@ -637,11 +650,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             include *
             autoLayout tb 150 80
         }
-        component ranking "C4-04-Componentes-Ranking" "Componentes de Ranking Service (diseño; el servicio es un esqueleto)." {
+        component ranking "C4-04-Componentes-Ranking" "Componentes de Ranking Service según ADR-027 (planeados; hoy el servicio es un esqueleto): consume service-request.rated y publica ranking.technician-reputation-changed." {
             include *
             autoLayout tb 150 80
         }
-        component payments "C4-04-Componentes-Payments" "Componentes de Payments Service por capa (SDD 10.3.1): pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado)." {
+        component payments "C4-04-Componentes-Payments" "Componentes de Payments Service por capa (SDD 10.3.1): pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado); pagos recibidos del técnico planeados (RF-25)." {
             include *
             autoLayout lr
         }
@@ -736,13 +749,17 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-Calificacion" "Calificación del servicio y recálculo de la reputación (RF-12, RF-20)." {
-            mobile -> gateway "POST la calificación del servicio" "HTTPS/JSON"
+        dynamic quickpatch "C4-05-Dinamico-Calificacion" "Escenario: calificación del servicio y reputación del técnico (RF-12, RF-20, AC9-E2; ADR-027, planeado)." {
+            title "Escenario: calificación del servicio y reputación del técnico"
+            mobile -> gateway "POST /v1/service-requests/{id}/rating con score y comment opcional" "HTTPS/JSON"
             gateway -> serviceRequest "Enruta con el JWT del cliente"
-            serviceRequest -> dbServiceRequest "Guarda la calificación y el evento en outbox"
-            serviceRequest -> kafka "Publica service-request.evaluated"
-            ranking -> kafka "Consume la calificación"
-            ranking -> dbRanking "Recalcula la reputación del técnico"
+            serviceRequest -> dbServiceRequest "Valida dueño y estado pagado; guarda ratings y service-request.rated en outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.rated (sin el comentario)"
+            ranking -> kafka "Consume service-request.rated, una vez por eventId"
+            ranking -> dbRanking "Suma la calificación, recalcula el promedio y la marca; guarda el evento en outbox"
+            ranking -> kafka "Publica ranking.technician-reputation-changed"
+            identity -> kafka "Consume la reputación"
+            identity -> dbIdentity "Actualiza technician_profiles.average_rating y la marca de reputación baja"
             autoLayout lr 200 100
             properties {
                 "structurizr.groups" false
@@ -758,7 +775,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             autoLayout lr
         }
 
-        deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción: VM1 (entrada y herramientas), VM3, VM4 y VM6 (ADR-022)." {
+        deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción al 27 de octubre de 2026 (Documento de Infraestructura V4, 4.3): VM1 (entrada y herramientas), VM3, VM4 y VM6 (ADR-022); gateway y panel en el Nginx de VM3 (ADR-028). Punteado: sin desplegar; Payments y Communication llegan con la promoción del MVP (SCRUM-518)." {
             include *
             exclude "mobProd -> gatewayProd" "webProd -> gatewayProd"
             exclude "* -> kafkaProd" "* -> redisProd" "* -> garageProd"
@@ -766,7 +783,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             autoLayout lr 200 60
         }
 
-        deployment quickpatch qa "C4-06-Despliegue-QA" "QA: copia de producción en VM2, VM5 y VM7; comparte VM1 (ADR-022)." {
+        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 27 de octubre de 2026 (Documento de Infraestructura V4, 4.3): VM2, VM5 y VM7, con la misma VM1 (ADR-022); gateway y panel en el Nginx de VM2 (ADR-028). Punteado: sin desplegar." {
             include *
             exclude "mobQa -> gatewayQa" "webQa -> gatewayQa"
             exclude "* -> kafkaQa" "* -> redisQa" "* -> garageQa"

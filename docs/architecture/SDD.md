@@ -252,7 +252,7 @@ payment.approved
 payment.rejected
 ```
 
-Son los 17 esquemas de `quickpatch-kafka` `v0.9.0`. `service-request.evaluated` (calificación, RF-12) sigue planeado en el DD 8.4.
+Son los 17 esquemas de `quickpatch-kafka` `v0.9.0`. `service-request.rated` (calificación, RF-12) y `ranking.technician-reputation-changed` siguen planeados (DD 8.4, ADR-027).
 
 **Sobre común del evento:**
 
@@ -525,7 +525,7 @@ El código ya define los nueve estados (`ServiceRequestStatus`). Hoy se usan los
 - consume `payment.approved`;
 - consume `payment.rejected`, que no cambia el estado (RN-SR5).
 
-`service-request.evaluated` (calificación) queda planeado; los consumidores de cada evento están en la matriz 8.6.
+`service-request.rated` (calificación, ADR-027) queda planeado; los consumidores de cada evento están en la matriz 8.6.
 
 **Componentes (C4).**
 
@@ -551,7 +551,7 @@ El diagrama reúne las decisiones de diseño que los demás servicios repiten: r
 | Geocodificación de la dirección | Si la solicitud llega sin coordenadas, busca la dirección en el geocodificador (Nominatim con el mapa de Bogotá) y responde `422 direccion-no-encontrada` si no la encuentra; `location-preview` deja confirmar el punto (ADR-024). | RIE-02; service-request 1.3.0 |
 | Cotización y cancelación | Emite, acepta y rechaza cotizaciones (máximo 3, con vencimiento) y cancela antes de iniciar. | RF-34 a RF-36; 1.5.0 y 1.6.0 |
 | Ejecución y evidencias | Inicia, guarda las fotos en Garage y completa con al menos una; publica `.started` y `.completed`. | RF-14, RF-15; 1.7.0 |
-| Calificación *(planeado)* | Calificación del cliente después del pago; publicará `service-request.evaluated`. | RF-12 |
+| Calificación *(planeado)* | Calificación del cliente después del pago; publicará `service-request.rated` (ADR-027). | RF-12 |
 
 ## 6.8 Matching Service
 
@@ -617,7 +617,7 @@ Los modelos persistentes definitivos de ranking permanecen sujetos a evolución 
 
 ![Componentes de Ranking Service](diagrams/c4/C4-04-Componentes-Ranking.png)
 
-**Figura 16. Componentes de Ranking Service (C4 · Component; diseño). Vista `C4-04-Componentes-Ranking`.**
+**Figura 16. Componentes de Ranking Service según ADR-027 (C4 · Component; planeado): consume `service-request.rated` y publica `ranking.technician-reputation-changed` con Outbox; sin API REST desde el gateway (ADR-025). Vista `C4-04-Componentes-Ranking`.**
 
 Todos los componentes están planeados: el servicio es hoy un esqueleto.
 
@@ -969,7 +969,7 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 ![Calificación y reputación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Calificacion.png)
 
-**Figura 27. Calificación del servicio y recálculo de la reputación (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-Calificacion`.**
+**Figura 27. Escenario: calificación del servicio y reputación del técnico (C4 · Dynamic; planeado, ADR-027). ServiceRequest guarda la calificación y publica `service-request.rated`; Ranking recalcula y publica `ranking.technician-reputation-changed`, que Identity proyecta en `technician_profiles`. Vista `C4-05-Dinamico-Calificacion`.**
 
 **Gestión de tenants.** La única operación que omite RLS, acotada a una transacción con el rol `identity_platform` y auditada (RF-21, SCRUM-112).
 
@@ -995,7 +995,8 @@ La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 
 | `service-request.completed` | `ServiceRequest Service` | `Payments Service`, `Communication Service` | Habilitar el proceso de pago y notificar al cliente que el servicio finalizó. |
 | `payment.approved` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Cambiar estado de solicitud a `pagado` y enviar comprobante/factura al cliente. |
 | `payment.rejected` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Informar rechazo de cobro y habilitar reintento de pago. |
-| `service-request.evaluated` | `ServiceRequest Service` | `Ranking Service` | Disparar el recálculo asíncrono de la reputación promedio del técnico. |
+| `service-request.rated` *(planeado, ADR-027)* | `ServiceRequest Service` | `Ranking Service` | Disparar el recálculo asíncrono de la reputación promedio del técnico, una vez por calificación. |
+| `ranking.technician-reputation-changed` *(planeado, ADR-027)* | `Ranking Service` | `Identity Service` | Actualizar `technician_profiles.average_rating` y la marca de reputación baja (AC9-E2). |
 
 ## 8.7 Consumer Groups
 
@@ -1389,11 +1390,11 @@ El diagrama muestra la distribución aprobada en ADR-022: VM1 de herramientas y 
 
 ![Despliegue de producción (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-Produccion.png)
 
-**Figura 30. Despliegue de producción: VM1, VM3, VM4 y VM6 (C4 · Deployment, ADR-022). Vista `C4-06-Despliegue-Produccion`.**
+**Figura 30. Despliegue de producción al 27 de octubre de 2026: VM1, VM3, VM4 y VM6 (C4 · Deployment, ADR-022). VM1 solo termina el TLS; el gateway y el panel corren en el Nginx de VM3, fuera del k3s (ADR-028). Payments y Communication, punteados, llegan con la promoción del MVP (SCRUM-518; Documento de Infraestructura V4, 4.3). Vista `C4-06-Despliegue-Produccion`.**
 
 ![Despliegue de QA (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-QA.png)
 
-**Figura 31. Despliegue de QA: VM2, VM5 y VM7, con la VM1 compartida (C4 · Deployment, ADR-022). Vista `C4-06-Despliegue-QA`.**
+**Figura 31. Despliegue de QA al 27 de octubre de 2026: VM2, VM5 y VM7, con la VM1 compartida (C4 · Deployment, ADR-022); el gateway y el panel en el Nginx de VM2 (ADR-028). Vista `C4-06-Despliegue-QA`.**
 
 IPs del laboratorio: VM1 10.43.100.168, VM3 10.43.98.205, VM4 10.43.98.209, VM6 10.43.99.12; QA: VM2 10.43.98.15, VM5 10.43.98.29, VM7 10.43.99.8. VM1 reenvía `quickpatch.internal` y `qa.quickpatch.internal` al NodePort 30080 de Traefik en VM3 y VM2.
 
