@@ -1,13 +1,14 @@
-# Documento de Pruebas (TD V2.9) — QUICKPATCH
+# Documento de Pruebas (TD V3.0) — QUICKPATCH
 ## Sistema Multi-tenant de Servicios Técnicos para el Hogar y las Empresas
 
 | | |
 |---|---|
 | **Tipo de documento** | Documento de Diseño y Definición de Pruebas (Test Document - TD) |
-| **Versión** | 2.9 (Entrega Sprint 4 / Semana 11) |
+| **Versión** | 3.0 (Incremento Técnico y Funcional Sprint 5 / Entrega Final) |
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
 | **Rol Responsable** | Katherine Bravo (QA Lead) |
+| **Trazabilidad Jira** | Historia `SCRUM-529` (Subtareas `SCRUM-530`, `SCRUM-531`, `SCRUM-532`) |
 | **Estándares Aplicados** | ISO/IEC/IEEE 29119 (Software Testing), ISO/IEC 25010:2023 (Calidad de Software), RFC 9457 (Problem Details), PCI-DSS v4.0 (K2) |
 | **Alcance** | Estrategia de pruebas automatizadas sobre 12 repositorios de componentes más el repositorio principal, y validación en 7 Máquinas Virtuales (ADR-022) |
 
@@ -32,7 +33,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V2.9) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente V5) y los escenarios de calidad del SAD (versión vigente V4 / v2.28) de cara a los entregables del Sprint 4.
+El presente Documento de Pruebas (TD V3.0) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente v5.6, con la sección 2.3.1 de alcance geográfico y 33 RFs canónicos) y los escenarios de calidad del SAD (versión vigente V5 / v2.35) de cara a los entregables del Sprint 5 y la Entrega Final.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -259,6 +260,55 @@ En caso de que cualquiera de las 5 sub-compuertas de la Compuerta 2 resulte en e
 
 ---
 
+### 3.3 Especificación Formal de la Compuerta 3 y Estrategia de Prueba de Humo en Producción (SCRUM-532 / SCRUM-47 / RNF-08)
+
+En concordancia con el requisito no funcional **RNF-08 (Compuerta Automatizada a Producción)** y el acuerdo arquitectónico **ADR-022** (Distribución formal sobre 7 Máquinas Virtuales en red `10.43.x.x`), la **Compuerta 3** rige la promoción final de artefactos validados desde el ambiente de QA hacia el clúster de Producción (`VM3`, `VM4`, `VM6`), garantizando el despliegue sin caída de servicio (*Zero Downtime Rolling Update*) y la verificación inmediata del MVP.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ SECUENCIA OPERATIVA DE LA COMPUERTA 3 (PROMOCIÓN A PRODUCCIÓN - RNF-08)                │
+├────────────────────────┬───────────────────────────────────────────────────────────────┤
+│ Fase del Pipeline      │ Acciones Ejecutadas y Criterios Inquebrantables de Control    │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ 1. Validación Previa   │ • Verificación de 100% PASS en Compuerta 2 (QA Desplegado).   │
+│    en QA (VM2)         │ • Aprobación formal de PR por Arquitectura (Juandi48).        │
+│                        │ • Inmutabilidad: Se promueven las MISMAS imágenes Docker.     │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ 2. Despliegue Rolling  │ • Ejecución de Ansible Playbook desde Runner en VM1 hacia VM3.│
+│    Update (VM3 k3s)    │ • MaxUnavailable: 0, MaxSurge: 1 (cero indisponibilidad).    │
+│                        │ • Espera activa con kubectl rollout status (timeout: 180 s).  │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ 3. Smoke Test E2E      │ • Ejecución del Smoke Test automatizado (SCRUM-47):           │
+│    Automatizado (VM1)  │   Flujo crítico completo Cliente → Técnico → Pago → Calificar.│
+│                        │ • Creación y limpieza de datos efímeros con prefijo smoke-.   │
+│                        │ • Cero exposición de credenciales o tokens en logs del run.   │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ 4. Veredicto Final     │ • Si Smoke Test es 100% PASS y pods están Ready: PROMOVIDO.   │
+│    y Rollback          │ • Si falla cualquier aserción: kubectl rollout undo inmediato,│
+│                        │   bloqueo del merge a main y alerta P0 urgente al equipo.     │
+└────────────────────────┴───────────────────────────────────────────────────────────────┘
+```
+
+#### 3.3.1 Arquitectura del Smoke Test Automatizado del Flujo Crítico (SCRUM-47)
+El Smoke Test (`tests/e2e/smoke-test-flujo-critico.postman_collection.json`) es una suite autónoma, determinista y de ejecución rápida (< 45 segundos) diseñada para ejecutarse tras cada despliegue de release en QA y previo a la apertura de tráfico en Producción:
+1. **Paso 1 (Registro y Auth Dinámica):** Registro al vuelo de un cliente y un técnico con credenciales dinámicas en Identity; obtención de tokens JWT RS256 con claims `tenant_id` y roles validados.
+2. **Paso 2 (Creación de Solicitud):** Cliente crea solicitud con coordenadas geográficas de Bogotá y categoría activa del catálogo (`buscando_tecnico`).
+3. **Paso 3 (Matching y Oferta):** Motor de matching asigna automáticamente al técnico elegible en $< 5\text{ s}$ (`asignado`).
+4. **Paso 4 (Cotización):** Técnico emite cotización detallada de repuestos/mano de obra y el cliente la acepta (`cotizacion_aceptada`).
+5. **Paso 5 (Ejecución y Evidencia):** Técnico inicia labores (`en_progreso`), carga obligatoriamente foto de evidencia a Garage S3 (`POST /evidence`) y finaliza el servicio (`completado`).
+6. **Paso 6 (Pago):** Cliente realiza el pago exitoso utilizando token de pasarela simulada Wompi (`pagado`).
+7. **Paso 7 (Comprobante Fiscal):** Payments genera automáticamente la factura con NIT institucional y desglose de IVA en JSON y PDF.
+8. **Paso 8 (Calificación):** Cliente emite calificación de 5 estrellas con comentario, publicando el evento outbox `service-request.rated` hacia Ranking (`calificado`), y Ranking publica `ranking.technician-reputation-changed` (ADR-027).
+9. **Paso 9 (Limpieza Automática / Teardown):** El runner limpia los datos efímeros generados para evitar contaminación transaccional en la base de datos operativa.
+
+#### 3.3.2 Criterios de Aceptación Inquebrantables de la Compuerta 3
+* **Tasa de Éxito del Flujo Crítico:** Exactamente **100.0% PASS** en las aserciones del Smoke Test (cero aserciones fallidas).
+* **Estabilidad del Clúster en Producción:** **0 caídas de pods**, **0 eventos de terminación por memoria (`OOMKilled` = 0)** y cumplimiento estricto del límite de RAM de VM3 $\le 6.5\text{ GiB}$ (SAD AC2-E5, SCRUM-347).
+* **Integridad de Despliegue:** 100% de los microservicios en estado `Ready` tras el *Rolling Update* (tiempo de convergencia $< 120\text{ s}$).
+* **Acción ante Fallo (Protocolo de Rollback Automático):** Si cualquier petición del Smoke Test responde con error (HTTP 4xx/5xx) o supera el timeout de 5 segundos, el pipeline aborta la promoción con código de salida 1, invoca `kubectl rollout undo deployment -n default` en VM3 revirtiendo todos los pods a la revisión previa estable, cancela el merge hacia la rama `main` y despacha una alerta P0 inmediata al canal de incidentes.
+
+---
+
 ## 4. Justificación Técnica de Herramientas frente a Alternativas
 
 | Categoría | Herramienta Elegida | Herramienta Alternativa | Justificación Técnica de la Elección |
@@ -340,15 +390,15 @@ echo "[QA] Pruebas aprobadas."
 
 ### 7.1 Matriz de Trazabilidad de Requisitos (RTM)
 
-La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requerimientos funcionales del **SRS V5** (aprobado por Product Owner), los escenarios de calidad del SAD (V4 / v2.28), las Historias de Usuario de Jira de los Sprints 3 y 4, y el catálogo formal de casos de prueba automatizados.
+La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requerimientos funcionales del **SRS v5.6** (versión oficial canónica), los 52 escenarios de calidad del SAD (V5 / v2.35), las Historias de Usuario de Jira de los Sprints 4 y 5, y el catálogo formal de casos de prueba automatizados.
 
-#### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS V5
-El SRS V5 formaliza un total de **32 Requisitos Funcionales activos** organizados en **23 Features**, **7 módulos de dominio** y **7 módulos transversales**, distribuidos en **7 Épicas**.
+#### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS v5.6 (33 RFs Canónicos)
+El SRS v5.6 formaliza un total de **33 Requisitos Funcionales canónicos** organizados en los módulos de Clientes, Empresas, Técnicos, Proveedores, Solicitudes, Matching, Pagos, Infraestructura y Seguridad.
 
 > [!NOTE]
-> **Aclaración sobre la numeración histórica:** En concordancia con las secciones 5.2 y 7.2 del SRS V5, la numeración salta de RF-29 a RF-34 porque los antiguos RF-30 a RF-33 (definidos en las versiones 2.x para control de cambios) fueron retirados en la versión 3.0 al ser reemplazados por el requisito no funcional **RNF-13 (Gestión Documental y Control de Cambios)**. Sus identificadores numéricos no se reutilizan para garantizar la trazabilidad histórica inmutable en Jira. Los 32 requisitos listados a continuación representan el **100% de los requisitos funcionales vigentes** del sistema.
+> **Alineación con SRS v5.6:** En estricta concordancia con el SRS v5.6 canónico (§5), la matriz de trazabilidad mapea exclusivamente los **33 Requisitos Funcionales oficiales** (RF-01 a RF-29 y RF-34 a RF-37). Las extensiones operativas de interacción (notificaciones push, buzón offline, geocodificación local y landing institucional) se gestionan a nivel de componentes sin alterar la numeración contractual del SRS.
 
-| ID RF | Feature | Descripción Funcional (SRS V5) | Módulo / Servicio Propietario | Casos de Prueba Automatizados Asociados (TD V2) |
+| ID RF | Feature | Descripción Funcional (SRS v5.6) | Módulo / Servicio Propietario | Casos de Prueba Automatizados Asociados (TD V3) |
 |---|---|---|---|---|
 | **RF-01** | F1.1 | Registro de Cliente con validación de formato de email, complejidad de password ($\ge 8$ caracteres) y unicidad por tenant. | Identity | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` |
 | **RF-02** | F1.1 | Registro de Técnico con datos personales, documento, especialidad y estado inicial `pendiente` de verificación (RN-TP3). | Identity / Actors | `IDN-004`, `ACT-001`, `ACT-002`, `REG-001`..`006` |
@@ -361,27 +411,28 @@ El SRS V5 formaliza un total de **32 Requisitos Funcionales activos** organizado
 | **RF-09** | F2.2 | Asignación automática por cercanía, especialidad, disponibilidad y cobertura zonal; reintento de solicitudes en espera (RN-M9, RN-M10). | Matching | `MAT-001` a `MAT-022`, `MAT-001`..`014` (E2E), `PRF-001` |
 | **RF-10** | F2.2 | Ofertas secuenciales a un técnico a la vez con ventana de vigencia (3 min) y aceptación/rechazo atómico sin penalización (RN-M1..M8). | Matching | `MAT-010`, `MAT-011`, `MAT-012`, `OFF-001`..`007`, `E2E-007` |
 | **RF-11** | F2.3 | Visualización en tiempo real del ciclo de vida de la solicitud (mínimo 4 estados: buscando_tecnico, asignado, en_progreso, completado). | ServiceRequest / Communication | `SRQ-006`, `TRK-001`..`010`, `COM-001`, `COM-002`, `COM-005` |
-| **RF-12** | F2.4 | Calificación obligatoria de 1 a 5 estrellas con comentario opcional habilitada exclusivamente tras confirmación del pago (`pagado`). | ServiceRequest / Ranking | `SRQ-021`, `SRQ-022`, `SRQ-023`, `RNK-001`, `RNK-002` |
+| **RF-12** | F2.4 | Calificación obligatoria de 1 a 5 estrellas con comentario opcional habilitada exclusivamente tras confirmación del pago (`pagado`). | ServiceRequest / Ranking | `SRQ-021`..`023`, `RNK-001`..`002`, `CAL-001`..`006` |
 | **RF-13** | F3.1 | Configuración de disponibilidad (`disponible`/`no_disponible`) y zona de cobertura como lista de localidades de Bogotá (DD §5.7). | Matching / Actors | `MAT-003`, `MAT-005`, `AVA-001`..`005`, `COV-001`..`004` |
 | **RF-14** | F3.2 | Consulta de detalle completo de solicitud asignada por el técnico (dirección, contacto de cliente y ubicación) protegida por confidencialidad. | ServiceRequest | `SRQ-005`, `DTL-001`..`005`, `RN-SR13` |
 | **RF-15** | F3.2 | Cierre de servicio por el técnico con adjuntos fotográficos obligatorios en Garage (ADR-016), habilitando facturación y pago. | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
 | **RF-16** | F3.3 | Administración de equipo de técnicos por Proveedor: alta de técnicos con herencia de tenant, estado pendiente y filtrado activo/inactivo. | Actors / Identity | `ACT-007`, `ACT-008`, `ACT-009`, `PRV-001`..`008` |
-| **RF-17** | F3.4 | Historial de servicios atendidos por el técnico con detalle paginado y filtrado por tenant. | ServiceRequest | `SRQ-026` |
-| **RF-18** | F4.1 | Monitoreo operativo en panel web: Admin del tenant ve solicitudes de su tenant; Admin de plataforma ve todos filtrables. | Web / ServiceRequest | `E2E-002` |
+| **RF-17** | F3.4 | Historial de servicios atendidos por el técnico con detalle paginado y filtrado por tenant. | ServiceRequest | `SRQ-026`, `HIS-001`..`005` |
+| **RF-18** | F4.1 | Monitoreo operativo en panel web: Admin del tenant ve solicitudes de su tenant; Admin de plataforma ve todos filtrables. | Web / ServiceRequest | `E2E-002`, `PNL-001`..`004` |
 | **RF-19** | F4.2 | Aprobación y rechazo motivado de técnicos y proveedores por Admin; trazabilidad en `audit_logs` y evento `technician.verification-changed`. | Identity / Actors / Web | `ACT-003`, `ACT-004`, `VER-001`..`009`, `E2E-003` |
 | **RF-20** | F4.2 | Suspensión de cuenta de técnico por Admin del tenant con motivo registrado $\ge 5$ caracteres; bloqueo inmediato de nuevas ofertas de matching. | Identity / Matching / Web | `ACT-005`, `ACT-006`, `SUS-001`..`011`, `RN-TP2` |
-| **RF-21** | F4.3 | Activación y desactivación administrativa de tenants por Admin de plataforma; bloqueo de login para tenants inactivos (RN-T1). | Identity / Web | `IDN-019`, `E2E-004` |
+| **RF-21** | F4.3 | Activación y desactivación administrativa de tenants; rechazo inmediato de solicitudes en ServiceRequest vía réplica local de eventos (RN-T1 / ADR-017). | Identity / ServiceRequest | `IDN-019`, `E2E-004`, `TNT-001`..`005` |
 | **RF-22** | F5.1 | Pago delegado con tarjeta de crédito/débito a través de pasarela certificada PCI-DSS con tokenización y cero PAN/CVV en BD (K2). | Payments | `PAY-001`, `PAY-002`, `PAY-003`, `PAY-010`, `PAY-011`, `E2E-009` |
-| **RF-23** | F5.1 | Pago corporativo centralizado a nombre de cuenta empresarial con NIT y razón social. | Payments | `PAY-006` |
+| **RF-23** | F5.1 | Pago corporativo centralizado a nombre de cuenta empresarial con NIT y razón social (SCRUM-43). | Payments | `PAY-006`, `PAY-019`..`023` |
 | **RF-24** | F5.2 | Emisión automática de comprobante fiscal / factura tras confirmación de pago aprobado. | Payments | `PAY-004`, `PAY-005` |
-| **RF-25** | F5.3 | Registro y conciliación de ingresos percibidos por técnicos y proveedores. | Payments | `PAY-007`, `PAY-008` |
+| **RF-25** | F5.3 | Registro y conciliación de ingresos percibidos por técnicos y proveedores (SCRUM-45). | Payments | `PAY-007`, `PAY-024`..`027` |
 | **RF-26** | F6.1 | Pipeline de integración y despliegue continuo (CI/CD) con calidad estática, linter y pruebas obligatorias antes de merge a `develop`. | Infrastructure | `INF-016` |
-| **RF-27** | F6.2 | Prueba automatizada End-to-End del flujo crítico de negocio (solicitud $\to$ matching $\to$ asignación $\to$ cotización $\to$ ejecución $\to$ pago $\to$ calificación). | E2E Tests | `E2E-001`, `E2E-012` |
+| **RF-27** | F6.2 | Prueba automatizada End-to-End del flujo crítico de negocio (Smoke Test SCRUM-47) que bloquea la promoción a Producción (RNF-08). | E2E Tests | `E2E-001`, `E2E-012`, `SMK-001`..`004` |
 | **RF-28** | F6.3 | Logging centralizado JSON estructurado con `correlationId`, monitoreo en Prometheus/Loki y compuertas de observabilidad. | Observability | `INF-011`, `INF-012`, `PRF-010` |
-| **RF-29** | F6.4 | Cifrado obligatorio en tránsito (TLS 1.3 / HTTPS) y en reposo (hashing seguro de contraseñas con sal). | Security | `IDN-015`, `IDN-021`, `INF-005` |
+| **RF-29** | F6.4 | Cifrado obligatorio en tránsito (TLS 1.3 / HTTPS) y en reposo (hashing seguro de contraseñas con sal y tokens PCI-DSS) (SCRUM-49). | Security | `IDN-015`, `IDN-021`, `INF-005`, `SEC-001`..`005` |
 | **RF-34** | F3.2 | Emisión de cotización de mano de obra y repuestos por técnico titular; bloqueo de inicio de servicio sin cotización aprobada (RN-Q1). | ServiceRequest | `SRQ-008`, `SRQ-009`, `SRQ-010` |
 | **RF-35** | F2.1 | Aceptación, rechazo y límite estricto de máximo 3 cotizaciones por solicitud antes de cancelación automática (RN-Q2, RN-Q3, RN-Q7). | ServiceRequest | `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
 | **RF-36** | F2.1 | Cancelación unilateral justificada de solicitud por Cliente antes del inicio de labores (`en_progreso`) con registro de motivo (RN-SR7). | ServiceRequest | `SRQ-019`, `SRQ-020`, `E2E-010` |
+| **RF-37** | F7.5 | Chat bidireccional en tiempo real entre cliente y técnico asignado con historial auditado y WebSocket seguro (ADR-026 / SCRUM-479). | Communication / Gateway | `CHT-001`..`005` |
 
 ---
 
@@ -421,6 +472,22 @@ En cumplimiento de la subtarea **SCRUM-401** de QA, la siguiente matriz formaliz
 | **SCRUM-454** / **SCRUM-456** | Geocodificación y buzón de notificaciones | RIE-02, RIE-03, ADR-024 | `SCRUM-456` | `GEO-001` al `GEO-004`, `NOT-001` al `NOT-004` | Geocodificación con Nominatim local acotado a Bogotá (time-out corto, 422 si fuera de zona) y persistencia de notificaciones en buzón con RLS. |
 | **SCRUM-399** | Documento de Pruebas TD V2 | Calidad y Diseño | `SCRUM-401`, `SCRUM-402` | Catálogo consolidado de 230+ casos | Formalización de la estrategia, catálogo de casos, RTM V5, protocolo de persistencia y compuertas de calidad. |
 | **SCRUM-394** | Informe de pruebas del Sprint 4 contra QA | Calidad y Reporte | `SCRUM-395`, `SCRUM-396`, `SCRUM-397`, `SCRUM-398` | Ejecución E2E, k6, ZAP y Loki | Evidencia real de ejecución sobre QA desplegado (VM2, VM5, VM7), matriz de defectos y compuerta de calidad. |
+
+---
+
+#### 7.1.3b Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 5 — Subtarea SCRUM-531)
+En cumplimiento de la subtarea **SCRUM-531** de QA, la siguiente matriz formaliza la trazabilidad bidireccional de todas las **Historias de Usuario del Incremento del Sprint 5** en Jira con sus respectivos Requisitos Funcionales del **SRS v5.6**, reglas de negocio, subtareas de QA y suites de pruebas automatizadas:
+
+| Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS v5.6 / SAD V5 | Subtarea QA en Jira | Suites y Casos de Prueba Asociados (TD V3) | Criterios de Aceptación y Validación QA |
+|---|---|---|---|---|---|
+| **SCRUM-32** | Calificación del servicio al finalizar | RF-12, SAD AC4-E6 | `SCRUM-87` | `CAL-001` al `CAL-006`, `RNK-001`..`002`, `SRQ-021`..`023` | Calificación 1 a 5 habilitada solo tras pago (409 si no completado), prohibición de doble calificación (409), bloqueo RBAC (403), outbox `service-request.rated`, Ranking publica `ranking.technician-reputation-changed` (ADR-027) e idempotencia en Ranking. |
+| **SCRUM-37** | Historial de servicios atendidos por el Técnico | RF-17, DD RN-SR15 | `SCRUM-102` | `HIS-001` al `HIS-005`, `SRQ-026` | Consulta paginada con fecha, estado y calificación recibida; filtrado por completado/cancelado; aislamiento estricto por técnico y tenant (RLS 404). |
+| **SCRUM-43** | Pago corporativo centralizado (Empresa) | RF-23, ADR-009 | `SCRUM-117` | `PAY-008` al `PAY-012`, `PAY-019` al `PAY-023` | Pago asociado a empresa cliente (`company_id`), auditoría de usuario pagador (`payer`), cobro exacto de cotización aprobada, comprobante con NIT y tokenización PCI-DSS. |
+| **SCRUM-45** | Registro de pagos recibidos (Técnico/Proveedor) | RF-25, PCI-DSS | `SCRUM-503` | `PAY-013` al `PAY-016`, `PAY-024` al `PAY-027` | Consulta paginada de ingresos para técnico y vista agregada para proveedor sobre su equipo; aislamiento intra-tenant y respuesta libre de PAN/CVV. |
+| **SCRUM-47** | Smoke Test E2E Automatizado del flujo crítico | RF-27, RNF-08 | `SCRUM-504` | `SMK-001` al `SMK-004`, `E2E-001` | Flujo crítico continuo en 9 pasos (registro a calificación) con datos autocontenidos y limpieza; fallo bloquea promoción a producción en compuerta-qa. |
+| **SCRUM-49** | Cifrado de datos sensibles en tránsito y reposo | RF-29, RNF-01 | `SCRUM-507` | `SEC-001` al `SEC-005`, `IDN-015`, `IDN-021` | Forzado TLS 1.3 con HSTS en Ingress VM1, hash seguro de contraseñas (Argon2id), cero PAN/CVV en Loki, Garage S3 prefirmado y ZAP DAST 0 alertas altas. |
+| **SCRUM-348** | ServiceRequest rechaza tenants inactivos sin esperar expiración de token | RF-21, RN-T1, ADR-017 | `SCRUM-511` | `TNT-001` al `TNT-005`, `IDN-019` | Evento outbox `tenant.status-changed`, réplica local en ServiceRequest consumida de forma idempotente; rechazo en segundos de tokens vigentes con HTTP 403 RFC 9457. |
+| **SCRUM-529** | Documento de Pruebas TD V3 | Calidad y Diseño | `SCRUM-530`, `SCRUM-531`, `SCRUM-532` | Catálogo consolidado de 270+ casos | Formalización de la estrategia V3, casos de prueba del Sprint 5 (530), actualización RTM a SRS v5.6 (531) y compuerta de producción RNF-08 (532). |
 
 ---
 
@@ -516,6 +583,11 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **IDN-019** | RN-T1 | Integración | Rechazo de login en tenant en estado inactivo. | Usuario de tenant inactivo recibe HTTP 403; mensaje `"tenant is disabled"`. |
 | **IDN-020** | RN-A1 | Integración | Inmutabilidad de registros en `audit_logs`. | Intentos de `UPDATE` o `DELETE` sobre `audit_logs` con rol de app son rechazados por BD. |
 | **IDN-021** | RF-29, RNF-02 | Integración | Cifrado obligatorio en tránsito (HTTPS/TLS) y en reposo. | Peticiones HTTP redirigidas a HTTPS (TLS 1.3) en Gateway Nginx; datos y contraseñas cifradas. |
+| **TNT-001** | RF-21, ADR-007 | Evento / Outbox | Emisión de evento outbox al desactivar tenant. | Transición a inactivo en Identity genera evento `tenant.status-changed` en `outbox_events` con estado completo. |
+| **TNT-002** | RF-21, ADR-017 | Integración / Réplica | Replicación asíncrona de estado de tenant en ServiceRequest. | ServiceRequest consume evento Kafka y actualiza tabla local `tenant_statuses` en menos de 2 segundos. |
+| **TNT-003** | RF-21, RN-T1 | Negativa / Creación | Rechazo inmediato de creación de solicitud con token vigente tras desactivación. | `POST /v1/service-requests` con JWT vigente de tenant desactivado responde HTTP 403 Forbidden (RFC 9457 `type: .../tenant-inactivo`) sin esperar a expiración de 60 min. |
+| **TNT-004** | RF-21, AC5-E5 | Evento / Idempotencia | Procesamiento idempotente de eventos de estado de tenant. | Múltiples entregas de `tenant.status-changed` con mismo `eventId` se deduplican en `processed_events`. |
+| **TNT-005** | RF-21, RN-T1 | Positiva / Reactivación | Desbloqueo inmediato tras reactivación del tenant. | Reactivación en Identity emite evento activo; ServiceRequest restablece inmediatamente creación de órdenes (201 Created). |
 
 ---
 
@@ -592,6 +664,11 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **SRQ-024** | ADR-007, AC5-E5| Evento | Consumo idempotente de evento `payment.approved`. | Segundo evento con mismo `eventId` es ignorado; solicitud permanece en `pagado` sin doble efecto. |
 | **SRQ-025** | AC9-E3 | Evento | Detección de servicios en curso sin cierre por más de 4 horas. | Solicitud marcada con flag de revisión para el Administrador tras superar umbral. |
 | **SRQ-026** | RF-17 | Integración | Consulta de historial de solicitudes atendidas por el técnico. | `GET /v1/technicians/me/services?status=completado` retorna historial paginado filtrado por tenant. |
+| **HIS-001** | RF-17, DD RN-SR15 | Funcional / Paginado | Consulta de historial de servicios con calificación recibida. | `GET /v1/technicians/me/service-requests?status=completado` retorna array paginado con id, fecha, categoría, estado y puntuación de calificación recibida. |
+| **HIS-002** | RF-17 | Filtro / Estado | Filtrado exclusivo por estado completado o cancelado. | Parámetro `status=cancelado` retorna únicamente servicios finalizados por cancelación; 0 servicios activos en respuesta. |
+| **HIS-003** | RF-17 | Consistencia / Paginación | Control de límites y desplazamiento en paginación. | Consulta con `limit=10&offset=0` respeta totalItems y devuelve estructura `data`, `pagination: { page, totalPages, totalItems }`. |
+| **HIS-004** | RF-17, RN-SR15 | Seguridad / Fuga Intra-Tenant | Aislamiento entre técnicos del mismo tenant. | Técnico autenticado solo visualiza solicitudes donde `technician_id == token.sub`. Cero visibilidad de órdenes ajenas. |
+| **HIS-005** | RF-17, RF-04 | Seguridad / Multi-Tenant RLS | Aislamiento multi-tenant en historial de técnico. | Solicitud de historial con JWT de tenant ajeno responde conjunto vacío o HTTP 404 Not Found (RLS). |
 
 ---
 
@@ -648,8 +725,21 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **PAY-016** | RN-P3 | Unitaria | Monto cobrado idéntico al valor de la cotización aprobada. | Discrepancia matemática entre `quotes.total_amount` y cobro enviado es igual a $0.00. |
 | **PAY-017** | AC6-E3 | Seguridad | Petición no autenticada intentando consultar comprobantes. | `GET /v1/payments/{id}/invoice` sin cabecera de autenticación retorna HTTP 401 Unauthorized. |
 | **PAY-018** | K2 | Seguridad | Prevención de registro de credenciales privadas de pasarela en consola. | Logs de contenedor libres de API Keys privadas o secretos de autenticación del proveedor. |
+| **PAY-019** | RF-23, ADR-009 | Integración / Empresa | Procesamiento de pago a nombre de cuenta corporativa. | `POST /v1/service-requests/{id}/payment` con rol `empresa_contacto` asocia el cobro a `company_id` del token; HTTP 200 OK (`aprobado`). |
+| **PAY-020** | RF-23 | Integración / Auditoría | Registro del usuario pagador corporativo en la transacción. | Fila en `payments` guarda `payer_user_id` identificando al contacto corporativo responsable del pago. |
+| **PAY-021** | RF-23, RN-P3 | Negativa / Integridad | Validación estricta de monto frente a cotización aprobada. | Intento de enviar monto distinto a `quotes.total_amount` es rechazado con HTTP 400 Bad Request; monto inmutable. |
+| **PAY-022** | RF-23, RF-04 | Seguridad / Aislamiento | Bloqueo de pago cruzado entre empresas y tenants. | Contacto de Empresa A intentando pagar orden de Empresa B recibe HTTP 403 Forbidden o 404 Not Found (RLS). |
+| **PAY-023** | RF-23, RF-24 | Integración / Factura | Factura corporativa con NIT y Razón Social de la empresa. | `GET /v1/payments/{id}/invoice` retorna comprobante oficial con NIT, razón social y desglose tributario de IVA. |
+| **PAY-024** | RF-25 | Planeado (SCRUM-45) | Consulta de ingresos percibidos por el técnico titular. | `GET /v1/technicians/me/payments` retornará listado paginado (planeado; backend Payments pendiente). |
+| **PAY-025** | RF-25 | Planeado (SCRUM-45) | Consulta agregada de pagos de técnicos pertenecientes al proveedor. | `GET /v1/providers/me/payments` retornará detalle financiero (planeado; backend Payments pendiente). |
+| **PAY-026** | RF-25, RF-04 | Planeado (SCRUM-45) | Aislamiento multi-tenant en consulta de ingresos. | Consulta cruzada responderá HTTP 404/vacío con RLS (planeado; backend Payments pendiente). |
+| **PAY-027** | RF-25, K2 | Planeado (SCRUM-45) | Protección de datos financieros en consultas de cobros. | Endpoints responderán sin PAN/CVV en payload (planeado; backend Payments pendiente). |
 
 ---
+
+
+> [!NOTE]
+> **Nota de Estado de Pruebas (SCRUM-45):** Los casos `PAY-024` a `PAY-027` corresponden a la consulta de ingresos percibidos por técnicos y proveedores. Se encuentran completamente diseñados y especificados con estado **Planeado**, a la espera de la entrega del endpoint en el microservicio Payments por el equipo de desarrollo backend. No se computan como ejecutados en los pipelines de CI actuales.
 
 ### 7.8 Módulo: Reputación y Calificaciones (`quickpatch-ranking`)
 * **Requisitos:** RF-12, RF-18, RF-20 | SAD: AC4-E6, AC9-E2
@@ -668,8 +758,18 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **RNK-010** | AC2-E2 | Rendimiento | Latencia de actualización de reputación tras calificación. | Promedio persistido en base de datos en menos de 500 ms tras consumo del evento. |
 | **RNK-011** | AC9-E2 | Unitaria | Cero suspensión automática desatendida. | Técnico señalado permanece activo hasta decisión manual del Administrador. |
 | **RNK-012** | RNF-04 | Observabilidad| Emisión de log estructurado ante detección de bajo promedio. | Log de advertencia con nivel `WARNING` emitido con ID de técnico y promedio para Loki. |
+| **CAL-001** | RF-12, SAD AC4-E6 | Planeado (SCRUM-32) | Registro de calificación válida de 1 a 5 estrellas con comentario. | `POST /v1/service-requests/{id}/ratings` tras pago exitoso (`pagado`) emitirá `service-request.rated` (ADR-027) y Ranking publicará `ranking.technician-reputation-changed` (planeado; backend Ranking pendiente). |
+| **CAL-002** | RF-12 | Planeado (SCRUM-32) | Rechazo de calificación sobre orden no pagada o incompleta. | Intento de calificar orden no pagada responderá HTTP 409 Conflict (planeado; backend Ranking pendiente). |
+| **CAL-003** | RF-12 | Planeado (SCRUM-32) | Prohibición estricta de doble calificación para una misma solicitud. | Segundo envío responderá HTTP 409 Conflict RN-R2 (planeado; backend Ranking pendiente). |
+| **CAL-004** | RF-12, AC6-E3 | Planeado (SCRUM-32) | Bloqueo de usuario ajeno intentando calificar orden. | Petición de usuario no titular responderá HTTP 403 Forbidden (planeado; backend Ranking pendiente). |
+| **CAL-005** | RF-12, RF-04 | Planeado (SCRUM-32) | Aislamiento multi-tenant en calificación de servicios. | Calificación cross-tenant responderá HTTP 404 Not Found RLS (planeado; backend Ranking pendiente). |
+| **CAL-006** | RF-12, AC5-E5 | Planeado (SCRUM-32) | Consumo idempotente y actualización de reputación del técnico en Ranking. | Ranking procesará evento una sola vez vía `processed_events` (planeado; backend Ranking pendiente). |
 
 ---
+
+
+> [!NOTE]
+> **Nota de Estado de Pruebas (SCRUM-32):** Los casos `CAL-001` a `CAL-006` corresponden a la calificación obligatoria del servicio al finalizar. Se encuentran completamente diseñados y especificados con estado **Planeado**, a la espera de la entrega del endpoint en el microservicio Ranking por el equipo de desarrollo backend. No se computan como ejecutados en los pipelines de CI actuales.
 
 ### 7.9 Módulo: Comunicación y Notificaciones (`quickpatch-communication`)
 * **Requisitos:** RIE-03 | SAD: AC2-E3, AC5-E5
@@ -732,6 +832,11 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **INF-014** | AC5-E4 | Resiliencia | Desconexión temporal de Kafka y persistencia en Outbox. | Eventos generados durante caída de Kafka se publican automáticamente tras reconexión. |
 | **INF-015** | INFRA 5.8 | Despliegue | Actualización con Rolling Update sin caída del backend. | Despliegue de nueva versión en k3s mantiene disponibilidad 100% durante el cambio. |
 | **INF-016** | RF-26, RNF-08 | CI/CD | Pipeline automatizado con corte ante fallos de prueba. | Falla simulada en suite unitaria detiene el pipeline de GitHub Actions y bloquea el despliegue a VM3. |
+| **SEC-001** | RF-29, RNF-01 | Seguridad / Tránsito | Forzado estricto de HTTPS y protocolo TLS 1.3 en Gateway. | Peticiones HTTP en puerto 80 son redirigidas con 301 a 443; Nginx Ingress VM1 negocia exclusivamente `TLS_AES_256_GCM_SHA384` con cabecera `Strict-Transport-Security: max-age=31536000`. |
+| **SEC-002** | RF-29, RNF-03 | Seguridad / Reposo | Hashing seguro de contraseñas con sal en PostgreSQL. | Verificación en tabla `users` de Identity: 100% de passwords almacenadas con algoritmo Argon2id / BCrypt; 0 contraseñas en texto claro. |
+| **SEC-003** | RF-29, K2 | Auditoría / PCI-DSS | Escáner regex periódico de logs de microservicios en Loki. | Búsqueda automatizada en Grafana Loki sobre `/v1/payments` arroja 0 PANs y 0 CVVs en logs estructurados (K2 Compliant). |
+| **SEC-004** | RF-29, ADR-016 | Seguridad / Almacenamiento | Protección de adjuntos y evidencias fotográficas en Garage S3. | Acceso a fotos en bucket S3 mediado por URLs prefirmadas con expiración de 15 minutos; 0 acceso público anónimo al storage. |
+| **SEC-005** | RF-29, RNF-07 | Seguridad / DAST | Escaneo dinámico automatizado OWASP ZAP Baseline en pipeline. | Contenedor Docker ZAP analiza endpoints expuestos; 0 alertas de severidad Crítica o Alta previo al pase a producción. |
 
 ---
 
@@ -752,6 +857,10 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **E2E-010** | RF-36 | E2E Cancel | Cancelación de solicitud por el cliente antes del inicio. | Solicitud pasa a `cancelado`; técnico asignado es liberado inmediatamente. |
 | **E2E-011** | AC6-E5 | E2E Trazabilidad| Reconstrucción completa de disputa mediante eventos. | Secuencia cronológica 100% íntegra con marca de tiempo UTC y fotos accesibles en Garage. |
 | **E2E-012** | AC5-E6 | E2E Calidad | Tasa de respuestas 5xx durante ejecución repetitiva de E2E. | Tasa de errores 5xx del servidor inferior al 1% en 20 iteraciones del flujo crítico. |
+| **SMK-001** | RF-27, RNF-08 | Smoke Test E2E | Recorrido automatizado integral de 9 pasos del flujo crítico. | Suite ejecuta registro dinámico, solicitud, matching, cotización, evidencia Garage, pago simulado, factura y calificación en menos de 45 segundos con 100% PASS. |
+| **SMK-002** | RF-27 | Autonomía / Datos | Autogeneración de datos efímeros y limpieza automática. | Datos creados con prefijo `smoke-` y limpiados en teardown; 0 dependencia de usuarios fijos y 0 residuos en BD de QA o Producción. |
+| **SMK-003** | RNF-08, INF-016 | Compuerta / CI/CD | Bloqueo de promoción a producción ante fallo del Smoke Test. | Falla de aserción en Smoke Test aborta el pipeline `compuerta-qa`, revierte el commit en `main` e invoca `kubectl rollout undo` en VM3. |
+| **SMK-004** | RF-29, K2 | Seguridad / Sanitización | Ejecución limpia sin exposición de credenciales o tokens en logs de CI. | Trazas de ejecución de Newman o Playwright en GitHub Actions sanitizadas; 0 JWTs, passwords o API Keys en el log de consola. |
 
 ---
 
@@ -1517,7 +1626,8 @@ Detalle del resumen estadístico de Newman en consola para la suite `scrum-108-a
 | **2.9** | 19 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de evidencias fotográficas y gráficas de ejecución real en ambiente de QA (Compuerta 2 — Sprint 4) en §10.12: pruebas de carga (50 VU) y estrés (150 VU) con Grafana k6, telemetría y logs transaccionales en vivo en Nginx Ingress, exportación de logs estructurados desde Grafana Loki API para auditoría PCI-DSS, transferencia segura SCP y reporte DAST con OWASP ZAP Baseline en Docker. |
 | **2.10** | 21 de octubre de 2026 | Katherine Bravo (QA Lead) | Actualización de evidencias fotográficas en §10.12 con la ejecución real certificada en ambiente de QA: corrida k6 50 VU con auto-cancelación (PR #121) y contraseñas dinámicas (11,008 checks, 0% error), consulta de logs estructurados en vivo en Grafana Loki API (2,649 líneas) y reporte CLI de Newman para SCRUM-56 (20 aserciones aprobadas). |
 | **2.11** | 22 de octubre de 2026 | Katherine Bravo (QA Lead) | Certificación 100% PASS de todas las suites E2E contra ambiente QA desplegado (`https://qa.quickpatch.internal` en VM2 k3s) ejecutadas mediante `correr-colecciones-qa.js`. Incorporación de evidencias de ejecución oficiales del 22/10 (`scrum-56-registro-tecnico-qa-2026-10-22.txt`, `scrum-84-seguimiento-estado-qa-2026-10-22.txt`, `scrum-99-equipo-proveedor-qa-2026-10-22.txt`, `scrum-108-aprobacion-rechazo-qa-2026-10-22.txt`, `scrum-111-suspension-tecnico-qa-2026-10-22.txt`, `scrum-incremento-tecnico-qa-2026-10-22.txt`), actualización de matrices de prueba con tipo RFC 9457 `problems/validacion`, actualización de métricas estadísticas Newman y agregación de evidencias fotográficas certificadas en §10.12 (§10.12.8 a §10.12.12). |
-
+| **2.12** | 24 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación del Cuadro de Mando de Estadísticas y Métricas de Calidad de Software para Sprint 5 (SCRUM-601 / SCRUM-604 en `estadisticas-pruebas-sprint5.md`), formalización del Registro Consolidado de Defectos (SCRUM-603 en `registro-defectos-sprint4-sprint5.md`), y generación automatizada de las 4 gráficas ejecutivas de calidad (distribución por tipo, torta de éxito 100% PASS, defectos por severidad y cobertura de microservicios vs umbral 80%). |
+| **3.0** | 25 de octubre de 2026 | Katherine Bravo (QA Lead) | **Línea Base Final del Documento de Pruebas (TD V3.0 — SCRUM-529):**<br>1. **Casos de Prueba del Incremento Sprint 5 (SCRUM-530):** Incorporación formal de los casos de prueba automatizados para Calificación del servicio (`SCRUM-32` / `CAL-001..006`), Historial de servicios atendidos por el técnico (`SCRUM-37` / `HIS-001..005`), Pago corporativo centralizado de empresa (`SCRUM-43` / `PAY-019..023`), Registro de pagos recibidos por técnico/proveedor (`SCRUM-45` / `PAY-024..027`), Smoke Test E2E del flujo crítico (`SCRUM-47` / `SMK-001..004`), Cifrado en tránsito y reposo (`SCRUM-49` / `SEC-001..005`) y Rechazo inmediato de tenants inactivos por eventos réplica (`SCRUM-348` / `TNT-001..005`).<br>2. **Actualización de la RTM a SRS v5.6 (SCRUM-531):** Trazabilidad bidireccional completa de los 33 Requisitos Funcionales canónicos del SRS v5.6 (RF-01 a RF-29 y RF-34 a RF-37) y matriz de correspondencia hacia las Historias de Usuario de Sprint 5.<br>3. **Estrategia de Prueba de Humo y Compuerta a Producción (SCRUM-532):** Formalización de la Compuerta 3 (§3.3) bajo RNF-08 sobre la topología de 7 VMs (ADR-022: VM1, VM3, VM4, VM6), definiendo el Smoke Test de 9 pasos y el protocolo de Rollback automático (`kubectl rollout undo`). |
 
 
 
