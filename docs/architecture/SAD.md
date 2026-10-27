@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.42 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.45 — QUICKPATCH
 
 ---
 
@@ -96,7 +96,7 @@ Los 9 ACs mapean 1 a 1 con las **9 características de ISO/IEC 25010:2023**, en 
 |AC1|Functional Suitability|D1; SRS — requisitos funcionales, cumplimiento funcional del sistema|Media|
 |AC2|Performance Efficiency|D1, D2|**Alta**|
 |AC3|Compatibility|D4, ISO/IEC 25010:2023 — RIE-01|Baja|
-|AC4|Interaction Capability|D2, D3; ISO/IEC 25010:2023 — RNF-11, RNF-12|Baja|
+|AC4|Capacidad de interacción (*Interaction Capability*)|D2, D3; ISO/IEC 25010:2023 — RNF-11, RNF-12|Baja|
 |AC5|Reliability|R5, R7|**Alta**|
 |AC6|Security|K2, D5, D6, D7|**Alta**|
 |AC7|Maintainability|R3, D6, D8|Media|
@@ -308,7 +308,7 @@ Característica agregada en esta versión (ver sección 2). Cubre si el sistema 
 |Respuesta|Kubernetes limita únicamente al pod que excede su límite, sin desalojar ni degradar a los demás|
 |Medida|El Matching mantiene menos de 3 segundos para el 95% de las solicitudes (AC2-E1) y 0 pods ajenos desalojados|
 
-### 3.4 AC4 — Interaction Capability
+### 3.4 AC4 — Capacidad de interacción (Interaction Capability)
 
 **Escenario 1 — Creación de solicitud en pocos pasos** · _Tipo: Uso_ · _(Operability)_
 
@@ -409,7 +409,7 @@ Característica agregada en esta versión (ver sección 2). Cubre si el sistema 
 |Respuesta|Muestra por sí sola el estado actual, qué sigue y quién es el técnico asignado, sin abrir otras pantallas ni consultar ayuda externa|
 |Medida|100% de los estados de la solicitud (mínimo 4, RF-11) muestran un texto que explica qué ocurre y cuál es el siguiente paso; al menos 4 de 5 usuarios de prueba describen correctamente el estado sin ayuda|
 
-> **Nota:** los escenarios 3, 4 y 9 se miden con pruebas de usabilidad con 5 usuarios, y el 5 y el 7 con pruebas automáticas y manuales sobre la aplicación; hay que definir quién las ejecuta (QA o Product Owner) y cuándo. El escenario 8 requiere que Frontend defina el dispositivo de referencia de gama baja.
+> **Nota:** los escenarios 3, 4 y 9 se miden con pruebas con 5 usuarios, y el 5 y el 7 con pruebas automáticas y manuales sobre la aplicación; hay que definir quién las ejecuta (QA o Product Owner) y cuándo. El escenario 8 requiere que Frontend defina el dispositivo de referencia de gama baja.
 
 ### 3.5 AC5 — Reliability
 
@@ -808,7 +808,7 @@ Un escenario con importancia de negocio **Alta** y dificultad arquitectónica **
 
 > Los 8 escenarios de Safety agregados en la versión 2.7 (AC9-E1 a AC9-E8) también son una primera propuesta: sus medidas (calificación de 3.0, 5 servicios, 4 horas, 85%, 15 minutos) deben validarse con el equipo y su valoración propuesta (†) ratificarse en la sesión ATAM. AC9-E6 es una alerta operativa, más cercana a *Reliability* que a *Safety*, y puede reemplazarse cuando se cierre el escenario de alerta sobre la habilitación de técnicos.
 
-> Los 7 escenarios de Interaction Capability agregados en la versión 2.8 (AC4-E3 a AC4-E9) también son una primera propuesta: sus umbrales (4 de 5 usuarios, 30 segundos, 10 minutos, 60% de calificaciones, 3 segundos) deben validarse con el equipo y su valoración propuesta (†) ratificarse en la sesión ATAM.
+> Los 7 escenarios de Capacidad de interacción agregados en la versión 2.8 (AC4-E3 a AC4-E9) también son una primera propuesta: sus umbrales (4 de 5 usuarios, 30 segundos, 10 minutos, 60% de calificaciones, 3 segundos) deben validarse con el equipo y su valoración propuesta (†) ratificarse en la sesión ATAM.
 
 |Escenario|Atributo|Importancia de negocio|Dificultad arquitectónica|Prioridad|
 |---|---|---|---|---|
@@ -822,15 +822,15 @@ Un escenario con importancia de negocio **Alta** y dificultad arquitectónica **
 |AC2-E5 Uso de recursos bajo carga normal|Performance Efficiency|Media†|Alta†|Media|
 |AC3-E1 Integración con pasarela de pagos|Compatibility|Media|Media|Media|
 |AC3-E2 Convivencia de los 8 microservicios en VM3|Compatibility|Media†|Alta†|Media|
-|AC4-E1 Creación de solicitud en pocos pasos|Interaction Capability|Media|Baja|Baja|
-|AC4-E2 Uso en distintos dispositivos|Interaction Capability|Media|Baja|Baja|
-|AC4-E3 Reconocer si la aplicación sirve para lo que necesito|Interaction Capability|Media†|Baja†|Baja|
-|AC4-E4 Primer uso del técnico sin capacitación|Interaction Capability|Media†|Baja†|Baja|
-|AC4-E5 Protección ante errores del usuario|Interaction Capability|Media†|Media†|Media|
-|AC4-E6 Motivación para calificar el servicio|Interaction Capability|Media†|Baja†|Baja|
-|AC4-E7 Uso con distintas capacidades|Interaction Capability|Baja†|Baja†|Baja|
-|AC4-E8 Uso en dispositivos de gama baja|Interaction Capability|Media†|Media†|Media|
-|AC4-E9 Seguimiento del servicio que se explica solo|Interaction Capability|Alta†|Baja†|Media|
+|AC4-E1 Creación de solicitud en pocos pasos|Capacidad de interacción|Media|Baja|Baja|
+|AC4-E2 Uso en distintos dispositivos|Capacidad de interacción|Media|Baja|Baja|
+|AC4-E3 Reconocer si la aplicación sirve para lo que necesito|Capacidad de interacción|†|Baja†|Baja|
+|AC4-E4 Primer uso del técnico sin capacitación|Capacidad de interacción|†|Baja†|Baja|
+|AC4-E5 Protección ante errores del usuario|Capacidad de interacción|†|Media†|Media|
+|AC4-E6 Motivación para calificar el servicio|Capacidad de interacción|†|Baja†|Baja|
+|AC4-E7 Uso con distintas capacidades|Capacidad de interacción|†|Baja†|Baja|
+|AC4-E8 Uso en dispositivos de gama baja|Capacidad de interacción|†|Media†|Media|
+|AC4-E9 Seguimiento del servicio que se explica solo|Capacidad de interacción|†|Baja†|Media|
 |AC5-E1 Caída de componente no crítico|Reliability|Alta|Media|**Alta**|
 |AC5-E2 Mantenimiento planeado|Reliability|Media|Baja|Baja|
 |AC5-E3 Caída de un microservicio|Reliability|Alta|Alta|**Alta**|
@@ -955,12 +955,14 @@ Cada servicio es responsable de un dominio de negocio, con su propio ciclo de de
 |Actors Service|Suppliers, Allies, Clients|**Planeado**: esqueleto sin persistencia; sus conceptos son evolutivos (SDD 6.14)|No desplegado|No desplegado|
 |Catalog Service|Catalog (especialidades, servicios publicados)|Implementado|Desplegado|Desplegado|
 |Matching Service|Matching, CoverageZone|Implementado; falta consumir `catalog.category-changed` para el nombre de la categoría en la oferta|Desplegado|Desplegado|
-|ServiceRequest Service|ServiceRequest (orquesta cotización → prestación → evaluación)|Implementado hasta el pago; la calificación (RF-12) está **planeada** (ADR-027)|Desplegado|Desplegado|
-|Ranking Service|Ranking (servicio prestado; el de materiales queda fuera del MVP, ver D3)|**Planeado**: esqueleto; se construye con ADR-027|No desplegado|No desplegado|
+|ServiceRequest Service|ServiceRequest (orquesta cotización → prestación → evaluación)|Implementado, incluida la calificación (RF-12, ADR-027, SCRUM-85)|Desplegado|Desplegado|
+|Ranking Service|Ranking (servicio prestado; el de materiales queda fuera del MVP, ver D3)|Implementado (ADR-027, SCRUM-498): reputación del técnico desde `service-request.rated`; sin endpoints de negocio|No desplegado (SCRUM-512)|No desplegado|
 |Payments Service|Payments, Billing, Payroll-lite|Pago con la pasarela simulada, pago de la empresa (RN-P6) y comprobante implementados; los pagos recibidos del técnico (RF-25) están **planeados**|Desplegado|Pendiente (SCRUM-518)|
 |Communication Service|Notifications y Chat de la solicitud (ADR-026); Complaints planificado para el roadmap 1.x, fuera del alcance del MVP|Implementado|Desplegado|Pendiente (SCRUM-518)|
 
 Producción iguala a QA antes de promover el MVP (SCRUM-518 a SCRUM-521): faltan Payments, Communication, Nominatim y los topics de Kafka del incremento (Documento de Infraestructura, sección 4.3).
+
+El interior de cada servicio (capas, componentes con los nombres reales de las clases y sus relaciones con la base, Kafka y el gateway) está en el SDD, sección 6 (diagramas C4 de componentes, figuras 10 a 18; SCRUM-580).
 
 #### 4.2.3 Persistencia
 
@@ -993,13 +995,23 @@ Esta sección describe cómo se distribuye el sistema sobre las 7 VMs propias (R
 |---|---|---|---|
 |VM1|10.43.100.168|Herramientas y entrada|Única entrada desde la VPN (R9): Nginx :443 que termina el HTTPS y reenvía por nombre al gateway de cada ambiente (VM3 o VM2) o a Grafana (ADR-028). Runner de GitHub con kubectl y k6. Prometheus, Loki y Grafana para los dos ambientes|
 |VM3|10.43.98.205|Producción — aplicación|k3s de un nodo: los 8 microservicios (Identity, Actors, Catalog, Matching, ServiceRequest, Ranking, Payments, Communication). Fuera de k3s, el Nginx del gateway de producción (:8080, solo desde VM1), que reenvía al Traefik de k3s y sirve el panel Angular (ADR-028)|
-|VM4|10.43.98.209|Producción — datos|PostgreSQL + PostGIS (una base por servicio, ADR-014) y Redis (caché y coordinación temporal de procesos programados)|
+|VM4|10.43.98.209|Producción — datos|PostgreSQL + PostGIS (una base por servicio, ADR-014), Redis (coordinación temporal de procesos programados, sección 4.2.3) y Nominatim con el mapa de Bogotá (ADR-024)|
 |VM6|10.43.99.12|Producción — mensajería y almacenamiento|Apache Kafka + Kafka UI y Garage, compatible con S3 (evidencias fotográficas, RF-15, y respaldos de PostgreSQL; ADR-016)|
 |VM2|10.43.98.15|QA — aplicación|Igual que VM3|
 |VM5|10.43.98.29|QA — datos|Igual que VM4|
 |VM7|10.43.99.8|QA — mensajería y almacenamiento|Igual que VM6|
 
-> **Distribución aprobada en la versión 2.22 (ADR-022) y aplicada el 7 de octubre de 2026 (SCRUM-334).** Los servicios corren así desde el 8 de octubre. Lo que hoy corre en cada ambiente está en el Documento de Infraestructura, sección 4.3: QA tiene 6 microservicios y producción 4; Actors y Ranking no están desplegados porque son esqueletos (sección 4.2.2).
+> **Distribución aprobada en la versión 2.22 (ADR-022) y aplicada el 7 de octubre de 2026 (SCRUM-334).** Los servicios corren así desde el 8 de octubre. Lo que hoy corre en cada ambiente está en el Documento de Infraestructura, sección 4.3: QA tiene 6 microservicios y producción 4; Actors no está desplegado porque es un esqueleto, y Ranking está implementado pero todavía sin desplegar (sección 4.2.2).
+
+**Vista de despliegue por ambiente (C4 · Deployment, SCRUM-573).** Cada ambiente tiene sus propios nodos, su gateway, sus datos, su Kafka y su almacenamiento. VM1 aparece aparte, como infraestructura auxiliar: la entrada TLS, el runner de CI/CD y la observabilidad. El panel y su página de presentación son parte del producto y los sirve el gateway de cada ambiente (ADR-028). Lo punteado no está desplegado todavía.
+
+![Despliegue de producción](diagrams/c4/C4-06-Despliegue-Produccion.png)
+
+**Figura 5.1. Producción: VM3 (aplicación), VM4 (datos) y VM6 (mensajería y almacenamiento), con VM1 como entrada y herramientas. Vista `C4-06-Despliegue-Produccion`.**
+
+![Despliegue de QA](diagrams/c4/C4-06-Despliegue-QA.png)
+
+**Figura 5.2. QA: VM2, VM5 y VM7, con la misma forma que producción y sin conexión con ella. Vista `C4-06-Despliegue-QA`.**
 
 > **Nota sobre storage de evidencias (self-hosted vs. Cloudflare R2):** confirmado con el equipo que la evidencia fotográfica sí está en el alcance del MVP. El storage se aprovisiona **self-hosted en VM6** (VM7 en QA, ADR-022), consistente con R5: primero MinIO y, desde la versión 2.13, Garage (ADR-016), porque MinIO dejó de distribuir su edición comunitaria. El diagrama de la presentación de Sprint 1 mostraba "MinIO / Cloudflare R2" como si fueran intercambiables; se descarta Cloudflare R2 para esta versión por R5: guardaría datos de usuarios en producción (las evidencias) fuera de las 7 VMs, aunque su capa gratuita no tenga costo. GitHub Container Registry sí se usa porque solo guarda imágenes de contenedor, no datos de usuarios. Si en el futuro se reconsidera, debe evaluarse explícitamente contra R5 antes de adoptarlo.
 
@@ -1279,5 +1291,8 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.40|26 oct 2026|Restricción R6 (SCRUM-598, subtarea SCRUM-599; revisión del Sprint 4): explica cómo se aplica dentro de la ciudad (área urbana de RN-SR9, mapa de Bogotá de ADR-024 y localidades de RN-M9) y remite al SRS 2.3.1, con la lista de zonas, la prueba fuera de Bogotá y la decisión pendiente P10 sobre Sumapaz. La 2.39 es el ADR-027 (SCRUM-542).|
 |2.41|27 oct 2026|Estado de los servicios planeados y de producción (SCRUM-544, revisión del Sprint 4), con las decisiones del mapa arquitectónico: la tabla 4.2.2 marca qué servicio está implementado o planeado y dónde está desplegado (Actors y Ranking son esqueletos; producción todavía no tiene Payments ni Communication); 4.2.3 dice para qué se usa Redis de verdad (coordinación de vencimientos, no caché); 4.2.4 usa los nombres reales de los eventos y el aviso del pago por `service-request.status-changed`; 4.2.1 reconoce la página de presentación del panel; 5.1 registra que ADR-022 se aplicó el 7 de octubre.|
 |2.42|27 oct 2026|Validación de los RNF con la evidencia del Sprint 5 (SCRUM-543), sección 2.2: RNF-01 y RNF-10 con el pago de la empresa contra QA (`scrum-496-pago-empresa`, 59/59); RNF-02 con la prueba de TLS de la entrada y la huella del certificado que fija la app; RNF-03 con la prueba de integración del hash BCrypt; RNF-07 con los despliegues del 27 de octubre; RNF-08 sigue sin ejercerse porque no ha habido promociones a producción. Ningún estado cambia: lo que falta es escenario (RNF-02 y RNF-03) o una medición (RNF-01, RNF-08, RNF-09 y RNF-12).|
+|2.43|27 oct 2026|Tabla 4.2.2: la calificación de ServiceRequest (SCRUM-85) y Ranking (SCRUM-498) pasan a implementados según ADR-027; Ranking sigue sin desplegar (SCRUM-512). La sección remite a los diagramas de componentes del SDD, sección 6 (SCRUM-580, SCRUM-584).|
+|2.44|27 oct 2026|AC4 se nombra **Capacidad de interacción**, como la característica de ISO/IEC 25010:2023 (SCRUM-568, corrección del profesor en la revisión del Sprint 4); los escenarios se miden con pruebas con usuarios. Sin cambios en los escenarios.|
+|2.45|27 oct 2026|Sección 5.1 con las vistas de despliegue por ambiente (figuras 5.1 y 5.2, SCRUM-573 y SCRUM-576): cada ambiente con sus nodos, su gateway y sus datos, y VM1 como infraestructura auxiliar. VM4 con Redis como coordinación temporal y Nominatim; Ranking implementado sin desplegar.|
 |2.27|12 oct 2026|Dependencias externas frente a R5 (SCRUM-413 y SCRUM-405). Se acepta ADR-024: R5 no cambia; la geocodificación (RIE-02) corre con un Nominatim propio con el mapa de Bogotá en VM4 y VM5, usado por ServiceRequest cuando la solicitud llega sin coordenadas, y las notificaciones (RIE-03) del MVP se entregan dentro de la app (canal de ADR-023 y buzón en Communication). El diagrama de contexto (4.1) pasa el geocodificador adentro del sistema y retira el proveedor de correo y push, y la nota de sistemas externos lo explica. ADR-024 entra a la tabla 5.5 y a la matriz 6.1 como excepción a ADR-014.|
 |2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|
