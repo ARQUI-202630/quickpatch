@@ -1,0 +1,198 @@
+# Inventario de funcionalidades por tipo de usuario — QUICKPATCH
+
+**Historia:** SCRUM-559 (matriz de funcionalidades por tipo de usuario y avance real). **Esta tarea:** SCRUM-560 (inventario).
+**Fecha de corte del inventario:** 27 de octubre de 2026, sobre `develop` de `quickpatch-mobile`, `quickpatch-web` y el SRS V5.6.
+**Siguientes pasos:** SCRUM-561 (Katherine) llena las columnas de estado con su evidencia, y SCRUM-562 calcula el avance.
+
+## Cómo se armó
+
+- **Del SRS:** cada RF (RF-01 a RF-29 y RF-34 a RF-37, 33 en total) queda en al menos una fila, con la HU que el SRS le asigna (sección 3, columna HU). Los RF que no son de un usuario sino del sistema van en "Transversal".
+- **De la app y del panel:** se revisaron las pantallas de `quickpatch-mobile` (`lib/features/**/paginas/`), las rutas de `quickpatch-web` (`src/app/app.routes.ts`) y las llamadas a la API de cada una. Así entran las funcionalidades básicas que el SRS no nombra como RF: cerrar sesión, editar el perfil, recuperar la contraseña, activar la cuenta y el buzón de notificaciones.
+- **Columna "Qué hay hoy":** describe lo que existe en el código, sin juzgar si funciona. Que una pantalla exista no la hace "Desarrollada" ni "Probada"; eso lo decide SCRUM-561 con evidencia.
+- **Columnas de estado** (las llena SCRUM-561, con los criterios de SCRUM-559):
+  - **Desarrollada:** sí / parcial / no.
+  - **Probada:** enlace a la evidencia de QA (`tests/e2e/evidencias/`, CI o captura). Sin enlace, no cuenta como probada.
+  - **Producción:** desplegada en producción (Documento de Infraestructura, 4.3).
+  - **Mock:** funciona con un simulador (por ejemplo, la pasarela de pagos, ADR-009 modificado).
+  - **Pendiente:** lo que falta.
+
+Una funcionalidad que comparten varios usuarios se repite en cada uno, porque el avance se calcula por usuario. Las filas repetidas llevan la misma evidencia.
+
+## 1. Visitante de la landing (panel web, sin sesión)
+
+| ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
+|---|---|---|---|---|---|---|---|---|---|---|
+| V-01 | Presentación | Ver la página de presentación de QUICKPATCH | — (SRS 5.3) | SCRUM-491 | Panel: ruta `''` (`presentacion`) | | | | | |
+| V-02 | Presentación | Descargar el APK de la app | — | SCRUM-628 | Panel: botón de descarga de `presentacion` hacia el último release | | | | | |
+
+## 2. Cliente hogar (app móvil)
+
+| ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
+|---|---|---|---|---|---|---|---|---|---|---|
+| C-01 | Cuenta | Registrarse con correo y contraseña | RF-01 | SCRUM-21 | `registro_page` → `POST /v1/auth/register/client` | | | | | |
+| C-02 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` → `POST /v1/auth/login` | | | | | |
+| C-03 | Cuenta | Cerrar sesión | — | — | `cuenta_page`, botón "Cerrar sesión" | | | | | |
+| C-04 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla; contrato `PATCH /v1/users/me` en diseño (SCRUM-610) | | | | | |
+| C-05 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla; contrato en diseño (SCRUM-624) | | | | | |
+| C-06 | Solicitudes | Crear una solicitud con GPS o dirección escrita | RF-07 | SCRUM-27 | `nueva_solicitud_page` → `location-preview` y `POST /v1/service-requests` | | | | | |
+| C-07 | Solicitudes | Ver sus solicitudes y el estado en tiempo real | RF-11 | SCRUM-31 | `mis_solicitudes_page`, `detalle_solicitud_page` y canal `/v1/realtime` | | | | | |
+| C-08 | Solicitudes | Aceptar o rechazar la cotización | RF-35 | SCRUM-486 | `detalle_solicitud_page` → `quotes/{id}/accept` y `reject` | | | | | |
+| C-09 | Solicitudes | Cancelar la solicitud con motivo | RF-36 | SCRUM-472 | `detalle_solicitud_page` → `POST /v1/service-requests/{id}/cancel` | | | | | |
+| C-10 | Solicitudes | Chatear con el técnico asignado | RF-37 | SCRUM-473 | `chat_page` → `/v1/service-requests/{id}/messages` y canal en tiempo real | | | | | |
+| C-11 | Notificaciones | Ver el buzón de notificaciones | RF-11 | — | `notificaciones_page` → `/v1/notifications` | | | | | |
+| C-12 | Pagos | Pagar con tarjeta | RF-22 | SCRUM-42 | `pagar_page` → `POST /v1/service-requests/{id}/payment` (pasarela simulada) | | | | | |
+| C-13 | Pagos | Ver el comprobante del pago | RF-24 | SCRUM-44 | `comprobante_page` → `GET /v1/payments/{id}/invoice` | | | | | |
+| C-14 | Calificación | Calificar el servicio (1 a 5, una vez, después del pago) | RF-12 | SCRUM-32 | Ruta declarada en `api_endpoints.dart`, sin pantalla; backend planeado (ADR-027) | | | | | |
+
+## 3. Empresa cliente (usuario `empresa_contacto`, app móvil)
+
+| ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
+|---|---|---|---|---|---|---|---|---|---|---|
+| E-01 | Cuenta | Registrar la cuenta corporativa (razón social, NIT y contacto) | RF-06 | SCRUM-26 | `registro_page` → `POST /v1/auth/register/company` | | | | | |
+| E-02 | Cuenta | Agregar usuarios autorizados de la empresa | RF-06 | SCRUM-26 | `usuarios_empresa_page` y `agregar_usuario_empresa_page` → `/v1/companies/me/users` | | | | | |
+| E-03 | Cuenta | Activar la cuenta por invitación (definir la contraseña) | RF-06 | SCRUM-26 | `activar_cuenta_page` → `POST /v1/auth/password/setup` | | | | | |
+| E-04 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | | | | | |
+| E-05 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | | | | | |
+| E-06 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | | | | | |
+| E-07 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | | | | | |
+| E-08 | Solicitudes | Crear una solicitud para una sede, a nombre de la empresa | RF-08 | SCRUM-28 | `nueva_solicitud_page` con el nombre de la sede | | | | | |
+| E-09 | Solicitudes | Ver las solicitudes y el estado en tiempo real | RF-11 | SCRUM-31 | Las mismas pantallas de C-07 | | | | | |
+| E-10 | Solicitudes | Aceptar o rechazar la cotización | RF-35 | SCRUM-486 | Igual que C-08 | | | | | |
+| E-11 | Solicitudes | Cancelar la solicitud con motivo | RF-36 | SCRUM-472 | Igual que C-09 | | | | | |
+| E-12 | Solicitudes | Chatear con el técnico asignado | RF-37 | SCRUM-473 | Igual que C-10 | | | | | |
+| E-13 | Notificaciones | Ver el buzón de notificaciones | RF-11 | — | `notificaciones_page` | | | | | |
+| E-14 | Pagos | Pagar a nombre de la cuenta corporativa | RF-23 | SCRUM-43 | `pagar_page`; paga cualquier usuario de la empresa (RN-P6) | | | | | |
+| E-15 | Pagos | Ver el comprobante del pago | RF-24 | SCRUM-44 | `comprobante_page` | | | | | |
+| E-16 | Calificación | Calificar el servicio | RF-12 | SCRUM-32 | Igual que C-14 | | | | | |
+
+## 4. Técnico (app móvil)
+
+| ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
+|---|---|---|---|---|---|---|---|---|---|---|
+| T-01 | Cuenta | Registrarse con datos y documentos, en estado pendiente de verificación | RF-02 | SCRUM-22 | `registro_tecnico_page` → `POST /v1/auth/register/technician` | | | | | |
+| T-02 | Cuenta | Activar la cuenta creada por su proveedor | RF-16 | SCRUM-36 | `activar_cuenta_page` | | | | | |
+| T-03 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | | | | | |
+| T-04 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | | | | | |
+| T-05 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | | | | | |
+| T-06 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | | | | | |
+| T-07 | Disponibilidad | Cambiar la disponibilidad y la cobertura por localidades | RF-13 | SCRUM-33 | `disponibilidad_page` → `/v1/technicians/me/availability` y `coverage` | | | | | |
+| T-08 | Ofertas | Recibir la oferta y aceptarla o rechazarla antes de 3 minutos | RF-10 | SCRUM-30 | `/v1/matching/offers`, `accept` y `reject` | | | | | |
+| T-09 | Servicio | Ver el detalle de la solicitud asignada | RF-14 | SCRUM-34 | `solicitud_asignada_page` | | | | | |
+| T-10 | Servicio | Emitir la cotización de mano de obra y materiales | RF-34 | SCRUM-486 | `solicitud_asignada_page` → `POST /v1/service-requests/{id}/quotes` | | | | | |
+| T-11 | Servicio | Iniciar, subir la foto de evidencia y completar | RF-15 | SCRUM-35 | `solicitud_asignada_page` → `start`, `evidence` y `complete` | | | | | |
+| T-12 | Servicio | Chatear con el cliente | RF-37 | SCRUM-473 | `chat_page` | | | | | |
+| T-13 | Notificaciones | Ver el buzón de notificaciones | RF-11 | — | `notificaciones_page` | | | | | |
+| T-14 | Historial | Ver el historial de solicitudes atendidas | RF-17 | SCRUM-37 | `servicios_tecnico_page` → `GET /v1/technicians/me/service-requests` | | | | | |
+| T-15 | Pagos | Ver los pagos recibidos | RF-25 | SCRUM-45 | Ruta `/v1/payments/received` declarada en `api_endpoints.dart`, sin pantalla ni backend | | | | | |
+
+## 5. Proveedor (app móvil)
+
+| ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
+|---|---|---|---|---|---|---|---|---|---|---|
+| P-01 | Cuenta | Registrarse con datos y documentos, en estado pendiente de verificación | RF-02 | SCRUM-22 | `registro_tecnico_page` | | | | | |
+| P-02 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | | | | | |
+| P-03 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | | | | | |
+| P-04 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | | | | | |
+| P-05 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | | | | | |
+| P-06 | Equipo | Registrar técnicos de su equipo | RF-16 | SCRUM-36 | `alta_tecnico_page` → `POST /v1/providers/me/technicians` e invitación | | | | | |
+| P-07 | Equipo | Ver y administrar su equipo | RF-16 | SCRUM-36 | `equipo_page` | | | | | |
+| P-08 | Notificaciones | Ver el buzón de notificaciones | RF-11 | — | `notificaciones_page` | | | | | |
+| P-09 | Pagos | Ver los pagos recibidos | RF-25 | SCRUM-45 | Igual que T-15 | | | | | |
+
+## 6. Administrador del tenant (panel web)
+
+| ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A-01 | Cuenta | Iniciar sesión en el panel (solo administradores) | RF-03, RF-05 | SCRUM-23, SCRUM-25 | Ruta `iniciar-sesion` | | | | | |
+| A-02 | Cuenta | Activar la cuenta (definir la contraseña) | — | — | Ruta `activar` → `POST /v1/auth/password/setup` | | | | | |
+| A-03 | Cuenta | Cerrar sesión | — | — | Botón del layout del panel (`app.html`) | | | | | |
+| A-04 | Operación | Ver el tablero operativo | RF-18 | SCRUM-38 | Ruta `inicio` | | | | | |
+| A-05 | Operación | Ver las solicitudes activas por estado | RF-18 | SCRUM-38 | Ruta `solicitudes` | | | | | |
+| A-06 | Operación | Cancelar una solicitud con motivo | RF-36 | SCRUM-472 | Ruta `solicitudes` → `POST /v1/service-requests/{id}/cancel` | | | | | |
+| A-07 | Técnicos | Aprobar o rechazar con motivo a técnicos y proveedores | RF-19 | SCRUM-39 | Ruta `tecnicos` → cambio de verificación | | | | | |
+| A-08 | Técnicos | Suspender a un técnico | RF-20 | SCRUM-40 | Ruta `tecnicos` | | | | | |
+| A-09 | Técnicos | Ver la reputación y la marca de reputación baja | RF-20 | SCRUM-32 | Sin pantalla; llega a Identity por evento (ADR-027, planeado) | | | | | |
+
+## 7. Administrador de plataforma (panel web)
+
+| ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
+|---|---|---|---|---|---|---|---|---|---|---|
+| AP-01 | Cuenta | Iniciar sesión en el panel | RF-03, RF-05 | SCRUM-23, SCRUM-25 | Ruta `iniciar-sesion` | | | | | |
+| AP-02 | Cuenta | Cerrar sesión | — | — | Botón del layout del panel | | | | | |
+| AP-03 | Tenants | Crear tenants | RF-21 | SCRUM-41 | Ruta `tenants` → `POST /v1/platform/tenants` | | | | | |
+| AP-04 | Tenants | Activar y desactivar tenants, con confirmación y auditoría | RF-21 | SCRUM-41 | Ruta `tenants` | | | | | |
+| AP-05 | Operación | Ver las solicitudes de todos los tenants, filtrables por tenant | RF-18 | SCRUM-38 | Ruta `solicitudes` → `/v1/platform/service-requests` | | | | | |
+| AP-06 | Operación | Ver el tablero operativo | RF-18 | SCRUM-38 | Ruta `inicio` | | | | | |
+
+## 8. Transversal (sistema, todos los usuarios)
+
+| ID | Módulo | Funcionalidad | RF | HU | Qué hay hoy | Desarrollada | Probada (evidencia) | Producción | Mock | Pendiente |
+|---|---|---|---|---|---|---|---|---|---|---|
+| X-01 | Seguridad | Aislamiento de los datos por tenant | RF-04 | SCRUM-24 | RLS en los servicios con base (SAD 2.2, RNF-10) | | | | | |
+| X-02 | Seguridad | Acceso según el rol y el canal | RF-05 | SCRUM-25 | Roles del JWT en cada servicio; el panel solo admite administradores | | | | | |
+| X-03 | Matching | Asignación automática del técnico | RF-09 | SCRUM-29 | Matching Service (Kafka) | | | | | |
+| X-04 | Calidad | CI/CD con build y pruebas antes de desplegar | RF-26 | SCRUM-46 | Workflows de cada repositorio y compuerta de QA | | | | | |
+| X-05 | Calidad | Prueba automatizada de punta a punta del flujo crítico | RF-27 | SCRUM-47 | Colecciones de `tests/e2e/`; la calificación del final del flujo todavía no existe | | | | | |
+| X-06 | Operación | Logs centralizados con correlación y alertas de caída | RF-28 | SCRUM-48 | Loki, Prometheus y Grafana en VM1 | | | | | |
+| X-07 | Seguridad | TLS en tránsito y contraseñas con hash | RF-29 | SCRUM-49 | Entrada TLS 1.2/1.3 y BCrypt (SAD 2.2, RNF-02 y RNF-03) | | | | | |
+
+## Cobertura del SRS
+
+| RF | Filas |
+|---|---|
+| RF-01 | C-01 |
+| RF-02 | T-01, P-01 |
+| RF-03 | C-02, E-04, T-03, P-02, A-01, AP-01 |
+| RF-04 | X-01 |
+| RF-05 | A-01, AP-01, X-02 |
+| RF-06 | E-01, E-02, E-03 |
+| RF-07 | C-06 |
+| RF-08 | E-08 |
+| RF-09 | X-03 |
+| RF-10 | T-08 |
+| RF-11 | C-07, C-11, E-09, E-13, T-13, P-08 |
+| RF-12 | C-14, E-16 |
+| RF-13 | T-07 |
+| RF-14 | T-09 |
+| RF-15 | T-11 |
+| RF-16 | T-02, P-06, P-07 |
+| RF-17 | T-14 |
+| RF-18 | A-04, A-05, AP-05, AP-06 |
+| RF-19 | A-07 |
+| RF-20 | A-08, A-09 |
+| RF-21 | AP-03, AP-04 |
+| RF-22 | C-12 |
+| RF-23 | E-14 |
+| RF-24 | C-13, E-15 |
+| RF-25 | T-15, P-09 |
+| RF-26 | X-04 |
+| RF-27 | X-05 |
+| RF-28 | X-06 |
+| RF-29 | X-07 |
+| RF-34 | T-10 |
+| RF-35 | C-08, E-10 |
+| RF-36 | C-09, E-11, A-06 |
+| RF-37 | C-10, E-12, T-12 |
+
+Los 33 RF del SRS V5.6 quedan en al menos una fila.
+
+## Totales del inventario
+
+| Usuario | Funcionalidades |
+|---|---|
+| Visitante de la landing | 2 |
+| Cliente hogar | 14 |
+| Empresa cliente | 16 |
+| Técnico | 15 |
+| Proveedor | 9 |
+| Administrador del tenant | 9 |
+| Administrador de plataforma | 6 |
+| Transversal | 7 |
+| **Total** | **78** |
+
+## Hallazgos del inventario
+
+1. **Funcionalidades básicas sin HU:** cerrar sesión y el buzón de notificaciones existen en la app y en el panel, pero no tienen una HU propia. Se dejan con "—" para no inventar un número; si se crea una HU, se agrega aquí.
+2. **La app declara rutas que todavía no usa:** la calificación (`/rating`) y los pagos recibidos (`/v1/payments/received`) están en `api_endpoints.dart`, pero ninguna pantalla las llama y el backend no las tiene. Cuentan como pendientes, no como desarrolladas.
+3. **Sin pantalla:** editar el perfil (SCRUM-609) y recuperar la contraseña (SCRUM-623) siguen en diseño de contrato.
+4. **Categorías del tenant:** el administrador las crea por API (`/v1/catalog/admin/categories`), pero el panel no tiene pantalla y el SRS no tiene un RF para ello. No se agrega una fila; queda como pregunta para la PO.
