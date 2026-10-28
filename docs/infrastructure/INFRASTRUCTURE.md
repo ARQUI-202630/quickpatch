@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.8 |
+| **Versión** | 4.9 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -934,7 +934,7 @@ Lo que sí está configurado:
 
 ### 10.5 Cifrado en tránsito y en reposo (SCRUM-506)
 
-Estado medido el 26 de octubre de 2026 en las 7 VMs, con comandos de solo lectura.
+Estado medido el 26 de octubre de 2026 en las 7 VMs, con comandos de solo lectura; los `Secret` de k3s y Redis se verificaron el 28 de octubre en VM2, VM3, VM4 y VM5.
 
 | Tramo o dato | Estado | Evidencia |
 |---|---|---|
@@ -945,20 +945,23 @@ Estado medido el 26 de octubre de 2026 en las 7 VMs, con comandos de solo lectur
 | Servicios a PostgreSQL (VM4 y VM5) | **Sin cifrar**: `ssl = off`. La autenticación es `scram-sha-256` y `pg_hba.conf` solo admite la IP de la VM de aplicación por rol | `show ssl` y `pg_hba.conf` |
 | Servicios a Kafka (VM6 y VM7) | **Sin cifrar ni autenticar**: listeners `PLAINTEXT` | `KAFKA_LISTENER_SECURITY_PROTOCOL_MAP` del `compose.yml` |
 | Servicios a Garage (VM6 y VM7) | Sin cifrar: API S3 por HTTP en el puerto 9000 de la IP de la VM | `garage.toml` (`api_bind_addr`) |
+| Servicios a Redis (VM4 y VM5) | **Sin TLS**: el contenedor arranca con `--bind <IP de la VM> --port 6379 --aclfile --appendonly`, sin ningún flag de TLS ni certificados en disco. La autenticación es por ACL (un usuario por servicio), escucha solo en la IP de la VM y el firewall admite solo a VM3 (producción) o VM2 (QA) | `docker inspect` del contenedor, `ss -ltn` y la carpeta de Redis, el 28 de octubre |
+| `Secret` de Kubernetes en reposo (VM2 y VM3) | **Sin cifrar**: `k3s secrets-encrypt status` responde `Encryption Status: Disabled, no configuration file found` en las dos VMs (k3s v1.31.4+k3s1), el servicio no se instaló con `secrets-encryption` y no existe el archivo de cifrado | `k3s secrets-encrypt status` y `grep` del servicio, el 28 de octubre |
 | Discos de las 7 VMs | **Sin cifrado visible**: no hay volúmenes LUKS ni dispositivos `crypt` en `lsblk`. El cifrado que aplique el hipervisor de la universidad no se ve desde las VMs | `lsblk` en las 7 VMs |
 | Datos de PostgreSQL | Sin cifrado en reposo (PostgreSQL no lo trae de serie); los volúmenes de Docker están en el disco sin cifrar | Misma evidencia de discos |
 | Contraseñas de los roles | Guardadas con `scram-sha-256` | `password_encryption` |
 | Respaldos de PostgreSQL | **Sin cifrar**: `pg_dump -Fc` queda en disco en VM4 y se sube a Garage por HTTP | `pg-backup.sh.j2` (sin `gpg` ni `age`) |
 | Secretos de la infraestructura | **Cifrados**: Ansible Vault, AES-256 (sección 8) | `vault.yml` |
 
-**No se pudo verificar:** si los `Secret` de Kubernetes están cifrados en reposo en el k3s (`k3s secrets-encrypt status`) ni la configuración de TLS y autenticación de Redis. Quedan para revisar con acceso a VM3, VM2, VM4 y VM5.
+**Verificado el 28 de octubre.** Los `Secret` de Kubernetes **no están cifrados en reposo** ni en producción ni en QA: contienen las cadenas de conexión de las bases (con las contraseñas de `_app` y `_migrator`), la llave privada de JWT de Identity y las claves de Garage y de Redis de ServiceRequest, y quedan en el almacén de datos del k3s sin cifrar (solo en base64) en el disco de VM2 y VM3. Redis **no usa TLS** en ninguno de los dos ambientes y se protege por ACL, por la IP de escucha y por el firewall.
 
 **Riesgos y decisión.** El tráfico sin cifrar viaja entre VMs de la red privada del laboratorio (`10.43.x.x`), con firewall por IP de origen (sección 10.2), y no sale a Internet; por eso se aceptó (sección 10.1). Lo que queda expuesto es el contenido de los discos y de los respaldos ante quien tenga acceso al almacenamiento o a una VM. Opciones, de menor a mayor esfuerzo:
 
 1. **Cifrar los respaldos** antes de subirlos a Garage (por ejemplo con `age`), con la llave en el vault.
-2. **Activar `secrets-encryption` en k3s** para los `Secret` (reinicia k3s; se aplica en VM3 y VM2).
+2. **Activar `secrets-encryption` en k3s** para los `Secret` (reinicia k3s; se aplica en VM3 y VM2). Es la opción con mejor relación entre esfuerzo y riesgo: la verificación del 28 de octubre muestra que hoy el cifrado está desactivado en los dos k3s, y los `Secret` que ya existen hay que volver a cifrarlos después de activarlo (`k3s secrets-encrypt reencrypt`).
 3. **TLS de PostgreSQL** (`ssl = on`, certificado autofirmado, `hostssl` en `pg_hba.conf` y `sslmode=require` en las cadenas de conexión de los 8 servicios): exige cambiar el `Secret` de cada servicio.
-4. **Cifrado de disco**: no se puede añadir a las VMs ya creadas sin reinstalarlas; depende de lo que ofrezca el laboratorio.
+4. **TLS de Redis** (`--tls-port`, certificado autofirmado y `rediss://` en la configuración de ServiceRequest, el único servicio que lo usa hoy): cambia el contenedor de Redis en VM4 y VM5 y el `Secret` de ServiceRequest.
+5. **Cifrado de disco**: no se puede añadir a las VMs ya creadas sin reinstalarlas; depende de lo que ofrezca el laboratorio.
 
 No se aplicó ninguna: cambian componentes en producción y QA y requieren la decisión del equipo. Mientras tanto la limitación queda registrada en la sección 13.
 
@@ -1055,7 +1058,7 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | La rama `main` no tiene protección; la aprobación del ambiente `produccion` es la única compuerta | Decisión pendiente del equipo | Sección 6.2 |
 | Actors, Ranking, Payments y Communication no tienen manifiesto ni `roles.sql`: no están desplegados | Dependen del código de los equipos | Sección 5.3 |
 | Certificados TLS autofirmados, sin CA reconocida | R9 | Secciones 10.1 y 11 |
-| Sin cifrado en reposo (discos, PostgreSQL, Garage y respaldos) y tráfico interno sin TLS (PostgreSQL, Kafka, Garage) | Decisión pendiente del equipo | Sección 10.5 |
+| Sin cifrado en reposo (discos, PostgreSQL, Garage, respaldos y los `Secret` de k3s) y tráfico interno sin TLS (PostgreSQL, Kafka, Garage y Redis) | Decisión pendiente del equipo | Sección 10.5 |
 | SSH con contraseña, la misma en las 7 VMs | Decisión del equipo | Sección 10.4 |
 | Kafka UI sin login: solo se usa por túnel SSH desde el equipo de DevOps | Decisión de DevOps | Sección 10.3 |
 
@@ -1203,3 +1206,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.6 | 27 oct 2026 | Sección 2.1 remite a las vistas de despliegue C4 por ambiente (producción y QA), las mismas del SAD y el SDD (SCRUM-576). |
 | 4.7 | 28 oct 2026 | Producción con 17 topics de Kafka y los Deployment de Payments y Communication esperando su imagen (SCRUM-518); QA con 19 topics y el panel `0.5.3`. La sección 4.3 se ajusta a esa medición, con lo que falta para promover (categorías, `aplicar-roles-db.yml`, el panel y Ranking). |
 | 4.8 | 28 oct 2026 | Tope de pool de Ranking y Actors (8 y 8; sin entrada la plantilla usaría 20 y la suma pasaría las 97 conexiones útiles) y el presupuesto de conexiones con los 8 servicios (94 de 97) en 5.7; Ranking se despliega por parámetro y no en las listas por defecto (4.3). |
+| 4.9 | 28 oct 2026 | Cifrado (SCRUM-506): verificados los `Secret` de k3s en VM2 y VM3 (cifrado desactivado) y Redis en VM4 y VM5 (sin TLS, con ACL y firewall); sección 10.5 sin pendientes de verificación y con la opción de activar `secrets-encryption` y la de TLS de Redis. |
