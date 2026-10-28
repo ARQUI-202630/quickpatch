@@ -4,7 +4,7 @@
 **Fecha de corte:** 27 de octubre de 2026, 17:00 (hora de Bogotá).
 **Fuentes:**
 - El inventario de 78 funcionalidades (`docs/testing/inventario-funcionalidades-por-usuario.md`, SCRUM-560).
-- Los estados que llenó QA en SCRUM-561 (rama `feature/qa/scrum-561-inventario-funcionalidades`, commit `e1fe335`, todavía sin fusionar).
+- Los estados que llenó QA en SCRUM-561 (fusionados en `develop` con quickpatch#190).
 - Las evidencias de `tests/e2e/evidencias/` y `tests/security/evidencias/` en `develop`.
 - Los PR fusionados hasta la fecha de corte.
 
@@ -36,14 +36,14 @@ cobertura de implementación = (verificadas + pendientes de QA) / total
 | Tipo de usuario | Total | Verificadas | Pendientes de QA | Parciales | No implementadas | **Avance** | Cobertura de implementación |
 |---|---|---|---|---|---|---|---|
 | Visitante de la landing | 2 | 0 | 2 | 0 | 0 | **0.0%** | 100.0% |
-| Cliente hogar | 14 | 10 | 1 | 1 | 2 | **71.4%** | 78.6% |
-| Empresa cliente | 16 | 12 | 1 | 1 | 2 | **75.0%** | 81.3% |
-| Técnico | 15 | 9 | 3 | 0 | 3 | **60.0%** | 80.0% |
-| Proveedor | 9 | 5 | 1 | 0 | 3 | **55.6%** | 66.7% |
+| Cliente hogar | 14 | 10 | 1 | 2 | 1 | **71.4%** | 78.6% |
+| Empresa cliente | 16 | 12 | 1 | 2 | 1 | **75.0%** | 81.3% |
+| Técnico | 15 | 9 | 3 | 1 | 2 | **60.0%** | 80.0% |
+| Proveedor | 9 | 5 | 1 | 1 | 2 | **55.6%** | 66.7% |
 | Administrador del tenant | 9 | 6 | 2 | 1 | 0 | **66.7%** | 88.9% |
 | Administrador de plataforma | 6 | 3 | 3 | 0 | 0 | **50.0%** | 100.0% |
 | Transversal | 7 | 6 | 0 | 1 | 0 | **85.7%** | 85.7% |
-| **Global** | **78** | **51** | **13** | **4** | **10** | **65.4%** | **82.1%** |
+| **Global** | **78** | **51** | **13** | **8** | **6** | **65.4%** | **82.1%** |
 
 - **Avance global: 65.4%** (51 de 78). Dos de las 51 son con la pasarela simulada (C-12 y E-14); sin ellas, el avance es 62.8%.
 - **Cobertura de implementación: 82.1%** (64 de 78). Es lo que llegaría a contar con solo correr en QA las pruebas que faltan, sin escribir funcionalidades nuevas.
@@ -62,7 +62,7 @@ cobertura de implementación = (verificadas + pendientes de QA) / total
 | C-01 | Verificada | `mvp-qa-sprint4-2026-10-18.txt` (`POST /v1/auth/register/client`) | QA citó `tenant-beta`, que no registra clientes |
 | C-02 | Verificada | `mvp-qa-sprint4-2026-10-18.txt` | |
 | C-03 | Pendiente de QA | — | Cerrar sesión es de la app; una colección de API no la prueba |
-| C-04 | No implementada | — | SCRUM-609, contrato pendiente (SCRUM-610) |
+| C-04 | Parcial | quickpatch-identity#27 | `PATCH /v1/users/me` en QA (identity 0.6.0, SCRUM-611); faltan las pantallas (SCRUM-612 y SCRUM-613) y QA (SCRUM-614) |
 | C-05 | No implementada | — | SCRUM-623 |
 | C-06 | Verificada | `scrum-75-solicitud-empresa-qa-2026-10-22.txt` | |
 | C-07 | Verificada | `scrum-84-seguimiento-estado-qa-2026-10-22.txt` | |
@@ -78,7 +78,7 @@ cobertura de implementación = (verificadas + pendientes de QA) / total
 | E-03 | Verificada | `scrum-68-cuenta-corporativa-qa-2026-10-22.txt` (`POST /v1/auth/password/setup`) | |
 | E-04 | Verificada | `mvp-qa-sprint4-2026-10-18.txt` | |
 | E-05 | Pendiente de QA | — | Igual que C-03 |
-| E-06 | No implementada | — | SCRUM-609 |
+| E-06 | Parcial | quickpatch-identity#27 | `PATCH /v1/users/me` en QA (identity 0.6.0, SCRUM-611); faltan las pantallas (SCRUM-612 y SCRUM-613) y QA (SCRUM-614) |
 | E-07 | No implementada | — | SCRUM-623 |
 | E-08 | Verificada | `scrum-75-solicitud-empresa-qa-2026-10-22.txt` | |
 | E-09 | Verificada | `scrum-84-seguimiento-estado-qa-2026-10-22.txt` | Mismo endpoint que el cliente |
@@ -93,7 +93,7 @@ cobertura de implementación = (verificadas + pendientes de QA) / total
 | T-02 | Pendiente de QA | — | `scrum-99` no llama a la activación (`/v1/auth/password/setup`) |
 | T-03 | Verificada | `mvp-qa-sprint4-2026-10-18.txt` | |
 | T-04 | Pendiente de QA | — | Igual que C-03 |
-| T-05 | No implementada | — | SCRUM-609 |
+| T-05 | Parcial | quickpatch-identity#27 | `PATCH /v1/users/me` en QA (identity 0.6.0, SCRUM-611); faltan las pantallas (SCRUM-612 y SCRUM-613) y QA (SCRUM-614) |
 | T-06 | No implementada | — | SCRUM-623 |
 | T-07 | Verificada | `scrum-incremento-tecnico-qa-2026-10-22.txt` (`PUT /availability` y `/coverage`) | |
 | T-08 | Verificada | `scrum-78-qa-2026-10-22.txt` | |
@@ -102,12 +102,12 @@ cobertura de implementación = (verificadas + pendientes de QA) / total
 | T-11 | Verificada | `scrum-96-evidencia-qa-2026-10-22.txt` | |
 | T-12 | Verificada | `scrum-483-chat-qa-2026-10-22.txt` | |
 | T-13 | Verificada | `scrum-458-geocodificacion-buzon-qa-2026-10-22.txt` | |
-| T-14 | Pendiente de QA | — | Ninguna evidencia llama a `GET /v1/technicians/me/service-requests`; QA citó `scrum-incremento-tecnico`, que no lo hace (SCRUM-102) |
+| T-14 | Pendiente de QA | — | Ninguna evidencia llama a `GET /v1/technicians/me/service-requests`; QA citó `scrum-incremento-tecnico`, que no lo hace (SCRUM-102). Desde el 27 de octubre la lista trae la calificación de cada servicio (SCRUM-100) |
 | T-15 | No implementada | — | SCRUM-45 |
 | P-01 | Verificada | `scrum-56-registro-tecnico-qa-2026-10-22.txt` | |
 | P-02 | Verificada | `mvp-qa-sprint4-2026-10-18.txt` | |
 | P-03 | Pendiente de QA | — | Igual que C-03 |
-| P-04 | No implementada | — | SCRUM-609 |
+| P-04 | Parcial | quickpatch-identity#27 | `PATCH /v1/users/me` en QA (identity 0.6.0, SCRUM-611); faltan las pantallas (SCRUM-612 y SCRUM-613) y QA (SCRUM-614) |
 | P-05 | No implementada | — | SCRUM-623 |
 | P-06 | Verificada | `scrum-99-equipo-proveedor-qa-2026-10-22.txt` | |
 | P-07 | Verificada | `scrum-99-equipo-proveedor-qa-2026-10-22.txt` | |
@@ -147,6 +147,7 @@ cobertura de implementación = (verificadas + pendientes de QA) / total
    - T-14: el historial.
    - C-03, E-05, T-04, P-03, A-03 y AP-02: cerrar sesión, que es de la interfaz.
 3. **Calificación y reputación (C-14, E-16 y A-09):** pasan de "No" a "Parcial", porque el backend quedó fusionado el 27 de octubre (SCRUM-85 y SCRUM-498).
+4. **Edición del perfil (C-04, E-06, T-05 y P-04):** pasan de "No implementada" a "Parcial", porque `PATCH /v1/users/me` quedó en QA el 27 de octubre (SCRUM-611). El avance y la cobertura no cambian: una parcial no cuenta en ninguno de los dos.
 
 ## Qué sube el avance en el Sprint 5
 

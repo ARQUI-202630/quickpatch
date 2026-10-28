@@ -32,7 +32,7 @@ Una funcionalidad que comparten varios usuarios se repite en cada uno, porque el
 | C-01 | Cuenta | Registrarse con correo y contraseña | RF-01 | SCRUM-21 | `registro_page` → `POST /v1/auth/register/client` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | No | No | No |
 | C-02 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` → `POST /v1/auth/login` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | No | No | No |
 | C-03 | Cuenta | Cerrar sesión | — | — | `cuenta_page`, botón "Cerrar sesión" | Sí | No | No | No | Sí (cerrar sesión es de la app, sin prueba de interfaz en QA) |
-| C-04 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla; contrato `PATCH /v1/users/me` en diseño (SCRUM-610) | No | No | No | No | Sí (SCRUM-609; contrato SCRUM-610 y pantalla UI) |
+| C-04 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla; `PATCH /v1/users/me` en QA desde el 27 de octubre (identity 0.6.0, SCRUM-611) | Parcial | No | No | No | Sí (pantallas SCRUM-612 y SCRUM-613, QA SCRUM-614) |
 | C-05 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla; contrato en diseño (SCRUM-624) | No | No | No | No | Sí (SCRUM-623; contrato SCRUM-624 y pantalla UI) |
 | C-06 | Solicitudes | Crear una solicitud con GPS o dirección escrita | RF-07 | SCRUM-27 | `nueva_solicitud_page` → `location-preview` y `POST /v1/service-requests` | Sí | Sí ([scrum-75-solicitud-empresa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-2026-10-22.txt)) | No | No | No |
 | C-07 | Solicitudes | Ver sus solicitudes y el estado en tiempo real | RF-11 | SCRUM-31 | `mis_solicitudes_page`, `detalle_solicitud_page` y canal `/v1/realtime` | Sí | Sí ([scrum-84-seguimiento-estado-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt)) | No | No | No |
@@ -53,7 +53,7 @@ Una funcionalidad que comparten varios usuarios se repite en cada uno, porque el
 | E-03 | Cuenta | Activar la cuenta por invitación (definir la contraseña) | RF-06 | SCRUM-26 | `activar_cuenta_page` → `POST /v1/auth/password/setup` | Sí | Sí ([scrum-68-cuenta-corporativa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-68-cuenta-corporativa-qa-2026-10-22.txt)) | No | No | No |
 | E-04 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | No | No | No |
 | E-05 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | Sí | No | No | No | Sí (cerrar sesión es de la app, sin prueba de interfaz en QA) |
-| E-06 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | No | No | No | No | Sí (SCRUM-609; contrato SCRUM-610 y pantalla UI) |
+| E-06 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Igual que C-04 | Parcial | No | No | No | Sí (pantallas SCRUM-612 y SCRUM-613, QA SCRUM-614) |
 | E-07 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | No | No | No | No | Sí (SCRUM-623; contrato SCRUM-624 y pantalla UI) |
 | E-08 | Solicitudes | Crear una solicitud para una sede, a nombre de la empresa | RF-08 | SCRUM-28 | `nueva_solicitud_page` con el nombre de la sede | Sí | Sí ([scrum-75-solicitud-empresa-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-75-solicitud-empresa-qa-2026-10-22.txt)) | No | No | No |
 | E-09 | Solicitudes | Ver las solicitudes y el estado en tiempo real | RF-11 | SCRUM-31 | Las mismas pantallas de C-07 | Sí | Sí ([scrum-84-seguimiento-estado-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt)) | No | No | No |
@@ -73,7 +73,7 @@ Una funcionalidad que comparten varios usuarios se repite en cada uno, porque el
 | T-02 | Cuenta | Activar la cuenta creada por su proveedor | RF-16 | SCRUM-36 | `activar_cuenta_page` | Sí | No | No | No | Sí (scrum-99 no llama a activación /v1/auth/password/setup en QA) |
 | T-03 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | No | No | No |
 | T-04 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | Sí | No | No | No | Sí (cerrar sesión es de la app, sin prueba de interfaz en QA) |
-| T-05 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | No | No | No | No | Sí (SCRUM-609; contrato SCRUM-610 y pantalla UI) |
+| T-05 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Igual que C-04 | Parcial | No | No | No | Sí (pantallas SCRUM-612 y SCRUM-613, QA SCRUM-614) |
 | T-06 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | No | No | No | No | Sí (SCRUM-623; contrato SCRUM-624 y pantalla UI) |
 | T-07 | Disponibilidad | Cambiar la disponibilidad y la cobertura por localidades | RF-13 | SCRUM-33 | `disponibilidad_page` → `/v1/technicians/me/availability` y `coverage` | Sí | Sí ([scrum-incremento-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt)) | No | No | No |
 | T-08 | Ofertas | Recibir la oferta y aceptarla o rechazarla antes de 3 minutos | RF-10 | SCRUM-30 | `/v1/matching/offers`, `accept` y `reject` | Sí | Sí ([scrum-78-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt)) | No | No | No |
@@ -92,7 +92,7 @@ Una funcionalidad que comparten varios usuarios se repite en cada uno, porque el
 | P-01 | Cuenta | Registrarse con datos y documentos, en estado pendiente de verificación | RF-02 | SCRUM-22 | `registro_tecnico_page` | Sí | Sí ([scrum-56-registro-tecnico-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt)) | No | No | No |
 | P-02 | Cuenta | Iniciar sesión, con bloqueo tras 5 intentos | RF-03 | SCRUM-23 | `inicio_sesion_page` | Sí | Sí ([mvp-qa-sprint4-2026-10-18.txt](../../tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt)) | No | No | No |
 | P-03 | Cuenta | Cerrar sesión | — | — | `cuenta_page` | Sí | No | No | No | Sí (cerrar sesión es de la app, sin prueba de interfaz en QA) |
-| P-04 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Sin pantalla (SCRUM-610) | No | No | No | No | Sí (SCRUM-609; contrato SCRUM-610 y pantalla UI) |
+| P-04 | Cuenta | Editar el perfil propio | — | SCRUM-609 | Igual que C-04 | Parcial | No | No | No | Sí (pantallas SCRUM-612 y SCRUM-613, QA SCRUM-614) |
 | P-05 | Cuenta | Recuperar la contraseña | — | SCRUM-623 | Sin pantalla (SCRUM-624) | No | No | No | No | Sí (SCRUM-623; contrato SCRUM-624 y pantalla UI) |
 | P-06 | Equipo | Registrar técnicos de su equipo | RF-16 | SCRUM-36 | `alta_tecnico_page` → `POST /v1/providers/me/technicians` e invitación | Sí | Sí ([scrum-99-equipo-proveedor-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt)) | No | No | No |
 | P-07 | Equipo | Ver y administrar su equipo | RF-16 | SCRUM-36 | `equipo_page` | Sí | Sí ([scrum-99-equipo-proveedor-qa-2026-10-22.txt](../../tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt)) | No | No | No |
@@ -199,15 +199,15 @@ Los 33 RF del SRS V5.6 quedan en al menos una fila.
 | **Funcionalidades en Inventario** | **78** | 100.0% | 8 perfiles de usuario cubriendo los 33 RF del SRS V5.6 |
 | **Implementadas y Verificadas (Avance Real)** | **51** | **65.4%** | Con evidencia real en QA que llama y comprueba la funcionalidad (`tests/`) |
 | **Implementadas, Pendientes de QA** | **13** | 16.7% | Código implementado; pendiente corrida o prueba de interfaz en QA |
-| **Parciales** | **4** | 5.1% | Backend fusionado sin UI completa (C-14, E-16, A-09) o flujo E2E sin paso final (X-05) |
-| **No Implementadas** | **10** | 12.8% | Sin código implementado (perfil propio, recuperar password, pagos recibidos) |
+| **Parciales** | **8** | 10.3% | Backend sin UI completa (C-14, E-16, A-09 y la edición del perfil C-04, E-06, T-05, P-04) o flujo E2E sin paso final (X-05) |
+| **No Implementadas** | **6** | 7.7% | Sin código implementado (recuperar la contraseña y pagos recibidos) |
 | **Cobertura de Implementación (Verificadas + Pendientes)** | **64** | **82.1%** | Total de funcionalidades ya desarrolladas en el sistema |
 | **En Producción (VM3)** | **0** | **0.0%** | Producción opera con `main` del 8 de octubre; 0 funcionalidades finales utilizables |
-| **Con Mock (Pasarela simulada)** | **2** | 2.6% | Pagos de cliente hogar (C-12) y corporativo (E-14) bajo sandbox Wompi |
+| **Con Mock (Pasarela simulada)** | **2** | 2.6% | Pagos de cliente hogar (C-12) y corporativo (E-14) con la pasarela simulada de Payments (ADR-009 modificado); aprobado y rechazado en `scrum-117-pago-qa-2026-10-22.txt` |
 
 ## Hallazgos del inventario
 
 1. **Funcionalidades básicas sin HU:** cerrar sesión y el buzón de notificaciones existen en la app y en el panel, pero no tienen una HU propia. Se dejan con "—" para no inventar un número; si se crea una HU, se agrega aquí.
-2. **La app declara rutas que todavía no usa:** la calificación (`/rating`) y los pagos recibidos (`/v1/payments/received`) están en `api_endpoints.dart`, pero ninguna pantalla las llama y el backend no las tiene. Cuentan como pendientes, no como desarrolladas.
-3. **Sin pantalla:** editar el perfil (SCRUM-609) y recuperar la contraseña (SCRUM-623) siguen en diseño de contrato.
+2. **La app declara rutas que todavía no usa:** la calificación (`/rating`) y los pagos recibidos (`/v1/payments/received`) están en `api_endpoints.dart`, pero ninguna pantalla las llama. La calificación ya está en el backend (SCRUM-85, en QA) y cuenta como parcial; los pagos recibidos no tienen backend y cuentan como no implementados.
+3. **Sin pantalla:** editar el perfil (SCRUM-609) ya tiene backend en QA (SCRUM-611) y espera las pantallas; recuperar la contraseña (SCRUM-623) sigue en diseño de contrato.
 4. **Categorías del tenant:** el administrador las crea por API (`/v1/catalog/admin/categories`), pero el panel no tiene pantalla y el SRS no tiene un RF para ello. No se agrega una fila; queda como pregunta para la PO.
