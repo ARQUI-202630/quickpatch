@@ -5,13 +5,14 @@ Script idempotente que carga en QA o en producción un juego de datos de demostr
 | Archivo | Qué es |
 |---|---|
 | `cargar-datos-demo.py` | El script (Python 3, sin dependencias) |
-| `juego-datos.json` | El juego de datos: clientes, empresa, técnicos, cobertura y solicitudes de ejemplo. Sin contraseñas |
+| `juego-datos.json` | El juego de datos: categorías base, clientes, empresa, técnicos, cobertura y solicitudes de ejemplo. Sin contraseñas |
 
 ## Qué carga
 
+- Las 6 categorías base del catálogo, las mismas de QA: Aire acondicionado, Cerrajería, Eléctrico, Electrodomésticos, Pintura y Plomería. Se crean solo las que falten (`POST /v1/catalog/admin/categories`). Una categoría que existe inactiva no se reactiva: eso lo decide el administrador del tenant. Producción no tenía ninguna el 28 de octubre de 2026.
 - 2 clientes, 1 empresa cliente con su usuario y 2 técnicos, aprobados y con cobertura en las 20 localidades de Bogotá. En QA los técnicos quedan además `disponible`. **En producción no se marcan disponibles** (siguen en `no_disponible`): marcarlos haría que Matching les ofreciera trabajo de clientes reales y reintentara solicitudes en espera (RN-M10). Para una demostración en producción se ponen disponibles a mano justo antes y se vuelven a bajar después.
 - 2 solicitudes de ejemplo con direcciones de Bogotá, con la descripción `[DEMO] …`.
-- Los correos usan el dominio `demo.quickpatch.test`. Las categorías se buscan por nombre en el catálogo del ambiente; si falta alguna, el script se detiene y lista las que existen.
+- Los correos usan el dominio `demo.quickpatch.test`. Las categorías se buscan por nombre en el catálogo del ambiente después de sembrarlas; si falta alguna, el script se detiene y lista las que existen.
 
 El juego es un punto de partida: la definición final de los datos es la tarea SCRUM-633 y se ajusta en `juego-datos.json`.
 
@@ -28,7 +29,10 @@ Las credenciales van en el entorno, nunca en el repositorio ni en este archivo:
 python3 tests/datos-demo/cargar-datos-demo.py --ambiente qa --simular       # muestra el plan, no escribe nada
 python3 tests/datos-demo/cargar-datos-demo.py --ambiente qa                 # carga en QA
 python3 tests/datos-demo/cargar-datos-demo.py --ambiente produccion --confirmar-produccion
+python3 tests/datos-demo/cargar-datos-demo.py --ambiente produccion --confirmar-produccion --solo-categorias
 ```
+
+Con `--solo-categorias` solo crea las categorías base. No crea cuentas ni solicitudes de demostración y no necesita `QP_DEMO_PASSWORD`. Así se siembra el catálogo de producción después de la promoción (SCRUM-518). Contra QA, el 28 de octubre de 2026 respondió «6 ya existían, 0 con error».
 
 Hace falta la VPN: el script entra por la IP de VM1 con el `Host` del ambiente, como la app móvil.
 
