@@ -139,7 +139,7 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scru
 
 La primera corrida encontró otros dos casos. Crear solo con la dirección no repetía el rechazo de la vista previa: Cali y Villavicencio daban 201 con un punto en Soacha o al norte de Bogotá. Además, un GPS en Soacha (4,5794; -74,2168) creaba la solicitud porque cae dentro del rectángulo de RN-SR9. SCRUM-636 los corrigió: al crear, el punto también debe estar en una de las 20 localidades. Esos casos pasaron a las carpetas 2 y 3 con 422.
 
-**Evidencia:** `evidencias/scrum-600-fuera-de-bogota-qa-2026-10-28.txt`, contra QA el 28 de octubre de 2026: 24 peticiones y 59 aserciones, sin fallos, con el resumen de los hallazgos al inicio. Es anterior a SCRUM-636: se repite cuando ServiceRequest con la corrección llegue a QA.
+**Evidencia:** `evidencias/scrum-600-fuera-de-bogota-qa-2026-10-28.txt`, contra QA el 28 de octubre de 2026: 24 peticiones y 59 aserciones, sin fallos, con el resumen de los hallazgos al inicio. Es anterior a SCRUM-636. La repetición con la corrección en QA es `evidencias/scrum-636-cobertura-localidades-qa-2026-10-28.txt`: 21 peticiones y 62 aserciones, sin fallos.
 
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
