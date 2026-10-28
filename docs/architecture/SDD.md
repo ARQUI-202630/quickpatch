@@ -1743,16 +1743,16 @@ infrastructure/   persistence/, messaging/, scheduling/, config/ (configuración
 5. Las pruebas reflejan la capa que prueban (`tests/unit/.../<Capa>/`).
 6. Reorganizar paquetes no cambia contratos REST ni eventos: el refactor se acepta solo con el CI en verde.
 
-**Estado al 25 de octubre de 2026** (revisión sobre `develop` de cada repositorio):
+**Estado al 27 de octubre de 2026** (revisión sobre `develop` de cada repositorio, después de SCRUM-587 y SCRUM-588):
 
 | Servicio | Cumple | Diferencias por corregir | Subtarea |
 |---|---|---|---|
 | Identity | Sí | — | SCRUM-587 (verificación) |
 | Catalog | Sí | — | SCRUM-587 (verificación) |
 | ServiceRequest | Sí | — | SCRUM-587 (verificación) |
-| Payments | Sí | `Domain/AssemblyMarker.cs` suelto en la raíz del proyecto (se puede mover a `Common/`) | SCRUM-588 |
-| Communication | No | `Api` está organizado por funcionalidad (`Chat/`, `Inbox/`, `Realtime/`) en lugar de `Endpoints/`, `Http/` y `Security/`. `Api/Realtime` mezcla el endpoint con adaptadores (`ConnectionRegistry`, `WebSocketClient`, `TokenValidator`). `Application` no tiene `Abstractions/` ni `Events/` (los puertos están junto a los casos de uso y `EventEnvelope` en `Realtime/`). Las pruebas unitarias están por funcionalidad y no por capa. | SCRUM-588 |
-| Matching | Parcial | `api/` es plano: controllers, `Problems`, `CorrelationIdFilter`, `ApiExceptionHandler` y `SecurityConfig` en el mismo paquete; van a `controllers/`, `http/` y `security/`. | SCRUM-588 |
+| Payments | Sí | — (`AssemblyMarker` movido a `Domain/Common`, quickpatch-payments#12) | SCRUM-588 |
+| Communication | Sí | — (quickpatch-communication#19): `Api` en `Endpoints/` y `Http/`, puertos en `Application/Abstractions`, contratos en `Application/Events` y pruebas por capa. `Api/Realtime` agrupa el canal WebSocket (sesión, registro de conexiones y validación del token de la primera trama), que es entrada del API (ADR-023) | SCRUM-588 |
+| Matching | Sí | — (quickpatch-matching#19): `api/` en `controllers/`, `http/` y `security/` | SCRUM-588 |
 | Ranking | Sí | — (implementado en SCRUM-498 con la convención: `Domain/Reputation`, `Application`, `Infrastructure/Persistence` y `Infrastructure/Messaging`) | — |
 | Actors | — | Esqueleto: sigue la convención cuando se implemente. | — |
 
