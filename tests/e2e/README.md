@@ -134,13 +134,12 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scru
   --insecure --env-var baseUrl=https://qa.quickpatch.internal --reporters cli --color off
 ```
 
-1. **Lo que cumple:** la vista previa rechaza con 422 `ubicacion-fuera-de-cobertura` una dirección escrita de Cali, Soacha, Chía, Villavicencio y El Poblado (Medellín), y con 422 `direccion-no-encontrada` la que no tiene coincidencia. Un punto de GPS en Medellín, Cali, Tunja y Chía da 422 `ubicacion-fuera-de-cobertura`. Una dirección de Bogotá sí se ubica (control).
-2. **Límites (carpeta 4):** la prueba encontró tres casos que la regla no cubre. Las aserciones describen lo que QA responde hoy, no lo esperado, para que el CI de los release no falle por un defecto ya conocido; cuando se corrijan, la colección se actualiza con la corrección. Cada solicitud que llega a crearse se cancela en el paso siguiente.
-   - El geocodificador empareja por el nombre de la calle e ignora la ciudad escrita: una calle de Medellín, Bucaramanga o Tunja que también existe en Bogotá se ubica en Bogotá.
-   - Crear la solicitud solo con la dirección de Cali o de Villavicencio da 201, aunque la vista previa da 422: el punto cae en Soacha o al norte de Bogotá, dentro del rectángulo de RN-SR9.
-   - El rectángulo de RN-SR9 incluye parte de Soacha: un GPS en 4,5794; -74,2168 crea la solicitud.
+1. **Lo que cumple:** la vista previa rechaza con 422 `ubicacion-fuera-de-cobertura` una dirección escrita de Cali, Soacha, Chía, Villavicencio y El Poblado (Medellín), y con 422 `direccion-no-encontrada` la que no tiene coincidencia. Crear solo con la dirección de Cali o de Villavicencio también da 422. Un punto de GPS en Soacha, Medellín, Cali, Tunja y Chía da 422 `ubicacion-fuera-de-cobertura`. Una dirección de Bogotá sí se ubica (control). Ningún caso crea una solicitud.
+2. **Límite documentado (carpeta 4, SRS 2.3.1):** el geocodificador empareja por el nombre de la calle e ignora la ciudad escrita, así que una calle de Medellín, Bucaramanga o Tunja que también existe en Bogotá se ubica en Bogotá. Lo mitiga la confirmación del pin en la app (ADR-024).
 
-**Evidencia:** `evidencias/scrum-600-fuera-de-bogota-qa-2026-10-28.txt`, contra QA el 28 de octubre de 2026: 24 peticiones y 59 aserciones, sin fallos, con el resumen de los hallazgos al inicio.
+La primera corrida encontró otros dos casos. Crear solo con la dirección no repetía el rechazo de la vista previa: Cali y Villavicencio daban 201 con un punto en Soacha o al norte de Bogotá. Además, un GPS en Soacha (4,5794; -74,2168) creaba la solicitud porque cae dentro del rectángulo de RN-SR9. SCRUM-636 los corrigió: al crear, el punto también debe estar en una de las 20 localidades. Esos casos pasaron a las carpetas 2 y 3 con 422.
+
+**Evidencia:** `evidencias/scrum-600-fuera-de-bogota-qa-2026-10-28.txt`, contra QA el 28 de octubre de 2026: 24 peticiones y 59 aserciones, sin fallos, con el resumen de los hallazgos al inicio. Es anterior a SCRUM-636: se repite cuando ServiceRequest con la corrección llegue a QA.
 
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 

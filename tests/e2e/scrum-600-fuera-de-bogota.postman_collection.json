@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "QUICKPATCH — SCRUM-600 Dirección fuera de Bogotá contra QA",
-    "description": "Restricción geográfica a Bogotá (R6 del SAD, RN-SR9 del DD, SRS 2.3.1) contra QA. Una dirección escrita fuera de Bogotá la rechaza la vista previa con 422 ubicacion-fuera-de-cobertura (o direccion-no-encontrada si el geocodificador no la reconoce); un punto de GPS fuera del área de cobertura también da 422. La carpeta 4 deja por escrito tres límites encontrados en QA: el geocodificador ignora la ciudad escrita cuando la calle existe en Bogotá (1); crear solo con la dirección acepta Cali y Villavicencio, que la vista previa rechaza, con un punto dentro del rectángulo de cobertura (2); y ese rectángulo incluye parte de Soacha (3). No necesita el administrador: el cliente se registra solo y cada solicitud que se crea se cancela. Variable: baseUrl. Correr con --reporters cli: el reporte JSON de Newman guarda tokens.",
+    "description": "Restricción geográfica a Bogotá (R6 del SAD, RN-SR9 del DD, SRS 2.3.1) contra QA. Una dirección escrita fuera de Bogotá la rechaza la vista previa con 422 ubicacion-fuera-de-cobertura (o direccion-no-encontrada si el geocodificador no la reconoce); un punto de GPS fuera del área de cobertura o de las 20 localidades también da 422, y crear solo con la dirección rechaza lo mismo que la vista previa (SCRUM-636). La carpeta 4 afirma el límite documentado: el geocodificador ignora la ciudad escrita cuando la calle existe en Bogotá. No necesita el administrador: el cliente se registra solo y ningún caso crea una solicitud. Variable: baseUrl. Correr con --reporters cli: el reporte JSON de Newman guarda tokens.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -546,7 +546,7 @@
       ]
     },
     {
-      "name": "2. Crear la solicitud solo con la dirección: sin coincidencia no se crea",
+      "name": "2. Crear la solicitud solo con la dirección: se rechaza igual que en la vista previa",
       "item": [
         {
           "name": "Cali sin coincidencia, solo con la dirección → 422 dirección no encontrada",
@@ -598,12 +598,168 @@
               }
             }
           ]
+        },
+        {
+          "name": "Cali, solo con la dirección → 422 fuera de cobertura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Calle 5 # 38-70, Cali, Valle del Cauca\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: solo en Bogotá', () => pm.expect(pm.response.json().detail).to.include('solo en Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Villavicencio, solo con la dirección → 422 fuera de cobertura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Carrera 3 # 14-20, Villavicencio, Meta\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: solo en Bogotá', () => pm.expect(pm.response.json().detail).to.include('solo en Bogotá'));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
       "name": "3. GPS fuera de Bogotá: RN-SR9 rechaza el punto",
       "item": [
+        {
+          "name": "GPS en Soacha, dentro del rectángulo → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Centro, Soacha\",\n  \"location\": {\n    \"latitude\": 4.5794,\n    \"longitude\": -74.2168\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: solo en Bogotá', () => pm.expect(pm.response.json().detail).to.include('solo en Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "GPS en Medellín → 422",
           "request": {
@@ -815,10 +971,10 @@
       ]
     },
     {
-      "name": "4. Límites conocidos de la regla (hallazgos de SCRUM-600)",
+      "name": "4. Límite documentado: una calle de Bogotá con otra ciudad escrita (SRS 2.3.1)",
       "item": [
         {
-          "name": "HALLAZGO 1: una calle de Bogotá con Medellín escrita se ubica en Bogotá (Suba)",
+          "name": "LÍMITE: una calle de Bogotá con Medellín escrita se ubica en Bogotá (Suba)",
           "request": {
             "method": "POST",
             "header": [
@@ -872,7 +1028,7 @@
           ]
         },
         {
-          "name": "HALLAZGO 1: una calle de Bogotá con Bucaramanga escrita se ubica en Bogotá (Usaquén)",
+          "name": "LÍMITE: una calle de Bogotá con Bucaramanga escrita se ubica en Bogotá (Usaquén)",
           "request": {
             "method": "POST",
             "header": [
@@ -926,7 +1082,7 @@
           ]
         },
         {
-          "name": "HALLAZGO 1: una calle de Bogotá con Tunja escrita se ubica en Bogotá (La Candelaria)",
+          "name": "LÍMITE: una calle de Bogotá con Tunja escrita se ubica en Bogotá (La Candelaria)",
           "request": {
             "method": "POST",
             "header": [
@@ -974,309 +1130,6 @@
                   "  pm.expect(r.matchedAddress).to.include('Bogotá');",
                   "  pm.expect(r.locality.name).to.eql('La Candelaria');",
                   "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "HALLAZGO 2: Cali, que la vista previa rechaza, se crea con un punto en Soacha",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clienteToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "service-requests"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Calle 5 # 38-70, Cali, Valle del Cauca\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('201', () => pm.response.to.have.status(201));",
-                  "pm.test('creada en buscando_tecnico con un punto dentro del rectángulo de cobertura (vista previa: 422)', () => {",
-                  "  const s = pm.response.json();",
-                  "  pm.expect(s.status).to.eql('buscando_tecnico');",
-                  "  pm.expect(s.location.latitude).to.be.within(4.45, 4.85);",
-                  "  pm.expect(s.location.longitude).to.be.within(-74.25, -73.98);",
-                  "});",
-                  "pm.collectionVariables.set('solicitudCaliId', pm.response.json().id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Limpieza: el cliente cancela la solicitud de la prueba",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clienteToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudCaliId}}/cancel",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "service-requests",
-                "{{solicitudCaliId}}",
-                "cancel"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Limpieza de la prueba SCRUM-600.\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "HALLAZGO 2: Villavicencio, que la vista previa rechaza, se crea con un punto al norte de Bogotá",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clienteToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "service-requests"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Carrera 3 # 14-20, Villavicencio, Meta\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('201', () => pm.response.to.have.status(201));",
-                  "pm.test('creada en buscando_tecnico con un punto dentro del rectángulo de cobertura (vista previa: 422)', () => {",
-                  "  const s = pm.response.json();",
-                  "  pm.expect(s.status).to.eql('buscando_tecnico');",
-                  "  pm.expect(s.location.latitude).to.be.within(4.45, 4.85);",
-                  "  pm.expect(s.location.longitude).to.be.within(-74.25, -73.98);",
-                  "});",
-                  "pm.collectionVariables.set('solicitudVillavicencioId', pm.response.json().id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Limpieza: el cliente cancela la solicitud de la prueba",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clienteToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudVillavicencioId}}/cancel",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "service-requests",
-                "{{solicitudVillavicencioId}}",
-                "cancel"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Limpieza de la prueba SCRUM-600.\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "HALLAZGO 3: un punto de GPS en Soacha, dentro del rectángulo, crea la solicitud",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clienteToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "service-requests"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Centro, Soacha\",\n  \"location\": {\n    \"latitude\": 4.5794,\n    \"longitude\": -74.2168\n  }\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('201', () => pm.response.to.have.status(201));",
-                  "pm.test('creada en buscando_tecnico con un punto dentro del rectángulo de cobertura (GPS en Soacha)', () => {",
-                  "  const s = pm.response.json();",
-                  "  pm.expect(s.status).to.eql('buscando_tecnico');",
-                  "  pm.expect(s.location.latitude).to.be.within(4.45, 4.85);",
-                  "  pm.expect(s.location.longitude).to.be.within(-74.25, -73.98);",
-                  "});",
-                  "pm.collectionVariables.set('solicitudSoachaId', pm.response.json().id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Limpieza: el cliente cancela la solicitud de la prueba",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "X-Correlation-Id",
-                "value": "{{$guid}}"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{clienteToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitudSoachaId}}/cancel",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "service-requests",
-                "{{solicitudSoachaId}}",
-                "cancel"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Limpieza de la prueba SCRUM-600.\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));"
                 ]
               }
             }
