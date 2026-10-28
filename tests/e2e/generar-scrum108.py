@@ -60,16 +60,31 @@ coleccion = base.coleccion(
                 req(
                     "1.2 Admin lista técnicos aprobados",
                     "GET",
-                    "/v1/admin/technicians?verificationStatus=aprobado",
+                    "/v1/admin/technicians?verificationStatus=aprobado&size=100",
                     [CORR, auth("adminToken")],
+                    # El listado va del más antiguo al más reciente y los aprobados se acumulan en QA con cada corrida
+                    # (y con los datos de demostración): el técnico recién aprobado queda en la última página. Se recorren
+                    # las páginas de 100 hasta encontrarlo.
                     pruebas=[
-                        "pm.test('[Filtro status=aprobado] 200 OK y técnico aprobado listado', () => {",
-                        "  pm.response.to.have.status(200);",
-                        "  const json = pm.response.json();",
-                        "  pm.expect(json.items).to.be.an('array');",
-                        "  const app = json.items.find(t => (t.userId || t.id) === pm.collectionVariables.get('tecnicoId'));",
-                        "  pm.expect(app).to.exist;",
-                        "  pm.expect(app.verificationStatus).to.eql('aprobado');",
+                        "pm.test('[Filtro status=aprobado] 200 OK y técnico aprobado listado', (done) => {",
+                        "  try {",
+                        "    pm.response.to.have.status(200);",
+                        "    const id = pm.collectionVariables.get('tecnicoId');",
+                        "    const buscar = (json, pagina) => {",
+                        "      try {",
+                        "        pm.expect(json.items).to.be.an('array');",
+                        "        const app = json.items.find(t => (t.userId || t.id) === id);",
+                        "        if (app) { pm.expect(app.verificationStatus).to.eql('aprobado'); return done(); }",
+                        "        if (pagina * 100 >= json.totalItems) { return done(new Error('El técnico aprobado no aparece en ninguna de las ' + pagina + ' páginas')); }",
+                        "        pm.sendRequest({",
+                        "          url: pm.variables.replaceIn('{{baseUrl}}') + '/api/v1/admin/technicians?verificationStatus=aprobado&size=100&page=' + (pagina + 1),",
+                        "          method: 'GET',",
+                        "          header: { 'Authorization': 'Bearer ' + pm.variables.get('adminToken'), 'X-Correlation-Id': pm.variables.replaceIn('{{$guid}}') }",
+                        "        }, (err, res) => { if (err) { return done(err); } buscar(res.json(), pagina + 1); });",
+                        "      } catch (e) { done(e); }",
+                        "    };",
+                        "    buscar(pm.response.json(), 1);",
+                        "  } catch (e) { done(e); }",
                         "});",
                     ],
                 ),
@@ -96,7 +111,7 @@ coleccion = base.coleccion(
                 req(
                     "2.2 Admin verifica que técnico aprobado ya no está en pendientes",
                     "GET",
-                    "/v1/admin/technicians?verificationStatus=pendiente",
+                    "/v1/admin/technicians?verificationStatus=pendiente&size=100",
                     [CORR, auth("adminToken")],
                     pruebas=[
                         "pm.test('[Consistencia] El técnico aprobado ya no aparece en pendientes', () => {",
