@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.6 |
+| **Versión** | 4.7 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -344,28 +344,29 @@ El toolchain está fijado por `docs/governance/TOOLCHAIN.md`: .NET SDK 10.0.401,
 
 ### 4.3 Estado real de QA y de producción (medido el 26 de octubre de 2026)
 
-Foto de lo que corre hoy, tomada con comandos de solo lectura desde VM1 (SCRUM-553). Sirve para saber qué falta en producción antes de promover el MVP (SCRUM-518).
+Foto de lo que corre hoy, tomada con comandos de solo lectura desde VM1 (SCRUM-553). Producción se volvió a medir el 28 de octubre, después de crear los topics de Kafka y los Deployment de Payments y Communication. Sirve para saber qué falta en producción antes de promover el MVP (SCRUM-518).
 
 | | Producción (VM3, VM4, VM6) | QA (VM2, VM5, VM7) |
 |---|---|---|
-| Microservicios en k3s | 4: Catalog, Identity, Matching y ServiceRequest | 6: los 4 anteriores, Communication y Payments |
-| Pods | 4 de 4 en `1/1 Running`, 0 reinicios | 6 de 6 en `1/1 Running`; Communication con 1 reinicio |
-| `Secret` y `ConfigMap` | Los de los 4 servicios, más los `Secret` de Payments y Communication (sin Deployment ni `ConfigMap`) | Los de los 6 servicios |
-| Ingress | Catalog, Identity y ServiceRequest | Catalog, Communication, Identity, Matching y ServiceRequest |
+| Microservicios en k3s | 6 Deployment: Catalog, Identity, Matching y ServiceRequest en servicio, y Communication y Payments esperando su imagen (`:pendiente`) | 6: los mismos, todos en servicio |
+| Pods | 4 en `1/1 Running`, 0 reinicios; Communication y Payments en `Init:ImagePullBackOff` hasta que el pipeline publique su imagen | 6 de 6 en `1/1 Running`; Communication con 1 reinicio |
+| `Secret` y `ConfigMap` | Los de los 6 servicios | Los de los 6 servicios |
+| Ingress | Catalog, Communication, Identity y ServiceRequest, más las `IngressRoute` de `payments` y `communication-chat` | Catalog, Communication, Identity, Matching y ServiceRequest |
 | Bases de PostgreSQL | Las 8 bases de servicio, incluidas `db_payments` y `db_communication`, con sus roles `*_migrator` y `*_app` | Las mismas 8 |
 | Nominatim | VM4: `nominatim` y `proxy`, en servicio desde el 27 de octubre (el mismo mapa que QA) | VM5: `nominatim` y `proxy`, en servicio |
-| Kafka | 2 topics (`catalog.category-changed` y `service-request.created`) y 2 grupos de consumidores | 17 topics y 6 grupos de consumidores |
+| Kafka | 17 topics (los mismos que tenía QA el 26 de octubre; 15 se crearon el 28 de octubre) y 2 grupos de consumidores | 19 topics (se agregaron `service-request.rated` y `ranking.technician-reputation-changed` el 28 de octubre) y 6 grupos de consumidores |
 | Garage | En servicio (VM6) | En servicio (VM7) |
-| Panel Angular | Página provisional | Build real de `release/0.5.2` |
+| Panel Angular | Página provisional | Build real de `release/0.5.3` |
 | Gateway | Nginx propio en VM3 (ADR-028) | Nginx propio en VM2 (ADR-028) |
 
 Lo que falta para que producción iguale a QA:
 
-- **Payments y Communication.** Las bases, los roles y los `Secret` ya existen en producción (SCRUM-519, 27 de octubre); faltan sus `ConfigMap`, Ingress, Deployment y los topics de Kafka que usan, que llegan con la promoción (SCRUM-518).
-- **Actors y Ranking** no están desplegados en ningún ambiente: sus bases y roles existen, pero no tienen manifiesto (sección 5.3).
-- **Topics de Kafka** del incremento (15 más en producción) con `deploy-kafka.yml`.
-- **Panel real** de producción: el job de `quickpatch-web` en `main` no existe todavía.
-- **Respaldo previo y tope de pool** antes de migrar (SCRUM-521, secciones 5.7 y 9.2).
+- **Payments y Communication.** Tienen en producción las bases, los roles, los `Secret`, el `ConfigMap`, el `Service`, la ruta de Traefik y el `Deployment` con la imagen `:pendiente` (SCRUM-519 y SCRUM-518, 27 y 28 de octubre). Falta que el pipeline publique su imagen con la promoción de `release/*` a `main` (SCRUM-522), y después de la primera migración, `aplicar-roles-db.yml` y un reinicio. Los manifiestos se aplicaron con `ref=release/0.2.0` (Payments) y `ref=release/0.3.2` (Communication), porque `main` de esos repositorios todavía no tiene `deploy/k8s`; son idénticos a los de `develop`.
+- **Actors y Ranking** no están desplegados en ningún ambiente: sus bases y roles existen, pero no tienen manifiesto (sección 5.3). Ranking tiene `db/roles.sql`, pero no `deploy/k8s`, ni ramas `release/*` (el CI no ha publicado su imagen), y no está en las listas de `aplicar-roles-db.yml` ni de `primer-despliegue-servicios.yml`: para desplegarlo en QA hace falta su manifiesto, un release y esas dos entradas.
+- **Topics de Kafka.** Producción tiene los 17 de QA del 26 de octubre. El `apps/kafka` que fija `develop` trae 19; los dos últimos (`service-request.rated` y `ranking.technician-reputation-changed`, de la calificación, ADR-027) se crearon solo en QA y se crearán en producción cuando se promueva esa función.
+- **Panel real** de producción: el job de `quickpatch-web` ya publica en VM3 al hacer push a `main` (`quickpatch-web#25`), pero `main` de `web` sigue en el 23 de septiembre. Falta promover el release y, antes, repetir `humo-frontends.yml` y `pruebas-sistema.yml`, porque el panel llegó a QA después de su última corrida.
+- **Categorías de servicio.** `db_catalog` de producción tiene 0; hay que decidir cómo se siembran antes de abrir el servicio.
+- **Respaldo previo a la migración.** El respaldo diario está verificado y el tope de pool aplicado (SCRUM-521); queda correr el respaldo a mano justo antes de migrar.
 
 Las imágenes de los servicios se etiquetan por el hash de su contenido (`t-<árbol>`, sección 6.1), así que la versión de cada servicio se ve en el release de su repositorio y no en el nombre de la imagen.
 
@@ -560,7 +561,7 @@ Nominatim convierte en coordenadas la dirección que escribe el Cliente cuando n
 
 Kafka corre en un solo nodo por ambiente (VM6 en producción, VM7 en QA; R10), con `replicationFactor = 1`. El playbook `operar-kafka-grupos.yml` reúne las tres operaciones del día a día.
 
-**Retención.** Cada topic se crea con `retention.ms` propio, tomado de `topics.yaml` del repositorio `quickpatch-kafka`: hoy 168 horas (7 días) en los 17 topics de QA y en los 2 de producción, medido el 26 de octubre de 2026. La variable `kafka_retencion_horas` de `group_vars` (168 en producción, 24 en QA) es solo el valor por defecto del broker y aplica a un topic creado sin `retention.ms`. Cambiar la retención de un topic existente se hace a mano con `kafka-configs.sh --alter` y se refleja en `topics.yaml`; `deploy-kafka.yml` no modifica los topics que ya existen.
+**Retención.** Cada topic se crea con `retention.ms` propio, tomado de `topics.yaml` del repositorio `quickpatch-kafka`: hoy 168 horas (7 días) en los 19 topics de QA y en los 17 de producción, medido el 28 de octubre de 2026. La variable `kafka_retencion_horas` de `group_vars` (168 en producción, 24 en QA) es solo el valor por defecto del broker y aplica a un topic creado sin `retention.ms`. Cambiar la retención de un topic existente se hace a mano con `kafka-configs.sh --alter` y se refleja en `topics.yaml`; `deploy-kafka.yml` no modifica los topics que ya existen.
 
 **Grupos de consumidores y lag.** Un grupo por servicio y función. El lag de un grupo es la diferencia entre el último offset del topic y el que el grupo ya confirmó.
 
@@ -571,7 +572,7 @@ Kafka corre en un solo nodo por ambiente (VM6 en producción, VM7 en QA; R10), c
 
 - **Cómo verlos:** `./ap playbooks/operar-kafka-grupos.yml` (solo lectura), o con `--limit vm7` para QA. Muestra el estado de cada grupo, el lag sumado por grupo y topic, y la retención de cada topic.
 - **Lectura del 26 de octubre en QA:** lag 0 en todos los grupos salvo `communication-service`, con 22 mensajes en `matching.no-technician-available`, 6 en `matching.search-resumed` y 5 en `matching.technician-assigned`. Se repitió igual en dos lecturas separadas por varios minutos, así que no es tráfico en tránsito: el consumidor no confirma esos offsets. Falta saber si Communication descarta esos eventos sin confirmarlos o si falla al procesarlos; es una revisión para el equipo de Communication. **Lectura del 27 de octubre:** el lag creció a 32, 10 y 8 mensajes (50 en total) en esos mismos tres topics, tras las nuevas solicitudes que hubo en QA ese día (pruebas de sistema y datos de demostración). No es un lag fijo: `communication-service` no está consumiendo los eventos `matching.*` y lo que llega se acumula. Reiniciar el grupo a `latest` lo oculta pero no lo arregla; primero hay que ver por qué no los procesa.
-- **Producción:** sin lag, porque casi no hay tráfico (2 topics).
+- **Producción:** sin lag, porque casi no hay tráfico (17 topics y 2 grupos de consumidores).
 
 **Reiniciar los offsets de un grupo.** Sirve cuando un grupo nuevo va a leer tráfico viejo (como el de las pruebas de carga que causó el `OOMKilled` de Communication, sección 5.6) o cuando hay que descartar o repetir eventos.
 
@@ -1198,3 +1199,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.4 | 27 oct 2026 | Tope de pool aplicado en producción y excepción al RNF-08 levantada (SCRUM-521): `Maximum Pool Size` en los Secret de Identity, Catalog y ServiceRequest, sección 6.2 con el motivo, la evidencia y lo que no se midió, y notas de 5.7 y de las limitaciones. |
 | 4.5 | 27 oct 2026 | Secret de Payments y Communication y Nominatim en producción (SCRUM-519 y SCRUM-520): sección 4.3 y la tabla de lo que falta, sección 5.9 con la medición en VM4 y el acceso comprobado, regla del 8088 aplicada y tabla de playbooks. |
 | 4.6 | 27 oct 2026 | Sección 2.1 remite a las vistas de despliegue C4 por ambiente (producción y QA), las mismas del SAD y el SDD (SCRUM-576). |
+| 4.7 | 28 oct 2026 | Producción con 17 topics de Kafka y los Deployment de Payments y Communication esperando su imagen (SCRUM-518); QA con 19 topics y el panel `0.5.3`. La sección 4.3 se ajusta a esa medición, con lo que falta para promover (categorías, `aplicar-roles-db.yml`, el panel y Ranking). |
