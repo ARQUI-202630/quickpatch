@@ -9,7 +9,10 @@
  *   node tests/e2e/correr-colecciones-qa.js scrum-490-cotizacion scrum-96-evidencia
  *
  * Opcionales: QA_PLATFORM_ADMIN_EMAIL y QA_PLATFORM_ADMIN_PASSWORD (vista de plataforma de SCRUM-105) y QA_BASE_URL
- * (por defecto https://qa.quickpatch.internal). Las claves viajan a Newman como --env-var y no se escriben en la
+ * (por defecto https://qa.quickpatch.internal). QA_CA_CERT es la ruta del certificado autofirmado de la entrada TLS
+ * (Documento de Infraestructura, 2.3): con ella Newman verifica el servidor (--ssl-extra-ca-certs) en vez de fallar con
+ * "self-signed certificate". Se obtiene con openssl s_client y se compara su huella SHA-256 con
+ * tests/security/evidencias/tls-entrada-qa-*.txt antes de usarla. Las claves viajan a Newman como --env-var y no se escriben en la
  * evidencia: el reporter cli no imprime cuerpos ni encabezados. Nunca se usa el reporter JSON, que sí los guarda.
  */
 const { spawnSync } = require('node:child_process');
@@ -33,6 +36,7 @@ for (const variable of ['QA_ADMIN_EMAIL', 'QA_ADMIN_PASSWORD']) {
 const baseUrl = process.env.QA_BASE_URL || 'https://qa.quickpatch.internal';
 const fecha = new Date().toISOString().slice(0, 10);
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const caQa = process.env.QA_CA_CERT && fs.readFileSync(process.env.QA_CA_CERT);
 const sinColor = (texto) => texto.replace(/\u001b\[[0-9;]*m/g, '');
 
 /**
@@ -49,7 +53,7 @@ function verificarAdministrador() {
   return new Promise((resolve) => {
     const peticion = cliente.request(url, {
       method: 'POST',
-      rejectUnauthorized: false,
+      ...(caQa ? { ca: caQa } : { rejectUnauthorized: false }),
       timeout: 15000,
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(cuerpo) },
     }, (respuesta) => {
@@ -102,6 +106,9 @@ for (const nombre of colecciones) {
     '--env-var', `adminEmail=${process.env.QA_ADMIN_EMAIL}`,
     '--env-var', `adminPassword=${process.env.QA_ADMIN_PASSWORD}`,
   ];
+  if (process.env.QA_CA_CERT) {
+    args.push('--ssl-extra-ca-certs', process.env.QA_CA_CERT);
+  }
   if (process.env.QA_PLATFORM_ADMIN_EMAIL && process.env.QA_PLATFORM_ADMIN_PASSWORD) {
     args.push('--env-var', `platformAdminEmail=${process.env.QA_PLATFORM_ADMIN_EMAIL}`);
     args.push('--env-var', `platformAdminPassword=${process.env.QA_PLATFORM_ADMIN_PASSWORD}`);
