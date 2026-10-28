@@ -164,7 +164,7 @@ La restricción geográfica es a la vez una **regla de negocio** del producto y 
 **Limitación conocida: el área urbana no cubre toda la ciudad.** El área de cobertura es un rectángulo sobre el área urbana. Comparado con los límites de IDECA, **Sumapaz queda completamente fuera**, y también la parte rural de **Usme** y de **Ciudad Bolívar**. Un técnico puede elegir Sumapaz como zona, pero nunca recibirá solicitudes de ahí, porque se rechazan al crearlas. Queda como la decisión pendiente P10 (sección 7.4.2).
 
 **Prueba y datos.**
-- La prueba de una ubicación fuera de Bogotá está en `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`: Villavicencio, latitud 4,15, responde `422 ubicacion-fuera-de-cobertura` en QA.
+- La prueba de una ubicación fuera de Bogotá está en `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt`: Villavicencio, latitud 4,15, responde `422 ubicacion-fuera-de-cobertura` en QA. Se repitió el 27 de octubre de 2026 en el ensayo de la demostración (`tests/e2e/evidencias/quickpatch-mvp-qa-2026-10-28.txt`, paso "Fuera de Bogotá → 422", SCRUM-600).
 - La de una dirección que no existe está en `tests/e2e/evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt` (`422 direccion-no-encontrada`).
 - Los datos de demostración (`tests/datos-demo/juego-datos.json`, SCRUM-632) usan direcciones dentro de Bogotá y dan a los técnicos cobertura en las 20 localidades.
 
