@@ -187,6 +187,8 @@ jobs:
           mkdir -p resultados-k6
           for s in "${scripts[@]}"; do
             nombre=$(basename "$s" .js)
+            # run-performance-suite.js es el ejecutor de Node para correr las suites a mano (usa require('fs')): k6 no lo entiende.
+            if [ "$nombre" = "run-performance-suite" ]; then continue; fi
             k6 run --insecure-skip-tls-verify -e BASE_URL="$BASE_URL" \
               --summary-export "resultados-k6/$nombre.json" "$s"
           done
