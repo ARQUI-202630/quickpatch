@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.9 |
+| **Versión** | 4.10 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -488,7 +488,8 @@ VM3 tiene 4 vCPU y 11 GiB de RAM fijos (sección 3.1), compartidos entre el cont
 | Matching Service (Spring Boot) | 1 / 1 vCPU | 1 / 1 GiB | Guaranteed |
 | Identity, Catalog, ServiceRequest y Payments (ASP.NET Core, c/u) | 100 m / 500 m | 160 MiB / 384 MiB; el init container de migraciones pide 64 MiB y llega a 256 MiB, solo mientras migra | Burstable |
 | Communication (ASP.NET Core) | 50 m / 500 m | 128 MiB / 512 MiB (el manifiesto de `develop`; en QA corre con 192 MiB de request); el init container de migraciones, 64 MiB / 256 MiB | Burstable |
-| Actors y Ranking (ASP.NET Core) | Sin manifiesto | Sin manifiesto | — |
+| Ranking (ASP.NET Core) | 50 m / 500 m | 128 MiB / 320 MiB; el init container de migraciones, 64 MiB / 256 MiB | Burstable |
+| Actors | Sin manifiesto: su repositorio solo tiene el README y los contratos | Sin manifiesto | — |
 
 Los límites históricos calculados para NestJS no se reutilizan para ASP.NET Core. Los manifiestos de Identity, Catalog, ServiceRequest y Payments fijan un límite de 384 MiB para el contenedor de la aplicación, el de Communication 512 MiB y el de Matching 1 GiB, con una réplica por servicio. Antes de la revisión del 26 de octubre de 2026 este documento decía 256 MiB para los servicios .NET (con una suma de 6,0 GiB); los manifiestos ya tenían 384 MiB. Con los límites reales, la suma en VM3 es 3,0 + 1,0 + 4 × 0,375 + 0,5 = 6,0 GiB para los 6 servicios que existen, y **6,5 GiB con Actors y Ranking en 256 MiB, o 6,75 GiB si adoptan 384 MiB** como los demás: queda en el umbral de 6,5 GiB o por encima. Es una cuenta de límites, el peor caso; el uso medido es mucho menor (más abajo).
 
@@ -520,6 +521,23 @@ pie title Presupuesto de RAM en VM3 (11 GiB)
 - **Proyección para los 8 servicios en VM3**, no una medición: a los 4.194 MiB de hoy se suman Payments (135 MiB) y Communication (124 MiB) medidos en QA y, por no existir, 150 MiB supuestos para cada uno de Actors y Ranking. Resultan unos 4.750 MiB (4,6 GiB). Es una cifra de capacidad de VM3, no la medida de AC2-E5 (ver la nota siguiente).
 
 > **AC2-E5 se mide en QA, no contra 6,5 GiB en VM3.** Desde la versión 2.15 del SAD (5 de octubre), el escenario AC2-E5 se mide en el ambiente de QA con los 8 servicios y los mismos `requests` y `limits` de producción. La medida es 0 reinicios por `OOMKilled` y cada pod dentro de sus `limits`, con `kubectl` y Grafana durante la prueba de carga con k6, y el consumo de CPU y RAM queda como línea base. El SAD dice que el total de RAM **no** se compara con el presupuesto de VM3, porque en QA todos los componentes comparten una sola VM. Esta sección había tomado el umbral de 6,5 GiB de la tarea SCRUM-554 y del caso PRF-005 del Documento de Pruebas, que siguen escritos con la comparación anterior; el documento de pruebas y la tarea deben alinearse con el SAD. Lo medido el 26 de octubre queda como dato de **capacidad de VM3**: con 4 servicios el uso real es 4,1 GiB, la proyección con 8 es 4,6 GiB y la suma de límites llega a 6,5 o 6,75 GiB de los 11,6 GiB de la VM. **Falta para AC2-E5:** desplegar Actors y Ranking en QA (hoy hay 6 servicios) y repetir la carga con k6 mirando reinicios y consumo por pod. En QA, el 26 de octubre, ningún pod había sido terminado por `OOMKilled`: el único reinicio (Communication, 24 de octubre) fue un cierre limpio (`Completed`, código 0). Si en producción se quiere además un tope de RAM total para VM3, hay que decidirlo como requisito aparte (el equipo de arquitectura).
+
+**Medición bajo carga en QA del 28 de octubre de 2026 (SCRUM-635).** Con `kubectl top` cada 30 segundos durante `pruebas-sistema.yml` con la casilla «carga» (k6: 50 VU durante 2,5 minutos y estrés de 150 VU durante 4 minutos; ejecución 40771025470 del repositorio `quickpatch`). Son **7 servicios y no 8**: Actors no tiene código ni manifiesto, así que la medida de AC2-E5 con los 8 queda pendiente de que exista.
+
+| Servicio | Reposo (MiB) | Pico bajo carga (MiB / CPU) | Límite de RAM (MiB) | Reinicios nuevos |
+|---|---|---|---|---|
+| Catalog | 150 | 150 / 98 m | 384 | 0 |
+| Communication | 131 | 185 / 366 m | 512 | 0 |
+| Identity | 149 | 164 / 8 m | 384 | 0 |
+| Matching | 285 | 288 / 141 m | 1.024 | 0 |
+| Payments | 143 | 146 / 7 m | 384 | 0 |
+| Ranking | 90 | 92 / 9 m | 320 | 0 |
+| ServiceRequest | 146 | 240 / 500 m | 384 | 0 |
+
+- **Resultado para AC2-E5 con 7 servicios:** 0 eventos `OOMKilled` y cada pod dentro de su límite. El mayor uso relativo es ServiceRequest, con 240 de 384 MiB (62 %). Los picos son el mayor valor de las muestras de 30 segundos, no un máximo continuo.
+- **Nodo de VM2:** 477 m de CPU (11 %) y 4.163 MiB (35 %) en reposo; en la última lectura del muestreo, 2.000 m (50 %) y 4.430 MiB (37 %).
+- **k6, 50 VU:** p95 de 100,75 ms en general y de 445 ms al crear una solicitud, 0 % de errores. **k6, 150 VU:** 0 errores 5xx de 19.982 iteraciones, p95 de 816 ms y 15 fallos HTTP de 39.953 (0,03 %); el check «respuesta exitosa o degradada» falló 14 veces de 19.982.
+- **Reinicios de Communication:** tiene 3 reinicios en total, el último el 28 de octubre a las 04:32 (hora de Bogotá). No fueron por memoria: el contenedor terminó con código 0 y el motivo es `Completed`. Hay eventos de las sondas de readiness y liveness con «context deadline exceeded» en Communication y en Identity (esta sin reinicios) durante las corridas del 28 de octubre. La causa no se investigó; está pendiente revisar los tiempos de las sondas.
 
 **Por qué el Matching queda en "Guaranteed":** cuando VM3 entra en presión de memoria, Kubernetes desaloja primero los pods en QoS "BestEffort" (sin límites) y luego los "Burstable" que más exceden su *request*; un pod "Guaranteed" (request = limit) es el último candidato a desalojo. AC2-E4 exige que el Matching siga respondiendo bajo pico de carga — dejarlo en la clase de QoS más protegida es lo que hace esa exigencia verificable, no solo declarada.
 
@@ -1207,3 +1225,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.7 | 28 oct 2026 | Producción con 17 topics de Kafka y los Deployment de Payments y Communication esperando su imagen (SCRUM-518); QA con 19 topics y el panel `0.5.3`. La sección 4.3 se ajusta a esa medición, con lo que falta para promover (categorías, `aplicar-roles-db.yml`, el panel y Ranking). |
 | 4.8 | 28 oct 2026 | Tope de pool de Ranking y Actors (8 y 8; sin entrada la plantilla usaría 20 y la suma pasaría las 97 conexiones útiles) y el presupuesto de conexiones con los 8 servicios (94 de 97) en 5.7; Ranking se despliega por parámetro y no en las listas por defecto (4.3). |
 | 4.9 | 28 oct 2026 | Cifrado (SCRUM-506): verificados los `Secret` de k3s en VM2 y VM3 (cifrado desactivado) y Redis en VM4 y VM5 (sin TLS, con ACL y firewall); sección 10.5 sin pendientes de verificación y con la opción de activar `secrets-encryption` y la de TLS de Redis. |
+| 4.10 | 28 oct 2026 | Medición de AC2-E5 bajo carga en QA con 7 servicios (SCRUM-635): uso y límites por pod con k6 de 50 y 150 VU, 0 `OOMKilled`; Ranking con su manifiesto en la tabla de la sección 5.6; Actors sin código; reinicios de Communication por sondas, sin investigar. |
