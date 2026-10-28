@@ -125,6 +125,23 @@ Necesita a Payments con el comprobante desplegado en QA (quickpatch-payments#8).
 
 **Evidencia de SCRUM-458:** `evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt`, contra QA el 22 de octubre de 2026 con Communication 0.3.1: 34 peticiones y 44 aserciones, sin fallos. La primera corrida, con la 0.3.0, dio 43 de 44: «mismo readAt» fallaba porque la primera respuesta de `POST /v1/notifications/{id}/read` llevaba 7 decimales y las siguientes 6 (quickpatch-communication#17).
 
+## Dirección fuera de Bogotá (SCRUM-600)
+
+`scrum-600-fuera-de-bogota.postman_collection.json` prueba contra QA la restricción geográfica de la SCRUM-598 (R6 del SAD, RN-SR9 del DD, SRS 2.3.1). Se genera con `python tests/e2e/generar-scrum600-fuera-de-bogota.py`. No necesita al administrador: el cliente se registra solo y usa la primera categoría del catálogo. Se puede correr sin secretos:
+
+```bash
+docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scrum-600-fuera-de-bogota.postman_collection.json \
+  --insecure --env-var baseUrl=https://qa.quickpatch.internal --reporters cli --color off
+```
+
+1. **Lo que cumple:** la vista previa rechaza con 422 `ubicacion-fuera-de-cobertura` una dirección escrita de Cali, Soacha, Chía, Villavicencio y El Poblado (Medellín), y con 422 `direccion-no-encontrada` la que no tiene coincidencia. Un punto de GPS en Medellín, Cali, Tunja y Chía da 422 `ubicacion-fuera-de-cobertura`. Una dirección de Bogotá sí se ubica (control).
+2. **Límites (carpeta 4):** la prueba encontró tres casos que la regla no cubre. Las aserciones describen lo que QA responde hoy, no lo esperado, para que el CI de los release no falle por un defecto ya conocido; cuando se corrijan, la colección se actualiza con la corrección. Cada solicitud que llega a crearse se cancela en el paso siguiente.
+   - El geocodificador empareja por el nombre de la calle e ignora la ciudad escrita: una calle de Medellín, Bucaramanga o Tunja que también existe en Bogotá se ubica en Bogotá.
+   - Crear la solicitud solo con la dirección de Cali o de Villavicencio da 201, aunque la vista previa da 422: el punto cae en Soacha o al norte de Bogotá, dentro del rectángulo de RN-SR9.
+   - El rectángulo de RN-SR9 incluye parte de Soacha: un GPS en 4,5794; -74,2168 crea la solicitud.
+
+**Evidencia:** `evidencias/scrum-600-fuera-de-bogota-qa-2026-10-28.txt`, contra QA el 28 de octubre de 2026: 24 peticiones y 59 aserciones, sin fallos, con el resumen de los hallazgos al inicio.
+
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
 `scrum-68-cuenta-corporativa.postman_collection.json` (RF-06, SCRUM-26) la genera `generar-scrum68-cuenta-corporativa.py`. Contrato: `identity.v1.yaml` 1.8.0. **No necesita al administrador**: todas las cuentas se registran por el canal con correo, NIT y clave generados en la corrida.

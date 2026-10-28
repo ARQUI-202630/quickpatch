@@ -1,0 +1,183 @@
+scrum-600-fuera-de-bogota contra QA, 2026-10-28
+Colección: tests/e2e/scrum-600-fuera-de-bogota.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-10-28T12:05:59.459Z. Duración: 7 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+Resultado de SCRUM-600 (restricción geográfica a Bogotá, SCRUM-598):
+  Cumple la regla (carpetas 1 a 3):
+    - Una dirección escrita de Cali, Soacha, Chía, Villavicencio o El Poblado (Medellín): la vista previa responde 422
+      ubicacion-fuera-de-cobertura («La dirección quedó fuera de Bogotá D.C.»). Sin coincidencia: 422 direccion-no-encontrada.
+    - Un punto de GPS en Medellín, Cali, Tunja o Chía (4,8587 N, al norte del área): 422 ubicacion-fuera-de-cobertura
+      («El servicio opera solo en Bogotá D.C.»).
+  No cumple la regla (carpeta 4; las aserciones describen lo que QA responde hoy, no lo esperado):
+    1. El geocodificador empareja por el nombre de la calle e ignora la ciudad y la numeración que le siguen. «Carrera 70 #
+       44-50, Laureles, Medellín» se ubica en Suba, «Carrera 15 # 85-20, Bucaramanga» en Usaquén y «Plaza de Bolívar, Tunja»
+       en La Candelaria: la vista previa da 200 con un punto de Bogotá.
+    2. Crear la solicitud solo con la dirección no aplica el mismo rechazo que la vista previa. «Calle 5 # 38-70, Cali» y
+       «Carrera 3 # 14-20, Villavicencio» dan 422 en la vista previa y 201 al crear: la solicitud queda en buscando_tecnico
+       con un punto en Soacha (4,574; -74,224) y otro al norte de Bogotá, cerca de Chía (4,841; -74,060). Los dos puntos caen
+       dentro del rectángulo de RN-SR9: la creación acepta lo que ese rectángulo acepta.
+    3. El rectángulo de RN-SR9 (lat 4,45 a 4,85; lng -74,25 a -73,98) incluye parte de Soacha: un GPS en 4,5794; -74,2168
+       crea la solicitud.
+  Las tres solicitudes que se crearon en la carpeta 4 se cancelan en el paso siguiente (200).
+
+
+newman
+
+QUICKPATCH — SCRUM-600 Dirección fuera de Bogotá contra QA
+
+❏ 0. Preparación: un cliente nuevo y una categoría de QA
+↳ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 1101ms]
+  ✓  201
+
+↳ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 1261ms]
+  ✓  200 con rol cliente
+
+↳ El cliente toma la primera categoría del catálogo
+  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 2.11kB, 23ms]
+  ✓  200
+  ✓  hay categorías
+
+❏ 1. Dirección escrita fuera de Bogotá: la vista previa la rechaza
+↳ Control: una dirección de Bogotá sí se ubica
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [200 OK, 429B, 100ms]
+  ✓  200 con punto dentro del área de cobertura de Bogotá
+
+↳ Cali → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 586B, 173ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ubicacion-fuera-de-cobertura
+  ✓  detalle: fuera de Bogotá
+
+↳ Soacha, vecina de Bogotá → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 586B, 167ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ubicacion-fuera-de-cobertura
+  ✓  detalle: fuera de Bogotá
+
+↳ Chía, vecina de Bogotá → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 586B, 121ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ubicacion-fuera-de-cobertura
+  ✓  detalle: fuera de Bogotá
+
+↳ Villavicencio → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 586B, 148ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ubicacion-fuera-de-cobertura
+  ✓  detalle: fuera de Bogotá
+
+↳ El Poblado, Medellín → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 586B, 108ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ubicacion-fuera-de-cobertura
+  ✓  detalle: fuera de Bogotá
+
+↳ Cali sin ninguna coincidencia → 422 dirección no encontrada
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 542B, 36ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo direccion-no-encontrada
+
+❏ 2. Crear la solicitud solo con la dirección: sin coincidencia no se crea
+↳ Cali sin coincidencia, solo con la dirección → 422 dirección no encontrada
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 542B, 33ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo direccion-no-encontrada
+
+❏ 3. GPS fuera de Bogotá: RN-SR9 rechaza el punto
+↳ GPS en Medellín → 422
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 13ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ubicacion-fuera-de-cobertura
+  ✓  detalle: solo en Bogotá
+
+↳ GPS en Cali → 422
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 18ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ubicacion-fuera-de-cobertura
+  ✓  detalle: solo en Bogotá
+
+↳ GPS en Tunja → 422
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 13ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ubicacion-fuera-de-cobertura
+  ✓  detalle: solo en Bogotá
+
+↳ GPS en Chía, al norte del área de cobertura → 422
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 11ms]
+  ✓  422
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ubicacion-fuera-de-cobertura
+  ✓  detalle: solo en Bogotá
+
+❏ 4. Límites conocidos de la regla (hallazgos de SCRUM-600)
+↳ HALLAZGO 1: una calle de Bogotá con Medellín escrita se ubica en Bogotá (Suba)
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [200 OK, 432B, 161ms]
+  ✓  200 con punto dentro del área de cobertura de Bogotá
+
+↳ HALLAZGO 1: una calle de Bogotá con Bucaramanga escrita se ubica en Bogotá (Usaquén)
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [200 OK, 439B, 59ms]
+  ✓  200 con punto dentro del área de cobertura de Bogotá
+
+↳ HALLAZGO 1: una calle de Bogotá con Tunja escrita se ubica en Bogotá (La Candelaria)
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [200 OK, 461B, 61ms]
+  ✓  200 con punto dentro del área de cobertura de Bogotá
+
+↳ HALLAZGO 2: Cali, que la vista previa rechaza, se crea con un punto en Soacha
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 837B, 161ms]
+  ✓  201
+  ✓  creada en buscando_tecnico con un punto dentro del rectángulo de cobertura (vista previa: 422)
+
+↳ Limpieza: el cliente cancela la solicitud de la prueba
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a18267-3b0c-72db-9635-31fbba0dda91/cancel [200 OK, 370B, 37ms]
+  ✓  200
+
+↳ HALLAZGO 2: Villavicencio, que la vista previa rechaza, se crea con un punto al norte de Bogotá
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 837B, 189ms]
+  ✓  201
+  ✓  creada en buscando_tecnico con un punto dentro del rectángulo de cobertura (vista previa: 422)
+
+↳ Limpieza: el cliente cancela la solicitud de la prueba
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a18267-3c57-727f-a302-64dd0c802a1a/cancel [200 OK, 370B, 21ms]
+  ✓  200
+
+↳ HALLAZGO 3: un punto de GPS en Soacha, dentro del rectángulo, crea la solicitud
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 806B, 32ms]
+  ✓  201
+  ✓  creada en buscando_tecnico con un punto dentro del rectángulo de cobertura (GPS en Soacha)
+
+↳ Limpieza: el cliente cancela la solicitud de la prueba
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a18267-3cb0-70a7-a2d8-8542ce120a11/cancel [200 OK, 370B, 30ms]
+  ✓  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  24 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  24 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  59 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 4.7s                                           │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 9.57kB (approx)                               │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 169ms [min: 11ms, max: 1261ms, s.d.: 311ms] │
+└────────────────────────────────────────────────────────────────────┘
