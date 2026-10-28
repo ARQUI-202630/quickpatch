@@ -6,12 +6,12 @@ generar-scrum490-96-cotizacion-evidencia.py, que también regenera sus dos colec
 
 Contratos: service-request.v1.yaml 1.8.0 (location-preview y creación con solo la dirección) y RN-SR9 del DD. No necesita
 al administrador: el cliente se registra solo y usa una categoría que ya existe en QA. Cada corrida usa un cliente nuevo
-con clave aleatoria, y las solicitudes que llegan a crearse (carpeta 4) se cancelan al final de cada caso.
+con clave aleatoria, y ningún caso crea una solicitud.
 
 Qué prueba: una dirección o un punto de GPS fuera de Bogotá. Las carpetas 1 a 3 son lo que la regla cumple hoy (422 sin
-crear nada). La 4 deja por escrito tres límites que la prueba encontró en QA y que la regla no cubre; se afirman tal como
-responde QA hoy, para que el CI de los release no falle por un defecto ya conocido y, el día que se corrija, la corrida
-avise y la colección se actualice junto con la corrección. Cada solicitud que llega a crearse se cancela en el paso siguiente.
+crear nada). La 4 afirma el límite documentado en el SRS 2.3.1: una calle de Bogotá con otra ciudad escrita se ubica en
+Bogotá. Los otros dos hallazgos de la primera corrida (crear solo con la dirección no repetía el rechazo de la vista previa,
+y el rectángulo incluía parte de Soacha) se corrigieron en SCRUM-636 y pasaron a las carpetas 2 y 3.
 """
 import importlib.util
 import json
@@ -135,16 +135,22 @@ direccion_escrita = {
 }
 
 crear_con_direccion = {
-    "name": "2. Crear la solicitud solo con la dirección: sin coincidencia no se crea",
+    "name": "2. Crear la solicitud solo con la dirección: se rechaza igual que en la vista previa",
     "item": [
         crear("Cali sin coincidencia, solo con la dirección → 422 dirección no encontrada",
               {"addressText": CALI_SIN_COINCIDENCIA}, error(422, "direccion-no-encontrada")),
+        # SCRUM-636: antes se creaban con un punto en Soacha o al norte de Bogotá, dentro del rectángulo de RN-SR9.
+        crear("Cali, solo con la dirección → 422 fuera de cobertura", {"addressText": CALI}, fuera_de_cobertura("solo en Bogotá")),
+        crear("Villavicencio, solo con la dirección → 422 fuera de cobertura", {"addressText": VILLAVICENCIO},
+              fuera_de_cobertura("solo en Bogotá")),
     ],
 }
 
 gps = {
     "name": "3. GPS fuera de Bogotá: RN-SR9 rechaza el punto",
     "item": [
+        # SCRUM-636: Soacha está dentro del rectángulo pero fuera de las 20 localidades.
+        con_gps("Soacha, dentro del rectángulo", "Centro, Soacha", 4.5794, -74.2168),
         con_gps("Medellín", "Centro, Medellín", 6.2442, -75.5812),
         con_gps("Cali", "Centro, Cali", 3.4516, -76.5320),
         con_gps("Tunja", "Centro, Tunja", 5.5353, -73.3678),
@@ -152,43 +158,14 @@ gps = {
     ],
 }
 
-def creada_en_rectangulo(origen):
-    return estado(201) + [
-        f"pm.test('creada en buscando_tecnico con un punto dentro del rectángulo de cobertura ({origen})', () => {{",
-        "  const s = pm.response.json();",
-        "  pm.expect(s.status).to.eql('buscando_tecnico');",
-        "  pm.expect(s.location.latitude).to.be.within(4.45, 4.85);",
-        "  pm.expect(s.location.longitude).to.be.within(-74.25, -73.98);",
-        "});",
-    ]
-
-
-def crear_y_cancelar(nombre, variable, cuerpo, origen):
-    return [
-        crear(nombre, cuerpo, creada_en_rectangulo(origen) + [
-            f"pm.collectionVariables.set('{variable}', pm.response.json().id);",
-        ]),
-        req("Limpieza: el cliente cancela la solicitud de la prueba", "POST", SOLICITUDES + "/{{" + variable + "}}/cancel",
-            [JSON, CORR, auth("clienteToken")], {"reason": "Limpieza de la prueba SCRUM-600."}, pruebas=estado(200)),
-    ]
-
-
 hallazgos = {
-    "name": "4. Límites conocidos de la regla (hallazgos de SCRUM-600)",
+    "name": "4. Límite documentado: una calle de Bogotá con otra ciudad escrita (SRS 2.3.1)",
     "item": [
+        # El geocodificador solo tiene el mapa de Bogotá e ignora la ciudad escrita. El punto cae en una localidad, así que
+        # la regla lo acepta; lo mitiga la confirmación del pin en la app (ADR-024).
         *[vista_previa(
-            f"HALLAZGO 1: una calle de Bogotá con {ciudad} escrita se ubica en Bogotá ({localidad})", direccion,
+            f"LÍMITE: una calle de Bogotá con {ciudad} escrita se ubica en Bogotá ({localidad})", direccion,
             ubicacion_en_bogota(localidad)) for ciudad, direccion, localidad in LIMITE_CIUDAD],
-        # La vista previa de estas dos direcciones da 422 (carpeta 1), pero al crear solo con la dirección la solicitud se crea
-        # con un punto que cae dentro del rectángulo de RN-SR9 (Soacha y el norte de Bogotá).
-        *crear_y_cancelar("HALLAZGO 2: Cali, que la vista previa rechaza, se crea con un punto en Soacha", "solicitudCaliId",
-                          {"addressText": CALI}, "vista previa: 422"),
-        *crear_y_cancelar("HALLAZGO 2: Villavicencio, que la vista previa rechaza, se crea con un punto al norte de Bogotá",
-                          "solicitudVillavicencioId", {"addressText": VILLAVICENCIO}, "vista previa: 422"),
-        *crear_y_cancelar("HALLAZGO 3: un punto de GPS en Soacha, dentro del rectángulo, crea la solicitud",
-                          "solicitudSoachaId",
-                          {"addressText": "Centro, Soacha", "location": {"latitude": 4.5794, "longitude": -74.2168}},
-                          "GPS en Soacha"),
     ],
 }
 
@@ -199,11 +176,10 @@ coleccion = {
             "Restricción geográfica a Bogotá (R6 del SAD, RN-SR9 del DD, SRS 2.3.1) contra QA. Una dirección escrita fuera de "
             "Bogotá la rechaza la vista previa con 422 ubicacion-fuera-de-cobertura (o direccion-no-encontrada si el "
             "geocodificador no la reconoce); un punto de GPS fuera del "
-            "área de cobertura también da 422. La carpeta 4 deja por escrito tres límites encontrados en QA: el geocodificador "
-            "ignora la ciudad escrita cuando la calle existe en Bogotá (1); crear solo con la dirección acepta Cali y "
-            "Villavicencio, que la vista previa rechaza, con un punto dentro del rectángulo de cobertura (2); y ese rectángulo "
-            "incluye parte de Soacha (3). No necesita el administrador: el cliente se registra solo y cada solicitud que se "
-            "crea se cancela. Variable: baseUrl. Correr con --reporters cli: el reporte JSON de Newman guarda tokens."
+            "área de cobertura o de las 20 localidades también da 422, y crear solo con la dirección rechaza lo mismo que la "
+            "vista previa (SCRUM-636). La carpeta 4 afirma el límite documentado: el geocodificador ignora la ciudad escrita "
+            "cuando la calle existe en Bogotá. No necesita el administrador: el cliente se registra solo y ningún caso crea "
+            "una solicitud. Variable: baseUrl. Correr con --reporters cli: el reporte JSON de Newman guarda tokens."
         ),
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     },
