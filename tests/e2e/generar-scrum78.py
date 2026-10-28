@@ -329,9 +329,10 @@ coleccion = {
                     [JSON, CORR, auth("tokenAlfa")],
                     {
                         "categoryId": "{{categoriaId}}",
-                        "description": "Fuga sin candidatos inmediatos en zona rural norte periférica",
-                        "location": {"latitude": 4.8500, "longitude": -74.0500},
-                        "addressText": "Zona Rural Norte Km 14"
+                        # Desde SCRUM-636 crear exige una de las 20 localidades: el punto anterior (4,85; -74,05) quedaba fuera y daba 422.
+                        "description": "Fuga sin candidatos inmediatos en el extremo norte de Usaquén (periferia)",
+                        "location": {"latitude": 4.7600, "longitude": -74.0300},
+                        "addressText": "Extremo norte de Usaquén, Torca"
                     },
                     pruebas=[
                         "pm.test('[RF-10 / RN-M10] Solicitud periférica creada exitosamente (201 Created)', () => {",
