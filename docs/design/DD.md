@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.14|
+|**Versión**|5.15|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -944,7 +944,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Servicio propietario:** ServiceRequest Service.
 
-**Propósito:** Almacena la valoración realizada por un cliente al finalizar un servicio.
+**Propósito:** Almacena la valoración realizada por un cliente al finalizar un servicio (RF-12, SCRUM-497).
 
 **Requisitos relacionados:** RF-12.
 
@@ -955,10 +955,10 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |service_request_id|UUID|No|FK local / UNIQUE|Solicitud calificada.|
 |technician_id|UUID|No|Ref. lógica|Técnico calificado.|
 |score|INTEGER|No|CHECK|Valor entre 1 y 5 (`CHECK (score BETWEEN 1 AND 5)`).|
-|comment|TEXT|Sí|—|Comentario opcional.|
-|created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
+|comment|TEXT|Sí|—|Comentario opcional (máximo 500 caracteres).|
+|created_at|TIMESTAMPTZ|No|—|Fecha y hora en que se registró la calificación (`ratedAt` en REST).|
 
-**Reglas de negocio:** RN-R1 a RN-R3 (sección 7.6).
+**Reglas de negocio:** RN-R1 a RN-R3 (sección 7.6). **Desde v5.15** (SCRUM-499): TechnicianServiceRequest (`GET /v1/technicians/me/service-requests`) incluye `score` y `ratedAt` si la solicitud completada fue calificada.
 
 ### 5.10 Tabla `service_evidence`
 
@@ -2780,7 +2780,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.12|SCRUM-484|**Cuenta corporativa (RF-06, SCRUM-26).** `identity.v1.yaml` 1.8.0 con `POST /v1/auth/register/company`, `GET /v1/companies/me` y `GET` y `POST /v1/companies/me/users` con la invitación de la sección 5.21 (secciones 8.2.1 y 8.3.18). Claim `company_id` en el token y `companyId` en el perfil. Nueva regla RN-CC4 (nadie define la contraseña de otro usuario). DEP-13 queda resuelta: el SRS V4 ya ubica la empresa cliente dentro del tenant.|
 |5.13|SCRUM-73|**Solicitud de empresa (RF-08, SCRUM-28).** `service-request.v1.yaml` 1.9.0: el `empresa_contacto` crea solicitudes con `siteName` opcional; `client_type` y `company_id` se implementan y salen del token (RN-SR12); `site_name` nueva en `service_requests` (sección 5.5). RN-SR14: los demás usuarios de la empresa ven la solicitud. `GET /v1/service-requests` se abre al `cliente` y al `empresa_contacto`, con `clientType` para que el panel distinga las de empresa (secciones 8.2.4 y 8.3.3).|
 |5.14|SCRUM-636|**Cobertura por localidades (RN-SR9).** Crear una solicitud, con GPS o con dirección, exige el rectángulo y una de las 20 localidades, igual que la vista previa (sección 8.3.3). El rectángulo solo aceptaba puntos en Soacha. Sin cambio de contrato: `422 ubicacion-fuera-de-cobertura` ya estaba documentado.|
-|5.15|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.15|SCRUM-499|**Historial técnico con calificación (RF-12, SCRUM-497).** `service-request.v1.yaml` 1.10.0: TechnicianServiceRequest ahora incluye campos opcionales `score` y `ratedAt` cuando una solicitud completada ha sido calificada. Se actualiza la descripción de `ratings.created_at` para usar `ratedAt` en el contrato REST (sección 8.3.11).|
+|5.16|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
