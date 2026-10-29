@@ -2,7 +2,7 @@
 
 **Proyecto:** QUICKPATCH - Plataforma multi-tenant de servicios técnicos  
 **Documento:** Descripción de Diseño de Software (SDD)  
-**Estado:** V4 lista para la revisión funcional del Product Owner (SCRUM-548; revisión en SCRUM-551, cambios en la sección 13.4) - organizada según el modelo C4 (sección 2.2). La V3 se aprobó en SCRUM-428 (sección 13.3) y la V2 en SCRUM-301 (sección 13.1)  
+**Estado:** V4 aprobada con observaciones por el Product Owner (SCRUM-548; revisión en SCRUM-551, sección 13.5; cambios en la sección 13.4) - organizada según el modelo C4 (sección 2.2). La V3 se aprobó en SCRUM-428 (sección 13.3) y la V2 en SCRUM-301 (sección 13.1)  
 **Fecha:** Octubre de 2026
 
 ---
@@ -2124,7 +2124,7 @@ Antes de consolidar una versión final del SDD se verifica la lista siguiente. R
 | Organización del código (10) | Backend + Frontend | **Desarrollada - lista para revisión** |
 | Flujos de negocio (11) | Arquitectura | **Desarrollada - 15 BPMN** |
 | Escenarios de validación (8.13) | Equipo | **Matriz completa** (8.13.4): 8 escenarios seguidos en las vistas y 1 sin vista dinámica propia (escenario 3) |
-| Revisión funcional | Product Owner | **V2 aprobada** (SCRUM-301, sección 13.1); **V3 aprobada** (SCRUM-428, sección 13.3); **V4 lista para revisión** (SCRUM-551, sección 13.4) |
+| Revisión funcional | Product Owner | **V2 aprobada** (SCRUM-301, sección 13.1); **V3 aprobada** (SCRUM-428, sección 13.3); **V4 aprobada con observaciones** (SCRUM-551, sección 13.5) |
 
 ## 13.1 Revisión funcional del SDD V2 (SCRUM-301)
 
@@ -2206,7 +2206,32 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 **Pendiente para cerrar la V4:**
 
 - Componentes de Matching y Communication con los nombres reales de las clases (figuras 15 y 18, SCRUM-583). El lugar en las secciones 6.8 y 6.11 ya existe.
-- La revisión funcional del Product Owner (SCRUM-551), con los criterios de las secciones 13.1 y 13.3.
+- Las observaciones de la revisión funcional del Product Owner (sección 13.5).
+
+---
+
+## 13.5 Revisión funcional del SDD V4 (SCRUM-551)
+
+Revisión del 28 de octubre de 2026 sobre `develop`, con los criterios de las V2 y V3 (secciones 13.1 y 13.3) y los de SCRUM-548. También se comparó el SDD con el SAD V5 (2.45).
+
+|Criterio|Cómo se verificó|Resultado|
+|---|---|---|
+|C4 reemplaza a 4+1|Búsqueda de "4+1"|Sin restos: solo aparece en las secciones 13.1 y 13.3.|
+|Consistencia con el SRS, el DD y los ADR|Cada RF, RNF y RIE citado se buscó en el SRS, cada regla RN-* en el DD 5.14 y cada ADR en `docs/architecture/adr/`|Todos existen.|
+|Consistencia con el SAD|Servicios, estados y despliegue comparados con las secciones 4.2.2 y 5.1 del SAD 2.45 y con ADR-027|Coinciden: Actors planeado, Ranking implementado sin desplegar y la calificación por eventos. La única diferencia es del SAD: su ciclo de vida (sección 7.4) libera el pago después de `EVALUATED`, mientras el SDD, el SRS (RF-12) y el DD (RN-R3) ponen el pago antes de la calificación (SRS, P2).|
+|No inventa alcance|Contratos de la sección 5.6.1 comparados con `develop` de `quickpatch-api-gateway`; eventos, con `develop` de `quickpatch-kafka`; componentes, con `quickpatch.dsl`|Sin alcance nuevo. Las versiones de la 5.6.1 coinciden con el gateway. Los pagos recibidos del técnico (RF-25, SCRUM-500) y la recuperación de la contraseña (SCRUM-624) siguen como diseño, y el componente de pagos recibidos está marcado `Planeado` en el modelo C4.|
+|Criterios de SCRUM-548|Secciones 6.4, 6.7, 6.9 y 9, y figuras 10, 13, 16, 27, 30 y 31|Cumplen los componentes de calificación y reputación, la vista dinámica de la calificación (figura 27) y el despliegue por ambiente. Faltan las figuras 15 y 18 (SCRUM-583).|
+|Figuras|Numeración e imágenes del documento|Figuras 1 a 52 sin huecos, todas con imagen.|
+|Comprensible para el PO|Lectura de las secciones 1 a 5 y 11|Se entiende: el System Context y los BPMN describen el negocio, y cada figura tiene su texto.|
+
+**Observaciones** (textos que quedaron de la V3; ninguna cambia el diseño):
+
+1. La sección 12 sigue con el resultado del 22 de octubre: dice que la calificación no tiene contrato y que `service-request.evaluated` está planeado. Hoy la calificación está en `service-request.v1.yaml` 1.10.0 y el evento es `service-request.rated` (ADR-027).
+2. La sección 5.6.2 dice que el esquema de `service-request.rated` llega con SCRUM-497. Ya está en `develop` de `quickpatch-kafka` (19 esquemas), aunque la última etiqueta sigue siendo `v0.9.0` (17).
+3. La sección 8.13.5 dice que el buzón no tiene escenario y se agrega "cuando se implemente", pero ya está implementado. Además, RF-25 no aparece en la lista, y en RF-17 falta el historial con la calificación (SCRUM-100, SCRUM-499).
+4. Las figuras 15 y 18 (SCRUM-583) siguen pendientes.
+
+**Resultado:** la V4 queda aprobada con observaciones. Las observaciones 1 a 3 se corrigen en SCRUM-548 y la 4 en SCRUM-583. La diferencia del ciclo de vida corresponde al SAD (SRS, P2).
 
 ---
 
