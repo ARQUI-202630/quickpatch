@@ -71,18 +71,20 @@ Los requisitos de este documento son la entrada del SAD: los drivers, killers, r
 
 ### 1.3 Línea base de documentos
 
-Este SRS se alinea con los documentos de `develop` del repositorio `quickpatch` al **14 de octubre de 2026**. De los cambios posteriores a la redacción del borrador (10 de octubre), la resolución de R5 frente a RIE-02 y RIE-03 incorpora el SAD 2.27 (ADR-024, 12 de octubre de 2026). Las demás secciones citan los documentos por sección y no por versión, para que una nueva versión de ellos no deje desactualizado el SRS. Si un documento cambia una sección citada, la referencia se revisa en la siguiente versión del SRS.
+Este SRS se alinea con los documentos de `develop` del repositorio `quickpatch` al **28 de octubre de 2026** (SCRUM-535). Las secciones citan los documentos por sección y no por versión, para que una nueva versión de ellos no deje desactualizado el SRS. Si un documento cambia una sección citada, la referencia se revisa en la siguiente versión del SRS.
 
-| Documento | Versión en la línea base | Siguiente versión (Jira) |
+| Documento | Versión en la línea base | Versión del Sprint 5 (Jira) |
 |---|---|---|
-| SAD — Documento de Arquitectura de Software | 2.28 (R5, RIE-02 y RIE-03: ADR-024, desde 2.27) | SAD V4 (SCRUM-411) |
-| DD — Diccionario de Datos y Contratos | 4.0 | DD V5 (SCRUM-455) |
-| SDD — Documento de Diseño de Software | V2 (modelo C4) | SDD V3 (SCRUM-424) |
-| TD — Documento de Pruebas | 1.4 | TD V2 (SCRUM-399) |
-| Documento de Infraestructura | 3.7 | Ninguna planeada (la V3, SCRUM-420, ya es la línea base) |
-| Backlog de producto (Jira, proyecto SCRUM) | Consulta del 10 oct 2026 (estados de las épicas 6 y 7: 14 oct 2026) | Backlog V5 (SCRUM-407) |
+| SAD — Documento de Arquitectura de Software | 2.39 (ADR-025 a ADR-028; la calificación por eventos, ADR-027, desde 2.39) | SAD V5 (SCRUM-541), finalizada en Jira. El SAD no marca qué número de versión corresponde a la V5 |
+| DD — Diccionario de Datos y Contratos | 5.14 | DD V6 (SCRUM-545), en análisis |
+| SDD — Documento de Diseño de Software | V4 lista para la revisión del Product Owner (modelo C4) | SDD V4 (SCRUM-548); revisión en SCRUM-551 y figuras 15 y 18 pendientes (SCRUM-583) |
+| TD — Documento de Pruebas | 3.0 | TD V3 (SCRUM-529) |
+| Documento de Infraestructura | 4.10 | Ninguna planeada (la V4 ya es la línea base) |
+| Backlog de producto (Jira, proyecto SCRUM) | Consulta del 28 oct 2026 | Backlog V6 (SCRUM-537), en backlog |
 
-> SCRUM-403 pide alinear el SRS V5 con el SAD V4 y el DD V4. Cuando se redactó esta versión ninguno estaba completo, así que el borrador usó las versiones del 10 de octubre y dejó en la sección 7.4 los cambios que el SAD V4 y el DD V4 deben incorporar. Al 14 de octubre de 2026, `develop` tiene el SAD 2.28 (ADR-023, ADR-024 y la compuerta de RNF-08), el DD 4.0 y el Documento de Infraestructura 3.7; el TD sigue en 1.4 y el SDD en V2, y la tabla ya usa esas versiones. Se comprobó que las secciones que cita el SRS siguen existiendo en esas versiones y que lo que el SRS afirma de ellas sigue siendo cierto (revisión de Sebastián Sánchez, 14 de octubre de 2026). De los cambios de esos documentos, esta versión solo incorpora el ADR-024.
+> **Revisión del 28 de octubre de 2026 (SCRUM-535).** Se comprobó contra `develop` que las reglas del DD (RN-\*), las dependencias (DEP-\*) y los ADR que cita el SRS siguen existiendo. Siguen abiertas las contradicciones de la sección 7.4.2: en P2, el SAD 2.39 cambia el nombre del evento de la calificación (`service-request.rated`), pero su sección 7.4 todavía libera el pago después de `EVALUATED`. La línea base queda cerrada para el SAD, el TD y el Documento de Infraestructura; el DD V6 y la aprobación del SDD V4 se incorporan cuando terminen.
+
+> **Línea base de la versión 5 (14 de octubre de 2026).** La resolución de R5 frente a RIE-02 y RIE-03 incorporó el SAD 2.27 (ADR-024, 12 de octubre de 2026). SCRUM-403 pide alinear el SRS V5 con el SAD V4 y el DD V4. Cuando se redactó esta versión ninguno estaba completo, así que el borrador usó las versiones del 10 de octubre y dejó en la sección 7.4 los cambios que el SAD V4 y el DD V4 deben incorporar. Al 14 de octubre de 2026, `develop` tiene el SAD 2.28 (ADR-023, ADR-024 y la compuerta de RNF-08), el DD 4.0 y el Documento de Infraestructura 3.7; el TD sigue en 1.4 y el SDD en V2, y la tabla ya usa esas versiones. Se comprobó que las secciones que cita el SRS siguen existiendo en esas versiones y que lo que el SRS afirma de ellas sigue siendo cierto (revisión de Sebastián Sánchez, 14 de octubre de 2026). De los cambios de esos documentos, esta versión solo incorpora el ADR-024.
 
 ---
 
