@@ -12,6 +12,9 @@ Sin credenciales en el repositorio: se leen del entorno.
   python3 cargar-datos-demo.py --ambiente qa --simular        muestra el plan y no escribe nada
   python3 cargar-datos-demo.py --ambiente qa                  carga
   python3 cargar-datos-demo.py --ambiente produccion --confirmar-produccion
+  python3 cargar-datos-demo.py --ambiente produccion --confirmar-produccion --solo-categorias
+                                      solo las categorías base, sin cuentas ni solicitudes de demostración
+                                      (no necesita QP_DEMO_PASSWORD)
 
 Las solicitudes de ejemplo llevan la descripción «[DEMO] ...». Limpiar los datos de las pruebas de carga
 (`playbooks/limpiar-carga-qa.yml`) filtra por «Solicitud de carga k6 %» y «Estrés pico 150 VU%», así que no las toca.
@@ -104,13 +107,45 @@ def buscar_tecnico(api, token, email):
         pagina += 1
 
 
-def cargar(api, juego, clave, admin, resumen, disponibles):
+def sembrar_categorias(api, juego, tok, resumen):
+    """Crea las categorías base que falten (POST /v1/catalog/admin/categories, admin_tenant). Un nombre repetido da 409.
+
+    Devuelve las categorías activas del catálogo por nombre. Si creó alguna, espera a que ServiceRequest reciba la réplica
+    (catalog.category-changed) antes de crear solicitudes con ella.
+    """
+    print("Categorías")
+    st, cats = api.llamar("GET", "/v1/catalog/categories", token=tok)
+    if st != 200:
+        sys.exit(f"Catálogo de categorías: HTTP {st}. No se cambió nada.")
+    existentes = {c["name"] for c in lista(cats)}
+    creadas = 0
+    for c in juego.get("categorias", []):
+        if c["nombre"] in existentes:
+            resumen.anotar("categoría", "ya existía", c["nombre"])
+            continue
+        st, r = api.llamar("POST", "/v1/catalog/admin/categories", {"name": c["nombre"], "description": c["descripcion"]}, tok)
+        if st == 201:
+            resumen.anotar("categoría", "creado", c["nombre"])
+            creadas += 1
+        elif st == 409:
+            # Existe pero inactiva: no se reactiva sola, la decisión es del administrador del tenant.
+            resumen.anotar("categoría", "ya existía", f"{c['nombre']} (inactiva: no se reactiva)")
+        else:
+            resumen.anotar("categoría", "error", f"{c['nombre']} (HTTP {st}: {str(r)[:120]})")
+    if creadas:
+        time.sleep(10)
+    st, cats = api.llamar("GET", "/v1/catalog/categories", token=tok)
+    return {c["name"]: c["id"] for c in lista(cats)}
+
+
+def cargar(api, juego, clave, admin, resumen, disponibles, solo_categorias=False):
     st, tok = api.login(*admin)
     if st != 200:
         sys.exit(f"Inicio de sesión del administrador: HTTP {st}. No se cambió nada.")
 
-    st, cats = api.llamar("GET", "/v1/catalog/categories", token=tok)
-    categorias = {c["name"]: c["id"] for c in lista(cats)}
+    categorias = sembrar_categorias(api, juego, tok, resumen)
+    if solo_categorias:
+        return
     pedidas = {t["categoria"] for t in juego["tecnicos"]} | {s["categoria"] for s in juego["solicitudes"]}
     if pedidas - categorias.keys():
         sys.exit(f"Categorías que no existen en el catálogo: {sorted(pedidas - categorias.keys())}. "
@@ -182,6 +217,7 @@ def cargar(api, juego, clave, admin, resumen, disponibles):
 
 def simular(juego):
     print("Plan (no se escribe nada):")
+    print(f"  categorías base (se crean las que falten): {', '.join(c['nombre'] for c in juego.get('categorias', []))}")
     print(f"  clientes: {len(juego['clientes'])}, empresas: {len(juego['empresas'])}, técnicos: {len(juego['tecnicos'])} "
           f"(cobertura en {len(juego['cobertura'])} localidades), solicitudes de ejemplo: {len(juego['solicitudes'])}")
     for grupo in ("clientes", "tecnicos"):
@@ -199,6 +235,8 @@ def main():
     ap.add_argument("--juego", default=str(Path(__file__).with_name("juego-datos.json")))
     ap.add_argument("--simular", action="store_true", help="muestra el plan y no llama a la API")
     ap.add_argument("--confirmar-produccion", action="store_true", help="obligatoria con --ambiente produccion")
+    ap.add_argument("--solo-categorias", action="store_true",
+                    help="solo crea las categorías base que falten; no crea cuentas ni solicitudes de demostración")
     ap.add_argument("--base-url", help="solo para pruebas locales (por ejemplo http://127.0.0.1:8099)")
     a = ap.parse_args()
 
@@ -209,11 +247,12 @@ def main():
     if a.ambiente == "produccion" and not a.confirmar_produccion:
         sys.exit("En producción hace falta --confirmar-produccion. No se cambió nada.")
 
-    faltan = [v for v in ("QP_ADMIN_EMAIL", "QP_ADMIN_PASSWORD", "QP_DEMO_PASSWORD") if not os.environ.get(v)]
+    requeridas = ("QP_ADMIN_EMAIL", "QP_ADMIN_PASSWORD") + (() if a.solo_categorias else ("QP_DEMO_PASSWORD",))
+    faltan = [v for v in requeridas if not os.environ.get(v)]
     if faltan:
         sys.exit(f"Faltan variables de entorno: {', '.join(faltan)}. No se cambió nada.")
-    clave = os.environ["QP_DEMO_PASSWORD"]
-    if not 8 <= len(clave) <= 128:
+    clave = os.environ.get("QP_DEMO_PASSWORD", "")
+    if not a.solo_categorias and not 8 <= len(clave) <= 128:
         sys.exit("QP_DEMO_PASSWORD debe tener entre 8 y 128 caracteres (política de Identity).")
 
     amb = AMBIENTES[a.ambiente]
@@ -223,7 +262,8 @@ def main():
     if not disponibles:
         print("Producción: los técnicos quedan aprobados y con cobertura, pero no se marcan disponibles "
               "(Matching podría ofrecerles trabajo de clientes reales).")
-    cargar(api, juego, clave, (os.environ["QP_ADMIN_EMAIL"], os.environ["QP_ADMIN_PASSWORD"]), resumen, disponibles)
+    cargar(api, juego, clave, (os.environ["QP_ADMIN_EMAIL"], os.environ["QP_ADMIN_PASSWORD"]), resumen, disponibles,
+           a.solo_categorias)
 
     print("\nConteo final")
     for tipo, c in resumen.cuenta.items():

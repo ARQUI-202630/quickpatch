@@ -1,5 +1,13 @@
 {
-  "_comentario": "Juego de datos de demostración (SCRUM-632). Sin contraseñas: la de las cuentas va en QP_DEMO_PASSWORD. Correos con el dominio demo.quickpatch.test. Las categorías se buscan por nombre en el catálogo del ambiente.",
+  "_comentario": "Juego de datos de demostración (SCRUM-632). Sin contraseñas: la de las cuentas va en QP_DEMO_PASSWORD. Correos con el dominio demo.quickpatch.test. Las categorías base son las de QA; el script crea las que falten en el catálogo del ambiente.",
+  "categorias": [
+    { "nombre": "Aire acondicionado", "descripcion": "Instalación, mantenimiento y recarga de gas." },
+    { "nombre": "Cerrajería", "descripcion": "Aperturas, cambio de guardas y chapas." },
+    { "nombre": "Eléctrico", "descripcion": "Instalaciones, tomas, breakers y cortos." },
+    { "nombre": "Electrodomésticos", "descripcion": "Reparación de lavadoras, neveras y estufas." },
+    { "nombre": "Pintura", "descripcion": "Pintura de interiores y exteriores." },
+    { "nombre": "Plomería", "descripcion": "Fugas, grifería, tuberías y destapes." }
+  ],
   "clientes": [
     { "email": "demo.cliente1@demo.quickpatch.test", "nombre": "Cliente Demo Uno", "telefono": "3001230001" },
     { "email": "demo.cliente2@demo.quickpatch.test", "nombre": "Cliente Demo Dos", "telefono": "3001230002" }

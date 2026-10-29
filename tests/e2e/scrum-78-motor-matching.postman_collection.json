@@ -739,7 +739,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Fuga sin candidatos inmediatos en zona rural norte periférica\",\n  \"location\": {\n    \"latitude\": 4.85,\n    \"longitude\": -74.05\n  },\n  \"addressText\": \"Zona Rural Norte Km 14\"\n}"
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Fuga sin candidatos inmediatos en el extremo norte de Usaquén (periferia)\",\n  \"location\": {\n    \"latitude\": 4.76,\n    \"longitude\": -74.03\n  },\n  \"addressText\": \"Extremo norte de Usaquén, Torca\"\n}"
             }
           },
           "event": [

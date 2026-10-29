@@ -1,0 +1,1141 @@
+{
+  "info": {
+    "name": "QUICKPATCH — SCRUM-600 Dirección fuera de Bogotá contra QA",
+    "description": "Restricción geográfica a Bogotá (R6 del SAD, RN-SR9 del DD, SRS 2.3.1) contra QA. Una dirección escrita fuera de Bogotá la rechaza la vista previa con 422 ubicacion-fuera-de-cobertura (o direccion-no-encontrada si el geocodificador no la reconoce); un punto de GPS fuera del área de cobertura o de las 20 localidades también da 422, y crear solo con la dirección rechaza lo mismo que la vista previa (SCRUM-636). La carpeta 4 afirma el límite documentado: el geocodificador ignora la ciudad escrita cuando la calle existe en Bogotá. No necesita el administrador: el cliente se registra solo y ningún caso crea una solicitud. Variable: baseUrl. Correr con --reporters cli: el reporte JSON de Newman guarda tokens.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://qa.quickpatch.internal"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Preparación: un cliente nuevo y una categoría de QA",
+      "item": [
+        {
+          "name": "Registro del cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba QA cliente\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('sufijo')) {",
+                  "  pm.collectionVariables.set('sufijo', Date.now().toString(36));",
+                  "  // Clave de las cuentas de esta corrida: se genera al vuelo y no se guarda en ningún lado.",
+                  "  pm.collectionVariables.set('clave', 'Qp_' + Math.random().toString(36).slice(2, 12) + '!Aa7');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente.qa.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol cliente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El cliente toma la primera categoría del catálogo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/catalog/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalog",
+                "categories"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('hay categorías', () => pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty);",
+                  "pm.collectionVariables.set('categoriaId', pm.response.json()[0].id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Dirección escrita fuera de Bogotá: la vista previa la rechaza",
+      "item": [
+        {
+          "name": "Control: una dirección de Bogotá sí se ubica",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Calle 72 # 10-07, Bogotá\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con punto dentro del área de cobertura de Bogotá', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(r.location.latitude).to.be.within(4.45, 4.85);",
+                  "  pm.expect(r.location.longitude).to.be.within(-74.25, -73.98);",
+                  "  pm.expect(r.matchedAddress).to.include('Bogotá');",
+                  "  pm.expect(r.locality.name).to.eql('Chapinero');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cali → 422 fuera de cobertura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Calle 5 # 38-70, Cali, Valle del Cauca\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: fuera de Bogotá', () => pm.expect(pm.response.json().detail).to.include('fuera de Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Soacha, vecina de Bogotá → 422 fuera de cobertura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Carrera 7 # 12-30, Soacha, Cundinamarca\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: fuera de Bogotá', () => pm.expect(pm.response.json().detail).to.include('fuera de Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chía, vecina de Bogotá → 422 fuera de cobertura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Calle 12 # 8-30, Chía, Cundinamarca\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: fuera de Bogotá', () => pm.expect(pm.response.json().detail).to.include('fuera de Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Villavicencio → 422 fuera de cobertura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Carrera 3 # 14-20, Villavicencio, Meta\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: fuera de Bogotá', () => pm.expect(pm.response.json().detail).to.include('fuera de Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Poblado, Medellín → 422 fuera de cobertura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Calle 10 Sur # 43A-30, El Poblado, Medellín, Antioquia\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: fuera de Bogotá', () => pm.expect(pm.response.json().detail).to.include('fuera de Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cali sin ninguna coincidencia → 422 dirección no encontrada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Avenida 6N # 25-60, Cali\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo direccion-no-encontrada', () => pm.expect(pm.response.json().type).to.match(/\\/direccion-no-encontrada$/));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Crear la solicitud solo con la dirección: se rechaza igual que en la vista previa",
+      "item": [
+        {
+          "name": "Cali sin coincidencia, solo con la dirección → 422 dirección no encontrada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Avenida 6N # 25-60, Cali\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo direccion-no-encontrada', () => pm.expect(pm.response.json().type).to.match(/\\/direccion-no-encontrada$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cali, solo con la dirección → 422 fuera de cobertura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Calle 5 # 38-70, Cali, Valle del Cauca\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: solo en Bogotá', () => pm.expect(pm.response.json().detail).to.include('solo en Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Villavicencio, solo con la dirección → 422 fuera de cobertura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Carrera 3 # 14-20, Villavicencio, Meta\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: solo en Bogotá', () => pm.expect(pm.response.json().detail).to.include('solo en Bogotá'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. GPS fuera de Bogotá: RN-SR9 rechaza el punto",
+      "item": [
+        {
+          "name": "GPS en Soacha, dentro del rectángulo → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Centro, Soacha\",\n  \"location\": {\n    \"latitude\": 4.5794,\n    \"longitude\": -74.2168\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: solo en Bogotá', () => pm.expect(pm.response.json().detail).to.include('solo en Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GPS en Medellín → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Centro, Medellín\",\n  \"location\": {\n    \"latitude\": 6.2442,\n    \"longitude\": -75.5812\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: solo en Bogotá', () => pm.expect(pm.response.json().detail).to.include('solo en Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GPS en Cali → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Centro, Cali\",\n  \"location\": {\n    \"latitude\": 3.4516,\n    \"longitude\": -76.532\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: solo en Bogotá', () => pm.expect(pm.response.json().detail).to.include('solo en Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GPS en Tunja → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Centro, Tunja\",\n  \"location\": {\n    \"latitude\": 5.5353,\n    \"longitude\": -73.3678\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: solo en Bogotá', () => pm.expect(pm.response.json().detail).to.include('solo en Bogotá'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GPS en Chía, al norte del área de cobertura → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaId}}\",\n  \"description\": \"Prueba de cobertura SCRUM-600\",\n  \"addressText\": \"Centro, Chía\",\n  \"location\": {\n    \"latitude\": 4.8587,\n    \"longitude\": -74.0586\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});",
+                  "pm.test('tipo ubicacion-fuera-de-cobertura', () => pm.expect(pm.response.json().type).to.match(/\\/ubicacion-fuera-de-cobertura$/));",
+                  "pm.test('detalle: solo en Bogotá', () => pm.expect(pm.response.json().detail).to.include('solo en Bogotá'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Límite documentado: una calle de Bogotá con otra ciudad escrita (SRS 2.3.1)",
+      "item": [
+        {
+          "name": "LÍMITE: una calle de Bogotá con Medellín escrita se ubica en Bogotá (Suba)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Carrera 70 # 44-50, Laureles, Medellín\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con punto dentro del área de cobertura de Bogotá', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(r.location.latitude).to.be.within(4.45, 4.85);",
+                  "  pm.expect(r.location.longitude).to.be.within(-74.25, -73.98);",
+                  "  pm.expect(r.matchedAddress).to.include('Bogotá');",
+                  "  pm.expect(r.locality.name).to.eql('Suba');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LÍMITE: una calle de Bogotá con Bucaramanga escrita se ubica en Bogotá (Usaquén)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Carrera 15 # 85-20, Bucaramanga\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con punto dentro del área de cobertura de Bogotá', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(r.location.latitude).to.be.within(4.45, 4.85);",
+                  "  pm.expect(r.location.longitude).to.be.within(-74.25, -73.98);",
+                  "  pm.expect(r.matchedAddress).to.include('Bogotá');",
+                  "  pm.expect(r.locality.name).to.eql('Usaquén');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LÍMITE: una calle de Bogotá con Tunja escrita se ubica en Bogotá (La Candelaria)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/location-preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "location-preview"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressText\": \"Plaza de Bolívar, Tunja\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con punto dentro del área de cobertura de Bogotá', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(r.location.latitude).to.be.within(4.45, 4.85);",
+                  "  pm.expect(r.location.longitude).to.be.within(-74.25, -73.98);",
+                  "  pm.expect(r.matchedAddress).to.include('Bogotá');",
+                  "  pm.expect(r.locality.name).to.eql('La Candelaria');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
