@@ -5,8 +5,8 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 5.8 (MVP, incremento del Sprint 4) |
-| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598; 5.7: capacidad de interacción, SCRUM-568 |
+| **Versión del documento** | 5.10 (borrador de la V6, MVP, incremento del Sprint 5) |
+| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598; 5.7: capacidad de interacción, SCRUM-568; 5.10: línea base, SCRUM-535 (SRS V6, SCRUM-533) |
 | **Responsable** | Angy Bautista (Product Owner) |
 | **Estado** | Aprobado por el Product Owner el 14 de octubre de 2026 (SCRUM-406). Línea base de la sección 1.3 revisada el 14 de octubre de 2026 (Sebastián Sánchez). Pendiente: el PR a `develop` |
 | **Estándar de referencia** | IEEE Std 830-1998 |
@@ -71,18 +71,20 @@ Los requisitos de este documento son la entrada del SAD: los drivers, killers, r
 
 ### 1.3 Línea base de documentos
 
-Este SRS se alinea con los documentos de `develop` del repositorio `quickpatch` al **28 de octubre de 2026** (SCRUM-535). Las secciones citan los documentos por sección y no por versión, para que una nueva versión de ellos no deje desactualizado el SRS. Si un documento cambia una sección citada, la referencia se revisa en la siguiente versión del SRS.
+Este SRS se alinea con los documentos de `develop` del repositorio `quickpatch` al **29 de octubre de 2026** (SCRUM-535). Las secciones citan los documentos por sección y no por versión, para que una nueva versión de ellos no deje desactualizado el SRS. Si un documento cambia una sección citada, la referencia se revisa en la siguiente versión del SRS.
 
 | Documento | Versión en la línea base | Versión del Sprint 5 (Jira) |
 |---|---|---|
-| SAD — Documento de Arquitectura de Software | 2.45 (ADR-025 a ADR-028; la calificación por eventos, ADR-027, desde 2.39; R6 dentro de Bogotá, 2.40; estado de los servicios, 2.41 y 2.43; validación de RNF del Sprint 5, 2.42) | SAD V5 (SCRUM-541), finalizada en Jira. El SAD no marca qué número de versión corresponde a la V5 |
-| DD — Diccionario de Datos y Contratos | 5.14 | DD V6 (SCRUM-545), en análisis |
+| SAD — Documento de Arquitectura de Software | 2.46 (ADR-025 a ADR-028; la calificación por eventos, ADR-027, desde 2.39; R6 dentro de Bogotá, 2.40; estado de los servicios, 2.41 y 2.43; validación de RNF del Sprint 5, 2.42; pago antes de la calificación, 2.46) | SAD V5 (SCRUM-541): 2.46. El SAD se numera por cambio; la V5 es la serie del Sprint 5 |
+| DD — Diccionario de Datos y Contratos | 5.15 | DD V6 (SCRUM-545), en análisis |
 | SDD — Documento de Diseño de Software | V4 lista para la revisión del Product Owner (modelo C4) | SDD V4 (SCRUM-548); revisión en SCRUM-551 y figuras 15 y 18 pendientes (SCRUM-583) |
 | TD — Documento de Pruebas | 3.0 | TD V3 (SCRUM-529) |
 | Documento de Infraestructura | 4.10 | Ninguna planeada (la V4 ya es la línea base) |
-| Backlog de producto (Jira, proyecto SCRUM) | Consulta del 28 oct 2026 | Backlog V6 (SCRUM-537), en backlog |
+| Backlog de producto (Jira, proyecto SCRUM) | Consulta del 29 oct 2026 | Backlog V6 (SCRUM-537), en backlog |
 
-> **Revisión del 28 de octubre de 2026 (SCRUM-535).** Se comprobó contra `develop` que las reglas del DD (RN-\*), las dependencias (DEP-\*) y los ADR que cita el SRS siguen existiendo. Siguen abiertas las contradicciones de la sección 7.4.2: en P2, el SAD 2.45 usa el nombre nuevo del evento de la calificación (`service-request.rated`), pero su sección 7.4 todavía libera el pago después de `EVALUATED`. La línea base queda cerrada para el SAD, el TD y el Documento de Infraestructura; el DD V6 y la aprobación del SDD V4 se incorporan cuando terminen.
+> **Revisión del 29 de octubre de 2026 (SCRUM-535).** Se comprobó contra `develop` que las reglas del DD (RN-\*), las dependencias (DEP-\*) y los ADR que cita el SRS siguen existiendo. La contradicción P2 queda resuelta con el SAD 2.46 (sección 7.4.2).
+>
+> **Versiones pendientes.** El DD V6 (SCRUM-545) y la aprobación del SDD V4 (SCRUM-551) todavía no están en `develop`. No son contradicciones: se incorporan en la siguiente revisión de la línea base, en otra subtarea.
 
 > **Línea base de la versión 5 (14 de octubre de 2026).** La resolución de R5 frente a RIE-02 y RIE-03 incorporó el SAD 2.27 (ADR-024, 12 de octubre de 2026). SCRUM-403 pide alinear el SRS V5 con el SAD V4 y el DD V4. Cuando se redactó esta versión ninguno estaba completo, así que el borrador usó las versiones del 10 de octubre y dejó en la sección 7.4 los cambios que el SAD V4 y el DD V4 deben incorporar. Al 14 de octubre de 2026, `develop` tiene el SAD 2.28 (ADR-023, ADR-024 y la compuerta de RNF-08), el DD 4.0 y el Documento de Infraestructura 3.7; el TD sigue en 1.4 y el SDD en V2, y la tabla ya usa esas versiones. Se comprobó que las secciones que cita el SRS siguen existiendo en esas versiones y que lo que el SRS afirma de ellas sigue siendo cierto (revisión de Sebastián Sánchez, 14 de octubre de 2026). De los cambios de esos documentos, esta versión solo incorpora el ADR-024.
 
@@ -642,7 +644,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 
 | ID | Requisito | Contradicción | Opciones |
 |---|---|---|---|
-| P2 | RF-12 | Este documento, el SDD (escenario 7) y el DD (RN-R3) ponen el pago antes de la calificación; el ciclo de vida del SAD (sección 7.4) todavía libera el pago después de la evaluación (`EVALUATED`). | Actualizar la sección 7.4 del SAD V4 al orden de este documento (pago → calificación). |
+| P2 | RF-12 | **Resuelta (SAD 2.46).** Este documento, el SDD (escenario 7) y el DD (RN-R3) ponen el pago antes de la calificación; el ciclo de vida del SAD (sección 7.4) liberaba el pago después de la evaluación (`EVALUATED`). | Aplicada: la sección 7.4 del SAD 2.46 va `DELIVERED` → `PAID` → `EVALUATED`. |
 | P4 | — | La Ley 1480 de 2011 (killer K13) exige un mecanismo para recibir reclamos, y el módulo de reclamos está fuera del MVP (SAD, FA3). | (a) Un canal mínimo de reclamos asociado a la solicitud, que requeriría un RF nuevo; (b) un canal externo documentado (correo de soporte). |
 | P5 | RF-11, RF-22 | Los técnicos en campo y la respuesta de la pasarela de pagos deben alcanzar el sistema desde fuera de la red del laboratorio, que no es accesible desde Internet (SAD, R9). | Las del SAD, sección 1.2: demostración en la red del campus, túnel gratuito o IP pública de la universidad. |
 | P6 | RNF-02, RNF-03 | No tienen un escenario de calidad que los mida (SAD, sección 2.2). | (a) Agregarlos como escenarios de AC6 (*Confidentiality*) en el SAD V4; (b) tratarlos como restricciones verificables por inspección. |
@@ -673,6 +675,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | 5.6 | 26 oct 2026 | Alcance geográfico (SCRUM-598, subtarea SCRUM-599; revisión del Sprint 4). Nueva sección 2.3.1: la restricción a Bogotá como regla de negocio, con lo que valida el sistema en cada momento (RN-SR9, RN-M9, RF-07, RF-13), las 20 localidades seleccionables, su efecto en el matching y la evidencia de la prueba fuera de Bogotá. Nueva decisión pendiente P10: Sumapaz y la parte rural de Usme y Ciudad Bolívar quedan fuera del área de cobertura. |
 | 5.7 | 27 oct 2026 | El grupo de RNF-11 y RNF-12 se llama **Capacidad de interacción**, como la característica de ISO/IEC 25010:2023 (antes se nombraba con el término de la versión 2011). Corrección del profesor en la revisión del Sprint 4 (SCRUM-567, subtarea SCRUM-568). Los requisitos no cambian. |
 | 5.8 | 28 oct 2026 | Alcance geográfico (SCRUM-636, historia SCRUM-598), tras la prueba SCRUM-600. En la sección 2.3.1, la cobertura al crear exige el rectángulo y una de las 20 localidades, con GPS o con dirección, igual que la vista previa. Nueva limitación conocida: una calle de Bogotá con otra ciudad escrita se ubica en Bogotá, mitigada con la confirmación del pin (ADR-024). P10 sigue abierta. |
+| 5.10 | 29 oct 2026 | SRS V6 (SCRUM-533), subtarea SCRUM-535. **Línea base (sección 1.3)** al 29 de octubre de 2026: SAD 2.46 (SAD V5, SCRUM-541), DD 5.15, SDD V4, TD 3.0, Documento de Infraestructura 4.10 y Backlog del 29 de octubre. Se comprobó que las reglas, las dependencias y los ADR que cita el SRS existen en `develop`. **P2 resuelta** (sección 7.4.2): el SAD 2.46 pone el pago antes de la calificación. El DD V6 y la aprobación del SDD V4 quedan como versiones pendientes y se incorporan en la siguiente revisión de la línea base. La versión 5.9 son los criterios de aceptación del Sprint 5 (SCRUM-534). |
 
 ---
 
