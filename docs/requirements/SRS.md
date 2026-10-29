@@ -5,10 +5,10 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 5.8 (MVP, incremento del Sprint 4) |
-| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598; 5.7: capacidad de interacción, SCRUM-568 |
+| **Versión del documento** | 5.9 (borrador de la V6, MVP, incremento del Sprint 5) |
+| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598; 5.7: capacidad de interacción, SCRUM-568; 5.8: alcance geográfico, SCRUM-636; 5.9: criterios de aceptación del Sprint 5, SCRUM-534 (SRS V6, SCRUM-533) |
 | **Responsable** | Angy Bautista (Product Owner) |
-| **Estado** | Aprobado por el Product Owner el 14 de octubre de 2026 (SCRUM-406). Línea base de la sección 1.3 revisada el 14 de octubre de 2026 (Sebastián Sánchez). Pendiente: el PR a `develop` |
+| **Estado** | Borrador de la V6: criterios de aceptación de los RF del Sprint 5 (SCRUM-534). Pendientes: la línea base de la sección 1.3 (SCRUM-535) y la revisión del Product Owner (SCRUM-536). La versión 5 fue aprobada por el Product Owner el 14 de octubre de 2026 (SCRUM-406) |
 | **Estándar de referencia** | IEEE Std 830-1998 |
 
 ---
@@ -390,7 +390,7 @@ La Épica 6 tiene además cuatro historias de infraestructura sin etiqueta de Fe
 | RF-09 | El sistema debe asignar automáticamente cada solicitud a un técnico del mismo tenant que esté aprobado, disponible, tenga la especialidad de la categoría solicitada y cubra la localidad de la ubicación del servicio (motor de matching), ofreciéndola primero al candidato más cercano. Si ningún técnico cumple las condiciones, la solicitud queda en espera y se reintenta cuando aparezca un candidato. Criterios de aceptación: sección 5.5.1. | Alta | F2.2 | SCRUM-29 |
 | RF-10 | El sistema debe ofrecer cada solicitud a un técnico a la vez y permitirle aceptarla o rechazarla desde la app móvil antes de que la oferta venza (3 minutos), sin penalización por rechazarla. Si la rechaza o no responde, el sistema la ofrece al siguiente candidato. Criterios de aceptación: sección 5.5.2. | Alta | F2.2 | SCRUM-30 |
 | RF-11 | El sistema debe mostrar al Cliente el estado actual de su solicitud en tiempo real (mínimo 4 estados). | Alta | F2.3 | SCRUM-31 |
-| RF-12 | El sistema debe permitir al Cliente calificar el servicio (1 a 5, con comentario opcional) una sola vez, después de que se confirme el pago (estado "Pagado"). | Media | F2.4 | SCRUM-32 |
+| RF-12 | El sistema debe permitir al Cliente calificar el servicio (1 a 5, con comentario opcional) una sola vez, después de que se confirme el pago (estado "Pagado"). Criterios de aceptación: sección 5.5.5. | Media | F2.4 | SCRUM-32 |
 | RF-35 | El sistema debe permitir al Cliente aceptar o rechazar la cotización de su solicitud. Una solicitud admite como máximo 3 cotizaciones, y una cotización sin respuesta antes de su vencimiento cancela la solicitud. | Alta | F2.1 | SCRUM-486 |
 | RF-36 | El sistema debe permitir al Cliente, o al administrador de su tenant, cancelar una solicitud mientras el servicio no haya iniciado, registrando el motivo de la cancelación. | Media | F2.1 | SCRUM-472 |
 | RF-37 | El sistema debe permitir al Cliente dueño de una solicitud (o a los usuarios autorizados de su Empresa) y al Técnico asignado escribirse mensajes de texto dentro de la solicitud, con historial guardado y entrega en tiempo real. El chat se habilita cuando la solicitud tiene técnico asignado y queda de solo lectura cuando se completa, se paga o se cancela. Ningún otro usuario ve los mensajes. | Media | F2.3 | SCRUM-473 |
@@ -403,7 +403,7 @@ La Épica 6 tiene además cuatro historias de infraestructura sin etiqueta de Fe
 | RF-14 | El sistema debe mostrar al Técnico el detalle completo de una solicitud asignada. | Alta | F3.2 | SCRUM-34 |
 | RF-15 | El sistema debe permitir al Técnico marcar una solicitud como completada únicamente después de adjuntar al menos una evidencia fotográfica del trabajo realizado, habilitando el proceso de pago. | Alta | F3.2 | SCRUM-35 |
 | RF-16 | El sistema debe permitir al Proveedor registrar y administrar su equipo de técnicos. | Media | F3.3 | SCRUM-36 |
-| RF-17 | El sistema debe mostrar al Técnico el historial de solicitudes atendidas. | Media | F3.4 | SCRUM-37 |
+| RF-17 | El sistema debe mostrar al Técnico el historial de solicitudes atendidas. Criterios de aceptación: sección 5.5.6. | Media | F3.4 | SCRUM-37 |
 | RF-34 | El sistema debe permitir al Técnico asignado emitir una cotización de mano de obra y materiales para la solicitud; el servicio no puede iniciar sin una cotización aceptada por el Cliente. | Alta | F3.2 | SCRUM-486 |
 
 #### Épica 4 — Panel Administrativo y Operaciones (SCRUM-10)
@@ -420,18 +420,18 @@ La Épica 6 tiene además cuatro historias de infraestructura sin etiqueta de Fe
 | ID | Descripción | Prior. | Feature | Jira |
 |---|---|---|---|---|
 | RF-22 | El sistema debe permitir al Cliente pagar con tarjeta, mediante un proveedor de pagos certificado PCI-DSS, el valor de la cotización aceptada una vez el servicio esté completado. Un pago rechazado no cambia el estado de la solicitud y permite reintentar. | Alta | F5.1 | SCRUM-42 |
-| RF-23 | El sistema debe permitir a una Empresa pagar servicios a nombre de su cuenta corporativa. | Alta | F5.1 | SCRUM-43 |
+| RF-23 | El sistema debe permitir a una Empresa pagar servicios a nombre de su cuenta corporativa. Criterios de aceptación: sección 5.5.7. | Alta | F5.1 | SCRUM-43 |
 | RF-24 | El sistema debe generar automáticamente un comprobante/factura al confirmarse un pago. | Alta | F5.2 | SCRUM-44 |
-| RF-25 | El sistema debe mostrar al Técnico/Proveedor el registro de pagos recibidos por sus servicios. | Media | F5.3 | SCRUM-45 |
+| RF-25 | El sistema debe mostrar al Técnico/Proveedor el registro de pagos recibidos por sus servicios. Criterios de aceptación: sección 5.5.8. | Media | F5.3 | SCRUM-45 |
 
 #### Épica 6 — Infraestructura y Preparación para Producción (DevOps & QA) (SCRUM-12)
 
 | ID | Descripción | Prior. | Feature | Jira |
 |---|---|---|---|---|
 | RF-26 | El sistema debe contar con un pipeline de CI/CD que ejecute build y pruebas automáticas antes de desplegar. | Alta | F6.1 | SCRUM-46 |
-| RF-27 | El sistema debe contar con una prueba automatizada end-to-end del flujo crítico (solicitud → asignación → cotización → servicio completado → pago → calificación). | Alta | F6.2 | SCRUM-47 |
+| RF-27 | El sistema debe contar con una prueba automatizada end-to-end del flujo crítico (solicitud → asignación → cotización → servicio completado → pago → calificación). Criterios de aceptación: sección 5.5.9. | Alta | F6.2 | SCRUM-47 |
 | RF-28 | El sistema debe registrar logs centralizados y estructurados de errores, con un identificador de correlación entre servicios, y contar con alertas básicas de caída de servicio. | Media | F6.3 | SCRUM-48 |
-| RF-29 | El sistema debe cifrar los datos sensibles en tránsito (HTTPS/TLS) y en reposo (contraseñas con hash seguro). | Alta | F6.4 | SCRUM-49 |
+| RF-29 | El sistema debe cifrar los datos sensibles en tránsito (HTTPS/TLS) y en reposo (contraseñas con hash seguro). Criterios de aceptación: sección 5.5.10. | Alta | F6.4 | SCRUM-49 |
 
 ### 5.3 Requisitos No Funcionales
 
@@ -472,7 +472,7 @@ Las acciones correctivas de los RNF parciales y sin cobertura (por ejemplo, que 
 
 ### 5.5 Criterios de aceptación de los RF del incremento
 
-Los RF del flujo del técnico que entran en el incremento del Sprint 4 se precisan con criterios de aceptación verificables (SCRUM-404). Cada criterio indica de dónde sale (criterio de la historia de Jira y regla de negocio del DD) y qué caso del Documento de Pruebas (TD, sección 7) lo verifica. "Falta caso" significa que el TD todavía no tiene un caso para ese criterio y debe agregarlo en el TD V2 (SCRUM-399). "Parcial" significa que los casos citados cubren solo una parte del criterio; la parte sin caso se indica en la misma celda. Los criterios usan los estados y los códigos de error de los contratos del DD (secciones 7 y 8).
+Los RF del flujo del técnico que entran en el incremento del Sprint 4 se precisan con criterios de aceptación verificables (SCRUM-404, secciones 5.5.1 a 5.5.4). Los RF que el Sprint 5 cierra o completa (RF-12, RF-17, RF-23, RF-25, RF-27 y RF-29) se precisan igual en las secciones 5.5.5 a 5.5.10 (SCRUM-534), a partir de los criterios de sus historias en Jira al 27 de octubre de 2026. Cuando una historia dice que el contrato se publica antes de implementar y el contrato todavía no existe, el criterio queda escrito como lo pide la historia y la fila indica de qué tarea de contrato depende. Cada criterio indica de dónde sale (criterio de la historia de Jira y regla de negocio del DD) y qué caso del Documento de Pruebas (TD, sección 7) lo verifica. "Falta caso" significa que el TD todavía no tiene un caso para ese criterio y debe agregarlo en el TD V2 (SCRUM-399). "Parcial" significa que los casos citados cubren solo una parte del criterio; la parte sin caso se indica en la misma celda. Los criterios usan los estados y los códigos de error de los contratos del DD (secciones 7 y 8).
 
 #### 5.5.1 RF-09 — Asignación automática de técnico (SCRUM-29)
 
@@ -525,6 +525,77 @@ Los RF del flujo del técnico que entran en el incremento del Sprint 4 se precis
 
 > **Diferencias con el TD que debe corregir el TD V2 (SCRUM-399):** MAT-003 usa la ruta `PUT /v1/matching/availability`, y el DD define `PUT /v1/technicians/me/availability`. MAT-005 guarda la cobertura como un polígono libre, y el DD la define como una lista de localidades (`MULTIPOLYGON`). MAT-010 y MAT-011 usan los valores `aceptada` y `rechazada`, y el DD usa `aceptado` y `rechazado`. ACT-006 usa `POST .../reactivate`, y el DD reactiva con `approve`. ACT-005 suspende automáticamente a un técnico con calificación menor a 3.0, algo que ningún RF define: RF-20 dice que la suspensión la hace el Admin del tenant (ver la decisión P8 en la sección 7.4).
 
+#### 5.5.5 RF-12 — Calificación del servicio (SCRUM-32)
+
+| # | Criterio de aceptación | Fuente | Casos (TD) |
+|---|---|---|---|
+| 1 | El Cliente dueño de la solicitud solo puede calificarla cuando está en `pagado`. En cualquier otro estado, la calificación se rechaza con `409 INVALID_STATE_TRANSITION`. | SCRUM-32 c1; DD RN-R3 (DEP-11), 8.3.11 | Falta caso |
+| 2 | La calificación es un puntaje entero de 1 a 5 con un comentario opcional. Un puntaje fuera de ese rango se rechaza con `400 VALIDATION_ERROR`. El comentario tiene la longitud máxima que fije el contrato (SCRUM-497; el ADR-027 propone 500 caracteres) y no se escribe en los logs. | SCRUM-32 c2; DD RN-R1, 5.9; SAD ADR-027 | Parcial: SRQ-022 (puntaje fuera de rango). Falta caso: comentario opcional y su longitud máxima |
+| 3 | Una solicitud se califica una sola vez. Un segundo intento responde `409 ALREADY_RATED`. | SCRUM-32 c3; DD RN-R2, 8.3.11 | SRQ-023 |
+| 4 | Solo califica el dueño de la solicitud, tomado del token (en una solicitud de empresa, el usuario que la creó). Otro usuario del mismo tenant recibe `403` y uno de otro tenant, `404`. | SCRUM-32 c3; SAD ADR-027; RF-04 | Falta caso |
+| 5 | Calificar no cambia el estado de la solicitud. La calificación y el evento `service-request.rated` se guardan en la misma transacción (Outbox), y el evento no lleva el comentario. | SCRUM-32 c4; DD 7.4, 8.4; SAD ADR-007, ADR-027 | Parcial: SRQ-021 (la calificación queda guardada). Falta caso: evento en el Outbox sin el comentario |
+| 6 | Ranking actualiza la cantidad de calificaciones y el promedio del técnico en su tenant. El mismo evento recibido dos veces suma una sola vez. Con 5 o más calificaciones y un promedio menor a 3.0, el técnico queda marcado con reputación baja, sin suspenderlo (la suspensión la decide el Admin del tenant, RF-20). | SCRUM-32 c4; DD RN-EV1; SAD ADR-027, AC9-E2, R12 | RNK-001, RNK-002, RNK-003, RNK-004, RNK-005, RNK-008 |
+| 7 | Si Ranking no está disponible, la calificación se acepta igual (`201`) y Ranking procesa los eventos pendientes cuando vuelve. | SAD ADR-027, AC5-E3 | RNK-006 |
+| 8 | La calificación se ve en el detalle de la solicitud y en el historial del técnico (RF-17, sección 5.5.6). | SCRUM-32 c5; SAD ADR-027 | Falta caso |
+| 9 | El contrato REST de la calificación y el esquema del evento `service-request.rated` están publicados en `quickpatch-api-gateway` y `quickpatch-kafka` antes de implementar. | SCRUM-32 c6 | Pendiente: SCRUM-497. Al 27 de octubre de 2026 la implementación (SCRUM-85 en ServiceRequest y SCRUM-498 en Ranking) está en `develop` con la ruta del DD (8.3.11), pero `service-request.v1.yaml` (v0.17.0) no tiene `/rating` y `quickpatch-kafka` no tiene `service-request.rated` |
+
+El nombre del evento es el del DD (8.4), `service-request.rated`. La historia SCRUM-32 dice `service-request.evaluated` y el SAD (4.2) `SERVICE_EVALUATED`; el ADR-027 fija el del DD. La decisión pendiente P2 (sección 7.4) sigue abierta mientras el ciclo de vida del SAD no ponga el pago antes de la calificación.
+
+#### 5.5.6 RF-17 — Historial de servicios del Técnico (SCRUM-37)
+
+| # | Criterio de aceptación | Fuente | Casos (TD) |
+|---|---|---|---|
+| 1 | El Técnico ve en la app las solicitudes que le asignaron, de la asignación más reciente a la más antigua, con el estado, la fecha, la categoría y, cuando exista, la calificación recibida (RF-12). | SCRUM-37 c1; contrato `service-request.v1.yaml` 1.2.0 (`GET /v1/technicians/me/service-requests`); DD 8.3 | Parcial: SRQ-026 (listado). Falta caso: la calificación en el historial, que depende del contrato SCRUM-499 |
+| 2 | El historial se puede filtrar por estado, al menos `completado` y `cancelado`, y es paginado (hasta 100 elementos por página). | SCRUM-37 c2; DD 8.1 | SRQ-026 |
+| 3 | Solo aparecen las solicitudes del técnico autenticado, en el tenant del token. Otro técnico u otro tenant no las ve. | SCRUM-37 c3; RF-04 | Falta caso |
+| 4 | El historial no trae la dirección, la ubicación ni los datos del cliente. El contacto solo se ve en el detalle, mientras la solicitud está entre `asignado` y `completado`. | DD RN-SR13 | Falta caso |
+| 5 | Solo el rol `tecnico` consulta el historial; los demás roles reciben `403`. | Contrato 1.2.0; RF-05 | Falta caso |
+| 6 | El endpoint está en el contrato de ServiceRequest antes de implementar. | SCRUM-37 c4 | Hecho para el listado (1.2.0, SCRUM-464). La calificación en la respuesta espera SCRUM-499 |
+
+#### 5.5.7 RF-23 — Pago a nombre de la cuenta corporativa (SCRUM-43)
+
+| # | Criterio de aceptación | Fuente | Casos (TD) |
+|---|---|---|---|
+| 1 | Cuando la solicitud es de una empresa, el pago queda asociado a la empresa y no a un usuario: lo puede hacer cualquier `empresa_contacto` de esa empresa, y el pago registra quién lo autorizó. | SCRUM-43 c1 y c2; DD RN-P6 | Falta caso en el TD. Verificado contra QA en la colección `scrum-496-pago-empresa` (27 de octubre de 2026) |
+| 2 | El monto es el total de la cotización aceptada; quien paga no puede enviar otro monto. | SCRUM-43 c3; DD RN-P3 | PAY-016 |
+| 3 | Un usuario de otra empresa, un cliente particular del mismo tenant o un usuario de otro tenant reciben `404` al consultar o pagar la solicitud. | SCRUM-43 c4; DD RN-P6; RF-04 | Falta caso en el TD. Verificado en `scrum-496-pago-empresa` |
+| 4 | Una solicitud ya pagada no se puede pagar otra vez (`409`). | DD RN-P2, RN-P5 | Falta caso en el TD. Verificado en `scrum-496-pago-empresa` |
+| 5 | El comprobante (JSON y PDF) sale con la razón social y el NIT de la empresa, rotulado como documento sin validez fiscal (DR-03). Lo lee quien pagó y el Admin del tenant. | SCRUM-43 c5; DR-03; DD 8.3.12 | PAY-006 |
+| 6 | Ni el número de la tarjeta ni el CVV llegan al backend ni se guardan: la tarjeta se tokeniza en la app. | SCRUM-43 c6; DD RN-P1; RNF-01 | PAY-001, PAY-002 |
+
+#### 5.5.8 RF-25 — Pagos recibidos por el Técnico y el Proveedor (SCRUM-45)
+
+| # | Criterio de aceptación | Fuente | Casos (TD) |
+|---|---|---|---|
+| 1 | El Técnico ve una lista paginada de los pagos de sus servicios, con la fecha, el monto y el estado (aprobado o pendiente). | SCRUM-45 c1; DD 8.1 y 8.3 (`GET /v1/payments/received`, sin versión de contrato) | Parcial: PAY-007. La ruta todavía no está en el contrato (SCRUM-500) |
+| 2 | El Proveedor ve los pagos de los técnicos de su equipo (RF-16). | SCRUM-45 c2 | Falta caso |
+| 3 | Cada usuario solo ve pagos de servicios propios o de su equipo. Un técnico no ve los pagos de otro técnico, y un técnico de otro tenant recibe una lista vacía o `404`. | SCRUM-45 c3; RF-04 | Parcial: PAY-008 (otro tenant). Falta caso: otro técnico del mismo tenant y proveedor ajeno |
+| 4 | La respuesta no incluye el número de la tarjeta, el CVV ni el token de la tarjeta. | SCRUM-45 c4; DD RN-P1; RNF-01 | Falta caso |
+| 5 | El endpoint está en el contrato de Payments, con las reglas de visibilidad por rol en el DD, antes de implementar. | SCRUM-45 c5 | Pendiente: SCRUM-500 |
+
+#### 5.5.9 RF-27 — Prueba automatizada del flujo crítico (SCRUM-47)
+
+| # | Criterio de aceptación | Fuente | Casos (TD) |
+|---|---|---|---|
+| 1 | Una sola prueba recorre el flujo completo: registro, solicitud, oferta y aceptación, cotización, inicio con evidencia fotográfica, servicio completado, pago, comprobante y calificación. | SCRUM-47 c1; RF-27 | Parcial: E2E-001. La calificación entra con RF-12 (sección 5.5.5) |
+| 2 | La prueba crea sus propios datos y los limpia al terminar. No depende de usuarios fijos ni deja datos de carga en QA. | SCRUM-47 c2; RNF-07 | Falta caso |
+| 3 | El pipeline la ejecuta después de cada despliegue de `release/*` en QA, y si falla bloquea la promoción a producción. | SCRUM-47 c3; RNF-08; SAD AC7-E6 | Falta caso (evidencia: una ejecución en verde y una fallida que bloquea la promoción) |
+| 4 | La prueba no escribe credenciales ni tokens en el log del pipeline. | SCRUM-47 c4 | Inspección del log del pipeline |
+
+#### 5.5.10 RF-29 — Cifrado en tránsito y en reposo (SCRUM-49)
+
+| # | Criterio de aceptación | Fuente | Casos (TD) |
+|---|---|---|---|
+| 1 | Todo el tráfico entre la app o el panel y el servidor usa HTTPS/TLS. Una petición HTTP se redirige a HTTPS o se rechaza. | SCRUM-49 c1; RNF-02 | IDN-021, INF-005 |
+| 2 | Las contraseñas se guardan con un hash seguro y nunca en texto plano. | SCRUM-49 c2; RNF-03 | IDN-015 |
+| 3 | Ninguna base de datos ni ningún log guarda el número de la tarjeta ni el CVV (escáner PCI-DSS sobre Loki). | SCRUM-49 c3; RNF-01; DD RN-P1; SAD AC6-E1 | PAY-001, PAY-002 |
+| 4 | El Documento de Infraestructura documenta el cifrado en reposo de PostgreSQL, Garage y los respaldos o, si no se cifran, la decisión y el riesgo. | SCRUM-49 c4 | Inspección del Documento de Infraestructura V4 |
+| 5 | Antes del lanzamiento a producción, el escaneo de vulnerabilidades (OWASP ZAP) no tiene hallazgos de severidad alta. | SCRUM-49 c5 | INF-013 |
+
+RNF-02 y RNF-03 siguen sin escenario de calidad en el SAD (decisión pendiente P6, sección 7.4); mientras tanto, los criterios 1 y 2 se verifican con los casos citados.
+
+> **Diferencias con el TD que debe corregir el TD V3 (SCRUM-529):** SRQ-026 usa la ruta `GET /v1/technicians/me/services` y el contrato publica `GET /v1/technicians/me/service-requests` (1.2.0). PAY-007 usa `GET /v1/payments/received`, que el DD lista pero que todavía no está en el contrato de Payments (SCRUM-500). El TD no tiene casos para el pago de la empresa por otro contacto (RN-P6) ni para el rechazo entre empresas, que hoy solo verifica la colección `scrum-496-pago-empresa`.
+
 ---
 
 ## 6. Matriz Comparativa
@@ -564,7 +635,7 @@ Con el fin de justificar el enfoque del producto, se comparó QUICKPATCH frente 
 
 #### 7.1.2 Requisitos, Historias de Usuario y Casos de Prueba
 
-Cada RF se enlaza con su historia de Jira y con los casos del Documento de Pruebas (TD, sección 7.1.1) que lo verifican. Los RF marcados con ★ son los del incremento y tienen criterios de aceptación en la sección 5.5, con el caso de prueba de cada criterio.
+Cada RF se enlaza con su historia de Jira y con los casos del Documento de Pruebas (TD, sección 7.1.1) que lo verifican. Los RF marcados con ★ tienen criterios de aceptación en la sección 5.5, con el caso de prueba de cada criterio: los del incremento del Sprint 4 (RF-09, RF-10, RF-13 y RF-19) y los del Sprint 5 (RF-12, RF-17, RF-23, RF-25, RF-27 y RF-29).
 
 | Requisito | Historia (Jira) | Casos de prueba (TD) |
 |---|---|---|
@@ -579,24 +650,24 @@ Cada RF se enlaza con su historia de Jira y con los casos del Documento de Prueb
 | RF-09 ★ | SCRUM-29 | MAT-001, MAT-002, MAT-004, MAT-006, MAT-007, MAT-008, MAT-009, MAT-013, PRF-001 |
 | RF-10 ★ | SCRUM-30 | MAT-009, MAT-010, MAT-011, MAT-012, E2E-007 |
 | RF-11 | SCRUM-31 | SRQ-006, COM-001, COM-002, COM-005 |
-| RF-12 | SCRUM-32 | SRQ-021, SRQ-022, SRQ-023, RNK-001, RNK-002 |
+| RF-12 ★ | SCRUM-32 | SRQ-021, SRQ-022, SRQ-023, RNK-001, RNK-002, RNK-003, RNK-004, RNK-005, RNK-006, RNK-008 |
 | RF-13 ★ | SCRUM-33 | MAT-003, MAT-004, MAT-005 |
 | RF-14 | SCRUM-34 | SRQ-005 |
 | RF-15 | SCRUM-35 | SRQ-016, SRQ-017, SRQ-018, E2E-001 |
 | RF-16 | SCRUM-36 | ACT-007, ACT-008, ACT-009 |
-| RF-17 | SCRUM-37 | SRQ-026 |
+| RF-17 ★ | SCRUM-37 | SRQ-026 |
 | RF-18 | SCRUM-38 | E2E-002 |
 | RF-19 ★ | SCRUM-39 | ACT-003, ACT-004, MAT-002, E2E-003 |
 | RF-20 | SCRUM-40 | ACT-005, ACT-006 |
 | RF-21 | SCRUM-41, SCRUM-348 | IDN-019, E2E-004 |
 | RF-22 | SCRUM-42 | PAY-003, PAY-010, PAY-011, E2E-009 |
-| RF-23 | SCRUM-43 | PAY-006 |
+| RF-23 ★ | SCRUM-43 | PAY-001, PAY-002, PAY-006, PAY-016; colección `scrum-496-pago-empresa` |
 | RF-24 | SCRUM-44 | PAY-004, PAY-005 |
-| RF-25 | SCRUM-45 | PAY-007 |
+| RF-25 ★ | SCRUM-45 | PAY-007, PAY-008 |
 | RF-26 | SCRUM-46 | INF-016 |
-| RF-27 | SCRUM-47 | E2E-001 |
+| RF-27 ★ | SCRUM-47 | E2E-001 |
 | RF-28 | SCRUM-48 | INF-011, INF-012, PRF-010 |
-| RF-29 | SCRUM-49 | IDN-015, IDN-021, INF-005 |
+| RF-29 ★ | SCRUM-49 | IDN-015, IDN-021, INF-005, INF-013, PAY-001, PAY-002 |
 | RF-34 | SCRUM-486 | SRQ-008, SRQ-009, SRQ-010 |
 | RF-35 | SCRUM-486 | SRQ-011, SRQ-012, SRQ-013, E2E-008 |
 | RF-36 | SCRUM-472 | SRQ-019, SRQ-020, E2E-010 |
@@ -606,23 +677,22 @@ Los RNF se verifican por medio de su escenario de calidad del SAD (sección 5.3)
 
 ### 7.2 Resumen de Requisitos Funcionales
 
-El presente MVP contempla un total de **32 requisitos funcionales**, agrupados en **23 Features**, organizados en **7 módulos de dominio** y soportados por **7 módulos transversales** (incluyendo la Gestión del Proyecto y Documentación), distribuidos en **7 épicas**. Se definen además **14 requisitos no funcionales** y **3 requisitos de interfaces externas**. Todos los requisitos están priorizados como *Alta* o *Media* por ser esenciales para demostrar el ciclo completo del negocio: registro y autenticación multi-tenant, solicitud de servicio, asignación automática, cotización, ejecución técnica con evidencia fotográfica, pago seguro y calificación. La numeración salta de RF-29 a RF-34 porque RF-30 a RF-33 (versiones 2.x, control de cambios) se retiraron en la versión 3.0 al reemplazarse por RNF-13, y sus números no se reutilizan. Cuatro RF del incremento (RF-09, RF-10, RF-13 y RF-19) tienen criterios de aceptación detallados en la sección 5.5. RF-34 y RF-35 comparten la historia SCRUM-486 (versión 5.2) y la de RF-36 es SCRUM-472 (versión 5.1).
+El presente MVP contempla un total de **32 requisitos funcionales**, agrupados en **23 Features**, organizados en **7 módulos de dominio** y soportados por **7 módulos transversales** (incluyendo la Gestión del Proyecto y Documentación), distribuidos en **7 épicas**. Se definen además **14 requisitos no funcionales** y **3 requisitos de interfaces externas**. Todos los requisitos están priorizados como *Alta* o *Media* por ser esenciales para demostrar el ciclo completo del negocio: registro y autenticación multi-tenant, solicitud de servicio, asignación automática, cotización, ejecución técnica con evidencia fotográfica, pago seguro y calificación. La numeración salta de RF-29 a RF-34 porque RF-30 a RF-33 (versiones 2.x, control de cambios) se retiraron en la versión 3.0 al reemplazarse por RNF-13, y sus números no se reutilizan. Diez RF tienen criterios de aceptación detallados en la sección 5.5: los cuatro del incremento del Sprint 4 (RF-09, RF-10, RF-13 y RF-19) y los seis del Sprint 5 (RF-12, RF-17, RF-23, RF-25, RF-27 y RF-29). RF-34 y RF-35 comparten la historia SCRUM-486 (versión 5.2) y la de RF-36 es SCRUM-472 (versión 5.1).
 
 **Estado de avance de la Épica 7 (consultado en Jira el 14 de octubre de 2026):** de sus 34 elementos, 27 figuran como Finalizados: todos los documentos y tareas de las versiones V1 a V4 y del Sprint 3, más el DD V4 (SCRUM-416) y el Documento de Infraestructura V3 (SCRUM-420). De las 7 historias restantes del Sprint 4, el SRS V5, el SAD V4 y el SDD V3 están en desarrollo; el TD V2 y el informe de pruebas, por hacer; y el Backlog V5 y la presentación, en Backlog.
 
 ### 7.3 Historias de Jira por actualizar
 
-Las siguientes historias de usuario tienen criterios de aceptación que no coinciden con este documento. SCRUM-24, SCRUM-29, SCRUM-30, SCRUM-33, SCRUM-34, SCRUM-39 y SCRUM-40 ya se reescribieron en Jira y salen de la lista de la versión 4.0. Faltan las de esta tabla. SCRUM-35 se reescribió con la evidencia fotográfica obligatoria (RF-15), y las historias de RF-34, RF-35 y RF-36 ya existen (SCRUM-486 y SCRUM-472).
+Las siguientes historias de usuario tienen criterios de aceptación que no coinciden con este documento. SCRUM-24, SCRUM-29, SCRUM-30, SCRUM-33, SCRUM-34, SCRUM-39 y SCRUM-40 ya se reescribieron en Jira y salen de la lista de la versión 4.0. Faltan las de esta tabla. SCRUM-35 se reescribió con la evidencia fotográfica obligatoria (RF-15), y las historias de RF-34, RF-35 y RF-36 ya existen (SCRUM-486 y SCRUM-472). En la versión 5.9 sale SCRUM-47, que ya incluye la cotización y la evidencia fotográfica y corre en el ambiente de QA (revisado el 27 de octubre de 2026).
 
 | Jira | Criterio de aceptación actual | Cambio necesario | Requisito |
 |---|---|---|---|
 | SCRUM-21 | El usuario queda asociado al tenant "Hogar/Bogotá" por defecto. | El Cliente queda en el tenant de la empresa oferente por cuyo canal se registra; no existe un tenant "Hogar". | RF-01, RF-04 |
 | SCRUM-26 | La cuenta empresarial queda asociada a un tenant propio. | La cuenta empresarial es una cuenta de usuario dentro del tenant. | RF-06 |
-| SCRUM-32 | La calificación solo se habilita cuando la solicitud está en estado "Completado". | Se habilita cuando la solicitud está en estado "Pagado". | RF-12 |
+| SCRUM-32 | Criterio 1: "La calificación solo se habilita cuando la solicitud está completada (y pagada, según el DD)". Criterio 4: el evento se llama `service-request.evaluated`. | Criterio 1: solo en estado "Pagado" (RN-R3), sin mencionar "completada". Criterio 4: el evento es `service-request.rated` (DD 8.4, ADR-027). | RF-12 |
 | SCRUM-38 | El Admin ve las solicitudes de todos los tenants. | El Admin del tenant ve solo su tenant; el Admin de plataforma ve todos, filtrables por tenant. | RF-18 |
 | SCRUM-41 | Criterio 4: "Un tenant desactivado no puede crear nuevas solicitudes." | La historia está finalizada y lo que se implementó es el rechazo del login. El rechazo inmediato de solicitudes pasa a SCRUM-348; conviene anotarlo en SCRUM-41. | RF-21 |
-| SCRUM-46, SCRUM-47 | Ambiente de "staging". | Ambiente de QA (VM2, VM5 y VM7). | RNF-07, RNF-08 |
-| SCRUM-47 | Flujo Cliente → Técnico → Pago → Calificación. | Incluir la cotización y la evidencia fotográfica. | RF-27 |
+| SCRUM-46 | Criterio 4: "Existe un ambiente de staging separado del de producción". | Ambiente de QA (VM2, VM5 y VM7). | RNF-07, RNF-08 |
 
 ### 7.4 Decisiones
 
@@ -671,6 +741,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | 5.6 | 26 oct 2026 | Alcance geográfico (SCRUM-598, subtarea SCRUM-599; revisión del Sprint 4). Nueva sección 2.3.1: la restricción a Bogotá como regla de negocio, con lo que valida el sistema en cada momento (RN-SR9, RN-M9, RF-07, RF-13), las 20 localidades seleccionables, su efecto en el matching y la evidencia de la prueba fuera de Bogotá. Nueva decisión pendiente P10: Sumapaz y la parte rural de Usme y Ciudad Bolívar quedan fuera del área de cobertura. |
 | 5.7 | 27 oct 2026 | El grupo de RNF-11 y RNF-12 se llama **Capacidad de interacción**, como la característica de ISO/IEC 25010:2023 (antes se nombraba con el término de la versión 2011). Corrección del profesor en la revisión del Sprint 4 (SCRUM-567, subtarea SCRUM-568). Los requisitos no cambian. |
 | 5.8 | 28 oct 2026 | Alcance geográfico (SCRUM-636, historia SCRUM-598), tras la prueba SCRUM-600. En la sección 2.3.1, la cobertura al crear exige el rectángulo y una de las 20 localidades, con GPS o con dirección, igual que la vista previa. Nueva limitación conocida: una calle de Bogotá con otra ciudad escrita se ubica en Bogotá, mitigada con la confirmación del pin (ADR-024). P10 sigue abierta. |
+| 5.9 | 29 oct 2026 | SRS V6 (SCRUM-533), subtarea SCRUM-534. **Criterios de aceptación del Sprint 5:** nuevas secciones 5.5.5 a 5.5.10 con los criterios verificables de RF-12, RF-17, RF-23, RF-25, RF-27 y RF-29, sacados de sus historias en Jira (SCRUM-32, 37, 43, 45, 47 y 49) al 27 de octubre de 2026, cada uno con la regla del DD o la decisión del SAD que lo sustenta y el caso del TD que lo verifica. RF-12 sigue el ADR-027 (calificación en ServiceRequest, evento `service-request.rated` y reputación en Ranking), y RF-23 cita la evidencia `scrum-496-pago-empresa` contra QA. Los criterios que dependen de un contrato sin publicar lo indican: SCRUM-497 (calificación), SCRUM-499 (calificación en el historial) y SCRUM-500 (pagos recibidos). Se agrega una nota con las diferencias que debe corregir el TD V3 (SCRUM-529). **Otros cambios:** los seis RF remiten a su sección de criterios, la matriz 7.1.2 los marca con ★ y suma los casos citados, y la sección 7.3 actualiza SCRUM-32 (estado "Pagado" y nombre del evento), deja SCRUM-46 sola en la fila del ambiente de staging y retira SCRUM-47, que ya se reescribió. Pendientes de la V6: la línea base de la sección 1.3 (SCRUM-535) y la revisión del Product Owner (SCRUM-536). |
 
 ---
 
