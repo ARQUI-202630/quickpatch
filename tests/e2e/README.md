@@ -45,6 +45,22 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run quic
 
 En la base: la solicitud quedó en `buscando_tecnico` con su punto, el Outbox publicó `service-request.created` y Matching lo registró en `processed_events`.
 
+## Prueba de humo del flujo crítico (SCRUM-504, historia SCRUM-47)
+
+`humo-flujo-critico.postman_collection.json` se genera con `python tests/e2e/generar-humo-flujo-critico.py` y reutiliza los pasos de las colecciones de SCRUM-490, SCRUM-96 y SCRUM-117. Es un recorrido único, sin casos negativos (RF-27, RNF-08):
+
+1. **Preparación:** categoría propia, técnico aprobado con cobertura en toda Bogotá y disponible, y un cliente, con una clave aleatoria que no se guarda.
+2. **Solicitud y asignación:** el cliente crea la solicitud, el técnico ve la oferta y la acepta.
+3. **Cotización:** el técnico cotiza 185.000 y el cliente acepta.
+4. **Ejecución con foto:** el técnico inicia, sube la foto y completa.
+5. **Pago y comprobante:** Payments crea el pago pendiente, el cliente paga con la tarjeta simulada aprobada, la solicitud pasa a `pagado` y el comprobante coincide con el pago.
+6. **Calificación:** el cliente califica con 5 (201) y una segunda calificación responde 409 `ya-calificada`.
+7. **Limpieza:** suspende al técnico y desactiva la categoría. La API no borra usuarios ni solicitudes; los datos que crea llevan el sufijo de la corrida en el correo y se pueden filtrar en la base.
+
+Falla si el recorrido pasa de 5 minutos (la última petición lo comprueba). Con el reporter `cli` no imprime credenciales ni tokens.
+
+**En el pipeline:** el job «Humo del flujo crítico» de `pruebas-sistema.yml` la corre en cada `release/*` y a mano, y falla sin correr nada si faltan `QA_ADMIN_EMAIL` y `QA_ADMIN_PASSWORD` (sin ellos la colección omitiría todos sus pasos y saldría en verde). El job de carga espera a que pase. La compuerta de producción (`compuerta-qa`, SCRUM-415) exige que la última corrida de `pruebas-sistema.yml` haya terminado en éxito después de que la versión llegó a QA, así que un fallo del humo bloquea la promoción. El bucle de Newman del job E2E la omite para no correrla dos veces.
+
 ## Cancelación de la solicitud de punta a punta (SCRUM-478)
 
 `scrum-478-cancelacion.postman_collection.json` prueba RF-36 (SCRUM-472) contra QA. Se genera con `python tests/e2e/generar-scrum478-cancelacion.py`.
