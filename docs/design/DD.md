@@ -10,7 +10,7 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.14|
+|**Versión**|5.15|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
 |**Historia en Jira**|SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
@@ -2781,6 +2781,7 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.13|SCRUM-73|**Solicitud de empresa (RF-08, SCRUM-28).** `service-request.v1.yaml` 1.9.0: el `empresa_contacto` crea solicitudes con `siteName` opcional; `client_type` y `company_id` se implementan y salen del token (RN-SR12); `site_name` nueva en `service_requests` (sección 5.5). RN-SR14: los demás usuarios de la empresa ven la solicitud. `GET /v1/service-requests` se abre al `cliente` y al `empresa_contacto`, con `clientType` para que el panel distinga las de empresa (secciones 8.2.4 y 8.3.3).|
 |5.14|SCRUM-499|**Historial técnico con calificación (RF-16, SCRUM-497).** `service-request.v1.yaml` 1.10.0: TechnicianServiceRequest ahora incluye campos opcionales `score` y `ratedAt` cuando una solicitud completada ha sido calificada. Se actualiza la descripción de `ratings.created_at` para usar `ratedAt` en el contrato REST (sección 8.3.11).|
 |5.15|SCRUM-636|**Cobertura por localidades (RN-SR9).** Crear una solicitud, con GPS o con dirección, exige el rectángulo y una de las 20 localidades, igual que la vista previa (sección 8.3.3). El rectángulo solo aceptaba puntos en Soacha. Sin cambio de contrato: `422 ubicacion-fuera-de-cobertura` ya estaba documentado.|
+|5.15|SCRUM-546/547|**Sprint 5: Modelos y Contratos Finales.** Incorpora calificación y reputación técnico (SCRUM-497, ADR-027), recuperación contraseña (SCRUM-624, ADR-024), evento tenant.status-changed (SCRUM-508), historial técnico ampliado (SCRUM-499, v1.10.0 identity, v1.2.0 payments). Actualiza agregados, reglas de negocio, índices. Alinea modelo con diagramas C4, eventos Kafka, flujos dinámicos. DD V5.15 cierra Sprint 5.|
 |5.16|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
