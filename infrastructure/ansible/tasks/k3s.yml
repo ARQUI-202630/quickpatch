@@ -60,8 +60,6 @@
             metrics:
               port: 9101
 
-# raw.githubusercontent.com está bloqueado en la red de la universidad, y get.k3s.io
-# rechaza clientes que no se identifican como curl. La versión se fija con INSTALL_K3S_VERSION.
 # secrets-encryption: k3s lo lee de config.yaml como el flag del mismo nombre. En un nodo que ya corre sin cifrado no cambia
 # nada hasta reiniciar k3s: para activarlo en uno existente se usa playbooks/cifrar-secretos-k3s.yml (respaldo, reinicio y recifrado).
 - name: Carpeta de configuración de k3s
@@ -80,6 +78,8 @@
     mode: "0600"
   when: k3s_secrets_encryption | default(false)
 
+# raw.githubusercontent.com está bloqueado en la red de la universidad, y get.k3s.io
+# rechaza clientes que no se identifican como curl. La versión se fija con INSTALL_K3S_VERSION.
 - name: Descargar el instalador de k3s
   ansible.builtin.get_url:
     url: https://get.k3s.io
