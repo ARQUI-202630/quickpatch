@@ -15,9 +15,10 @@ Colección: tests/e2e/humo-flujo-critico.postman_collection.json (reporter cli: 
    La rama cambió una sola aserción (la calificación esperada, de 5 a 3). Resultado:
      29 aserciones, 1 fallida: «201 con el contrato Rating — expected 5 to deeply equal 3».
    Humo del flujo crítico: failure; conclusión del workflow: failure; Carga (k6): omitida porque necesita el humo.
-   La compuerta de producción (infrastructure/ansible/files/compuerta-qa.sh) toma la última ejecución terminada de
-   pruebas-sistema.yml y la deja pasar solo si su conclusión es «success»; con esta, la conclusión es «failure» y
-   bloquea la promoción.
+   Según infrastructure/ansible/files/compuerta-qa.sh, la compuerta de producción consulta la última ejecución terminada
+   de pruebas-sistema.yml (cualquier rama) y falla si su conclusión no es «success». La API de GitHub devuelve
+   «failure» para esta corrida, así que, mientras fue la última, esa comprobación habría bloqueado la promoción.
+   No se ejecutó compuerta-qa.sh contra esta corrida: la conclusión se leyó de la API y el efecto se deduce del script.
 
 3. Run en verde posterior, rama feature/qa/humo-flujo-critico
    https://github.com/ARQUI-202630/quickpatch/actions/runs/41005708665
