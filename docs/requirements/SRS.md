@@ -8,7 +8,7 @@
 | **Versión del documento** | 5.10 (borrador de la V6, MVP, incremento del Sprint 5) |
 | **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598; 5.7: capacidad de interacción, SCRUM-568; 5.10: línea base, SCRUM-535 (SRS V6, SCRUM-533) |
 | **Responsable** | Angy Bautista (Product Owner) |
-| **Estado** | Aprobado por el Product Owner el 14 de octubre de 2026 (SCRUM-406). Línea base de la sección 1.3 revisada el 14 de octubre de 2026 (Sebastián Sánchez). Pendiente: el PR a `develop` |
+| **Estado** | Borrador de la V6: línea base de la sección 1.3 al 29 de octubre de 2026 (SCRUM-535) y criterios de aceptación de los RF del Sprint 5 (SCRUM-534, versión 5.9). Pendiente: la revisión del Product Owner (SCRUM-536). La versión 5 fue aprobada por el Product Owner el 14 de octubre de 2026 (SCRUM-406) |
 | **Estándar de referencia** | IEEE Std 830-1998 |
 
 ---
