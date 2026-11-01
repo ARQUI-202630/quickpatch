@@ -2212,13 +2212,13 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 
 ## 13.5 Revisión funcional del SDD V4 (SCRUM-551)
 
-Revisión del 28 de octubre de 2026 sobre `develop`, con los criterios de las V2 y V3 (secciones 13.1 y 13.3) y los de SCRUM-548. También se comparó el SDD con el SAD V5 (2.45).
+Revisión del 28 de octubre de 2026 sobre `develop`, con los criterios de las V2 y V3 (secciones 13.1 y 13.3) y los de SCRUM-548. También se comparó el SDD con el SAD V5 (2.45). El 1 de noviembre de 2026 se volvió a comparar con el SAD 2.46, que resolvió la diferencia del ciclo de vida, y con `quickpatch-kafka` `v0.10.0`.
 
 |Criterio|Cómo se verificó|Resultado|
 |---|---|---|
 |C4 reemplaza a 4+1|Búsqueda de "4+1"|Sin restos: solo aparece en las secciones 13.1 y 13.3.|
 |Consistencia con el SRS, el DD y los ADR|Cada RF, RNF y RIE citado se buscó en el SRS, cada regla RN-* en el DD 5.14 y cada ADR en `docs/architecture/adr/`|Todos existen.|
-|Consistencia con el SAD|Servicios, estados y despliegue comparados con las secciones 4.2.2 y 5.1 del SAD 2.45 y con ADR-027|Coinciden: Actors planeado, Ranking implementado sin desplegar y la calificación por eventos. La única diferencia es del SAD: su ciclo de vida (sección 7.4) libera el pago después de `EVALUATED`, mientras el SDD, el SRS (RF-12) y el DD (RN-R3) ponen el pago antes de la calificación (SRS, P2).|
+|Consistencia con el SAD|Servicios, estados y despliegue comparados con las secciones 4.2.2, 5.1 y 7.4 del SAD 2.46 y con ADR-027|Coinciden: Actors planeado, Ranking implementado sin desplegar y la calificación por eventos. La única diferencia que había, el ciclo de vida del SAD 2.45 (sección 7.4) con el pago después de `EVALUATED`, la resolvió el SAD 2.46 (`DELIVERED` → `PAID` → `EVALUATED`), como el SDD, el SRS (RF-12) y el DD (RN-R3) (SRS, P2).|
 |No inventa alcance|Contratos de la sección 5.6.1 comparados con `develop` de `quickpatch-api-gateway`; eventos, con `develop` de `quickpatch-kafka`; componentes, con `quickpatch.dsl`|Sin alcance nuevo. Las versiones de la 5.6.1 coinciden con el gateway. Los pagos recibidos del técnico (RF-25, SCRUM-500) y la recuperación de la contraseña (SCRUM-624) siguen como diseño, y el componente de pagos recibidos está marcado `Planeado` en el modelo C4.|
 |Criterios de SCRUM-548|Secciones 6.4, 6.7, 6.9 y 9, y figuras 10, 13, 16, 27, 30 y 31|Cumplen los componentes de calificación y reputación, la vista dinámica de la calificación (figura 27) y el despliegue por ambiente. Faltan las figuras 15 y 18 (SCRUM-583).|
 |Figuras|Numeración e imágenes del documento|Figuras 1 a 52 sin huecos, todas con imagen.|
@@ -2227,11 +2227,11 @@ Revisión del 28 de octubre de 2026 sobre `develop`, con los criterios de las V2
 **Observaciones** (textos que quedaron de la V3; ninguna cambia el diseño):
 
 1. La sección 12 sigue con el resultado del 22 de octubre: dice que la calificación no tiene contrato y que `service-request.evaluated` está planeado. Hoy la calificación está en `service-request.v1.yaml` 1.10.0 y el evento es `service-request.rated` (ADR-027).
-2. La sección 5.6.2 dice que el esquema de `service-request.rated` llega con SCRUM-497. Ya está en `develop` de `quickpatch-kafka` (19 esquemas), aunque la última etiqueta sigue siendo `v0.9.0` (17).
+2. La sección 5.6.2 dice que el esquema de `service-request.rated` llega con SCRUM-497. Ya está publicado en `quickpatch-kafka` `v0.10.0` (20 esquemas, con `ranking.technician-reputation-changed` y `tenant.status-changed`).
 3. La sección 8.13.5 dice que el buzón no tiene escenario y se agrega "cuando se implemente", pero ya está implementado. Además, RF-25 no aparece en la lista, y en RF-17 falta el historial con la calificación (SCRUM-100, SCRUM-499).
 4. Las figuras 15 y 18 (SCRUM-583) siguen pendientes.
 
-**Resultado:** la V4 queda aprobada con observaciones. Las observaciones 1 a 3 se corrigen en SCRUM-548 y la 4 en SCRUM-583. La diferencia del ciclo de vida corresponde al SAD (SRS, P2).
+**Resultado:** la V4 queda aprobada con observaciones. Las observaciones 1 a 3 se corrigen en SCRUM-548 y la 4 en SCRUM-583. La diferencia del ciclo de vida con el SAD quedó resuelta en el SAD 2.46 (SRS, P2).
 
 ---
 
