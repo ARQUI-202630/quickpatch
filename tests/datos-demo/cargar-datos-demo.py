@@ -200,6 +200,28 @@ def cargar(api, juego, clave, admin, resumen, disponibles, solo_categorias=False
             resumen.anotar("técnico (disponibilidad)", "aplicado" if st == 200 else "error",
                            t["email"] if st == 200 else f"{t['email']} (HTTP {st})")
 
+    if "proveedores" in juego:
+        print("Proveedores")
+        for p in juego["proveedores"]:
+            cat_nombre = p["equipo"][0]["categoria"] if p.get("equipo") else "Plomería"
+            cat_id = categorias.get(cat_nombre, list(categorias.values())[0])
+            st, r = registrar(api, resumen, "proveedor", p["email"], "/v1/auth/register/technician", {
+                "email": p["email"], "password": clave, "fullName": p["nombre"], "phone": p["telefono"],
+                "documentId": p["documento"], "specialtyId": cat_id, "role": "proveedor"})
+            u = buscar_tecnico(api, tok, p["email"]) or {}
+            uid, estado = u.get("userId"), u.get("verificationStatus")
+            if uid and estado != "aprobado":
+                st_a, _ = api.llamar("POST", f"/v1/admin/technicians/{uid}/approve", token=tok)
+                resumen.anotar("proveedor (aprobación)", "aplicado" if st_a == 200 else "error", p["email"])
+            st_p, ptok = api.login(p["email"], clave)
+            if ptok and p.get("equipo"):
+                for tec in p["equipo"]:
+                    t_cat_id = categorias.get(tec["categoria"], cat_id)
+                    st_t, _ = api.llamar("POST", "/v1/providers/me/technicians", {
+                        "email": tec["email"], "fullName": tec["nombre"], "phone": tec["telefono"],
+                        "documentId": tec["documento"], "specialtyId": t_cat_id}, ptok)
+                    resumen.anotar("técnico de equipo", "creado" if st_t == 201 else ("ya existía" if st_t == 409 else "error"), tec["email"])
+
     print("Solicitudes de ejemplo")
     for s in juego["solicitudes"]:
         st, ctok = api.login(s["cliente"], clave)
@@ -225,6 +247,13 @@ def simular(juego):
             print(f"  {grupo[:-1]}: {x['email']}")
     for e in juego["empresas"]:
         print(f"  empresa: {e['razonSocial']} ({e['usuario']['email']})")
+    for p in juego.get("proveedores", []):
+        print(f"  proveedor: {p['razonSocial']} ({p['email']})")
+        for tec in p.get("equipo", []):
+            print(f"    técnico de equipo: {tec['nombre']} ({tec['email']})")
+    if "segundoTenant" in juego:
+        st_t = juego["segundoTenant"]
+        print(f"  segundo tenant: {st_t['nombre']} ({st_t['slug']}) — cliente: {st_t['cliente']['email']}, técnico: {st_t['tecnico']['email']}")
     for s in juego["solicitudes"]:
         print(f"  solicitud: {s['descripcion']} — {s['direccion']}")
 
