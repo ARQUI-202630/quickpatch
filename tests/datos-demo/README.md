@@ -1,50 +1,76 @@
 # Datos de demostración de QA y producción
 
-Script idempotente que carga en QA o en producción un juego de datos de demostración (SCRUM-632, SCRUM-634). Usa solo la API pública, el mismo camino de la app y del panel, así que respeta RLS y los roles de cada servicio.
+Script idempotente que carga en QA o en producción un juego de datos de demostración (**SCRUM-632**, definición formal de datos en **SCRUM-633**). Usa exclusivamente la API pública —el mismo camino que transitan la aplicación móvil y el panel web administrativo— garantizando el cumplimiento de RLS, los roles RBAC y el aislamiento por tenant.
 
 | Archivo | Qué es |
 |---|---|
-| `cargar-datos-demo.py` | El script (Python 3, sin dependencias) |
-| `juego-datos.json` | El juego de datos: categorías base, clientes, empresa, técnicos, cobertura y solicitudes de ejemplo. Sin contraseñas |
+| `cargar-datos-demo.py` | Script de carga idempotente (Python 3, biblioteca estándar, sin dependencias externas) |
+| `juego-datos.json` | Definición formal del juego de datos semilla: categorías base, clientes hogar, empresas clientes corporativas, técnicos con cobertura en Bogotá y solicitudes de demostración. Sin credenciales |
 
-## Qué carga
+## Qué carga (Definición SCRUM-633)
 
-- Las 6 categorías base del catálogo, las mismas de QA: Aire acondicionado, Cerrajería, Eléctrico, Electrodomésticos, Pintura y Plomería. Se crean solo las que falten (`POST /v1/catalog/admin/categories`). Una categoría que existe inactiva no se reactiva: eso lo decide el administrador del tenant. Producción no tenía ninguna el 28 de octubre de 2026.
-- 2 clientes, 1 empresa cliente con su usuario y 2 técnicos, aprobados y con cobertura en las 20 localidades de Bogotá. En QA los técnicos quedan además `disponible`. **En producción no se marcan disponibles** (siguen en `no_disponible`): marcarlos haría que Matching les ofreciera trabajo de clientes reales y reintentara solicitudes en espera (RN-M10). Para una demostración en producción se ponen disponibles a mano justo antes y se vuelven a bajar después.
-- 2 solicitudes de ejemplo con direcciones de Bogotá, con la descripción `[DEMO] …`.
-- Los correos usan el dominio `demo.quickpatch.test`. Las categorías se buscan por nombre en el catálogo del ambiente después de sembrarlas; si falta alguna, el script se detiene y lista las que existen.
+El juego de datos formalizado en `juego-datos.json` cubre todos los tipos de usuario y perfiles de uso contemplados en el sistema (SRS v5.5, TD §8.2):
 
-El juego es un punto de partida: la definición final de los datos es la tarea SCRUM-633 y se ajusta en `juego-datos.json`.
+1. **6 Categorías Base de Catálogo:**
+   - Si no existen en el ambiente, el script las siembra automáticamente (`POST /v1/catalog/admin/categories`):
+     - *Aire acondicionado* (Instalación, mantenimiento y recarga de gas)
+     - *Cerrajería* (Aperturas, cambio de guardas y chapas)
+     - *Eléctrico* (Instalaciones, tomas, breakers y cortos)
+     - *Electrodomésticos* (Reparación de lavadoras, neveras y estufas)
+     - *Pintura* (Pintura de interiores y exteriores)
+     - *Plomería* (Fugas, grifería, tuberías y destapes)
+   - Una categoría que ya existe inactiva no se reactiva sola: esa decisión corresponde al administrador del tenant.
+2. **3 Clientes Hogar (Personas Naturales):**
+   - `demo.cliente1@demo.quickpatch.test` (Carolina Gómez Restrepo, Tel: `3001230001`)
+   - `demo.cliente2@demo.quickpatch.test` (Andrés Felipe Morales, Tel: `3001230002`)
+   - `demo.cliente3@demo.quickpatch.test` (Mariana Lucía Torres, Tel: `3001230003`)
+3. **2 Empresas Clientes (Personas Jurídicas / Cuentas Corporativas):**
+   - *Inmobiliaria & Coworking Bogotá S.A.S.* (NIT `900123456-7`), Contacto: `demo.empresa1@demo.quickpatch.test` (Santiago Ramírez, Tel: `3001230011`)
+   - *Restaurantes y Cafés Andinos S.A.S.* (NIT `901987654-3`), Contacto: `demo.empresa2@demo.quickpatch.test` (Valeria Jaramillo, Tel: `3001230012`)
+4. **4 Técnicos Profesionales Independientes:**
+   - `demo.tecnico1@demo.quickpatch.test` (Carlos Alberto Pérez, CC: `1000000021`, Especialidad: Plomería)
+   - `demo.tecnico2@demo.quickpatch.test` (Jorge Enrique Duarte, CC: `1000000022`, Especialidad: Plomería)
+   - `demo.tecnico3@demo.quickpatch.test` (Mauricio Silva Peña, CC: `1000000023`, Especialidad: Cerrajería)
+   - `demo.tecnico4@demo.quickpatch.test` (Héctor Fabio Ospina, CC: `1000000024`, Especialidad: Eléctrico)
+   - Todos quedan aprobados por el administrador de tenant y con cobertura configurada en las **20 localidades de Bogotá** (`01` a `20`).
+   - En **QA**, los técnicos se configuran con estado `disponible` inmediatamente.
+   - En **producción no se marcan disponibles** (permanecen en `no_disponible`): marcarlos haría que el motor de Matching les asigne solicitudes de clientes reales o reintente órdenes en cola (RN-M10). Para una demostración en producción se activan bajo demanda y se desactivan al finalizar.
+5. **5 Solicitudes de Demostración (`[DEMO]`):**
+   - Todas ubicadas en direcciones verificables dentro del perímetro urbano de Bogotá (geocodificación Nominatim RIE-02 / RN-SR9):
+     - `demo.cliente1`: `[DEMO] Fuga de agua continua en grifería del lavamanos principal` (Calle 72 # 10-34, Chapinero).
+     - `demo.cliente2`: `[DEMO] Cambio de cerradura de seguridad y copia de llaves` (Carrera 15 # 85-30, Usaquén).
+     - `demo.cliente3`: `[DEMO] Cortocircuito en panel de interruptores de cocina` (Calle 53 # 13-25, Teusaquillo).
+     - `demo.empresa1`: `[DEMO] Mantenimiento preventivo de batería de baños piso 3 oficinas` (Avenida Carrera 68 # 24-30, Salitre / Fontibón).
+     - `demo.empresa2`: `[DEMO] Revisión de acometida y tomas de corriente en barra comercial` (Calle 134 # 9-51, Usaquén).
 
-## Cómo se usa
+## Gestión de Credenciales y Seguridad
 
-Las credenciales van en el entorno, nunca en el repositorio ni en este archivo:
+En estricto cumplimiento con las políticas de seguridad del proyecto (**RF-29**, **RNF-01**, **K2**):
+- **Ninguna credencial se almacena en el repositorio ni en archivos de configuración.**
+- La contraseña uniforme de las cuentas de demostración se provee en tiempo de ejecución mediante la variable de entorno `QP_DEMO_PASSWORD` (debe tener entre 8 y 128 caracteres conforme a la política de Identity).
+- Las credenciales del administrador de tenant se suministran por entorno:
 
-| Variable | Qué es |
+| Variable | Descripción |
 |---|---|
-| `QP_ADMIN_EMAIL`, `QP_ADMIN_PASSWORD` | Administrador **del tenant** del ambiente, rol `admin_tenant` (`vault_identity_admins` del vault de Ansible). Aprobar técnicos es solo de `admin_tenant`; el administrador de la plataforma recibiría 403 |
-| `QP_DEMO_PASSWORD` | Contraseña de las cuentas de demostración, entre 8 y 128 caracteres (política de Identity) |
+| `QP_ADMIN_EMAIL`, `QP_ADMIN_PASSWORD` | Administrador **del tenant** del ambiente, rol `admin_tenant` (`vault_identity_admins` del vault de Ansible). La aprobación de técnicos está restringida a este rol |
+| `QP_DEMO_PASSWORD` | Contraseña asignada a todas las cuentas semilla del juego de datos de demostración |
+
+## Ejecución del Script
 
 ```bash
-python3 tests/datos-demo/cargar-datos-demo.py --ambiente qa --simular       # muestra el plan, no escribe nada
-python3 tests/datos-demo/cargar-datos-demo.py --ambiente qa                 # carga en QA
+# 1. Simulación sin escrituras (inspección de plan)
+python3 tests/datos-demo/cargar-datos-demo.py --ambiente qa --simular
+
+# 2. Carga sobre ambiente QA (requiere VPN y variables de entorno)
+python3 tests/datos-demo/cargar-datos-demo.py --ambiente qa
+
+# 3. Carga sobre ambiente Producción (con confirmación de seguridad)
 python3 tests/datos-demo/cargar-datos-demo.py --ambiente produccion --confirmar-produccion
-python3 tests/datos-demo/cargar-datos-demo.py --ambiente produccion --confirmar-produccion --solo-categorias
 ```
 
-Con `--solo-categorias` solo crea las categorías base. No crea cuentas ni solicitudes de demostración y no necesita `QP_DEMO_PASSWORD`. Así se siembra el catálogo de producción después de la promoción (SCRUM-518). Contra QA, el 28 de octubre de 2026 respondió «6 ya existían, 0 con error».
+El script es estrictamente **idempotente**: si un usuario, empresa o solicitud ya existe (código HTTP 409), el registro existente se respeta sin duplicar entidades ni generar inconsistencias.
 
-Hace falta la VPN: el script entra por la IP de VM1 con el `Host` del ambiente, como la app móvil.
+## Procedimiento de Limpieza y Convivencia
 
-Al terminar imprime el conteo de creados, ya existentes, aplicados y con error. Termina con código 1 si hubo algún error. Si un registro ya existe (HTTP 409) lo deja como está, así que se puede repetir sin duplicar nada.
-
-## Limpieza
-
-- **Datos de las pruebas de carga (k6):** `infrastructure/ansible/playbooks/limpiar-carga-qa.yml`. Filtra las solicitudes por «Solicitud de carga k6 %» y «Estrés pico 150 VU%», así que **no toca** las de demostración (`[DEMO] …`). Primero solo cuenta; con `-e borrar=si` respalda las bases y borra.
-- **Datos de demostración:** la API no ofrece borrar usuarios ni solicitudes. Si hace falta retirarlos, se hace en la base con un respaldo previo, filtrando por el dominio `demo.quickpatch.test` y por `[DEMO]`.
-
-## Qué no cubre
-
-- No crea tenants de proveedores ni administradores de tenant.
-- Las solicitudes quedan en estado inicial; no simula cotizaciones, pagos ni chat.
-- Se probó contra un servidor simulado en local (flujo, paginación, producción y fallos de aprobación) y contra QA real el 26 de octubre de 2026: la primera corrida creó 2 clientes, 1 empresa, 2 técnicos (aprobados, con cobertura y disponibles) y 2 solicitudes, sin errores; la segunda dejó todo como «ya existía». **En producción todavía no se ha corrido**: primero `--simular`, y los técnicos quedan sin marcar disponibles.
+- **Aislamiento frente a pruebas de carga:** El playbook de Ansible `infrastructure/ansible/playbooks/limpiar-carga-qa.yml` purga exclusivamente solicitudes cuyo patrón coincida con `Solicitud de carga k6 %` o `Estrés pico 150 VU%`, preservando intactos los registros que inician con el prefijo `[DEMO] …`.
+- **Depuración de datos de demostración:** Dado que la API pública no expone eliminación física de usuarios ni solicitudes, si se requiere retirar el juego de demostración se realiza a nivel de base de datos previa copia de seguridad, filtrando por el dominio `@demo.quickpatch.test` y la descripción `[DEMO]`.
