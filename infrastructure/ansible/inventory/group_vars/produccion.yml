@@ -3,6 +3,10 @@
 entorno: produccion
 kubeconfig_name: produccion
 
+# k3s (VM3): los Secret siguen SIN cifrar en reposo. Activarlo reinicia k3s: playbooks/cifrar-secretos-k3s.yml con
+# -e ambiente=produccion -e confirmar_produccion=si -e aplicar=si, y después poner esta variable en true (SCRUM-49).
+k3s_secrets_encryption: false
+
 # PostgreSQL (VM4): cada base con su rol; solo VM3 (k3s) puede conectarse.
 pg_superuser_password: "{{ vault_postgres_superuser_password }}"
 pg_roles_passwords: "{{ vault_db_roles_passwords }}"   # por servicio: migrator y app (DD 10.2)
