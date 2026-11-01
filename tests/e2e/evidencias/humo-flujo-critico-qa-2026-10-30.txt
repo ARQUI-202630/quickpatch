@@ -1,0 +1,27 @@
+Prueba de humo del flujo crítico contra QA (SCRUM-504, historia SCRUM-47)
+Workflow: pruebas-sistema.yml, job «Humo del flujo crítico», runner de VM1, 30 de octubre de 2026.
+Colección: tests/e2e/humo-flujo-critico.postman_collection.json (reporter cli: no imprime cuerpos, tokens ni claves).
+
+1. Run en verde, rama feature/qa/humo-flujo-critico
+   https://github.com/ARQUI-202630/quickpatch/actions/runs/41003815481
+   Humo del flujo crítico: success. 30 peticiones, 29 aserciones, 0 fallos, 15,6 s (límite: 5 minutos).
+   Recorrido: solicitud, oferta aceptada, cotización 185.000 aceptada, inicio, foto, completado, pago pendiente,
+   pago aprobado, solicitud en «pagado», comprobante, calificación 201 y segunda calificación 409 ya-calificada,
+   limpieza (técnico suspendido y categoría desactivada).
+   E2E: success. Seguridad: success. Carga (k6): omitida (corrida a mano sin la casilla «carga»).
+
+2. Run fallido de ejemplo, rama desechable tmp/humo-fallo-demostrativo (ya borrada)
+   https://github.com/ARQUI-202630/quickpatch/actions/runs/41004801802
+   La rama cambió una sola aserción (la calificación esperada, de 5 a 3). Resultado:
+     29 aserciones, 1 fallida: «201 con el contrato Rating — expected 5 to deeply equal 3».
+   Humo del flujo crítico: failure; conclusión del workflow: failure; Carga (k6): omitida porque necesita el humo.
+   Según infrastructure/ansible/files/compuerta-qa.sh, la compuerta de producción consulta la última ejecución terminada
+   de pruebas-sistema.yml (cualquier rama) y falla si su conclusión no es «success». La API de GitHub devuelve
+   «failure» para esta corrida, así que, mientras fue la última, esa comprobación habría bloqueado la promoción.
+   No se ejecutó compuerta-qa.sh contra esta corrida: la conclusión se leyó de la API y el efecto se deduce del script.
+
+3. Run en verde posterior, rama feature/qa/humo-flujo-critico
+   https://github.com/ARQUI-202630/quickpatch/actions/runs/41005708665
+   Humo del flujo crítico: success. 30 peticiones, 29 aserciones, 0 fallos, 18,4 s. E2E y Seguridad: success.
+   Se lanzó justo después del fallo demostrativo para que la última ejecución del workflow volviera a quedar en éxito
+   y no bloqueara ninguna promoción.
