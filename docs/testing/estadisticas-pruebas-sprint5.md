@@ -90,7 +90,7 @@ Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](file:///c:/U
 * **Capacidad de Carga k6:** **44,631 peticiones procesadas** con 0.00% de errores y p95 de 415.39 ms bajo 150 VU.
 * **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.
 * **Avance Preliminar del Producto (Matriz Excel UAT):** **74.93%** (Meta Sprint 4: 80% / Brecha: -5.07%).
-* **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts).
+* **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts). Antes 92.65% (31.5 / 34): RF-12 (calificación) pasó de *No implementado* a *Parcial* (+0.5 pts) porque el backend de calificación (SCRUM-85) ya responde en QA (`tests/e2e/evidencias/humo-flujo-critico-qa-2026-10-30.txt`); falta la pantalla del cliente (SCRUM-86).
 * **% Funcionalidades Probadas por QA:** **86.03%** (29.25 / 34 pts con evidencia).
 * **% Escenarios de Calidad (SAD §3):** **49.04%** (52 escenarios evaluados: 20 Cumple, 11 Parcial, 2 No cumple, 19 No medido).
 
