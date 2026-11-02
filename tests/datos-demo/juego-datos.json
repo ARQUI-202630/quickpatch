@@ -1,5 +1,5 @@
 {
-  "_comentario": "Juego de datos de demostración para QA y producción (SCRUM-632, SCRUM-633). Cubre todos los tipos de usuario (clientes hogar, empresas clientes corporativas, técnicos profesionales independientes y proveedores con equipo de técnicos, más segundo tenant para aislamiento). Sin contraseñas en el repositorio (inyectadas vía QP_DEMO_PASSWORD). Correos con dominio demo.quickpatch.test. Direcciones reales geocodificables en Bogotá. Incluye las 6 categorías base de QA sembradas automáticamente si no existen.",
+  "_comentario": "Juego de datos de demostración para QA y producción (SCRUM-632, SCRUM-633). Cubre clientes hogar, empresas clientes, técnicos independientes y un proveedor con un técnico de su equipo, todos en el tenant del ambiente. Sin contraseñas en el repositorio (QP_DEMO_PASSWORD). Correos con el dominio demo.quickpatch.test. Direcciones geocodificables en Bogotá. Incluye las 6 categorías base, que el script crea si faltan. Los NIT llevan el dígito de verificación de la DIAN y el script lo valida.",
   "categorias": [
     { "nombre": "Aire acondicionado", "descripcion": "Instalación, mantenimiento y recarga de gas." },
     { "nombre": "Cerrajería", "descripcion": "Aperturas, cambio de guardas y chapas." },
@@ -28,7 +28,7 @@
   "empresas": [
     {
       "razonSocial": "Inmobiliaria & Coworking Bogotá S.A.S.",
-      "nit": "900123456-7",
+      "nit": "900123456-8",
       "usuario": {
         "email": "demo.empresa1@demo.quickpatch.test",
         "nombre": "Santiago Ramírez (Administrador Coworking)",
@@ -37,7 +37,7 @@
     },
     {
       "razonSocial": "Restaurantes y Cafés Andinos S.A.S.",
-      "nit": "901987654-3",
+      "nit": "901987654-0",
       "usuario": {
         "email": "demo.empresa2@demo.quickpatch.test",
         "nombre": "Valeria Jaramillo (Operaciones Retail)",
@@ -47,12 +47,11 @@
   ],
   "proveedores": [
     {
-      "razonSocial": "Red de Servicios Técnicos Bogotá S.A.S.",
-      "nit": "901234567-8",
       "email": "demo.proveedor1@demo.quickpatch.test",
       "nombre": "Héctor Fabio Proveedor",
       "telefono": "3004560001",
       "documento": "1000000030",
+      "categoria": "Plomería",
       "equipo": [
         {
           "email": "demo.tecnico.proveedor1@demo.quickpatch.test",
@@ -94,27 +93,6 @@
       "categoria": "Eléctrico"
     }
   ],
-  "segundoTenant": {
-    "nombre": "Tenant Beta Soluciones",
-    "slug": "tenant-beta",
-    "descripcion": "Segundo tenant para validación de aislamiento multi-tenant RLS (AC6-E2)",
-    "admin": {
-      "email": "admin@beta.qa.quickpatch.internal",
-      "nombre": "Admin Tenant Beta"
-    },
-    "cliente": {
-      "email": "demo.beta.cliente@demo.quickpatch.test",
-      "nombre": "Gabriel Eduardo Ortiz",
-      "telefono": "3007890001"
-    },
-    "tecnico": {
-      "email": "demo.beta.tecnico@demo.quickpatch.test",
-      "nombre": "Álvaro José Benítez",
-      "telefono": "3007890002",
-      "documento": "1000000041",
-      "categoria": "Plomería"
-    }
-  },
   "cobertura": [
     "01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
     "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"
