@@ -1290,6 +1290,32 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Reglas:** la invitación sirve una sola vez y solo antes de `expires_at`. Un token usado, vencido, anulado o de otro tenant responde igual (`400 enlace-invalido`), para no revelar cuál fue el caso. RLS por tenant como `users`; `identity_app` tiene `SELECT`, `INSERT` y `UPDATE`.
 
+### 5.21a Tabla `password_recovery_tokens`
+
+**Nueva v5.15 (SCRUM-624, ADR-024).** **Servicio propietario:** Identity Service.
+
+**Propósito:** Tokens de un solo uso para que el usuario recupere su contraseña olvidada. Se genera a partir de una solicitud pendiente del `admin_tenant` o por iniciativa del usuario; el usuario recibe un enlace seguro por correo (no implementado en el MVP, ADR-024) y lo usa para definir nueva contraseña.
+
+**Requisitos relacionados:** SCRUM-624, ADR-024.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|id|UUID|No|PK|Identificador del token.|
+|tenant_id|UUID|No|FK → `tenants`|Tenant del usuario.|
+|user_id|UUID|No|FK → `users`|Usuario que solicita recuperar contraseña. Índice `ix_password_recovery_tokens_user`.|
+|token_hash|CHAR(64)|No|UNIQUE|SHA-256 del token en hexadecimal. El token en claro (256 bits en base64url) se entrega una sola vez y no se guarda (RN-U2, RN-U7).|
+|expires_at|TIMESTAMPTZ|No|—|Vence a 1 hora. Token usado, vencido, anulado o de otro tenant responden igual (`400 enlace-invalido`), para no revelar cuentas existentes (RN-U7).|
+|used_at|TIMESTAMPTZ|Sí|—|Cuándo se usó para definir la contraseña; nulo mientras no se use. Un token usado no puede volver a usarse.|
+|created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
+
+**Reglas:** cada token sirve una sola vez y solo antes de `expires_at`. Invalida todas las sesiones previas del usuario. Un token usado, vencido, de otro tenant o inexistente responde igual (`400 enlace-invalido`), para no revelar si la cuenta existe. RLS por tenant como `users`; `identity_app` tiene `SELECT`, `INSERT` y `UPDATE`.
+
+**Índices sugeridos:**
+
+- UNIQUE sobre `token_hash`.
+- Índice sobre `tenant_id, user_id, created_at DESC` para buscar el más reciente.
+- Índice parcial sobre `user_id, expires_at` para limpiar expirados.
+
 ### 5.22 Tabla `notifications`
 
 **Nueva v5 (ADR-024, SCRUM-455).** **Servicio propietario:** Communication Service, en su base `db_communication`.
@@ -1426,18 +1452,19 @@ Las reglas de negocio se documentan aparte del diccionario de datos: el dicciona
 
 ### 7.1 Reglas de `tenants`
 
-- **RN-T1:** un tenant inactivo no puede crear nuevas solicitudes.
+- **RN-T1:** un tenant inactivo no puede crear nuevas solicitudes ni sus usuarios pueden autenticarse. La creación de solicitudes valida el estado del tenant consultando Identity Service (referencia lógica entre servicios); un tenant inactivo responde `422 tenant-inactivo` (SCRUM-508, pendiente de implementar en ServiceRequest Service).
 - **RN-T2:** todo tenant corresponde a una empresa oferente identificada por su NIT; clientes hogar y empresas cliente se registran como usuarios del tenant.
 - **RN-T3:** el tenant activo del usuario debe obtenerse desde el contexto autenticado.
 
 ### 7.2 Reglas de `users`
 
 - **RN-U1:** el correo es único dentro de cada tenant.
-- **RN-U2:** la contraseña nunca se almacena en texto plano.
+- **RN-U2:** la contraseña nunca se almacena en texto plano. Solo se guardan hashes de tokens de recuperación e invitaciones.
 - **RN-U3:** el tenant no se recibe libremente desde el frontend.
 - **RN-U4:** después de varios intentos fallidos se puede bloquear temporalmente la cuenta.
 - **RN-U5:** en el registro y en el login, el tenant se resuelve a partir del canal por el que llega la solicitud, no de un campo del formulario (sección 10.3).
 - **RN-U6:** solo `admin_plataforma` administra tenants; `admin_tenant` administra únicamente su propio tenant.
+- **RN-U7 (nuevo v5.15):** recuperación de contraseña olvidada con token seguro de un solo uso que vence a 1 hora (SCRUM-624, sección 5.21a). Un token usado, vencido, de otro tenant o inexistente responde igual (`400 enlace-invalido`) para no revelar cuentas existentes. Invalida todas las sesiones previas del usuario.
 
 ### 7.3 Reglas de `technician_profiles`
 
@@ -1734,6 +1761,8 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |GET|`/v1/providers/me/technicians?status=`|`proveedor`|RF-16|Contrato v1.7.0|Listar el equipo; `status` es `activo` (aprobado) o `inactivo` (pendiente, rechazado o suspendido).|
 |POST|`/v1/providers/me/technicians/{userId}/invitation`|`proveedor`|RF-16|Contrato v1.7.0|Generar un enlace nuevo y anular los anteriores sin usar.|
 |POST|`/v1/auth/password/setup`|Público, con el token de la invitación|RF-16, RF-06|Contrato v1.7.0|El técnico del equipo o, desde la 1.8.0, el usuario agregado a una empresa define su contraseña.|
+|POST|`/v1/auth/password-recovery/request`|Público|SCRUM-624|Contrato v1.10.0|Solicitar recuperación de contraseña olvidada (sección 8.3.19). Responde igual exista o no la cuenta. Genera token seguro de un solo uso que vence a 1 hora; no implementa envío de correo (ADR-024).|
+|POST|`/v1/auth/password-recovery/{token}/confirm`|Público, con el token de recuperación|SCRUM-624|Contrato v1.10.0|Confirmar nueva contraseña con token válido. Invalida todas las sesiones anteriores. Token usado, vencido o de otro tenant responden igual para no revelar cuál fue el caso (RN-U7).|
 |GET|`/internal/v1/users?ids=`|Interno: ServiceRequest con el JWT del usuario|RF-14|Contrato interno v1.0.0|Nombre y teléfono por lote (sección 8.3.4). No pasa por el Gateway.|
 |GET|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.2.0|Listar todos los tenants, activos e inactivos, ordenados por nombre.|
 |POST|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.5.0|Crear un tenant (empresa oferente) en `activo`; NIT único en la plataforma (`409`). Queda en `audit_logs` (`crear_tenant`). No crea usuarios ni el canal.|
@@ -2258,6 +2287,28 @@ Cuenta solo las solicitudes del tenant del `admin_tenant` (RLS). `byStatus` siem
 |`GET /v1/companies/me/users`|200, solo los de su empresa|403|— (no aparecen)|
 |`POST /v1/companies/me/users`|201, o 409 `correo-registrado`|403|—|
 |`POST /v1/companies/me/users/{userId}/invitation`|201, o 409 `contrasena-definida`|403|404|
+
+#### 8.3.19 Recuperación de contraseña — `POST /v1/auth/password-recovery/request` y `{token}/confirm`
+
+**Contrato `identity.v1.yaml` 1.10.0 (v5.15, SCRUM-624, ADR-024).**
+
+**Solicitud de recuperación (`POST /v1/auth/password-recovery/request`):**
+
+```json
+{ "email": "ana.gomez@correo.com" }
+```
+
+Pública (sin autenticar). Usuario solicita recuperar su contraseña con su correo. Responde igual exista o no la cuenta, para no revelar cuentas existentes (RN-U7). Si la cuenta existe en el tenant del canal, Identity genera un token seguro de un solo uso y **la respuesta `202 Accepted` dice que el correo fue enviado**, aunque el correo real depende de ADR-024 (no implementado en el MVP). El token se guarda solo su hash en `password_recovery_tokens` (sección 5.21a) y vence a 1 hora.
+
+**Confirmación (`POST /v1/auth/password-recovery/{token}/confirm`):**
+
+```json
+{ "newPassword": "nueva_contraseña_segura" }
+```
+
+Pública, con el token en la URL (entre el nombre del endpoint y el cuerpo, para que no quede en los logs). Confirma la nueva contraseña del usuario si el token es válido. Invalida todas las sesiones previas del usuario (el cliente debe iniciar sesión de nuevo). Si el token no existe, vence, ya se usó o pertenece a otro tenant, responde `400 enlace-invalido`, igual que para invitaciones (sección 8.3.14), para no revelar cuál fue el caso.
+
+**Errores (v1.10.0):** `202` aceptada para solicitud (exista o no la cuenta); `200` para confirmación exitosa; `400 enlace-invalido` si el token no es válido; `400 validacion` si la nueva contraseña no cumple los requisitos (mínimo 8 caracteres, letras y números).
 
 ### 8.4 Eventos Kafka
 
