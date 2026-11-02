@@ -1,358 +1,192 @@
-# Diagramas C4: Contexto & Contenedores — SCRUM-575/578
+# Diagramas C4: contexto, contenedores y despliegue — SCRUM-575/578
 
-**Documento:** SCRUM-575/578  
-**Versión:** 1.0  
-**Fecha:** 2026-10-31  
-**Scope:** Diagramas C4 de contexto del sistema y contenedores (servicios, BD, cache)
+**Versión:** 2.0
+**Fecha:** 2026-11-02
+**Alineado con:** `docs/architecture/diagrams/c4/quickpatch.dsl`, Documento de Infraestructura (secciones 2.1, 3.3, 3.4 y 4.3), ADR-016, ADR-022, ADR-023, ADR-024 y ADR-028.
+
+Este documento resume las vistas C4 de nivel 1 y 2 y el reparto de las VMs. La fuente de los diagramas formales es el DSL; las imágenes generadas están en `docs/architecture/diagrams/c4/`.
 
 ---
 
-## 1. Diagrama de Contexto C4 Nivel 1
+## 1. Contexto (C4 nivel 1)
 
-QUICKPATCH y sus actores externos.
+Las personas que usan QUICKPATCH y su único sistema externo de producción, la pasarela de pagos (RIE-01, R5, ADR-024). No se dibujan sistemas futuros: el correo y las notificaciones push quedan fuera del MVP (ADR-024). La geocodificación es propia (Nominatim dentro de las VMs) y el API Gateway es un contenedor de QUICKPATCH, no un sistema externo.
 
 ```mermaid
 graph TB
-    subgraph "QUICKPATCH Platform"
-        QP["🏢 QUICKPATCH<br/>Multi-tenant SaaS<br/>Technical Services"]
-    end
-    
-    subgraph "Usuarios"
-        Client["👤 Cliente<br/>(hogar o empresa)"]
-        Tech["👨‍🔧 Técnico"]
-        Provider["🏭 Proveedor<br/>(técnicos)"]
-        Admin["👔 Admin Plataforma"]
-    end
-    
-    subgraph "Sistemas Externos"
-        Gateway["🔐 API Gateway<br/>Reverse Proxy<br/>(Nginx/Traefik)"]
-        Payment["💳 Pasarela de Pago<br/>(simulada MVP)"]
-        SMS["📱 SMS Gateway<br/>(ADR-024: no en MVP)"]
-        Email["✉️ Email Service<br/>(ADR-024: no en MVP)"]
-        Geo["🗺️ Nominatim<br/>Geocoding"]
-    end
-    
-    Client -->|"REST API<br/>JWT"| Gateway
-    Tech -->|"REST API<br/>JWT"| Gateway
-    Provider -->|"REST API<br/>JWT"| Gateway
-    Admin -->|"REST API<br/>JWT"| Gateway
-    
-    Gateway -->|"Enruta a<br/>servicios"| QP
-    
-    QP -->|"Paga"| Payment
-    QP -->|"Geocodifica"| Geo
-    QP -->|"Futuro: SMS"| SMS
-    QP -->|"Futuro: Email"| Email
-    
-    style QP fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    style Gateway fill:#fff3e0,stroke:#f57c00
-    style Payment fill:#f3e5f5,stroke:#7b1fa2
-    style Geo fill:#e8f5e9,stroke:#388e3c
+    Cliente["Cliente"]
+    Empresa["Empresa cliente"]
+    Tecnico["Técnico"]
+    Proveedor["Proveedor"]
+    AdminT["Admin del tenant"]
+    AdminP["Admin de plataforma"]
+
+    QP["QUICKPATCH<br/>Plataforma multi-tenant de servicios técnicos"]
+    Pasarela["Pasarela de pagos PCI-DSS<br/>(externa; simulada en el MVP)"]
+
+    Cliente -->|"Pide, sigue, paga y califica (app móvil)"| QP
+    Empresa -->|"Pide y paga para sus sedes (app móvil)"| QP
+    Tecnico -->|"Recibe ofertas, cotiza y ejecuta (app móvil)"| QP
+    Proveedor -->|"Administra su equipo (app móvil)"| QP
+    AdminT -->|"Aprueba técnicos y opera su tenant (panel web)"| QP
+    AdminP -->|"Administra los tenants (panel web)"| QP
+    QP -->|"Tokeniza y cobra"| Pasarela
 ```
+
+Imagen formal: `docs/architecture/diagrams/c4/C4-02-Contexto.png`.
 
 ---
 
-## 2. Diagrama de Contenedores C4 Nivel 2
-
-Microservicios, BD, broker de mensajes.
+## 2. Contenedores (C4 nivel 2)
 
 ```mermaid
 graph TB
-    subgraph "Load Balancer"
-        LB["⚖️ Nginx/HAProxy"]
+    Mobile["App móvil<br/>(Flutter)"]
+    Web["Panel web<br/>(Angular)"]
+    GW["API Gateway<br/>Nginx (quickpatch-api-gateway)"]
+
+    subgraph Servicios["Microservicios"]
+        IS["Identity<br/>.NET 10"]
+        AC["Actors<br/>.NET 10"]
+        CT["Catalog<br/>.NET 10"]
+        SR["ServiceRequest<br/>.NET 10"]
+        MT["Matching<br/>Java 25 + Spring Boot"]
+        RK["Ranking<br/>.NET 10"]
+        PY["Payments<br/>.NET 10"]
+        CM["Communication<br/>.NET 10<br/>canal en tiempo real, buzón y chat"]
     end
-    
-    subgraph "API Gateway (VM1)"
-        GW["API Gateway<br/>(Nginx + Spring Cloud<br/>o Kong)"]
-    end
-    
-    subgraph "Microservicios (VM2, K3s)"
-        IS["🔑 Identity Service<br/>(.NET 10)<br/>--- <br/>Puerto: 5001"]
-        SR["📋 ServiceRequest Service<br/>(.NET 10)<br/>--- <br/>Puerto: 5002"]
-        QT["💰 Payments Service<br/>(.NET 10)<br/>--- <br/>Puerto: 5003"]
-        CTG["🏷️ Catalog Service<br/>(.NET 10)<br/>--- <br/>Puerto: 5004"]
-        MT["🎯 Matching Service<br/>(Java 25 Spring Boot)<br/>--- <br/>Puerto: 8080"]
-        RK["⭐ Ranking Service<br/>(.NET 10)<br/>--- <br/>Puerto: 5005"]
-        CM["💬 Communication Service<br/>(.NET 10)<br/>--- <br/>Puerto: 5006"]
-        BZ["📦 Buzón Service<br/>(futuro)<br/>--- <br/>Puerto: 5007"]
-    end
-    
-    subgraph "Datos (PostgreSQL)"
-        DB["🗄️ PostgreSQL<br/>+ PostGIS<br/>-- <br/>8 BD por tenant<br/>(RLS)"]
-    end
-    
-    subgraph "Caché & Almacenamiento"
-        Redis["⚡ Redis<br/>(cache)<br/>-- <br/>Sesiones, outbox<br/>staging"]
-        S3["📁 Garage/MinIO<br/>(evidencia fotográfica)<br/>-- <br/>Imágenes servicios"]
-    end
-    
-    subgraph "Event Broker"
-        Kafka["📨 Apache Kafka<br/>-- <br/>1 nodo<br/>3 particiones<br/>(R10, ADR-006)"]
-    end
-    
-    LB -->|"HTTPS"| GW
-    GW -->|"HTTP/gRPC"| IS
-    GW -->|"HTTP/gRPC"| SR
-    GW -->|"HTTP/gRPC"| QT
-    GW -->|"HTTP/gRPC"| CTG
-    GW -->|"HTTP/gRPC"| MT
-    GW -->|"HTTP/gRPC"| RK
-    GW -->|"HTTP/gRPC"| CM
-    
-    IS -->|"CRUD<br/>RLS"| DB
-    SR -->|"CRUD<br/>RLS"| DB
-    QT -->|"CRUD<br/>RLS"| DB
-    CTG -->|"CRUD<br/>RLS"| DB
-    MT -->|"CRUD<br/>RLS"| DB
-    RK -->|"CRUD<br/>RLS"| DB
-    CM -->|"CRUD<br/>RLS"| DB
-    
-    IS -->|"Sesiones<br/>JWT keys"| Redis
-    SR -->|"Outbox staging"| Redis
-    QT -->|"Outbox staging"| Redis
-    
-    SR -->|"Upload"| S3
-    
-    SR -->|"Publica"| Kafka
-    MT -->|"Publica"| Kafka
-    RK -->|"Publica"| Kafka
-    IS -->|"Publica"| Kafka
-    QT -->|"Publica"| Kafka
-    CM -->|"Consume"| Kafka
-    RK -->|"Consume"| Kafka
-    MT -->|"Consume"| Kafka
-    SR -->|"Consume"| Kafka
-    
-    style GW fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style DB fill:#f3e5f5,stroke:#7b1fa2
-    style Kafka fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    style Redis fill:#fffde7,stroke:#f9a825
-    style S3 fill:#fce4ec,stroke:#c2185b
+
+    PG[("PostgreSQL + PostGIS<br/>una base por servicio (ADR-014)<br/>cada una con su outbox_events")]
+    KF["Apache Kafka<br/>un topic por tipo de evento"]
+    RD[("Redis<br/>candado de tareas programadas<br/>de ServiceRequest")]
+    GA[("Garage (S3)<br/>evidencias y respaldos (ADR-016)")]
+    NOM["Geocodificador<br/>Nominatim, solo Bogotá (ADR-024)"]
+    Pasarela["Pasarela de pagos"]
+
+    Mobile -->|"HTTPS /api"| GW
+    Web -->|"HTTPS /api"| GW
+    Mobile -->|"WebSocket /api/v1/realtime"| GW
+    GW -->|"HTTP, quita /api"| IS
+    GW -->|"HTTP"| SR
+    GW -->|"HTTP"| PY
+    GW -->|"HTTP"| CM
+
+    IS --> PG
+    CT --> PG
+    SR --> PG
+    MT --> PG
+    RK --> PG
+    PY --> PG
+    CM --> PG
+
+    IS -->|"technician.*, tenant.status-changed"| KF
+    CT -->|"catalog.category-changed"| KF
+    SR -->|"service-request.*"| KF
+    MT -->|"matching.*"| KF
+    RK -->|"ranking.technician-reputation-changed"| KF
+    PY -->|"payment.*"| KF
+    KF -->|"service-request.created, technician.*"| MT
+    KF -->|"matching.*, payment.*,<br/>catalog.category-changed,<br/>tenant.status-changed"| SR
+    KF -->|"service-request.rated"| RK
+    KF -->|"ranking.technician-reputation-changed"| IS
+    KF -->|"service-request.completed"| PY
+    KF -->|"service-request.*, matching.*, payment.*"| CM
+
+    SR -->|"candado"| RD
+    SR -->|"fotos del servicio"| GA
+    SR -->|"busca la dirección"| NOM
+    PY -.->|"cobrará (planeado)"| Pasarela
 ```
+
+Notas:
+
+- El gateway es un **Nginx** por ambiente (ADR-028). REST solo llega a Identity, ServiceRequest, Payments y Communication (ADR-025); Catalog, Matching y Ranking se comunican por eventos.
+- **El buzón no es un servicio aparte:** vive dentro de Communication, junto con el canal en tiempo real y el chat (ADR-023, ADR-024, ADR-026).
+- **El outbox es la tabla `outbox_events` de la base de cada servicio**, escrita en la misma transacción que el cambio (ADR-007). Redis no guarda outbox ni sesiones: hoy solo lo usa ServiceRequest como candado de sus tareas programadas.
+- Actors y Ranking todavía no están desplegados en ningún ambiente (Documento de Infraestructura 4.3).
+
+Imagen formal: `docs/architecture/diagrams/c4/C4-03-Contenedores.png`.
 
 ---
 
-## 3. Diagrama de Despliegue (Infrastructure)
+## 3. Despliegue
 
-Máquinas virtuales, K3s, DNS, certificados.
+La vista de despliegue por ambiente ya está en `develop` y es la referencia vigente:
+
+- Producción: `docs/architecture/diagrams/c4/C4-06-Despliegue-Produccion.png`
+- QA: `docs/architecture/diagrams/c4/C4-06-Despliegue-QA.png`
+
+Reparto de las 7 VMs (ADR-022, Documento de Infraestructura 2.1):
+
+|VM|Ambiente|Qué corre|
+|---|---|---|
+|VM1|Herramientas|Nginx :443 de entrada TLS que reenvía por nombre (`quickpatch.internal`, `qa.quickpatch.internal`, `grafana.quickpatch.internal`); runner de GitHub con kubectl y k6; Prometheus, Loki y Grafana de los dos ambientes|
+|VM2|QA, aplicación|k3s de un nodo: Nginx del gateway :8080 con el panel, Traefik :30080 y los microservicios|
+|VM3|Producción, aplicación|Igual que VM2|
+|VM4|Producción, datos|PostgreSQL + PostGIS :5432, Redis :6379 y Nominatim :8088|
+|VM5|QA, datos|Igual que VM4|
+|VM6|Producción, mensajería y almacenamiento|Kafka :9092 y Garage :9000|
+|VM7|QA, mensajería y almacenamiento|Igual que VM6|
 
 ```mermaid
 graph TB
-    subgraph "Internet"
-        Users["👥 Usuarios"]
+    VPN(["VPN de la universidad"])
+    subgraph VM1["VM1 · Herramientas"]
+        NGX["Nginx :443"]
+        OBS["Prometheus, Loki, Grafana"]
+        RUN["Runner, kubectl, k6"]
     end
-    
-    subgraph "Cloud / On-Premises"
-        DNS["🔗 DNS<br/>quickpatch.internal"]
-        
-        subgraph "VM1 (Nginx/API Gateway)"
-            GW["API Gateway<br/>Nginx/Traefik<br/>- Reverse proxy<br/>- Enrutamiento<br/>- Rate limit"]
-        end
-        
-        subgraph "VM2 (K3s Cluster)"
-            subgraph "Pods Microservicios"
-                IS_POD["Identity<br/>ReplicaSet=1"]
-                SR_POD["ServiceRequest<br/>ReplicaSet=2"]
-                QT_POD["Payments<br/>ReplicaSet=1"]
-                CTG_POD["Catalog<br/>ReplicaSet=1"]
-                MT_POD["Matching<br/>ReplicaSet=2<br/>(Java)"]
-                RK_POD["Ranking<br/>ReplicaSet=1"]
-                CM_POD["Communication<br/>ReplicaSet=1"]
-            end
-            
-            subgraph "Servicios K3s"
-                Svc["Services<br/>(ClusterIP)"]
-            end
-            
-            subgraph "Ingress"
-                ING["Traefik IngressRoute<br/>- /api → Gateway<br/>- /admin → Panel<br/>- PathPrefix"]
-            end
-        end
-        
-        subgraph "VM3 (PostgreSQL)"
-            PG["PostgreSQL 16<br/>+ PostGIS<br/>- RLS habilitado<br/>- 8 BD (1 por tenant)<br/>- Backups diarios"]
-        end
-        
-        subgraph "VM4 (Redis)"
-            REDIS["Redis 7<br/>- Sesiones<br/>- Outbox staging<br/>- TTL 24h"]
-        end
-        
-        subgraph "VM5 (Kafka)"
-            KAFKA["Kafka 3.x<br/>- 1 broker<br/>- 20 topics<br/>- Replication=1"]
-        end
-        
-        subgraph "VM6-7 (Almacenamiento)"
-            S3["MinIO/Garage<br/>- Evidencia fotográfica<br/>- Backup replicado"]
-        end
-        
-        subgraph "Monitoreo & Logging"
-            PROM["Prometheus<br/>(métricas)"]
-            LOGS["ELK Stack<br/>(logs)"]
-            ALERT["AlertManager<br/>(alertas)"]
-        end
+    subgraph PROD["Producción"]
+        VM3["VM3 · k3s<br/>gateway Nginx, panel, servicios"]
+        VM4[("VM4 · PostgreSQL, Redis, Nominatim")]
+        VM6["VM6 · Kafka y Garage"]
     end
-    
-    Users -->|"HTTPS:443"| DNS
-    DNS -->|"A record"| GW
-    
-    GW -->|"HTTP:5001-5006"| ING
-    ING -->|"Service Discovery"| Svc
-    Svc -->|"TCP"| IS_POD
-    Svc -->|"TCP"| SR_POD
-    Svc -->|"TCP"| QT_POD
-    Svc -->|"TCP"| CTG_POD
-    Svc -->|"TCP"| MT_POD
-    Svc -->|"TCP"| RK_POD
-    Svc -->|"TCP"| CM_POD
-    
-    IS_POD -->|"5432"| PG
-    SR_POD -->|"5432"| PG
-    QT_POD -->|"5432"| PG
-    CTG_POD -->|"5432"| PG
-    MT_POD -->|"5432"| PG
-    RK_POD -->|"5432"| PG
-    CM_POD -->|"5432"| PG
-    
-    SR_POD -->|"6379"| REDIS
-    IS_POD -->|"6379"| REDIS
-    QT_POD -->|"6379"| REDIS
-    
-    SR_POD -->|"9092"| KAFKA
-    MT_POD -->|"9092"| KAFKA
-    RK_POD -->|"9092"| KAFKA
-    CM_POD -->|"9092"| KAFKA
-    
-    SR_POD -->|"S3 API"| S3
-    
-    IS_POD -->|"Exporta métricas"| PROM
-    SR_POD -->|"Exporta métricas"| PROM
-    MT_POD -->|"Exporta métricas"| PROM
-    
-    SR_POD -->|"Logs"| LOGS
-    MT_POD -->|"Logs"| LOGS
-    CM_POD -->|"Logs"| LOGS
-    
-    PROM -->|"Evalúa reglas"| ALERT
-    ALERT -->|"Notificación"| Users
-    
-    style GW fill:#fff3e0,stroke:#f57c00
-    style PG fill:#f3e5f5,stroke:#7b1fa2
-    style KAFKA fill:#e8f5e9,stroke:#388e3c
-    style REDIS fill:#fffde7,stroke:#f9a825
-    style S3 fill:#fce4ec,stroke:#c2185b
-    style PROM fill:#e0f2f1,stroke:#00897b
-    style LOGS fill:#e0f2f1,stroke:#00897b
+    subgraph QA["QA"]
+        VM2["VM2 · k3s<br/>gateway Nginx, panel, servicios"]
+        VM5[("VM5 · PostgreSQL, Redis, Nominatim")]
+        VM7["VM7 · Kafka y Garage"]
+    end
+
+    VPN -->|"443"| NGX
+    NGX -->|"quickpatch.internal :8080"| VM3
+    NGX -->|"qa.quickpatch.internal :8080"| VM2
+    NGX -->|"grafana.quickpatch.internal"| OBS
+    VM3 -->|"5432, 6379, 8088"| VM4
+    VM3 -->|"9092, 9000"| VM6
+    VM4 -.->|"respaldo diario :9000"| VM6
+    VM2 -->|"5432, 6379, 8088"| VM5
+    VM2 -->|"9092, 9000"| VM7
+    RUN -->|"despliegue :6443"| VM3
+    RUN -->|"despliegue :6443 y pruebas"| VM2
 ```
+
+Los dos ambientes no se conectan entre sí; solo VM1 llega a ambos. Las 7 VMs envían métricas y logs a VM1 (no se dibujan para no cruzar todas las flechas). QA no tiene respaldo: sus datos son de prueba.
 
 ---
 
-## 4. Flujo de Request Extremo a Extremo
-
-Cliente → API Gateway → Microservicio → BD → Kafka → Otros servicios.
+## 4. Flujo de una petición: crear una solicitud
 
 ```mermaid
 sequenceDiagram
-    participant Client as Cliente/App
-    participant DNS as DNS
-    participant LB as Load Balancer
-    participant GW as API Gateway
-    participant SR as ServiceRequest<br/>(Pod en K3s)
-    participant PG as PostgreSQL
-    participant Redis as Redis
-    participant Kafka as Kafka
-    participant CM as Communication<br/>(Pod en K3s)
-    
-    Client->>DNS: resolve quickpatch.internal
-    DNS->>Client: IP del Gateway
-    
-    Client->>LB: POST /api/v1/service-requests<br/>(HTTPS)
-    LB->>GW: Enruta a servicio correcto
-    
-    GW->>SR: POST /v1/service-requests<br/>(auth: JWT)
-    SR->>SR: Valida JWT, extrae tenant_id
-    
-    SR->>PG: INSERT service_requests<br/>(RLS: tenant_id)
-    PG->>SR: id generado
-    
-    SR->>Redis: INSERT outbox_events<br/>(event, status=pending)
-    
-    SR->>Client: 201 Created
-    Note over SR: Publicador async
-    SR->>Kafka: service-request.created
-    
-    Kafka->>CM: event received
-    CM->>CM: Procesa evento
-    CM->>CM: Publica notificación<br/>(WebSocket, buzón)
+    participant App as App móvil
+    participant E as Nginx VM1
+    participant G as Gateway Nginx (VM3)
+    participant SR as ServiceRequest (k3s)
+    participant DB as db_service_request (VM4)
+    participant K as Kafka (VM6)
+    participant M as Matching (k3s)
+
+    App->>E: POST /api/v1/service-requests (HTTPS, JWT)
+    E->>G: reenvía por nombre
+    G->>SR: POST /v1/service-requests (quita /api)
+    SR->>SR: valida el JWT; tenant del token (RN-T3)
+    SR->>DB: lee tenant_status_replica (RN-T1)
+    SR->>DB: INSERT service_requests + INSERT outbox_events (misma transacción, ADR-007)
+    SR-->>App: 201 Created
+    SR->>K: el publicador envía service-request.created
+    K->>M: consume service-request.created
 ```
 
 ---
 
-## 5. Arquitectura de Red y Seguridad
-
-```mermaid
-graph TB
-    Internet["🌍 Internet"]
-    
-    subgraph "DMZ"
-        GW["🔐 API Gateway<br/>(Nginx/Traefik)<br/>- TLS 1.3<br/>- Rate limit<br/>- CORS"]
-    end
-    
-    subgraph "Private Network"
-        K3s["K3s Cluster<br/>(Internal)"]
-        PG[("PostgreSQL<br/>(Internal)")]
-        KAFKA["Kafka<br/>(Internal)"]
-        REDIS["Redis<br/>(Internal)"]
-    end
-    
-    subgraph "Storage"
-        S3["MinIO<br/>(Backup)"]
-    end
-    
-    Internet -->|"HTTPS:443<br/>Certificado TLS"| GW
-    GW -->|"HTTP<br/>Intra-red"| K3s
-    
-    K3s -->|"5432"| PG
-    K3s -->|"6379"| REDIS
-    K3s -->|"9092"| KAFKA
-    K3s -->|"S3 API"| S3
-    
-    Note over GW: Public<br/>Nginx/Traefik<br/>Rate limit<br/>Auth mínima
-    Note over K3s: Private<br/>Solo desde GW<br/>Service Mesh (futuro)
-    Note over PG: Private<br/>RLS (multi-tenancy)<br/>Backup automático
-    
-    style GW fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style K3s fill:#e3f2fd,stroke:#1976d2
-    style PG fill:#f3e5f5,stroke:#7b1fa2
-    style KAFKA fill:#e8f5e9,stroke:#388e3c
-```
-
----
-
-## 6. Notas de Despliegue
-
-### Versioning & Rollouts
-- Microservicios usan semver: v1.0.0, v1.1.0, etc.
-- K3s: rolling update con `maxSurge=1, maxUnavailable=0`.
-- Blue-green deployment para cambios críticos.
-
-### Escalabilidad
-- **ServiceRequest:** ReplicaSet=2 (alto volumen de solicitudes).
-- **Matching:** ReplicaSet=2 (búsqueda intensiva).
-- **Identity:** ReplicaSet=1 (auth crítico, bajo volumen).
-
-### Monitoreo
-- Prometheus scrape de métricas cada 15s.
-- Alertas: pod down, BD latencia >100ms, Kafka lag.
-
-### Disaster Recovery
-- PostgreSQL: backups diarios, PITR 7 días.
-- Kafka: replication factor=1 (no redundancia en MVP per R10).
-- MinIO: replicado en 2 nodos.
-
----
-
-**Referencias:**
-- SAD (sección 4.2: microservicios, sección 9: infraestructura)
-- INFRASTRUCTURE.md (DR, backups, monitoring)
-- ADR-009 (Pasarela), ADR-015 (QA), ADR-024 (Email/SMS fuera MVP)
-
+**Referencias:** Documento de Infraestructura (2.1, 3.3, 3.4, 4.3 y 10); ADR-007, ADR-014, ADR-016, ADR-022, ADR-023, ADR-024, ADR-025, ADR-026 y ADR-028; `quickpatch.dsl`.
