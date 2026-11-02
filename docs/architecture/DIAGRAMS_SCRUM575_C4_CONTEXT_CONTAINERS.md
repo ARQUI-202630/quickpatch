@@ -10,7 +10,7 @@ Este documento resume las vistas C4 de nivel 1 y 2 y el reparto de las VMs. La f
 
 ## 1. Contexto (C4 nivel 1)
 
-Las personas que usan QUICKPATCH y su único sistema externo de producción, la pasarela de pagos (RIE-01, R5, ADR-024). No se dibujan sistemas futuros: el correo y las notificaciones push quedan fuera del MVP (ADR-024). La geocodificación es propia (Nominatim dentro de las VMs) y el API Gateway es un contenedor de QUICKPATCH, no un sistema externo.
+Las personas que usan QUICKPATCH y su único sistema externo de producción, la pasarela de pagos (RIE-01, R5, ADR-024). La geocodificación es propia (Nominatim dentro de las VMs) y el API Gateway es un contenedor de QUICKPATCH, no un sistema externo.
 
 ```mermaid
 graph TB
@@ -22,7 +22,7 @@ graph TB
     AdminP["Admin de plataforma"]
 
     QP["QUICKPATCH<br/>Plataforma multi-tenant de servicios técnicos"]
-    Pasarela["Pasarela de pagos PCI-DSS<br/>(externa; simulada en el MVP)"]
+    Pasarela["Pasarela de pagos PCI-DSS<br/>(simulada en el MVP, ADR-009)"]
 
     Cliente -->|"Pide, sigue, paga y califica (app móvil)"| QP
     Empresa -->|"Pide y paga para sus sedes (app móvil)"| QP
@@ -61,7 +61,6 @@ graph TB
     RD[("Redis<br/>candado de tareas programadas<br/>de ServiceRequest")]
     GA[("Garage (S3)<br/>evidencias y respaldos (ADR-016)")]
     NOM["Geocodificador<br/>Nominatim, solo Bogotá (ADR-024)"]
-    Pasarela["Pasarela de pagos"]
 
     Mobile -->|"HTTPS /api"| GW
     Web -->|"HTTPS /api"| GW
@@ -70,6 +69,8 @@ graph TB
     GW -->|"HTTP"| SR
     GW -->|"HTTP"| PY
     GW -->|"HTTP"| CM
+    GW -->|"HTTP: /v1/catalog/admin/categories"| CT
+    GW -->|"HTTP: disponibilidad, cobertura y ofertas"| MT
 
     IS --> PG
     CT --> PG
@@ -95,15 +96,14 @@ graph TB
     SR -->|"candado"| RD
     SR -->|"fotos del servicio"| GA
     SR -->|"busca la dirección"| NOM
-    PY -.->|"cobrará (planeado)"| Pasarela
 ```
 
 Notas:
 
-- El gateway es un **Nginx** por ambiente (ADR-028). REST solo llega a Identity, ServiceRequest, Payments y Communication (ADR-025); Catalog, Matching y Ranking se comunican por eventos.
+- El gateway es un **Nginx** por ambiente (ADR-028). Según ADR-025, el REST principal va a Identity, ServiceRequest y Payments, con excepciones explícitas: las acciones del técnico en Matching (disponibilidad, cobertura y ofertas: `/v1/matching`, `/v1/technicians/me/availability` y `/coverage`), la administración del catálogo en Catalog (`/v1/catalog/admin/categories`) y, en Communication, el buzón (`/v1/notifications`), el canal en tiempo real (`/v1/realtime`) y el chat (`/v1/service-requests/{id}/messages`). Ranking y Actors no reciben REST.
+- El cobro con la pasarela lo hace Payments con un adaptador simulado dentro del servicio (ADR-009), así que no hay flecha hacia un sistema externo en esta vista.
 - **El buzón no es un servicio aparte:** vive dentro de Communication, junto con el canal en tiempo real y el chat (ADR-023, ADR-024, ADR-026).
 - **El outbox es la tabla `outbox_events` de la base de cada servicio**, escrita en la misma transacción que el cambio (ADR-007). Redis no guarda outbox ni sesiones: hoy solo lo usa ServiceRequest como candado de sus tareas programadas.
-- Actors y Ranking todavía no están desplegados en ningún ambiente (Documento de Infraestructura 4.3).
 
 Imagen formal: `docs/architecture/diagrams/c4/C4-03-Contenedores.png`.
 
@@ -179,7 +179,7 @@ sequenceDiagram
     App->>E: POST /api/v1/service-requests (HTTPS, JWT)
     E->>G: reenvía por nombre
     G->>SR: POST /v1/service-requests (quita /api)
-    SR->>SR: valida el JWT; tenant del token (RN-T3)
+    SR->>SR: valida el JWT; tenant del token (RN-T3, DD 7.1)
     SR->>DB: lee tenant_status_replica (RN-T1)
     SR->>DB: INSERT service_requests + INSERT outbox_events (misma transacción, ADR-007)
     SR-->>App: 201 Created
