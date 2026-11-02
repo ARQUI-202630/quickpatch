@@ -70,7 +70,7 @@ Las evidencias y reportes formales generados para la compuerta de seguridad prev
 | Archivo de Evidencia | Descripción y Alcance | Trazabilidad Jira |
 |---|---|---|
 | `reporte-revision-vulnerabilidades-lanzamiento-scrum-507.md` | Informe consolidado v2.0 de revisión de vulnerabilidades y seguridad para la compuerta de lanzamiento (Dictamen: GO FOR RELEASE condicionado a Plan de Cierre) | **SCRUM-507**, **SCRUM-49** |
-| `zap-dast-baseline-qa-2026-10-31.txt` | Escaneo dinámico DAST OWASP ZAP Baseline de la corrida de CI del 31 de octubre (61 reglas, 59 PASS, 0 FAIL-NEW, 1 Medium mitigada, 1 Low) | **SCRUM-507**, **SCRUM-49** |
+| `zap-dast-baseline-qa-2026-10-31.txt` | Escaneo dinámico DAST OWASP ZAP Baseline de la corrida de CI del 31 de octubre (58 reglas pasivas, 56 PASS, 0 FAIL-NEW, 1 Medium mitigada, 1 Low) | **SCRUM-507**, **SCRUM-49** |
 | `zap-dast-baseline-qa-2026-10-18.txt` | Escaneo dinámico DAST OWASP ZAP Baseline sobre el API Gateway (corrida inicial de referencia) | **SCRUM-507**, **SCRUM-526** |
 | `pci-dss-loki-qa-2026-10-18.txt` | Auditoría algorítmica PCI-DSS sobre registros exportados de Loki en QA (100 logs en 5 streams, 0 PANs, 0 CVVs) | **SCRUM-507**, **SCRUM-527** |
 | `tls-ingress-qa-2026-10-27.txt` | Certificación OpenSSL de cifrado en tránsito en Ingress Nginx (RSA 4096-bit, TLS 1.2/1.3) | **SCRUM-49**, **RNF-02** |

@@ -16,11 +16,11 @@ Conforme a los criterios de aceptación de la historia **SCRUM-49** y la subtare
 
 | Componente Auditado | Herramienta / Método | Criterio de Aceptación | Resultado Obtenido | Estado de Compuerta |
 |---|---|---|---|:---:|
-| **Cifrado en Tránsito (TLS)** | OpenSSL 3.5.5 `s_client` | HTTPS/TLS obligatorio; rechazo de HTTP plano y suites inseguras | TLSv1.2 y TLSv1.3 activos (`ECDHE-RSA-AES256-GCM-SHA384` y `TLS_AES_256_GCM_SHA384`). Tráfico HTTP plano redirigido a HTTPS | **CUMPLE** |
+| **Cifrado en Tránsito (TLS)** | OpenSSL 3.5.5 `s_client` | HTTPS/TLS obligatorio; rechazo de HTTP plano y suites inseguras | TLSv1.2 y TLSv1.3 activos (`ECDHE-RSA-AES256-GCM-SHA384` y `TLS_AES_256_GCM_SHA384`). HTTP plano rechazado: el puerto 80 de VM1 no escucha | **CUMPLE** |
 | **Privacidad de Pagos (PCI-DSS)** | `tests/security/pci_dss_scanner.py` (Luhn Mod 10 + CVV Regex) | 0 números de tarjeta (PAN) y 0 códigos de seguridad (CVV) en BD y logs | **0 violaciones** sobre 100 registros en 5 streams auditados en Loki (`service-request`, `matching`, `communication`, `coredns`) | **CUMPLE** |
 | **Vulnerabilidades Web/API (DAST)** | OWASP ZAP Baseline (`ghcr.io/zaproxy/zaproxy:stable`) | Sin hallazgos de severidad Alta o Crítica en endpoints públicos | **0 hallazgos Altos/Críticos**; 1 hallazgo Medio (CSP en API REST, regla `IGNORE`) y 1 Bajo (HSTS en raíz) | **CUMPLE** |
 | **Protección de Credenciales** | Inspección de esquema Identity y logs | Contraseñas con hashing robusto (PBKDF2/BCrypt); 0 credenciales en texto plano | Verificado: campos `password_hash` con salt en Identity Service; cero contraseñas en logs | **CUMPLE** |
-| **Cifrado en Reposo (QA y Producción)** | k3s `encryption-config.yaml` / PostgreSQL VM4/VM5 | Secretos y bases cifrados en reposo, o decisión y riesgo documentado | En QA: Secret de k3s cifrados (PR #210). En Producción: pendiente de ejecución en despliegue final (SCRUM-518) | **PLAN DE CIERRE** *(Pendiente Prod)* |
+| **Cifrado en Reposo (QA y Producción)** | k3s `secrets-encrypt status` / PostgreSQL VM4/VM5 | Secretos y bases cifrados en reposo, o decisión y riesgo documentado | En QA: Secret de k3s cifrados (PR #210). En Producción: pendiente de ejecución en despliegue final (SCRUM-518) | **PLAN DE CIERRE** *(Pendiente Prod)* |
 
 **Dictamen de Aseguramiento de Calidad:** **COMPUERTA DE SEGURIDAD APROBADA CONDICIONADA AL PLAN DE CIERRE (GO FOR RELEASE)**. No existen vulnerabilidades de severidad alta o crítica bloqueantes para la promoción del MVP a Producción.
 
@@ -35,7 +35,7 @@ Conforme a los criterios de aceptación de la historia **SCRUM-49** y la subtare
   - Cifrados negociados:
     - TLS 1.2: `ECDHE-RSA-AES256-GCM-SHA384`
     - TLS 1.3: `TLS_AES_256_GCM_SHA384`
-  - Se confirmó que cualquier solicitud HTTP entrante por puerto 80 es redirigida mediante HTTP 301/308 permanente hacia HTTPS, garantizando la confidencialidad de tokens JWT, parámetros de geocodificación y datos de servicios en tránsito.
+  - El puerto 80 de VM1 no escucha y `ufw` solo abre el 443, por lo que no se acepta tráfico HTTP plano (`docs/infrastructure/INFRASTRUCTURE.md` §10.5). Esto garantiza la confidencialidad de tokens JWT, parámetros de geocodificación y datos de servicios en tránsito.
 
 ### 2.2 Auditoría PCI-DSS sobre Registros de Logs (Req 3.4/3.5, PAY-002, K2)
 - **Herramienta:** `tests/security/pci_dss_scanner.py` ejecutado a través de `tests/security/run-pci-dss-suite.py`.
@@ -55,15 +55,15 @@ Conforme a los criterios de aceptación de la historia **SCRUM-49** y la subtare
 - **Evidencias en el repositorio:**
   - Reporte consolidado de la corrida del 31 de octubre: `tests/security/evidencias/zap-dast-baseline-qa-2026-10-31.txt`.
   - Antecedente de corrida previa: `tests/security/evidencias/zap-dast-baseline-qa-2026-10-18.txt`.
-  - Archivos estructurados del escáner: `tests/security/evidencias/zap.json` y `tests/security/evidencias/zap.html`.
+  - Archivos estructurados del escáner: `tests/security/evidencias/zap.json` y `tests/security/evidencias/zap.html`, exportados de la corrida del 18 de octubre (`zap.json` generado el 19 de octubre a las 04:55 UTC); sus dos alertas coinciden con las de la corrida del 31 de octubre.
 - **Cifras exactas del escaneo:**
-  - Reglas evaluadas por el escáner: **61 reglas de seguridad pasiva y baseline**.
-  - Reglas aprobadas (**PASS**): **59 reglas (96.7%)**, incluyendo ausencia de inyección SQL (40018), XSS reflejado/almacenado (40026), Command Injection (90020), divulgación de código fuente (10045) y divulgación de información sensible.
+  - Reglas pasivas registradas en la evidencia: **58** (56 sin hallazgos y 2 con alerta).
+  - Reglas aprobadas (**PASS**): **56 reglas (96,6%)**, listadas una a una en la evidencia, entre ellas divulgación de información sensible en URL (10024), mensajes de error de depuración (10023), cabecera `X-Content-Type-Options` (10021), divulgación de PII (10062) y cookies sin `HttpOnly`/`Secure` (10010, 10011). El baseline es pasivo: no ejecuta reglas activas como inyección SQL o XSS.
   - Hallazgos Críticos / Altos (**FAIL-NEW**): **0 (CERO)**.
   - Hallazgos Medios (**Medium**): **1 hallazgo** -> *Content Security Policy (CSP) Header Not Set* (Plugin 10038, 3 instancias en `https://qa.quickpatch.internal`, `/robots.txt`, `/sitemap.xml`).
     - *Tratamiento:* Regla catalogada formalmente como `IGNORE` en `tests/security/zap-baseline.conf`. CSP aplica a renderizado HTML en navegadores; los servicios de QUICKPATCH son APIs REST JSON sin estado consumidas con Bearer JWT.
   - Hallazgos Bajos (**Low**): **1 hallazgo** -> *Strict-Transport-Security Header Not Set* (Plugin 10035, 3 instancias en la raíz `/` cuando responde 403 al no existir index HTML).
-    - *Tratamiento:* Advertencia informativa sin impacto en la seguridad de la API (tráfico forzado a TLS 1.3). Se recomienda incorporar el flag `always` en el bloque Nginx de Producción.
+    - *Tratamiento:* Advertencia informativa sin impacto en la seguridad de la API (solo se acepta HTTPS con TLS 1.2 y 1.3). Se recomienda incorporar el flag `always` en el bloque Nginx de Producción.
 
 ---
 
@@ -73,10 +73,10 @@ En atención a la observación técnica de DevOps, se documenta el estado difere
 
 | Componente | Estado en QA | Estado en Producción | Plan de Cierre / Mitigación para Producción | HU / Tarea Responsable |
 |---|---|---|---|:---:|
-| **Secret de k3s en Reposo** | Cifrado activo mediante `encryption-config.yaml` | **Pendiente** | Aplicar el manifiesto de cifrado de secretos en el clúster k3s de Producción (VM3) durante el aprovisionamiento | SCRUM-518 / SCRUM-49 |
-| **PostgreSQL en Reposo** | Datos en volumen de VM5 sin cifrado de bloque | **Pendiente** (VM4) | Decisión documentada en INFRASTRUCTURE.md §10.3: el laboratorio opera en red privada aislada (10.43.0.0/16). Riesgo asumido para el MVP | SCRUM-518 |
+| **Secret de k3s en Reposo** | Cifrado activo desde el 30 de octubre (AES-CBC, 14 de 14 `Secret`) con `playbooks/cifrar-secretos-k3s.yml` | **Pendiente** | Ejecutar `playbooks/cifrar-secretos-k3s.yml` en el clúster k3s de Producción (VM3) | SCRUM-518 / SCRUM-49 |
+| **PostgreSQL en Reposo** | Datos en volumen de VM5 sin cifrado de bloque | **Pendiente** (VM4) | Decisión documentada en `docs/infrastructure/INFRASTRUCTURE.md` §10.5: el laboratorio opera en red privada aislada (10.43.0.0/16). Riesgo asumido para el MVP | SCRUM-518 |
 | **Garage S3 en Reposo** | Almacenamiento en VM7 sin cifrado del backend | **Pendiente** (VM6) | Acceso restringido por credenciales secretas de S3 administradas vía vault de Ansible | SCRUM-518 |
-| **Respaldos de Base de Datos** | Scripts de backup en VM1 | **Pendiente** | Implementar cifrado GPG en el script de respaldo automatizado antes de transferir fuera de VM4 | Post-MVP / DevOps |
+| **Respaldos de Base de Datos** | `pg_dump -Fc` sin cifrar en el disco de VM4 y subido a Garage por HTTP (`pg-backup.sh.j2`) | **Pendiente** | Cifrar el respaldo (`age` o GPG, con la llave en el vault) antes de subirlo a Garage | Post-MVP / DevOps |
 
 ---
 
