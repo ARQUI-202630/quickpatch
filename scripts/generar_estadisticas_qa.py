@@ -30,13 +30,36 @@ SEC_EVIDENCIAS_DIR = os.path.join(REPO_ROOT, 'tests', 'security', 'evidencias')
 DEFECTOS_FILE = os.path.join(REPO_ROOT, 'docs', 'testing', 'registro-defectos-sprint4-sprint5.md')
 OUTPUT_MD = os.path.join(REPO_ROOT, 'docs', 'testing', 'estadisticas-pruebas-sprint5.md')
 IMG_DIR = os.path.join(REPO_ROOT, 'docs', 'testing', 'img')
+COVERAGE_FILE = os.path.join(CI_RESULTS_DIR, 'cobertura-scrum-602.json')
+EXCEL_REPO = os.path.join(REPO_ROOT, 'docs', 'testing', 'Matriz_UAT_Avance_QuickPatch.xlsx')
 
 os.makedirs(IMG_DIR, exist_ok=True)
 
 # ---------------------------------------------------------------------------
+# 0. COBERTURA DE CÓDIGO POR SERVICIO (SCRUM-602)
+# ---------------------------------------------------------------------------
+def load_coverage():
+    """
+    Lee la cobertura por servicio publicada en CI (SCRUM-602). Un servicio sin
+    dato queda como 'Sin dato'; nunca se estima un porcentaje.
+    """
+    if not os.path.exists(COVERAGE_FILE):
+        return {'servicios': {}, 'umbral_minimo': 80.0, 'fuente': ''}
+    with open(COVERAGE_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def coverage_label(cov_map, key):
+    svc = cov_map['servicios'].get(key)
+    if not svc:
+        return 'Sin dato'
+    return f"{svc['cobertura']:.1f}%"
+
+
+# ---------------------------------------------------------------------------
 # 1. PARSER DE PRUEBAS DE MICROSERVICIOS EN CI (.trx y Surefire)
 # ---------------------------------------------------------------------------
-def parse_ci_results():
+def parse_ci_results(cov_map):
     """
     Parsea los resultados reales del CI de cada microservicio a partir de los
     archivos .trx (Visual Studio Test Results) y surefire-summary.json.
@@ -72,7 +95,7 @@ def parse_ci_results():
                         'total': data['total'],
                         'passed': data['passed'],
                         'failed': data['failed'],
-                        'coverage': 'Pendiente (SCRUM-602)'
+                        'coverage': coverage_label(cov_map, folder_name)
                     })
                 continue
 
@@ -124,7 +147,7 @@ def parse_ci_results():
             'total': total_svc,
             'passed': total_svc - failed_svc,
             'failed': failed_svc,
-            'coverage': 'Pendiente (SCRUM-602)'
+            'coverage': coverage_label(cov_map, folder_name)
         })
 
     # Incorporar pruebas automatizadas de la App Móvil Flutter (quickpatch-mobile)
@@ -137,7 +160,7 @@ def parse_ci_results():
         'total': 493,
         'passed': 493,
         'failed': 0,
-        'coverage': 'Pendiente (SCRUM-602)'
+        'coverage': coverage_label(cov_map, 'mobile')
     })
 
     return ci_data
@@ -297,6 +320,7 @@ def parse_k6_results():
 # ---------------------------------------------------------------------------
 def parse_defects():
     excel_candidates = [
+        EXCEL_REPO,
         r'C:\Users\kathe\Downloads\Matriz_UAT_Avance_QuickPatch_FINAL.xlsx',
         r'C:\Users\kathe\Downloads\Matriz_UAT_Avance_QuickPatch_v2.xlsx',
         r'C:\Users\kathe\Downloads\Matriz_UAT_Avance_QuickPatch.xlsx'
@@ -361,7 +385,7 @@ def parse_defects():
 # ---------------------------------------------------------------------------
 # 6. GENERADOR DE GRÁFICAS EJECUTIVAS
 # ---------------------------------------------------------------------------
-def generate_charts(ci_data, e2e_data, sec_data, defects):
+def generate_charts(ci_data, e2e_data, sec_data, defects, cov_map):
     # Paleta de diseño premium
     primary = '#2563EB'
     success = '#10B981'
@@ -464,20 +488,27 @@ def generate_charts(ci_data, e2e_data, sec_data, defects):
     plt.savefig(os.path.join(IMG_DIR, 'grafica-3-barras-defectos.png'), dpi=300)
     plt.close()
 
-    # GRÁFICA 4: Pruebas Reales de CI por Microservicio (Cobertura Pendiente SCRUM-602)
-    svc_names = [s['service'] for s in ci_data]
-    svc_totals = [s['total'] for s in ci_data]
+    # GRÁFICA 4: Cobertura de código por servicio (SCRUM-602)
+    servicios = cov_map['servicios']
+    umbral = cov_map.get('umbral_minimo', 80.0)
+    orden = sorted(servicios.items(), key=lambda kv: kv[1]['cobertura'])
+    nombres = [f"quickpatch-{k}" for k, _ in orden]
+    valores = [v['cobertura'] for _, v in orden]
+    colores = [success if v >= umbral else danger for v in valores]
 
     fig, ax = plt.subplots(figsize=(10, 5))
-    bars = ax.barh(svc_names, svc_totals, color='#3B82F6', edgecolor='#1E3A8A', height=0.6)
-    ax.set_title('Pruebas Automatizadas de CI por Microservicio (Cobertura: Pendiente SCRUM-602)', fontsize=13, fontweight='bold', pad=15)
-    ax.set_xlabel('Pruebas Reales Ejecutadas en CI (Unitarias + Integración)', fontsize=11, fontweight='semibold')
-    ax.set_xlim(0, max(svc_totals) * 1.18)
+    bars = ax.barh(nombres, valores, color=colores, edgecolor='#0F172A', height=0.6)
+    ax.axvline(umbral, color=dark, linestyle='--', linewidth=1.2)
+    ax.annotate(f'Umbral de la compuerta CI: {umbral:.0f}%', xy=(umbral, len(nombres) - 0.4),
+                xytext=(-6, 0), textcoords='offset points', ha='right', va='center',
+                fontsize=9, fontweight='bold', color=dark)
+    ax.set_title('Cobertura de Código por Servicio (CI, SCRUM-602)', fontsize=13, fontweight='bold', pad=15)
+    ax.set_xlabel('Cobertura de líneas (%)', fontsize=11, fontweight='semibold')
+    ax.set_xlim(0, 125)
 
-    for bar in bars:
-        w = bar.get_width()
-        ax.annotate(f'{w} pruebas (Run activo)',
-                    xy=(w, bar.get_y() + bar.get_height() / 2),
+    for bar, (k, v) in zip(bars, orden):
+        ax.annotate(f"{v['cobertura']:.1f}%  ({v['pruebas']} pruebas)",
+                    xy=(bar.get_width(), bar.get_y() + bar.get_height() / 2),
                     xytext=(6, 0), textcoords="offset points",
                     ha='left', va='center', fontsize=9, fontweight='bold', color='#1E293B')
 
@@ -488,7 +519,7 @@ def generate_charts(ci_data, e2e_data, sec_data, defects):
 # ---------------------------------------------------------------------------
 # 7. GENERADOR DE DOCUMENTO MARKDOWN
 # ---------------------------------------------------------------------------
-def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects):
+def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map):
     tot_unit = sum(s['unit'] for s in ci_data)
     tot_it = sum(s['integration'] for s in ci_data)
     tot_ci = sum(s['total'] for s in ci_data)
@@ -502,9 +533,9 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects):
 
     md = []
     md.append("# Cuadro de Mando de Estadísticas de Pruebas — Sprint 5 (SCRUM-604)\n")
-    md.append("**Código del Documento:** `MET-QA-SP5-2026-10-27`  ")
-    md.append("**Versión:** `2.1 Dinámica Oficial (Sincronizada con Matriz UAT Excel)`  ")
-    md.append("**Fecha de Generación:** 27 de octubre de 2026  ")
+    md.append("**Código del Documento:** `MET-QA-SP5-2026-11-02`  ")
+    md.append("**Versión:** `2.2 Dinámica Oficial (Cobertura de CI SCRUM-602 incorporada)`  ")
+    md.append("**Fecha de Generación:** 2 de noviembre de 2026  ")
     md.append("**Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  ")
     md.append("**Trazabilidad Jira:** Tarea `SCRUM-604` | Requisito RNF-08 | Documento de Pruebas `TD.md` V3.0  ")
     md.append("**Principio Metodológico:** Toda cifra reportada proviene directamente de archivos de resultados de CI (.trx/surefire), evidencias Newman en QA, resúmenes JSON de k6 y la Matriz de Avance UAT en Excel. Cero cifras escritas a mano.\n")
@@ -518,8 +549,29 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects):
     for s in ci_data:
         md.append(f"| **quickpatch-{s['service'].lower()}** | Run #{s['run']} | {s['unit']:,} | {s['integration']:,} | **{s['total']:,}** | {s['passed']:,} | {s['failed']} | *{s['coverage']}* |")
 
-    md.append(f"| **TOTAL UNITARIAS E INTEGRACIÓN** | — | **{tot_unit:,}** | **{tot_it:,}** | **{tot_ci:,}** | **{tot_ci:,}** | **0** | *Pendiente (SCRUM-602)* |\n")
-    md.append("> **Nota sobre Cobertura:** La publicación de reportes de cobertura en CI se encuentra en desarrollo bajo la tarea `SCRUM-602` (responsable: Sebastián). Mientras dicha tarea no finalice, la columna permanece en estado formal **Pendiente**, sin estimaciones porcentuales ficticias.\n")
+    cov_vals = [v['cobertura'] for v in cov_map['servicios'].values()]
+    cov_rango = f"{min(cov_vals):.1f}% – {max(cov_vals):.1f}%" if cov_vals else 'Sin dato'
+    umbral = cov_map.get('umbral_minimo', 80.0)
+    md.append(f"| **TOTAL UNITARIAS E INTEGRACIÓN** | — | **{tot_unit:,}** | **{tot_it:,}** | **{tot_ci:,}** | **{tot_ci:,}** | **0** | *{cov_rango}* |\n")
+    md.append("### Cobertura de código por servicio (SCRUM-602)\n")
+    md.append(f"Fuente: `tests/ci-results/cobertura-scrum-602.json` ({cov_map.get('fuente', '')}). Umbral de la Compuerta 1 del Documento de Pruebas: **{umbral:.0f}%**.\n")
+    md.append("| Repositorio | Pruebas en la corrida de cobertura | Cobertura | ¿Cumple el umbral? |")
+    md.append("|---|:---:|:---:|:---:|")
+    for k, v in sorted(cov_map['servicios'].items(), key=lambda kv: -kv[1]['cobertura']):
+        cumple = 'Sí' if v['cobertura'] >= umbral else 'No'
+        md.append(f"| `quickpatch-{k}` | {v['pruebas']:,} | **{v['cobertura']:.1f}%** | {cumple} |")
+    sin_dato = cov_map.get('sin_dato', [])
+    md.append("")
+    if sin_dato:
+        md.append(f"> **Servicios sin dato de cobertura:** {', '.join('`quickpatch-' + x + '`' for x in sin_dato)}. SCRUM-602 no reportó cobertura para ellos; la columna queda como *Sin dato* y no se estima.\n")
+    difs = []
+    for s in ci_data:
+        key = 'service-request' if s['service'] == 'ServiceRequest' else ('mobile' if s['service'].startswith('Mobile') else s['service'].lower())
+        v = cov_map['servicios'].get(key)
+        if v and v['pruebas'] != s['total']:
+            difs.append(f"`quickpatch-{key}` ({s['total']} en la tabla, {v['pruebas']} en la corrida de cobertura)")
+    if difs:
+        md.append("> **Diferencias de conteo:** " + '; '.join(difs) + ". La tabla de pruebas usa los resultados archivados en `tests/ci-results/`; la cobertura viene de la última corrida de `develop` reportada en SCRUM-602, que es posterior.\n")
     md.append("---\n")
 
     md.append("## 2. Pruebas de Sistema E2E y Seguridad (QA Desplegado)\n")
@@ -559,30 +611,33 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects):
     md.append(f"* **Defectos Descartados / Retractados:** **{desc} ({desc/tot_def*100:.1f}%)**.")
     md.append(f"* **Defectos en Mitigación en Sprint 5:** **{pend} ({pend/tot_def*100:.1f}%)** (ninguno bloqueante).")
     md.append(f"* **Defectos Críticos o Bloqueantes Abiertos:** **0 (0.0%)**.\n")
-    md.append("Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/registro-defectos-sprint4-sprint5.md) y en la hoja `Defectos` de la Matriz UAT Excel.\n")
+    md.append("Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-defectos-sprint4-sprint5.md) y en la hoja `Defectos` de la Matriz UAT Excel.\n")
     md.append("---\n")
 
     md.append("## 5. Resumen Ejecutivo y Gráficas de Calidad\n")
-    md.append(f"* **Total de Pruebas Reales Automatizadas:** **{total_real_tests:,} pruebas / aserciones** (1,525 unitarias/integración + 931 E2E + 13 seguridad).")
+    md.append(f"* **Total de Pruebas Reales Automatizadas:** **{total_real_tests:,} pruebas / aserciones** ({tot_ci:,} unitarias/integración + {tot_e2e_assert:,} E2E + {tot_sec_assert:,} seguridad).")
     md.append(f"* **Tasa de Aprobación de Pruebas:** **100.0% PASS (0 fallos en runs oficiales)**.")
-    md.append(f"* **Capacidad de Carga k6:** **44,631 peticiones procesadas** con 0.00% de errores y p95 de 415.39 ms bajo 150 VU.")
+    k6_max = max(k6_data, key=lambda k: k['vus']) if k6_data else None
+    if k6_max:
+        md.append(f"* **Capacidad de Carga k6:** **{k6_max['requests']:,} peticiones procesadas** con {k6_max['error_rate']} de errores y p95 de {k6_max['p95_ms']} ms bajo {k6_max['vus']} VU.")
+    md.append(f"* **Cobertura de Código en CI (SCRUM-602):** **{cov_rango}** en {len(cov_vals)} repositorios; todos sobre el umbral de {umbral:.0f}%." if cov_vals and min(cov_vals) >= umbral else f"* **Cobertura de Código en CI (SCRUM-602):** {cov_rango}.")
     md.append(f"* **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.")
-    md.append(f"* **Avance Preliminar del Producto (Matriz Excel UAT):** **74.36%** (Meta Sprint 4: 80% / Brecha: -5.64%).")
-    md.append(f"* **% Funcionalidades Implementadas (Develop):** **92.65%** (31.5 / 34 pts).")
+    md.append(f"* **Avance Preliminar del Producto (Matriz Excel UAT):** **74.93%** (Meta Sprint 4: 80% / Brecha: -5.07%).")
+    md.append(f"* **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts).")
     md.append(f"* **% Funcionalidades Probadas por QA:** **86.03%** (29.25 / 34 pts con evidencia).")
-    md.append(f"* **% Escenarios de Calidad (SAD §3):** **47.12%** (52 escenarios evaluados: 20 Cumple, 9 Parcial, 2 No cumple, 21 No medido).\n")
+    md.append(f"* **% Escenarios de Calidad (SAD §3):** **49.04%** (52 escenarios evaluados: 20 Cumple, 11 Parcial, 2 No cumple, 19 No medido).\n")
 
     md.append("### Gráfica 1: Distribución de Pruebas por Tipo")
-    md.append("![Gráfica 1: Distribución por Tipo](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-1-pruebas-por-tipo.png)\n")
+    md.append("![Gráfica 1: Distribución por Tipo](img/grafica-1-pruebas-por-tipo.png)\n")
 
     md.append("### Gráfica 2: Tasa de Éxito de Pruebas (100% PASS)")
-    md.append("![Gráfica 2: Torta de Éxito](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-2-torta-exito-pruebas.png)\n")
+    md.append("![Gráfica 2: Torta de Éxito](img/grafica-2-torta-exito-pruebas.png)\n")
 
     md.append("### Gráfica 3: Estado y Severidad de Defectos")
-    md.append("![Gráfica 3: Defectos](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-3-barras-defectos.png)\n")
+    md.append("![Gráfica 3: Defectos](img/grafica-3-barras-defectos.png)\n")
 
-    md.append("### Gráfica 4: Pruebas Reales de CI por Microservicio")
-    md.append("![Gráfica 4: Pruebas de CI por Microservicio](file:///c:/Users/kathe/OneDrive/Escritorio/ARQUI/Arquitectura/quickpatch/docs/testing/img/grafica-4-cobertura-por-servicio.png)\n")
+    md.append("### Gráfica 4: Cobertura de Código por Servicio (SCRUM-602)")
+    md.append("![Gráfica 4: Cobertura por Servicio](img/grafica-4-cobertura-por-servicio.png)\n")
 
     with open(OUTPUT_MD, 'w', encoding='utf-8') as f:
         f.write('\n'.join(md))
@@ -594,7 +649,9 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects):
 # ---------------------------------------------------------------------------
 if __name__ == '__main__':
     print("Iniciando extracción dinámica de estadísticas de QA...")
-    ci_data = parse_ci_results()
+    cov_map = load_coverage()
+    print(f"  Cobertura cargada: {len(cov_map['servicios'])} servicios")
+    ci_data = parse_ci_results(cov_map)
     print(f"  Microservicios parseados: {len(ci_data)} ({sum(s['total'] for s in ci_data)} pruebas CI)")
 
     e2e_data = parse_e2e_results()
@@ -610,9 +667,9 @@ if __name__ == '__main__':
     print(f"  Defectos parseados: {len(defects)}")
 
     print("Generando gráficas ejecutivas...")
-    generate_charts(ci_data, e2e_data, sec_data, defects)
+    generate_charts(ci_data, e2e_data, sec_data, defects, cov_map)
 
     print("Generando documento Markdown oficial...")
-    generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects)
+    generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map)
 
     print("¡Proceso completado con éxito!")
