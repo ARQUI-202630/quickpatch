@@ -36,11 +36,12 @@ La siguiente tabla consolida los defectos identificados en los ciclos de prueba 
 | **BUG-SP4-007** | Media | Runner Newman / Seed | E2E QA (Cuentas fijas omitidas) | **Corregido** | Sprint 4 | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt` (patrón `preparacion()`) |
 | **BUG-SP4-008** | Baja | `quickpatch-identity` | E2E QA (`scrum-56-registro-tecnico`) | **Corregido** | Sprint 4 | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt` (tipo `problems/validacion`) |
 | **BUG-SP4-009** | Media | `quickpatch-identity` | E2E QA (`scrum-99-equipo-proveedor`) | **Corregido** | Sprint 4 | `tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt` (remoción `specialty`) |
-| **SCRUM-410** | Media | `quickpatch-service-request` | Rendimiento k6 (Prueba de estrés 150 VU) | **Corregido** | Sprint 4 | PR #121 (`cancelar()` en k6) / `tests/performance/evidencias/k6-stress-150vu-qa-2026-10-18.txt` |
-| **SCRUM-606** | Media | `quickpatch-communication` | Tiempo Real WebSocket (`scrum-478`) | **Pendiente** | Sprint 5 | Reintentos automáticos y reconexión en WebSocket Gateway |
-| **SCRUM-607** | Baja | `quickpatch-payments` | Facturación y Comprobante PDF (`scrum-495`) | **Pendiente** | Sprint 5 | Desglose formal de impuestos en PDF de liquidación |
-| **SCRUM-608** | Media | `quickpatch-mobile` | Pruebas UAT Emulador Android (GPS Mock) | **Pendiente** | Sprint 5 | Inyección de coordenadas geográficas en emulador Android |
-| **SCRUM-609** | Baja | `quickpatch-web` | Interacción UI Web Admin (Paginación) | **Pendiente** | Sprint 5 | Ajuste de paginación reactiva en listado de técnicos |
+| **DEF-S4-02** | Alta | `quickpatch-performance` | Rendimiento k6 (Prueba de estrés 150 VU) | **Corregido** | Sprint 4 | PR #121 (`cancelar()` en k6) / `tests/performance/evidencias/k6-stress-150vu-qa-2026-10-18.txt` |
+| **DEF-S4-03** | Media | `Ingress Nginx (VM1)` | Escaneo DAST ZAP (HSTS y nosniff) | **No aplica a producción** | Sprint 5 | QA no emite HSTS ni nosniff (decisión heredada: certificado autofirmado); producción sí (verificado en vivo 2-nov, INFRASTRUCTURE §10.5, PR #222) |
+| **DEF-S5-01** | Media | `quickpatch-communication` | Tiempo Real WebSocket (`scrum-478`) | **En mitigación** | Sprint 5 | Reintentos automáticos y reconexión en WebSocket Gateway (mejora técnica post-MVP) |
+| **DEF-S5-02** | Baja | `quickpatch-payments` | Facturación y Comprobante PDF (`scrum-495`) | **En mitigación** | Sprint 5 | Desglose formal de impuestos en PDF de liquidación (mejora técnica post-MVP) |
+| **DEF-S5-03** | Media | `quickpatch-mobile` | Pruebas UAT Emulador Android (GPS Mock) | **En mitigación** | Sprint 5 | Inyección de coordenadas geográficas en emulador Android (arnés de prueba UAT) |
+| **DEF-S5-04** | Baja | `quickpatch-web` | Interacción UI Web Admin (Paginación) | **En mitigación** | Sprint 5 | Ajuste de paginación reactiva en listado de técnicos (mejora UI post-MVP) |
 
 ---
 
@@ -48,16 +49,16 @@ La siguiente tabla consolida los defectos identificados en los ciclos de prueba 
 
 | Estado del Defecto | Cantidad | Porcentaje |
 |---|:---:|:---:|
-| **Solucionados y Verificados (Cerrados)** | 9 | 64.3% |
-| **Descartados / Inválidos (Retractados)** | 1 | 7.1% |
-| **Pendientes (En desarrollo en Sprint 5)** | 4 | 28.6% |
-| **Total de Defectos Registrados** | **14** | **100.0%** |
+| **Solucionados / Verificados / No aplica a producción** | 10 | 66.7% |
+| **Descartados / Inválidos (Retractados)** | 1 | 6.7% |
+| **En mitigación (Pendientes en Sprint 5)** | 4 | 26.6% |
+| **Total de Defectos Registrados (S4 y S5)** | **15** | **100.0%** |
 
 ### Distribución por Severidad
 * **Bloqueantes (S1):** 0 detectados (0.0%).
-* **Alta (S2):** 0 abiertas en Sprint 5 (0.0%).
-* **Media (S3) / Falla de Arnés:** 10 registrados (6 corregidos en producto/suite, 2 fallas de arnés comprobadas con evidencia, 1 descartado, 2 pendientes en Sprint 5).
-* **Baja (S4):** 4 registrados (2 corregidos en Sprint 4, 2 pendientes en Sprint 5).
+* **Alta (S2):** 1 registrada y corregida (DEF-S4-02 cancelación k6).
+* **Media (S3) / Falla de Arnés:** 10 registrados (6 corregidos en producto/suite, 2 fallas de arnés comprobadas con evidencia, 1 descartado, 1 no aplica a producción: DEF-S4-03, 2 en mitigación: DEF-S5-01 y DEF-S5-03).
+* **Baja (S4):** 4 registrados (2 corregidos en Sprint 4, 2 en mitigación en Sprint 5: DEF-S5-02 y DEF-S5-04).
 
 ---
 

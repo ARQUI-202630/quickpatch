@@ -93,9 +93,9 @@ Conforme a la directriz técnica de QA, las peticiones masivas de carga no se co
 ## 4. Registro Consolidado de Defectos (SCRUM-603)
 
 * **Total de Defectos Registrados:** **19 anomalías**.
-* **Defectos Corregidos y Verificados:** **14 (73.7%)**.
+* **Defectos Corregidos o No aplicables:** **15 (78.9%)** (14 corregidos y verificados + 1 no aplica a producción: DEF-S4-03).
 * **Defectos Descartados / Retractados:** **0 (0.0%)**.
-* **Defectos en Mitigación en Sprint 5:** **5 (26.3%)** (ninguno bloqueante).
+* **Defectos en Mitigación en Sprint 5:** **4 (21.1%)** (ninguno bloqueante: DEF-S5-01 a DEF-S5-04).
 * **Defectos Críticos o Bloqueantes Abiertos:** **0 (0.0%)**.
 
 Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-defectos-sprint4-sprint5.md) y en la hoja `Defectos` de la Matriz UAT Excel.

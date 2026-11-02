@@ -1,0 +1,92 @@
+================================================================================
+EVIDENCIA DE CI: OWASP ZAP BASELINE Y REVISIÓN PCI-DSS DE LOGS EN QA (SCRUM-507 / SCRUM-49)
+================================================================================
+Origen: GitHub Actions, workflow «Pruebas de sistema», corrida 41168063519
+  https://github.com/ARQUI-202630/quickpatch/actions/runs/41168063519
+Job: «Seguridad (OWASP ZAP y PCI-DSS)», id 124439838881
+  https://github.com/ARQUI-202630/quickpatch/actions/runs/41168063519/job/124439838881
+Rama: feature/qa/humo-flujo-critico, commit 5966cc781b9df857527c6ec3c0d5f6d90c929aba
+Ejecución del job: 2026-10-31T04:27:08Z a 2026-10-31T04:28:22Z (30 de octubre, 23:27 a 23:28, hora de Bogotá)
+Resultado del job: success
+Objetivo: https://qa.quickpatch.internal (VM1, 10.43.100.168)
+Comando ZAP: ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://qa.quickpatch.internal -I -r zap.html -c zap-baseline.conf
+Artefacto del reporte: reporte-zap (zap.html), copiado en zap-dast-baseline-qa-2026-10-30.html
+
+Las líneas de abajo se copiaron sin cambios del log del job (marca de tiempo UTC de GitHub Actions al inicio).
+
+Alcance: ZAP baseline es un escaneo pasivo. Según zap.html recorrió la raíz y los archivos /robots.txt,
+/sitemap.xml y /favicon.ico; no recorrió los endpoints del API REST ni ejecutó reglas activas (inyección, XSS).
+
+--------------------------------------------------------------------------------
+1. OWASP ZAP BASELINE (paso «docker run ... zap-baseline.py»)
+--------------------------------------------------------------------------------
+2026-10-31T04:28:15.9192094Z Total of 8 URLs
+2026-10-31T04:28:15.9194452Z PASS: Vulnerable JS Library (Powered by Retire.js) [10003]
+2026-10-31T04:28:15.9195818Z PASS: In Page Banner Information Leak [10009]
+2026-10-31T04:28:15.9198420Z PASS: Cookie No HttpOnly Flag [10010]
+2026-10-31T04:28:15.9199399Z PASS: Cookie Without Secure Flag [10011]
+2026-10-31T04:28:15.9200544Z PASS: Cross-Domain JavaScript Source File Inclusion [10017]
+2026-10-31T04:28:15.9201704Z PASS: Content-Type Header Missing [10019]
+2026-10-31T04:28:15.9203256Z PASS: Information Disclosure - Debug Error Messages [10023]
+2026-10-31T04:28:15.9204945Z PASS: Information Disclosure - Sensitive Information in URL [10024]
+2026-10-31T04:28:15.9206604Z PASS: Information Disclosure - Sensitive Information in HTTP Referrer Header [10025]
+2026-10-31T04:28:15.9208627Z PASS: Information Disclosure - Suspicious Comments [10027]
+2026-10-31T04:28:15.9210520Z PASS: Off-site Redirect [10028]
+2026-10-31T04:28:15.9211613Z PASS: Cookie Poisoning [10029]
+2026-10-31T04:28:15.9212855Z PASS: User Controllable Charset [10030]
+2026-10-31T04:28:15.9214539Z PASS: User Controllable HTML Element Attribute (Potential XSS) [10031]
+2026-10-31T04:28:15.9216204Z PASS: Viewstate [10032]
+2026-10-31T04:28:15.9221540Z PASS: Directory Browsing [10033]
+2026-10-31T04:28:15.9222680Z PASS: Heartbleed OpenSSL Vulnerability (Indicative) [10034]
+2026-10-31T04:28:15.9223843Z PASS: HTTP Server Response Header [10036]
+2026-10-31T04:28:15.9225268Z PASS: Server Leaks Information via "X-Powered-By" HTTP Response Header Field(s) [10037]
+2026-10-31T04:28:15.9227222Z PASS: X-Backend-Server Header Information Leak [10039]
+2026-10-31T04:28:15.9228559Z PASS: Secure Pages Include Mixed Content [10040]
+2026-10-31T04:28:15.9229810Z PASS: HTTP to HTTPS Insecure Transition in Form Post [10041]
+2026-10-31T04:28:15.9231170Z PASS: HTTPS to HTTP Insecure Transition in Form Post [10042]
+2026-10-31T04:28:15.9232387Z PASS: User Controllable JavaScript Event (XSS) [10043]
+2026-10-31T04:28:15.9234925Z PASS: Big Redirect Detected (Potential Sensitive Information Leak) [10044]
+2026-10-31T04:28:15.9236705Z PASS: Retrieved from Cache [10050]
+2026-10-31T04:28:15.9239200Z PASS: X-ChromeLogger-Data (XCOLD) Header Information Leak [10052]
+2026-10-31T04:28:15.9241331Z PASS: Cookie without SameSite Attribute [10054]
+2026-10-31T04:28:15.9242941Z PASS: CSP [10055]
+2026-10-31T04:28:15.9244459Z PASS: X-Debug-Token Information Leak [10056]
+2026-10-31T04:28:15.9245970Z PASS: Username Hash Found [10057]
+2026-10-31T04:28:15.9247908Z PASS: X-AspNet-Version Response Header [10061]
+2026-10-31T04:28:15.9249662Z PASS: PII Disclosure [10062]
+2026-10-31T04:28:15.9251090Z PASS: Timestamp Disclosure [10096]
+2026-10-31T04:28:15.9258518Z PASS: Hash Disclosure [10097]
+2026-10-31T04:28:15.9260491Z PASS: Cross-Domain Misconfiguration [10098]
+2026-10-31T04:28:15.9267661Z PASS: Weak Authentication Method [10105]
+2026-10-31T04:28:15.9269611Z PASS: Reverse Tabnabbing [10108]
+2026-10-31T04:28:15.9272316Z PASS: Authentication Request Identified [10111]
+2026-10-31T04:28:15.9274434Z PASS: Session Management Response Identified [10112]
+2026-10-31T04:28:15.9276296Z PASS: Verification Request Identified [10113]
+2026-10-31T04:28:15.9278408Z PASS: Script Served From Malicious Domain (polyfill) [10115]
+2026-10-31T04:28:15.9280518Z PASS: ZAP is Out of Date [10116]
+2026-10-31T04:28:15.9282296Z PASS: Absence of Anti-CSRF Tokens [10202]
+2026-10-31T04:28:15.9284121Z PASS: Private IP Disclosure [2]
+2026-10-31T04:28:15.9285685Z PASS: Session ID in URL Rewrite [3]
+2026-10-31T04:28:15.9287740Z PASS: Script Passive Scan Rules [50001]
+2026-10-31T04:28:15.9289655Z PASS: Stats Passive Scan Rule [50003]
+2026-10-31T04:28:15.9291273Z PASS: Insecure JSF ViewState [90001]
+2026-10-31T04:28:15.9293016Z PASS: Java Serialization Object [90002]
+2026-10-31T04:28:15.9294839Z PASS: Sub Resource Integrity Attribute Missing [90003]
+2026-10-31T04:28:15.9296727Z PASS: Charset Mismatch [90011]
+2026-10-31T04:28:15.9299034Z PASS: Application Error Disclosure [90022]
+2026-10-31T04:28:15.9300705Z PASS: WSDL File Detection [90030]
+2026-10-31T04:28:15.9302352Z PASS: Loosely Scoped Cookie [90033]
+2026-10-31T04:28:15.9304162Z IGNORE: Missing Anti-clickjacking Header [10020] x 4 
+2026-10-31T04:28:15.9314421Z IGNORE: Content Security Policy (CSP) Header Not Set [10038] x 4 
+2026-10-31T04:28:15.9325487Z WARN-NEW: Re-examine Cache-control Directives [10015] x 4 
+2026-10-31T04:28:15.9335739Z WARN-NEW: X-Content-Type-Options Header Missing [10021] x 5 
+2026-10-31T04:28:15.9347886Z WARN-NEW: Strict-Transport-Security Header Not Set [10035] x 5 
+2026-10-31T04:28:15.9359986Z WARN-NEW: Modern Web Application [10109] x 4 
+2026-10-31T04:28:15.9371631Z FAIL-NEW: 0	FAIL-INPROG: 0	WARN-NEW: 4	WARN-INPROG: 0	INFO: 0	IGNORE: 2	PASS: 55
+
+--------------------------------------------------------------------------------
+2. REVISIÓN PCI-DSS DE LOGS EN LOKI (paso «python3 - <<'PY'», consulta query_range a http://10.43.100.168:3100)
+Consulta: {vm="vm2"} (todos los logs del clúster k3s de QA, Payments incluido), últimas 24 horas, límite 5000 líneas.
+Busca números de tarjeta (Visa, Mastercard, Amex y Discover con dígito Luhn válido) y CVV/CVC seguidos de 3 o 4 dígitos.
+--------------------------------------------------------------------------------
+2026-10-31T04:28:17.0730408Z Líneas revisadas: 5000. Hallazgos: 0.
