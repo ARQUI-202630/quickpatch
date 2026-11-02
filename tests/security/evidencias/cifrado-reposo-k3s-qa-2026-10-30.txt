@@ -1,0 +1,16 @@
+================================================================================
+EVIDENCIA: CIFRADO EN REPOSO DE LOS SECRET DE K3S (SCRUM-507 / SCRUM-49)
+================================================================================
+Fuente: docs/infrastructure/INFRASTRUCTURE.md, registro de DevOps (última modificación del archivo: f140ba2 2026-10-30)
+Ejecución reportada: playbooks/cifrar-secretos-k3s.yml en VM2 (QA) el 30 de octubre de 2026 (PR #210)
+Tipo de verificación: transcripción del resultado registrado por DevOps; QA no tiene acceso a VM2 para repetirla.
+
+1. Estado en QA (VM2) y en producción (VM3)
+  docs/infrastructure/INFRASTRUCTURE.md:968: | `Secret` de Kubernetes en reposo, QA (VM2) | **Cifrados desde el 30 de octubre** (AES-CBC, SCRUM-49): `k3s secrets-encrypt status` responde `Encryption Status: Enabled` con etapa `reencrypt_finished`, y los 14 `Secret` del almacén de datos empiezan por `k8s:enc:aescbc` (antes, 0 de 14). El API sigue sirviendo los 14 y los 7 pods de `quickpatch` quedaron en `Running` | `playbooks/cifrar-secretos-k3s.yml`, el 30 de octubre |
+  docs/infrastructure/INFRASTRUCTURE.md:969: | `Secret` de Kubernetes en reposo, producción (VM3) | **Sin cifrar**: `k3s secrets-encrypt status` responde `Encryption Status: Disabled, no configuration file found` (k3s v1.31.4+k3s1), el servicio no se instaló con `secrets-encryption` y no existe el archivo de cifrado. `k3s_secrets_encryption` está en `false` en `produccion.yml` | `k3s secrets-encrypt status` y `grep` del servicio, el 28 de octubre |
+
+2. Resultado de la corrida en QA
+  docs/infrastructure/INFRASTRUCTURE.md:996: *Resultado en QA (30 de octubre).* `Encryption Status: Enabled`, etapa `reencrypt_finished`, llave `aescbckey-2026-10-30T23:06:20-05:00`, 14 de 14 `Secret` cifrados en el almacén, el API sigue viendo 14 y los pods de `quickpatch` en `Running`. La prueba de humo del flujo crítico (`tests/e2e/README.md`, SCRUM-504) salió en verde después del cambio.
+
+Resumen: en QA, `k3s secrets-encrypt status` = Enabled, etapa reencrypt_finished, 14 de 14 Secret cifrados (AES-CBC).
+En producción (VM3) sigue Disabled: es parte del plan de cierre de SCRUM-518.
