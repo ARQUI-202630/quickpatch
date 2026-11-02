@@ -1,10 +1,10 @@
 # Reporte de Revisión de Vulnerabilidades y Seguridad Previo al Lanzamiento
 
 **Código del Documento:** `SEC-REV-PRELAUNCH-SCRUM-507`  
-**Versión:** `2.0 Revisada y Conciliada`  
-**Fecha de Emisión:** 31 de octubre de 2026  
+**Versión:** `2.1 Evidencia de CI reemplazada (corrida 41168063519)`  
+**Fecha de Emisión:** 2 de noviembre de 2026  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
-**Trazabilidad Jira:** Subtarea [SCRUM-507](https://arqui-202630.atlassian.net/browse/SCRUM-507) | Historia Padre [SCRUM-49](https://arqui-202630.atlassian.net/browse/SCRUM-49) (*Cifrado de datos sensibles en tránsito y en reposo* — Responsable: Sebastian Sanchez Olaya)  
+**Trazabilidad Jira:** Subtarea [SCRUM-507](https://jorgefortich3.atlassian.net/browse/SCRUM-507) | Historia Padre [SCRUM-49](https://jorgefortich3.atlassian.net/browse/SCRUM-49) (*Cifrado de datos sensibles en tránsito y en reposo* — Responsable: Sebastian Sanchez Olaya)  
 **Ambiente Auditado:** QA Desplegado (`https://qa.quickpatch.internal` / `10.43.100.168`), ambiente candidato a promoción a Producción (Sprint 5)  
 **Estándares de Referencia:** OWASP Top 10 API Security (2023), PCI-DSS v4.0 (Requisitos 3.4 y 3.5), RF-29, RNF-01, RNF-02, Compuerta de Calidad K2 (Gate 2/3)
 
@@ -17,12 +17,12 @@ Conforme a los criterios de aceptación de la historia **SCRUM-49** y la subtare
 | Componente Auditado | Herramienta / Método | Criterio de Aceptación | Resultado Obtenido | Estado de Compuerta |
 |---|---|---|---|:---:|
 | **Cifrado en Tránsito (TLS)** | OpenSSL 3.5.5 `s_client` | HTTPS/TLS obligatorio; rechazo de HTTP plano y suites inseguras | TLSv1.2 y TLSv1.3 activos (`ECDHE-RSA-AES256-GCM-SHA384` y `TLS_AES_256_GCM_SHA384`). HTTP plano rechazado: el puerto 80 de VM1 no escucha | **CUMPLE** |
-| **Privacidad de Pagos (PCI-DSS)** | `tests/security/pci_dss_scanner.py` (Luhn Mod 10 + CVV Regex) | 0 números de tarjeta (PAN) y 0 códigos de seguridad (CVV) en BD y logs | **0 violaciones** sobre 100 registros en 5 streams auditados en Loki (`service-request`, `matching`, `communication`, `coredns`) | **CUMPLE** |
-| **Vulnerabilidades Web/API (DAST)** | OWASP ZAP Baseline (`ghcr.io/zaproxy/zaproxy:stable`) | Sin hallazgos de severidad Alta o Crítica en endpoints públicos | **0 hallazgos Altos/Críticos**; 1 hallazgo Medio (CSP en API REST, regla `IGNORE`) y 1 Bajo (HSTS en raíz) | **CUMPLE** |
-| **Protección de Credenciales** | Inspección de esquema Identity y logs | Contraseñas con hashing robusto (PBKDF2/BCrypt); 0 credenciales en texto plano | Verificado: campos `password_hash` con salt en Identity Service; cero contraseñas en logs | **CUMPLE** |
-| **Cifrado en Reposo (QA y Producción)** | k3s `secrets-encrypt status` / PostgreSQL VM4/VM5 | Secretos y bases cifrados en reposo, o decisión y riesgo documentado | En QA: Secret de k3s cifrados (PR #210). En Producción: pendiente de ejecución en despliegue final (SCRUM-518) | **PLAN DE CIERRE** *(Pendiente Prod)* |
+| **Privacidad de Pagos (PCI-DSS)** | Paso PCI-DSS del job «Seguridad» en CI (Luhn por marca + expresión de CVV) | 0 números de tarjeta (PAN) y 0 códigos de seguridad (CVV) en los logs | **0 hallazgos** en 5.000 líneas de logs de QA (`{vm="vm2"}`, últimas 24 h, con Payments desplegado), corrida de CI 41168063519 del 30 de octubre | **CUMPLE** |
+| **Vulnerabilidades Web (DAST pasivo)** | OWASP ZAP Baseline (`ghcr.io/zaproxy/zaproxy:stable`), corrida de CI 41168063519 | Sin hallazgos de severidad Alta o Crítica | **0 FAIL**; 55 PASS, 4 WARN (cache-control, X-Content-Type-Options, HSTS y 10109) y 2 IGNORE (anti-clickjacking y CSP). Escaneo pasivo sobre la raíz y archivos estáticos: **no cubre el API** | **CUMPLE con alcance limitado** |
+| **Protección de Credenciales** | Inspección del código de Identity | Contraseñas con hashing robusto (PBKDF2/BCrypt); 0 credenciales en texto plano | BCrypt con factor de trabajo 12 (`appsettings.json`), solo se guarda `password_hash`. Evidencia: `credenciales-bcrypt-identity-2026-11-02.txt` | **CUMPLE** *(por código)* |
+| **Cifrado en Reposo (QA y Producción)** | k3s `secrets-encrypt status` / PostgreSQL VM4/VM5 | Secretos y bases cifrados en reposo, o decisión y riesgo documentado | En QA: 14 de 14 `Secret` de k3s cifrados con AES-CBC (PR #210). En Producción: pendiente (SCRUM-518). Evidencia: `cifrado-reposo-k3s-qa-2026-10-30.txt` | **PLAN DE CIERRE** *(Pendiente Prod)* |
 
-**Dictamen de Aseguramiento de Calidad:** **COMPUERTA DE SEGURIDAD APROBADA CONDICIONADA AL PLAN DE CIERRE (GO FOR RELEASE)**. No existen vulnerabilidades de severidad alta o crítica bloqueantes para la promoción del MVP a Producción.
+**Dictamen de Aseguramiento de Calidad:** **COMPUERTA DE SEGURIDAD APROBADA CONDICIONADA AL PLAN DE CIERRE (GO FOR RELEASE)**. No se encontraron vulnerabilidades de severidad alta o crítica en lo revisado. El escaneo DAST fue pasivo y no tocó el API, así que no reemplaza una prueba activa sobre los endpoints REST.
 
 ---
 
@@ -38,32 +38,29 @@ Conforme a los criterios de aceptación de la historia **SCRUM-49** y la subtare
   - El puerto 80 de VM1 no escucha y `ufw` solo abre el 443, por lo que no se acepta tráfico HTTP plano (`docs/infrastructure/INFRASTRUCTURE.md` §10.5). Esto garantiza la confidencialidad de tokens JWT, parámetros de geocodificación y datos de servicios en tránsito.
 
 ### 2.2 Auditoría PCI-DSS sobre Registros de Logs (Req 3.4/3.5, PAY-002, K2)
-- **Herramienta:** `tests/security/pci_dss_scanner.py` ejecutado a través de `tests/security/run-pci-dss-suite.py`.
-- **Evidencia en el repositorio:** `tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt` y archivo de exportación `tests/security/evidencias/loki_qa_k3s.json`.
-- **Cifras exactas auditadas:**
-  - Streams evaluados: **5 streams de logs** centralizados en Loki de QA (VM1).
-  - Líneas de log inspeccionadas: **100 registros completos** correspondientes a los servicios transaccionales del flujo crítico: `service-request`, `matching`, `communication` y el resolvedor interno `coredns`.
-  - **Violaciones detectadas:** **0 (CERO)** números de tarjeta (PAN) y **0 (CERO)** códigos de seguridad (CVV) en texto plano.
-- **Validación de robustez del escáner:**
-  - 6 marcas de tarjeta válidas detectadas con 100% de efectividad (Visa 16/13 dígitos, Mastercard rangos 51-55 y 2221-2720, Amex 15 dígitos, Discover 16 dígitos).
-  - 16 pruebas negativas extremas aprobadas sin falsos positivos (números con suma de verificación inválida, teléfonos celulares colombianos con prefijo `+57`, cédulas de ciudadanía, NITs con dígito de verificación, UUIDs de tenants y categorías, correlation IDs, montos COP, tokens de pasarela, inyecciones SQL/XSS y caracteres emoji).
-  - Se confirmó que la aplicación móvil y la pasarela simulada (ADR-009) transmiten exclusivamente tokens opacos (`tok_test_...`), asegurando que ningún PAN toque el backend ni quede expuesto en los logs.
+- **Corrida citada:** CI «Pruebas de sistema», corrida [41168063519](https://github.com/ARQUI-202630/quickpatch/actions/runs/41168063519), job «Seguridad (OWASP ZAP y PCI-DSS)», 30 de octubre de 2026 a las 23:28 (hora de Bogotá), con Payments ya desplegado en QA.
+- **Evidencia en el repositorio:** `tests/security/evidencias/zap-pci-ci-qa-2026-10-30-run-41168063519.txt` (sección 2, línea copiada del log del job).
+- **Alcance:** consulta a Loki de QA `{vm="vm2"}` (todos los logs del clúster k3s), últimas 24 horas, límite de 5.000 líneas.
+- **Resultado:** `Líneas revisadas: 5000. Hallazgos: 0.` Ningún número de tarjeta (Visa, Mastercard, Amex o Discover con dígito Luhn válido) ni CVV/CVC en texto plano.
+- **Antecedente:** la corrida local del 18 de octubre (`pci-dss-loki-qa-2026-10-18.txt`) revisó 100 líneas, antes del despliegue de Payments; se conserva solo como referencia.
+- **Robustez del escáner:** `tests/security/run-pci-dss-suite.py` valida el detector con las marcas de tarjeta y con casos negativos (teléfonos, cédulas, NIT, UUID, montos), sin falsos positivos.
 
 ### 2.3 Escaneo Dinámico de Vulnerabilidades DAST (OWASP ZAP Baseline)
-- **Herramienta:** OWASP ZAP Baseline Scanner (`zap-baseline.py` contenedor `ghcr.io/zaproxy/zaproxy:stable`) sobre `https://qa.quickpatch.internal`.
-- **Reglas:** `tests/security/zap-baseline.conf`.
+- **Corrida citada:** la misma corrida de CI 41168063519 (paso ZAP, 30 de octubre a las 23:27, hora de Bogotá) sobre `https://qa.quickpatch.internal`, con las reglas de `tests/security/zap-baseline.conf`.
 - **Evidencias en el repositorio:**
-  - Reporte consolidado de la corrida del 31 de octubre: `tests/security/evidencias/zap-dast-baseline-qa-2026-10-31.txt`.
-  - Antecedente de corrida previa: `tests/security/evidencias/zap-dast-baseline-qa-2026-10-18.txt`.
-  - Archivos estructurados del escáner: `tests/security/evidencias/zap.json` y `tests/security/evidencias/zap.html`, exportados de la corrida del 18 de octubre (`zap.json` generado el 19 de octubre a las 04:55 UTC); sus dos alertas coinciden con las de la corrida del 31 de octubre.
-- **Cifras exactas del escaneo:**
-  - Reglas pasivas registradas en la evidencia: **58** (56 sin hallazgos y 2 con alerta).
-  - Reglas aprobadas (**PASS**): **56 reglas (96,6%)**, listadas una a una en la evidencia, entre ellas divulgación de información sensible en URL (10024), mensajes de error de depuración (10023), cabecera `X-Content-Type-Options` (10021), divulgación de PII (10062) y cookies sin `HttpOnly`/`Secure` (10010, 10011). El baseline es pasivo: no ejecuta reglas activas como inyección SQL o XSS.
-  - Hallazgos Críticos / Altos (**FAIL-NEW**): **0 (CERO)**.
-  - Hallazgos Medios (**Medium**): **1 hallazgo** -> *Content Security Policy (CSP) Header Not Set* (Plugin 10038, 3 instancias en `https://qa.quickpatch.internal`, `/robots.txt`, `/sitemap.xml`).
-    - *Tratamiento:* Regla catalogada formalmente como `IGNORE` en `tests/security/zap-baseline.conf`. CSP aplica a renderizado HTML en navegadores; los servicios de QUICKPATCH son APIs REST JSON sin estado consumidas con Bearer JWT.
-  - Hallazgos Bajos (**Low**): **1 hallazgo** -> *Strict-Transport-Security Header Not Set* (Plugin 10035, 3 instancias en la raíz `/` cuando responde 403 al no existir index HTML).
-    - *Tratamiento:* Advertencia informativa sin impacto en la seguridad de la API (solo se acepta HTTPS con TLS 1.2 y 1.3). Se recomienda incorporar el flag `always` en el bloque Nginx de Producción.
+  - `tests/security/evidencias/zap-pci-ci-qa-2026-10-30-run-41168063519.txt` (sección 1): las 63 líneas del resultado de ZAP copiadas del log del job.
+  - `tests/security/evidencias/zap-dast-baseline-qa-2026-10-30.html`: el reporte HTML publicado como artefacto `reporte-zap` de esa corrida.
+  - Antecedente: `tests/security/evidencias/zap-dast-baseline-qa-2026-10-18.txt` (corrida del 18 de octubre).
+- **Alcance (importante):** ZAP baseline es un escaneo **pasivo**: solo observa las respuestas, no envía ataques (no hay reglas activas de inyección SQL ni XSS). Según el reporte, recorrió la raíz y los archivos `/robots.txt`, `/sitemap.xml` y `/favicon.ico` (ZAP cuenta 8 URLs). **No recorrió los endpoints del API REST**, así que este resultado no certifica el API.
+- **Resultado (`FAIL-NEW: 0, WARN-NEW: 4, IGNORE: 2, PASS: 55`):**
+  - **FAIL:** 0.
+  - **WARN (4):** *Re-examine Cache-control Directives* [10015] x4, *X-Content-Type-Options Header Missing* [10021] x5, *Strict-Transport-Security Header Not Set* [10035] x5 y *Modern Web Application* [10109] x4.
+  - **IGNORE (2), según `zap-baseline.conf`:** *Missing Anti-clickjacking Header* [10020] x4 y *Content Security Policy (CSP) Header Not Set* [10038] x4. CSP no se evaluó: está en IGNORE.
+  - **PASS:** 55 reglas, listadas en la evidencia.
+- **Tratamiento de las alertas:**
+  - **HSTS [10035]:** la cabecera `Strict-Transport-Security` **no está configurada** en el Ingress. Hay que configurarla en Nginx de QA y de Producción (por ejemplo `max-age=31536000`), no basta con ajustar un bloque existente. Queda abierta y se registra como defecto.
+  - **X-Content-Type-Options [10021]:** falta `nosniff` en las respuestas revisadas; se corrige en la misma configuración del Ingress.
+  - **Cache-control [10015] y 10109:** informativas en la raíz estática; se revisan junto con las cabeceras anteriores.
 
 ---
 
@@ -82,5 +79,5 @@ En atención a la observación técnica de DevOps, se documenta el estado difere
 
 ## 4. Conclusión y Recomendación
 
-1. **Subtarea SCRUM-507:** Se da por cumplida la revisión formal de vulnerabilidades con las cifras exactas corregidas, la evidencia del escaneo ZAP actualizada al 31 de octubre de 2026 y la matriz de compuerta conciliada.
-2. **Historia SCRUM-49:** DevOps (Sebastian Sanchez Olaya) cuenta con la certificación formal requerida para proceder con el cierre de la historia en Jira, manteniendo el plan de cierre documentado para el despliegue en Producción.
+1. **Subtarea SCRUM-507:** La revisión queda documentada con la evidencia real de la corrida de CI 41168063519 (ZAP pasivo y PCI-DSS sobre 5.000 líneas), sin hallazgos altos ni críticos. Quedan abiertas las cabeceras HSTS y X-Content-Type-Options del Ingress, y falta un escaneo activo sobre el API.
+2. **Historia SCRUM-49:** El cierre lo decide DevOps (Sebastian Sanchez Olaya) con esta evidencia y con el plan de cierre de la sección 3 para Producción.
