@@ -1,0 +1,96 @@
+================================================================================
+EVIDENCIA: CARGA DEL JUEGO DE DATOS DE DEMOSTRACIÓN EN QA (SCRUM-632 / SCRUM-633 / SCRUM-634)
+================================================================================
+Fecha: 2 de noviembre de 2026
+Ambiente: QA (https://qa.quickpatch.internal, VM1), por la API pública
+Script: tests/datos-demo/cargar-datos-demo.py de develop (quickpatch#217, merge d8f15d4), juego-datos.json de la misma versión
+Comando: python3 tests/datos-demo/cargar-datos-demo.py --ambiente qa
+Ejecutó: Sebastián Sánchez, con el administrador del tenant de QA y la contraseña de las cuentas demo leídas del entorno
+  (QP_ADMIN_EMAIL, QP_ADMIN_PASSWORD y QP_DEMO_PASSWORD); no se imprimen ni quedan en este archivo.
+Resultado: terminó sin errores (código de salida 0). Es la primera corrida real de los flujos nuevos del proveedor y de su
+  equipo (invitación, contraseña, aprobación y cobertura); antes solo se había probado con --simular.
+
+--------------------------------------------------------------------------------
+1. SALIDA DEL SCRIPT
+--------------------------------------------------------------------------------
+Categorías
+  categoría: Aire acondicionado -> ya existía
+  categoría: Cerrajería -> ya existía
+  categoría: Eléctrico -> ya existía
+  categoría: Electrodomésticos -> ya existía
+  categoría: Pintura -> ya existía
+  categoría: Plomería -> ya existía
+Clientes
+  cliente: demo.cliente1@demo.quickpatch.test -> ya existía
+  cliente: demo.cliente2@demo.quickpatch.test -> ya existía
+  cliente: demo.cliente3@demo.quickpatch.test -> creado
+Empresas
+  empresa: Inmobiliaria & Coworking Bogotá S.A.S. -> creado
+  empresa: Restaurantes y Cafés Andinos S.A.S. -> creado
+Técnicos
+  técnico: demo.tecnico1@demo.quickpatch.test -> ya existía
+  técnico (aprobación): demo.tecnico1@demo.quickpatch.test -> ya existía
+  técnico (cobertura): demo.tecnico1@demo.quickpatch.test -> aplicado
+  técnico (disponibilidad): demo.tecnico1@demo.quickpatch.test -> aplicado
+  técnico: demo.tecnico2@demo.quickpatch.test -> ya existía
+  técnico (aprobación): demo.tecnico2@demo.quickpatch.test -> ya existía
+  técnico (cobertura): demo.tecnico2@demo.quickpatch.test -> aplicado
+  técnico (disponibilidad): demo.tecnico2@demo.quickpatch.test -> aplicado
+  técnico: demo.tecnico3@demo.quickpatch.test -> creado
+  técnico (aprobación): demo.tecnico3@demo.quickpatch.test -> aplicado
+  técnico (cobertura): demo.tecnico3@demo.quickpatch.test -> aplicado
+  técnico (disponibilidad): demo.tecnico3@demo.quickpatch.test -> aplicado
+  técnico: demo.tecnico4@demo.quickpatch.test -> creado
+  técnico (aprobación): demo.tecnico4@demo.quickpatch.test -> aplicado
+  técnico (cobertura): demo.tecnico4@demo.quickpatch.test -> aplicado
+  técnico (disponibilidad): demo.tecnico4@demo.quickpatch.test -> aplicado
+Proveedores
+  proveedor: demo.proveedor1@demo.quickpatch.test -> creado
+  proveedor (aprobación): demo.proveedor1@demo.quickpatch.test -> aplicado
+  técnico de equipo: demo.tecnico.proveedor1@demo.quickpatch.test -> creado
+  técnico de equipo (contraseña): demo.tecnico.proveedor1@demo.quickpatch.test -> aplicado
+  técnico de equipo (aprobación): demo.tecnico.proveedor1@demo.quickpatch.test -> aplicado
+  técnico de equipo (cobertura): demo.tecnico.proveedor1@demo.quickpatch.test -> aplicado
+  técnico de equipo (disponibilidad): demo.tecnico.proveedor1@demo.quickpatch.test -> aplicado
+Solicitudes de ejemplo
+  solicitud: [DEMO] Fuga de agua continua en grifería del lavam -> creado
+  solicitud: [DEMO] Cambio de cerradura de seguridad y copia de -> creado
+  solicitud: [DEMO] Cortocircuito en panel de interruptores de  -> creado
+  solicitud: [DEMO] Mantenimiento preventivo de batería de baño -> creado
+  solicitud: [DEMO] Revisión de acometida y tomas de corriente  -> creado
+
+Conteo final
+  categoría: 0 creados, 6 ya existían, 0 aplicados, 0 con error
+  cliente: 1 creados, 2 ya existían, 0 aplicados, 0 con error
+  empresa: 2 creados, 0 ya existían, 0 aplicados, 0 con error
+  técnico: 2 creados, 2 ya existían, 0 aplicados, 0 con error
+  técnico (aprobación): 0 creados, 2 ya existían, 2 aplicados, 0 con error
+  técnico (cobertura): 0 creados, 0 ya existían, 4 aplicados, 0 con error
+  técnico (disponibilidad): 0 creados, 0 ya existían, 4 aplicados, 0 con error
+  proveedor: 1 creados, 0 ya existían, 0 aplicados, 0 con error
+  proveedor (aprobación): 0 creados, 0 ya existían, 1 aplicados, 0 con error
+  técnico de equipo: 1 creados, 0 ya existían, 0 aplicados, 0 con error
+  técnico de equipo (contraseña): 0 creados, 0 ya existían, 1 aplicados, 0 con error
+  técnico de equipo (aprobación): 0 creados, 0 ya existían, 1 aplicados, 0 con error
+  técnico de equipo (cobertura): 0 creados, 0 ya existían, 1 aplicados, 0 con error
+  técnico de equipo (disponibilidad): 0 creados, 0 ya existían, 1 aplicados, 0 con error
+  solicitud: 5 creados, 0 ya existían, 0 aplicados, 0 con error
+
+--------------------------------------------------------------------------------
+2. CONTEOS EN LAS BASES DE QA TRAS LA CARGA (consulta de solo lectura, VM5)
+--------------------------------------------------------------------------------
+db_identity, usuarios con correo @demo.quickpatch.test (rol | total | con contraseña definida):
+  cliente | 3 | 3
+  empresa_contacto | 3 | 3      (1 de la corrida del 26 de octubre y 2 de esta)
+  proveedor | 1 | 1
+  tecnico | 5 | 5               (demo.tecnico1 a 4 y el técnico del equipo del proveedor)
+db_identity, técnicos y proveedores demo por estado de verificación: aprobado | 6
+db_service_request, solicitudes [DEMO] por estado: buscando_tecnico | 5 ; en_espera | 2
+  (las 2 en espera son de la corrida del 26 de octubre; las 5 nuevas buscan técnico)
+db_service_request, solicitudes que no son [DEMO]: 333 (no se tocan)
+
+Observaciones:
+- Las cuentas demo.cliente1, demo.cliente2, demo.tecnico1 y demo.tecnico2 ya existían desde el 26 de octubre con otros
+  nombres; el script las respeta (409), solo les aplica cobertura y disponibilidad, así que sus nombres no cambian.
+- Los técnicos quedan disponibles y con cobertura en las 20 localidades: Matching les ofrece las solicitudes [DEMO] nuevas.
+- Sin credenciales en este archivo.
