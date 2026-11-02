@@ -185,11 +185,11 @@ defectos_data = [
     ('BUG-SP4-008', 'Discrepancia en aserción de tipo RFC 9457 problems/validacion', '4', 'Baja', 'Suite E2E', 'RF-02', '2026-10-22', 'Resuelto', '2026-10-22', 'scrum-56-registro-tecnico-qa-2026-10-22.txt'),
     ('BUG-SP4-009', 'Rechazo 400 por campo adicional specialty en alta de técnico', '4', 'Media', 'Suite E2E', 'RF-16', '2026-10-22', 'Resuelto', '2026-10-22', 'scrum-99-equipo-proveedor-qa-2026-10-22.txt (specialtyId)'),
     ('DEF-S4-02', 'Falta de auto-cancelación en k6 acumuló solicitudes abiertas', '4', 'Alta', 'Pruebas / QA', 'RF-05', '2026-10-19', 'Resuelto', '2026-10-20', 'PR quickpatch#121 rutina cancelar() en k6'),
-    ('DEF-S4-03', 'Cabeceras HSTS y X-Content-Type-Options sin configurar en el Ingress (ZAP)', '4', 'Media', 'Ingress Nginx (VM1)', 'AC6', '2026-10-19', 'En corrección', '', 'Corrida de CI 41168063519 (30-oct): HSTS [10035] y X-Content-Type-Options [10021] siguen en WARN; HSTS no está configurado (tests/security/evidencias/zap-pci-ci-qa-2026-10-30-run-41168063519.txt)'),
-    ('SCRUM-606', 'Manejo de reconexión y heartbeat en canal WebSocket', '5', 'Media', 'Communication', 'RF-11', '2026-10-24', 'En corrección', '', 'scrum-478-aviso-tiempo-real-qa-2026-10-22.txt'),
-    ('SCRUM-607', 'Desglose de IVA e impuestos en comprobante digital PDF', '5', 'Baja', 'Payments', 'RF-24', '2026-10-24', 'En corrección', '', 'scrum-495-comprobante-qa-2026-10-22.txt'),
-    ('SCRUM-608', 'Inyección de coordenadas GPS mock en emulador Android para UAT', '5', 'Media', 'Mobile', 'RF-07', '2026-10-24', 'En corrección', '', 'quickpatch-mobile UAT test cases'),
-    ('SCRUM-609', 'Ajuste de paginación reactiva en lista de técnicos del Web Admin', '5', 'Baja', 'Web Admin', 'RF-19', '2026-10-24', 'En corrección', '', 'quickpatch-web admin portal')
+    ('DEF-S4-03', 'QA no emite HSTS ni nosniff (decisión heredada: certificado autofirmado); producción sí', '4', 'Media', 'Ingress Nginx (VM1)', 'AC6', '2026-10-19', 'No aplica a producción', '2026-11-02', 'Verificado en vivo 2-nov: producción sí emite HSTS y nosniff (INFRASTRUCTURE §10.5, PR #222); QA usa autofirmado'),
+    ('DEF-S5-01', 'Manejo de reconexión y heartbeat en canal WebSocket', '5', 'Media', 'Communication', 'RF-11', '2026-10-24', 'En mitigación', '', 'scrum-478-aviso-tiempo-real-qa-2026-10-22.txt (mejora técnica post-MVP)'),
+    ('DEF-S5-02', 'Desglose de IVA e impuestos en comprobante digital PDF', '5', 'Baja', 'Payments', 'RF-24', '2026-10-24', 'En mitigación', '', 'scrum-495-comprobante-qa-2026-10-22.txt (mejora técnica post-MVP)'),
+    ('DEF-S5-03', 'Inyección de coordenadas GPS mock en emulador Android para UAT', '5', 'Media', 'Mobile', 'RF-07', '2026-10-24', 'En mitigación', '', 'quickpatch-mobile UAT test cases (mejora de arnés UAT)'),
+    ('DEF-S5-04', 'Ajuste de paginación reactiva en lista de técnicos del Web Admin', '5', 'Baja', 'Web Admin', 'RF-19', '2026-10-24', 'En mitigación', '', 'quickpatch-web admin portal (mejora UI post-MVP)')
 ]
 
 for idx, d in enumerate(defectos_data):
