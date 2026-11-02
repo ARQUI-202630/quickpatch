@@ -58,8 +58,8 @@ Conforme a los criterios de aceptación de la historia **SCRUM-49** y la subtare
   - **IGNORE (2), según `zap-baseline.conf`:** *Missing Anti-clickjacking Header* [10020] x4 y *Content Security Policy (CSP) Header Not Set* [10038] x4. CSP no se evaluó: está en IGNORE.
   - **PASS:** 55 reglas, listadas en la evidencia.
 - **Tratamiento de las alertas:**
-  - **HSTS [10035]:** la cabecera `Strict-Transport-Security` **no está configurada** en el Ingress. Hay que configurarla en Nginx de QA y de Producción (por ejemplo `max-age=31536000`), no basta con ajustar un bloque existente. Queda abierta y se registra como defecto.
-  - **X-Content-Type-Options [10021]:** falta `nosniff` en las respuestas revisadas; se corrige en la misma configuración del Ingress.
+  - **HSTS [10035]:** ZAP escanea `qa.quickpatch.internal`, y el bloque de QA del Nginx de entrada (VM1) no emite `Strict-Transport-Security`. **El bloque de producción sí** (`max-age=31536000`, plantilla `entrada-nginx.conf.j2`; Documento de Infraestructura §10.5), y se comprobó el 2 de noviembre de 2026 con `curl` contra el Nginx de VM1 por el nombre de producción (`quickpatch.internal`) y por IP: la cabecera sale. La diferencia con QA es heredada y se mantiene (el certificado de QA es autofirmado y, con HSTS, el navegador no deja aceptar la excepción del certificado durante la UAT). No es una brecha de producción; el WARN es de QA.
+  - **X-Content-Type-Options [10021]:** igual que HSTS: producción responde `X-Content-Type-Options: nosniff` (verificado el 2 de noviembre de 2026 por nombre y por IP) y el gateway de QA (VM2) no lo emite a propósito (`{% if not es_qa %}` en `gateway-ambiente-nginx.conf.j2`). El WARN corresponde a QA.
   - **Cache-control [10015] y 10109:** informativas en la raíz estática; se revisan junto con las cabeceras anteriores.
 
 ---
@@ -79,5 +79,5 @@ En atención a la observación técnica de DevOps, se documenta el estado difere
 
 ## 4. Conclusión y Recomendación
 
-1. **Subtarea SCRUM-507:** La revisión queda documentada con la evidencia real de la corrida de CI 41168063519 (ZAP pasivo y PCI-DSS sobre 5.000 líneas), sin hallazgos altos ni críticos. Quedan abiertas las cabeceras HSTS y X-Content-Type-Options del Ingress, y falta un escaneo activo sobre el API.
+1. **Subtarea SCRUM-507:** La revisión queda documentada con la evidencia real de la corrida de CI 41168063519 (ZAP pasivo y PCI-DSS sobre 5.000 líneas), sin hallazgos altos ni críticos. Las cabeceras HSTS y X-Content-Type-Options las emite producción (verificado en vivo) y no QA, que es lo que escanea ZAP; falta un escaneo activo sobre el API.
 2. **Historia SCRUM-49:** El cierre lo decide DevOps (Sebastian Sanchez Olaya) con esta evidencia y con el plan de cierre de la sección 3 para Producción.
