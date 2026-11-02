@@ -81,7 +81,6 @@ graph TB
 
 - **El buzón es `notifications`**, no `chat_messages`. La app lo lee con `GET /v1/notifications?unread=&page=&size=` y marca leída con `POST /v1/notifications/{id}/read`.
 - `chat_messages` es el chat entre el cliente y el técnico asignado (`GET` y `POST /v1/service-requests/{id}/messages`). Es otra función, no el buzón.
-- No hay notificaciones push ni correo en el MVP (ADR-024). Con la app cerrada, el usuario ve el buzón al abrirla.
 
 ---
 
