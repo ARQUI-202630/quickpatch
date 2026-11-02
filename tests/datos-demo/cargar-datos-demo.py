@@ -67,6 +67,24 @@ class Api:
         return st, (r.get("accessToken") if isinstance(r, dict) else None)
 
 
+def dv_nit(numero):
+    """Dígito de verificación del NIT según la DIAN (pesos 3, 7, 13, ... de derecha a izquierda, módulo 11)."""
+    pesos = (3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71)
+    r = sum(int(c) * w for c, w in zip(reversed(numero), pesos)) % 11
+    return r if r < 2 else 11 - r
+
+
+def validar_nits(juego):
+    """Detiene el script si un NIT con dígito de verificación no cuadra (por ejemplo 900123456-7 debe ser 900123456-8)."""
+    malos = []
+    for e in juego.get("empresas", []):
+        numero, _, dv = e["nit"].partition("-")
+        if dv and int(dv) != dv_nit(numero):
+            malos.append(f"{e['razonSocial']}: {e['nit']} (el dígito correcto es {dv_nit(numero)})")
+    if malos:
+        sys.exit("NIT con dígito de verificación incorrecto: " + "; ".join(malos) + ". No se cambió nada.")
+
+
 def lista(r):
     return r if isinstance(r, list) else (r or {}).get("items", []) if isinstance(r, dict) else []
 
@@ -105,6 +123,63 @@ def buscar_tecnico(api, token, email):
         if not items or pagina * 100 >= r.get("totalItems", 0):
             return None
         pagina += 1
+
+
+def habilitar(api, juego, tok, resumen, tipo, email, clave, disponibles, uid=None, estado=None, solo_aprobar=False):
+    """Aprueba al técnico o proveedor (admin_tenant) y, si es técnico, le pone cobertura y fuera de producción lo marca disponible.
+
+    Devuelve el token del usuario si inicia sesión, o None.
+    """
+    if not uid:
+        u = buscar_tecnico(api, tok, email) or {}
+        uid, estado = u.get("userId"), u.get("verificationStatus")
+    if not uid:
+        resumen.anotar(f"{tipo} (aprobación)", "error", f"{email}: no aparece en el listado de Identity")
+        return None
+    if estado == "aprobado":
+        resumen.anotar(f"{tipo} (aprobación)", "ya existía", email)
+    else:
+        st_a, r_a = api.llamar("POST", f"/v1/admin/technicians/{uid}/approve", token=tok)
+        if st_a != 200:
+            resumen.anotar(f"{tipo} (aprobación)", "error", f"{email} (HTTP {st_a}: {str(r_a)[:120]})")
+            return None
+        resumen.anotar(f"{tipo} (aprobación)", "aplicado", email)
+    st, ttok = api.login(email, clave)
+    if not ttok:
+        resumen.anotar(f"{tipo} (sesión)", "error", f"{email}: no inicia sesión (HTTP {st})")
+        return None
+    if solo_aprobar:  # el proveedor gestiona su equipo; la cobertura y la disponibilidad son de cada técnico
+        return ttok
+    for _ in range(12):  # Matching conoce al técnico unos segundos después de aprobarlo
+        st, _r = api.llamar("PUT", "/v1/technicians/me/coverage", {"localityCodes": juego["cobertura"]}, ttok)
+        if st == 200:
+            break
+        time.sleep(3)
+    resumen.anotar(f"{tipo} (cobertura)", "aplicado" if st == 200 else "error", email if st == 200 else f"{email} (HTTP {st})")
+    if disponibles:
+        st, _r = api.llamar("PUT", "/v1/technicians/me/availability", {"status": "disponible"}, ttok)
+        resumen.anotar(f"{tipo} (disponibilidad)", "aplicado" if st == 200 else "error",
+                       email if st == 200 else f"{email} (HTTP {st})")
+    return ttok
+
+
+def definir_clave_equipo(api, resumen, ptok, tec, uid, invitacion, clave):
+    """Define la contraseña del técnico del equipo con su invitación (POST /v1/auth/password/setup).
+
+    Si el técnico ya existía, pide una invitación nueva; 409 significa que ya definió su contraseña.
+    """
+    if not invitacion:
+        st, r = api.llamar("POST", f"/v1/providers/me/technicians/{uid}/invitation", token=ptok)
+        if st == 409:
+            resumen.anotar("técnico de equipo (contraseña)", "ya existía", tec["email"])
+            return
+        if st != 201 or not isinstance(r, dict):
+            resumen.anotar("técnico de equipo (contraseña)", "error", f"{tec['email']} (invitación: HTTP {st})")
+            return
+        invitacion = r
+    st, r = api.llamar("POST", "/v1/auth/password/setup", {"token": invitacion["token"], "password": clave})
+    resumen.anotar("técnico de equipo (contraseña)", "aplicado" if st == 204 else "error",
+                   tec["email"] if st == 204 else f"{tec['email']} (HTTP {st}: {str(r)[:120]})")
 
 
 def sembrar_categorias(api, juego, tok, resumen):
@@ -146,7 +221,9 @@ def cargar(api, juego, clave, admin, resumen, disponibles, solo_categorias=False
     categorias = sembrar_categorias(api, juego, tok, resumen)
     if solo_categorias:
         return
-    pedidas = {t["categoria"] for t in juego["tecnicos"]} | {s["categoria"] for s in juego["solicitudes"]}
+    pedidas = ({t["categoria"] for t in juego["tecnicos"]} | {s["categoria"] for s in juego["solicitudes"]}
+               | {p["categoria"] for p in juego.get("proveedores", [])}
+               | {e["categoria"] for p in juego.get("proveedores", []) for e in p.get("equipo", [])})
     if pedidas - categorias.keys():
         sys.exit(f"Categorías que no existen en el catálogo: {sorted(pedidas - categorias.keys())}. "
                  f"Existen: {sorted(categorias)}. No se cambió nada.")
@@ -169,36 +246,41 @@ def cargar(api, juego, clave, admin, resumen, disponibles, solo_categorias=False
             "email": t["email"], "password": clave, "fullName": t["nombre"], "phone": t["telefono"],
             "documentId": t["documento"], "specialtyId": categorias[t["categoria"]], "role": "tecnico"})
         if st == 201 and isinstance(r, dict) and r.get("id"):
-            uid, estado = r["id"], "pendiente"
+            habilitar(api, juego, tok, resumen, "técnico", t["email"], clave, disponibles, r["id"], "pendiente")
         else:
-            u = buscar_tecnico(api, tok, t["email"]) or {}
-            uid, estado = u.get("userId"), u.get("verificationStatus")
-        if not uid:
-            resumen.anotar("técnico (aprobación)", "error", f"{t['email']}: no aparece en el listado de Identity")
+            habilitar(api, juego, tok, resumen, "técnico", t["email"], clave, disponibles)
+
+    print("Proveedores")
+    for p in juego.get("proveedores", []):
+        # El registro de proveedor usa el mismo cuerpo que el de técnico: no tiene razón social ni NIT (RegisterTechnicianRequest).
+        st, r = registrar(api, resumen, "proveedor", p["email"], "/v1/auth/register/technician", {
+            "email": p["email"], "password": clave, "fullName": p["nombre"], "phone": p["telefono"],
+            "documentId": p["documento"], "specialtyId": categorias[p["categoria"]], "role": "proveedor"})
+        uid = r.get("id") if st == 201 and isinstance(r, dict) else None
+        ptok = habilitar(api, juego, tok, resumen, "proveedor", p["email"], clave, disponibles, uid, "pendiente" if uid else None,
+                         solo_aprobar=True)
+        if not ptok:
             continue
-        if estado == "aprobado":
-            resumen.anotar("técnico (aprobación)", "ya existía", t["email"])
-        else:
-            st_a, r_a = api.llamar("POST", f"/v1/admin/technicians/{uid}/approve", token=tok)
-            if st_a != 200:
-                resumen.anotar("técnico (aprobación)", "error", f"{t['email']} (HTTP {st_a}: {str(r_a)[:120]})")
-                continue
-            resumen.anotar("técnico (aprobación)", "aplicado", t["email"])
-        st, ttok = api.login(t["email"], clave)
-        if not ttok:
-            resumen.anotar("técnico (cobertura)", "error", f"{t['email']}: no inicia sesión (HTTP {st})")
-            continue
-        for _ in range(12):  # Matching conoce al técnico unos segundos después de aprobarlo
-            st, _r = api.llamar("PUT", "/v1/technicians/me/coverage", {"localityCodes": juego["cobertura"]}, ttok)
-            if st == 200:
-                break
-            time.sleep(3)
-        resumen.anotar("técnico (cobertura)", "aplicado" if st == 200 else "error",
-                       t["email"] if st == 200 else f"{t['email']} (HTTP {st})")
-        if disponibles:
-            st, _r = api.llamar("PUT", "/v1/technicians/me/availability", {"status": "disponible"}, ttok)
-            resumen.anotar("técnico (disponibilidad)", "aplicado" if st == 200 else "error",
-                           t["email"] if st == 200 else f"{t['email']} (HTTP {st})")
+        for tec in p.get("equipo", []):
+            st_t, r_t = api.llamar("POST", "/v1/providers/me/technicians", {
+                "email": tec["email"], "fullName": tec["nombre"], "phone": tec["telefono"],
+                "documentId": tec["documento"], "specialtyId": categorias[tec["categoria"]]}, ptok)
+            if st_t == 201 and isinstance(r_t, dict):
+                resumen.anotar("técnico de equipo", "creado", tec["email"])
+                definir_clave_equipo(api, resumen, ptok, tec, r_t["id"], r_t.get("invitation"), clave)
+                habilitar(api, juego, tok, resumen, "técnico de equipo", tec["email"], clave, disponibles, r_t["id"], "pendiente")
+            elif st_t == 409:
+                resumen.anotar("técnico de equipo", "ya existía", tec["email"])
+                u = buscar_tecnico(api, tok, tec["email"]) or {}
+                uid_t = u.get("userId")
+                if not uid_t:
+                    resumen.anotar("técnico de equipo (contraseña)", "error", f"{tec['email']}: no aparece en el equipo")
+                    continue
+                definir_clave_equipo(api, resumen, ptok, tec, uid_t, None, clave)
+                habilitar(api, juego, tok, resumen, "técnico de equipo", tec["email"], clave, disponibles,
+                          uid_t, u.get("verificationStatus"))
+            else:
+                resumen.anotar("técnico de equipo", "error", f"{tec['email']} (HTTP {st_t}: {str(r_t)[:120]})")
 
     print("Solicitudes de ejemplo")
     for s in juego["solicitudes"]:
@@ -225,6 +307,11 @@ def simular(juego):
             print(f"  {grupo[:-1]}: {x['email']}")
     for e in juego["empresas"]:
         print(f"  empresa: {e['razonSocial']} ({e['usuario']['email']})")
+    for p in juego.get("proveedores", []):
+        print(f"  proveedor: {p['nombre']} ({p['email']}, {p['categoria']})")
+        for tec in p.get("equipo", []):
+            print(f"    técnico de equipo: {tec['nombre']} ({tec['email']}, {tec['categoria']}): se le define la contraseña "
+                  f"con su invitación y se aprueba")
     for s in juego["solicitudes"]:
         print(f"  solicitud: {s['descripcion']} — {s['direccion']}")
 
@@ -241,6 +328,7 @@ def main():
     a = ap.parse_args()
 
     juego = json.loads(Path(a.juego).read_text(encoding="utf-8"))
+    validar_nits(juego)
     if a.simular:
         simular(juego)
         return

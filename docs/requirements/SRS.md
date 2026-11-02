@@ -5,10 +5,10 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 5.9 (borrador de la V6, MVP, incremento del Sprint 5) |
-| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598; 5.7: capacidad de interacción, SCRUM-568; 5.8: alcance geográfico, SCRUM-636; 5.9: criterios de aceptación del Sprint 5, SCRUM-534 (SRS V6, SCRUM-533) |
+| **Versión del documento** | 5.10 (borrador de la V6, MVP, incremento del Sprint 5) |
+| **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598; 5.7: capacidad de interacción, SCRUM-568; 5.8: alcance geográfico, SCRUM-636; 5.9: criterios de aceptación del Sprint 5, SCRUM-534; 5.10: línea base, SCRUM-535 (SRS V6, SCRUM-533) |
 | **Responsable** | Angy Bautista (Product Owner) |
-| **Estado** | Borrador de la V6: criterios de aceptación de los RF del Sprint 5 (SCRUM-534). Pendientes: la línea base de la sección 1.3 (SCRUM-535) y la revisión del Product Owner (SCRUM-536). La versión 5 fue aprobada por el Product Owner el 14 de octubre de 2026 (SCRUM-406) |
+| **Estado** | Borrador de la V6: línea base de la sección 1.3 al 29 de octubre de 2026 (SCRUM-535) y criterios de aceptación de los RF del Sprint 5 (SCRUM-534, versión 5.9). Pendiente: la revisión del Product Owner (SCRUM-536). La versión 5 fue aprobada por el Product Owner el 14 de octubre de 2026 (SCRUM-406) |
 | **Estándar de referencia** | IEEE Std 830-1998 |
 
 ---
@@ -71,18 +71,22 @@ Los requisitos de este documento son la entrada del SAD: los drivers, killers, r
 
 ### 1.3 Línea base de documentos
 
-Este SRS se alinea con los documentos de `develop` del repositorio `quickpatch` al **14 de octubre de 2026**. De los cambios posteriores a la redacción del borrador (10 de octubre), la resolución de R5 frente a RIE-02 y RIE-03 incorpora el SAD 2.27 (ADR-024, 12 de octubre de 2026). Las demás secciones citan los documentos por sección y no por versión, para que una nueva versión de ellos no deje desactualizado el SRS. Si un documento cambia una sección citada, la referencia se revisa en la siguiente versión del SRS.
+Este SRS se alinea con los documentos de `develop` del repositorio `quickpatch` al **29 de octubre de 2026** (SCRUM-535). Las secciones citan los documentos por sección y no por versión, para que una nueva versión de ellos no deje desactualizado el SRS. Si un documento cambia una sección citada, la referencia se revisa en la siguiente versión del SRS.
 
-| Documento | Versión en la línea base | Siguiente versión (Jira) |
+| Documento | Versión en la línea base | Versión del Sprint 5 (Jira) |
 |---|---|---|
-| SAD — Documento de Arquitectura de Software | 2.28 (R5, RIE-02 y RIE-03: ADR-024, desde 2.27) | SAD V4 (SCRUM-411) |
-| DD — Diccionario de Datos y Contratos | 4.0 | DD V5 (SCRUM-455) |
-| SDD — Documento de Diseño de Software | V2 (modelo C4) | SDD V3 (SCRUM-424) |
-| TD — Documento de Pruebas | 1.4 | TD V2 (SCRUM-399) |
-| Documento de Infraestructura | 3.7 | Ninguna planeada (la V3, SCRUM-420, ya es la línea base) |
-| Backlog de producto (Jira, proyecto SCRUM) | Consulta del 10 oct 2026 (estados de las épicas 6 y 7: 14 oct 2026) | Backlog V5 (SCRUM-407) |
+| SAD — Documento de Arquitectura de Software | 2.46 (ADR-025 a ADR-028; la calificación por eventos, ADR-027, desde 2.39; R6 dentro de Bogotá, 2.40; estado de los servicios, 2.41 y 2.43; validación de RNF del Sprint 5, 2.42; pago antes de la calificación, 2.46) | SAD V5 (SCRUM-541): 2.46. El SAD se numera por cambio; la V5 es la serie del Sprint 5 |
+| DD — Diccionario de Datos y Contratos | 5.15 | DD V6 (SCRUM-545), en análisis |
+| SDD — Documento de Diseño de Software | V4 lista para la revisión del Product Owner (modelo C4) | SDD V4 (SCRUM-548); revisión en SCRUM-551 y figuras 15 y 18 pendientes (SCRUM-583) |
+| TD — Documento de Pruebas | 3.0 | TD V3 (SCRUM-529) |
+| Documento de Infraestructura | 4.10 | Ninguna planeada (la V4 ya es la línea base) |
+| Backlog de producto (Jira, proyecto SCRUM) | Consulta del 29 oct 2026 | Backlog V6 (SCRUM-537), en backlog |
 
-> SCRUM-403 pide alinear el SRS V5 con el SAD V4 y el DD V4. Cuando se redactó esta versión ninguno estaba completo, así que el borrador usó las versiones del 10 de octubre y dejó en la sección 7.4 los cambios que el SAD V4 y el DD V4 deben incorporar. Al 14 de octubre de 2026, `develop` tiene el SAD 2.28 (ADR-023, ADR-024 y la compuerta de RNF-08), el DD 4.0 y el Documento de Infraestructura 3.7; el TD sigue en 1.4 y el SDD en V2, y la tabla ya usa esas versiones. Se comprobó que las secciones que cita el SRS siguen existiendo en esas versiones y que lo que el SRS afirma de ellas sigue siendo cierto (revisión de Sebastián Sánchez, 14 de octubre de 2026). De los cambios de esos documentos, esta versión solo incorpora el ADR-024.
+> **Revisión del 29 de octubre de 2026 (SCRUM-535).** Se comprobó contra `develop` que las reglas del DD (RN-\*), las dependencias (DEP-\*) y los ADR que cita el SRS siguen existiendo. La contradicción P2 queda resuelta con el SAD 2.46 (sección 7.4.2).
+>
+> **Versiones pendientes.** El DD V6 (SCRUM-545) y la aprobación del SDD V4 (SCRUM-551) todavía no están en `develop`. No son contradicciones: se incorporan en la siguiente revisión de la línea base, en otra subtarea.
+
+> **Línea base de la versión 5 (14 de octubre de 2026).** La resolución de R5 frente a RIE-02 y RIE-03 incorporó el SAD 2.27 (ADR-024, 12 de octubre de 2026). SCRUM-403 pide alinear el SRS V5 con el SAD V4 y el DD V4. Cuando se redactó esta versión ninguno estaba completo, así que el borrador usó las versiones del 10 de octubre y dejó en la sección 7.4 los cambios que el SAD V4 y el DD V4 deben incorporar. Al 14 de octubre de 2026, `develop` tiene el SAD 2.28 (ADR-023, ADR-024 y la compuerta de RNF-08), el DD 4.0 y el Documento de Infraestructura 3.7; el TD sigue en 1.4 y el SDD en V2, y la tabla ya usa esas versiones. Se comprobó que las secciones que cita el SRS siguen existiendo en esas versiones y que lo que el SRS afirma de ellas sigue siendo cierto (revisión de Sebastián Sánchez, 14 de octubre de 2026). De los cambios de esos documentos, esta versión solo incorpora el ADR-024.
 
 ---
 
@@ -710,7 +714,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 
 | ID | Requisito | Contradicción | Opciones |
 |---|---|---|---|
-| P2 | RF-12 | Este documento, el SDD (escenario 7) y el DD (RN-R3) ponen el pago antes de la calificación; el ciclo de vida del SAD (sección 7.4) todavía libera el pago después de la evaluación (`EVALUATED`). | Actualizar la sección 7.4 del SAD V4 al orden de este documento (pago → calificación). |
+| P2 | RF-12 | **Resuelta (SAD 2.46).** Este documento, el SDD (escenario 7) y el DD (RN-R3) ponen el pago antes de la calificación; el ciclo de vida del SAD (sección 7.4) liberaba el pago después de la evaluación (`EVALUATED`). | Aplicada: la sección 7.4 del SAD 2.46 va `DELIVERED` → `PAID` → `EVALUATED`. |
 | P4 | — | La Ley 1480 de 2011 (killer K13) exige un mecanismo para recibir reclamos, y el módulo de reclamos está fuera del MVP (SAD, FA3). | (a) Un canal mínimo de reclamos asociado a la solicitud, que requeriría un RF nuevo; (b) un canal externo documentado (correo de soporte). |
 | P5 | RF-11, RF-22 | Los técnicos en campo y la respuesta de la pasarela de pagos deben alcanzar el sistema desde fuera de la red del laboratorio, que no es accesible desde Internet (SAD, R9). | Las del SAD, sección 1.2: demostración en la red del campus, túnel gratuito o IP pública de la universidad. |
 | P6 | RNF-02, RNF-03 | No tienen un escenario de calidad que los mida (SAD, sección 2.2). | (a) Agregarlos como escenarios de AC6 (*Confidentiality*) en el SAD V4; (b) tratarlos como restricciones verificables por inspección. |
@@ -742,6 +746,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | 5.7 | 27 oct 2026 | El grupo de RNF-11 y RNF-12 se llama **Capacidad de interacción**, como la característica de ISO/IEC 25010:2023 (antes se nombraba con el término de la versión 2011). Corrección del profesor en la revisión del Sprint 4 (SCRUM-567, subtarea SCRUM-568). Los requisitos no cambian. |
 | 5.8 | 28 oct 2026 | Alcance geográfico (SCRUM-636, historia SCRUM-598), tras la prueba SCRUM-600. En la sección 2.3.1, la cobertura al crear exige el rectángulo y una de las 20 localidades, con GPS o con dirección, igual que la vista previa. Nueva limitación conocida: una calle de Bogotá con otra ciudad escrita se ubica en Bogotá, mitigada con la confirmación del pin (ADR-024). P10 sigue abierta. |
 | 5.9 | 29 oct 2026 | SRS V6 (SCRUM-533), subtarea SCRUM-534. **Criterios de aceptación del Sprint 5:** nuevas secciones 5.5.5 a 5.5.10 con los criterios verificables de RF-12, RF-17, RF-23, RF-25, RF-27 y RF-29, sacados de sus historias en Jira (SCRUM-32, 37, 43, 45, 47 y 49) al 27 de octubre de 2026, cada uno con la regla del DD o la decisión del SAD que lo sustenta y el caso del TD que lo verifica. RF-12 sigue el ADR-027 (calificación en ServiceRequest, evento `service-request.rated` y reputación en Ranking), y RF-23 cita la evidencia `scrum-496-pago-empresa` contra QA. Los contratos de la calificación (SCRUM-497), la calificación en el historial (SCRUM-499) y los pagos recibidos (SCRUM-500) se publicaron después (`service-request.v1.yaml` 1.10.0, `payments.v1.yaml` 1.2.0 y `quickpatch-kafka` v0.10.0), y los criterios los citan al 1 de noviembre de 2026. Se agrega una nota con las diferencias que debe corregir el TD V3 (SCRUM-529). **Otros cambios:** los seis RF remiten a su sección de criterios, la matriz 7.1.2 los marca con ★ y suma los casos citados, y la sección 7.3 actualiza SCRUM-32 (estado "Pagado" y nombre del evento), deja SCRUM-46 sola en la fila del ambiente de staging y retira SCRUM-47, que ya se reescribió. Pendientes de la V6: la línea base de la sección 1.3 (SCRUM-535) y la revisión del Product Owner (SCRUM-536). |
+| 5.10 | 29 oct 2026 | SRS V6 (SCRUM-533), subtarea SCRUM-535. **Línea base (sección 1.3)** al 29 de octubre de 2026: SAD 2.46 (SAD V5, SCRUM-541), DD 5.15, SDD V4, TD 3.0, Documento de Infraestructura 4.10 y Backlog del 29 de octubre. Se comprobó que las reglas, las dependencias y los ADR que cita el SRS existen en `develop`. **P2 resuelta** (sección 7.4.2): el SAD 2.46 pone el pago antes de la calificación. El DD V6 y la aprobación del SDD V4 quedan como versiones pendientes y se incorporan en la siguiente revisión de la línea base. La versión 5.9 son los criterios de aceptación del Sprint 5 (SCRUM-534). |
 
 ---
 
