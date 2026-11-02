@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.11 |
+| **Versión** | 4.12 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -407,6 +407,7 @@ Los grupos `produccion` (VM3, VM4 y VM6) y `qa` (VM2, VM5 y VM7) reúnen los de 
 | `probar-restauracion-pg.yml` | VM4 | Baja de Garage la copia de un día, restaura las 8 bases en bases de prueba `prueba_restauracion_*` de la misma instancia, compara tablas y filas con las reales y borra todo. No toca las bases `db_*` (sección 9.3) |
 | `deploy-k3s.yml` | VM3 y VM2 | k3s de un nodo con los rangos de red de abajo, Traefik en la red del host (puertos 30080 y 30443), namespace `quickpatch` y kubeconfig para el runner |
 | `cifrar-secretos-k3s.yml` | VM2 (QA); VM3 con confirmación | Solo informa por defecto (estado del cifrado, subcomandos de k3s y cuántos `Secret` hay cifrados). Con `-e aplicar=si` respalda el almacén de datos, activa `secrets-encryption`, reinicia k3s, vuelve a cifrar los `Secret` y verifica. Producción exige `-e ambiente=produccion -e confirmar_produccion=si` (sección 10.5) |
+| `cargar-equipos-pagos.yml` | VM5 (QA); VM4 con confirmación | Carga única del equipo de cada proveedor en Payments (SCRUM-501, P-02): copia `tenant_id`, `user_id`, `provider_id` y `created_at` de `technician_profiles` (`db_identity`) a `payment_technicians` (`db_payments`), en el mismo PostgreSQL, para los técnicos registrados antes de la retención de 7 días de `technician.registered`. Solo informa por defecto (conteos de las dos tablas); con `-e aplicar=si` carga. Es idempotente y no pisa una fila más reciente que ya guardó el consumidor. Va después de desplegar la migración `EquipoDelProveedor` de Payments. Producción exige `-e ambiente=produccion -e confirmar_produccion=si`. |
 | `deploy-gateway.yml` | VM3 y VM2; VM1 | En cada VM de aplicación, el Nginx del gateway del ambiente con su carpeta de panel; en VM1, la entrada TLS con los tres nombres (sección 11) y el certificado. `--limit vm2`, `--limit vm3` o `--limit vm1`; `-e copiar_panel=qa|produccion` copia el panel que sirve VM1 al gateway del ambiente |
 | `verificar-gateway-ambiente.yml` | VM1 | Solo lectura: compara, para cada ambiente, el gateway, Traefik, el panel y la entrada de VM1 por nombre y por IP |
 | `deploy-runner.yml` | VM1 | kubectl, k6, kubeconfig de QA y producción, llave SSH hacia VM2 y VM3 (`--tags llave-runner`), la compuerta de producción `compuerta-qa` (RNF-08) y el runner de GitHub como servicio |
@@ -1245,3 +1246,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.9 | 28 oct 2026 | Cifrado (SCRUM-506): verificados los `Secret` de k3s en VM2 y VM3 (cifrado desactivado) y Redis en VM4 y VM5 (sin TLS, con ACL y firewall); sección 10.5 sin pendientes de verificación y con la opción de activar `secrets-encryption` y la de TLS de Redis. |
 | 4.10 | 28 oct 2026 | Medición de AC2-E5 bajo carga en QA con 7 servicios (SCRUM-635): uso y límites por pod con k6 de 50 y 150 VU, 0 `OOMKilled`; Ranking con su manifiesto en la tabla de la sección 5.6; Actors sin código; reinicios de Communication por sondas, sin investigar. |
 | 4.11 | 30 oct 2026 | Cifrado de los `Secret` de k3s en QA (SCRUM-49): playbook `cifrar-secretos-k3s.yml` en la tabla de playbooks (5.2), resultado, procedimiento, lección del primer intento y vuelta atrás en 10.5, y la limitación de la sección 13 limitada a producción. |
+| 4.12 | 2 nov 2026 | Carga única del equipo de cada proveedor en Payments (SCRUM-501, P-02): playbook `cargar-equipos-pagos.yml` en la tabla de playbooks (5.2). |

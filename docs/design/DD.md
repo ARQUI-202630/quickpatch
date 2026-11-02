@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.15|
+|**Versión**|5.16|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -110,7 +110,7 @@ Algunos elementos de esta versión resuelven dependencias que el DD v2.2 dejaba 
 |ID|Propuesta|Dependencia que resuelve|Documento que debe reflejarla|
 |---|---|---|---|
 |P-01|Matching Service mantiene una proyección local de la especialidad y del estado de verificación de cada técnico, alimentada por los eventos `technician.registered` y `technician.verification-changed` de Identity Service.|DEP-01|**Resuelta en v4:** P-01 adoptada y alineada con el ADR-017 (`technician.registered` y `technician.verification-changed` v1, sección 1.8). Falta actualizar el pendiente de Safety del SAD (sección 3.9).|
-|P-02|Mientras Actors Service no tenga persistencia, `technician_profiles.provider_id` referencia al usuario con rol `proveedor` dentro de Identity Service (FK física).|DEP-02 (parcial)|SDD, sección 6.14|
+|P-02|Mientras Actors Service no tenga persistencia, `technician_profiles.provider_id` referencia al usuario con rol `proveedor` dentro de Identity Service (FK física). **Desde la 5.16 (SCRUM-501)** Payments guarda de cada técnico su proveedor en la proyección `payment_technicians` (sección 5.25), alimentada por `technician.registered`, para los pagos recibidos del equipo.|DEP-02 (parcial)|SDD, sección 6.14|
 |P-03|La especialidad de un técnico es una categoría de servicio: `technician_profiles.specialty_id` referencia `service_categories.id`.|DEP-02 (parcial)|SDD, sección 6.6|
 |P-04|La cobertura de un técnico se expresa por localidades de Bogotá, a partir de un catálogo de referencia `localities` en Matching Service.|RF-13 (SCRUM-33)|SDD, sección 6.8|
 |P-05|Matching Service persiste las solicitudes que debe asignar (`matching_requests`) para poder reintentar las que quedan en espera.|SCRUM-29, criterio 3|SDD, sección 8.3|
@@ -247,7 +247,7 @@ QUICKPATCH se descompone en 8 microservicios de dominio (SAD, sección 4.2.2), d
 |Matching Service|`technician_availability` (incluye la proyección de especialidad y verificación, P-01), `coverage_zones`, `matching_attempts`, `matching_requests` (P-05) y el catálogo de referencia `localities` (P-04).|
 |ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence` y la réplica de lectura `service_request_categories`|
 |Ranking Service|Ninguna todavía. Consume el evento `service-request.rated`; su persistencia es evolutiva (SDD, sección 6.14).|
-|Payments Service|`payments`, `invoices`|
+|Payments Service|`payments`, `invoices` y la proyección `payment_technicians` (v5.16, equipo de cada proveedor, P-02)|
 |Communication Service|`notifications` (v5, buzón de ADR-024) en `db_communication`. `Conversation` y `Complaint` son evolutivos.|
 |Transversal (en cada servicio)|`audit_logs`, `outbox_events`, `processed_events`|
 
@@ -1358,6 +1358,27 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 ---
 
+### 5.25 Tabla `payment_technicians`
+
+**Nueva v5.16 (SCRUM-501, P-02).** **Servicio propietario:** Payments Service, en su base `db_payments`.
+
+**Propósito:** Proyección local del equipo de cada proveedor: de cada técnico guarda el proveedor al que pertenece, si lo tiene. Payments no consulta a Identity Service (ADR-003): la alimenta el evento `technician.registered` (event-carried state transfer, ADR-017) y sirve para que el `proveedor` vea en `GET /v1/payments/received` los pagos de los técnicos de su equipo.
+
+**Requisitos relacionados:** RF-25, RF-16.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|technician_id|UUID|No|PK|`technician_profiles.user_id` del técnico en Identity Service (ref. lógica). Une con `payments.technician_id`.|
+|tenant_id|UUID|No|—|Tenant del técnico.|
+|provider_id|UUID|Sí|—|Usuario con rol `proveedor` al que pertenece el técnico (`data.providerId` del evento). Nulo para los técnicos independientes.|
+|updated_at|TIMESTAMPTZ|No|—|Versión de la fila (`data.updatedAt` del evento). Un evento con un `updatedAt` anterior o igual al guardado se descarta.|
+
+**Reglas:** el consumidor es idempotente por `eventId` (`processed_events`, RN-EV1) y aplica el evento bajo el tenant del mensaje. RLS por tenant. `payments_app` tiene `SELECT`, `INSERT` y `UPDATE`. Índice por `provider_id` para listar el equipo del proveedor.
+
+**Carga inicial.** El topic `technician.registered` conserva 7 días, así que los técnicos registrados antes de que Payments empezara a consumirlo no llegan por el evento. Se cargan una sola vez por ambiente con el playbook `cargar-equipos-pagos.yml`, que copia `tenant_id`, `user_id`, `provider_id` y `created_at` de `technician_profiles` (`db_identity`) a esta tabla, en el mismo PostgreSQL del ambiente. Es idempotente y no pisa una fila que el consumidor ya guardó con una versión más reciente. No se agrega un endpoint a Identity ni se republican eventos, para no acoplar a Payments por llamada síncrona ni hacer que Matching y Communication reprocesen todos los técnicos.
+
+---
+
 ## 6. Relaciones entre datos
 
 ### 6.1 Relaciones físicas dentro de un servicio
@@ -1792,7 +1813,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |GET|`/v1/service-requests/{id}/payment`|Cliente dueño, `empresa_contacto` de la empresa|RF-22, RF-23|Nuevo|Estado del pago actual de la solicitud.|
 |POST|`/v1/service-requests/{id}/payment`|Cliente dueño, `empresa_contacto` de la empresa|RF-22, RF-23||Procesar el pago pendiente o reintentar tras un rechazo (RN-P4, RN-P5).|
 |GET|`/v1/payments/{id}/invoice`|Pagador, `admin_tenant`|RF-24|Contrato 1.1.0|Comprobante en JSON o PDF según `Accept` (sección 8.3.16).|
-|GET|`/v1/payments/received?page=&size=`|`tecnico`|RF-25||Pagos de los servicios del técnico autenticado.|
+|GET|`/v1/payments/received?technicianId=&status=&page=&size=`|`tecnico`, `proveedor`|RF-25|Contrato 1.2.0|Pagos recibidos, del más reciente al más antiguo, sin los `rechazado` y sin datos de tarjeta (RN-P1). **Visibilidad por rol:** el `tecnico` ve solo los suyos (el técnico sale del token) y no usa `technicianId` (`400` si lo envía); el `proveedor` ve los de los técnicos de su equipo según la proyección `payment_technicians` (sección 5.25) y puede acotar uno con `technicianId`: un técnico que no es de su equipo, independiente o de otro proveedor, devuelve la lista vacía. Otro rol responde `403`. El tenant sale siempre del token (RLS).|
 
 Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la solicitud que se paga, pero las atiende Payments Service: el Gateway enruta por el sufijo `/payment`. **v5.8:** en k3s lo hace un `IngressRoute` de Traefik con `PathRegexp` sobre `/v1/service-requests/{id}/payment`, que tiene más prioridad que el prefijo `/v1/service-requests` de ServiceRequest (manifiesto de Payments). Contrato: `payments.v1.yaml` 1.0.0 (SCRUM-42) y 1.1.0, con el comprobante (SCRUM-44); los pagos recibidos llegan con SCRUM-45. **v5.10:** el prefijo `/v1/payments` es solo de Payments y el mismo `IngressRoute` lo enruta con `PathPrefix`.
 
@@ -2781,7 +2802,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.13|SCRUM-73|**Solicitud de empresa (RF-08, SCRUM-28).** `service-request.v1.yaml` 1.9.0: el `empresa_contacto` crea solicitudes con `siteName` opcional; `client_type` y `company_id` se implementan y salen del token (RN-SR12); `site_name` nueva en `service_requests` (sección 5.5). RN-SR14: los demás usuarios de la empresa ven la solicitud. `GET /v1/service-requests` se abre al `cliente` y al `empresa_contacto`, con `clientType` para que el panel distinga las de empresa (secciones 8.2.4 y 8.3.3).|
 |5.14|SCRUM-636|**Cobertura por localidades (RN-SR9).** Crear una solicitud, con GPS o con dirección, exige el rectángulo y una de las 20 localidades, igual que la vista previa (sección 8.3.3). El rectángulo solo aceptaba puntos en Soacha. Sin cambio de contrato: `422 ubicacion-fuera-de-cobertura` ya estaba documentado.|
 |5.15|SCRUM-499|**Historial técnico con calificación (RF-12, SCRUM-497).** `service-request.v1.yaml` 1.10.0: TechnicianServiceRequest ahora incluye campos opcionales `score` y `ratedAt` cuando una solicitud completada ha sido calificada. Se actualiza la descripción de `ratings.created_at` para usar `ratedAt` en el contrato REST (sección 8.3.11).|
-|5.16|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.16|SCRUM-501|**Equipo del proveedor en Payments y pagos recibidos del proveedor (RF-25, P-02).** Nueva tabla `payment_technicians` (sección 5.25), proyección del proveedor de cada técnico alimentada por `technician.registered` y cargada una vez por ambiente con `cargar-equipos-pagos.yml`. `GET /v1/payments/received` (contrato 1.2.0) lo admite también para el `proveedor`, con sus reglas de visibilidad por rol (sección 8.3, SCRUM-500). Se actualiza P-02 y el Cuadro 8.|
+|5.17|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 

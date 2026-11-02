@@ -1,0 +1,94 @@
+# Carga única del equipo de cada proveedor en Payments (SCRUM-501, P-02).
+# Payments guarda de cada técnico su proveedor (tabla payment_technicians) a partir de technician.registered, pero el topic solo
+# conserva 7 días: los técnicos registrados antes de que Payments empezara a consumirlo no están. Este playbook los copia una vez
+# de db_identity (technician_profiles) a db_payments, en el mismo PostgreSQL del ambiente. No hay endpoint nuevo en Identity ni
+# se republican eventos (así Matching y Communication no reprocesan nada).
+#
+#   ./ap playbooks/cargar-equipos-pagos.yml -k -K                 solo informa (no cambia nada): conteos de las dos tablas
+#   ./ap playbooks/cargar-equipos-pagos.yml -k -K -e aplicar=si   carga o actualiza payment_technicians
+#
+# Por defecto QA (VM5); producción exige además -e ambiente=produccion -e confirmar_produccion=si.
+#
+# Es idempotente y no pisa lo que el consumidor ya guardó: una fila solo se actualiza si la copia de Identity es más reciente
+# (updated_at, ADR-017), así que repetir o correr con el servicio activo es seguro. Se corre con el usuario postgres del contenedor
+# (sin RLS), una sola vez por ambiente después de desplegar la migración EquipoDelProveedor de Payments; solo imprime conteos.
+- name: Cargar el equipo de los proveedores en Payments
+  hosts: "{{ 'database' if (ambiente | default('qa')) == 'produccion' else 'qa_datos' }}"
+  gather_facts: false
+  become: true
+  vars:
+    psql: docker compose -f {{ stack_dir }}/postgres/compose.yml exec -T -u postgres postgres psql -X -v ON_ERROR_STOP=1 -q -At -F ' | '
+    csv: /tmp/equipos-pagos.csv
+    cuenta_identity: SELECT count(*), count(provider_id) FROM technician_profiles
+    cuenta_payments: SELECT count(*), count(provider_id) FROM payment_technicians
+    exportar: >-
+      COPY (SELECT tenant_id, user_id, provider_id, created_at FROM technician_profiles)
+      TO STDOUT WITH (FORMAT csv)
+  pre_tasks:
+    - name: Producción solo con confirmación explícita
+      ansible.builtin.assert:
+        that: (ambiente | default('qa')) != 'produccion' or (confirmar_produccion | default('no')) == 'si'
+        fail_msg: Para producción agrega -e ambiente=produccion -e confirmar_produccion=si.
+        quiet: true
+  tasks:
+    - name: La tabla payment_technicians existe en db_payments
+      ansible.builtin.command: "{{ psql }} -d db_payments -c \"SELECT to_regclass('public.payment_technicians') IS NOT NULL\""
+      register: tabla
+      changed_when: false
+      failed_when: tabla.stdout.strip() != 't'
+
+    - name: Conteos antes de cargar
+      ansible.builtin.shell: |
+        set -o pipefail
+        echo "identity.technician_profiles (total | con proveedor): $({{ psql }} -d db_identity -c "{{ cuenta_identity }}")"
+        echo "payments.payment_technicians (total | con proveedor): $({{ psql }} -d db_payments -c "{{ cuenta_payments }}")"
+      args:
+        executable: /bin/bash
+      register: antes
+      changed_when: false
+
+    - name: Mostrar los conteos
+      ansible.builtin.debug:
+        msg: "{{ antes.stdout_lines }}"
+
+    - name: Cargar el equipo desde Identity
+      when: (aplicar | default('no')) == 'si'
+      ansible.builtin.shell: |
+        set -o pipefail
+        {{ psql }} -d db_identity -c "{{ exportar }}" > {{ csv }}
+        {
+          echo "BEGIN;"
+          echo "CREATE TEMP TABLE carga (tenant_id uuid, technician_id uuid, provider_id uuid, updated_at timestamptz) ON COMMIT DROP;"
+          echo "COPY carga FROM STDIN WITH (FORMAT csv);"
+          cat {{ csv }}
+          echo '\.'
+          echo "INSERT INTO payment_technicians (tenant_id, technician_id, provider_id, updated_at)"
+          echo "  SELECT tenant_id, technician_id, provider_id, updated_at FROM carga"
+          echo "  ON CONFLICT (technician_id) DO UPDATE SET provider_id = EXCLUDED.provider_id, updated_at = EXCLUDED.updated_at"
+          echo "  WHERE payment_technicians.updated_at < EXCLUDED.updated_at;"
+          echo "COMMIT;"
+        } | {{ psql }} -d db_payments
+      args:
+        executable: /bin/bash
+      changed_when: true
+
+    - name: Conteos después de cargar
+      when: (aplicar | default('no')) == 'si'
+      ansible.builtin.shell: |
+        set -o pipefail
+        echo "payments.payment_technicians (total | con proveedor): $({{ psql }} -d db_payments -c "{{ cuenta_payments }}")"
+      args:
+        executable: /bin/bash
+      register: despues
+      changed_when: false
+
+    - name: Mostrar el resultado
+      when: (aplicar | default('no')) == 'si'
+      ansible.builtin.debug:
+        msg: "{{ despues.stdout_lines }}"
+
+    - name: Quitar el archivo temporal de la carga
+      when: (aplicar | default('no')) == 'si'
+      ansible.builtin.file:
+        path: "{{ csv }}"
+        state: absent
