@@ -16,22 +16,23 @@ Las pruebas reales ejecutadas por los pipelines de CI en cada microservicio y en
 | Componente / Repositorio | Último Run / Tag | Unitarias | Integración | Total Pruebas | Pasan | Fallan | Cobertura de Código |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **quickpatch-identity** | Run #57 | 229 | 32 | **261** | 261 | 0 | *97.2%* |
-| **quickpatch-actors** | Run #12 | 6 | 2 | **8** | 8 | 0 | *Sin dato* |
+| **quickpatch-actors** | Run #12 | 6 | 2 | **8** | 8 | 0 | *100.0%* |
 | **quickpatch-catalog** | Run #32 | 20 | 8 | **28** | 28 | 0 | *95.8%* |
 | **quickpatch-communication** | Run #45 | 178 | 8 | **186** | 186 | 0 | *94.7%* |
 | **quickpatch-matching** | Run #41 | 89 | 26 | **115** | 115 | 0 | *99.1%* |
 | **quickpatch-payments** | Run #25 | 54 | 0 | **54** | 54 | 0 | *93.9%* |
-| **quickpatch-ranking** | Run #12 | 6 | 2 | **8** | 8 | 0 | *Sin dato* |
+| **quickpatch-ranking** | Run #12 | 6 | 2 | **8** | 8 | 0 | *91.7%* |
 | **quickpatch-servicerequest** | Run #68 | 324 | 48 | **372** | 372 | 0 | *95.7%* |
 | **quickpatch-mobile (app flutter)** | Run #Tag v0.5.1 | 462 | 31 | **493** | 493 | 0 | *97.0%* |
-| **TOTAL UNITARIAS E INTEGRACIÓN** | — | **1,368** | **157** | **1,525** | **1,525** | **0** | *93.9% – 99.1%* |
+| **TOTAL UNITARIAS E INTEGRACIÓN** | — | **1,368** | **157** | **1,525** | **1,525** | **0** | *91.7% – 100.0%* |
 
 ### Cobertura de código por servicio (SCRUM-602)
 
-Fuente: `tests/ci-results/cobertura-scrum-602.json` (Jira SCRUM-602 (Extraer conteos y cobertura de los pipelines de cada repositorio), ultima ejecucion de develop de cada repositorio, reportado el 2026-10-26). Umbral de la Compuerta 1 del Documento de Pruebas: **80%**.
+Fuente: `tests/ci-results/cobertura-scrum-602.json` (Jira SCRUM-602 (Extraer conteos y cobertura de los pipelines de cada repositorio), ultima ejecucion de develop de cada repositorio, reportado el 2026-10-26; actors y ranking confirmados en la revision del PR #220). Umbral de la Compuerta 1 del Documento de Pruebas: **80%**.
 
 | Repositorio | Pruebas en la corrida de cobertura | Cobertura | ¿Cumple el umbral? |
 |---|:---:|:---:|:---:|
+| `quickpatch-actors` | — | **100.0%** | Sí |
 | `quickpatch-matching` | 115 | **99.1%** | Sí |
 | `quickpatch-web` | 161 | **99.1%** | Sí |
 | `quickpatch-identity` | 261 | **97.2%** | Sí |
@@ -40,8 +41,9 @@ Fuente: `tests/ci-results/cobertura-scrum-602.json` (Jira SCRUM-602 (Extraer con
 | `quickpatch-service-request` | 372 | **95.7%** | Sí |
 | `quickpatch-communication` | 186 | **94.7%** | Sí |
 | `quickpatch-payments` | 57 | **93.9%** | Sí |
+| `quickpatch-ranking` | — | **91.7%** | Sí |
 
-> **Servicios sin dato de cobertura:** `quickpatch-actors`, `quickpatch-ranking`. SCRUM-602 no reportó cobertura para ellos; la columna queda como *Sin dato* y no se estima.
+> **Notas por repositorio:** `quickpatch-ranking`: corrida de CI del 2026-10-28; `quickpatch-actors`: corrida de CI del 2026-10-12; el servicio es un esqueleto.
 
 > **Diferencias de conteo:** `quickpatch-payments` (54 en la tabla, 57 en la corrida de cobertura); `quickpatch-mobile` (493 en la tabla, 492 en la corrida de cobertura). La tabla de pruebas usa los resultados archivados en `tests/ci-results/`; la cobertura viene de la última corrida de `develop` reportada en SCRUM-602, que es posterior.
 
@@ -105,7 +107,7 @@ Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-def
 * **Total de Pruebas Reales Automatizadas:** **2,469 pruebas / aserciones** (1,525 unitarias/integración + 931 E2E + 13 seguridad).
 * **Tasa de Aprobación de Pruebas:** **100.0% PASS (0 fallos en runs oficiales)**.
 * **Capacidad de Carga k6:** **38,876 peticiones procesadas** con 0.00% de errores y p95 de 415.39 ms bajo 150 VU.
-* **Cobertura de Código en CI (SCRUM-602):** **93.9% – 99.1%** en 8 repositorios; todos sobre el umbral de 80%.
+* **Cobertura de Código en CI (SCRUM-602):** **91.7% – 100.0%** en 10 repositorios; todos sobre el umbral de 80%.
 * **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.
 * **Avance Preliminar del Producto (Matriz Excel UAT):** **74.93%** (Meta Sprint 4: 80% / Brecha: -5.07%).
 * **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts).

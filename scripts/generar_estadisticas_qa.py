@@ -507,7 +507,8 @@ def generate_charts(ci_data, e2e_data, sec_data, defects, cov_map):
     ax.set_xlim(0, 125)
 
     for bar, (k, v) in zip(bars, orden):
-        ax.annotate(f"{v['cobertura']:.1f}%  ({v['pruebas']} pruebas)",
+        etiqueta = f"{v['cobertura']:.1f}%" + (f"  ({v['pruebas']} pruebas)" if v.get('pruebas') else '')
+        ax.annotate(etiqueta,
                     xy=(bar.get_width(), bar.get_y() + bar.get_height() / 2),
                     xytext=(6, 0), textcoords="offset points",
                     ha='left', va='center', fontsize=9, fontweight='bold', color='#1E293B')
@@ -559,16 +560,20 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map):
     md.append("|---|:---:|:---:|:---:|")
     for k, v in sorted(cov_map['servicios'].items(), key=lambda kv: -kv[1]['cobertura']):
         cumple = 'Sí' if v['cobertura'] >= umbral else 'No'
-        md.append(f"| `quickpatch-{k}` | {v['pruebas']:,} | **{v['cobertura']:.1f}%** | {cumple} |")
+        pruebas = f"{v['pruebas']:,}" if v.get('pruebas') else '—'
+        md.append(f"| `quickpatch-{k}` | {pruebas} | **{v['cobertura']:.1f}%** | {cumple} |")
     sin_dato = cov_map.get('sin_dato', [])
     md.append("")
+    notas = cov_map.get('notas', {})
+    if notas:
+        md.append("> **Notas por repositorio:** " + '; '.join(f"`quickpatch-{k}`: {v}" for k, v in notas.items()) + ".\n")
     if sin_dato:
         md.append(f"> **Servicios sin dato de cobertura:** {', '.join('`quickpatch-' + x + '`' for x in sin_dato)}. SCRUM-602 no reportó cobertura para ellos; la columna queda como *Sin dato* y no se estima.\n")
     difs = []
     for s in ci_data:
         key = 'service-request' if s['service'] == 'ServiceRequest' else ('mobile' if s['service'].startswith('Mobile') else s['service'].lower())
         v = cov_map['servicios'].get(key)
-        if v and v['pruebas'] != s['total']:
+        if v and v.get('pruebas') and v['pruebas'] != s['total']:
             difs.append(f"`quickpatch-{key}` ({s['total']} en la tabla, {v['pruebas']} en la corrida de cobertura)")
     if difs:
         md.append("> **Diferencias de conteo:** " + '; '.join(difs) + ". La tabla de pruebas usa los resultados archivados en `tests/ci-results/`; la cobertura viene de la última corrida de `develop` reportada en SCRUM-602, que es posterior.\n")
