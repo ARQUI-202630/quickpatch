@@ -1,0 +1,52 @@
+================================================================================
+EVIDENCIA: TENANT DESACTIVADO CONTRA QA, RN-T1 (SCRUM-511 / SCRUM-348)
+================================================================================
+Fecha: 2 de noviembre de 2026
+Ambiente: QA (https://qa.quickpatch.internal y https://beta.qa.quickpatch.internal, VM1), por la API pública
+Versiones desplegadas: quickpatch-identity release/0.7.0 (quickpatch-identity#30) y quickpatch-service-request release/0.11.0
+  (quickpatch-service-request#32); topic tenant.status-changed creado en el Kafka de QA ese día (una partición, retención de 7 días);
+  contrato service-request 1.11.0 (quickpatch-api-gateway#35, etiqueta v0.21.0).
+Script: probar-tenant-inactivo-qa.py (copia en la bóveda del equipo de DevOps). Ejecutó Sebastián Sánchez; lee el admin_plataforma del
+  vault de Ansible dentro del proceso y no imprime ni guarda credenciales ni tokens.
+Datos propios: tenant Beta de QA ("QA Tenant Beta", NIT 900999001-1) y un cliente nuevo de ese tenant, con correo y clave aleatorios
+  (qa-tenant-inactivo-<hora>@example.com, la clave no se guarda). No se toca el tenant principal de QA.
+
+Escenario: un cliente de Beta inicia sesión y conserva su token (60 min). El admin_plataforma desactiva el tenant. Con el MISMO token,
+POST /v1/service-requests debe responder 422 problems/tenant-inactivo en segundos, y al reactivar el tenant debe dejar de responderlo.
+
+--------------------------------------------------------------------------------
+SALIDA DEL SCRIPT
+--------------------------------------------------------------------------------
+Tenant desactivado contra QA (RN-T1, SCRUM-348 / SCRUM-511)
+  Tenant Beta: QA Tenant Beta (01a13e06-b2a8-7e27-aa1c-cb3e70641dd1), estado inicial: activo
+  OK    Registro de un cliente nuevo en Beta (HTTP 201)
+  OK    Login del cliente en Beta (HTTP 200); su token queda vigente 60 min
+  OK    Con el tenant ACTIVO la creación llega a la validación de la categoría (HTTP 422, categoria-no-disponible)
+  OK    admin_plataforma desactiva el tenant Beta (HTTP 200)
+  OK    MISMO token: la creación responde 422 tenant-inactivo en 2.2 s (HTTP 422, tenant-inactivo)
+  OK    El token sigue vigente para otras operaciones (GET /v1/users/me, HTTP 200): RN-T1 solo cierra la creación
+  OK    Un login nuevo del tenant inactivo se rechaza (HTTP 403, tenant-inactivo)
+  Tenant Beta reactivado (HTTP 200)
+  OK    Reactivado: la creación deja de responder tenant-inactivo en 1.2 s (HTTP 422, categoria-no-disponible)
+
+Resultado: 0 verificaciones fallidas.
+
+--------------------------------------------------------------------------------
+LECTURA DEL RESULTADO
+--------------------------------------------------------------------------------
+- Con el tenant activo, la petición llega a la validación de la categoría (422 categoria-no-disponible: Beta no tiene categorías), es
+  decir, el tenant no la bloquea.
+- Desactivado el tenant, el MISMO token recibe 422 tenant-inactivo en 2,2 s (sondeo cada 0,5 s, así que la medida tiene ese margen):
+  Identity publica tenant.status-changed por Outbox y ServiceRequest aplica la réplica. Sin la réplica, el rechazo llegaría al vencer
+  el token (60 minutos). El token sigue sirviendo para otras operaciones (GET /v1/users/me, 200), como dice RN-T1.
+- Un login nuevo del tenant inactivo se rechaza con 403 tenant-inactivo (Identity).
+- Reactivado el tenant, la creación vuelve a llegar a la validación de la categoría en 1,2 s.
+- El script deja siempre el tenant reactivado (bloque finally).
+
+Alcance y límites:
+- Beta no tiene categorías ni admin_tenant (Identity no crea el administrador al crear el tenant), así que la prueba no crea una solicitud
+  con 201. El contraste antes/durante/después se hace con el tipo de error: categoria-no-disponible (activo), tenant-inactivo
+  (desactivado) y categoria-no-disponible otra vez (reactivado). El 201 tras reactivar lo cubren las pruebas de integración de
+  quickpatch-service-request con PostgreSQL y Kafka reales (TenantStatusFlowTests).
+- No está todavía en la colección Newman de la compuerta de QA: el CI ya tiene los secretos QA_PLATFORM_ADMIN_EMAIL y
+  QA_PLATFORM_ADMIN_PASSWORD, así que se puede automatizar como un caso de la colección.

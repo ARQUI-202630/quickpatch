@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.16|
+|**Versión**|5.17|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -245,7 +245,7 @@ QUICKPATCH se descompone en 8 microservicios de dominio (SAD, sección 4.2.2), d
 |Actors Service|Ninguna todavía. `Supplier`, `Ally` y `Client` son conceptos evolutivos (SDD, sección 6.14).|
 |Catalog Service|`service_categories`|
 |Matching Service|`technician_availability` (incluye la proyección de especialidad y verificación, P-01), `coverage_zones`, `matching_attempts`, `matching_requests` (P-05) y el catálogo de referencia `localities` (P-04).|
-|ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence` y la réplica de lectura `service_request_categories`|
+|ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence`, la réplica de lectura `service_request_categories` y la réplica del estado de los tenants `tenant_status_replica` (v5.17, RN-T1)|
 |Ranking Service|Ninguna todavía. Consume el evento `service-request.rated`; su persistencia es evolutiva (SDD, sección 6.14).|
 |Payments Service|`payments`, `invoices` y la proyección `payment_technicians` (v5.16, equipo de cada proveedor, P-02)|
 |Communication Service|`notifications` (v5, buzón de ADR-024) en `db_communication`. `Conversation` y `Complaint` son evolutivos.|
@@ -1379,6 +1379,26 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 ---
 
+### 5.26 Tabla `tenant_status_replica`
+
+**Nueva v5.17 (SCRUM-508, SCRUM-510, RN-T1).** **Servicio propietario:** ServiceRequest Service, en su base `db_service_request`.
+
+**Propósito:** Réplica local del estado de cada tenant, alimentada por el evento `tenant.status-changed` de Identity (event-carried state transfer, ADR-017). Permite a ServiceRequest rechazar la creación de solicitudes de un tenant desactivado (`422 tenant-inactivo`) sin llamar a Identity (ADR-003) y sin esperar a que venza el token ya emitido.
+
+**Requisitos relacionados:** RF-21, RN-T1.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|tenant_id|UUID|No|PK|`tenants.id` en Identity Service (ref. lógica). Es el tenant que cambió de estado, que es también el `tenantId` del sobre del evento.|
+|status|VARCHAR(20)|No|—|`activo` o `inactivo` (restricción `CHECK`).|
+|updated_at|TIMESTAMPTZ|No|—|Versión de la fila (`data.updatedAt` del evento). Un evento con un `updatedAt` anterior o igual al guardado se descarta.|
+
+**Reglas:** **un tenant sin fila cuenta como activo**: la réplica empieza vacía y solo guarda los tenants que cambian de estado. El consumidor es idempotente por `eventId` (`processed_events`, RN-EV1) y aplica el evento bajo el tenant del mensaje; un mensaje que no cumple el contrato (estado fuera de `activo` o `inactivo`, o `data.tenantId` distinto del `tenantId` del sobre) se descarta sin bloquear la partición. RLS por tenant (`tenant_isolation`). `service_request_app` tiene `SELECT`, `INSERT` y `UPDATE`. La verificación va al inicio de la transacción de creación de la solicitud, sin agregar otra transacción.
+
+**Estado inicial al desplegar.** Como el evento es nuevo, la réplica no conoce a los tenants que ya estaban inactivos: antes de desplegar se cuentan en cada ambiente y, si hay alguno, se reemite su estado una vez desde Identity. En QA (2 de noviembre de 2026) los 4 tenants estaban activos.
+
+---
+
 ## 6. Relaciones entre datos
 
 ### 6.1 Relaciones físicas dentro de un servicio
@@ -1447,7 +1467,7 @@ Las reglas de negocio se documentan aparte del diccionario de datos: el dicciona
 
 ### 7.1 Reglas de `tenants`
 
-- **RN-T1:** un tenant inactivo no puede crear nuevas solicitudes.
+- **RN-T1:** un tenant inactivo no puede iniciar sesión ni crear nuevas solicitudes. Identity rechaza el login y, al activar o desactivar un tenant, publica `tenant.status-changed` v1 (sección 8.4) por Outbox en la misma transacción del cambio, con el estado completo y `updatedAt` como versión (ADR-017). ServiceRequest guarda una réplica local del estado (`tenant_status_replica`, sección 5.26), sin llamar a Identity (ADR-003), y rechaza `POST /v1/service-requests` con `422 tenant-inactivo` aunque el token siga vigente, así que la desactivación tiene efecto en segundos y no cuando vence el token. Un tenant sin fila en la réplica cuenta como activo. Los tokens emitidos antes de la desactivación siguen sirviendo para las demás operaciones hasta que expiran.
 - **RN-T2:** todo tenant corresponde a una empresa oferente identificada por su NIT; clientes hogar y empresas cliente se registran como usuarios del tenant.
 - **RN-T3:** el tenant activo del usuario debe obtenerse desde el contexto autenticado.
 
@@ -1612,7 +1632,7 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 
 |Regla|Mecanismo|
 |---|---|
-|RN-T1|Identity Service rechaza el login de usuarios de un tenant inactivo. Los tokens emitidos antes de la desactivación siguen siendo válidos hasta que expiran.|
+|RN-T1|Identity Service rechaza el login de usuarios de un tenant inactivo. **Desde la 5.17** ServiceRequest rechaza además crear solicitudes con `422 tenant-inactivo`, según la réplica `tenant_status_replica` (sección 5.26). Los tokens emitidos antes de la desactivación siguen siendo válidos para las demás operaciones hasta que expiran.|
 |RN-T2, RN-T3, RN-U3, RN-U5|El tenant sale del token o del canal (sección 10.3) y RLS lo aplica en cada transacción (sección 10.2).|
 |RN-U1|Índice único sobre `tenant_id, email`.|
 |RN-U2|Identity Service guarda solo el hash (RNF-03).|
@@ -1722,7 +1742,7 @@ Los errores siguen el formato *Problem Details* (RFC 9457) de los contratos v1: 
 |409|`DUPLICATE_RESOURCE`|Correo, documento, NIT o nombre de categoría ya registrado en el tenant.|
 |422|`EVIDENCE_REQUIRED`|Se intenta completar sin evidencia (RN-SR3).|
 |422|`LOCATION_OUT_OF_COVERAGE`|La ubicación no está dentro de ninguna localidad de Bogotá (RN-SR1).|
-|422|`TENANT_INACTIVE`|El tenant está inactivo (RN-T1).|
+|422|`TENANT_INACTIVE`|El tenant está inactivo (RN-T1). **Publicado como `tenant-inactivo`** en los contratos v1: el login de Identity y `POST /v1/service-requests` (service-request 1.11.0).|
 |423|`ACCOUNT_LOCKED`|La cuenta está bloqueada por intentos fallidos (RN-U4). Incluye `lockedUntil`.|
 |502|`PAYMENT_PROVIDER_ERROR`|La pasarela no respondió o respondió con error técnico. El pago queda `procesando` y se concilia (SDD V2, antes DD §10.9).|
 |503|`SERVICE_UNAVAILABLE`|El servicio o la base de datos no están disponibles (SDD, sección 8.11).|
@@ -1758,7 +1778,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |GET|`/internal/v1/users?ids=`|Interno: ServiceRequest con el JWT del usuario|RF-14|Contrato interno v1.0.0|Nombre y teléfono por lote (sección 8.3.4). No pasa por el Gateway.|
 |GET|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.2.0|Listar todos los tenants, activos e inactivos, ordenados por nombre.|
 |POST|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.5.0|Crear un tenant (empresa oferente) en `activo`; NIT único en la plataforma (`409`). Queda en `audit_logs` (`crear_tenant`). No crea usuarios ni el canal.|
-|PATCH|`/v1/platform/tenants/{id}`|`admin_plataforma`|RF-21|Contrato v1.2.0|Activar o desactivar con `{ "status": "activo" \| "inactivo" }` (RN-T1). Repetir el estado no es error; desactivar el tenant de la plataforma responde `409 tenant-plataforma`. Queda en `audit_logs`.|
+|PATCH|`/v1/platform/tenants/{id}`|`admin_plataforma`|RF-21|Contrato v1.2.0|Activar o desactivar con `{ "status": "activo" \| "inactivo" }` (RN-T1). Repetir el estado no es error; desactivar el tenant de la plataforma responde `409 tenant-plataforma`. Queda en `audit_logs`. Si el estado cambia, publica `tenant.status-changed` (sección 8.4).|
 
 #### 8.2.2 Catalog Service
 
@@ -1945,7 +1965,7 @@ El token de acceso dura 15 minutos y el de renovación 7 días (SDD V2, antes DD
 
 **Localidad del punto (propuesta P-09).** Las 20 localidades son de Matching Service (`localities`, sección 5.18). Para responder la vista previa sin llamar a Matching, ServiceRequest tendría una copia de solo lectura del mismo catálogo de referencia, cargada por migración desde la misma capa oficial que la migración `V3` de Matching (IDECA, generalizada a 0,0002°), sin `tenant_id` ni RLS. Como es un catálogo estático y oficial, las dos copias dan la misma localidad; si cambia, se actualizan las dos migraciones. La alternativa es una consulta interna a Matching, que agrega una llamada síncrona entre servicios.
 
-**Errores (contrato v1):** `400 validacion`; `422 ubicacion-fuera-de-cobertura` si la ubicación está fuera del área de cobertura (RN-SR9); `422 categoria-no-disponible` si la categoría no existe o no está activa en el tenant (RN-SR10); **v5:** `422 direccion-no-encontrada` si llega sin `location` y la dirección no se pudo geocodificar. **Pendiente:** `422 tenant-inactivo` (RN-T1) exige que ServiceRequest conozca el estado del tenant; hoy solo lo rechaza el login.
+**Errores (contrato v1):** `400 validacion`; `422 ubicacion-fuera-de-cobertura` si la ubicación está fuera del área de cobertura (RN-SR9); `422 categoria-no-disponible` si la categoría no existe o no está activa en el tenant (RN-SR10); **v5:** `422 direccion-no-encontrada` si llega sin `location` y la dirección no se pudo geocodificar. **v5.17 (contrato 1.11.0, SCRUM-510):** `422 tenant-inactivo` (RN-T1, detalle `tenant is disabled`) si el tenant del token fue desactivado, aunque el token siga vigente; ServiceRequest lo sabe por la réplica `tenant_status_replica` (sección 5.26) y no consulta a Identity.
 
 **Efecto:** inserta en `service_requests` y publica `service-request.created` en la misma transacción (ADR-007).
 
@@ -2304,6 +2324,7 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 |`payment.approved`|Payments|ServiceRequest, Communication|La solicitud pasa a `pagado`; Payments emite la factura.||
 |`payment.rejected`|Payments|ServiceRequest, Communication|La solicitud permanece en `completado` (RN-SR5).||
 |`catalog.category-changed`|Catalog|ServiceRequest, Matching|Estado completo de una categoría para las réplicas locales (`service_request_categories`). Desde ADR-025, ServiceRequest sirve con ella la lista de categorías de las apps.|Contrato v1; `description` opcional desde quickpatch-kafka v0.8.0 (5.7)|
+|`tenant.status-changed`|Identity|ServiceRequest|El administrador de la plataforma activó o desactivó un tenant (RF-21). Lleva el estado completo (`activo` o `inactivo`) y `updatedAt` como versión (ADR-017). Se publica por Outbox en la misma transacción del cambio de `tenants.status`, solo si el estado cambió, y el `tenantId` del sobre y la clave del mensaje son los del tenant que cambió, no los del administrador. ServiceRequest guarda la réplica `tenant_status_replica` (sección 5.26) y rechaza crear solicitudes de un tenant inactivo (RN-T1). Un topic de una partición; el consumidor descarta el evento si ya tiene un `updatedAt` más reciente.|Contrato v1 (5.17, SCRUM-508). Topic con retención de 7 días.|
 
 _Cuadro 11: Eventos Kafka, productores y consumidores_
 
@@ -2803,7 +2824,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.14|SCRUM-636|**Cobertura por localidades (RN-SR9).** Crear una solicitud, con GPS o con dirección, exige el rectángulo y una de las 20 localidades, igual que la vista previa (sección 8.3.3). El rectángulo solo aceptaba puntos en Soacha. Sin cambio de contrato: `422 ubicacion-fuera-de-cobertura` ya estaba documentado.|
 |5.15|SCRUM-499|**Historial técnico con calificación (RF-12, SCRUM-497).** `service-request.v1.yaml` 1.10.0: TechnicianServiceRequest ahora incluye campos opcionales `score` y `ratedAt` cuando una solicitud completada ha sido calificada. Se actualiza la descripción de `ratings.created_at` para usar `ratedAt` en el contrato REST (sección 8.3.11).|
 |5.16|SCRUM-501|**Equipo del proveedor en Payments y pagos recibidos del proveedor (RF-25, P-02).** Nueva tabla `payment_technicians` (sección 5.25), proyección del proveedor de cada técnico alimentada por `technician.registered` y cargada una vez por ambiente con `cargar-equipos-pagos.yml`. `GET /v1/payments/received` (contrato 1.2.0) lo admite también para el `proveedor`, con sus reglas de visibilidad por rol (sección 8.3, SCRUM-500). Se actualiza P-02 y el Cuadro 8.|
-|5.17|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.17|SCRUM-508|**RN-T1 con la réplica del estado del tenant (RF-21).** Nueva tabla `tenant_status_replica` en ServiceRequest (sección 5.26), alimentada por el evento `tenant.status-changed` de Identity (sección 8.4), y `422 tenant-inactivo` al crear una solicitud (contrato service-request 1.11.0, SCRUM-510). Se actualizan RN-T1 (7.1 y su tabla de reglas), el Cuadro 8, el Cuadro 10, los errores de la creación (8.3.3) y el endpoint de plataforma.|
+|5.18|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
