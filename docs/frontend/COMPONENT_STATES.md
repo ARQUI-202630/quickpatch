@@ -1,129 +1,99 @@
-# Guía de Estados de Componentes UI — QUICKPATCH
+# Guía de estados de pantalla — QUICKPATCH
 
-**Documento:** SCRUM-620  
-**Versión:** 1.0  
-**Fecha:** 2026-10-28  
-**Audience:** Frontend (Flutter mobile, Angular web)
+|Campo|Valor|
+|---|---|
+|**Historia**|SCRUM-620 (subtarea de SCRUM-619, consistencia visual y de estados)|
+|**Versión**|1.0|
+|**Fecha**|28 de octubre de 2026|
+|**Para**|App móvil (Flutter) y panel web (Angular)|
+|**Fuente**|DD 5.15: máquina de estados (sección 5.5, figura 3), reglas RN-SR, RN-Q, RN-P y RN-R (sección 7), canal en tiempo real (sección 8.5); contratos de `quickpatch-api-gateway`|
 
----
+Esta guía no define reglas nuevas: resume para los frontends lo que ya dicen el DD y los contratos. Si algo de aquí no coincide con ellos, mandan el DD y el contrato, y esta guía se corrige.
 
-## Propósito
+## Reglas comunes
 
-Esta guía documenta los estados visibles y transiciones de los componentes UI principales de QUICKPATCH, alineados con los estados de negocio del DD (sección 5) y los flujos del SDD.
+- **El estado lo decide el backend.** La pantalla muestra el estado que devuelve la API; no lo adelanta al pulsar un botón ni lo deduce de otro dato. Después de una acción, se vuelve a pedir el recurso.
+- **Tiempo real primero, consulta después.** El canal de Communication (WebSocket `/v1/realtime`, `asyncapi/realtime.v1.yaml`, DD 8.5, ADR-023) avisa `service-request.status-changed`, `offer.created` y `service-request.counts-changed`. Los avisos no traen el detalle: al recibir uno, la app pide el recurso por REST. Si el canal está caído, la pantalla consulta al abrirse y con el gesto de recargar.
+- **Sin caché de estados de negocio.** Cada vez que se abre una pantalla de solicitud, pago o cotización, se consulta el servidor.
+- **Cuatro estados de pantalla en todas las vistas:** cargando, vacío (con un texto que diga qué falta y qué puede hacer el usuario), error (con reintentar) y con datos.
+- **Los errores llegan en `application/problem+json`** (RFC 9457). La pantalla decide por `type`, no por el texto; en `400 validacion` muestra `errors.<campo>` junto al campo.
+- **Las acciones que no aplican no se muestran.** Si una acción falla con `409 transicion-invalida`, se recarga el recurso y se muestra el estado actual.
 
-Los componentes reflejan el estado real del backend: no anticipan transiciones, no cachean estados desactualizados.
+## 1. Solicitud de servicio
 
----
+Estados del DD (sección 5.5): `buscando_tecnico`, `en_espera`, `asignado`, `cotizado`, `cotizacion_aceptada`, `en_progreso`, `completado`, `pagado` y `cancelado`.
 
-## 1. Solicitud de Servicio (`ServiceRequest`)
+|Estado|Qué ve el cliente o la empresa|Acciones del cliente|Qué ve el técnico asignado|Acciones del técnico|
+|---|---|---|---|---|
+|`buscando_tecnico`|Buscando técnico|Cancelar|—|Aceptar o rechazar la oferta (`offer.created`)|
+|`en_espera`|Sin técnicos disponibles por ahora; la búsqueda se reanuda sola|Cancelar|—|—|
+|`asignado`|Técnico asignado, esperando cotización|Cancelar|Detalle con dirección y teléfono (RN-SR13)|Emitir cotización (RN-Q1)|
+|`cotizado`|Cotización por responder, con su vencimiento|Aceptar, rechazar o cancelar|Cotización enviada|—|
+|`cotizacion_aceptada`|Cotización aceptada, esperando el inicio|Cancelar|Detalle con dirección y teléfono|Iniciar el servicio (RN-SR6)|
+|`en_progreso`|Servicio en curso|—|Detalle con dirección y teléfono|Subir evidencia y completar (RN-SR3: sin evidencia responde `422 evidencia-requerida`)|
+|`completado`|Servicio terminado, pago pendiente|Pagar (y reintentar si el pago fue rechazado, RN-SR5)|Detalle con dirección y teléfono|—|
+|`pagado`|Servicio pagado|Calificar una vez (RN-R2, RN-R3); comprobante del pago|En el historial, sin datos de contacto (RN-SR13), con `score` y `ratedAt` si ya lo calificaron|—|
+|`cancelado`|Cancelada, con el motivo|—|En el historial|—|
 
-**Estados principales:** `buscando_tecnico`, `en_espera`, `asignado`, `en_progreso`, `completado`, `cancelado`, `pagado`.
+- **Cancelar** solo existe antes de `en_progreso` (RN-SR7) y solo lo pueden hacer el cliente que creó la solicitud y el `admin_tenant` (RN-SR8). Si la solicitud tenía una cotización pendiente, esa cotización queda `anulada` (RN-Q5).
+- **Empresa cliente:** los demás `empresa_contacto` de la misma empresa ven la solicitud, pero las acciones (cancelar, responder la cotización, calificar) son solo de quien la creó (RN-SR14).
+- **`admin_tenant`:** ve todas las solicitudes de su tenant en el panel operativo, filtradas por estado (RF-18), y puede cancelar las que estén antes de `en_progreso`.
 
-### Estados y transiciones
+## 2. Cotización
 
-| Estado | Visible | Quién puede ver | Acciones disponibles | Icono/Color |
-|--------|---------|-----------------|----------------------|------------|
-| **buscando_tecnico** | Cliente | Cliente, admin | Cancelar | 🔍 Gris (progreso) |
-| **en_espera** | Cliente | Cliente, admin | Cancelar | ⏳ Amarillo (pausa) |
-| **asignado** | Cliente + técnico | Dueño (cliente/empresa, técnico) | Cliente: aceptar/rechazar cotización; Técnico: iniciar | 👨‍🔧 Azul |
-| **en_progreso** | Cliente + técnico | Dueño | Cliente: ver avance; Técnico: completar | ⚙️ Naranja (activo) |
-| **completado** | Cliente + técnico | Dueño | Cliente: calificar; Técnico: ver calificación | ✅ Verde |
-| **pagado** | Cliente + técnico | Cliente (pago), técnico (reputación) | Cerrado | 💳 Verde oscuro |
-| **cancelado** | Cliente + técnico | Dueño | No hay acciones | ❌ Rojo |
+Estados del DD (sección 5.11): `pendiente`, `aceptada`, `rechazada`, `anulada` y `expirada`.
 
-### Transiciones no permitidas
+|Estado|Pantalla del cliente|Qué pasa con la solicitud|
+|---|---|---|
+|`pendiente`|Total de mano de obra y materiales, vencimiento, aceptar o rechazar|Queda en `cotizado`|
+|`aceptada`|Cotización aceptada (no se modifica, RN-Q4)|Pasa a `cotizacion_aceptada`|
+|`rechazada`|Cotización rechazada|Vuelve a `asignado`; el técnico puede enviar otra, hasta 3 por solicitud. Al rechazar la tercera, la solicitud se cancela (RN-Q7)|
+|`expirada`|Venció sin respuesta|La solicitud se cancela con el motivo «cotización sin respuesta» (RN-Q6)|
+|`anulada`|La solicitud se canceló con la cotización pendiente|`cancelado` (RN-Q5)|
 
-- No se puede volver de `completado` a `en_progreso`.
-- No se puede cancelar desde `en_progreso` o después.
-- No se puede pagar dos veces (`pagado` es terminal).
+## 3. Pago
 
-### Información visible por rol
+El pago nace cuando la solicitud llega a `completado` (RN-P4), no al aceptar la cotización. Su monto es el total de la cotización aceptada (RN-P3). La pantalla de pago consulta `GET /v1/service-requests/{id}/payment`.
 
-- **Cliente propietario:** todo lo anterior, más dirección, ubicación, datos del técnico, cotización.
-- **Empresa_contacto:** lo mismo que cliente si la solicitud es de la empresa.
-- **Técnico asignado:** solo desde `asignado` en adelante; no ve dirección ni datos de cliente (RN-SR13) hasta `en_progreso`.
-- **Admin_tenant:** todo, filtrable por estado.
+|Estado|Pantalla del cliente|Acción|
+|---|---|---|
+|`pendiente`|Monto a pagar|Pagar. El botón se desactiva al enviar; un segundo envío responde `409 pago-en-curso` y no crea otro pago (RN-P5). Si el pago todavía no existe, responde `409 pago-no-disponible` (RN-P4): se espera y se vuelve a consultar|
+|`procesando`|Pago en proceso|Ninguna. La app vuelve a consultar el pago hasta que la conciliación lo cierre (contrato payments)|
+|`aprobado`|Pago aprobado; la solicitud pasa a `pagado` (RN-SR4)|Ver el comprobante, sin validez fiscal (`GET /v1/payments/{id}/invoice`, SRS P3)|
+|`rechazado`|Pago rechazado; la solicitud sigue en `completado` (RN-SR5)|Reintentar: el mismo endpoint crea un pago nuevo|
 
----
+Los datos de la tarjeta nunca llegan al backend ni se guardan en la app (RN-P1).
 
-## 2. Cotización (`Quote`)
+## 4. Calificación
 
-Aparece cuando el técnico asignado propone un total a cobrar por mano de obra + materiales.
+Solo el dueño de la solicitud califica, solo en `pagado` y una sola vez (RN-R1 a RN-R3). Puntaje de 1 a 5 y comentario opcional de hasta 500 caracteres.
 
-| Estado | Quién ve | Qué hace |
-|--------|----------|----------|
-| **En revisión** | Cliente | Acepta o rechaza. Si rechaza, vuelve a `asignado` y el técnico puede hacer otra oferta. |
-| **Aceptada** | Ambos | Se cierra. El técnico puede iniciar el servicio. Cliente puede pagar desde aquí. |
-| **Rechazada** | Ambos | Se cierra. No hay acción. |
+|Estado|Cliente|Técnico|
+|---|---|---|
+|Sin calificar (`pagado`)|Formulario de calificación|Nada|
+|Calificada|Su calificación, de solo lectura|`score` y `ratedAt` en su historial (`GET /v1/technicians/me/service-requests`, service-request 1.10.0)|
 
----
+`409 ya-calificada` significa que ya existe: se muestra la calificación en modo lectura. La reputación del técnico la calcula Ranking por eventos (ADR-027) y puede tardar unos segundos en verse.
 
-## 3. Pago (`Payment`)
+## 5. Errores que la pantalla debe distinguir
 
-| Estado | Visible para | Acciones | Notas |
-|--------|---------------|---------|----|
-| **pendiente** | Cliente, admin | Pagar | Se crea cuando la cotización es aceptada. |
-| **procesando** | Igual | Esperando respuesta de pasarela (simulada). App consulta periódicamente. | El estado es temporal. |
-| **aprobado** | Igual | Cerrado. Solicitud pasa a `pagado`. | Técnico ve el pago en su historial. |
-| **rechazado** | Igual | Reintentar pago | Se puede crear otro pago. |
+|`type` (sufijo)|Código|Qué muestra la pantalla|
+|---|---|---|
+|`validacion`|400|El mensaje de `errors.<campo>` junto al campo|
+|`no-autenticado`|401|Vuelve al inicio de sesión|
+|`no-autorizado`|403|«No tienes permiso para esta acción»; no reintenta|
+|`no-encontrado`|404|«No encontramos este elemento»; una solicitud de otro tenant también responde 404|
+|`transicion-invalida`|409|Recarga el recurso y muestra el estado actual|
+|`ya-calificada`|409|Muestra la calificación existente|
+|`limite-de-cotizaciones`|409|Al técnico: la solicitud ya tiene 3 cotizaciones o una pendiente (RN-Q2, RN-Q7)|
+|`pago-en-curso`|409|El pago se está procesando; consulta el pago en vez de reenviar|
+|`evidencia-requerida`|422|Pide subir al menos una evidencia antes de completar|
+|`ubicacion-fuera-de-cobertura`|422|«Por ahora solo atendemos en Bogotá» (RN-SR9)|
+|`direccion-no-encontrada`|422|Pide corregir la dirección o marcar el punto en el mapa|
+|`cuenta-bloqueada`|423|Inicio de sesión bloqueado 15 minutos tras 5 intentos (RN-U4); usa la cabecera `Retry-After`|
 
----
+## Historial
 
-## 4. Calificación (`Rating`)
-
-Aparece después de `completado` y solo el cliente propietario puede calificar (una sola vez).
-
-| Estado | Visible | Acciones |
-|--------|---------|----------|
-| **No calificada** | Cliente (solo en `completado`) | Calificar (1-5 estrellas + comentario opcional) |
-| **Calificada** | Cliente + Técnico | Ver calificación. Técnico ve su reputación actualizada. |
-
----
-
-## 5. Carritos y Caché
-
-### Regla General
-
-**No cachear estados de negocio.** Siempre consultar el servidor cuando el usuario abre una pantalla.
-
-- **GET /v1/service-requests/{id}:** obtén el estado actual antes de mostrar.
-- **GET /v1/service-requests?status=&page=&size=:** lista actualizada.
-- **GET /v1/technicians/me/service-requests:** historial técnico con score/ratedAt si aplica.
-
-### Optimización: Polling
-
-Si un estado está en transición (`procesando`, `buscando_tecnico`), la app puede hacer polling cada 5 segundos para evitar que el usuario espere. Detener cuando el estado cambie.
-
----
-
-## 6. WebSocket / Tiempo Real (Futuro)
-
-La guía actual es para REST. Cuando Communication agregue WebSocket (RF-37, SCRUM-479), los cambios de estado llegarán en tiempo real vía `chat.message` en `realtime.v1.yaml`.
-
----
-
-## 7. Errores Comunes en UI
-
-| Error | Causa | Acción usuario |
-|-------|-------|-----------------|
-| `404 no-encontrado` | Solicitud no existe o no tiene permiso. | Reload. Si persiste, contactar soporte. |
-| `409 transicion-invalida` | Acción no permitida desde este estado. | Reload para ver el estado actual. |
-| `409 ya-calificada` | Ya calificó esta solicitud. | Mostrar la calificación existente (read-only). |
-| `423 cuenta-bloqueada` | Login: 5 intentos fallidos. | Esperar 15 minutos. Mostrar `Retry-After`. |
-
----
-
-## 8. Referencias
-
-- **DD:** secciones 5 (Diccionario de Datos), 7 (Reglas de Negocio), 8.3 (Contratos).
-- **SAD:** sección 7.4 (ciclo de vida de la solicitud).
-- **SDD:** sección 11 (flujos de negocio).
-- **RN-SR1 a RN-SR16:** reglas de solicitud de servicio.
-
----
-
-**Historial:**
-
-| Versión | Fecha | Cambio | SCRUM |
-|---------|-------|--------|-------|
-| 1.0 | 2026-10-28 | Creación inicial. Estados principales, transiciones, permisos. | SCRUM-620 |
+|Versión|Fecha|Cambio|
+|---|---|---|
+|1.0|28 oct 2026|Primera versión (SCRUM-620): reglas comunes, estados de la solicitud, la cotización, el pago y la calificación según el DD 5.15, y errores que la pantalla distingue.|
