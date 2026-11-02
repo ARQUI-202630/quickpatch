@@ -1,16 +1,27 @@
 import openpyxl
+import re
 import sys
 
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 import os
 
-local_excel = os.path.join(os.path.dirname(__file__), 'Matriz_UAT_Avance_QuickPatch.xlsx')
-downloads_excel = r'C:\Users\kathe\Downloads\Matriz_UAT_Avance_QuickPatch.xlsx'
-FILE_PATH = local_excel if os.path.exists(local_excel) else downloads_excel
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FILE_PATH = os.path.join(BASE_DIR, 'Matriz_UAT_Avance_QuickPatch.xlsx')
+MATRIZ_MD = os.path.join(BASE_DIR, 'matriz-escenarios-calidad-52.md')
 
-print(f"Cargando workbook: {FILE_PATH}...")
+print(f"Cargando workbook: {os.path.basename(FILE_PATH)}...")
 wb = openpyxl.load_workbook(FILE_PATH, data_only=False)
+
+wb['Funcionalidades']['A2'].value = (
+    'Columnas M a O llenadas por QA el 25-oct-2026 al revisar develop de los 15 repos de ARQUI-202630. '
+    'Kathe (QA) valida M a O; la PO llena P (UAT). Una X en la columna del rol = el rol usa esa funcionalidad.'
+)
+wb['Escenarios']['A2'].value = (
+    'Fuente: docs/testing/matriz-escenarios-calidad-52.md (sección 2), que sigue la sección 3 del SAD. '
+    'Esta hoja se llena con docs/testing/actualizar_matriz_excel.py. '
+    "'No medido' = no hay evidencia todavía."
+)
 
 # ===========================================================================
 # 1. ACTUALIZAR HOJA FUNCIONALIDADES
@@ -22,7 +33,7 @@ func_updates = {
     # RF: (estado_dev, res_qa, evidencia, observaciones, lista_prod, cuenta)
     'RF-02': ('Implementado', 'Aprobado', 'scrum-56-registro-tecnico-qa-2026-10-22.txt (23 aserciones)', 'Registro de técnicos y proveedores validado contra QA desplegado (RFC 9457).', 'Sí', 'Sí'),
     'RF-10': ('Implementado', 'Aprobado con observaciones', 'scrum-incremento-tecnico-qa-2026-10-22.txt (bloques 2.3 y 2.6)', 'Aceptación atómica (OFF-004) y rechazo explícito (OFF-002) verificados; vencimiento a los 3 min pendiente de prueba de reloj.', 'Sí', 'Sí'),
-    'RF-12': ('No implementado', 'Sin probar', '', 'Ranking es un esqueleto con 8 pruebas; sin endpoint de calificación.', 'No', 'Sí'),
+    'RF-12': ('Parcial', 'Sin probar', 'humo-flujo-critico-qa-2026-10-30.txt (calificación 201 y segunda calificación 409)', 'Backend de calificación fusionado (SCRUM-85) y respondiendo en QA por API; falta la pantalla del cliente (SCRUM-86) y su prueba.', 'No', 'Sí'),
     'RF-14': ('Implementado', 'Aprobado', 'scrum-incremento-tecnico-qa-2026-10-22.txt (bloque 3.1 DTL-001)', 'Técnico asignado ve detalle completo con teléfono y dirección (RN-SR13). Terceros reciben 403/404.', 'Sí', 'Sí'),
     'RF-16': ('Implementado', 'Aprobado', 'scrum-99-equipo-proveedor-qa-2026-10-22.txt (43 aserciones)', 'Alta, activación y listado de técnicos del equipo del proveedor certificados en QA.', 'Sí', 'Sí'),
     'RF-17': ('Implementado', 'Sin probar', '', 'Endpoint GET /v1/technicians/me/service-requests pendiente de prueba E2E dedicada (scrum-105 es panel admin).', 'No', 'Sí'),
@@ -51,46 +62,53 @@ for r in range(5, ws_func.max_row + 1):
 # 2. ACTUALIZAR HOJA ESCENARIOS (52 Escenarios del SAD)
 # ===========================================================================
 ws_esc = wb['Escenarios']
-print("\nActualizando hoja Escenarios...")
+print("\nActualizando hoja Escenarios desde matriz-escenarios-calidad-52.md...")
 
-esc_updates = {
-    # ID: (valor_medido, evidencia, estado, observaciones)
-    'AC1-E1': ('0 asignaciones a técnicos de otra especialidad', 'scrum-78-qa-2026-10-22.txt; scrum-incremento-tecnico-qa-2026-10-22.txt', 'Cumple', 'Filtro por especialidad validado en motor de matching (0 asignaciones erróneas).'),
-    'AC1-E3': ('Detalle completo (categoría, dirección, teléfono) entregado al técnico', 'scrum-incremento-tecnico-qa-2026-10-22.txt (bloque 3.1 DTL-001)', 'Cumple', 'Detalle completo visible para técnico asignado (RN-SR13). Terceros reciben 403.'),
-    'AC2-E1': ('p95 = 73.55 ms en carga 50 VU (< 3 s)', 'tests/performance/evidencias/k6-load-50vu-summary.json', 'Cumple', 'Búsqueda espacial con PostGIS y latencia percentil 95 muy por debajo de 3s.'),
-    'AC2-E3': ('≈ 2 s en pruebas E2E contra QA (< 7 s)', 'scrum-490-cotizacion-qa-2026-10-22.txt; scrum-478-aviso-tiempo-real-qa-2026-10-22.txt', 'Cumple', 'Tiempo desde creación de solicitud hasta entrega de evento WebSocket en QA.'),
-    'AC2-E4': ('150 VU sostenido, 0% fallos (38,876 reqs), p95 = 415.39 ms', 'tests/performance/evidencias/k6-stress-150vu-summary.json', 'Cumple', 'Carga masiva sostenida durante 4 minutos sin degradación ni pérdida de peticiones.'),
-    'AC2-E5': ('0 caídas observadas en k6', 'tests/performance/evidencias/k6-stress-150vu-qa-2026-10-18.txt', 'Parcial', 'Requiere captura gráfica de Grafana / kubectl get pods con limits (Infraestructura §5.6).'),
-    'AC3-E2': ('8 microservicios coexistiendo en VM2 k3s; p95 = 73.55 ms y 0 pods desalojados', 'k6-stress-150vu-qa-2026-10-18.txt; tests/ci-results/', 'Cumple', 'Convivencia y estabilidad demostrada bajo carga masiva sin fallos.'),
-    'AC5-E3': ('Eventos retenidos en outbox_events y procesados al reconectar', 'scrum-incremento-tecnico-qa-2026-10-22.txt (outbox pattern)', 'Parcial', 'Garantía Outbox atómica verificada en persistencia PostgreSQL.'),
-    'AC5-E4': ('Persistencia transaccional en outbox_events; reintento activo', 'docs/architecture/SDD.md §4.2; outbox_events en PostgreSQL', 'Parcial', 'Patrón Outbox implementado en microservicios productores.'),
-    'AC5-E5': ('Sin prueba de deduplicación en QA', '', 'No medido', 'Prueba de reintento de eventos duplicados en QA pendiente de ejecución; verificada en suite local.'),
-    'AC5-E6': ('Flujo E2E probado sin fallos (61 aserciones PASS)', 'tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt', 'Parcial', 'Flujo verificado hasta pago y comprobante; calificación pendiente por RF-12 no desarrollado.'),
-    'AC6-E1': ('0 números PAN/CVV en 2,649 trazas auditadas en Loki', 'tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt', 'Cumple', 'Escaneo exhaustivo de logs estructurados con regex de tarjetas de crédito.'),
-    'AC6-E2': ('Accesos cross-tenant aislados responden 404 (0 fugas)', 'tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt; tenant-beta-qa-2026-10-15.txt', 'Cumple', 'Aislamiento lógico garantizado con Row-Level Security (RLS) en PostgreSQL VM5.'),
-    'AC6-E3': ('Accesos no autorizados bloqueados con HTTP 403 Forbidden', 'tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt; scrum-105-panel-operativo-qa-2026-10-22.txt', 'Cumple', 'Control de acceso basado en roles (RBAC) validado en API Gateway y microservicios.'),
-    'AC6-E4': ('401 en REST y 4001 en WS ante tokens sin firma/expirados', 'tests/e2e/evidencias/mvp-qa-sprint4-2026-10-18.txt; scrum-478-aviso-tiempo-real-qa-2026-10-22.txt', 'Cumple', 'Rechazo inmediato de JWT RSA-256 expirados o manipulados.'),
-    'AC6-E5': ('Transiciones registradas con actor, timestamp y S3', 'tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt; scrum-96-evidencia-qa-2026-10-22.txt', 'Cumple', 'Trazabilidad de la orden y evidencia fotográfica en Garage S3.'),
-    'AC6-E8': ('423 Locked tras 5 intentos fallidos (RN-U4)', 'mvp-qa-sprint4-2026-10-18.txt (bloque fuerza bruta)', 'Cumple', 'Mitigación de fuerza bruta en autenticación verificada en QA.'),
-    'AC7-E1': ('1,032 pruebas CI backend aprobadas en runs de 1m a 4m (< 10 min)', 'GitHub Actions (8 repositorios backend, runs oficiales)', 'Cumple', 'Pipelines automatizados de CI ejecutan unitarias e integración en repos backend; cobertura no publicada aún.'),
-    'AC7-E2': ('Sin conteo formal de PRs por repositorio', '', 'No medido', 'Métrica histórica de PRs por repositorio pendiente de consolidar en Sprint 5.'),
-    'AC7-E6': ('Compuertas 2.1 a 2.6 aprobadas; pruebas k6 en QA (ADR-015)', 'docs/testing/informe-pruebas-sprint4.md §5', 'Cumple', 'Aislamiento total de producción; validación en QA previa a promoción.'),
-    'AC8-E3': ('Soporte de cuenta Empresa integrado limpiamente (RF-06, RF-08)', 'scrum-68-cuenta-corporativa-qa-2026-10-22.txt; scrum-75-solicitud-empresa-qa-2026-10-22.txt', 'Cumple', 'Nuevo tipo de cliente corporativo integrado sin regresiones en el dominio.'),
-    'AC9-E1': ('Saltos de estado inválidos responden 409 Conflict', 'tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt', 'Cumple', 'Máquina de estados estricta en ServiceRequest bloquea transiciones ilegales.'),
-    'AC9-E4': ('Transición atómica a en_espera sin candidatos elegibles', 'tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt', 'Cumple', 'Lógica de reintentos y paso a en_espera probada en Matching Service.'),
-    'AC9-E5': ('Conciliación y manejo de timeout en pasarela simulada', 'tests/e2e/evidencias/scrum-117-pago-qa-2026-10-22.txt; scrum-495-comprobante-qa-2026-10-22.txt', 'Cumple', 'Manejo de estados pendientes y pago simulado sin duplicación de cobros.'),
-    'AC9-E7': ('Suites E2E de incremento técnico aprobadas antes de merge', 'scrum-incremento-tecnico-qa-2026-10-22.txt', 'Cumple', 'Integración de componentes del incremento técnico validada en QA.')
-}
+# La matriz en markdown es la fuente única: valor medido, evidencia, estado y
+# observaciones de cada escenario salen de su sección 2.
+LATEX = [
+    (r'\approx', '≈'), (r'\ge', '≥'), (r'\le', '≤'), (r'\times', '×'), (r'\%', '%'),
+]
+
+
+def texto_plano(celda):
+    celda = celda.replace('**', '').replace('`', '').replace('*', '')
+    for latex, simbolo in LATEX:
+        celda = celda.replace(latex, simbolo)
+    celda = re.sub(r'\\text\{\s*([^}]*)\}', r' \1', celda)
+    celda = celda.replace('$', '')
+    return re.sub(r'\s+', ' ', celda).strip()
+
+
+with open(MATRIZ_MD, encoding='utf-8') as f:
+    seccion_2 = f.read().split('## 3.')[0]
+
+esc_updates = {}
+for linea in seccion_2.splitlines():
+    m = re.match(r'\| \*\*(AC\d-E\d)\*\* \|', linea)
+    if not m:
+        continue
+    columnas = [c.strip() for c in linea.strip().strip('|').split('|')]
+    if len(columnas) != 8:
+        continue
+    valor, evidencia, estado, obs = columnas[4], columnas[5], columnas[6], columnas[7]
+    evidencia = '' if 'Sin archivo de evidencia' in evidencia else texto_plano(evidencia)
+    esc_updates[m.group(1)] = (texto_plano(valor), evidencia, texto_plano(estado), texto_plano(obs))
+
+if len(esc_updates) != 52:
+    sys.exit(f"La matriz trae {len(esc_updates)} escenarios en la sección 2; se esperaban 52.")
 
 for r in range(5, ws_esc.max_row + 1):
     esc_id = ws_esc.cell(r, 1).value
     if esc_id in esc_updates:
-        v_med, evid, estado, obs = esc_updates[esc_id]
-        ws_esc.cell(r, 6).value = v_med   # Col F: Valor medido
-        ws_esc.cell(r, 7).value = evid    # Col G: Evidencia
-        ws_esc.cell(r, 8).value = estado  # Col H: Estado (Cumple, Parcial, No cumple, No medido)
-        if obs:
-            ws_esc.cell(r, 10).value = obs # Col J: Observaciones
+        v_med, evid, estado, obs = esc_updates.pop(esc_id)
+        ws_esc.cell(r, 6).value = v_med            # Col F: Valor medido
+        ws_esc.cell(r, 7).value = evid or None     # Col G: Evidencia
+        ws_esc.cell(r, 8).value = estado           # Col H: Estado (Cumple, Parcial, No cumple, No medido)
+        ws_esc.cell(r, 10).value = obs             # Col J: Observaciones
+
+if esc_updates:
+    sys.exit(f"Escenarios de la matriz que no están en la hoja: {', '.join(sorted(esc_updates))}")
 
 # ===========================================================================
 # 3. ACTUALIZAR HOJA PRUEBAS
@@ -180,12 +198,12 @@ for idx, d in enumerate(defectos_data):
         ws_def.cell(target_row, col_idx).value = val
 
 # Guardar workbook
-print(f"\nGuardando cambios en {FILE_PATH}...")
+print(f"\nGuardando cambios en {os.path.basename(FILE_PATH)}...")
 try:
     wb.save(FILE_PATH)
     print("¡Archivo Excel modificado y guardado con éxito en la ruta principal!")
 except PermissionError:
-    FILE_PATH_V2 = r'C:\Users\kathe\Downloads\Matriz_UAT_Avance_QuickPatch_v2.xlsx'
-    print(f"El archivo principal está abierto en Excel (bloqueado). Guardando copia refinada en {FILE_PATH_V2}...")
+    FILE_PATH_V2 = os.path.join(BASE_DIR, 'Matriz_UAT_Avance_QuickPatch_v2.xlsx')
+    print(f"El archivo principal está abierto en Excel (bloqueado). Guardando copia en {os.path.basename(FILE_PATH_V2)}...")
     wb.save(FILE_PATH_V2)
     print("¡Archivo guardado con éxito en Matriz_UAT_Avance_QuickPatch_v2.xlsx!")
