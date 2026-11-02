@@ -1,0 +1,57 @@
+{
+  "fuente": "Jira SCRUM-602 (Extraer conteos y cobertura de los pipelines de cada repositorio), ultima ejecucion de develop de cada repositorio, reportado el 2026-10-26; actors y ranking confirmados en la revision del PR #220",
+  "artefactos": [
+    "Repositorios .NET: artefacto de cobertura publicado por su workflow de CI",
+    "https://github.com/ARQUI-202630/quickpatch-matching/pull/18",
+    "https://github.com/ARQUI-202630/quickpatch-web/pull/26",
+    "https://github.com/ARQUI-202630/quickpatch-mobile/pull/42"
+  ],
+  "umbral_minimo": 80.0,
+  "servicios": {
+    "identity": {
+      "pruebas": 261,
+      "cobertura": 97.2
+    },
+    "catalog": {
+      "pruebas": 28,
+      "cobertura": 95.8
+    },
+    "service-request": {
+      "pruebas": 372,
+      "cobertura": 95.7
+    },
+    "payments": {
+      "pruebas": 57,
+      "cobertura": 93.9
+    },
+    "communication": {
+      "pruebas": 186,
+      "cobertura": 94.7
+    },
+    "matching": {
+      "pruebas": 115,
+      "cobertura": 99.1
+    },
+    "web": {
+      "pruebas": 161,
+      "cobertura": 99.1
+    },
+    "mobile": {
+      "pruebas": 492,
+      "cobertura": 97.0
+    },
+    "ranking": {
+      "pruebas": null,
+      "cobertura": 91.7
+    },
+    "actors": {
+      "pruebas": null,
+      "cobertura": 100.0
+    }
+  },
+  "sin_dato": [],
+  "notas": {
+    "ranking": "corrida de CI del 2026-10-28",
+    "actors": "corrida de CI del 2026-10-12; el servicio es un esqueleto"
+  }
+}

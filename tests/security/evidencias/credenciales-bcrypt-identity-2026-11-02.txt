@@ -1,0 +1,38 @@
+================================================================================
+EVIDENCIA: HASH DE CONTRASEÑAS EN IDENTITY (SCRUM-507 / SCRUM-49, RN-U2, RNF-03)
+================================================================================
+Tipo de verificación: inspección del código fuente de quickpatch-identity (no es una medición en ejecución).
+Repositorio: ARQUI-202630/quickpatch-identity, submódulo apps/backend/services/identity
+Commit inspeccionado: 8b1ff41d97137e6fcb1befbc1625e972d2e6bfc2 (puntero del submódulo en esta rama)
+Fecha de la inspección: 2 de noviembre de 2026
+
+1. El hash de contraseñas usa BCrypt con factor de trabajo configurable
+  src/QuickPatch.Identity.Infrastructure/Security/SecurityAdapters.cs:13: /// <summary>BCrypt con factor de trabajo configurable (RN-U2, RNF-03; el TD IDN-015 exige BCrypt o Argon2).</summary>
+  src/QuickPatch.Identity.Infrastructure/Security/SecurityAdapters.cs:14: public sealed class BCryptPasswordHasher(IOptions<PasswordOptions> options) : IPasswordHasher
+  src/QuickPatch.Identity.Infrastructure/Security/SecurityAdapters.cs:15: {
+  src/QuickPatch.Identity.Infrastructure/Security/SecurityAdapters.cs:16:     private readonly Lazy<string> dummyHash = new(() => BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString(), options.Value.WorkFactor));
+  src/QuickPatch.Identity.Infrastructure/Security/SecurityAdapters.cs:17: 
+  src/QuickPatch.Identity.Infrastructure/Security/SecurityAdapters.cs:18:     public string Hash(string password) => BCrypt.Net.BCrypt.HashPassword(password, options.Value.WorkFactor);
+
+2. El factor de trabajo por defecto es 12 (2^12 rondas)
+  src/QuickPatch.Identity.Infrastructure/Options/IdentityOptions.cs:18: /// <summary>Hash de contraseñas (sección <c>Passwords</c>).</summary>
+  src/QuickPatch.Identity.Infrastructure/Options/IdentityOptions.cs:19: public sealed class PasswordOptions
+  src/QuickPatch.Identity.Infrastructure/Options/IdentityOptions.cs:20: {
+  src/QuickPatch.Identity.Infrastructure/Options/IdentityOptions.cs:21:     public const string Section = "Passwords";
+  src/QuickPatch.Identity.Infrastructure/Options/IdentityOptions.cs:22: 
+  src/QuickPatch.Identity.Infrastructure/Options/IdentityOptions.cs:23:     /// <summary>Factor de trabajo de BCrypt (2^n rondas).</summary>
+  src/QuickPatch.Identity.Infrastructure/Options/IdentityOptions.cs:24:     public int WorkFactor { get; set; } = 12;
+
+3. La configuración del servicio fija el factor en 12; solo el perfil Development lo baja a 10
+  src/QuickPatch.Identity.Api/appsettings.json: "WorkFactor": 12
+  src/QuickPatch.Identity.Api/appsettings.Development.json: "WorkFactor": 10
+
+4. Registro del hasher en la inyección de dependencias
+  src/QuickPatch.Identity.Infrastructure/DependencyInjection.cs:31:         services.Configure<PasswordOptions>(configuration.GetSection(PasswordOptions.Section));
+  src/QuickPatch.Identity.Infrastructure/DependencyInjection.cs:45:         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+
+5. La base guarda solo el hash (columna password_hash)
+  src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs:43:             e.Property(x => x.PasswordHash).HasColumnName("password_hash").HasMaxLength(255);
+
+Pendiente para una verificación en ejecución: consultar en la base de Identity de QA que los valores de
+password_hash empiecen por $2a$12$ o $2b$12$ (solo el prefijo, nunca el hash completo).

@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.45 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.46 — QUICKPATCH
 
 ---
 
@@ -1195,7 +1195,8 @@ flowchart LR
     B --> C[ACCEPTED]
     C --> D[IN_PROGRESS]
     D --> E[DELIVERED]
-    E --> F[EVALUATED]
+    E --> P[PAID]
+    P --> F[EVALUATED]
     A -.-> X[CANCELLED]
     B -.-> X
     C -.-> X
@@ -1205,9 +1206,9 @@ flowchart LR
 |---|---|
 |Cotización (`QUOTED`)|El cliente describe la necesidad; se sugieren aliados/empleados vía matching; se cotiza mano de obra + materiales|
 |Prestación del servicio (`IN_PROGRESS` → `DELIVERED`)|Seguimiento en tiempo real, evidencias fotográficas, chat, checklist de trabajo|
-|Evaluación de la entrega (`EVALUATED`)|El cliente valida lo entregado, califica (ranking), se libera el pago/factura|
+|Pago y evaluación (`PAID` → `EVALUATED`)|El cliente paga la cotización aceptada (ADR-009) y recibe un comprobante sin validez fiscal (K14); con el pago confirmado califica al técnico, una sola vez, y Ranking recalcula la reputación por eventos (ADR-027). Si el pago se rechaza, el servicio sigue entregado y el cliente puede reintentar|
 
-`CANCELLED` es posible desde cualquier estado previo a `IN_PROGRESS`.
+`CANCELLED` es posible desde cualquier estado previo a `IN_PROGRESS`. El orden pago → calificación es el del SRS (RF-12, contradicción P2), el SDD (escenario 7) y el DD (RN-R3); en el DD, `DELIVERED` es `completado`, `PAID` es `pagado` y la calificación queda en `ratings`.
 
 ### 7.5 Modelo de facturación
 
@@ -1294,5 +1295,6 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.43|27 oct 2026|Tabla 4.2.2: la calificación de ServiceRequest (SCRUM-85) y Ranking (SCRUM-498) pasan a implementados según ADR-027; Ranking sigue sin desplegar (SCRUM-512). La sección remite a los diagramas de componentes del SDD, sección 6 (SCRUM-580, SCRUM-584).|
 |2.44|27 oct 2026|AC4 se nombra **Capacidad de interacción**, como la característica de ISO/IEC 25010:2023 (SCRUM-568, corrección del profesor en la revisión del Sprint 4); los escenarios se miden con pruebas con usuarios. Sin cambios en los escenarios.|
 |2.45|27 oct 2026|Sección 5.1 con las vistas de despliegue por ambiente (figuras 5.1 y 5.2, SCRUM-573 y SCRUM-576): cada ambiente con sus nodos, su gateway y sus datos, y VM1 como infraestructura auxiliar. VM4 con Redis como coordinación temporal y Nominatim; Ranking implementado sin desplegar.|
+|2.46|29 oct 2026|Sección 7.4: el pago va antes de la calificación (`DELIVERED` → `PAID` → `EVALUATED`), como el SRS (RF-12), el SDD (escenario 7) y el DD (RN-R3). Cierra la contradicción P2 del SRS (sección 7.4.2), señalada en la línea base del SRS (SCRUM-535).|
 |2.27|12 oct 2026|Dependencias externas frente a R5 (SCRUM-413 y SCRUM-405). Se acepta ADR-024: R5 no cambia; la geocodificación (RIE-02) corre con un Nominatim propio con el mapa de Bogotá en VM4 y VM5, usado por ServiceRequest cuando la solicitud llega sin coordenadas, y las notificaciones (RIE-03) del MVP se entregan dentro de la app (canal de ADR-023 y buzón en Communication). El diagrama de contexto (4.1) pasa el geocodificador adentro del sistema y retira el proveedor de correo y push, y la nota de sistemas externos lo explica. ADR-024 entra a la tabla 5.5 y a la matriz 6.1 como excepción a ADR-014.|
 |2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|

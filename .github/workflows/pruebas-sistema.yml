@@ -7,6 +7,7 @@
 # Cada prueba se omite con un aviso si su carpeta todavía no tiene pruebas:
 #   tests/e2e/package.json              → Playwright
 #   tests/e2e/*.postman_collection.json → Newman
+#   tests/e2e/humo-flujo-critico.postman_collection.json → prueba de humo (job propio, SCRUM-504)
 #   tests/security/zap-baseline.conf    → reglas opcionales de ZAP (el escaneo corre siempre)
 #   tests/performance/*.js              → k6
 #
@@ -41,6 +42,29 @@ env:
   LOKI: http://10.43.100.168:3100   # Loki está en VM1 desde el ADR-022 (VM7 es ahora Kafka y Garage de QA)
 
 jobs:
+  humo:
+    name: Humo del flujo crítico
+    runs-on: [self-hosted, vm1, red-laboratorio]
+    # Recorrido único de solicitud a calificación (SCRUM-47). La colección falla sola si pasa de 5 minutos.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Newman, flujo crítico de punta a punta
+        env:
+          QA_ADMIN_EMAIL: ${{ secrets.QA_ADMIN_EMAIL }}
+          QA_ADMIN_PASSWORD: ${{ secrets.QA_ADMIN_PASSWORD }}
+        run: |
+          # Sin el administrador la colección omite todos sus pasos y saldría en verde sin probar nada.
+          if [ -z "$QA_ADMIN_EMAIL" ] || [ -z "$QA_ADMIN_PASSWORD" ]; then
+            echo "::error::Faltan los secretos QA_ADMIN_EMAIL y QA_ADMIN_PASSWORD: la prueba de humo no puede correr."
+            exit 1
+          fi
+          # Reporter cli: el JSON de Newman guarda cuerpos y tokens.
+          docker run --rm --network host --add-host "$QA_HOST:$QA_IP" -v "$PWD/tests/e2e:/etc/newman" \
+            postman/newman:6-alpine run humo-flujo-critico.postman_collection.json --insecure --reporters cli \
+            --env-var "baseUrl=$BASE_URL" --env-var "adminEmail=$QA_ADMIN_EMAIL" --env-var "adminPassword=$QA_ADMIN_PASSWORD"
+
   e2e:
     name: E2E (Playwright y Newman)
     runs-on: [self-hosted, vm1, red-laboratorio]
@@ -73,6 +97,8 @@ jobs:
             exit 0
           fi
           for c in "${colecciones[@]}"; do
+            # La de humo tiene su propio job.
+            if [ "$(basename "$c")" = "humo-flujo-critico.postman_collection.json" ]; then continue; fi
             docker run --rm --network host --add-host "$QA_HOST:$QA_IP" -v "$PWD/tests/e2e:/etc/newman" \
               postman/newman:6-alpine run "$(basename "$c")" --insecure --env-var "baseUrl=$BASE_URL" \
               --env-var "adminEmail=$QA_ADMIN_EMAIL" --env-var "adminPassword=$QA_ADMIN_PASSWORD" \
@@ -162,7 +188,7 @@ jobs:
 
   carga:
     name: Carga (k6)
-    needs: [e2e, seguridad]
+    needs: [humo, e2e, seguridad]
     # Siempre en release/* (compuerta 3); a mano, solo con la casilla «carga».
     if: github.event_name == 'push' || inputs.carga
     runs-on: [self-hosted, vm1, red-laboratorio]
