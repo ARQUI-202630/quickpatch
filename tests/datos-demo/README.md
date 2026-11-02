@@ -61,5 +61,6 @@ Al terminar imprime el conteo de creados, ya existentes, aplicados y con error. 
 
 - **26 de octubre de 2026, QA real** (versión anterior del juego): la primera corrida creó 2 clientes, 1 empresa, 2 técnicos (aprobados, con cobertura y disponibles) y 2 solicitudes, sin errores; la segunda dejó todo como «ya existía».
 - **28 de octubre de 2026, QA real, `--solo-categorias`:** «6 ya existían, 0 con error».
+- **2 de noviembre de 2026, QA real** (juego actual): 1 cliente, 2 empresas, 2 técnicos, 1 proveedor con su técnico de equipo (invitación, contraseña, aprobación y cobertura) y 5 solicitudes `[DEMO]` creados; las cuentas anteriores se respetaron; 0 con error. Quedan 6 técnicos y proveedores aprobados y las 5 solicitudes en `buscando_tecnico`. Salida y conteos en `evidencias/carga-qa-2026-11-02.txt`.
 - **2 de noviembre de 2026, servidor simulado en local** (`--base-url`), con el juego actual: la primera corrida creó todo (incluidos el proveedor y el técnico de su equipo, con contraseña definida y aprobado) sin errores; la segunda dejó todo como «ya existía» y terminó con código 0. En `--ambiente produccion` no marcó a nadie disponible.
 - **El juego actual todavía no se ha corrido contra QA real ni contra producción.** En producción, primero `--simular`.
