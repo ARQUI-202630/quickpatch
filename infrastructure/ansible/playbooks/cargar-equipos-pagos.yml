@@ -18,7 +18,6 @@
   become: true
   vars:
     psql: docker compose -f {{ stack_dir }}/postgres/compose.yml exec -T -u postgres postgres psql -X -v ON_ERROR_STOP=1 -q -At -F ' | '
-    csv: /tmp/equipos-pagos.csv
     cuenta_identity: SELECT count(*), count(provider_id) FROM technician_profiles
     cuenta_payments: SELECT count(*), count(provider_id) FROM payment_technicians
     exportar: >-
@@ -35,7 +34,14 @@
       ansible.builtin.command: "{{ psql }} -d db_payments -c \"SELECT to_regclass('public.payment_technicians') IS NOT NULL\""
       register: tabla
       changed_when: false
-      failed_when: tabla.stdout.strip() != 't'
+
+    - name: Comprobar que la migración del equipo ya está desplegada
+      ansible.builtin.assert:
+        that: tabla.stdout.strip() == 't'
+        fail_msg: >-
+          Falta la tabla payment_technicians: despliega primero la migración EquipoDelProveedor de Payments
+          (el release que trae SCRUM-501).
+        quiet: true
 
     - name: Conteos antes de cargar
       ansible.builtin.shell: |
@@ -55,12 +61,16 @@
       when: (aplicar | default('no')) == 'si'
       ansible.builtin.shell: |
         set -o pipefail
-        {{ psql }} -d db_identity -c "{{ exportar }}" > {{ csv }}
+        # Archivo temporal propio y solo legible por root (trae ids de técnicos y proveedores); se borra aunque la carga falle.
+        umask 077
+        archivo=$(mktemp /tmp/equipos-pagos.XXXXXX)
+        trap 'rm -f "$archivo"' EXIT
+        {{ psql }} -d db_identity -c "{{ exportar }}" > "$archivo"
         {
           echo "BEGIN;"
           echo "CREATE TEMP TABLE carga (tenant_id uuid, technician_id uuid, provider_id uuid, updated_at timestamptz) ON COMMIT DROP;"
           echo "COPY carga FROM STDIN WITH (FORMAT csv);"
-          cat {{ csv }}
+          cat "$archivo"
           echo '\.'
           echo "INSERT INTO payment_technicians (tenant_id, technician_id, provider_id, updated_at)"
           echo "  SELECT tenant_id, technician_id, provider_id, updated_at FROM carga"
@@ -86,9 +96,3 @@
       when: (aplicar | default('no')) == 'si'
       ansible.builtin.debug:
         msg: "{{ despues.stdout_lines }}"
-
-    - name: Quitar el archivo temporal de la carga
-      when: (aplicar | default('no')) == 'si'
-      ansible.builtin.file:
-        path: "{{ csv }}"
-        state: absent
