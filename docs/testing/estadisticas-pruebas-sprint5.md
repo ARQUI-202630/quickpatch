@@ -93,9 +93,9 @@ Conforme a la directriz técnica de QA, las peticiones masivas de carga no se co
 ## 4. Registro Consolidado de Defectos (SCRUM-603)
 
 * **Total de Defectos Registrados:** **19 anomalías**.
-* **Defectos Corregidos y Verificados:** **15 (78.9%)**.
+* **Defectos Corregidos y Verificados:** **14 (73.7%)**.
 * **Defectos Descartados / Retractados:** **0 (0.0%)**.
-* **Defectos en Mitigación en Sprint 5:** **4 (21.1%)** (ninguno bloqueante).
+* **Defectos en Mitigación en Sprint 5:** **5 (26.3%)** (ninguno bloqueante).
 * **Defectos Críticos o Bloqueantes Abiertos:** **0 (0.0%)**.
 
 Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-defectos-sprint4-sprint5.md) y en la hoja `Defectos` de la Matriz UAT Excel.
@@ -110,7 +110,7 @@ Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-def
 * **Cobertura de Código en CI (SCRUM-602):** **91.7% – 100.0%** en 10 repositorios; todos sobre el umbral de 80%.
 * **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.
 * **Avance Preliminar del Producto (Matriz Excel UAT):** **74.93%** (Meta Sprint 4: 80% / Brecha: -5.07%).
-* **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts).
+* **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts). Antes 92.65% (31.5 / 34): RF-12 (calificación) pasó de *No implementado* a *Parcial* (+0.5 pts) porque el backend de calificación (SCRUM-85) ya responde en QA (`tests/e2e/evidencias/humo-flujo-critico-qa-2026-10-30.txt`); falta la pantalla del cliente (SCRUM-86).
 * **% Funcionalidades Probadas por QA:** **86.03%** (29.25 / 34 pts con evidencia).
 * **% Escenarios de Calidad (SAD §3):** **49.04%** (52 escenarios evaluados: 20 Cumple, 11 Parcial, 2 No cumple, 19 No medido).
 

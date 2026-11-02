@@ -628,7 +628,7 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map):
     md.append(f"* **Cobertura de Código en CI (SCRUM-602):** **{cov_rango}** en {len(cov_vals)} repositorios; todos sobre el umbral de {umbral:.0f}%." if cov_vals and min(cov_vals) >= umbral else f"* **Cobertura de Código en CI (SCRUM-602):** {cov_rango}.")
     md.append(f"* **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.")
     md.append(f"* **Avance Preliminar del Producto (Matriz Excel UAT):** **74.93%** (Meta Sprint 4: 80% / Brecha: -5.07%).")
-    md.append(f"* **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts).")
+    md.append(f"* **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts). Antes 92.65% (31.5 / 34): RF-12 (calificación) pasó de *No implementado* a *Parcial* (+0.5 pts) porque el backend de calificación (SCRUM-85) ya responde en QA (`tests/e2e/evidencias/humo-flujo-critico-qa-2026-10-30.txt`); falta la pantalla del cliente (SCRUM-86).")
     md.append(f"* **% Funcionalidades Probadas por QA:** **86.03%** (29.25 / 34 pts con evidencia).")
     md.append(f"* **% Escenarios de Calidad (SAD §3):** **49.04%** (52 escenarios evaluados: 20 Cumple, 11 Parcial, 2 No cumple, 19 No medido).\n")
 
