@@ -625,11 +625,11 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 ## 5. Diccionario de Datos
 
-**Estado de implementación (`develop`, 14 de octubre de 2026).** El diccionario describe el modelo completo de esta versión; no todas sus tablas existen todavía en el código. Este cuadro resume qué tablas ya tienen migración en cada servicio y qué falta. Las columnas pendientes se marcan en su tabla con **Pendiente de implementar**.
+**Estado de implementación (`develop`, 31 de octubre de 2026).** El diccionario describe el modelo completo de esta versión; no todas sus tablas existen todavía en el código. Este cuadro resume qué tablas ya tienen migración en cada servicio y qué falta. Las columnas pendientes se marcan en su tabla con **Pendiente de implementar**.
 
 |Servicio|Tablas implementadas|Pendiente|
 |---|---|---|
-|Identity|`tenants`, `users`, `technician_profiles` (con `provider_id`), `password_setup_tokens`, `audit_logs`, `outbox_events`|`users.company_id` y `client_companies` (RF-06)|
+|Identity|`tenants`, `users`, `technician_profiles` (con `provider_id`), `password_setup_tokens`, `audit_logs`, `outbox_events`|`password_recovery_tokens` (SCRUM-624); `users.company_id` y `client_companies` (RF-06)|
 |Catalog|`service_categories` (con `updated_at`), `outbox_events`|—|
 |ServiceRequest|`service_requests` (con `matching_updated_at`), `service_request_categories`, `outbox_events`, `processed_events`|`company_id` y `client_type` (RF-08); `cancelled_by`, `cancelled_by_type` y `audit_logs` (RF-36, SCRUM-475); `quotes`, `ratings` y `service_evidence`|
 |Matching|`technician_availability`, `coverage_zones`, `localities`, `matching_requests`, `matching_attempts`, `outbox_events`, `processed_events`|—|
