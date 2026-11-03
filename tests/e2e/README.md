@@ -157,6 +157,28 @@ La primera corrida encontró otros dos casos. Crear solo con la dirección no re
 
 **Evidencia:** `evidencias/scrum-600-fuera-de-bogota-qa-2026-10-28.txt`, contra QA el 28 de octubre de 2026: 24 peticiones y 59 aserciones, sin fallos, con el resumen de los hallazgos al inicio. Es anterior a SCRUM-636. La repetición con la corrección en QA es `evidencias/scrum-636-cobertura-localidades-qa-2026-10-28.txt`: 21 peticiones y 62 aserciones, sin fallos.
 
+## Tenant desactivado contra QA (SCRUM-511)
+
+`scrum-511-tenant-desactivado.postman_collection.json` prueba contra QA la HU SCRUM-348 (RF-21, RN-T1, ADR-017) y el caso `TNT-003` del TD. Se genera con `python tests/e2e/generar-scrum511-tenant-desactivado.py`. Necesita al administrador de la plataforma (`platformAdminEmail` y `platformAdminPassword`, secretos de QA que el CI ya pasa a Newman); sin ellos se omiten todos los pasos.
+
+**Datos propios:** usa el tenant Beta de QA (`beta.qa.quickpatch.internal`, NIT 900999001-1) y un cliente nuevo de ese tenant, con correo y clave generados en la corrida. Nunca toca el tenant principal: si no encuentra Beta, o si Beta resultara ser el tenant de la plataforma, no sigue.
+
+0. **Preparación:** deja Beta activo (por si una corrida anterior se cortó), registra un cliente nuevo en Beta e inicia sesión. Ese token se usa en todo lo demás.
+1. **Tenant activo:** crear una solicitud llega a la validación de la categoría (422, no `tenant-inactivo`). Beta no tiene categorías, así que no se crea nada.
+2. **Tenant desactivado:** el administrador de la plataforma desactiva Beta. Con el MISMO token, crear responde 422 `tenant-inactivo` (`tenant is disabled`, RFC 9457) en menos de 15 s; la colección reintenta cada 0,5 s y escribe en cuántos segundos llegó. El token sigue sirviendo para otras operaciones (`GET /v1/users/me`, 200). Un login nuevo y un registro nuevo en Beta dan 403 `tenant-inactivo`.
+3. **Tenant reactivado:** con el MISMO token, crear deja de responder `tenant-inactivo` y vuelve a la validación de la categoría.
+4. **Cierre:** Beta queda activo. Newman no se detiene cuando falla una aserción, así que este paso corre aunque algo haya fallado antes.
+
+```bash
+docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scrum-511-tenant-desactivado.postman_collection.json \
+  --insecure --env-var baseUrl=https://qa.quickpatch.internal \
+  --env-var platformAdminEmail=... --env-var platformAdminPassword=... --reporters cli --color off
+```
+
+**Límite:** no se ve un 201 después de reactivar porque Beta no tiene categorías; el contraste se hace con el tipo de error. El 201 lo cubren las pruebas de integración de quickpatch-service-request (`TenantStatusFlowTests`).
+
+**Evidencia:** la corrida manual del 2 de noviembre de 2026 está en `evidencias/tenant-desactivado-qa-2026-11-02.txt` (0 verificaciones fallidas). La colección se revisó contra un servidor de prueba local que imita las respuestas de los contratos: 20 peticiones y 24 aserciones sin fallos; sin Beta se detiene en la preparación, y sin secretos omite todo. La primera corrida en QA queda en el job de Newman de `pruebas-sistema.yml`.
+
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
 `scrum-68-cuenta-corporativa.postman_collection.json` (RF-06, SCRUM-26) la genera `generar-scrum68-cuenta-corporativa.py`. Contrato: `identity.v1.yaml` 1.8.0. **No necesita al administrador**: todas las cuentas se registran por el canal con correo, NIT y clave generados en la corrida.
