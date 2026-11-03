@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.18|
+|**Versión**|5.19|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-625 — Hash del correo con HMAC y la invitación pendiente en la recuperación de la contraseña (5.19); SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -1424,7 +1424,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Nueva v5.18 (SCRUM-597; implementación SCRUM-625, `quickpatch-identity#29`).** **Servicio propietario:** Identity Service.
 
-**Propósito:** Registro de cada pedido de recuperación para aplicar el límite de 3 por correo por hora, exista o no la cuenta. Guarda el hash del correo y no el correo, para no conservar quién intentó recuperar una cuenta.
+**Propósito:** Registro de cada pedido de recuperación para aplicar el límite de 3 por correo por hora, exista o no la cuenta. Guarda el HMAC del correo y no el correo, para no conservar quién intentó recuperar una cuenta.
 
 **Requisitos relacionados:** RF-03, RNF-03.
 
@@ -1432,7 +1432,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |---|---|---|---|---|
 |id|UUID|No|PK|Identificador del intento.|
 |tenant_id|UUID|No|FK → `tenants`|Tenant del canal por el que llegó el pedido (RN-U5).|
-|email_hash|CHAR(64)|No|—|SHA-256 del correo normalizado. Índice `ix_password_recovery_attempts_email` por `email_hash, attempted_at`.|
+|email_hash|CHAR(64)|No|—|**Desde la v5.19**, HMAC-SHA256 en hexadecimal del correo normalizado, con una clave propia de Identity Service que se entrega como Secret de cada ambiente y nunca se guarda en el repositorio. Un SHA-256 sin clave se podía revertir con un diccionario de correos y revelaba quién pidió la recuperación (Ley 1581). Índice `ix_password_recovery_attempts_email` por `email_hash, attempted_at`.|
 |attempted_at|TIMESTAMPTZ|No|—|Momento del pedido.|
 
 **Reglas:** RLS por tenant (`tenant_isolation`). `identity_app` tiene `SELECT` e `INSERT`.
@@ -1714,7 +1714,7 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 |RN-CC2|`CHECK ((role = 'empresa_contacto') = (company_id IS NOT NULL))` en `users`.|
 |RN-CC3|Identity Service toma `company_id` y `tenant_id` del token, no del cuerpo de la petición.|
 |RN-CC4|Identity Service crea al usuario agregado con un hash inutilizable y le entrega la invitación de la sección 5.21.|
-|RN-U7|Identity Service guarda la solicitud en `password_recovery_requests` (un solo pendiente por usuario con índice único parcial), cuenta los pedidos por hash del correo en `password_recovery_attempts` y guarda solo el hash del enlace en `password_setup_tokens` con `purpose = 'recuperacion'`.|
+|RN-U7|Identity Service guarda la solicitud en `password_recovery_requests` (un solo pendiente por usuario con índice único parcial), cuenta los pedidos por hash del correo en `password_recovery_attempts` y guarda solo el hash del enlace en `password_setup_tokens` con `purpose = 'recuperacion'`. Desde la v5.19, el hash del correo es un HMAC-SHA256 con la clave del servicio (sección 5.28). El técnico que nunca activó su invitación también puede recuperar la contraseña: al confirmarla, Identity Service marca como usadas (`used_at`) sus invitaciones pendientes (`purpose = 'invitacion'`), para que el proveedor lo vea con contraseña definida y una invitación vieja no pueda reemplazarla.|
 |RN-A1|Permisos: los roles de aplicación solo tienen `INSERT` y `SELECT` sobre `audit_logs` (sección 10.2).|
 
 ---
@@ -2887,7 +2887,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.16|SCRUM-501|**Equipo del proveedor en Payments y pagos recibidos del proveedor (RF-25, P-02).** Nueva tabla `payment_technicians` (sección 5.25), proyección del proveedor de cada técnico alimentada por `technician.registered` y cargada una vez por ambiente con `cargar-equipos-pagos.yml`. `GET /v1/payments/received` (contrato 1.2.0) lo admite también para el `proveedor`, con sus reglas de visibilidad por rol (sección 8.3, SCRUM-500). Se actualiza P-02 y el Cuadro 8.|
 |5.17|SCRUM-508|**RN-T1 con la réplica del estado del tenant (RF-21).** Nueva tabla `tenant_status_replica` en ServiceRequest (sección 5.26), alimentada por el evento `tenant.status-changed` de Identity (sección 8.4), y `422 tenant-inactivo` al crear una solicitud (contrato service-request 1.11.0, SCRUM-510). Se actualizan RN-T1 (7.1 y su tabla de reglas), el Cuadro 8, el Cuadro 10, los errores de la creación (8.3.3) y el endpoint de plataforma.|
 |5.18|SCRUM-597|**Recuperación de la contraseña olvidada (RF-03, ADR-024).** Contrato `identity.v1.yaml` 1.10.0 con `POST /v1/auth/password-recovery`, `GET /v1/admin/password-recovery-requests`, `POST /v1/admin/password-recovery-requests/{id}/link` y `POST /v1/auth/password-recovery/confirm` (secciones 8.2.1 y 8.3.19). Nuevas tablas `password_recovery_requests` y `password_recovery_attempts` (secciones 5.27 y 5.28) y columna `purpose` en `password_setup_tokens` (5.21): el enlace de recuperación lo genera el `admin_tenant`, vence a 1 hora y no hay correo. Nueva regla RN-U7, error `429` y Cuadro 8.|
-|5.19|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.19|SCRUM-625|**Decisiones de la recuperación de la contraseña (`quickpatch-identity#29`).** `password_recovery_attempts.email_hash` pasa de SHA-256 a HMAC-SHA256 con una clave del servicio (sección 5.28). Al confirmar la recuperación se marcan como usadas las invitaciones pendientes del usuario (RN-U7). Se aprueba el modelo de las tablas 5.27 y 5.28 y de la columna `purpose` (5.21) tal como lo implementa el PR.|
+|5.20|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 

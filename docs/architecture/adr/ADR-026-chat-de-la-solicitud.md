@@ -1,6 +1,6 @@
 # ADR-026 — Chat de la solicitud en Communication, sobre el canal en tiempo real
 
-- **Estado:** Propuesto el 21 de octubre de 2026 con SCRUM-473 (subtarea de diseño SCRUM-479). Acota FA3 del SAD (sección 1.3) y agrega una excepción a ADR-025
+- **Estado:** Aceptado el 3 de noviembre de 2026 por el equipo, con el chat implementado en Communication (SCRUM-480 y SCRUM-481; revisión del SAD V5 en SCRUM-551). Propuesto el 21 de octubre de 2026 con SCRUM-473 (subtarea de diseño SCRUM-479). Acota FA3 del SAD (sección 1.3) y agrega una excepción a ADR-025
 - **Fecha:** 21 de octubre de 2026
 - **Decisión:** el cliente dueño de la solicitud y el técnico asignado se escriben mensajes de texto dentro de la solicitud. **Communication Service** guarda la conversación en `db_communication` y entrega cada mensaje nuevo por el canal en tiempo real de ADR-023. El historial y el envío son REST hacia Communication (`/v1/service-requests/{id}/messages`), como **excepción explícita** de ADR-025. Communication sabe quién participa y en qué estado está la solicitud por una réplica alimentada con `service-request.status-changed` (ADR-017), sin llamar a ServiceRequest
 - **Atributos priorizados:** AC4 (el mensaje llega al otro participante en el momento, por el canal que ya existe) y AC6 Security (solo los dos participantes, con RLS por tenant y sin el texto en los logs)

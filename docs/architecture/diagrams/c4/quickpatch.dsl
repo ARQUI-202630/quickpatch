@@ -58,7 +58,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     mobSesion = component "Sesión" "Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol." "Almacenamiento seguro del dispositivo · core/session"
                     mobAuth = component "Autenticación" "Login, registro de cliente hogar y registro de técnico o proveedor con su especialidad (SCRUM-55); registro de empresa con razón social, NIT y primer usuario (SCRUM-67)." "Riverpod · features/autenticacion"
                     mobInicio = component "Inicio por rol" "Acceso a la nueva solicitud y categorías de Catalog para el cliente; opciones (Disponibilidad y cobertura) y aviso de verificación para técnico y proveedor (SCRUM-441)." "Riverpod · features/inicio"
-                    mobCuenta = component "Cuenta" "Datos de la sesión, licencias y cierre de sesión (SCRUM-441)." "Pantalla móvil · features/inicio"
+                    mobCuenta = component "Cuenta" "Datos de la sesión, licencias y cierre de sesión (SCRUM-441); edición del perfil propio con PATCH /v1/users/me (SCRUM-612)." "Pantalla móvil · features/cuenta"
                     mobDiseno = component "Sistema de diseño" "Tema azul con tokens y tipografía, y componentes compartidos: tarjeta de solicitud, chip de estado, selector de categoría, botones y estados vacío, de error y de carga (SCRUM-439)." "Componentes móviles · app/theme y shared/widgets"
                     mobSolicitudes = component "Solicitudes" "Nueva solicitud en tres pasos en un formulario (RNF-11) y detalle con su estado (SCRUM-442)." "Riverpod · features/solicitudes"
                     mobUbicacion = component "Ubicación del dispositivo" "Permiso y lectura del GPS con respaldo en LocationManager y límite de 15 s." "geolocator · features/solicitudes/data"
@@ -68,6 +68,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     mobNotificaciones = component "Buzón de notificaciones" "Lista las notificaciones del usuario, las marca leídas y abre su solicitud (RIE-03, ADR-024; SCRUM-459)." "Riverpod · features/notificaciones"
                     mobChat = component "Chat de la solicitud" "Historial paginado, envío y mensajes nuevos por la trama chat.message; solo lectura al cerrar (RF-37, ADR-026; SCRUM-482)." "Riverpod · features/chat"
                     mobEmpresa = component "Usuarios de la empresa" "Empresa cliente del usuario y alta de otros usuarios con invitación (RF-06; SCRUM-67)." "Riverpod · features/empresa"
+                    mobCalificacion = component "Calificación" "Estrellas y comentario en el detalle de una solicitud pagada, para quien la creó (RF-12; SCRUM-86)." "Riverpod · features/calificacion"
+                    mobHistorial = component "Historial del técnico" "Servicios atendidos con filtros Completados, Pagados y Cancelados y la calificación recibida (RF-17; SCRUM-101)." "Riverpod · features/solicitudes"
                     mobPagos = component "Pago y comprobante" "Pago con la pasarela simulada (la tarjeta se tokeniza en el teléfono) y comprobante en PDF (RF-22 a RF-24)." "Riverpod · features/pagos"
                 }
                 web = container "Panel web" "Panel de administración del tenant y de la plataforma." "SPA web + TypeScript" "Web Browser" {
@@ -90,7 +92,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             group "Microservicios" {
                 identity = container "Identity Service" "Autenticación, usuarios, tenants y auditoría." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
-                    idEndpoints = component "IdentityEndpoints" "POST /v1/auth/register/client, /register/technician, /login y /password/setup; GET /v1/users/me; /v1/platform/tenants; /v1/admin/technicians (aprobar, rechazar, suspender); /v1/providers/me/technicians; GET /internal/v1/users (solo dentro del clúster)." "Minimal API · Api/Endpoints"
+                    idEndpoints = component "IdentityEndpoints" "POST /v1/auth/register/client, /register/technician, /login y /password/setup; GET y PATCH /v1/users/me (perfil propio, SCRUM-611); /v1/platform/tenants; /v1/admin/technicians (aprobar, rechazar, suspender); /v1/providers/me/technicians; GET /internal/v1/users (solo dentro del clúster)." "Minimal API · Api/Endpoints"
                     idCompanyEndpoints = component "CompanyEndpoints" "POST /v1/auth/register/company; GET /v1/companies/me y POST /v1/companies/me/users (RF-06)." "Minimal API · Api/Endpoints"
                     idSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Lee usuario, tenant, rol y company_id del JWT y registra cada 403 (RNF-04)." "ASP.NET Core · Api/Security"
                     idHttp = component "CorrelationId y Problems" "Propaga X-Correlation-Id y responde application/problem+json." "ASP.NET Core · Api/Http"
@@ -99,14 +101,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idAuth = component "Auth" "LoginHandler (bloqueo tras 5 intentos), RegisterClientHandler, RegisterTechnicianHandler y EnsureTenantAdminHandler." "Casos de uso · Application/Auth"
                     idCompanies = component "Companies" "RegisterCompanyHandler, GetMyCompanyHandler y CreateCompanyUserHandler (RF-06)." "Casos de uso · Application/Companies"
                     idTechnicians = component "Technicians" "ChangeVerificationHandler y ListTechniciansHandler (RF-19, RF-20); CreateTeamTechnicianHandler y ListTeamHandler (RF-16); SetupPasswordHandler y RenewInvitationHandler." "Casos de uso · Application/Technicians"
-                    idPlatform = component "Platform" "ListTenantsHandler, CreateTenantHandler y UpdateTenantStatusHandler con auditoría (RF-21)." "Casos de uso · Application/Platform"
-                    idUsers = component "Users" "GetCurrentUserHandler y LookupUsersHandler (nombres por lote para otros servicios)." "Casos de uso · Application/Users"
+                    idPlatform = component "Platform" "ListTenantsHandler, CreateTenantHandler y UpdateTenantStatusHandler con auditoría (RF-21); al cambiar el estado deja tenant.status-changed en el Outbox (RN-T1, SCRUM-509)." "Casos de uso · Application/Platform"
+                    idUsers = component "Users" "GetCurrentUserHandler, UpdateCurrentUserHandler (nombre y teléfono del perfil propio, SCRUM-611) y LookupUsersHandler (nombres por lote para otros servicios)." "Casos de uso · Application/Users"
                     # Domain
                     idDomain = component "Dominio de identidad" "User (LockoutPolicy), Tenant, TechnicianProfile (VerificationStatus), ClientCompany, PasswordSetupToken, AuditEntry y Roles." "Domain"
                     # Infrastructure
                     idPersistence = component "TenantUnitOfWork, PlatformUnitOfWork y repositorios" "UserRepository, TenantRepository, TechnicianProfileRepository, ClientCompanyRepository, PasswordSetupTokenRepository y AuditLog; RLS con app.current_tenant o SET LOCAL ROLE identity_platform." "EF Core + Npgsql · Infrastructure/Persistence"
                     idSecurityAdapters = component "RsaTokenIssuer y BCryptPasswordHasher" "Firma el JWT RS256 (ADR-018) y hace el hash de las contraseñas (RNF-03)." "Infrastructure/Security"
-                    idOutbox = component "EfOutbox" "Guarda technician.registered y technician.verification-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Messaging"
+                    idOutbox = component "EfOutbox" "Guarda technician.registered, technician.verification-changed y tenant.status-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Messaging"
                     idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
                     idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta average_rating, rating_count y low_reputation en technician_profiles; descarta lo atrasado por changedAt (ADR-027, ADR-017)." "Kafka consumer · Infrastructure/Messaging"
                 }
@@ -146,7 +148,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     srReferences = component "References" "ListCategoriesHandler y ListLocalitiesHandler." "Casos de uso · Application/References"
                     srQuotes = component "Quotes" "IssueQuoteHandler, RespondQuoteHandler y ExpireQuoteHandler (máximo 3, vencimiento)." "Casos de uso · Application/Quotes"
                     srExecution = component "Execution" "StartServiceHandler, UploadEvidenceHandler y CompleteServiceHandler." "Casos de uso · Application/Execution"
-                    srEventHandlers = component "Manejadores de eventos" "ApplyCategoryChangedHandler, MatchingStatusHandler y PaymentEventsHandler: aplican cada evento una vez por eventId." "Casos de uso · Application/Categories, Matching y Payments"
+                    srEventHandlers = component "Manejadores de eventos" "ApplyCategoryChangedHandler, MatchingStatusHandler, PaymentEventsHandler y ApplyTenantStatusChangedHandler (réplica del estado del tenant, RN-T1): aplican cada evento una vez por eventId." "Casos de uso · Application/Categories, Matching y Payments"
                     srRating = component "Ratings" "RateServiceRequestHandler: valida dueño, estado pagado y que no esté calificada (RN-R1 a RN-R3) y deja service-request.rated en el Outbox (ADR-027)." "Casos de uso · Application/Ratings"
                     # Domain
                     srDomain = component "Dominio de la solicitud" "ServiceRequest (transiciones RN-SR2 a RN-SR7), Quote, ServiceEvidence, Rating, CategoryReplica, GeoPoint, CoverageArea y Locality." "Domain"
@@ -154,6 +156,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     srPersistence = component "TenantUnitOfWork y repositorios" "ServiceRequestRepository, QuoteRepository, EvidenceRepository, RatingRepository, CategoryReplicaRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
                     srOutbox = component "EfOutbox" "Guarda los eventos de la solicitud en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
                     srPublisher = component "OutboxPublisher" "Lotes con FOR UPDATE SKIP LOCKED; publica y marca published_at." "BackgroundService · Infrastructure/Messaging"
+                    srTenantConsumer = component "TenantStatusChangedConsumer" "Consume tenant.status-changed (SCRUM-510)." "Kafka consumer · Infrastructure/Messaging"
                     srCategoryConsumer = component "CategoryChangedConsumer" "Consume catalog.category-changed." "Kafka consumer · Infrastructure/Messaging"
                     srMatchingConsumer = component "MatchingEventsConsumer" "Consume matching.technician-assigned, .no-technician-available y .search-resumed." "Kafka consumer · Infrastructure/Messaging"
                     srPaymentConsumer = component "PaymentEventsConsumer" "Consume payment.approved y payment.rejected." "Kafka consumer · Infrastructure/Messaging"
@@ -202,11 +205,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     paReconciliation = component "ReconciliationJob" "Cierra los pagos que la pasarela dejó sin respuesta (AC9-E5)." "BackgroundService · Infrastructure/Messaging"
                     paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado)." "Infrastructure/Providers"
                     paPdf = component "InvoicePdfRenderer" "Arma el PDF del comprobante, sin validez fiscal." "Infrastructure/Documents"
-                    paReceived = component "Pagos recibidos" "GET /v1/payments/received?page=&size= para el técnico (RF-25, DD 8)." "Minimal API" "Planeado"
+                    paReceived = component "ReceivedPaymentEndpoints" "GET /v1/payments/received?page=&size=: pagos del técnico y, para el proveedor, de su equipo (RF-25, payments 1.2.0)." "Minimal API · Api/Endpoints"
+                    paReceivedHandler = component "ReceivedPaymentsHandler" "Lista los pagos pendientes y aprobados según el rol: el técnico ve los suyos y el proveedor los de su equipo (SCRUM-501)." "Casos de uso · Application/Payments"
+                    paTechnicianHandler = component "TechnicianRegisteredHandler" "Guarda el proveedor de cada técnico en payment_technicians, una vez por eventId (DD 5.25, P-02)." "Casos de uso · Application/Payments"
+                    paTechnicianConsumer = component "TechnicianRegisteredConsumer" "Consume technician.registered." "Kafka consumer · Infrastructure/Messaging"
                     paWebhook = component "Receptor de webhooks del PSP" "Confirmará el resultado de forma idempotente con la pasarela certificada." "Minimal API" "Planeado"
                 }
                 communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    coConsumidores = component "Consumidores de eventos" "service-request.*, matching.* y payment.*, una vez por eventId." "Kafka consumer"
+                    coConsumidores = component "Consumidores de eventos" "service-request.created, .status-changed y los de la cotización, matching.offer-created y technician.*, una vez por eventId." "Kafka consumer"
                     coPlantillas = component "Plantillas de notificación" "Arma el mensaje según el evento y el destinatario." "Application"
                     coCanal = component "Canal en tiempo real" "WebSocket /v1/realtime: valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant (ADR-023)." "ASP.NET Core WebSockets"
                     coChat = component "Chat de la solicitud" "Réplica de participantes desde service-request.status-changed, mensajes en chat_messages y GET y POST /v1/service-requests/{id}/messages; entrega chat.message por el canal (RF-37, ADR-026)." "Minimal API + Kafka consumer"
@@ -256,6 +262,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         mobNavegacion -> mobEmpresa "Abre"
         mobSolicitudes -> mobChat "Abre el chat de la solicitud en"
         mobSolicitudes -> mobPagos "Abre el pago y el comprobante en"
+        mobSolicitudes -> mobCalificacion "Muestra la calificación del servicio pagado con"
+        mobCalificacion -> mobHttp "POST /v1/service-requests/{id}/rating con"
+        mobCuenta -> mobHistorial "Abre el historial del técnico en"
+        mobHistorial -> mobHttp "GET /v1/technicians/me/service-requests con"
+        mobCuenta -> mobHttp "GET y PATCH /v1/users/me con"
         mobChat -> mobHttp "GET y POST mensajes con"
         mobChat -> mobTiempoReal "Recibe chat.message de"
         mobEmpresa -> mobHttp "GET y POST /v1/companies/me con"
@@ -312,7 +323,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         gateway -> acApi "Enruta /api/v1/actors" "HTTP" "Planeado"
         gateway -> paPaymentEndpoints "Enruta /api/v1/service-requests/{id}/payment" "HTTP"
         gateway -> paInvoiceEndpoints "Enruta /api/v1/payments" "HTTP"
-        gateway -> paReceived "Enrutará /api/v1/payments/received" "HTTP" "Planeado"
+        gateway -> paReceived "Enruta /api/v1/payments/received" "HTTP"
         gateway -> maApi "Enruta /api/v1/matching, /api/v1/technicians y /api/v1/localities" "HTTP"
         gateway -> coCanal "Enruta /api/v1/realtime" "WebSocket"
         gateway -> coBuzon "Enruta /api/v1/notifications" "HTTP"
@@ -339,10 +350,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         idPlatform -> idPersistence "Cambia tenants por IPlatformUnitOfWork con"
         idAuth -> idOutbox "Registra technician.registered con"
         idTechnicians -> idOutbox "Registra technician.registered y technician.verification-changed con"
+        idPlatform -> idOutbox "Registra tenant.status-changed con"
         idPersistence -> dbIdentity "Lee y escribe (RLS)" "SQL"
         idOutbox -> dbIdentity "INSERT en outbox_events" "SQL"
         idPublisher -> dbIdentity "Lee pendientes y marca published_at" "SQL"
-        idPublisher -> kafka "Publica technician.registered y technician.verification-changed" "Kafka"
+        idPublisher -> kafka "Publica technician.registered, technician.verification-changed y tenant.status-changed" "Kafka"
         idReputationConsumer -> kafka "Consume ranking.technician-reputation-changed" "Kafka"
         idReputationConsumer -> idPersistence "Actualiza la reputación del técnico con"
 
@@ -394,6 +406,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         srRatingEndpoints -> srSecurity "Toma el usuario autenticado de"
         srRatingEndpoints -> srRating "Invoca"
         srCategoryConsumer -> kafka "Consume catalog.category-changed" "Kafka"
+        srTenantConsumer -> kafka "Consume tenant.status-changed" "Kafka"
+        srTenantConsumer -> srEventHandlers "Entrega el evento a"
         srMatchingConsumer -> kafka "Consume matching.*" "Kafka"
         srPaymentConsumer -> kafka "Consume payment.*" "Kafka"
         srCategoryConsumer -> srEventHandlers "Entrega el evento a"
@@ -459,14 +473,19 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         paCompletedHandler -> paPersistence "Registra el eventId y el pago con"
         paInvoices -> paPersistence "Lee el comprobante con"
         paPayments -> paOutbox "Registra payment.approved o payment.rejected con"
-        paReceived -> paPersistence "Leerá los pagos aprobados del técnico con" "" "Planeado"
-        paPersistence -> dbPayments "Lee y escribe payments, invoices y processed_events (RLS)" "SQL"
+        paReceived -> paSecurity "Toma el usuario autenticado de"
+        paReceived -> paReceivedHandler "Invoca"
+        paReceivedHandler -> paPersistence "Lee los pagos del técnico o del equipo del proveedor con"
+        paTechnicianConsumer -> kafka "Consume technician.registered" "Kafka"
+        paTechnicianConsumer -> paTechnicianHandler "Entrega el evento a"
+        paTechnicianHandler -> paPersistence "Guarda el proveedor del técnico con"
+        paPersistence -> dbPayments "Lee y escribe payments, invoices, payment_technicians y processed_events (RLS)" "SQL"
         paOutbox -> dbPayments "INSERT en outbox_events" "SQL"
         paPublisher -> dbPayments "Lee pendientes y marca published_at" "SQL"
         paPublisher -> kafka "Publica payment.*" "Kafka"
 
         # Communication
-        coConsumidores -> kafka "Consume service-request.*, matching.* y payment.*" "Kafka"
+        coConsumidores -> kafka "Consume service-request.created, .status-changed, .quoted, .quote-accepted y .quote-rejected, matching.offer-created y technician.*" "Kafka"
         coConsumidores -> coPlantillas "Arma el mensaje con"
         coPlantillas -> coCanal "Avisa a los usuarios conectados con"
         coPlantillas -> coBuzon "Guarda la notificación con"
@@ -569,9 +588,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         catalogQa = containerInstance catalog
                         serviceRequestQa = containerInstance serviceRequest
                         matchingQa = containerInstance matching
-                        rankingQa = containerInstance ranking {
-                            tags "Planeado"
-                        }
+                        rankingQa = containerInstance ranking
                         paymentsQa = containerInstance payments
                         communicationQa = containerInstance communication
                     }
@@ -664,7 +681,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             include *
             autoLayout tb 150 80
         }
-        component payments "C4-04-Componentes-Payments" "Componentes de Payments Service por capa (SDD 10.3.1): pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado); pagos recibidos del técnico planeados (RF-25)." {
+        component payments "C4-04-Componentes-Payments" "Componentes de Payments Service por capa (SDD 10.3.1): pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado); pagos recibidos del técnico y del equipo del proveedor (RF-25)." {
             include *
             autoLayout lr
         }
@@ -744,22 +761,74 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-Pago" "Pago tokenizado y facturación (RF-22 a RF-24, ADR-009)." {
-            mobile -> gateway "POST /api/v1/payments con el token de la tarjeta" "HTTPS/JSON"
+        dynamic quickpatch "C4-05-Dinamico-Cotizacion" "Desde que el técnico asignado cotiza hasta que el cliente acepta (RF-34, RF-35; RN-Q2, RN-Q8; ADR-007, ADR-023). Si el cliente rechaza (POST .../reject), ServiceRequest vuelve la solicitud a asignado y publica service-request.quote-rejected en lugar de los pasos 10 a 16; con la tercera rechazada cancela la solicitud (RN-Q7). Sin respuesta en 24 h, la cotización vence y la solicitud se cancela (RN-Q6)." {
+            title "Escenario: cotización del servicio"
+            mobile -> gateway "Las apps del cliente y del técnico tienen abierto el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
+            gateway -> communication "Enruta el WebSocket; Communication valida el token"
+            mobile -> gateway "El técnico cotiza: POST /api/v1/service-requests/{id}/quotes con mano de obra, materiales y detalle" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del técnico asignado"
+            serviceRequest -> dbServiceRequest "Guarda la cotización pendiente (de 1 a 3, vence en 24 h), pasa la solicitud a cotizado y guarda service-request.quoted y status-changed en el Outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.quoted"
+            communication -> kafka "Consume service-request.quoted (una vez por eventId)"
+            communication -> gateway "Avisa al cliente por su WebSocket y guarda la notificación en el buzón"
+            gateway -> mobile "La app del cliente muestra la cotización con el total y el vencimiento" "WebSocket (wss)"
+            mobile -> gateway "El cliente acepta: POST /api/v1/service-requests/{id}/quotes/{quoteId}/accept" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del cliente dueño"
+            serviceRequest -> dbServiceRequest "Acepta la cotización, pasa la solicitud a cotizacion_aceptada y guarda service-request.quote-accepted y status-changed en el Outbox"
+            serviceRequest -> kafka "Publica service-request.quote-accepted"
+            communication -> kafka "Consume service-request.quote-accepted"
+            communication -> gateway "Avisa al técnico por su WebSocket"
+            gateway -> mobile "La app del técnico habilita Iniciar el servicio" "WebSocket (wss)"
+            autoLayout lr 250 120
+            properties {
+                "structurizr.groups" false
+            }
+        }
+        dynamic quickpatch "C4-05-Dinamico-Pago" "Desde que el técnico completa hasta que el cliente tiene el comprobante (RF-22 a RF-24; RN-P1, RN-P4, RN-SR4; ADR-007, ADR-009 modificado). Si la pasarela rechaza, Payments publica payment.rejected en el paso 12 y la solicitud sigue en completado para reintentar (RN-SR5); si no responde, la conciliación cierra el pago (AC9-E5)." {
+            title "Escenario: pago del servicio y comprobante"
+            mobile -> gateway "Las apps del cliente y del técnico tienen abierto el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
+            gateway -> communication "Enruta el WebSocket; Communication valida el token"
+            mobile -> gateway "El técnico completa: POST /api/v1/service-requests/{id}/complete" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del técnico asignado"
+            serviceRequest -> dbServiceRequest "Pasa la solicitud a completado y guarda service-request.completed (con el total) y status-changed en el Outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.completed"
+            payments -> kafka "Consume service-request.completed (una vez por eventId)"
+            payments -> dbPayments "Crea el pago pendiente con el total de la cotización aceptada (RN-P4)"
+            mobile -> gateway "El cliente paga: POST /api/v1/service-requests/{id}/payment con el token de la tarjeta, que se tokeniza en el teléfono (RN-P1)" "HTTPS/JSON"
             gateway -> payments "Enruta con el JWT del cliente"
-            payments -> pasarela "Cobra con el token (sin PAN ni CVV)"
-            pasarela -> payments "Webhook con el resultado"
-            payments -> dbPayments "Guarda el pago, la factura y el evento en outbox (una transacción)"
-            payments -> kafka "Publica payment.approved o payment.rejected"
-            serviceRequest -> kafka "Consume el resultado y pasa a pagado"
-            communication -> kafka "Consume el resultado y envía el comprobante"
-            autoLayout rl 200 100
+            payments -> dbPayments "Cobra con la pasarela simulada (adaptador dentro de Payments, ADR-009) y guarda el pago aprobado, el comprobante y payment.approved en el Outbox (una transacción)"
+            payments -> kafka "Publica payment.approved"
+            serviceRequest -> kafka "Consume payment.approved"
+            serviceRequest -> dbServiceRequest "Pasa la solicitud a pagado (RN-SR4) y guarda service-request.status-changed en el Outbox"
+            serviceRequest -> kafka "Publica service-request.status-changed"
+            communication -> kafka "Consume service-request.status-changed"
+            communication -> gateway "Avisa al cliente y al técnico por su WebSocket"
+            gateway -> mobile "La app del cliente abre el comprobante: GET /api/v1/payments/{id}/invoice en PDF" "WebSocket (wss)"
+            autoLayout lr 250 120
+            properties {
+                "structurizr.groups" false
+            }
+        }
+        dynamic quickpatch "C4-05-Dinamico-Cancelacion" "El cliente dueño cancela antes de que empiece el servicio (RF-36; RN-Q5, RN-M5, RN-M6; ADR-007). Desde en_progreso responde 409 transicion-invalida. El admin_tenant también puede cancelar desde el panel, y queda en audit_logs. Communication no consume service-request.cancelled: avisa con service-request.status-changed." {
+            title "Escenario: cancelación de una solicitud"
+            mobile -> gateway "Las apps del cliente y del técnico tienen abierto el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
+            gateway -> communication "Enruta el WebSocket; Communication valida el token"
+            mobile -> gateway "El cliente cancela: POST /api/v1/service-requests/{id}/cancel con el motivo (5 a 500 caracteres)" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del cliente dueño"
+            serviceRequest -> dbServiceRequest "Bloquea la solicitud (FOR UPDATE), la pasa a cancelado, anula la cotización pendiente (RN-Q5) y guarda service-request.cancelled y status-changed en el Outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.cancelled y service-request.status-changed"
+            matching -> kafka "Consume service-request.cancelled (una vez por eventId)"
+            matching -> dbMatching "Cancela la oferta pendiente y no ofrece a más candidatos (RN-M5); si había técnico, vuelve a disponible (RN-M6)"
+            communication -> kafka "Consume service-request.status-changed"
+            communication -> gateway "Avisa al cliente y al técnico asignado por su WebSocket"
+            gateway -> mobile "Las apps muestran la solicitud cancelada" "WebSocket (wss)"
+            autoLayout lr 250 120
             properties {
                 "structurizr.groups" false
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-Calificacion" "Escenario: calificación del servicio y reputación del técnico (RF-12, RF-20, AC9-E2; ADR-027; Ranking todavía sin desplegar, SCRUM-512)." {
+        dynamic quickpatch "C4-05-Dinamico-Calificacion" "Escenario: calificación del servicio y reputación del técnico (RF-12, RF-20, AC9-E2; ADR-027; Ranking en QA desde SCRUM-512)." {
             title "Escenario: calificación del servicio y reputación del técnico"
             mobile -> gateway "POST /v1/service-requests/{id}/rating con score y comment opcional" "HTTPS/JSON"
             gateway -> serviceRequest "Enruta con el JWT del cliente"
@@ -793,7 +862,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             autoLayout lr 200 60
         }
 
-        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 27 de octubre de 2026 (Documento de Infraestructura V4, 4.3): VM2, VM5 y VM7, con la misma VM1 (ADR-022); gateway y panel en el Nginx de VM2 (ADR-028). Punteado: sin desplegar." {
+        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 3 de noviembre de 2026, con Ranking desplegado (SCRUM-512): VM2, VM5 y VM7, con la misma VM1 (ADR-022); gateway y panel en el Nginx de VM2 (ADR-028). Punteado: sin desplegar." {
             include *
             exclude "mobQa -> gatewayQa" "webQa -> gatewayQa"
             exclude "* -> kafkaQa" "* -> redisQa" "* -> garageQa"
