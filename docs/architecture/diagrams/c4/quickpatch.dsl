@@ -202,11 +202,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     paReconciliation = component "ReconciliationJob" "Cierra los pagos que la pasarela dejó sin respuesta (AC9-E5)." "BackgroundService · Infrastructure/Messaging"
                     paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado)." "Infrastructure/Providers"
                     paPdf = component "InvoicePdfRenderer" "Arma el PDF del comprobante, sin validez fiscal." "Infrastructure/Documents"
-                    paReceived = component "Pagos recibidos" "GET /v1/payments/received?page=&size= para el técnico (RF-25, DD 8)." "Minimal API" "Planeado"
+                    paReceived = component "ReceivedPaymentEndpoints" "GET /v1/payments/received?page=&size=: pagos del técnico y, para el proveedor, de su equipo (RF-25, payments 1.2.0)." "Minimal API · Api/Endpoints"
+                    paReceivedHandler = component "ReceivedPaymentsHandler" "Lista los pagos pendientes y aprobados según el rol: el técnico ve los suyos y el proveedor los de su equipo (SCRUM-501)." "Casos de uso · Application/Payments"
+                    paTechnicianHandler = component "TechnicianRegisteredHandler" "Guarda el proveedor de cada técnico en payment_technicians, una vez por eventId (DD 5.25, P-02)." "Casos de uso · Application/Payments"
+                    paTechnicianConsumer = component "TechnicianRegisteredConsumer" "Consume technician.registered." "Kafka consumer · Infrastructure/Messaging"
                     paWebhook = component "Receptor de webhooks del PSP" "Confirmará el resultado de forma idempotente con la pasarela certificada." "Minimal API" "Planeado"
                 }
                 communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    coConsumidores = component "Consumidores de eventos" "service-request.*, matching.* y payment.*, una vez por eventId." "Kafka consumer"
+                    coConsumidores = component "Consumidores de eventos" "service-request.created, .status-changed y los de la cotización, matching.offer-created y technician.*, una vez por eventId." "Kafka consumer"
                     coPlantillas = component "Plantillas de notificación" "Arma el mensaje según el evento y el destinatario." "Application"
                     coCanal = component "Canal en tiempo real" "WebSocket /v1/realtime: valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant (ADR-023)." "ASP.NET Core WebSockets"
                     coChat = component "Chat de la solicitud" "Réplica de participantes desde service-request.status-changed, mensajes en chat_messages y GET y POST /v1/service-requests/{id}/messages; entrega chat.message por el canal (RF-37, ADR-026)." "Minimal API + Kafka consumer"
@@ -312,7 +315,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         gateway -> acApi "Enruta /api/v1/actors" "HTTP" "Planeado"
         gateway -> paPaymentEndpoints "Enruta /api/v1/service-requests/{id}/payment" "HTTP"
         gateway -> paInvoiceEndpoints "Enruta /api/v1/payments" "HTTP"
-        gateway -> paReceived "Enrutará /api/v1/payments/received" "HTTP" "Planeado"
+        gateway -> paReceived "Enruta /api/v1/payments/received" "HTTP"
         gateway -> maApi "Enruta /api/v1/matching, /api/v1/technicians y /api/v1/localities" "HTTP"
         gateway -> coCanal "Enruta /api/v1/realtime" "WebSocket"
         gateway -> coBuzon "Enruta /api/v1/notifications" "HTTP"
@@ -459,14 +462,19 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         paCompletedHandler -> paPersistence "Registra el eventId y el pago con"
         paInvoices -> paPersistence "Lee el comprobante con"
         paPayments -> paOutbox "Registra payment.approved o payment.rejected con"
-        paReceived -> paPersistence "Leerá los pagos aprobados del técnico con" "" "Planeado"
-        paPersistence -> dbPayments "Lee y escribe payments, invoices y processed_events (RLS)" "SQL"
+        paReceived -> paSecurity "Toma el usuario autenticado de"
+        paReceived -> paReceivedHandler "Invoca"
+        paReceivedHandler -> paPersistence "Lee los pagos del técnico o del equipo del proveedor con"
+        paTechnicianConsumer -> kafka "Consume technician.registered" "Kafka"
+        paTechnicianConsumer -> paTechnicianHandler "Entrega el evento a"
+        paTechnicianHandler -> paPersistence "Guarda el proveedor del técnico con"
+        paPersistence -> dbPayments "Lee y escribe payments, invoices, payment_technicians y processed_events (RLS)" "SQL"
         paOutbox -> dbPayments "INSERT en outbox_events" "SQL"
         paPublisher -> dbPayments "Lee pendientes y marca published_at" "SQL"
         paPublisher -> kafka "Publica payment.*" "Kafka"
 
         # Communication
-        coConsumidores -> kafka "Consume service-request.*, matching.* y payment.*" "Kafka"
+        coConsumidores -> kafka "Consume service-request.created, .status-changed, .quoted, .quote-accepted y .quote-rejected, matching.offer-created y technician.*" "Kafka"
         coConsumidores -> coPlantillas "Arma el mensaje con"
         coPlantillas -> coCanal "Avisa a los usuarios conectados con"
         coPlantillas -> coBuzon "Guarda la notificación con"
@@ -664,7 +672,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             include *
             autoLayout tb 150 80
         }
-        component payments "C4-04-Componentes-Payments" "Componentes de Payments Service por capa (SDD 10.3.1): pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado); pagos recibidos del técnico planeados (RF-25)." {
+        component payments "C4-04-Componentes-Payments" "Componentes de Payments Service por capa (SDD 10.3.1): pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado); pagos recibidos del técnico y del equipo del proveedor (RF-25)." {
             include *
             autoLayout lr
         }
