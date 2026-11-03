@@ -1,6 +1,6 @@
 # ADR-027 — Calificación en ServiceRequest y reputación del técnico en Ranking
 
-- **Estado:** Propuesto el 25 de octubre de 2026 con SCRUM-542 (SAD V5, SCRUM-541) para SCRUM-32. Concreta ADR-003 para el driver D3 y cierra DEP-04 del DD
+- **Estado:** Aceptado el 3 de noviembre de 2026 por el equipo, con la calificación (SCRUM-85), la reputación (SCRUM-498) y sus esquemas en `quickpatch-kafka` `v0.10.0` implementados (revisión del SAD V5 en SCRUM-551). Propuesto el 25 de octubre de 2026 con SCRUM-542 (SAD V5, SCRUM-541) para SCRUM-32. Concreta ADR-003 para el driver D3 y cierra DEP-04 del DD
 - **Fecha:** 25 de octubre de 2026
 - **Decisión:** la calificación es un hecho de la solicitud y la guarda **ServiceRequest** (`ratings`, DD 5.9), que la recibe por REST (`POST /v1/service-requests/{id}/rating`, DD 8.3.11) y publica `service-request.rated` con Outbox. **Ranking Service** consume ese evento, mantiene la reputación de cada técnico de forma idempotente y publica `ranking.technician-reputation-changed`, del que Identity actualiza la proyección `technician_profiles.average_rating` y la marca de reputación baja (AC9-E2). Ningún servicio llama a otro de forma síncrona por la calificación
 - **Atributos priorizados:** AC5 Reliability (si Ranking falla, la calificación igual queda guardada y la reputación se pone al día al volver) y AC1 Functional Suitability (una sola calificación por solicitud pagada y un promedio correcto)
