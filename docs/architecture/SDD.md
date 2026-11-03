@@ -641,10 +641,11 @@ Implementado en `quickpatch-ranking` (SCRUM-498), con su base `db_ranking` bajo 
 |---|---|---|
 | `Payment` | `payments` | Estado de una operación de pago sin almacenar PAN/CVV. |
 | `Invoice` | `invoices` | Comprobante del pago aprobado, con el NIT si el pagador es una empresa; el PDF se genera al pedirlo. |
+| `PaymentTechnician` | `payment_technicians` | Proyección del proveedor de cada técnico, alimentada por `technician.registered`, para los pagos recibidos del equipo (DD 5.25, P-02). |
 | `PaymentTokenReference` | Value Object | Referencia al token suministrado por el PSP. |
 | `PaymentStatus` | Value Object / Enum conceptual | Estado controlado de la transacción. |
 
-**Eventos:** `payment.approved`, `payment.rejected`.
+**Eventos:** publica `payment.approved` y `payment.rejected`; consume `service-request.completed` y `technician.registered`.
 
 **Componentes (C4).**
 
@@ -652,7 +653,7 @@ Implementado en `quickpatch-ranking` (SCRUM-498), con su base `db_ranking` bajo 
 
 **Figura 17. Componentes de Payments Service (C4 · Component). Vista `C4-04-Componentes-Payments`.**
 
-Implementado en el MVP con la pasarela simulada (ADR-009 modificado; SCRUM-115 y SCRUM-493): la app tokeniza la tarjeta y a Payments solo llega el token (RNF-01). El adaptador cobra detrás del mismo puerto que usará la pasarela certificada, que sigue planeada junto con su receptor de webhooks; mientras tanto, una conciliación programada cierra los pagos que quedaron sin respuesta. El pago se abre al consumir `service-request.completed`, publica `payment.approved` o `payment.rejected` por el Outbox y emite el comprobante en JSON o PDF, sin validez fiscal (RF-24). Payments 0.1.1 está en QA (SAD 2.2, RNF-01).
+Implementado en el MVP con la pasarela simulada (ADR-009 modificado; SCRUM-115 y SCRUM-493): la app tokeniza la tarjeta y a Payments solo llega el token (RNF-01). El adaptador cobra detrás del mismo puerto que usará la pasarela certificada, que sigue planeada junto con su receptor de webhooks; mientras tanto, una conciliación programada cierra los pagos que quedaron sin respuesta. El pago se abre al consumir `service-request.completed`, publica `payment.approved` o `payment.rejected` por el Outbox y emite el comprobante en JSON o PDF, sin validez fiscal (RF-24). Desde el Sprint 5 expone también los pagos recibidos (`GET /v1/payments/received`, payments 1.2.0, RF-25, SCRUM-501): `ReceivedPaymentEndpoints` y `ReceivedPaymentsHandler` devuelven al técnico sus pagos pendientes y aprobados y al proveedor los de su equipo, que Payments conoce por `TechnicianRegisteredConsumer` sin llamar a Identity (ADR-017). Payments 0.3.0 está en QA (SAD 2.2, RNF-01).
 
 ## 6.11 Communication Service
 
@@ -2205,6 +2206,7 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 | Escenario de asignación del técnico con pasos numerados y eventos por nombre | 8 (figura 22b) | SCRUM-590 |
 | Componentes del Sprint 5, dinámica de la calificación y despliegue real | 6, 8 (figura 27) y 9 | SCRUM-549 y SCRUM-550 |
 | Componentes reales de la calificación: ServiceRequest, Ranking e Identity | 6.4, 6.7 y 6.9 (figuras 10, 13 y 16) | SCRUM-584 |
+| Pagos recibidos de Payments con sus clases reales (`ReceivedPaymentEndpoints`, `ReceivedPaymentsHandler`, `TechnicianRegisteredConsumer` y `TechnicianRegisteredHandler`) y los consumidores reales de Communication, sin `payment.*` | 6.10 (figura 17), figura 18 y figura 3 | SCRUM-584 |
 | Observaciones 1 a 3 de la revisión funcional del PO: sección 12 con la revisión de la V4, contratos de `v0.21.0`, los 20 eventos de `quickpatch-kafka` `v0.10.0` y RF-17, RF-25 y el buzón en la sección 8.13.5 | 5.6.1, 5.6.2, 8.13.5, 12 y 13.5 | SCRUM-548 |
 | Auditoría previa a la revisión del PO: estado del documento, calificación implementada en la matriz de escenarios, secuencia de extremo a extremo con el técnico y la calificación por Kafka (ADR-027), cuenta corporativa implementada, Ranking en la convención de paquetes y referencias corregidas | 1, 6.2, 6.7, 8.13.3, 8.13.4, 10.2, 11.4 y 13 | SCRUM-548 |
 
