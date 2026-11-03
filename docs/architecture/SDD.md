@@ -115,15 +115,15 @@ El diagrama de contexto deja solo lo que interactúa con el sistema en operació
 
 **Figura 2. Contexto de QUICKPATCH (C4 · System Context). Vista `C4-02-Contexto`.**
 
-Los sistemas externos son la pasarela de pagos certificada PCI-DSS (SAD, K2), el servicio de geocodificación y el proveedor de notificaciones por correo y push. La geocodificación convierte en coordenadas la dirección que escribe el cliente cuando no comparte la ubicación de su dispositivo (SRS, RIE-02); la app envía siempre las coordenadas de la solicitud y la cercanía entre la solicitud y los técnicos la calcula PostGIS, sin servicio externo. Los proveedores concretos no están definidos. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
+El único sistema externo es la pasarela de pagos certificada PCI-DSS (SAD, K2, R5); en el MVP la reemplaza un adaptador simulado dentro de Payments (ADR-009 modificado). La geocodificación (SRS, RIE-02) corre dentro de las 7 VMs con un Nominatim propio que solo tiene el mapa de Bogotá, y las notificaciones (RIE-03) se entregan dentro de la app, por el canal en tiempo real y el buzón de Communication; el correo y las notificaciones push quedan fuera del MVP (ADR-024). Por eso el geocodificador aparece como contenedor en la Figura 3 y no como sistema externo. La cercanía entre la solicitud y los técnicos la calcula PostGIS. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
 
-> **Contradicción por resolver:** el SAD (R5) indica que la pasarela de pagos es la única dependencia externa de producción, pero el SRS define la geocodificación (RIE-02) y las notificaciones (RIE-03) como servicios con los que el sistema se integra. Si alguno corre dentro de las 7 VMs, deja de ser un sistema externo y sale de estos diagramas; si es externo, R5 debe ajustarse.
+> **Contradicción resuelta:** la versión anterior de esta sección contaba la geocodificación y un proveedor de correo y push como sistemas externos, frente a R5 del SAD. ADR-024 la resolvió manteniendo R5: la geocodificación es propia y las notificaciones quedan dentro de la app.
 
 ---
 
 # 5. Container diagram
 
-La arquitectura se organiza por dominios y servicios. Los clientes acceden a través del API Gateway; los microservicios contienen capacidades de negocio separadas; Kafka gestiona la integración asíncrona; y PostgreSQL/PostGIS, Redis y Garage soportan persistencia, caché y evidencias.
+La arquitectura se organiza por dominios y servicios. Los clientes acceden a través del API Gateway; los microservicios contienen capacidades de negocio separadas; Kafka gestiona la integración asíncrona; y PostgreSQL/PostGIS, Redis y Garage soportan la persistencia, la coordinación temporal (sin caché en el MVP) y las evidencias.
 
 ## 5.1 Contenedores del sistema
 
@@ -131,7 +131,7 @@ La arquitectura se organiza por dominios y servicios. Los clientes acceden a tra
 
 **Figura 3. Contenedores de QUICKPATCH (C4 · Container). Vista `C4-03-Contenedores`.**
 
-Para que las capas se lean (personas, apps, gateway, servicios y almacenes), este diagrama no dibuja la entrega de correo y push del proveedor de notificaciones a las personas; esa entrega está en el diagrama de contexto (Figura 2) y en el dinámico de creación de solicitud.
+Las notificaciones no salen del sistema: Communication las entrega por el canal en tiempo real (`/v1/realtime`, ADR-023) y las guarda en su buzón (ADR-024), así que el diagrama no tiene un proveedor de correo o push.
 
 El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 9.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): la App móvil (Flutter) es el canal de clientes, empresas cliente, técnicos y proveedores, y el Panel web (una SPA en Angular) es el de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 6.5), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que tiene REST principal solo hacia Identity, ServiceRequest y Payments (ADR-025); Matching, Catalog y Communication reciben por el gateway solo las excepciones del ADR (acciones del técnico, administración del catálogo, buzón y canal en tiempo real), y Actors y Ranking solo se integran por Kafka.
 
@@ -620,9 +620,9 @@ No tiene endpoints de negocio: el gateway no le enruta nada (ADR-025). Si Rankin
 
 ![Componentes de Ranking Service](diagrams/c4/C4-04-Componentes-Ranking.png)
 
-**Figura 16. Componentes de Ranking Service según ADR-027 (C4 · Component; implementado en SCRUM-498, sin desplegar hasta SCRUM-512): consume `service-request.rated` y publica `ranking.technician-reputation-changed` con Outbox; sin API REST desde el gateway (ADR-025). Vista `C4-04-Componentes-Ranking`.**
+**Figura 16. Componentes de Ranking Service según ADR-027 (C4 · Component; implementado en SCRUM-498 y desplegado en QA con SCRUM-512): consume `service-request.rated` y publica `ranking.technician-reputation-changed` con Outbox; sin API REST desde el gateway (ADR-025). Vista `C4-04-Componentes-Ranking`.**
 
-Implementado en `quickpatch-ranking` (SCRUM-498), con su base `db_ranking` bajo RLS; todavía no está desplegado en ningún ambiente (SCRUM-512).
+Implementado en `quickpatch-ranking` (SCRUM-498), con su base `db_ranking` bajo RLS. Corre en QA desde el 28 de octubre de 2026 (`release/0.1.0`, SCRUM-512); a producción llega con la promoción del MVP (SCRUM-518).
 
 ## 6.10 Payments Service
 
@@ -787,7 +787,7 @@ La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máqui
 | **Microservicios Backend (8)** | Pods independientes en clúster k3s | VM3 (`10.43.98.205`) | Ejecución de la lógica de negocio (Identity, Actors, Catalog, Matching, ServiceRequest, Ranking, Payments, Communication). |
 | **Motor de Base de Datos** | PostgreSQL + PostGIS | VM4 (`10.43.98.209`) | Almacenamiento relacional transaccional y consultas geoespaciales; una base por servicio. |
 | **Geocodificador** | Nominatim con el mapa de Bogotá y su propio PostgreSQL | VM4 (`10.43.98.209`); en QA, VM5 | Convierte en coordenadas la dirección de una solicitud que llega sin ubicación (RIE-02, ADR-024). Solo lo alcanza la VM del k3s de su ambiente. Hoy está desplegado solo en QA. |
-| **Servicio de Cache y Colas Cortas** | Redis | VM4 (`10.43.98.209`) | Cache en memoria y coordinación temporal; un usuario por servicio restringido a sus claves. |
+| **Servicio de Cache y Colas Cortas** | Redis | VM4 (`10.43.98.209`) | Coordinación temporal: el bloqueo con el que una réplica de ServiceRequest vence las cotizaciones; sin caché en el MVP. Un usuario por servicio restringido a sus claves. |
 | **Bus de Eventos (Broker)** | Apache Kafka + Kafka UI (`quickpatch-kafka`) | VM6 (`10.43.99.12`) | Mensajería distribuida asíncrona entre microservicios. |
 | **Storage de Evidencias Fotográficas** | Garage (S3-compatible) | VM6 (`10.43.99.12`) | Repositorio de objetos para evidencias fotográficas (D7) y respaldos de PostgreSQL. |
 | **Stack de Observabilidad** | Prometheus + Loki + Grafana | VM1 (`10.43.100.168`, herramientas) | Métricas, logs estructurados con `correlationId` y alertas de caída de servicio de los dos ambientes (RF-28). |
@@ -983,35 +983,42 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 ## 8.6 Productores y consumidores Kafka
 
-La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 8.4) es la siguiente. Los nueve primeros tienen esquema publicado en `quickpatch-kafka` (`topics/topics.yaml`); los de ejecución, pago y calificación son de diseño hasta que se implementen sus historias.
+La matriz de eventos asíncronos del sistema (DD, sección 8.4) coincide con `topics/topics.yaml` de `quickpatch-kafka` `v0.10.0`: 20 eventos, todos con esquema publicado y productor implementado. Communication no consume los eventos de Matching ni de pago: avisa al cliente y al técnico con `service-request.status-changed`, que ServiceRequest publica después de aplicar cada uno de esos cambios.
 
 | Tópico / Evento | Microservicio Productor | Microservicios Consumidores | Propósito del Flujo |
 |---|---|---|---|
-| `catalog.category-changed` | `Catalog Service` | `ServiceRequest Service`, `Matching Service` | Publicar el estado completo de una categoría tras crearla o modificarla, para que cada consumidor mantenga su réplica local (ADR-017). |
-| `service-request.created` | `ServiceRequest Service` | `Matching Service`, `Communication Service` | Iniciar búsqueda de técnico disponible y notificar al cliente que su solicitud fue recibida. |
-| `technician.registered` | `Identity Service` | `Matching Service`, `Communication Service` | Crear la proyección del técnico en Matching (especialidad y verificación, P-01) y avisarle que su registro está en verificación. |
+| `catalog.category-changed` | `Catalog Service` | `ServiceRequest Service`, `Matching Service` | Publicar el estado completo de una categoría tras crearla o modificarla, para que cada consumidor mantenga su réplica local (ADR-017). Matching todavía no la aplica (DD 8.3.5). |
+| `service-request.created` | `ServiceRequest Service` | `Matching Service`, `Communication Service` | Iniciar la búsqueda de técnico y avisar al cliente que su solicitud fue recibida. |
+| `technician.registered` | `Identity Service` | `Matching Service`, `Communication Service`, `Payments Service` | Crear la proyección del técnico en Matching (especialidad y verificación, P-01), avisarle que su registro está en verificación y, en Payments, guardar el proveedor de cada técnico para los pagos recibidos del equipo (`payment_technicians`, P-02). |
 | `technician.verification-changed` | `Identity Service` | `Matching Service`, `Communication Service` | Actualizar la proyección cuando el administrador aprueba, rechaza o suspende (un técnico aprobado puede reanudar solicitudes en espera, RN-M10) y avisarle el resultado. |
 | `matching.offer-created` | `Matching Service` | `Communication Service` | Avisar al técnico que tiene una oferta, que vence a los 3 minutos (RN-M8). |
-| `matching.technician-assigned` | `Matching Service` | `ServiceRequest Service`, `Communication Service` | Actualizar estado a `asignado` y notificar al técnico asignado y al cliente. |
-| `matching.no-technician-available` | `Matching Service` | `ServiceRequest Service`, `Communication Service` | Colocar solicitud en `en_espera` y notificar al cliente que no hay técnicos disponibles (AC9-E4). |
-| `matching.search-resumed` | `Matching Service` | `ServiceRequest Service`, `Communication Service` | Volver la solicitud de `en_espera` a `buscando_tecnico` cuando aparece un técnico que puede atenderla (RN-M10) y avisar al cliente. |
-| `service-request.status-changed` | `ServiceRequest Service` | `Communication Service` | Avisar al cliente y al técnico asignado un cambio de estado que ServiceRequest ya aplicó (SCRUM-466). Sale en la misma transacción del cambio y nunca de un evento descartado. |
-| `service-request.completed` | `ServiceRequest Service` | `Payments Service`, `Communication Service` | Habilitar el proceso de pago y notificar al cliente que el servicio finalizó. |
-| `payment.approved` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Cambiar estado de solicitud a `pagado` y enviar comprobante/factura al cliente. |
-| `payment.rejected` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Informar rechazo de cobro y habilitar reintento de pago. |
+| `matching.technician-assigned` | `Matching Service` | `ServiceRequest Service` | Pasar la solicitud a `asignado`; el aviso sale con `service-request.status-changed`. |
+| `matching.no-technician-available` | `Matching Service` | `ServiceRequest Service` | Colocar la solicitud en `en_espera` (AC9-E4). |
+| `matching.search-resumed` | `Matching Service` | `ServiceRequest Service` | Volver la solicitud de `en_espera` a `buscando_tecnico` cuando aparece un técnico que puede atenderla (RN-M10). |
+| `service-request.status-changed` | `ServiceRequest Service` | `Communication Service` | Avisar al cliente y al técnico asignado un cambio de estado que ServiceRequest ya aplicó (SCRUM-466) y mantener la réplica de participantes del chat (ADR-026). Sale en la misma transacción del cambio y nunca de un evento descartado. |
+| `service-request.cancelled` | `ServiceRequest Service` | `Matching Service` | Retirar la oferta pendiente y liberar al técnico asignado. |
+| `service-request.quoted` | `ServiceRequest Service` | `Communication Service` | Avisar al cliente que tiene una cotización (RF-34). |
+| `service-request.quote-accepted` | `ServiceRequest Service` | `Communication Service` | Avisar al técnico que el cliente aceptó la cotización (RF-35). |
+| `service-request.quote-rejected` | `ServiceRequest Service` | `Communication Service` | Avisar al técnico que el cliente rechazó la cotización. |
+| `service-request.started` | `ServiceRequest Service` | — | Registrar el inicio de la ejecución; hoy no tiene consumidores. |
+| `service-request.completed` | `ServiceRequest Service` | `Payments Service`, `Matching Service` | Abrir el pago pendiente con el total de la cotización aceptada (RN-P4) y liberar al técnico (SCRUM-94). |
+| `payment.approved` | `Payments Service` | `ServiceRequest Service` | Pasar la solicitud a `pagado`. |
+| `payment.rejected` | `Payments Service` | `ServiceRequest Service` | Registrar el rechazo y dejar la solicitud lista para reintentar el pago. |
 | `service-request.rated` (ADR-027) | `ServiceRequest Service` | `Ranking Service` | Disparar el recálculo asíncrono de la reputación promedio del técnico, una vez por calificación. |
 | `ranking.technician-reputation-changed` (ADR-027) | `Ranking Service` | `Identity Service` | Actualizar `technician_profiles.average_rating` y la marca de reputación baja (AC9-E2). |
+| `tenant.status-changed` | `Identity Service` | `ServiceRequest Service` | Mantener la réplica del estado del tenant para rechazar en segundos las solicitudes de un tenant inactivo (RN-T1, SCRUM-509 y SCRUM-510). |
 
 ## 8.7 Consumer Groups
 
 Para garantizar escalabilidad horizontal y procesamiento desacoplado en Kafka (ADR-003, AC5-E3):
 
-1. **Grupos asignados por microservicio:**
-   - `servicerequest-service-group`
-   - `matching-service-group`
-   - `payments-service-group`
-   - `communication-service-group`
-   - `ranking-service-group`
+1. **Grupos asignados por microservicio** (valor por defecto de `Kafka:ConsumerGroupId` en cada servicio; Matching lo fija en `spring.kafka.consumer.group-id`):
+   - `identity-service`
+   - `service-request-service`
+   - `matching-service`
+   - `payments-service`
+   - `ranking-service`
+   - `communication-service` (canal en tiempo real), `communication-inbox` (buzón) y `communication-chat` (réplica de participantes del chat): Communication lee los mismos eventos con tres grupos para que cada función avance su propio offset.
 2. **Aislamiento de offsets:** Cada consumer group almacena su progreso de lectura de forma independiente en Kafka. Si un servicio se detiene por mantenimiento o falla (ej. `ranking-service`, escenario AC5-E3), los eventos continúan encolándose en el tópico sin bloquear a los otros grupos; al reiniciar el pod, retoma el procesamiento desde el último offset confirmado sin pérdida de datos.
 3. **Estrategia de particionado:** Los mensajes utilizan como clave (*message key*) el `aggregate_id` (o `service_request_id`). Esto asegura que todos los eventos relacionados con una misma solicitud lleguen a la misma partición y sean consumidos en estricto orden cronológico.
 
@@ -1361,7 +1368,7 @@ sequenceDiagram
 | 4 | Ejecución del servicio | ServiceRequest, Communication | ✅ Figura 13 | 🟡 Figura 23 (diseño) | ✅ Secciones 6.7 y 10.2 (evidencia en QA: `scrum-96-evidencia`) | ✅ Figuras 30 y 31 (Garage) |
 | 5 | Pago | Payments, ServiceRequest | ✅ Figura 17 (pasarela simulada) | 🟡 Figuras 23 y 24 (diseño) | ✅ Sección 6.10 (evidencia en QA: `scrum-495-comprobante`) | 🟡 Sin la pasarela certificada (proveedor por definir) |
 | 6 | Aprobación/rechazo PSP | Payments, ServiceRequest | ✅ Figura 17 (aprobado y rechazado con la pasarela simulada) | 🟡 Figuras 23 y 24 (diseño) | ✅ Sección 6.10 | 🟡 Sin la pasarela certificada (proveedor por definir) |
-| 7 | Calificación | ServiceRequest, Ranking, Identity | ✅ Figuras 10, 13 y 16 | ✅ Figura 27 | ✅ Secciones 6.7, 6.9 y 10.2 (SCRUM-85 y SCRUM-498) | 🟡 Figuras 30 y 31: Ranking sin desplegar (SCRUM-512) |
+| 7 | Calificación | ServiceRequest, Ranking, Identity | ✅ Figuras 10, 13 y 16 | ✅ Figura 27 | ✅ Secciones 6.7, 6.9 y 10.2 (SCRUM-85 y SCRUM-498) | 🟡 Ranking en QA (figura 31, SCRUM-512); en producción llega con la promoción del MVP (figura 30, SCRUM-518) |
 | 8 | Aislamiento multi-tenant | API Gateway, todos los servicios | ✅ Figura 3 y sección 6.12 | ✅ Figuras 25 y 28; Figura 20 (C4 · Code) | ✅ Secciones 6.12 y 10.3 | ✅ Figuras 30, 31 y 33 |
 | 9 | Falla temporal de Kafka | Cualquier productor, Kafka | ✅ Figura 3 y sección 6.12 | ✅ Figura 29; Figura 19 (C4 · Code) | ✅ Secciones 8.10 y 10.3 | ✅ Figuras 30 y 31 |
 
@@ -1403,7 +1410,7 @@ El diagrama muestra la distribución aprobada en ADR-022: VM1 de herramientas y 
 
 ![Despliegue de QA (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-QA.png)
 
-**Figura 31. Despliegue de QA al 27 de octubre de 2026: VM2, VM5 y VM7, con la VM1 compartida (C4 · Deployment, ADR-022); el gateway y el panel en el Nginx de VM2 (ADR-028). Vista `C4-06-Despliegue-QA`.**
+**Figura 31. Despliegue de QA al 3 de noviembre de 2026, con Ranking desplegado (SCRUM-512): VM2, VM5 y VM7, con la VM1 compartida (C4 · Deployment, ADR-022); el gateway y el panel en el Nginx de VM2 (ADR-028). Vista `C4-06-Despliegue-QA`.**
 
 IPs del laboratorio: VM1 10.43.100.168, VM3 10.43.98.205, VM4 10.43.98.209, VM6 10.43.99.12; QA: VM2 10.43.98.15, VM5 10.43.98.29, VM7 10.43.99.8. VM1 reenvía `quickpatch.internal` y `qa.quickpatch.internal` al NodePort 30080 de Traefik en VM3 y VM2.
 
@@ -2105,7 +2112,7 @@ Antes de consolidar una versión final del SDD se verifica la lista siguiente. R
 
 |Verificación|Resultado|Cómo se revisó y qué falta|
 |---|---|---|
-|Todo contenedor del diagrama de contenedores tiene repositorio, pipeline y despliegue (secciones 9 y 10).|🟡 Parcial|Los 8 microservicios, el API Gateway, las dos apps y Kafka tienen repositorio y pipeline. Redis, Garage, PostgreSQL y el Geocodificador se despliegan con Ansible desde `infrastructure/`. Payments corre en QA y Ranking ya tiene manifiesto (`deploy/k8s/ranking.yaml`, SCRUM-512). Actors sigue sin manifiesto: es el único servicio planeado.|
+|Todo contenedor del diagrama de contenedores tiene repositorio, pipeline y despliegue (secciones 9 y 10).|🟡 Parcial|Los 8 microservicios, el API Gateway, las dos apps y Kafka tienen repositorio y pipeline. Redis, Garage, PostgreSQL y el Geocodificador se despliegan con Ansible desde `infrastructure/`. Payments y Ranking corren en QA (Ranking desde el 28 de octubre, `release/0.1.0`, SCRUM-512). Actors sigue sin manifiesto: es el único servicio planeado.|
 |Todo contenedor desplegable aparece en los diagramas de despliegue de producción y QA.|✅ Cumple|Todos aparecen en las Figuras 30 y 31. Actors y Ranking, y el Geocodificador de producción, se dibujan con borde punteado porque todavía no están desplegados.|
 |Los diagramas dinámicos usan solo contenedores y relaciones del modelo C4.|✅ Cumple|Las vistas dinámicas se definen en `quickpatch.dsl` sobre los elementos del modelo, y `structurizr validate` no da errores (SCRUM-468).|
 |Los escenarios de validación pueden seguirse en los diagramas de contenedores, componentes, dinámicos y de despliegue.|🟡 Parcial|Matriz 8.13.4: los escenarios 1, 2, 4, 5, 6, 8 y 9 se siguen en las vistas estáticas, y la ejecución y el pago tienen evidencia de QA. El 3 no tiene vista C4 dinámica propia, las dinámicas de ejecución y pago siguen siendo de diseño. El 7 (calificación) está implementado y tiene su vista dinámica (figura 27).|
@@ -2125,7 +2132,7 @@ Antes de consolidar una versión final del SDD se verifica la lista siguiente. R
 | System Landscape, System Context y Container (3 a 5) | Arquitectura | **V4 - lista para revisión**; contratos al día con `quickpatch-api-gateway` `v0.21.0` (Identity 1.10.0, ServiceRequest 1.11.0, Payments 1.2.0) y `quickpatch-kafka` `v0.10.0` (20 eventos) |
 | Component y Code (6 y 7) | Backend + Frontend | **V4 - lista para revisión**; componentes con los nombres del código (sección 13.4), salvo Matching y Communication (SCRUM-583) |
 | Dynamic (8) | Backend + QA | **V4 - lista para revisión**; asignación con escenario nombrado (SCRUM-590) y calificación implementada (figura 27) |
-| Deployment (9) | DevOps | **V4 - lista para revisión**; una vista por ambiente (figuras 30 y 31, SCRUM-576); Actors, Ranking y el Geocodificador de producción marcados como no desplegados |
+| Deployment (9) | DevOps | **V4 - lista para revisión**; una vista por ambiente (figuras 30 y 31, SCRUM-576); Actors en los dos ambientes, y Ranking y el Geocodificador en producción, marcados como no desplegados |
 | Organización del código (10) | Backend + Frontend | **Desarrollada - lista para revisión** |
 | Flujos de negocio (11) | Arquitectura | **Desarrollada - 15 BPMN** |
 | Escenarios de validación (8.13) | Equipo | **Matriz completa** (8.13.4): 8 escenarios seguidos en las vistas y 1 sin vista dinámica propia (escenario 3) |
