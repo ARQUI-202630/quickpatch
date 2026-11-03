@@ -87,11 +87,13 @@ Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estruc
 | `C4-07-Codigo-AislamientoTenant` | Code (PlantUML) | 20 |
 | `C4-05-Dinamico-CrearSolicitud` | Dynamic | 22 |
 | `C4-05-Dinamico-AsignacionTecnico` | Dynamic | 22b |
+| `C4-05-Dinamico-Cotizacion` | Dynamic | 22c |
 | `C4-05-Dinamico-Pago` | Dynamic | 24 |
 | `C4-05-Dinamico-InicioSesion` | Dynamic | 25 |
 | `C4-05-Dinamico-ReplicaCategorias` | Dynamic | 26 |
 | `C4-05-Dinamico-Calificacion` | Dynamic | 27 |
 | `C4-05-Dinamico-GestionTenants` | Dynamic | 28 |
+| `C4-05-Dinamico-Cancelacion` | Dynamic | 28b |
 | `C4-06-Despliegue-Produccion` | Deployment | 30 |
 | `C4-06-Despliegue-QA` | Deployment | 31 |
 
@@ -888,6 +890,12 @@ El técnico ve sus ofertas pendientes con la localidad y la distancia, pero no l
 
 **Figura 22b. Escenario: asignación de técnico a una solicitud (C4 · Dynamic). Vista `C4-05-Dinamico-AsignacionTecnico`.**
 
+**Cotización.** Con el técnico asignado, la solicitud pasa por la cotización antes de iniciar (RF-34, RF-35). El técnico emite hasta tres cotizaciones; cada una vence a las 24 horas, y al rechazar la tercera la solicitud se cancela (RN-Q2, RN-Q6 a RN-Q8). Cada paso guarda el cambio y sus eventos en una transacción (ADR-007), y Communication avisa al otro participante por el canal en tiempo real y el buzón.
+
+![Cotización del servicio (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Cotizacion.png)
+
+**Figura 22c. Escenario: cotización del servicio (C4 · Dynamic; SCRUM-589, desde los flujos de SCRUM-591). Vista `C4-05-Dinamico-Cotizacion`.**
+
 ## 8.4 Secuencia de pago y facturación
 
 Este flujo describe el cierre operativo del servicio y el cobro bajo el estándar PCI-DSS y el modelo Merchant of Record (RF-15, RF-22, RF-24, D4, D7, K2, ADR-009, AC3-E1, AC6-E1, AC9-E1, AC9-E5):
@@ -951,11 +959,11 @@ sequenceDiagram
 
 ---
 
-**Vista C4.** El flujo de pago a nivel de contenedores. Payments está implementado con la pasarela simulada; la pasarela certificada del diagrama sigue planeada.
+**Vista C4.** El escenario de pago a nivel de contenedores, como está implementado: el pago pendiente lo crea `service-request.completed`, el cobro lo hace la pasarela simulada dentro de Payments (ADR-009 modificado) y la solicitud pasa a `pagado` con `payment.approved`. La pasarela certificada y su webhook siguen planeados (sección 6.10).
 
 ![Pago tokenizado y facturación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Pago.png)
 
-**Figura 24. Pago tokenizado y facturación (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-Pago`.**
+**Figura 24. Escenario: pago del servicio y comprobante (C4 · Dynamic; SCRUM-589). Vista `C4-05-Dinamico-Pago`.**
 
 ## 8.5 Otros flujos críticos
 
@@ -984,6 +992,14 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 ![Gestión de tenants (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-GestionTenants.png)
 
 **Figura 28. Gestión de tenants por el admin de plataforma (C4 · Dynamic). Vista `C4-05-Dinamico-GestionTenants`.**
+
+**Cancelación.** El cliente dueño (o el `admin_tenant` desde el panel) cancela una solicitud antes de `en_progreso` (RF-36). Matching retira la oferta pendiente y libera al técnico; Communication avisa con `service-request.status-changed`, porque no consume `service-request.cancelled` (matriz 8.6).
+
+![Cancelación de una solicitud (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Cancelacion.png)
+
+**Figura 28b. Escenario: cancelación de una solicitud (C4 · Dynamic; SCRUM-589). Vista `C4-05-Dinamico-Cancelacion`.**
+
+Los diagramas de secuencia de detalle de la cotización, el pago y la cancelación, con sus alternativas (rechazo, vencimiento, pasarela sin respuesta) y los errores de cada contrato, están en `docs/architecture/DIAGRAMS_SCRUM591_DYNAMIC_FLOWS.md` (SCRUM-591).
 
 ## 8.6 Productores y consumidores Kafka
 
@@ -2216,6 +2232,7 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 | Componentes de Identity, Catalog, ServiceRequest y Payments con los nombres del código | 6.4, 6.6, 6.7 y 6.10 (figuras 10, 12, 13 y 17) | SCRUM-581 y SCRUM-582 |
 | Escenario de asignación del técnico con pasos numerados y eventos por nombre | 8 (figura 22b) | SCRUM-590 |
 | Componentes del Sprint 5, dinámica de la calificación y despliegue real | 6, 8 (figura 27) y 9 | SCRUM-549 y SCRUM-550 |
+| Escenarios dinámicos con título y pasos numerados para la cotización, el pago y la cancelación, desde los flujos de SCRUM-591 | 8.3, 8.4 y 8.5 (figuras 22c, 24 y 28b) | SCRUM-589 |
 | Revisión integral del Sprint 5: sistemas externos según ADR-024 (sección 4), Ranking en QA, matriz 8.6 y grupos 8.7 con los eventos y consumidores reales, perfil, `tenant.status-changed` y su réplica en Identity y ServiceRequest, y calificación e historial en la app | 4, 5, 6.2, 6.4, 6.7, 6.9, 8.6, 8.7, 9 y 12 (figuras 3, 9, 10, 13, 16, 27 y 31) | SCRUM-548 |
 | Componentes reales de la calificación: ServiceRequest, Ranking e Identity | 6.4, 6.7 y 6.9 (figuras 10, 13 y 16) | SCRUM-584 |
 | Pagos recibidos de Payments con sus clases reales (`ReceivedPaymentEndpoints`, `ReceivedPaymentsHandler`, `TechnicianRegisteredConsumer` y `TechnicianRegisteredHandler`) y los consumidores reales de Communication, sin `payment.*` | 6.10 (figura 17), figura 18 y figura 3 | SCRUM-584 |

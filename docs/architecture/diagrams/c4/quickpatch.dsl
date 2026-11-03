@@ -761,16 +761,68 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-Pago" "Pago tokenizado y facturación (RF-22 a RF-24, ADR-009)." {
-            mobile -> gateway "POST /api/v1/payments con el token de la tarjeta" "HTTPS/JSON"
+        dynamic quickpatch "C4-05-Dinamico-Cotizacion" "Desde que el técnico asignado cotiza hasta que el cliente acepta (RF-34, RF-35; RN-Q2, RN-Q8; ADR-007, ADR-023). Si el cliente rechaza (POST .../reject), ServiceRequest vuelve la solicitud a asignado y publica service-request.quote-rejected en lugar de los pasos 10 a 16; con la tercera rechazada cancela la solicitud (RN-Q7). Sin respuesta en 24 h, la cotización vence y la solicitud se cancela (RN-Q6)." {
+            title "Escenario: cotización del servicio"
+            mobile -> gateway "Las apps del cliente y del técnico tienen abierto el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
+            gateway -> communication "Enruta el WebSocket; Communication valida el token"
+            mobile -> gateway "El técnico cotiza: POST /api/v1/service-requests/{id}/quotes con mano de obra, materiales y detalle" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del técnico asignado"
+            serviceRequest -> dbServiceRequest "Guarda la cotización pendiente (de 1 a 3, vence en 24 h), pasa la solicitud a cotizado y guarda service-request.quoted y status-changed en el Outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.quoted"
+            communication -> kafka "Consume service-request.quoted (una vez por eventId)"
+            communication -> gateway "Avisa al cliente por su WebSocket y guarda la notificación en el buzón"
+            gateway -> mobile "La app del cliente muestra la cotización con el total y el vencimiento" "WebSocket (wss)"
+            mobile -> gateway "El cliente acepta: POST /api/v1/service-requests/{id}/quotes/{quoteId}/accept" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del cliente dueño"
+            serviceRequest -> dbServiceRequest "Acepta la cotización, pasa la solicitud a cotizacion_aceptada y guarda service-request.quote-accepted y status-changed en el Outbox"
+            serviceRequest -> kafka "Publica service-request.quote-accepted"
+            communication -> kafka "Consume service-request.quote-accepted"
+            communication -> gateway "Avisa al técnico por su WebSocket"
+            gateway -> mobile "La app del técnico habilita Iniciar el servicio" "WebSocket (wss)"
+            autoLayout lr 250 120
+            properties {
+                "structurizr.groups" false
+            }
+        }
+        dynamic quickpatch "C4-05-Dinamico-Pago" "Desde que el técnico completa hasta que el cliente tiene el comprobante (RF-22 a RF-24; RN-P1, RN-P4, RN-SR4; ADR-007, ADR-009 modificado). Si la pasarela rechaza, Payments publica payment.rejected en el paso 12 y la solicitud sigue en completado para reintentar (RN-SR5); si no responde, la conciliación cierra el pago (AC9-E5)." {
+            title "Escenario: pago del servicio y comprobante"
+            mobile -> gateway "Las apps del cliente y del técnico tienen abierto el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
+            gateway -> communication "Enruta el WebSocket; Communication valida el token"
+            mobile -> gateway "El técnico completa: POST /api/v1/service-requests/{id}/complete" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del técnico asignado"
+            serviceRequest -> dbServiceRequest "Pasa la solicitud a completado y guarda service-request.completed (con el total) y status-changed en el Outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.completed"
+            payments -> kafka "Consume service-request.completed (una vez por eventId)"
+            payments -> dbPayments "Crea el pago pendiente con el total de la cotización aceptada (RN-P4)"
+            mobile -> gateway "El cliente paga: POST /api/v1/service-requests/{id}/payment con el token de la tarjeta, que se tokeniza en el teléfono (RN-P1)" "HTTPS/JSON"
             gateway -> payments "Enruta con el JWT del cliente"
-            payments -> pasarela "Cobra con el token (sin PAN ni CVV)"
-            pasarela -> payments "Webhook con el resultado"
-            payments -> dbPayments "Guarda el pago, la factura y el evento en outbox (una transacción)"
-            payments -> kafka "Publica payment.approved o payment.rejected"
-            serviceRequest -> kafka "Consume el resultado y pasa a pagado"
-            communication -> kafka "Consume el resultado y envía el comprobante"
-            autoLayout rl 200 100
+            payments -> dbPayments "Cobra con la pasarela simulada (adaptador dentro de Payments, ADR-009) y guarda el pago aprobado, el comprobante y payment.approved en el Outbox (una transacción)"
+            payments -> kafka "Publica payment.approved"
+            serviceRequest -> kafka "Consume payment.approved"
+            serviceRequest -> dbServiceRequest "Pasa la solicitud a pagado (RN-SR4) y guarda service-request.status-changed en el Outbox"
+            serviceRequest -> kafka "Publica service-request.status-changed"
+            communication -> kafka "Consume service-request.status-changed"
+            communication -> gateway "Avisa al cliente y al técnico por su WebSocket"
+            gateway -> mobile "La app del cliente abre el comprobante: GET /api/v1/payments/{id}/invoice en PDF" "WebSocket (wss)"
+            autoLayout lr 250 120
+            properties {
+                "structurizr.groups" false
+            }
+        }
+        dynamic quickpatch "C4-05-Dinamico-Cancelacion" "El cliente dueño cancela antes de que empiece el servicio (RF-36; RN-Q5, RN-M5, RN-M6; ADR-007). Desde en_progreso responde 409 transicion-invalida. El admin_tenant también puede cancelar desde el panel, y queda en audit_logs. Communication no consume service-request.cancelled: avisa con service-request.status-changed." {
+            title "Escenario: cancelación de una solicitud"
+            mobile -> gateway "Las apps del cliente y del técnico tienen abierto el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
+            gateway -> communication "Enruta el WebSocket; Communication valida el token"
+            mobile -> gateway "El cliente cancela: POST /api/v1/service-requests/{id}/cancel con el motivo (5 a 500 caracteres)" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del cliente dueño"
+            serviceRequest -> dbServiceRequest "Bloquea la solicitud (FOR UPDATE), la pasa a cancelado, anula la cotización pendiente (RN-Q5) y guarda service-request.cancelled y status-changed en el Outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.cancelled y service-request.status-changed"
+            matching -> kafka "Consume service-request.cancelled (una vez por eventId)"
+            matching -> dbMatching "Cancela la oferta pendiente y no ofrece a más candidatos (RN-M5); si había técnico, vuelve a disponible (RN-M6)"
+            communication -> kafka "Consume service-request.status-changed"
+            communication -> gateway "Avisa al cliente y al técnico asignado por su WebSocket"
+            gateway -> mobile "Las apps muestran la solicitud cancelada" "WebSocket (wss)"
+            autoLayout lr 250 120
             properties {
                 "structurizr.groups" false
             }
