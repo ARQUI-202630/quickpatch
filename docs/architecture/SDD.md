@@ -351,7 +351,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Sesión | `core/session` | Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol. | SCRUM-23 |
 | Autenticación | `features/autenticacion` | Login, registro de cliente hogar y registro de técnico o proveedor con su especialidad, y activación de la cuenta del técnico de un equipo con el enlace de invitación (`POST /v1/auth/password/setup`). El registro de empresa está oculto (`registroEmpresaHabilitado = false`) hasta SCRUM-26. | SCRUM-23; SCRUM-22 / SCRUM-55; SCRUM-98 |
 | Inicio por rol | `features/inicio` | Para el cliente, acceso a la nueva solicitud y categorías de Catalog; para técnico y proveedor, sus opciones (Disponibilidad y cobertura) y el aviso de verificación. | SCRUM-27 / SCRUM-441 |
-| Cuenta | `features/inicio` | Datos de la sesión, licencias y cierre de sesión. | SCRUM-441 |
+| Cuenta | `features/cuenta` | Datos de la sesión, licencias y cierre de sesión; edición del nombre y el teléfono propios con `PATCH /v1/users/me`, con el correo y el rol de solo lectura (identity 1.9.0). | SCRUM-441 / SCRUM-612 |
 | Sistema de diseño | `app/theme`, `shared/widgets`, `features/solicitudes/presentation/widgets` | Tema azul con tokens y tipografía, y componentes para las pantallas del cliente y del técnico (tarjeta de solicitud, chip de estado, selector de categoría, botones y estados vacío, de error y de carga); contraste WCAG AA y texto al 200 % probados. | SCRUM-439 (440 a 444) |
 | Solicitudes | `features/solicitudes` | Nueva solicitud en tres pasos en un solo formulario (RNF-11) y seguimiento: línea de estado, técnico asignado e indicador de búsqueda, que se actualiza con el canal en tiempo real. | SCRUM-27 / SCRUM-71 / SCRUM-442; SCRUM-31 / SCRUM-83; SCRUM-29 / SCRUM-77 |
 | Servicios del técnico | `features/solicitudes` | Lista de sus servicios asignados con filtro por estado y paginación (`GET /v1/technicians/me/service-requests`), sin dirección ni cliente (RN-SR13), y detalle con el cliente, la dirección y un mapa de solo lectura (`GET /v1/service-requests/{id}`), visibles solo entre `asignado` y `completado`. | SCRUM-34 / SCRUM-92 / SCRUM-467 |
@@ -366,6 +366,8 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Cuenta corporativa | `features/autenticacion`, `features/empresa` | Registro de la empresa cliente con su primer usuario y alta de otros usuarios con invitación (RF-06, identity 1.8.0). | SCRUM-67 |
 | Solicitudes del cliente y de la empresa | `features/solicitudes` | Lista de las propias o de la empresa con filtro y paginación, sede en la solicitud de empresa y solo lectura para la de otro usuario de la empresa (RF-08, RF-11, RN-SR14). | SCRUM-74 |
 | Pago y comprobante | `features/pagos` | Pago con la pasarela simulada (la tarjeta se tokeniza en el teléfono) y comprobante en PDF para compartir (RF-22 a RF-24). | SCRUM-116 / SCRUM-494 |
+| Calificación | `features/calificacion` | Estrellas y comentario en el detalle de una solicitud `pagado`, solo para quien la creó; reconoce `ya-calificada` y `transicion-invalida` (RF-12, service-request 1.10.0). | SCRUM-86 |
+| Historial del técnico | `features/solicitudes` | Servicios atendidos desde Cuenta, con filtros Completados, Pagados y Cancelados y la calificación recibida (RF-17, `GET /v1/technicians/me/service-requests`). | SCRUM-101 |
 
 Reglas comunes a las dos aplicaciones:
 
@@ -425,6 +427,7 @@ En el incremento del Sprint 4, Identity suma:
 - **Equipo del proveedor** (RF-16; SCRUM-97, SCRUM-461): el proveedor da de alta técnicos sin contraseña (`/v1/providers/me/technicians`) y recibe un enlace de invitación de un solo uso; el técnico define su contraseña con `POST /v1/auth/password/setup`. En `password_setup_tokens` solo se guarda el hash del token, y el enlace apunta al panel de cada ambiente (`Invitations__LinkBase`).
 - **Creación de tenants** (RF-21; SCRUM-462): `POST /v1/platform/tenants` crea la empresa oferente activa en `PlatformUnitOfWork` y registra `crear_tenant` en `audit_logs`; un NIT repetido responde `409 nit-registrado`.
 - **Cuenta corporativa** (RF-06; SCRUM-66): `POST /v1/auth/register/company` crea en una transacción la empresa cliente (`client_companies`) y su primer `empresa_contacto` en el tenant del canal; la empresa es una cuenta dentro del tenant, no un tenant (DEP-13). Los demás usuarios entran con la misma invitación de un solo uso del equipo del proveedor, y el token del `empresa_contacto` lleva `company_id`.
+- **En el Sprint 5:** la edición del perfil propio (`PATCH /v1/users/me`, solo nombre y teléfono, `UpdateCurrentUserHandler`, SCRUM-611), la proyección de la reputación que publica Ranking (`ReputationChangedConsumer`, SCRUM-498) y `tenant.status-changed`, que `UpdateTenantStatusHandler` deja en el Outbox al activar o desactivar un tenant (RN-T1, SCRUM-509). La recuperación de la contraseña tiene contrato (identity 1.10.0) y modelo (DD 5.19); su implementación está en revisión (SCRUM-625).
 - **Consulta interna de nombres** (SCRUM-91): `GET /internal/v1/users` (`identity-internal.v1.yaml`) devuelve por lote el nombre y el contacto de usuarios del tenant a otros servicios dentro del clúster; el servicio que llama reenvía el JWT del usuario, así que el tenant sigue saliendo del token. No pasa por el API Gateway ni tiene ruta en el Ingress. ServiceRequest la usa en el detalle de la solicitud para mostrar el cliente al técnico asignado y el técnico al cliente.
 
 ## 6.5 Actors Service
@@ -513,7 +516,7 @@ completado       -> pagado (payment.rejected no cambia el estado, RN-SR5)
 
 El código ya define los nueve estados (`ServiceRequestStatus`). Hoy se usan los de la búsqueda: la creación deja la solicitud en `buscando_tecnico` y los eventos de Matching la pasan a `asignado`, a `en_espera` o de vuelta a `buscando_tecnico` (SCRUM-29). Cada cambio guarda `matching_updated_at` para descartar un evento más viejo que el último aplicado (SCRUM-460). Las demás transiciones llegan con sus historias (RF-34, RF-35, RF-36, RF-14 y RF-22).
 
-**Datos documentados:** `service_requests`, `service_request_categories` (réplica), `outbox_events`, `processed_events` y `quotes`, `service_evidence`, `audit_logs`, `localities` (copia) y `ratings` (calificaciones, SCRUM-85). `service_categories` es de Catalog Service (DD 5.4); la réplica es la tabla 5.20.
+**Datos documentados:** `service_requests`, `service_request_categories` (réplica), `outbox_events`, `processed_events` y `quotes`, `service_evidence`, `audit_logs`, `localities` (copia), `ratings` (calificaciones, SCRUM-85) y `tenant_status_replica` (estado de cada tenant, DD 5.26, SCRUM-510). `service_categories` es de Catalog Service (DD 5.4); la réplica es la tabla 5.20.
 
 **Referencias lógicas externas:** `client_id`, `technician_id`, `tenant_id`.
 
@@ -526,7 +529,8 @@ El código ya define los nueve estados (`ServiceRequestStatus`). Hoy se usan los
 - consume `matching.no-technician-available`;
 - consume `matching.search-resumed`;
 - consume `payment.approved`;
-- consume `payment.rejected`, que no cambia el estado (RN-SR5).
+- consume `payment.rejected`, que no cambia el estado (RN-SR5);
+- consume `tenant.status-changed` y guarda el estado de cada tenant en `tenant_status_replica` (`TenantStatusChangedConsumer` y `ApplyTenantStatusChangedHandler`): crear una solicitud en un tenant inactivo responde `422 tenant-inactivo` aunque el token siga vigente (RN-T1, SCRUM-510).
 
 `service-request.rated` (calificación, ADR-027) sale por el mismo Outbox; los consumidores de cada evento están en la matriz 8.6.
 
@@ -2212,6 +2216,7 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 | Componentes de Identity, Catalog, ServiceRequest y Payments con los nombres del código | 6.4, 6.6, 6.7 y 6.10 (figuras 10, 12, 13 y 17) | SCRUM-581 y SCRUM-582 |
 | Escenario de asignación del técnico con pasos numerados y eventos por nombre | 8 (figura 22b) | SCRUM-590 |
 | Componentes del Sprint 5, dinámica de la calificación y despliegue real | 6, 8 (figura 27) y 9 | SCRUM-549 y SCRUM-550 |
+| Revisión integral del Sprint 5: sistemas externos según ADR-024 (sección 4), Ranking en QA, matriz 8.6 y grupos 8.7 con los eventos y consumidores reales, perfil, `tenant.status-changed` y su réplica en Identity y ServiceRequest, y calificación e historial en la app | 4, 5, 6.2, 6.4, 6.7, 6.9, 8.6, 8.7, 9 y 12 (figuras 3, 9, 10, 13, 16, 27 y 31) | SCRUM-548 |
 | Componentes reales de la calificación: ServiceRequest, Ranking e Identity | 6.4, 6.7 y 6.9 (figuras 10, 13 y 16) | SCRUM-584 |
 | Pagos recibidos de Payments con sus clases reales (`ReceivedPaymentEndpoints`, `ReceivedPaymentsHandler`, `TechnicianRegisteredConsumer` y `TechnicianRegisteredHandler`) y los consumidores reales de Communication, sin `payment.*` | 6.10 (figura 17), figura 18 y figura 3 | SCRUM-584 |
 | Observaciones 1 a 3 de la revisión funcional del PO: sección 12 con la revisión de la V4, contratos de `v0.21.0`, los 20 eventos de `quickpatch-kafka` `v0.10.0` y RF-17, RF-25 y el buzón en la sección 8.13.5 | 5.6.1, 5.6.2, 8.13.5, 12 y 13.5 | SCRUM-548 |
