@@ -270,7 +270,7 @@ const server = http.createServer((req, res) => {
             }
 
             // Contraseña incorrecta (401 credenciales-invalidas)
-            if (body.password === 'Incorrecta123') {
+            if (typeof body.password === 'string' && body.password.startsWith('Invalida_')) {
                 return sendProblemDetails(res, 401, 'credenciales-invalidas', 'Correo o contraseña incorrectos', 'Correo o contraseña incorrectos.', correlationId);
             }
 

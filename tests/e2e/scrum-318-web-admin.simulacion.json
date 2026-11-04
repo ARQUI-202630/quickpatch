@@ -186,10 +186,19 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@quickpatch.internal\",\n  \"password\": \"PasswordInvalidoTotal999*\"\n}"
+              "raw": "{\n  \"email\": \"admin@quickpatch.internal\",\n  \"password\": \"{{claveInvalida}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('claveInvalida', 'Invalida_' + Date.now() + '_Z9!');"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -245,10 +254,19 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"bloqueado@quickpatch.internal\",\n  \"password\": \"CualquierPassword123*\"\n}"
+              "raw": "{\n  \"email\": \"bloqueado@quickpatch.internal\",\n  \"password\": \"{{claveInvalida}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('claveInvalida', 'Invalida_' + Date.now() + '_Z9!');"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -626,10 +644,19 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"usuario@tenant-desactivado.test\",\n  \"password\": \"PasswordValido123*\"\n}"
+              "raw": "{\n  \"email\": \"usuario@tenant-desactivado.test\",\n  \"password\": \"{{claveInvalida}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('claveInvalida', 'Invalida_' + Date.now() + '_Z9!');"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
