@@ -1,7 +1,7 @@
 # Guion de la demostración del incremento — Sprint 5
 
 **Historia:** SCRUM-556 (presentación de la entrega del Sprint 5). **Tarea:** SCRUM-557. Las diapositivas son de SCRUM-558 (Jorge); este guion y sus evidencias son el insumo.
-**Estado del guion:** versión del 3 de noviembre de 2026, revisada contra los despliegues de QA del 2 de noviembre y los PR fusionados hasta el 3. La primera versión es del 27 de octubre, con el ensayo técnico de esa noche (sección "Ensayo"). Los pasos marcados **[requiere APK 0.5.4]** dependen de publicar ese APK (sección "Preparación"). Lo demás ya corre en QA.
+**Estado del guion:** versión del 3 de noviembre de 2026, revisada contra los despliegues de QA del 2 de noviembre y los PR fusionados hasta el 3. La primera versión es del 27 de octubre, con el ensayo técnico de esa noche. El ensayo técnico final se corrió el 3 de noviembre: 11 colecciones, 581 aserciones y 0 fallos (sección "Ensayo"). Los pasos marcados **[requiere APK 0.5.4]** dependen de publicar ese APK (sección "Preparación"). Lo demás ya corre en QA.
 
 ## Reglas de la demostración
 
@@ -148,6 +148,27 @@ Además de las nueve del 27 de octubre, el ensayo final suma las dos que cubren 
 | 5.3 Tenant inactivo | `scrum-511-tenant-desactivado` | El 422 `tenant-inactivo` con el mismo token y la reactivación |
 
 No se lanza `pruebas-sistema.yml` completo para el ensayo: su carga con k6 crea unas 40.000 solicitudes en QA.
+
+### Ensayo técnico final del 3 de noviembre de 2026 (20:28 a 20:40, hora de Bogotá)
+
+Corrido por Juan Diego contra `https://qa.quickpatch.internal`, con las versiones de QA del 2 de noviembre y cuentas nuevas de clave aleatoria. Newman verificó el certificado de la entrada TLS con `QA_CA_CERT`; su huella SHA-256 coincide con la de `tests/security/evidencias/`. Las 11 colecciones pasan sin fallos, incluidas la calificación y el tenant inactivo.
+
+| Bloque del guion | Colección | Peticiones | Aserciones | Fallos | Evidencia |
+|---|---|---|---|---|---|
+| 3 (login, solicitud, matching, ejecución) y 5 | `quickpatch-mvp` | 43 | 61 | 0 | `quickpatch-mvp-qa-2026-11-04.txt` |
+| 3 (técnico: oferta, servicios, evidencia) | `scrum-incremento-tecnico` | 42 | 61 | 0 | `scrum-incremento-tecnico-qa-2026-11-04.txt` |
+| 3.4 Cotización | `scrum-490-cotizacion` | 60 | 76 | 0 | `scrum-490-cotizacion-qa-2026-11-04.txt` |
+| 3.5 Chat | `scrum-483-chat` | 43 | 69 | 0 | `scrum-483-chat-qa-2026-11-04.txt` |
+| 3.7 Pago aprobado y rechazado | `scrum-117-pago` | 71 | 57 | 0 | `scrum-117-pago-qa-2026-11-04.txt` |
+| 3.7 Comprobante | `scrum-495-comprobante` | 39 | 42 | 0 | `scrum-495-comprobante-qa-2026-11-04.txt` |
+| 3.7 a 3.8 Pago y calificación | `humo-flujo-critico` | 27 | 29 | 0 | `humo-flujo-critico-qa-2026-11-04.txt` |
+| 4.1 Empresa y sus usuarios | `scrum-68-cuenta-corporativa` | 32 | 68 | 0 | `scrum-68-cuenta-corporativa-qa-2026-11-04.txt` |
+| 4.2 Pago de la empresa | `scrum-496-pago-empresa` | 51 | 59 | 0 | `scrum-496-pago-empresa-qa-2026-11-04.txt` |
+| 5 Panel operativo | `scrum-105-panel-operativo` | 29 | 35 | 0 | `scrum-105-panel-operativo-qa-2026-11-04.txt` |
+| 5.3 Tenant inactivo | `scrum-511-tenant-desactivado` | 16 | 24 | 0 | `scrum-511-tenant-desactivado-qa-2026-11-04.txt` |
+| **Total** | 11 colecciones | **453** | **581** | **0** | `tests/e2e/evidencias/` |
+
+Las evidencias llevan la fecha UTC del inicio (4 de noviembre). En el primer intento, `quickpatch-mvp`, `scrum-105-panel-operativo` y `scrum-511-tenant-desactivado` corrieron sin las credenciales del administrador de la plataforma: la 511 omitió todos sus pasos y la MVP falló 7 aserciones del bloque de la plataforma. El fallo estaba en la carga local de las credenciales, no en QA. Con ellas cargadas, las tres pasaron y sus evidencias reemplazan a las del primer intento.
 
 ### Ensayo técnico del 27 de octubre de 2026 (22:40 a 23:10, hora de Bogotá)
 

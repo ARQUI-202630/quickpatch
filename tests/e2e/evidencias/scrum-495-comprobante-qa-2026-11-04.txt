@@ -1,0 +1,202 @@
+scrum-495-comprobante contra QA, 2026-11-04
+Colección: tests/e2e/scrum-495-comprobante.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-11-04T01:31:10.904Z. Duración: 26 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-495 Comprobante del pago de punta a punta
+
+□ 0. Preparación: categoría propia, técnico aprobado y clientes
+└ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1020ms]
+  √  200 con rol admin_tenant
+
+└ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 439B, 45ms]
+  √  201
+
+└ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 442B, 894ms]
+  √  201
+
+└ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a42e-8a16-777f-81ea-2b8bc88eb7b2/approve [200 OK, 321B, 36ms]
+  √  200
+
+└ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 922ms]
+  √  200 con rol tecnico
+
+└ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 46ms]
+  √  200
+
+└ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 41ms]
+  √  200
+
+└ Registro de otro técnico, sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 954ms]
+  √  201
+
+└ Login del otro técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1047ms]
+  √  200 con rol tecnico
+
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 1020ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 927ms]
+  √  200 con rol cliente
+
+└ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 432B, 926ms]
+  √  201
+
+└ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 935ms]
+  √  200 con rol cliente
+
+└ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 439B, 1085ms]
+  √  201
+
+└ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 924ms]
+  √  200 con rol cliente
+
+□ 1. Hasta el servicio completado
+└ Crear la solicitud 1 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 833B, 46ms]
+  √  201
+
+└ El técnico ve la oferta de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 36ms]
+
+Attempting to set next request to 69f1ce92-e981-4bde-9a22-0044cef35dbd
+
+└ El técnico ve la oferta de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 818B, 34ms]
+  √  la oferta está pendiente para el técnico
+
+└ El técnico acepta la oferta de la solicitud 1
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/fd433d44-812e-4bb0-8e0d-b9c6b5cef9f1/accept [200 OK, 447B, 40ms]
+  √  200
+
+└ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42e-b42e-7dc3-b9db-79c5ee9258fd [200 OK, 759B, 33ms]
+
+Attempting to set next request to fb38c085-018c-44cd-9cd6-8cabbd129384
+
+└ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42e-b42e-7dc3-b9db-79c5ee9258fd [200 OK, 888B, 255ms]
+  √  asignado al técnico de la prueba
+
+└ El técnico cotiza 185.000
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42e-b42e-7dc3-b9db-79c5ee9258fd/quotes [201 Created, 648B, 37ms]
+  √  201 con el contrato Quote
+
+└ El cliente acepta
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42e-b42e-7dc3-b9db-79c5ee9258fd/quotes/01a1a42e-c789-7652-a4fb-2bb62ac7b3e7/accept [200 OK, 366B, 776ms]
+  √  200 con el contrato QuoteDecision
+
+└ El técnico inicia
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42e-b42e-7dc3-b9db-79c5ee9258fd/start [200 OK, 342B, 42ms]
+  √  200
+
+└ El técnico sube la foto
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42e-b42e-7dc3-b9db-79c5ee9258fd/evidence [201 Created, 444B, 50ms]
+  √  201
+
+└ El técnico completa
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42e-b42e-7dc3-b9db-79c5ee9258fd/complete [200 OK, 343B, 40ms]
+  √  200
+
+□ 2. Pago aprobado con NIT
+└ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42e-b42e-7dc3-b9db-79c5ee9258fd/payment [404 Not Found, 569B, 35ms]
+
+Attempting to set next request to 24fdc21c-73f2-419e-b564-bb003ab901e8
+
+└ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42e-b42e-7dc3-b9db-79c5ee9258fd/payment [200 OK, 479B, 32ms]
+  √  200 con el contrato Payment en pendiente
+
+└ Paga con la tarjeta aprobada y factura con NIT
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42e-b42e-7dc3-b9db-79c5ee9258fd/payment [200 OK, 543B, 45ms]
+  √  200 con el contrato Payment en aprobado
+
+□ 3. Comprobante
+└ El pagador ve el comprobante en JSON
+  GET https://qa.quickpatch.internal/api/v1/payments/01a1a42e-cf2b-7986-97d4-c95fbcf6541b/invoice [200 OK, 754B, 35ms]
+  √  200 con el contrato Invoice
+
+└ El pagador descarga el PDF
+  GET https://qa.quickpatch.internal/api/v1/payments/01a1a42e-cf2b-7986-97d4-c95fbcf6541b/invoice [200 OK, 3.41kB, 37ms]
+  √  200 con el PDF como adjunto
+
+└ El administrador del tenant ve el comprobante
+  GET https://qa.quickpatch.internal/api/v1/payments/01a1a42e-cf2b-7986-97d4-c95fbcf6541b/invoice [200 OK, 754B, 32ms]
+  √  200
+
+└ Un Accept que no es JSON ni PDF → 406
+  GET https://qa.quickpatch.internal/api/v1/payments/01a1a42e-cf2b-7986-97d4-c95fbcf6541b/invoice [406 Not Acceptable, 470B, 30ms]
+  √  406
+  √  Problem Details (RFC 9457) con correlationId
+
+□ 4. Accesos
+└ El técnico no ve el comprobante → 403
+  GET https://qa.quickpatch.internal/api/v1/payments/01a1a42e-cf2b-7986-97d4-c95fbcf6541b/invoice [403 Forbidden, 443B, 28ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ Otro cliente no ve el comprobante → 404
+  GET https://qa.quickpatch.internal/api/v1/payments/01a1a42e-cf2b-7986-97d4-c95fbcf6541b/invoice [404 Not Found, 459B, 33ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo no-encontrado
+
+└ El cliente de otro tenant no ve el comprobante → 404 (RLS)
+  GET https://qa.quickpatch.internal/api/v1/payments/01a1a42e-cf2b-7986-97d4-c95fbcf6541b/invoice [404 Not Found, 459B, 35ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ Un pago que no existe → 404
+  GET https://qa.quickpatch.internal/api/v1/payments/b1c65d22-ec12-44b6-8874-51a05bf6987d/invoice [404 Not Found, 459B, 36ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+□ Limpieza
+└ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a42e-8a16-777f-81ea-2b8bc88eb7b2/suspend [200 OK, 348B, 39ms]
+  √  200
+
+└ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a1a42e-898b-7fd7-b74d-9853b7d3b878 [200 OK, 435B, 35ms]
+  √  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  39 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  39 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  39 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  42 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 21.8s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 17.69kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 324ms [min: 28ms, max: 1085ms, s.d.: 422ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:30956) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:30956) [DEP0044] DeprecationWarning: The `util.isArray` API is deprecated. Please use `Array.isArray()` instead.
