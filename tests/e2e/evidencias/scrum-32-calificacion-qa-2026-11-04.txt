@@ -1,0 +1,515 @@
+scrum-32-calificacion contra QA, 2026-11-04
+Colección: tests/e2e/scrum-32-calificacion.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-11-04T13:16:45.837Z. Duración: 60 s. Código de salida: 1.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-87 Calificación del servicio
+
+□ 0. Preparación: categoría propia, técnico aprobado y clientes
+└ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1117ms]
+  √  200 con rol admin_tenant
+
+└ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 437B, 58ms]
+  √  201
+
+└ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 1004ms]
+  √  201
+
+└ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a6b4-840a-70e3-98d6-a7938b42efce/approve [200 OK, 321B, 51ms]
+  √  200
+
+└ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 998ms]
+  √  200 con rol tecnico
+
+└ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 47ms]
+  √  200
+
+└ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 43ms]
+  √  200
+
+└ Registro de otro técnico, sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 1040ms]
+  √  201
+
+└ Login del otro técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 840ms]
+  √  200 con rol tecnico
+
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 892ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 942ms]
+  √  200 con rol cliente
+
+└ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 432B, 938ms]
+  √  201
+
+└ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 989ms]
+  √  200 con rol cliente
+
+└ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 439B, 930ms]
+  √  201
+
+└ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 888ms]
+  √  200 con rol cliente
+
+□ 1. Solicitud 1: no se califica antes de pagar (RN-R3)
+└ Crear la solicitud 1 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 833B, 81ms]
+  √  201
+
+└ El técnico ve la oferta de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 817B, 45ms]
+  √  la oferta está pendiente para el técnico
+
+└ El técnico acepta la oferta de la solicitud 1
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/4d3a6d68-77bc-4454-a940-2e4da48b9006/accept [200 OK, 447B, 44ms]
+  √  200
+
+└ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59 [200 OK, 758B, 39ms]
+
+Attempting to set next request to 68f497f3-711a-48d0-83d1-6672abe6f368
+
+└ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59 [200 OK, 886B, 56ms]
+  √  asignado al técnico de la prueba
+
+└ CAL-011: en asignado → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [409 Conflict, 541B, 43ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ El técnico cotiza la solicitud 1
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/quotes [201 Created, 648B, 45ms]
+  √  201 con el contrato Quote
+
+└ Se acepta la cotización de la solicitud 1
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/quotes/01a1a6b4-b8a5-7f7d-9bac-0d9765d84c70/accept [200 OK, 366B, 44ms]
+  √  200 con el contrato QuoteDecision
+
+└ El técnico inicia la solicitud 1
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/start [200 OK, 342B, 41ms]
+  √  200
+
+└ El técnico sube la foto de la solicitud 1
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/evidence [201 Created, 445B, 66ms]
+  √  201
+
+└ CAL-011: en en_progreso → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [409 Conflict, 541B, 54ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ El técnico completa la solicitud 1
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/complete [200 OK, 343B, 40ms]
+  √  200
+
+└ CAL-010: completado sin pagar → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [409 Conflict, 541B, 40ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ El pago de la solicitud 1 queda pendiente (espera service-request.completed en Payments)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/payment [404 Not Found, 569B, 583ms]
+
+Attempting to set next request to 6ea971f3-7179-4900-a48c-a0303f202091
+
+└ El pago de la solicitud 1 queda pendiente (espera service-request.completed en Payments)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/payment [200 OK, 479B, 35ms]
+  √  200
+  √  pendiente
+
+└ Se paga la solicitud 1 con la tarjeta aprobada
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/payment [200 OK, 543B, 47ms]
+  √  200
+  √  aprobado
+
+└ La solicitud 1 queda pagada (payment.approved)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59 [200 OK, 947B, 42ms]
+
+Attempting to set next request to bd6fc6c1-7d12-46a7-bf1f-152b48dda07c
+
+└ La solicitud 1 queda pagada (payment.approved)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59 [200 OK, 943B, 319ms]
+  √  pagado
+
+□ 2. Solicitud 1 pagada: validaciones y quién califica
+└ CAL-004: score 0 → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [400 Bad Request, 548B, 32ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  error en score
+
+└ CAL-005: score 6 → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [400 Bad Request, 548B, 33ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  error en score
+
+└ CAL-006: score 4.5 → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [400 Bad Request, 444B, 33ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+
+└ CAL-006: score "5" → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [201 Created, 361B, 43ms]
+  1. 400
+  2. Problem Details (RFC 9457) con correlationId
+
+└ CAL-007: sin score → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [400 Bad Request, 548B, 36ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  error en score
+
+└ CAL-008: comentario de 501 caracteres → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [400 Bad Request, 546B, 37ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  error en comment
+
+└ CAL-009: technicianId en el cuerpo → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [400 Bad Request, 444B, 33ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+
+└ CAL-013: otro cliente del mismo tenant → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [403 Forbidden, 482B, 38ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ CAL-014: cliente del tenant Beta → 404 (RLS)
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [404 Not Found, 457B, 40ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ CAL-015: el técnico → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [403 Forbidden, 443B, 38ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ CAL-015: admin_tenant → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [403 Forbidden, 443B, 38ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ CAL-016: sin sesión → 401
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [401 Unauthorized, 476B, 37ms]
+  √  401
+
+└ CAL-017: solicitud inexistente → 404
+  POST https://qa.quickpatch.internal/api/v1/service-requests/00000000-0000-4000-8000-000000000000/rating [404 Not Found, 457B, 36ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ La solicitud 1 en el historial del técnico
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/service-requests?size=100 [200 OK, 599B, 356ms]
+  √  200
+  √  la solicitud está en el historial
+  3. ningún intento rechazado dejó calificación
+
+└ CAL-001 / CAL-003 / CAL-008: 5 estrellas con comentario de 500 caracteres → 201
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [409 Conflict, 515B, 40ms]
+  4. 201 con el contrato RatingResponse
+
+└ CAL-001: la solicitud sigue en pagado
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59 [200 OK, 943B, 42ms]
+  √  pagado
+
+└ CAL-012: calificar otra vez → 409 ya-calificada
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-adbe-7f47-b74b-8b8daa848c59/rating [409 Conflict, 515B, 41ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ya-calificada
+
+└ La solicitud 1 en el historial del técnico
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/service-requests?size=100 [200 OK, 599B, 39ms]
+  √  200
+  √  la solicitud está en el historial
+  √  CAL-012 / CAL-021: el historial del técnico conserva las 5 estrellas
+
+□ 3. Solicitud 2: 1 estrella sin comentario; solicitud 3 cancelada
+└ Crear la solicitud 2 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 833B, 57ms]
+  √  201
+
+└ El técnico ve la oferta de la solicitud 2
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 39ms]
+
+Attempting to set next request to 38116395-909d-4423-b8dd-62f7c060716b
+
+└ El técnico ve la oferta de la solicitud 2
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 817B, 45ms]
+  √  la oferta está pendiente para el técnico
+
+└ El técnico acepta la oferta de la solicitud 2
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/18a6b8ed-eea4-4b90-990d-2be2e97b2a7e/accept [200 OK, 447B, 42ms]
+  √  200
+
+└ La solicitud 2 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db [200 OK, 758B, 38ms]
+
+Attempting to set next request to 2c6a7fd4-19d8-4453-86c5-6a6226c276ca
+
+└ La solicitud 2 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db [200 OK, 886B, 833ms]
+  √  asignado al técnico de la prueba
+
+└ El técnico cotiza la solicitud 2
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db/quotes [201 Created, 648B, 49ms]
+  √  201 con el contrato Quote
+
+└ Se acepta la cotización de la solicitud 2
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db/quotes/01a1a6b4-f0c4-7748-8f62-df6cd26be89a/accept [200 OK, 366B, 42ms]
+  √  200 con el contrato QuoteDecision
+
+└ El técnico inicia la solicitud 2
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db/start [200 OK, 342B, 41ms]
+  √  200
+
+└ El técnico sube la foto de la solicitud 2
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db/evidence [201 Created, 445B, 61ms]
+  √  201
+
+└ El técnico completa la solicitud 2
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db/complete [200 OK, 343B, 45ms]
+  √  200
+
+└ El pago de la solicitud 2 queda pendiente (espera service-request.completed en Payments)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db/payment [404 Not Found, 569B, 38ms]
+
+Attempting to set next request to 9cdf6591-d14d-44c3-98db-eebb1c82e037
+
+└ El pago de la solicitud 2 queda pendiente (espera service-request.completed en Payments)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db/payment [200 OK, 479B, 39ms]
+  √  200
+  √  pendiente
+
+└ Se paga la solicitud 2 con la tarjeta aprobada
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db/payment [200 OK, 543B, 63ms]
+  √  200
+  √  aprobado
+
+└ La solicitud 2 queda pagada (payment.approved)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db [200 OK, 948B, 44ms]
+
+Attempting to set next request to d263d4be-a15b-481a-807e-de73c1247ac6
+
+└ La solicitud 2 queda pagada (payment.approved)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db [200 OK, 944B, 41ms]
+  √  pagado
+
+└ CAL-002 / CAL-003: 1 estrella sin comentario → 201
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b4-db17-762b-b858-c6f6589624db/rating [201 Created, 361B, 40ms]
+  √  201 con el contrato RatingResponse
+
+└ Crear la solicitud 3 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 832B, 42ms]
+  √  201
+
+└ El técnico ve la oferta de la solicitud 3
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 42ms]
+
+Attempting to set next request to 260d7ae7-55c1-4457-8d49-aae19e178ba7
+
+└ El técnico ve la oferta de la solicitud 3
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 817B, 40ms]
+  √  la oferta está pendiente para el técnico
+
+└ El técnico acepta la oferta de la solicitud 3
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/491c5796-22f8-4a46-942a-0672157d8e27/accept [200 OK, 447B, 43ms]
+  √  200
+
+└ La solicitud 3 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-05c7-7e83-9c70-b2902dff14cf [200 OK, 758B, 36ms]
+
+Attempting to set next request to 8cbd91ec-39bb-411b-bbad-a8c45cb6c552
+
+└ La solicitud 3 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-05c7-7e83-9c70-b2902dff14cf [200 OK, 886B, 43ms]
+  √  asignado al técnico de la prueba
+
+└ El cliente cancela la solicitud 3
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-05c7-7e83-9c70-b2902dff14cf/cancel [200 OK, 370B, 53ms]
+  √  200
+  √  cancelado
+
+└ CAL-011: cancelada → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-05c7-7e83-9c70-b2902dff14cf/rating [409 Conflict, 541B, 38ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+□ 4. Solicitud 4 de empresa: solo califica quien la creó (CAL-018)
+└ Registro de Empresa
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [201 Created, 718B, 969ms]
+  √  201
+
+└ Login de quien crea la solicitud
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.33kB, 1547ms]
+  √  200 como empresa_contacto de su empresa
+
+└ La empresa agrega a un colega
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users [201 Created, 688B, 1000ms]
+  √  201
+
+└ El colega define su contraseña
+  POST https://qa.quickpatch.internal/api/v1/auth/password/setup [204 No Content, 159B, 948ms]
+  √  204
+
+└ Login de el colega
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.34kB, 898ms]
+  √  200 como empresa_contacto de su empresa
+
+└ La empresa crea la solicitud 4 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 881B, 70ms]
+  √  201
+  √  de empresa
+
+└ El técnico ve la oferta de la solicitud 4
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 41ms]
+
+Attempting to set next request to 67c6ed6f-b6b6-4a83-8a37-6ba13cb6cb38
+
+└ El técnico ve la oferta de la solicitud 4
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 817B, 44ms]
+  √  la oferta está pendiente para el técnico
+
+└ El técnico acepta la oferta de la solicitud 4
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/469e618c-1e75-4215-b33e-78616f49e367/accept [200 OK, 447B, 44ms]
+  √  200
+
+└ La solicitud 4 queda asignada
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a [200 OK, 806B, 38ms]
+
+Attempting to set next request to 138ed207-b59c-42e0-ba57-766bc6bb2045
+
+└ La solicitud 4 queda asignada
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a [200 OK, 934B, 157ms]
+  √  asignado
+
+└ El técnico cotiza la solicitud 4
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a/quotes [201 Created, 648B, 46ms]
+  √  201 con el contrato Quote
+
+└ Se acepta la cotización de la solicitud 4
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a/quotes/01a1a6b5-42f3-7746-bd35-37f35ee66d09/accept [200 OK, 366B, 44ms]
+  √  200 con el contrato QuoteDecision
+
+└ El técnico inicia la solicitud 4
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a/start [200 OK, 342B, 40ms]
+  √  200
+
+└ El técnico sube la foto de la solicitud 4
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a/evidence [201 Created, 445B, 58ms]
+  √  201
+
+└ El técnico completa la solicitud 4
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a/complete [200 OK, 343B, 45ms]
+  √  200
+
+└ El pago de la solicitud 4 queda pendiente (espera service-request.completed en Payments)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a/payment [404 Not Found, 569B, 35ms]
+
+Attempting to set next request to 6ba3947a-7194-431e-8061-566d167ce52d
+
+└ El pago de la solicitud 4 queda pendiente (espera service-request.completed en Payments)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a/payment [200 OK, 479B, 63ms]
+  √  200
+  √  pendiente
+
+└ Se paga la solicitud 4 con la tarjeta aprobada
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a/payment [200 OK, 543B, 49ms]
+  √  200
+  √  aprobado
+
+└ La solicitud 4 queda pagada (payment.approved)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a [200 OK, 996B, 44ms]
+
+Attempting to set next request to 882083c5-48e6-4bd9-b06d-fae4590b6915
+
+└ La solicitud 4 queda pagada (payment.approved)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a [200 OK, 992B, 59ms]
+  √  pagado
+
+└ CAL-018: el colega de la empresa → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a/rating [403 Forbidden, 482B, 43ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ CAL-018: quien creó la solicitud → 201
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a6b5-2fe7-70c6-8ddd-f2a1b1c6151a/rating [201 Created, 387B, 589ms]
+  √  201 con el contrato RatingResponse
+
+□ Limpieza
+└ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a6b4-840a-70e3-98d6-a7938b42efce/suspend [200 OK, 348B, 45ms]
+  √  200
+
+└ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a1a6b4-8387-7fc6-823d-b9472ce7f9f0 [200 OK, 433B, 40ms]
+  √  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                 101 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                 101 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                 101 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                 127 │                  4 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 56.5s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 37.56kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 220ms [min: 32ms, max: 1547ms, s.d.: 360ms] │
+└────────────────────────────────────────────────────────────────────┘
+
+  #  failure         detail                                                                                                                                          
+                                                                                                                                                                     
+ 1.  AssertionError  400                                                                                                                                             
+                     expected response to have status code 400 but got 201                                                                                           
+                     at assertion:0 in test-script                                                                                                                   
+                     inside "2. Solicitud 1 pagada: validaciones y quién califica / CAL-006: score "5" → 400"                                                        
+                                                                                                                                                                     
+ 2.  AssertionError  Problem Details (RFC 9457) con correlationId                                                                                                    
+                     expected 'application/json; charset=utf-8' to include 'application/problem+json'                                                                
+                     at assertion:1 in test-script                                                                                                                   
+                     inside "2. Solicitud 1 pagada: validaciones y quién califica / CAL-006: score "5" → 400"                                                        
+                                                                                                                                                                     
+ 3.  AssertionError  ningún intento rechazado dejó calificación                                                                                                      
+                     expected false to deeply equal true                                                                                                             
+                     at assertion:2 in test-script                                                                                                                   
+                     inside "2. Solicitud 1 pagada: validaciones y quién califica / La solicitud 1 en el historial del técnico"                                      
+                                                                                                                                                                     
+ 4.  AssertionError  201 con el contrato RatingResponse                                                                                                              
+                     expected response to have status code 201 but got 409                                                                                           
+                     at assertion:0 in test-script                                                                                                                   
+                     inside "2. Solicitud 1 pagada: validaciones y quién califica / CAL-001 / CAL-003 / CAL-008: 5 estrellas con comentario de 500 caracteres → 201" 
+(node:364) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:364) [DEP0044] DeprecationWarning: The `util.isArray` API is deprecated. Please use `Array.isArray()` instead.

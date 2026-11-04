@@ -205,6 +205,41 @@ Al final suspende a los dos técnicos y desactiva la categoría.
 
 **Evidencia:** `evidencias/scrum-45-pagos-tecnico-qa-2026-11-04.txt`, contra QA el 3 de noviembre de 2026 (hora de Bogotá): 85 peticiones y 103 aserciones, sin fallos; `PAY-026` y `PAY-036` se omitieron porque Beta no tiene categorías.
 
+## Edición del perfil propio (SCRUM-614)
+
+`scrum-614-perfil.postman_collection.json` prueba contra QA la HU SCRUM-609 (RF-01, RF-04) con `PATCH /v1/users/me` de `identity.v1.yaml` 1.9.0. Cubre `PER-001` a `PER-018` del TD 7.2; `PER-019` a `PER-022` son de pantalla. Se genera con `python tests/e2e/generar-scrum614-perfil.py` y necesita al administrador del tenant.
+
+1. **Cada rol edita su perfil:** el cliente cambia el nombre, el teléfono, los dos a la vez y borra el teléfono (`null`); el técnico y el `empresa_contacto` también editan. Al `admin_tenant` de QA solo se le reenvía su mismo nombre, para no cambiar sus datos.
+2. **Validaciones:** cuerpo vacío, nombre de 1 o 151 caracteres, vacío o en blanco y teléfono de 6 o 31 caracteres dan 400 en `application/problem+json` con el campo en `errors`; 2 y 150, 7 y 30 caracteres dan 200.
+3. **Campos que no se editan:** `email`, `role`, `tenant_id`, `verificationStatus` e `id` de otro usuario dan 400, y después se comprueba que el correo, el rol, la verificación y el otro usuario siguen igual. `X-Tenant-Id` con el tenant de Beta se ignora: el cambio queda en el usuario del token y el cliente de Beta no cambia. Sin sesión, 401; el mismo token sigue sirviendo después de editar.
+
+**Evidencia:** `evidencias/scrum-614-perfil-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 56 peticiones y 102 aserciones, sin fallos.
+
+## Historial de servicios del técnico (SCRUM-102)
+
+`scrum-37-historial.postman_collection.json` prueba contra QA la HU SCRUM-37 (RF-17, RN-SR13, RN-SR15) con `GET /v1/technicians/me/service-requests` de `service-request.v1.yaml` 1.10.0. Cubre `HIS-001` a `HIS-015` y `SRQ-026` del TD 7.5; `HIS-016` es de pantalla. Se genera con `python tests/e2e/generar-scrum37-historial.py`, que reutiliza los pasos de `generar-scrum32-calificacion.py`.
+
+**Datos propios:** el técnico de la prueba recibe cinco solicitudes, en este orden: pagada y calificada con 4 estrellas, pagada sin calificar, completada, cancelada por el cliente estando asignada, y asignada.
+
+1. **Historial:** antes de la primera está vacío. Después trae las cinco, de la asignación más reciente a la más antigua, con página 1 de tamaño 20, solo los campos del contrato (sin dirección, ubicación ni cliente) y `score` y `ratedAt` solo en la calificada.
+2. **Filtros y páginas:** `completado`, `cancelado` y `pagado` traen solo las suyas; `terminado` da 400. Con `size=2` las páginas 1, 2 y 3 traen 2, 2 y 1 sin repetidos; la 4 viene vacía con `totalItems` 5; `page=0`, `size=0` y `size=101` dan 400.
+3. **Fugas y permisos:** otro técnico del tenant no ve nada; cliente y `admin_tenant` reciben 403 y sin sesión 401.
+
+**Límite:** `HIS-013` (técnico de Beta) se omite mientras Beta no tenga categorías, igual que `PAY-026` en SCRUM-503.
+
+**Evidencia:** `evidencias/scrum-37-historial-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 91 peticiones y 101 aserciones, sin fallos; `HIS-013` se omitió.
+
+## Calificación del servicio (SCRUM-87)
+
+`scrum-32-calificacion.postman_collection.json` prueba contra QA la HU SCRUM-32 (RF-12, RN-R1 a RN-R3) con `POST /v1/service-requests/{id}/rating` de `service-request.v1.yaml` 1.10.0. Cubre `CAL-001` a `CAL-018` y `CAL-021` del TD 7.8. `CAL-019` y `CAL-020` (el evento `service-request.rated` sin el comentario y la reputación sin doble conteo) los cubren las pruebas de integración de ServiceRequest y Ranking; `CAL-022` y `CAL-023` son de pantalla. Se genera con `python tests/e2e/generar-scrum32-calificacion.py`.
+
+1. **Antes de pagar:** la solicitud 1 da 409 `transicion-invalida` en `asignado`, en `en_progreso` y en `completado` sin pagar.
+2. **Ya pagada:** puntaje 0, 6, 4.5, `"5"` o ausente, comentario de 501 caracteres y `technicianId` en el cuerpo dan 400. Otro cliente, el técnico y el `admin_tenant` reciben 403; el cliente de Beta y una solicitud inexistente, 404; sin sesión, 401. Ningún intento deja calificación. Después, 5 estrellas con un comentario de 500 caracteres dan 201, la solicitud sigue `pagado`, calificar otra vez da 409 `ya-calificada` y el historial del técnico conserva las 5 estrellas.
+3. **Sin comentario y cancelada:** la solicitud 2 recibe 1 estrella sin comentario (`comment: null`); la 3, cancelada, da 409.
+4. **Empresa (CAL-018):** en la solicitud de una empresa, el colega recibe 403 y quien la creó califica.
+
+**Evidencia:** `evidencias/scrum-32-calificacion-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 101 peticiones y 127 aserciones, con 4 fallos que vienen de un defecto. ServiceRequest acepta `{"score":"5"}` con 201 porque lee números escritos como texto, aunque el contrato pide `integer`. Los otros tres fallos son consecuencia: esa calificación queda guardada. La corrección es quickpatch-service-request#39; cuando esté en QA se vuelve a correr la colección.
+
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
 `scrum-68-cuenta-corporativa.postman_collection.json` (RF-06, SCRUM-26) la genera `generar-scrum68-cuenta-corporativa.py`. Contrato: `identity.v1.yaml` 1.8.0. **No necesita al administrador**: todas las cuentas se registran por el canal con correo, NIT y clave generados en la corrida.
