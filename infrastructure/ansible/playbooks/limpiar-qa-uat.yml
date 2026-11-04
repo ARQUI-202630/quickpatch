@@ -1,0 +1,272 @@
+# Deja los datos de QA listos para la UAT (SCRUM-607): conserva las cuentas y las solicitudes que se usan en las
+# demostraciones y borra el resto (pruebas automáticas, cargas de k6, ejecuciones de humo). Solo QA (VM5): el grupo
+# está fijo y no hay forma de apuntarlo a producción.
+#
+#   ./ap playbooks/limpiar-qa-uat.yml -k -K                  solo cuenta lo que se borraría (no cambia nada)
+#   ./ap playbooks/limpiar-qa-uat.yml -k -K -e ensayo=si     borra de verdad dentro de una transacción y la revierte
+#   ./ap playbooks/limpiar-qa-uat.yml -k -K -e aplicar=si    respalda las cinco bases y borra
+#
+# Qué se conserva:
+#   - Usuarios: los de @demo.quickpatch.test, los profe.*@quickpatch.test, todo admin_tenant y admin_plataforma, y las
+#     cuentas de la lista cuentas_extra.
+#   - Solicitudes: las que empiezan por «[DEMO]» (las que deja cargar-demo-qa.py), con lo que tengan en Matching,
+#     Communication y Payments. Del resto de solicitudes se borran también sus cotizaciones, calificaciones,
+#     evidencias, intentos de asignación, chats, pagos y facturas.
+#   - Tenants: todos menos los dos «Humo … SCRUM-448» (se borran con sus filas).
+#   No toca outbox_events ni processed_events, ni el catálogo (las categorías se desactivan con catalogo-qa.py).
+#
+# Antes de borrar comprueba que no hay eventos sin publicar, que las cuentas de cuentas_extra existen y que los
+# clientes de las solicitudes que se conservan también se conservan; si algo no cuadra, para sin cambiar nada.
+# Cada base va en una sola transacción y las claves salen de Identity y de ServiceRequest, que se borran al final:
+# si algo falla a mitad, se puede repetir. El respaldo (pg_dump -Fc, solo lectura para root) queda en
+# {{ stack_dir }}/postgres/limpieza-uat-<fecha>/ en VM5; se restaura con pg_restore --clean (INFRASTRUCTURE.md 9.3).
+# Corre como postgres: el dueño salta RLS, que aquí no se debilita (no cambia políticas ni roles).
+- name: Limpiar los datos de QA para la UAT
+  hosts: qa_datos
+  gather_facts: false
+  become: true
+  vars:
+    dir: "{{ stack_dir }}/postgres"
+    psql: docker compose -f {{ dir }}/compose.yml exec -T -u postgres postgres psql -X -v ON_ERROR_STOP=1 -q -At
+    modo: "{{ 'aplicar' if aplicar | default('no') == 'si' else ('ensayo' if ensayo | default('no') == 'si' else 'conteo') }}"
+    bases_respaldo: [db_identity, db_service_request, db_matching, db_communication, db_payments]
+    solicitudes_conservadas: "description LIKE '[DEMO]%'"
+    tenants_a_borrar: "name LIKE 'Humo%SCRUM-448%'"
+    # Cuentas que se conservan además de las demo, las profe.* y los administradores.
+    cuentas_extra:
+      - angie@gmail.com
+      - cliente.carga@quickpatch.internal
+      - cliente.demo@quickpatch.dev
+      - proveedor.demo@quickpatch.dev
+      - tecnico.demo@quickpatch.dev
+    cuentas_filtro: >-
+      email LIKE '%@demo.quickpatch.test' OR email LIKE 'profe.%@quickpatch.test'
+      OR role IN ('admin_tenant', 'admin_plataforma')
+      OR email IN ('{{ cuentas_extra | join("', '") }}')
+    # Cada paso borra de t las filas que cumplen w; el orden respeta las claves foráneas. Las tablas temporales
+    # keep_users, keep_req y tenants_borrar las crea la tarea «Contar o borrar en cada base».
+    bases:
+      - base: db_matching
+        totales: [matching_requests, matching_attempts, technician_availability, coverage_zones]
+        pasos:
+          - t: matching_attempts
+            w: >-
+              NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = t.service_request_id)
+              OR NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.technician_id)
+          - t: matching_requests
+            w: NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = t.service_request_id)
+          - t: technician_availability
+            w: NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.technician_id)
+          - t: coverage_zones
+            w: NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.technician_id)
+      - base: db_communication
+        totales: [notifications, chat_participants, chat_messages]
+        pasos:
+          - t: chat_messages
+            w: NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = t.service_request_id)
+          - t: chat_participants
+            w: NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = t.service_request_id)
+          - t: notifications
+            w: >-
+              NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.user_id)
+              OR (t.service_request_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = t.service_request_id))
+      - base: db_payments
+        totales: [payments, invoices, payment_technicians]
+        pasos:
+          - t: invoices
+            w: >-
+              t.payment_id IN (SELECT p.id FROM payments p
+              WHERE NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = p.service_request_id))
+          - t: payments
+            w: NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = t.service_request_id)
+          - t: payment_technicians
+            w: NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.technician_id)
+      - base: db_service_request
+        totales: [service_requests, quotes, ratings, service_evidence]
+        pasos:
+          - t: quotes
+            w: NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = t.service_request_id)
+          - t: ratings
+            w: NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = t.service_request_id)
+          - t: service_evidence
+            w: NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = t.service_request_id)
+          - t: audit_logs
+            w: >-
+              t.target_id IN (SELECT s.id FROM service_requests s
+              WHERE NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = s.id))
+          - t: service_requests
+            w: NOT EXISTS (SELECT 1 FROM keep_req k WHERE k.id = t.id)
+          - t: tenant_status_replica
+            w: t.tenant_id IN (SELECT id FROM tenants_borrar)
+      - base: db_identity
+        totales: [tenants, users, technician_profiles, client_companies, password_setup_tokens, audit_logs]
+        pasos:
+          - t: password_setup_tokens
+            w: NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.user_id)
+          - t: technician_profiles
+            w: NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.user_id)
+          - t: audit_logs
+            w: >-
+              (t.actor_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.actor_user_id))
+              OR t.tenant_id IN (SELECT id FROM tenants_borrar)
+          - t: users
+            w: NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.id)
+          - t: client_companies
+            w: NOT EXISTS (SELECT 1 FROM users u WHERE u.company_id = t.id)
+          - t: tenants
+            w: t.id IN (SELECT id FROM tenants_borrar)
+  tasks:
+    - name: Ids de los usuarios que se conservan
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d db_identity"
+        stdin: "SELECT id FROM users WHERE {{ cuentas_filtro }} ORDER BY id;"
+      register: usuarios
+      changed_when: false
+
+    - name: Cuentas de cuentas_extra que existen
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d db_identity"
+        stdin: >-
+          SELECT count(*) FROM users
+          WHERE email IN ('{{ cuentas_extra | join("', '") }}');
+      register: extras
+      changed_when: false
+
+    - name: Ids de los tenants que se borran
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d db_identity"
+        stdin: "SELECT id FROM tenants WHERE {{ tenants_a_borrar }} ORDER BY id;"
+      register: tenants
+      changed_when: false
+
+    - name: Usuarios que se conservan dentro de esos tenants
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d db_identity"
+        stdin: >-
+          SELECT count(*) FROM users
+          WHERE tenant_id IN (SELECT id FROM tenants WHERE {{ tenants_a_borrar }}) AND ({{ cuentas_filtro }});
+      register: usuarios_en_tenants
+      changed_when: false
+
+    - name: Ids de las solicitudes que se conservan
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d db_service_request"
+        stdin: "SELECT id FROM service_requests WHERE {{ solicitudes_conservadas }} ORDER BY id;"
+      register: solicitudes
+      changed_when: false
+
+    - name: Clientes de las solicitudes que se conservan
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d db_service_request"
+        stdin: "SELECT DISTINCT client_id FROM service_requests WHERE {{ solicitudes_conservadas }};"
+      register: clientes
+      changed_when: false
+
+    - name: Eventos de outbox sin publicar
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d {{ item }}"
+        stdin: "SELECT count(*) FROM outbox_events WHERE published_at IS NULL;"
+      loop: [db_identity, db_service_request, db_matching, db_payments]
+      register: pendientes
+      changed_when: false
+
+    - name: Comprobar que lo que se conserva cuadra
+      ansible.builtin.assert:
+        that:
+          - usuarios.stdout_lines | length > 0
+          - usuarios.stdout_lines | select('match', '^[0-9a-f-]{36}$') | list | length == usuarios.stdout_lines | length
+          - tenants.stdout_lines | select('match', '^[0-9a-f-]{36}$') | list | length == tenants.stdout_lines | length
+          - solicitudes.stdout_lines | length > 0
+          - solicitudes.stdout_lines | select('match', '^[0-9a-f-]{36}$') | list | length == solicitudes.stdout_lines | length
+          - extras.stdout | int == cuentas_extra | length
+          - tenants.stdout_lines | length in [0, 2]
+          - usuarios_en_tenants.stdout | int == 0
+          - clientes.stdout_lines | difference(usuarios.stdout_lines) | length == 0
+          - pendientes.results | map(attribute='stdout') | map('int') | sum == 0 or modo != 'aplicar'
+        fail_msg: >-
+          Algo de lo que se conserva no cuadra con el plan; no se cambió nada. Cuentas encontradas de cuentas_extra:
+          {{ extras.stdout }} de {{ cuentas_extra | length }}; tenants a borrar: {{ tenants.stdout_lines | length }}
+          (deben ser 2, o 0 si ya se borraron); usuarios que se conservan dentro de esos tenants: {{ usuarios_en_tenants.stdout }};
+          clientes de solicitudes [DEMO] que no se conservan: {{ clientes.stdout_lines | difference(usuarios.stdout_lines) }};
+          eventos sin publicar: {{ pendientes.results | map(attribute='stdout') | list }}.
+        quiet: true
+
+    - name: Totales antes
+      ansible.builtin.command:
+        cmd: "{{ psql }} -F ': ' -d {{ item.base }}"
+        stdin: >-
+          {% for tabla in item.totales %}SELECT '{{ item.base }} / {{ tabla }}', count(*) FROM {{ tabla }}
+          {{ 'UNION ALL' if not loop.last else ';' }} {% endfor %}
+      loop: "{{ bases }}"
+      loop_control: { label: "{{ item.base }}" }
+      register: antes
+      changed_when: false
+
+    - name: Respaldo de las cinco bases antes de borrar
+      when: modo == 'aplicar'
+      ansible.builtin.shell: |
+        set -euo pipefail
+        umask 077
+        destino={{ dir }}/limpieza-uat-$(date -u +%Y%m%dT%H%M%SZ)
+        mkdir -p "$destino"
+        for b in {{ bases_respaldo | join(' ') }}; do
+          docker compose -f {{ dir }}/compose.yml exec -T -u postgres postgres pg_dump -Fc -d "$b" > "$destino/$b.dump"
+        done
+        ls -la "$destino"
+      args: { executable: /bin/bash }
+      register: respaldo
+      changed_when: true
+
+    # Matching, Communication y Payments, luego ServiceRequest e Identity (de donde salen las claves): si algo falla a
+    # mitad, las claves siguen ahí y se puede repetir.
+    - name: Contar o borrar en cada base
+      ansible.builtin.command:
+        cmd: "{{ psql }} -F ': ' -d {{ item.base }}"
+        stdin: |
+          BEGIN;
+          CREATE TEMP TABLE keep_users (id uuid PRIMARY KEY) ON COMMIT DROP;
+          CREATE TEMP TABLE keep_req (id uuid PRIMARY KEY) ON COMMIT DROP;
+          CREATE TEMP TABLE tenants_borrar (id uuid PRIMARY KEY) ON COMMIT DROP;
+          INSERT INTO keep_users VALUES {% for i in usuarios.stdout_lines %}('{{ i }}'){{ ',' if not loop.last }}{% endfor %};
+          INSERT INTO keep_req VALUES {% for i in solicitudes.stdout_lines %}('{{ i }}'){{ ',' if not loop.last }}{% endfor %};
+          {% if tenants.stdout_lines %}
+          INSERT INTO tenants_borrar VALUES {% for i in tenants.stdout_lines %}('{{ i }}'){{ ',' if not loop.last }}{% endfor %};
+          {% endif %}
+          {% for p in item.pasos %}
+          {% if modo == 'conteo' %}
+          SELECT '{{ item.base }} / {{ p.t }}', count(*) FROM {{ p.t }} t WHERE {{ p.w }};
+          {% else %}
+          WITH d AS (DELETE FROM {{ p.t }} t WHERE {{ p.w }} RETURNING 1) SELECT '{{ item.base }} / {{ p.t }}', count(*) FROM d;
+          {% endif %}
+          {% endfor %}
+          {{ 'COMMIT' if modo == 'aplicar' else 'ROLLBACK' }};
+      loop: "{{ bases }}"
+      loop_control: { label: "{{ item.base }}" }
+      register: resultado
+      changed_when: modo == 'aplicar'
+
+    - name: Totales después
+      ansible.builtin.command:
+        cmd: "{{ psql }} -F ': ' -d {{ item.base }}"
+        stdin: >-
+          {% for tabla in item.totales %}SELECT '{{ item.base }} / {{ tabla }}', count(*) FROM {{ tabla }}
+          {{ 'UNION ALL' if not loop.last else ';' }} {% endfor %}
+      loop: "{{ bases }}"
+      loop_control: { label: "{{ item.base }}" }
+      register: despues
+      changed_when: false
+
+    - name: Resultado
+      ansible.builtin.debug:
+        msg:
+          - >-
+            {{ {'conteo': 'SOLO CONTEO (nada cambió; -e ensayo=si prueba el borrado y lo revierte, -e aplicar=si borra)',
+            'ensayo': 'ENSAYO (se borró dentro de una transacción y se revirtió: nada cambió)',
+            'aplicar': 'BORRADO'}[modo] }}
+          - >-
+            Se conservan {{ usuarios.stdout_lines | length }} usuarios y {{ solicitudes.stdout_lines | length }}
+            solicitudes; se borran {{ tenants.stdout_lines | length }} tenants
+          - "Filas que {{ 'se borrarían' if modo != 'aplicar' else 'se borraron' }}: {{ resultado.results | map(attribute='stdout_lines') | flatten }}"
+          - "Totales antes: {{ antes.results | map(attribute='stdout_lines') | flatten }}"
+          - "Totales después: {{ despues.results | map(attribute='stdout_lines') | flatten }}"
+          - "{{ respaldo.stdout_lines | default(['(sin respaldo: no se borró nada)']) }}"

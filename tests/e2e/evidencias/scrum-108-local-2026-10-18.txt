@@ -1,0 +1,126 @@
+(node:20100) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[QA Mock Gateway] Inicializado en http://localhost:8080
+
+======================================================
+ EJECUTANDO: SCRUM-108 (Aprobación/Rechazo de Técnicos)
+ HU Padre: SCRUM-39 | RF-19 | RN-TP1 | DD §8.3.13
+ Modo: Simulación Preparatoria Local
+ Target: http://localhost:8080
+ Archivo: scrum-108-aprobacion-rechazo.postman_collection.json
+======================================================
+
+newman
+
+QUICKPATCH — Aprobación y Rechazo de Técnicos (SCRUM-108 / HU SCRUM-39)
+
+□ 0. Autenticación de Actores
+└ 0.1 Login Administrador Tenant Alfa
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 566B, 39ms]
+  √  [Auth] Login de Admin Tenant Alfa exitoso (200 OK)
+
+└ 0.2 Login Administrador Tenant Beta
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 571B, 7ms]
+  √  [Auth] Login de Admin Tenant Beta exitoso (200 OK)
+
+└ 0.3 Login Cliente para Control RBAC
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 558B, 4ms]
+  √  [Auth] Login de Cliente para RBAC exitoso (200 OK)
+
+└ 0.4 Login Técnico para Control RBAC
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 584B, 3ms]
+  √  [Auth] Login de Técnico para RBAC exitoso (200 OK)
+
+□ 1. Consulta y Filtros de Verificación
+└ 1.1 Admin lista técnicos pendientes de verificación
+  GET http://localhost:8080/api/v1/admin/technicians?verificationStatus=pendiente [200 OK, 828B, 5ms]
+  √  [RF-19] 200 OK al listar técnicos pendientes de verificación
+  √  [RF-19] Técnicos en lista tienen estado pendiente y datos requeridos
+
+└ 1.2 Admin lista técnicos aprobados
+  GET http://localhost:8080/api/v1/admin/technicians?verificationStatus=aprobado [200 OK, 552B, 4ms]
+  √  [Filtro status=aprobado] 200 OK y técnicos aprobados listados
+
+□ 2. Aprobación de Técnico
+└ 2.1 Admin aprueba técnico pendiente (usr-tec-pending-01)
+  POST http://localhost:8080/api/v1/admin/technicians/usr-tec-pending-01/approve [200 OK, 429B, 4ms]
+  √  [RF-19 / RN-TP1] 200 OK al aprobar perfil técnico
+
+└ 2.2 Admin verifica que técnico aprobado ya no está en pendientes
+  GET http://localhost:8080/api/v1/admin/technicians?verificationStatus=pendiente [200 OK, 547B, 4ms]
+  √  [Consistencia] El técnico aprobado ya no aparece en lista de pendientes
+
+└ 2.3 Transición Inválida: Intento de aprobar técnico ya aprobado -> 409 Conflict
+  POST http://localhost:8080/api/v1/admin/technicians/usr-tec-approved-01/approve [409 Conflict, 519B, 6ms]
+  √  [RN-TP1 / Transición] 409 Conflict al intentar aprobar técnico ya aprobado
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /transicion-invalida
+
+□ 3. Rechazo de Técnico con Motivo
+└ 3.1 Admin rechaza técnico con motivo válido
+  POST http://localhost:8080/api/v1/admin/technicians/usr-tec-pending-02/reject [200 OK, 506B, 3ms]
+  √  [RF-19] 200 OK al rechazar técnico con motivo fundamentado
+
+└ 3.2 Validación: Intento de rechazar sin motivo válido -> 400 Bad Request
+  POST http://localhost:8080/api/v1/admin/technicians/usr-tec-pending-02/reject [400 Bad Request, 517B, 3ms]
+  √  [Validación] 400 Bad Request cuando el motivo es menor a 5 caracteres
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /validacion-solicitud
+
+└ 3.3 Transición Inválida: Intento de rechazar técnico aprobado -> 409 Conflict
+  POST http://localhost:8080/api/v1/admin/technicians/usr-tec-approved-01/reject [409 Conflict, 500B, 2ms]
+  √  [Transición Inválida] 409 Conflict al intentar rechazar un técnico en estado aprobado
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /transicion-invalida
+
+□ 4. Control de Acceso RBAC y Aislamiento Multi-Tenant
+└ 4.1 Control RBAC: Cliente intenta aprobar técnico -> 403 Forbidden
+  POST http://localhost:8080/api/v1/admin/technicians/usr-tec-pending-01/approve [403 Forbidden, 484B, 3ms]
+  √  [RBAC] 403 Forbidden para cliente intentando aprobar técnicos
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autorizado
+
+└ 4.2 Control RBAC: Técnico intenta auto-aprobarse -> 403 Forbidden
+  POST http://localhost:8080/api/v1/admin/technicians/usr-tec-pending-01/approve [403 Forbidden, 484B, 4ms]
+  √  [RBAC] 403 Forbidden para técnico intentando auto-aprobarse
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autorizado
+
+└ 4.3 Seguridad: Consulta anónima sin token -> 401 Unauthorized
+  GET http://localhost:8080/api/v1/admin/technicians [401 Unauthorized, 477B, 2ms]
+  √  [Seguridad] 401 Unauthorized ante solicitud anónima (IDN-017)
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autenticado
+
+└ 4.4 Aislamiento Multi-Tenant (RLS): Admin Beta intenta aprobar técnico de Tenant Alfa -> 404 Not Found
+  POST http://localhost:8080/api/v1/admin/technicians/usr-tec-pending-01/approve [404 Not Found, 494B, 2ms]
+  √  [SAD AC6-E2 / RLS] 404 Not Found para Admin Beta intentando aprobar técnico de Alfa
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-encontrado
+
+└ 4.5 Aislamiento Multi-Tenant (RLS): Admin Beta lista técnicos pendientes con cero fuga de Alfa
+  GET http://localhost:8080/api/v1/admin/technicians?verificationStatus=pendiente [200 OK, 541B, 2ms]
+  √  [SAD AC6-E2 / RLS] 200 OK para Admin Beta con aislamiento estricto de técnicos
+
+┌─────────────────────────┬─────────────────┬─────────────────┐
+│                         │        executed │          failed │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              iterations │               1 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│                requests │              17 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│            test-scripts │              17 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│      prerequest-scripts │               0 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              assertions │              32 │               0 │
+├─────────────────────────┴─────────────────┴─────────────────┤
+│ total run duration: 1616ms                                  │
+├─────────────────────────────────────────────────────────────┤
+│ total data received: 5.33kB (approx)                        │
+├─────────────────────────────────────────────────────────────┤
+│ average response time: 5ms [min: 2ms, max: 39ms, s.d.: 8ms] │
+└─────────────────────────────────────────────────────────────┘
+
+[Newman] Ejecución de SCRUM-108 completada al 100% con éxito.
+[QA Mock Gateway] Servidor local cerrado.

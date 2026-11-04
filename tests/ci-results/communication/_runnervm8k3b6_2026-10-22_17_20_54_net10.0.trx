@@ -1,0 +1,707 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="cd9d99dd-bd13-4952-a36a-369d3af972a7" name="@runnervm8k3b6 2026-10-22 17:20:54" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-22T17:20:54.9717435+00:00" queuing="2026-10-22T17:20:54.9717436+00:00" start="2026-10-22T17:20:52.4093300+00:00" finish="2026-10-22T17:21:58.0914729+00:00" />
+  <TestSettings name="default" id="09b8f244-042f-4c93-a4f9-788c8c234f9d">
+    <Deployment runDeploymentRoot="_runnervm8k3b6_2026-10-22_17_20_54" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="9dcba8c9-d1dc-4b1e-915d-3721e0e0cfb8" testId="1e0f9e30-a4a7-860f-5ff8-ce0b6541eb2b" testName="QuickPatch.Communication.IntegrationTests.InboxFlowTests.Rls_ElRolDelServicioSoloVeElTenantFijadoYSoloCambiaReadAt" computerName="runnervm8k3b6" duration="00:00:00.0600261" startTime="2026-10-22T17:21:49.6089144+00:00" endTime="2026-10-22T17:21:57.6615082+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9dcba8c9-d1dc-4b1e-915d-3721e0e0cfb8" />
+    <UnitTestResult executionId="8a85c74b-19f0-498d-bdec-cdd31aaea767" testId="4541038d-f0f7-3a7b-be7d-4c34fcb9927d" testName="QuickPatch.Communication.IntegrationTests.InboxFlowTests.RegistroYVerificacion_LleganAlBuzonDelTecnico" computerName="runnervm8k3b6" duration="00:00:01.0159784" startTime="2026-10-22T17:21:22.5828875+00:00" endTime="2026-10-22T17:21:31.5865056+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8a85c74b-19f0-498d-bdec-cdd31aaea767" />
+    <UnitTestResult executionId="c0b51c9f-860a-42c5-9842-3c1c1ab95825" testId="7413363e-54d0-df99-df0c-6dca49f64959" testName="QuickPatch.Communication.IntegrationTests.HealthEndpointsTests.HealthEndpoint_RespondeOk(ruta: &quot;/health/live&quot;)" computerName="runnervm8k3b6" duration="00:00:00.0044701" startTime="2026-10-22T17:20:54.1565152+00:00" endTime="2026-10-22T17:20:54.1566692+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c0b51c9f-860a-42c5-9842-3c1c1ab95825" />
+    <UnitTestResult executionId="7d0158a9-6777-4003-a9cb-45ba8bd81961" testId="7bb04592-7054-9922-471a-4466c9c5f205" testName="QuickPatch.Communication.IntegrationTests.InboxFlowTests.Cotizacion_LlegaAlBuzon_YElRechazoNoRepiteLaAsignacion" computerName="runnervm8k3b6" duration="00:00:00.8671992" startTime="2026-10-22T17:21:41.2326467+00:00" endTime="2026-10-22T17:21:49.6079875+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7d0158a9-6777-4003-a9cb-45ba8bd81961" />
+    <UnitTestResult executionId="728c4f65-8174-4825-9618-6c6270a232e1" testId="f4713198-aaad-ff5b-1d80-6b55b7f6334b" testName="QuickPatch.Communication.IntegrationTests.InboxFlowTests.Chat_ReplicaPorEventos_MensajesEntreParticipantes_YCierreAlCompletar" computerName="runnervm8k3b6" duration="00:00:01.5102173" startTime="2026-10-22T17:21:31.5877405+00:00" endTime="2026-10-22T17:21:41.2314650+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="728c4f65-8174-4825-9618-6c6270a232e1" />
+    <UnitTestResult executionId="440ca8af-2403-4b21-84b7-b464f7ddcd0d" testId="f537ba44-ab1b-e800-93fd-73f925872a85" testName="QuickPatch.Communication.IntegrationTests.KafkaToRealtimeTests.EventoDeKafka_LlegaComoAvisoSoloAlClienteDelTenant" computerName="runnervm8k3b6" duration="00:00:02.5396842" startTime="2026-10-22T17:20:53.7354463+00:00" endTime="2026-10-22T17:21:21.7282938+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="440ca8af-2403-4b21-84b7-b464f7ddcd0d" />
+    <UnitTestResult executionId="0141c2de-c78e-4ffb-a4ac-dc79e80effaf" testId="887bfb66-3d48-94f4-b296-88c728216ce7" testName="QuickPatch.Communication.IntegrationTests.HealthEndpointsTests.HealthEndpoint_RespondeOk(ruta: &quot;/health/ready&quot;)" computerName="runnervm8k3b6" duration="00:00:00.4466069" startTime="2026-10-22T17:20:53.7099108+00:00" endTime="2026-10-22T17:20:54.1372870+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0141c2de-c78e-4ffb-a4ac-dc79e80effaf" />
+    <UnitTestResult executionId="0cd2d4c0-8a15-4cd1-ab95-b3ae475b3f81" testId="cb0e2279-8a9d-e4d9-a11a-e9d5eeb83363" testName="QuickPatch.Communication.IntegrationTests.InboxFlowTests.Eventos_CreanElBuzonDeCadaUsuarioSinDuplicarYSinMezclarTenants" computerName="runnervm8k3b6" duration="00:00:03.4252273" startTime="2026-10-22T17:20:53.7077471+00:00" endTime="2026-10-22T17:21:22.5815183+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0cd2d4c0-8a15-4cd1-ab95-b3ae475b3f81" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="QuickPatch.Communication.IntegrationTests.InboxFlowTests.RegistroYVerificacion_LleganAlBuzonDelTecnico" storage="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/quickpatch.communication.integrationtests/bin/release/net10.0/quickpatch.communication.integrationtests.dll" id="4541038d-f0f7-3a7b-be7d-4c34fcb9927d">
+      <Execution id="8a85c74b-19f0-498d-bdec-cdd31aaea767" />
+      <TestMethod codeBase="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/QuickPatch.Communication.IntegrationTests/bin/Release/net10.0/QuickPatch.Communication.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="QuickPatch.Communication.IntegrationTests.InboxFlowTests" name="RegistroYVerificacion_LleganAlBuzonDelTecnico" />
+    </UnitTest>
+    <UnitTest name="QuickPatch.Communication.IntegrationTests.InboxFlowTests.Eventos_CreanElBuzonDeCadaUsuarioSinDuplicarYSinMezclarTenants" storage="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/quickpatch.communication.integrationtests/bin/release/net10.0/quickpatch.communication.integrationtests.dll" id="cb0e2279-8a9d-e4d9-a11a-e9d5eeb83363">
+      <Execution id="0cd2d4c0-8a15-4cd1-ab95-b3ae475b3f81" />
+      <TestMethod codeBase="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/QuickPatch.Communication.IntegrationTests/bin/Release/net10.0/QuickPatch.Communication.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="QuickPatch.Communication.IntegrationTests.InboxFlowTests" name="Eventos_CreanElBuzonDeCadaUsuarioSinDuplicarYSinMezclarTenants" />
+    </UnitTest>
+    <UnitTest name="QuickPatch.Communication.IntegrationTests.HealthEndpointsTests.HealthEndpoint_RespondeOk(ruta: &quot;/health/live&quot;)" storage="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/quickpatch.communication.integrationtests/bin/release/net10.0/quickpatch.communication.integrationtests.dll" id="7413363e-54d0-df99-df0c-6dca49f64959">
+      <Execution id="c0b51c9f-860a-42c5-9842-3c1c1ab95825" />
+      <TestMethod codeBase="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/QuickPatch.Communication.IntegrationTests/bin/Release/net10.0/QuickPatch.Communication.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="QuickPatch.Communication.IntegrationTests.HealthEndpointsTests" name="HealthEndpoint_RespondeOk" />
+    </UnitTest>
+    <UnitTest name="QuickPatch.Communication.IntegrationTests.InboxFlowTests.Chat_ReplicaPorEventos_MensajesEntreParticipantes_YCierreAlCompletar" storage="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/quickpatch.communication.integrationtests/bin/release/net10.0/quickpatch.communication.integrationtests.dll" id="f4713198-aaad-ff5b-1d80-6b55b7f6334b">
+      <Execution id="728c4f65-8174-4825-9618-6c6270a232e1" />
+      <TestMethod codeBase="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/QuickPatch.Communication.IntegrationTests/bin/Release/net10.0/QuickPatch.Communication.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="QuickPatch.Communication.IntegrationTests.InboxFlowTests" name="Chat_ReplicaPorEventos_MensajesEntreParticipantes_YCierreAlCompletar" />
+    </UnitTest>
+    <UnitTest name="QuickPatch.Communication.IntegrationTests.InboxFlowTests.Cotizacion_LlegaAlBuzon_YElRechazoNoRepiteLaAsignacion" storage="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/quickpatch.communication.integrationtests/bin/release/net10.0/quickpatch.communication.integrationtests.dll" id="7bb04592-7054-9922-471a-4466c9c5f205">
+      <Execution id="7d0158a9-6777-4003-a9cb-45ba8bd81961" />
+      <TestMethod codeBase="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/QuickPatch.Communication.IntegrationTests/bin/Release/net10.0/QuickPatch.Communication.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="QuickPatch.Communication.IntegrationTests.InboxFlowTests" name="Cotizacion_LlegaAlBuzon_YElRechazoNoRepiteLaAsignacion" />
+    </UnitTest>
+    <UnitTest name="QuickPatch.Communication.IntegrationTests.KafkaToRealtimeTests.EventoDeKafka_LlegaComoAvisoSoloAlClienteDelTenant" storage="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/quickpatch.communication.integrationtests/bin/release/net10.0/quickpatch.communication.integrationtests.dll" id="f537ba44-ab1b-e800-93fd-73f925872a85">
+      <Execution id="440ca8af-2403-4b21-84b7-b464f7ddcd0d" />
+      <TestMethod codeBase="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/QuickPatch.Communication.IntegrationTests/bin/Release/net10.0/QuickPatch.Communication.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="QuickPatch.Communication.IntegrationTests.KafkaToRealtimeTests" name="EventoDeKafka_LlegaComoAvisoSoloAlClienteDelTenant" />
+    </UnitTest>
+    <UnitTest name="QuickPatch.Communication.IntegrationTests.InboxFlowTests.Rls_ElRolDelServicioSoloVeElTenantFijadoYSoloCambiaReadAt" storage="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/quickpatch.communication.integrationtests/bin/release/net10.0/quickpatch.communication.integrationtests.dll" id="1e0f9e30-a4a7-860f-5ff8-ce0b6541eb2b">
+      <Execution id="9dcba8c9-d1dc-4b1e-915d-3721e0e0cfb8" />
+      <TestMethod codeBase="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/QuickPatch.Communication.IntegrationTests/bin/Release/net10.0/QuickPatch.Communication.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="QuickPatch.Communication.IntegrationTests.InboxFlowTests" name="Rls_ElRolDelServicioSoloVeElTenantFijadoYSoloCambiaReadAt" />
+    </UnitTest>
+    <UnitTest name="QuickPatch.Communication.IntegrationTests.HealthEndpointsTests.HealthEndpoint_RespondeOk(ruta: &quot;/health/ready&quot;)" storage="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/quickpatch.communication.integrationtests/bin/release/net10.0/quickpatch.communication.integrationtests.dll" id="887bfb66-3d48-94f4-b296-88c728216ce7">
+      <Execution id="0141c2de-c78e-4ffb-a4ac-dc79e80effaf" />
+      <TestMethod codeBase="/home/runner/work/quickpatch-communication/quickpatch-communication/tests/integration/QuickPatch.Communication.IntegrationTests/bin/Release/net10.0/QuickPatch.Communication.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="QuickPatch.Communication.IntegrationTests.HealthEndpointsTests" name="HealthEndpoint_RespondeOk" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="1e0f9e30-a4a7-860f-5ff8-ce0b6541eb2b" executionId="9dcba8c9-d1dc-4b1e-915d-3721e0e0cfb8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4541038d-f0f7-3a7b-be7d-4c34fcb9927d" executionId="8a85c74b-19f0-498d-bdec-cdd31aaea767" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7413363e-54d0-df99-df0c-6dca49f64959" executionId="c0b51c9f-860a-42c5-9842-3c1c1ab95825" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7bb04592-7054-9922-471a-4466c9c5f205" executionId="7d0158a9-6777-4003-a9cb-45ba8bd81961" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f4713198-aaad-ff5b-1d80-6b55b7f6334b" executionId="728c4f65-8174-4825-9618-6c6270a232e1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f537ba44-ab1b-e800-93fd-73f925872a85" executionId="440ca8af-2403-4b21-84b7-b464f7ddcd0d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="887bfb66-3d48-94f4-b296-88c728216ce7" executionId="0141c2de-c78e-4ffb-a4ac-dc79e80effaf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cb0e2279-8a9d-e4d9-a11a-e9d5eeb83363" executionId="0cd2d4c0-8a15-4cd1-ab95-b3ae475b3f81" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="8" executed="8" passed="8" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.13)
+[xUnit.net 00:00:00.08]   Discovering: QuickPatch.Communication.IntegrationTests
+[xUnit.net 00:00:00.14]   Discovered:  QuickPatch.Communication.IntegrationTests
+[xUnit.net 00:00:00.16]   Starting:    QuickPatch.Communication.IntegrationTests
+[testcontainers.org 00:00:00.21] Connected to Docker:
+  Host: unix:///var/run/docker.sock
+  Server Version: 28.0.4
+  Kernel Version: 6.17.0-1022-azure
+  API Version: 1.48
+  Operating System: Ubuntu 24.04.5 LTS
+  Total Memory: 15.61 GB
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api
+[testcontainers.org 00:00:00.25] Searching Docker registry credential in CredHelpers
+[testcontainers.org 00:00:00.25] Searching Docker registry credential in Auths
+[testcontainers.org 00:00:00.25] Searching Docker registry credential in CredsStore
+[testcontainers.org 00:00:00.25] Searching Docker registry credential in Auths
+[testcontainers.org 00:00:00.25] Docker registry credential https://index.docker.io/v1/ found
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+[testcontainers.org 00:00:01.47] Docker image testcontainers/ryuk:0.14.0@sha256:7c1a8a9a47c780ed0f983770a662f80deb115d95cce3e2daa3d12115b8cd28f0 created
+[testcontainers.org 00:00:01.57] Docker container 0dda3ac4a070 created
+[testcontainers.org 00:00:01.63] Start Docker container 0dda3ac4a070
+[testcontainers.org 00:00:01.84] Wait for Docker container 0dda3ac4a070 to complete readiness checks
+[testcontainers.org 00:00:02.86] Docker container 0dda3ac4a070 ready
+[testcontainers.org 00:00:12.41] Docker image postgres:16 created
+[testcontainers.org 00:00:12.42] Docker container 0fb83439164d created
+[testcontainers.org 00:00:12.42] Start Docker container 0fb83439164d
+[testcontainers.org 00:00:12.56] Wait for Docker container 0fb83439164d to complete readiness checks
+[testcontainers.org 00:00:12.57] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container 0fb83439164d
+[testcontainers.org 00:00:13.68] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container 0fb83439164d
+[testcontainers.org 00:00:13.77] Docker container 0fb83439164d ready
+[testcontainers.org 00:00:15.56] Docker image confluentinc/cp-kafka:7.7.1 created
+[testcontainers.org 00:00:15.56] Docker image confluentinc/cp-kafka:7.7.1 created
+[testcontainers.org 00:00:15.58] Docker container 4f499b2aec15 created
+[testcontainers.org 00:00:15.58] Docker container 813175428b0b created
+[testcontainers.org 00:00:15.59] Start Docker container 4f499b2aec15
+[testcontainers.org 00:00:15.59] Start Docker container 813175428b0b
+[testcontainers.org 00:00:15.78] Add file to tar archive: Content length: 390 byte(s), Target file: "/testcontainers.sh", UID: 0, GID: 0, Mode: 0755
+[testcontainers.org 00:00:15.79] Copy tar archive to container: Content length: 390 byte(s), Docker container: 4f499b2aec15
+[testcontainers.org 00:00:15.79] Add file to tar archive: Content length: 390 byte(s), Target file: "/testcontainers.sh", UID: 0, GID: 0, Mode: 0755
+[testcontainers.org 00:00:15.79] Copy tar archive to container: Content length: 390 byte(s), Docker container: 813175428b0b
+[testcontainers.org 00:00:15.80] Wait for Docker container 813175428b0b to complete readiness checks
+[testcontainers.org 00:00:15.80] Wait for Docker container 4f499b2aec15 to complete readiness checks
+[testcontainers.org 00:00:21.86] Docker container 4f499b2aec15 ready
+[testcontainers.org 00:00:22.88] Docker container 813175428b0b ready
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api
+info: QuickPatch.Communication.Api.Realtime.RealtimeSession[1612513252]
+      Canal en tiempo real abierto para el usuario b552dd1d-560b-4491-8062-11a46eab5b2a del tenant ac710a1e-1ec4-45cc-b6c5-a954cf1a043b (cliente).
+info: QuickPatch.Communication.Api.Realtime.RealtimeSession[1612513252]
+      Canal en tiempo real abierto para el usuario b552dd1d-560b-4491-8062-11a46eab5b2a del tenant 0620f146-c552-4480-83f3-285ecb3808c9 (cliente).
+info: QuickPatch.Communication.Application.Realtime.RealtimeNotifier[1341610549]
+      service-request.status-changed 98bacf6c-4cd6-474a-a809-0d2b8ca86671 del tenant ac710a1e-1ec4-45cc-b6c5-a954cf1a043b: 1 avisos enviados.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?' (DbType = Guid), @p4='?', @p5='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO chat_participants (service_request_id, tenant_id, client_id, technician_id, status, status_changed_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      ON CONFLICT (service_request_id) DO UPDATE
+      SET client_id = EXCLUDED.client_id, technician_id = EXCLUDED.technician_id, status = EXCLUDED.status,
+          status_changed_at = EXCLUDED.status_changed_at
+      WHERE chat_participants.status_changed_at &lt; EXCLUDED.status_changed_at
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?' (DbType = Guid), @p4='?', @p5='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO chat_participants (service_request_id, tenant_id, client_id, technician_id, status, status_changed_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      ON CONFLICT (service_request_id) DO UPDATE
+      SET client_id = EXCLUDED.client_id, technician_id = EXCLUDED.technician_id, status = EXCLUDED.status,
+          status_changed_at = EXCLUDED.status_changed_at
+      WHERE chat_participants.status_changed_at &lt; EXCLUDED.status_changed_at
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?' (DbType = Guid), @p4='?', @p5='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO chat_participants (service_request_id, tenant_id, client_id, technician_id, status, status_changed_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      ON CONFLICT (service_request_id) DO UPDATE
+      SET client_id = EXCLUDED.client_id, technician_id = EXCLUDED.technician_id, status = EXCLUDED.status,
+          status_changed_at = EXCLUDED.status_changed_at
+      WHERE chat_participants.status_changed_at &lt; EXCLUDED.status_changed_at
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: QuickPatch.Communication.Application.Inbox.InboxRecorder[1140292561]
+      service-request.status-changed 5c1f085b-13cf-436a-8059-b3b9f2292126 del tenant 31d78ffd-ffa4-4b8e-b400-267ccd208d11: 2 notificaciones nuevas.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: QuickPatch.Communication.Application.Inbox.InboxRecorder[1140292561]
+      service-request.status-changed 5c1f085b-13cf-436a-8059-b3b9f2292126 del tenant 31d78ffd-ffa4-4b8e-b400-267ccd208d11: 0 notificaciones nuevas.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: QuickPatch.Communication.Application.Inbox.InboxRecorder[1140292561]
+      service-request.status-changed b27676e9-b09f-47a8-89e4-4149547da72c del tenant 31d78ffd-ffa4-4b8e-b400-267ccd208d11: 2 notificaciones nuevas.
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+warn: Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware[2]
+      The response has already started, the error handler will not be executed.
+warn: Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware[2]
+      The response has already started, the error handler will not be executed.
+fail: Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware[1]
+      An unhandled exception has occurred while executing the request.
+      System.IO.IOException: The remote end closed the connection.
+       ---&gt; System.ObjectDisposedException: Cannot access a disposed object.
+      Object name: 'Microsoft.AspNetCore.TestHost.TestWebSocket'.
+         --- End of inner exception stack trace ---
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiverSenderBuffer.ThrowNoReceive()
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiverSenderBuffer.ReceiveAsync(CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiveAsync(ArraySegment`1 buffer, CancellationToken cancellationToken)
+         at QuickPatch.Communication.Api.Realtime.RealtimeSession.ReadFrameAsync(WebSocket socket, Int32 maxBytes, CancellationToken cancellationToken) in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs:line 208
+         at QuickPatch.Communication.Api.Realtime.RealtimeSession.RunAsync(WebSocket socket, CancellationToken aborted) in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs:line 111
+         at QuickPatch.Communication.Api.Realtime.RealtimeEndpoints.&lt;&gt;c.&lt;&lt;MapRealtime&gt;b__2_0&gt;d.MoveNext() in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeEndpoints.cs:line 40
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Http.RequestDelegateFactory.ExecuteTaskResult[T](Task`1 task, HttpContext httpContext)
+         at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Diagnostics.StatusCodePagesMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.&lt;Invoke&gt;g__Awaited|10_0(ExceptionHandlerMiddlewareImpl middleware, HttpContext context, Task task)
+fail: Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware[1]
+      An unhandled exception has occurred while executing the request.
+      System.IO.IOException: The remote end closed the connection.
+       ---&gt; System.ObjectDisposedException: Cannot access a disposed object.
+      Object name: 'Microsoft.AspNetCore.TestHost.TestWebSocket'.
+         --- End of inner exception stack trace ---
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiverSenderBuffer.ThrowNoReceive()
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiverSenderBuffer.ReceiveAsync(CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiveAsync(ArraySegment`1 buffer, CancellationToken cancellationToken)
+         at QuickPatch.Communication.Api.Realtime.RealtimeSession.ReadFrameAsync(WebSocket socket, Int32 maxBytes, CancellationToken cancellationToken) in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs:line 208
+         at QuickPatch.Communication.Api.Realtime.RealtimeSession.RunAsync(WebSocket socket, CancellationToken aborted) in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs:line 111
+         at QuickPatch.Communication.Api.Realtime.RealtimeEndpoints.&lt;&gt;c.&lt;&lt;MapRealtime&gt;b__2_0&gt;d.MoveNext() in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeEndpoints.cs:line 40
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Http.RequestDelegateFactory.ExecuteTaskResult[T](Task`1 task, HttpContext httpContext)
+         at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Diagnostics.StatusCodePagesMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.&lt;Invoke&gt;g__Awaited|10_0(ExceptionHandlerMiddlewareImpl middleware, HttpContext context, Task task)
+fail: Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware[1]
+      An unhandled exception has occurred while executing the request.
+      System.IO.IOException: The remote end closed the connection.
+       ---&gt; System.ObjectDisposedException: Cannot access a disposed object.
+      Object name: 'Microsoft.AspNetCore.TestHost.TestWebSocket'.
+         --- End of inner exception stack trace ---
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiverSenderBuffer.ThrowNoReceive()
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiverSenderBuffer.ReceiveAsync(CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiveAsync(ArraySegment`1 buffer, CancellationToken cancellationToken)
+         at QuickPatch.Communication.Api.Realtime.RealtimeSession.ReadFrameAsync(WebSocket socket, Int32 maxBytes, CancellationToken cancellationToken) in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs:line 208
+         at QuickPatch.Communication.Api.Realtime.RealtimeSession.RunAsync(WebSocket socket, CancellationToken aborted) in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs:line 111
+         at QuickPatch.Communication.Api.Realtime.RealtimeEndpoints.&lt;&gt;c.&lt;&lt;MapRealtime&gt;b__2_0&gt;d.MoveNext() in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeEndpoints.cs:line 40
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Http.RequestDelegateFactory.ExecuteTaskResult[T](Task`1 task, HttpContext httpContext)
+         at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Diagnostics.StatusCodePagesMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.&lt;Invoke&gt;g__Awaited|10_0(ExceptionHandlerMiddlewareImpl middleware, HttpContext context, Task task)
+         at Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.HandleException(HttpContext context, ExceptionDispatchInfo edi)
+         at Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.&lt;Invoke&gt;g__Awaited|10_0(ExceptionHandlerMiddlewareImpl middleware, HttpContext context, Task task)
+         at QuickPatch.Communication.Api.Http.CorrelationId.&lt;&gt;c.&lt;&lt;UseCorrelationId&gt;b__3_0&gt;d.MoveNext() in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Http/CorrelationId.cs:line 29
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+warn: Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware[2]
+      The response has already started, the error page middleware will not be executed.
+fail: Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware[1]
+      An unhandled exception has occurred while executing the request.
+      System.IO.IOException: The remote end closed the connection.
+       ---&gt; System.ObjectDisposedException: Cannot access a disposed object.
+      Object name: 'Microsoft.AspNetCore.TestHost.TestWebSocket'.
+         --- End of inner exception stack trace ---
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiverSenderBuffer.ThrowNoReceive()
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiverSenderBuffer.ReceiveAsync(CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.TestHost.TestWebSocket.ReceiveAsync(ArraySegment`1 buffer, CancellationToken cancellationToken)
+         at QuickPatch.Communication.Api.Realtime.RealtimeSession.ReadFrameAsync(WebSocket socket, Int32 maxBytes, CancellationToken cancellationToken) in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs:line 208
+         at QuickPatch.Communication.Api.Realtime.RealtimeSession.RunAsync(WebSocket socket, CancellationToken aborted) in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs:line 111
+         at QuickPatch.Communication.Api.Realtime.RealtimeEndpoints.&lt;&gt;c.&lt;&lt;MapRealtime&gt;b__2_0&gt;d.MoveNext() in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Realtime/RealtimeEndpoints.cs:line 40
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Http.RequestDelegateFactory.ExecuteTaskResult[T](Task`1 task, HttpContext httpContext)
+         at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Diagnostics.StatusCodePagesMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.&lt;Invoke&gt;g__Awaited|10_0(ExceptionHandlerMiddlewareImpl middleware, HttpContext context, Task task)
+         at Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.HandleException(HttpContext context, ExceptionDispatchInfo edi)
+         at Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlewareImpl.&lt;Invoke&gt;g__Awaited|10_0(ExceptionHandlerMiddlewareImpl middleware, HttpContext context, Task task)
+         at QuickPatch.Communication.Api.Http.CorrelationId.&lt;&gt;c.&lt;&lt;UseCorrelationId&gt;b__3_0&gt;d.MoveNext() in /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api/Http/CorrelationId.cs:line 29
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+warn: Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware[2]
+      The response has already started, the error page middleware will not be executed.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId AND n.read_at IS NULL
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid), @p3='?' (DbType = Int32), @p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT n.id, n.created_at, n.message, n.read_at, n.service_request_id, n.source_event_id, n.tenant_id, n.title, n.type, n.user_id
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId
+      ORDER BY n.created_at DESC, n.id DESC
+      LIMIT @p3 OFFSET @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@id='?' (DbType = Guid), @tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT n.id, n.created_at, n.message, n.read_at, n.service_request_id, n.source_event_id, n.tenant_id, n.title, n.type, n.user_id
+      FROM notifications AS n
+      WHERE n.id = @id AND n.tenant_id = @tenantId AND n.user_id = @userId
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p1='?' (DbType = Guid), @p0='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      UPDATE notifications SET read_at = @p0
+      WHERE id = @p1;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId AND n.read_at IS NULL
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid), @p3='?' (DbType = Int32), @p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT n.id, n.created_at, n.message, n.read_at, n.service_request_id, n.source_event_id, n.tenant_id, n.title, n.type, n.user_id
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId AND n.read_at IS NULL
+      ORDER BY n.created_at DESC, n.id DESC
+      LIMIT @p3 OFFSET @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId AND n.read_at IS NULL
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid), @p3='?' (DbType = Int32), @p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT n.id, n.created_at, n.message, n.read_at, n.service_request_id, n.source_event_id, n.tenant_id, n.title, n.type, n.user_id
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId
+      ORDER BY n.created_at DESC, n.id DESC
+      LIMIT @p3 OFFSET @p
+[testcontainers.org 00:00:26.90] Delete Docker container 813175428b0b
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (987ms) [Parameters=[@id='?' (DbType = Guid), @tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT n.id, n.created_at, n.message, n.read_at, n.service_request_id, n.source_event_id, n.tenant_id, n.title, n.type, n.user_id
+      FROM notifications AS n
+      WHERE n.id = @id AND n.tenant_id = @tenantId AND n.user_id = @userId
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId AND n.read_at IS NULL
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid), @p3='?' (DbType = Int32), @p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT n.id, n.created_at, n.message, n.read_at, n.service_request_id, n.source_event_id, n.tenant_id, n.title, n.type, n.user_id
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId
+      ORDER BY n.created_at DESC, n.id DESC
+      LIMIT @p3 OFFSET @p
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+[testcontainers.org 00:00:28.50] Delete Docker container 0fb83439164d
+[testcontainers.org 00:00:28.50] Delete Docker container 4f499b2aec15
+[testcontainers.org 00:00:28.79] Docker container c6a02c206987 created
+[testcontainers.org 00:00:28.79] Docker container 635d414c9ae6 created
+[testcontainers.org 00:00:28.79] Start Docker container c6a02c206987
+[testcontainers.org 00:00:28.79] Start Docker container 635d414c9ae6
+[testcontainers.org 00:00:28.93] Wait for Docker container 635d414c9ae6 to complete readiness checks
+[testcontainers.org 00:00:28.94] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container 635d414c9ae6
+[testcontainers.org 00:00:28.96] Add file to tar archive: Content length: 390 byte(s), Target file: "/testcontainers.sh", UID: 0, GID: 0, Mode: 0755
+[testcontainers.org 00:00:28.96] Copy tar archive to container: Content length: 390 byte(s), Docker container: c6a02c206987
+[testcontainers.org 00:00:28.96] Wait for Docker container c6a02c206987 to complete readiness checks
+[testcontainers.org 00:00:30.01] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container 635d414c9ae6
+[testcontainers.org 00:00:31.12] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container 635d414c9ae6
+[testcontainers.org 00:00:31.19] Docker container 635d414c9ae6 ready
+[testcontainers.org 00:00:33.99] Docker container c6a02c206987 ready
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Object), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: QuickPatch.Communication.Application.Inbox.InboxRecorder[1140292561]
+      technician.registered 1ba0b385-a02e-4474-8dcf-26d9a6214184 del tenant 673b9750-68fb-4bc8-85ca-48a0df50afd9: 1 notificaciones nuevas.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Object), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: QuickPatch.Communication.Application.Inbox.InboxRecorder[1140292561]
+      technician.verification-changed a4f114e6-6fc6-4f93-954f-eba52d1b1a2b del tenant 673b9750-68fb-4bc8-85ca-48a0df50afd9: 1 notificaciones nuevas.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId AND n.read_at IS NULL
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@tenantId='?' (DbType = Guid), @userId='?' (DbType = Guid), @p3='?' (DbType = Int32), @p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT n.id, n.created_at, n.message, n.read_at, n.service_request_id, n.source_event_id, n.tenant_id, n.title, n.type, n.user_id
+      FROM notifications AS n
+      WHERE n.tenant_id = @tenantId AND n.user_id = @userId
+      ORDER BY n.created_at DESC, n.id DESC
+      LIMIT @p3 OFFSET @p
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+[testcontainers.org 00:00:37.50] Delete Docker container 635d414c9ae6
+[testcontainers.org 00:00:37.50] Delete Docker container c6a02c206987
+[testcontainers.org 00:00:37.77] Docker container e68953a21f7e created
+[testcontainers.org 00:00:37.77] Start Docker container e68953a21f7e
+[testcontainers.org 00:00:37.78] Docker container 44db0d79b843 created
+[testcontainers.org 00:00:37.78] Start Docker container 44db0d79b843
+[testcontainers.org 00:00:37.91] Wait for Docker container e68953a21f7e to complete readiness checks
+[testcontainers.org 00:00:37.91] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container e68953a21f7e
+[testcontainers.org 00:00:37.97] Add file to tar archive: Content length: 390 byte(s), Target file: "/testcontainers.sh", UID: 0, GID: 0, Mode: 0755
+[testcontainers.org 00:00:37.97] Copy tar archive to container: Content length: 390 byte(s), Docker container: 44db0d79b843
+[testcontainers.org 00:00:37.98] Wait for Docker container 44db0d79b843 to complete readiness checks
+[testcontainers.org 00:00:39.01] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container e68953a21f7e
+[testcontainers.org 00:00:40.12] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container e68953a21f7e
+[testcontainers.org 00:00:40.19] Docker container e68953a21f7e ready
+[testcontainers.org 00:00:43.03] Docker container 44db0d79b843 ready
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?' (DbType = Guid), @p4='?', @p5='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO chat_participants (service_request_id, tenant_id, client_id, technician_id, status, status_changed_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      ON CONFLICT (service_request_id) DO UPDATE
+      SET client_id = EXCLUDED.client_id, technician_id = EXCLUDED.technician_id, status = EXCLUDED.status,
+          status_changed_at = EXCLUDED.status_changed_at
+      WHERE chat_participants.status_changed_at &lt; EXCLUDED.status_changed_at
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@serviceRequestId='?' (DbType = Guid), @tenantId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT c.service_request_id, c.client_id, c.status, c.status_changed_at, c.technician_id, c.tenant_id
+      FROM chat_participants AS c
+      WHERE c.service_request_id = @serviceRequestId AND c.tenant_id = @tenantId
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?', @p3='?', @p4='?' (DbType = DateTime), @p5='?' (DbType = Guid), @p6='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO chat_messages (id, author_id, author_role, body, sent_at, service_request_id, tenant_id)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+info: QuickPatch.Communication.Application.Chat.SendChatMessageHandler[980773811]
+      Mensaje del chat de f5311b91-fc09-4cc7-b79a-13afd7ef3a08 (tenant 23f4a10a-4406-40be-ae23-834dc55dc09c) entregado a 0 conexiones.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@serviceRequestId='?' (DbType = Guid), @tenantId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT c.service_request_id, c.client_id, c.status, c.status_changed_at, c.technician_id, c.tenant_id
+      FROM chat_participants AS c
+      WHERE c.service_request_id = @serviceRequestId AND c.tenant_id = @tenantId
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@tenantId='?' (DbType = Guid), @serviceRequestId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM chat_messages AS c
+      WHERE c.tenant_id = @tenantId AND c.service_request_id = @serviceRequestId
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@tenantId='?' (DbType = Guid), @serviceRequestId='?' (DbType = Guid), @p3='?' (DbType = Int32), @p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT c.id, c.author_id, c.author_role, c.body, c.sent_at, c.service_request_id, c.tenant_id
+      FROM chat_messages AS c
+      WHERE c.tenant_id = @tenantId AND c.service_request_id = @serviceRequestId
+      ORDER BY c.sent_at DESC, c.id DESC
+      LIMIT @p3 OFFSET @p
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@serviceRequestId='?' (DbType = Guid), @tenantId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT c.service_request_id, c.client_id, c.status, c.status_changed_at, c.technician_id, c.tenant_id
+      FROM chat_participants AS c
+      WHERE c.service_request_id = @serviceRequestId AND c.tenant_id = @tenantId
+      LIMIT 2
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@serviceRequestId='?' (DbType = Guid), @tenantId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT c.service_request_id, c.client_id, c.status, c.status_changed_at, c.technician_id, c.tenant_id
+      FROM chat_participants AS c
+      WHERE c.service_request_id = @serviceRequestId AND c.tenant_id = @tenantId
+      LIMIT 2
+info: QuickPatch.Communication.Application.Realtime.RealtimeNotifier[1341610549]
+      service-request.status-changed 5843ada8-22c1-4db5-bcdb-b4f38ae708d3 del tenant 23f4a10a-4406-40be-ae23-834dc55dc09c: 0 avisos enviados.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?' (DbType = Object), @p4='?', @p5='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO chat_participants (service_request_id, tenant_id, client_id, technician_id, status, status_changed_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      ON CONFLICT (service_request_id) DO UPDATE
+      SET client_id = EXCLUDED.client_id, technician_id = EXCLUDED.technician_id, status = EXCLUDED.status,
+          status_changed_at = EXCLUDED.status_changed_at
+      WHERE chat_participants.status_changed_at &lt; EXCLUDED.status_changed_at
+info: QuickPatch.Communication.Application.Realtime.RealtimeNotifier[1341610549]
+      service-request.status-changed 8b30aa0c-4c0e-4de1-bc0e-de9f8c2edc4c del tenant 23f4a10a-4406-40be-ae23-834dc55dc09c: 0 avisos enviados.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?' (DbType = Guid), @p4='?', @p5='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO chat_participants (service_request_id, tenant_id, client_id, technician_id, status, status_changed_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      ON CONFLICT (service_request_id) DO UPDATE
+      SET client_id = EXCLUDED.client_id, technician_id = EXCLUDED.technician_id, status = EXCLUDED.status,
+          status_changed_at = EXCLUDED.status_changed_at
+      WHERE chat_participants.status_changed_at &lt; EXCLUDED.status_changed_at
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@serviceRequestId='?' (DbType = Guid), @tenantId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT c.service_request_id, c.client_id, c.status, c.status_changed_at, c.technician_id, c.tenant_id
+      FROM chat_participants AS c
+      WHERE c.service_request_id = @serviceRequestId AND c.tenant_id = @tenantId
+      LIMIT 2
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: QuickPatch.Communication.Application.Inbox.InboxRecorder[1140292561]
+      service-request.status-changed 64e97862-67c2-4e4f-9616-a1a95d34037d del tenant 23f4a10a-4406-40be-ae23-834dc55dc09c: 2 notificaciones nuevas.
+[testcontainers.org 00:00:47.15] Delete Docker container 44db0d79b843
+[testcontainers.org 00:00:47.15] Delete Docker container e68953a21f7e
+[testcontainers.org 00:00:47.42] Docker container 92bf3c5b9814 created
+[testcontainers.org 00:00:47.42] Start Docker container 92bf3c5b9814
+[testcontainers.org 00:00:47.42] Docker container 4cefcaba5aeb created
+[testcontainers.org 00:00:47.43] Start Docker container 4cefcaba5aeb
+[testcontainers.org 00:00:47.59] Wait for Docker container 92bf3c5b9814 to complete readiness checks
+[testcontainers.org 00:00:47.59] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container 92bf3c5b9814
+[testcontainers.org 00:00:47.63] Add file to tar archive: Content length: 390 byte(s), Target file: "/testcontainers.sh", UID: 0, GID: 0, Mode: 0755
+[testcontainers.org 00:00:47.63] Copy tar archive to container: Content length: 390 byte(s), Docker container: 4cefcaba5aeb
+[testcontainers.org 00:00:47.64] Wait for Docker container 4cefcaba5aeb to complete readiness checks
+[testcontainers.org 00:00:48.68] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container 92bf3c5b9814
+[testcontainers.org 00:00:49.78] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container 92bf3c5b9814
+[testcontainers.org 00:00:49.85] Docker container 92bf3c5b9814 ready
+[testcontainers.org 00:00:52.67] Docker container 4cefcaba5aeb ready
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api
+info: QuickPatch.Communication.Application.Realtime.RealtimeNotifier[1341610549]
+      service-request.status-changed 2e7bf53e-6488-4f88-8e65-bc3de8423e91 del tenant a1712653-e0dd-4f47-981b-f5262d93cc50: 0 avisos enviados.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?' (DbType = Guid), @p4='?', @p5='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO chat_participants (service_request_id, tenant_id, client_id, technician_id, status, status_changed_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5)
+      ON CONFLICT (service_request_id) DO UPDATE
+      SET client_id = EXCLUDED.client_id, technician_id = EXCLUDED.technician_id, status = EXCLUDED.status,
+          status_changed_at = EXCLUDED.status_changed_at
+      WHERE chat_participants.status_changed_at &lt; EXCLUDED.status_changed_at
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: QuickPatch.Communication.Application.Inbox.InboxRecorder[1140292561]
+      service-request.quote-rejected 6f14c827-a5cc-4b7b-91ac-f1d6f5864a92 del tenant a1712653-e0dd-4f47-981b-f5262d93cc50: 1 notificaciones nuevas.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT set_config('app.current_tenant', @p0, true)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Guid), @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?', @p6='?' (DbType = Guid), @p7='?' (DbType = Guid), @p8='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+      INSERT INTO notifications (id, tenant_id, user_id, type, title, message, service_request_id, source_event_id, created_at)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8)
+      ON CONFLICT (source_event_id, user_id) DO NOTHING
+info: QuickPatch.Communication.Application.Inbox.InboxRecorder[1140292561]
+      service-request.quoted 9bea9509-9615-48b0-9537-e4bbcf254039 del tenant a1712653-e0dd-4f47-981b-f5262d93cc50: 1 notificaciones nuevas.
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+[testcontainers.org 00:00:55.51] Delete Docker container 4cefcaba5aeb
+[testcontainers.org 00:00:55.52] Delete Docker container 92bf3c5b9814
+[testcontainers.org 00:00:55.79] Docker container f504c3c01fee created
+[testcontainers.org 00:00:55.79] Docker container aba19320e59c created
+[testcontainers.org 00:00:55.79] Start Docker container f504c3c01fee
+[testcontainers.org 00:00:55.80] Start Docker container aba19320e59c
+[testcontainers.org 00:00:55.95] Wait for Docker container aba19320e59c to complete readiness checks
+[testcontainers.org 00:00:55.95] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container aba19320e59c
+[testcontainers.org 00:00:56.00] Add file to tar archive: Content length: 390 byte(s), Target file: "/testcontainers.sh", UID: 0, GID: 0, Mode: 0755
+[testcontainers.org 00:00:56.00] Copy tar archive to container: Content length: 390 byte(s), Docker container: f504c3c01fee
+[testcontainers.org 00:00:56.00] Wait for Docker container f504c3c01fee to complete readiness checks
+[testcontainers.org 00:00:57.05] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container aba19320e59c
+[testcontainers.org 00:00:58.19] Execute "pg_isready --host localhost --dbname db_communication --username postgres" at Docker container aba19320e59c
+[testcontainers.org 00:00:58.26] Docker container aba19320e59c ready
+[testcontainers.org 00:01:01.08] Docker container f504c3c01fee ready
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /home/runner/work/quickpatch-communication/quickpatch-communication/src/QuickPatch.Communication.Api
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+[testcontainers.org 00:01:03.58] Delete Docker container aba19320e59c
+[testcontainers.org 00:01:03.58] Delete Docker container f504c3c01fee
+[xUnit.net 00:01:04.18]   Finished:    QuickPatch.Communication.IntegrationTests
+</StdOut>
+    </Output>
+    <CollectorDataEntries>
+      <Collector agentName="runnervm8k3b6" uri="datacollector://microsoft/CoverletCodeCoverage/1.0" collectorDisplayName="XPlat code coverage">
+        <UriAttachments>
+          <UriAttachment>
+            <A href="runnervm8k3b6/coverage.cobertura.xml"></A>
+          </UriAttachment>
+        </UriAttachments>
+      </Collector>
+    </CollectorDataEntries>
+  </ResultSummary>
+</TestRun>

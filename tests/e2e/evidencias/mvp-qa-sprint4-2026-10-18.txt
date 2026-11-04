@@ -1,0 +1,174 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN REAL EN QA — Colección MVP (SCRUM-395)
+Ambiente: QA Desplegado (k3s en VM2 / Ingress https://qa.quickpatch.internal)
+Ejecutado con: Newman CLI (reporte limpio sin credenciales)
+================================================================================
+
+
+❏ 1. Administrador del tenant
+↳ Login del administrador
+  POST https://qa.quickpatch.internal/api/v1/auth/login [400 Bad Request, 314B, 449ms]
+  ✗  200 con token (falló: expected response to have status code 200 but got 400)
+  ✗  rol admin_tenant (falló: Cannot read properties of undefined (reading 'role'))
+↳ Crear categoría
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [401 Unauthorized, 221B, 67ms]
+  ✗  201 creada y activa (falló: expected response to have status code 201 but got 401)
+↳ Categoría con nombre repetido → 409
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [401 Unauthorized, 221B, 36ms]
+  ✗  409 categoría registrada (falló: expected response to have status code 409 but got 401)
+  ✓  Problem Details (RFC 9457) con correlationId
+
+❏ 2. Cliente
+↳ Registro de cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 183B, 3405ms]
+  ✓  201 registrado
+↳ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 970B, 1085ms]
+  ✓  200 con rol cliente
+↳ Perfil del cliente (GET /v1/users/me)
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 183B, 255ms]
+  ✓  200 con su propio usuario
+↳ Correo repetido → 409
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [409 Conflict, 241B, 31ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo correo-registrado
+↳ Categorías del tenant incluyen la nueva
+  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 753B, 24ms]
+  ✗  200 y la categoría está activa (falló: expected [ …(6) ] to include null)
+
+❏ 3. Solicitud de servicio
+↳ Crear solicitud (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [400 Bad Request, 216B, 23ms]
+  ✗  201 en buscando_tecnico (falló: expected response to have status code 201 but got 400)
+  ✓  responde con X-Correlation-Id
+↳ Consultar la solicitud
+  GET https://qa.quickpatch.internal/api/v1/service-requests/null [404 Not Found, 217B, 16ms]
+  ✗  200 con la misma solicitud (falló: expected response to have status code 200 but got 404)
+
+❏ 4. Casos negativos
+↳ Sin token → 401
+  POST https://qa.quickpatch.internal/api/v1/service-requests [401 Unauthorized, 221B, 15ms]
+  ✓  401
+↳ Administrador no crea solicitudes → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests [401 Unauthorized, 221B, 23ms]
+  ✗  403 (falló: expected response to have status code 403 but got 401)
+↳ Cliente no administra categorías → 403
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [403 Forbidden, 217B, 28ms]
+  ✓  403
+↳ Fuera de Bogotá → 422
+  POST https://qa.quickpatch.internal/api/v1/service-requests [400 Bad Request, 216B, 15ms]
+  ✗  422 fuera de cobertura (falló: expected response to have status code 422 but got 400)
+  ✓  Problem Details (RFC 9457) con correlationId
+↳ Descripción corta → 400 por campo
+  POST https://qa.quickpatch.internal/api/v1/service-requests [400 Bad Request, 216B, 21ms]
+  ✗  400 con error en description (falló: Target cannot be null or undefined.)
+  ✓  Problem Details (RFC 9457) con correlationId
+↳ Contraseña incorrecta → 401
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 1050ms]
+  ✓  401
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo credenciales-invalidas
+↳ Registro de un cliente para el bloqueo
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 173B, 977ms]
+  ✓  201 registrado
+↳ Intentos fallidos hasta el bloqueo → 423
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 1581ms]
+↳ Intentos fallidos hasta el bloqueo → 423
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 979ms]
+↳ Intentos fallidos hasta el bloqueo → 423
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 2173ms]
+↳ Intentos fallidos hasta el bloqueo → 423
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 1021ms]
+↳ Intentos fallidos hasta el bloqueo → 423
+  POST https://qa.quickpatch.internal/api/v1/auth/login [423 Locked, 320B, 1384ms]
+  ✓  423 al llegar al máximo de intentos
+  ✓  bloqueo al 5.º intento
+↳ Contraseña correcta durante el bloqueo → 423
+  POST https://qa.quickpatch.internal/api/v1/auth/login [423 Locked, 320B, 38ms]
+  ✓  423
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo cuenta-bloqueada
+↳ Registro de un segundo cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 167B, 907ms]
+  ✓  201 registrado
+↳ Login del segundo cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 954B, 2666ms]
+  ✓  200
+↳ Solicitud de otro cliente → 404
+  GET https://qa.quickpatch.internal/api/v1/service-requests/null [404 Not Found, 217B, 26ms]
+  ✓  404, sin revelar que existe
+  ✓  Problem Details (RFC 9457) con correlationId
+
+❏ 5. Administrador de la plataforma (SCRUM-112)
+↳ Login del administrador de la plataforma
+  POST https://qa.quickpatch.internal/api/v1/auth/login [400 Bad Request, 314B, 29ms]
+  ✗  200 con rol admin_plataforma (falló: expected response to have status code 200 but got 400)
+↳ Listar tenants
+  GET https://qa.quickpatch.internal/api/v1/platform/tenants [401 Unauthorized, 221B, 96ms]
+  ✗  200 con al menos el tenant del canal (falló: expected response to have status code 200 but got 401)
+↳ Administrador del tenant no lista tenants → 403
+  GET https://qa.quickpatch.internal/api/v1/platform/tenants [401 Unauthorized, 221B, 71ms]
+  ✗  403 (falló: expected response to have status code 403 but got 401)
+↳ Cliente no cambia el estado de un tenant → 403
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/%7B%7BtenantPropio%7D%7D [404 Not Found, 217B, 24ms]
+  ✗  403 (falló: expected response to have status code 403 but got 404)
+↳ Desactivar el tenant de la plataforma → 409
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/%7B%7BtenantPropio%7D%7D [404 Not Found, 217B, 14ms]
+  ✗  409 tenant de la plataforma (falló: expected response to have status code 409 but got 404)
+  ✓  Problem Details (RFC 9457) con correlationId
+↳ Activar el tenant propio es idempotente → 200
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/%7B%7BtenantPropio%7D%7D [404 Not Found, 217B, 14ms]
+  ✗  200 y sigue activo (falló: expected response to have status code 200 but got 404)
+↳ Estado fuera del contrato → 400 por campo
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/%7B%7BtenantPropio%7D%7D [404 Not Found, 217B, 17ms]
+  ✗  400 con error en status (falló: expected response to have status code 400 but got 404)
+  ✓  Problem Details (RFC 9457) con correlationId
+↳ Tenant inexistente → 404
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/98dbb5ab-6830-46e5-be46-561cda34d3bc [401 Unauthorized, 221B, 49ms]
+  ✗  404 (falló: expected response to have status code 404 but got 401)
+  ✓  Problem Details (RFC 9457) con correlationId
+
+❏ 6. Catálogo: desactivar una categoría (SCRUM-287)
+↳ Crear una categoría para desactivar
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [401 Unauthorized, 221B, 25ms]
+  ✗  201 (falló: expected response to have status code 201 but got 401)
+↳ Desactivar la categoría
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/null [404 Not Found, 217B, 16ms]
+  ✗  200 inactiva y con updatedAt (falló: expected response to have status code 200 but got 404)
+↳ El cliente ya no la ve
+  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 753B, 24ms]
+  ✓  200 sin la categoría inactiva
+↳ Categoría inexistente → 404
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/e1e82307-f469-4e65-a17f-d2070d9d02f8 [401 Unauthorized, 221B, 17ms]
+  ✗  404 (falló: expected response to have status code 404 but got 401)
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✗  tipo no-encontrado (falló: expected 'https://quickpatch.internal/problems/…' to match /\/no-encontrado$/)
+
+❏ 7. Técnico (SCRUM-287)
+↳ Registro de técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [400 Bad Request, 216B, 42ms]
+  ✗  201 pendiente de verificación (falló: expected response to have status code 201 but got 400)
+↳ Documento repetido → 409
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [400 Bad Request, 216B, 75ms]
+  ✗  409 (falló: expected response to have status code 409 but got 400)
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✗  tipo documento-registrado (falló: expected 'https://quickpatch.internal/problems/…' to match /\/documento-registrado$/)
+↳ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 249B, 4286ms]
+  ✗  200 con rol tecnico (falló: expected response to have status code 200 but got 401)
+↳ Perfil del técnico muestra la verificación
+  GET https://qa.quickpatch.internal/api/v1/users/me [401 Unauthorized, 221B, 76ms]
+  ✗  200 con verificationStatus pendiente (falló: expected response to have status code 200 but got 401)
+↳ El técnico no crea solicitudes → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests [401 Unauthorized, 221B, 20ms]
+  ✗  403 (falló: expected response to have status code 403 but got 401)
+  ✓  Problem Details (RFC 9457) con correlationId
+
+┌─────────────────────────┬──────────────────┬──────────────────┐
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+│                requests │               43 │                0 │
+│              assertions │               60 │               28 │
+└─────────────────────────┴──────────────────┴──────────────────┘

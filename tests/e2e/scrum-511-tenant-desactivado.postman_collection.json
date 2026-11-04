@@ -1,0 +1,949 @@
+{
+  "info": {
+    "name": "QUICKPATCH — SCRUM-511 Tenant desactivado contra QA (RN-T1)",
+    "description": "HU SCRUM-348 (RF-21, RN-T1, ADR-017) contra QA con datos propios: un cliente nuevo del tenant Beta conserva su token; el administrador de la plataforma desactiva Beta y el MISMO token recibe 422 tenant-inactivo al crear una solicitud en segundos (TNT-003). El token sigue sirviendo para otras operaciones (GET /v1/users/me, 200); un login nuevo y un registro nuevo en Beta se rechazan con 403 tenant-inactivo. Al reactivar, la creación deja de responder tenant-inactivo. Beta siempre queda activo al terminar. Variables: baseUrl, platformAdminEmail y platformAdminPassword (secretos de QA, nunca en el repositorio); sin ellos se omiten todos los pasos. Contratos: identity.v1.yaml 1.5.0, service-request.v1.yaml 1.11.0.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://qa.quickpatch.internal"
+    },
+    {
+      "key": "platformAdminEmail",
+      "value": ""
+    },
+    {
+      "key": "platformAdminPassword",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Preparación: Beta activo y un cliente nuevo con su token",
+      "item": [
+        {
+          "name": "Login del administrador de la plataforma",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{platformAdminEmail}}\",\n  \"password\": \"{{platformAdminPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('sufijo')) {",
+                  "  pm.collectionVariables.set('sufijo', Date.now().toString(36));",
+                  "  // Clave de la cuenta de prueba de esta corrida; no se guarda en ningún lado.",
+                  "  pm.collectionVariables.set('clave', 'Qp' + Math.random().toString(36).slice(2, 12) + '7Z');",
+                  "}",
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "pm.collectionVariables.set('categoriaInexistente', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol admin_plataforma', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('admin_plataforma');",
+                  "});",
+                  "pm.collectionVariables.set('plataformaToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ubicar el tenant Beta por su NIT",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const beta = pm.response.json().find(t => t.nit === '900999001-1');",
+                  "const partes = pm.collectionVariables.get('plataformaToken').split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "const yo = JSON.parse(CryptoJS.enc.Base64.parse(partes + '='.repeat((4 - partes.length % 4) % 4)).toString(CryptoJS.enc.Utf8));",
+                  "pm.test('Beta existe y no es el tenant de la plataforma', () => {",
+                  "  pm.expect(beta, 'tenant Beta de QA').to.be.ok;",
+                  "  pm.expect(beta.id).to.not.eql(yo.tenant_id);",
+                  "});",
+                  "// Sin Beta no se sigue: la colección nunca desactiva otro tenant.",
+                  "if (beta && beta.id !== yo.tenant_id) { pm.collectionVariables.set('betaId', beta.id); }",
+                  "else { pm.collectionVariables.unset('betaId'); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Beta activo antes de empezar (idempotente)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{betaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants",
+                "{{betaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"activo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 y Beta queda activo', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('activo');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro de un cliente nuevo en Beta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"qa-tenant-inactivo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba 511 cliente Beta\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del cliente de Beta: su token queda vigente 60 min",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"qa-tenant-inactivo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 con rol cliente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user.role).to.eql('cliente');",
+                  "});",
+                  "pm.collectionVariables.set('clienteToken', pm.response.json().accessToken);",
+                  "const partes = pm.response.json().accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "const carga = JSON.parse(CryptoJS.enc.Base64.parse(partes + '='.repeat((4 - partes.length % 4) % 4)).toString(CryptoJS.enc.Utf8));",
+                  "pm.test('el token es del tenant Beta', () => pm.expect(carga.tenant_id).to.eql(pm.collectionVariables.get('betaId')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Tenant activo: la creación no se bloquea por el tenant",
+      "item": [
+        {
+          "name": "Crear con el tenant activo → 422 de categoría",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaInexistente}}\",\n  \"description\": \"Prueba de tenant desactivado (SCRUM-511)\",\n  \"location\": {\n    \"latitude\": 4.6486,\n    \"longitude\": -74.063\n  },\n  \"addressText\": \"Calle 63 # 9-45, apto 201\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 por la categoría, no por el tenant', () => {",
+                  "  pm.response.to.have.status(422);",
+                  "  pm.expect(pm.response.json().type).to.not.match(/\\/tenant-inactivo$/);",
+                  "});",
+                  "console.log('tipo con el tenant activo: ' + pm.response.json().type);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Tenant desactivado: el MISMO token ya no crea (TNT-003)",
+      "item": [
+        {
+          "name": "El administrador de la plataforma desactiva Beta",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{betaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants",
+                "{{betaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactivo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 y Beta queda inactivo', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('inactivo');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MISMO token: crear → 422 tenant-inactivo en segundos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaInexistente}}\",\n  \"description\": \"Prueba de tenant desactivado (SCRUM-511)\",\n  \"location\": {\n    \"latitude\": 4.6486,\n    \"longitude\": -74.063\n  },\n  \"addressText\": \"Calle 63 # 9-45, apto 201\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('inicio')) { pm.collectionVariables.set('inicio', Date.now()); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(pm.response.code === 422 && /\\/tenant-inactivo$/.test((() => { try { return pm.response.json().type || ''; } catch (e) { return ''; } })())) && intento < 30) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 500);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  console.log('intentos: ' + intento + ' (cada 500 ms)');",
+                  "  const segundos = (Date.now() - Number(pm.collectionVariables.get('inicio'))) / 1000;",
+                  "  pm.collectionVariables.unset('inicio');",
+                  "  console.log('rechazo con tenant-inactivo en ' + segundos.toFixed(1) + ' s');",
+                  "  pm.test('422 tenant-inactivo', () => pm.response.to.have.status(422));",
+                  "  pm.test('tipo tenant-inactivo', () => pm.expect(pm.response.json().type).to.match(/\\/tenant-inactivo$/));",
+                  "  pm.test('detalle tenant is disabled', () => pm.expect(pm.response.json().detail).to.eql('tenant is disabled'));",
+                  "  pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "    pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "  });",
+                  "  pm.test('llega en segundos, no al vencer el token (menos de 15 s)', () => pm.expect(segundos).to.be.below(15));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MISMO token: GET /v1/users/me sigue respondiendo 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login nuevo del cliente de Beta → 403 tenant-inactivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"qa-tenant-inactivo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('tipo tenant-inactivo', () => pm.expect(pm.response.json().type).to.match(/\\/tenant-inactivo$/));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro nuevo en Beta → 403 tenant-inactivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/client",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register",
+                "client"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"qa-tenant-inactivo-2.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{clave}}\",\n  \"fullName\": \"Prueba 511 segundo cliente\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));",
+                  "pm.test('tipo tenant-inactivo', () => pm.expect(pm.response.json().type).to.match(/\\/tenant-inactivo$/));",
+                  "pm.test('Problem Details (RFC 9457) con correlationId', () => {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/problem+json');",
+                  "  pm.expect(pm.response.json()).to.have.property('correlationId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Tenant reactivado: la creación deja de responder tenant-inactivo",
+      "item": [
+        {
+          "name": "El administrador de la plataforma reactiva Beta",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{betaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants",
+                "{{betaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"activo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 y Beta queda activo', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('activo');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MISMO token: crear → ya no es tenant-inactivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Host",
+                "value": "beta.qa.quickpatch.internal"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoriaInexistente}}\",\n  \"description\": \"Prueba de tenant desactivado (SCRUM-511)\",\n  \"location\": {\n    \"latitude\": 4.6486,\n    \"longitude\": -74.063\n  },\n  \"addressText\": \"Calle 63 # 9-45, apto 201\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const intento = Number(pm.collectionVariables.get('intentos') || 0);",
+                  "if (!(!(pm.response.code === 422 && /\\/tenant-inactivo$/.test((() => { try { return pm.response.json().type || ''; } catch (e) { return ''; } })()))) && intento < 30) {",
+                  "  pm.collectionVariables.set('intentos', intento + 1);",
+                  "  setTimeout(() => {}, 500);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('intentos');",
+                  "  console.log('intentos: ' + intento + ' (cada 500 ms)');",
+                  "  pm.test('422 por la categoría, no por el tenant', () => {",
+                  "    pm.response.to.have.status(422);",
+                  "    pm.expect(pm.response.json().type).to.not.match(/\\/tenant-inactivo$/);",
+                  "  });",
+                  "  console.log('tipo con el tenant reactivado: ' + pm.response.json().type);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Cierre: Beta queda activo",
+      "item": [
+        {
+          "name": "Beta activo al terminar (aunque algo haya fallado antes)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{plataformaToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/platform/tenants/{{betaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "platform",
+                "tenants",
+                "{{betaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"activo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.variables.get('platformAdminEmail')) { pm.execution.skipRequest(); }",
+                  "if (!pm.collectionVariables.get('betaId')) { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 y Beta queda activo', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('activo');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

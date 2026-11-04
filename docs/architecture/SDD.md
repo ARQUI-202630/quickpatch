@@ -2,7 +2,7 @@
 
 **Proyecto:** QUICKPATCH - Plataforma multi-tenant de servicios técnicos  
 **Documento:** Descripción de Diseño de Software (SDD)  
-**Estado:** V3 en revisión (SCRUM-424; revisión funcional en SCRUM-428, sección 13) - organizada según el modelo C4 (sección 2.2). La V2 se aprobó en SCRUM-301 (sección 13.1)  
+**Estado:** V4 aprobada con observaciones por el Product Owner (SCRUM-548; revisión en SCRUM-551, sección 13.5; cambios en la sección 13.4) - organizada según el modelo C4 (sección 2.2). La V3 se aprobó en SCRUM-428 (sección 13.3) y la V2 en SCRUM-301 (sección 13.1)  
 **Fecha:** Octubre de 2026
 
 ---
@@ -21,7 +21,7 @@ Los diagramas y descripciones del SDD deben mantenerse alineados con las fuentes
 
 | Artefacto / vista | Fuentes primarias de diseño | Elementos que deben mantenerse sincronizados |
 |---|---|---|
-| **System Landscape y System Context (secciones 3 y 4)** | `SRS.md` (tipos de usuario, RIE), `SAD.md` (sección 4.1, killers y restricciones), `DD.md` (roles, RN-U6) | Personas, límite del sistema, sistemas externos y relaciones. |
+| **System Landscape y System Context (secciones 3 y 4)** | `SRS.md` (tipos de usuario, RIE), `SAD.md` (sección 1.2, killers y restricciones), `DD.md` (roles, RN-U6) | Personas, límite del sistema, sistemas externos y relaciones. |
 | **Container (sección 5)** | `SAD.md`, `DD.md`, contratos de `quickpatch-api-gateway` y `quickpatch-kafka` | Contenedores, tecnologías, bases por servicio, contratos y eventos. |
 | **Component y Code (secciones 6 y 7)** | `SAD.md`, `DD.md`, código de cada repositorio | Componentes, responsabilidades, reglas de negocio, dependencias y clases de las áreas críticas. |
 | **Dynamic (sección 8)** | `SRS.md`, `DD.md`, `SAD.md`, escenarios de calidad | Flujos síncronos y asíncronos, productores y consumidores, concurrencia, reintentos y fallos. |
@@ -87,11 +87,13 @@ Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estruc
 | `C4-07-Codigo-AislamientoTenant` | Code (PlantUML) | 20 |
 | `C4-05-Dinamico-CrearSolicitud` | Dynamic | 22 |
 | `C4-05-Dinamico-AsignacionTecnico` | Dynamic | 22b |
+| `C4-05-Dinamico-Cotizacion` | Dynamic | 22c |
 | `C4-05-Dinamico-Pago` | Dynamic | 24 |
 | `C4-05-Dinamico-InicioSesion` | Dynamic | 25 |
 | `C4-05-Dinamico-ReplicaCategorias` | Dynamic | 26 |
 | `C4-05-Dinamico-Calificacion` | Dynamic | 27 |
 | `C4-05-Dinamico-GestionTenants` | Dynamic | 28 |
+| `C4-05-Dinamico-Cancelacion` | Dynamic | 28b |
 | `C4-06-Despliegue-Produccion` | Deployment | 30 |
 | `C4-06-Despliegue-QA` | Deployment | 31 |
 
@@ -115,15 +117,15 @@ El diagrama de contexto deja solo lo que interactúa con el sistema en operació
 
 **Figura 2. Contexto de QUICKPATCH (C4 · System Context). Vista `C4-02-Contexto`.**
 
-Los sistemas externos son la pasarela de pagos certificada PCI-DSS (SAD, K2), el servicio de geocodificación y el proveedor de notificaciones por correo y push. La geocodificación convierte en coordenadas la dirección que escribe el cliente cuando no comparte la ubicación de su dispositivo (SRS, RIE-02); la app envía siempre las coordenadas de la solicitud y la cercanía entre la solicitud y los técnicos la calcula PostGIS, sin servicio externo. Los proveedores concretos no están definidos. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
+El único sistema externo es la pasarela de pagos certificada PCI-DSS (SAD, K2, R5); en el MVP la reemplaza un adaptador simulado dentro de Payments (ADR-009 modificado). La geocodificación (SRS, RIE-02) corre dentro de las 7 VMs con un Nominatim propio que solo tiene el mapa de Bogotá, y las notificaciones (RIE-03) se entregan dentro de la app, por el canal en tiempo real y el buzón de Communication; el correo y las notificaciones push quedan fuera del MVP (ADR-024). Por eso el geocodificador aparece como contenedor en la Figura 3 y no como sistema externo. La cercanía entre la solicitud y los técnicos la calcula PostGIS. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
 
-> **Contradicción por resolver:** el SAD (R5) indica que la pasarela de pagos es la única dependencia externa de producción, pero el SRS define la geocodificación (RIE-02) y las notificaciones (RIE-03) como servicios con los que el sistema se integra. Si alguno corre dentro de las 7 VMs, deja de ser un sistema externo y sale de estos diagramas; si es externo, R5 debe ajustarse.
+> **Contradicción resuelta:** la versión anterior de esta sección contaba la geocodificación y un proveedor de correo y push como sistemas externos, frente a R5 del SAD. ADR-024 la resolvió manteniendo R5: la geocodificación es propia y las notificaciones quedan dentro de la app.
 
 ---
 
 # 5. Container diagram
 
-La arquitectura se organiza por dominios y servicios. Los clientes acceden a través del API Gateway; los microservicios contienen capacidades de negocio separadas; Kafka gestiona la integración asíncrona; y PostgreSQL/PostGIS, Redis y Garage soportan persistencia, caché y evidencias.
+La arquitectura se organiza por dominios y servicios. Los clientes acceden a través del API Gateway; los microservicios contienen capacidades de negocio separadas; Kafka gestiona la integración asíncrona; y PostgreSQL/PostGIS, Redis y Garage soportan la persistencia, la coordinación temporal (sin caché en el MVP) y las evidencias.
 
 ## 5.1 Contenedores del sistema
 
@@ -131,11 +133,11 @@ La arquitectura se organiza por dominios y servicios. Los clientes acceden a tra
 
 **Figura 3. Contenedores de QUICKPATCH (C4 · Container). Vista `C4-03-Contenedores`.**
 
-Para que las capas se lean (personas, apps, gateway, servicios y almacenes), este diagrama no dibuja la entrega de correo y push del proveedor de notificaciones a las personas; esa entrega está en el diagrama de contexto (Figura 2) y en el dinámico de creación de solicitud.
+Las notificaciones no salen del sistema: Communication las entrega por el canal en tiempo real (`/v1/realtime`, ADR-023) y las guarda en su buzón (ADR-024), así que el diagrama no tiene un proveedor de correo o push.
 
-El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 9.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): la App móvil (Flutter) es el canal de clientes, empresas cliente, técnicos y proveedores, y el Panel web (una SPA en Angular) es el de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 6.5), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que enruta por REST a los 8 microservicios.
+El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 9.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): la App móvil (Flutter) es el canal de clientes, empresas cliente, técnicos y proveedores, y el Panel web (una SPA en Angular) es el de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 6.5), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que tiene REST principal solo hacia Identity, ServiceRequest y Payments (ADR-025); Matching, Catalog y Communication reciben por el gateway solo las excepciones del ADR (acciones del técnico, administración del catálogo, buzón y canal en tiempo real), y Actors y Ranking solo se integran por Kafka.
 
-Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Identity y Actors solo atienden REST), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación, y el proveedor de notificaciones. Con ADR-024 solo la pasarela es externa en el MVP: la geocodificación la hace ServiceRequest con un Nominatim propio (mapa de Bogotá, en la VM de datos de cada ambiente) y las notificaciones se entregan dentro de la app (canal de ADR-023 y buzón en Communication); correo y push quedan fuera del MVP. La cercanía entre la solicitud y los técnicos se calcula con PostGIS. El seguimiento en tiempo real de la solicitud (RF-11) usa un WebSocket desde las apps hasta Communication Service a través del API Gateway (`/v1/realtime`, ADR-023), con consulta del estado por REST cada 30 segundos como respaldo. El proveedor concreto de la pasarela de pagos no está definido.
+Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Actors se integra solo por Kafka), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación, y el proveedor de notificaciones. Con ADR-024 solo la pasarela es externa en el MVP: la geocodificación la hace ServiceRequest con un Nominatim propio (mapa de Bogotá, en la VM de datos de cada ambiente) y las notificaciones se entregan dentro de la app (canal de ADR-023 y buzón en Communication); correo y push quedan fuera del MVP. La cercanía entre la solicitud y los técnicos se calcula con PostGIS. El seguimiento en tiempo real de la solicitud (RF-11) usa un WebSocket desde las apps hasta Communication Service a través del API Gateway (`/v1/realtime`, ADR-023), con consulta del estado por REST cada 30 segundos como respaldo. El proveedor concreto de la pasarela de pagos no está definido.
 
 ## 5.2 Vista por capas (complementaria)
 
@@ -143,15 +145,15 @@ Cada microservicio tiene su propia base de datos dentro de una única instancia 
 
 **Figura 4. Vista lógica general por capas de QUICKPATCH.**
 
-La representación organiza los contenedores de la Figura 3 en cinco capas, sin nombrar el framework de los clientes. En la **capa de cliente** están la App móvil (clientes, empresas cliente, técnicos y proveedores) y el Panel web (administradores). En la **capa de entrada**, el API Gateway recibe REST en `/api/v1/*` y el canal en tiempo real por WebSocket en `/api/v1/realtime` (ADR-023), quita `/api` y enruta por el contrato; cada servicio valida el JWT (ADR-018). La **capa de servicios de negocio** reúne los ocho microservicios. En la **capa de integración** están Apache Kafka, por donde los servicios publican y consumen eventos de dominio con el patrón Outbox; el Geocodificador (Nominatim con el mapa de Bogotá, ADR-024), que usa ServiceRequest para ubicar la dirección; y la pasarela de pagos PCI-DSS, el único sistema externo, que usa Payments. En la **capa de datos**, PostgreSQL + PostGIS es una sola instancia con una base por servicio (ADR-014), Redis guarda la caché de Matching y Garage (S3) las evidencias y los respaldos (ADR-016). La fuente de la figura es `diagrams/sdd/src/01_vista_logica_capas.puml`.
+La representación organiza los contenedores de la Figura 3 en cinco capas, sin nombrar el framework de los clientes. En la **capa de cliente** están la App móvil (clientes, empresas cliente, técnicos y proveedores) y el Panel web (administradores). En la **capa de entrada**, el API Gateway recibe REST en `/api/v1/*` y el canal en tiempo real por WebSocket en `/api/v1/realtime` (ADR-023), quita `/api` y enruta por el contrato; cada servicio valida el JWT (ADR-018). Las flechas sólidas son el REST principal hacia Identity, ServiceRequest y Payments, y las punteadas, las excepciones del ADR-025. La **capa de servicios de negocio** reúne los ocho microservicios. En la **capa de integración** están Apache Kafka, por donde los servicios publican y consumen eventos de dominio con el patrón Outbox; el Geocodificador (Nominatim con el mapa de Bogotá, ADR-024), que usa ServiceRequest para ubicar la dirección; y la pasarela de pagos PCI-DSS, el único sistema externo, que usa Payments. En la **capa de datos**, PostgreSQL + PostGIS es una sola instancia con una base por servicio (ADR-014), Redis guarda los candados con los que ServiceRequest coordina el vencimiento de las cotizaciones, y la caché de Matching queda planeada (línea gris punteada); Garage (S3) guarda las evidencias y los respaldos (ADR-016). La fuente de la figura es `diagrams/sdd/src/01_vista_logica_capas.puml`.
 
 ## 5.3 Componentes lógicos principales del backend (complementaria)
 
-![Diagrama de componentes del backend](diagrams/sdd/02_componentes_backend.png)
+![Diagrama de componentes del backend](diagrams/sdd/02_componentes_backend.svg)
 
 **Figura 5. Componentes lógicos principales del backend.**
 
-El API Gateway concentra la entrada de solicitudes síncronas. ServiceRequest, Matching, Payments, Ranking y Communication participan en los flujos de eventos por Kafka. Cada servicio conserva su límite funcional y su propiedad de datos.
+La figura resume en una sola vista los componentes de cada servicio (secciones 6.4 a 6.11) y los eventos de la matriz 8.6, según el código de `develop`; lo que todavía no está implementado aparece en gris como «planeado». El API Gateway recibe el REST y el WebSocket de los clientes; cada servicio valida el JWT (ADR-018). Según ADR-025, el REST principal va a Identity, ServiceRequest y Payments, y las líneas punteadas son sus excepciones: las acciones del técnico en Matching, la administración del catálogo y el buzón, el chat y el canal en tiempo real de Communication. Identity, Catalog, ServiceRequest, Matching y Payments publican sus eventos por un Outbox propio (ADR-007); la tabla junto a Kafka dice qué publica y qué consume cada uno. El ciclo de la solicitud pasa de ServiceRequest a Matching para buscar al técnico, vuelve con su resultado, y al cerrar el servicio llega a Payments, que responde con el pago aprobado o rechazado; Communication convierte esos eventos en avisos del canal en tiempo real (ADR-023) y en notificaciones del buzón (ADR-024), y además atiende el chat de la solicitud (ADR-026). ServiceRequest también pide a Identity los nombres por la consulta interna, ubica la dirección con el geocodificador (ADR-024), coordina en Redis el vencimiento de las cotizaciones y guarda las evidencias en Garage (ADR-016). En el MVP, Payments cobra con una pasarela simulada detrás del mismo puerto que usará la pasarela certificada (ADR-009). Actors y Ranking siguen planeados. Cada servicio conserva su límite funcional y su propia base de datos (ADR-014). La fuente de la figura es `diagrams/sdd/src/02_componentes_backend.puml`.
 
 ## 5.4 Principios de organización
 
@@ -213,19 +215,20 @@ Un servicio no ejecuta escrituras directas sobre tablas propietarias de otro dom
 
 ### 5.6.1 REST
 
-Los contratos publicados están en `quickpatch-api-gateway` (etiqueta `v0.6.0`); el DD los detalla (catálogo en la sección 8.2 y especificación en la 8.3). Cada servicio expone solo los suyos y el API Gateway enruta `/api/<servicio>` sin reglas propias.
+Los contratos publicados están en `quickpatch-api-gateway` (etiqueta `v0.21.0`, con Identity 1.10.0, ServiceRequest 1.11.0 y Payments 1.2.0); el DD los detalla (catálogo en la sección 8.2 y especificación en la 8.3). Cada servicio expone solo los suyos y el API Gateway enruta `/api/<servicio>` sin reglas propias. Desde ADR-025 solo Identity, ServiceRequest y Payments tienen REST principal; las categorías y las localidades las sirve ServiceRequest (service-request 1.8.0), y las rutas de Matching, Catalog y Communication que siguen en el gateway son las excepciones que el ADR lista.
 
 | Contrato | Versión | Servicio | Rutas |
 |---|---|---|---|
-| `identity.v1.yaml` | 1.7.0 | Identity | `/v1/auth/register/client`, `/v1/auth/register/technician`, `/v1/auth/login`, `/v1/auth/password/setup`, `/v1/users/me`, `/v1/platform/tenants`, `/v1/admin/technicians` (aprobar, rechazar y suspender), `/v1/providers/me/technicians` (alta e invitación) |
+| `identity.v1.yaml` | 1.10.0 | Identity | `/v1/auth/register/client`, `/register/technician` y `/register/company`, `/v1/auth/login`, `/v1/auth/password/setup`, `/v1/auth/password-recovery` y `/confirm` (recuperación de la contraseña, desde la 1.10.0, SCRUM-624), `/v1/admin/password-recovery-requests` y `/{id}/link` (el `admin_tenant` genera el enlace), `/v1/users/me` (consulta y, desde la 1.9.0, edición del perfil propio, SCRUM-610), `/v1/platform/tenants`, `/v1/admin/technicians` (aprobar, rechazar y suspender), `/v1/providers/me/technicians` (alta e invitación), `/v1/companies/me` y sus usuarios |
 | `identity-internal.v1.yaml` | 1.0.0 | Identity | `/internal/v1/users` (nombres por lote, solo entre servicios; no pasa por el API Gateway) |
-| `catalog.v1.yaml` | 1.2.0 | Catalog | `/v1/catalog/categories`, `/v1/catalog/admin/categories` |
-| `service-request.v1.yaml` | 1.3.0 | ServiceRequest | `/v1/service-requests`, `/v1/service-requests/location-preview`, `/v1/service-requests/{id}`, `/v1/technicians/me/service-requests` |
-| `matching.v1.yaml` | 1.0.0 | Matching | `/v1/localities`, `/v1/technicians/me/availability`, `/v1/technicians/me/coverage`, `/v1/matching/offers` (aceptar y rechazar) |
-| `communication.v1.yaml` | 1.0.0 | Communication | `/v1/notifications`, `/v1/notifications/{id}/read` |
-| `asyncapi/realtime.v1.yaml` | 1.0.0 | Communication | `/v1/realtime` (WebSocket, ADR-023) |
+| `catalog.v1.yaml` | 1.3.0 | Catalog | `/v1/catalog/admin/categories` (excepción de ADR-025; las categorías para crear solicitudes las sirve ServiceRequest) |
+| `service-request.v1.yaml` | 1.11.0 | ServiceRequest | `/v1/service-requests` (crear, listar por rol y detalle), `/location-preview`, `/categories` y `/localities` (ADR-025), `/{id}/cancel`, `/{id}/quotes` (emitir, aceptar y rechazar), `/{id}/start`, `/{id}/evidence`, `/{id}/complete`, `/v1/technicians/me/service-requests`, `/v1/admin/service-requests/summary` y `/v1/platform/service-requests/summary`; `/{id}/rating` (calificación, desde la 1.10.0, ADR-027); desde la 1.11.0, crear responde 422 `tenant-inactivo` (RN-T1, SCRUM-510) |
+| `matching.v1.yaml` | 1.1.0 | Matching | `/v1/localities`, `/v1/technicians/me/availability`, `/v1/technicians/me/coverage`, `/v1/matching/offers` (aceptar y rechazar); excepción de ADR-025 |
+| `communication.v1.yaml` | 1.3.0 | Communication | `/v1/notifications` y `/{id}/read` (buzón, ADR-024), `/v1/service-requests/{id}/messages` (chat, ADR-026); excepción de ADR-025 |
+| `payments.v1.yaml` | 1.2.0 | Payments | `/v1/service-requests/{id}/payment`, `/v1/payments/{id}/invoice` (JSON o PDF), `/v1/payments/received` (pagos recibidos del técnico y del equipo del proveedor, desde la 1.2.0, SCRUM-500) |
+| `asyncapi/realtime.v1.yaml` | 1.1.0 | Communication | `/v1/realtime` (WebSocket, ADR-023), con la trama `chat.message` desde la 1.1.0 |
 
-La cotización, la cancelación, el inicio y el cierre del servicio, las evidencias, la calificación y el pago (`/v1/service-requests/{id}/quotes`, `/cancel`, `/start`, `/complete`, `/evidence`, `/rating` y `/payment`) están en el DD 8.2 y en el diseño de las secciones 8.4 y 8.5, pero todavía no tienen contrato publicado. `POST /v1/auth/register/company` tampoco está en `identity.v1.yaml` (SCRUM-26).
+Todo el ciclo de la solicitud tiene contrato publicado, incluida la calificación (RF-12, service-request 1.10.0, SCRUM-497). También tienen contrato los pagos recibidos (RF-25, payments 1.2.0, SCRUM-500), ya implementados en Payments (SCRUM-501), y la recuperación de la contraseña (identity 1.10.0, SCRUM-624), cuya implementación está en revisión (SCRUM-625).
 
 ### 5.6.2 Eventos de dominio
 
@@ -241,9 +244,20 @@ matching.technician-assigned
 matching.no-technician-available
 matching.search-resumed
 service-request.status-changed
+service-request.cancelled
+service-request.quoted
+service-request.quote-accepted
+service-request.quote-rejected
+service-request.started
+service-request.completed
+payment.approved
+payment.rejected
+service-request.rated
+ranking.technician-reputation-changed
+tenant.status-changed
 ```
 
-Los eventos de cotización, ejecución, pago y calificación (`service-request.quoted`, `.started`, `.completed`, `.cancelled`, `.evaluated`, `payment.approved` y `payment.rejected`) están en el DD 8.4 y se publican en `quickpatch-kafka` cuando se implementen sus historias.
+Son los 20 esquemas de `quickpatch-kafka` `v0.10.0`. `service-request.rated` (calificación, RF-12) y `ranking.technician-reputation-changed` los publican ServiceRequest y Ranking (ADR-027, SCRUM-85 y SCRUM-498; esquemas de SCRUM-497). `tenant.status-changed` lo publica Identity al cambiar el estado de un tenant y lo consume ServiceRequest (RN-T1, SCRUM-508 y SCRUM-509).
 
 **Sobre común del evento:**
 
@@ -302,6 +316,8 @@ Infrastructure -> Application / Domain mediante interfaces
 
 El detalle definitivo de proyectos, carpetas y paquetes debe quedar sincronizado con la sección 10.
 
+**Cómo leer los diagramas de componentes (SCRUM-581, SCRUM-582).** Los diagramas de Identity, Catalog, ServiceRequest y Payments (secciones 6.4, 6.6, 6.7 y 6.10) muestran el servicio por dentro, capa por capa: el endpoint (`Api/Endpoints`), el caso de uso (`Application/<agregado>`), el dominio, el repositorio con su `TenantUnitOfWork` y la base, y en Kafka el `EfOutbox`, el `OutboxPublisher` y los consumidores. Cada componente lleva el nombre de su clase o carpeta en `develop`, y la tecnología indica la ruta (por ejemplo, `Minimal API · Api/Endpoints`), así que se puede ir del diagrama al código sin traducir nombres. Lo que todavía no existe (la calificación de ServiceRequest y el webhook de la pasarela certificada) aparece punteado como «Planeado».
+
 ## 6.2 Aplicaciones cliente
 
 Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componente indica la carpeta del repositorio donde vive (sección 10.2) y corresponde al código de `develop`; los componentes con borde punteado están planeados.
@@ -324,6 +340,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Aprobación de técnicos | `features/tecnicos/tecnicos.ts` | Lista técnicos y proveedores del tenant por estado de verificación, con paginación. Aprueba y rechaza (RF-19), suspende y reactiva (RF-20) según las transiciones de DD 8.3.13, con confirmación y un motivo de 5 a 500 caracteres para rechazar y suspender; un 409 `transicion-invalida` recarga la lista. | SCRUM-39 / SCRUM-107; SCRUM-40 / SCRUM-110 |
 | Cliente API de técnicos | `features/tecnicos/tecnicos-api.ts` | `GET /v1/admin/technicians` y `POST .../{userId}/approve`, `/reject` y `/suspend`; los nombres de especialidad salen de `GET /v1/catalog/categories`. | SCRUM-39 / SCRUM-107; SCRUM-40 / SCRUM-110 |
 | Activación de cuenta | `features/activacion` | Página pública `/activar` donde el técnico del equipo de un proveedor define su contraseña con el enlace de invitación (`POST /v1/auth/password/setup`). El token viaja en el fragmento del enlace, que el navegador no envía al servidor, y solo sale en el cuerpo del `POST`. | SCRUM-36 / SCRUM-463 |
+| Mi perfil | `features/perfil` | Nombre y teléfono propios con `GET` y `PATCH /v1/users/me` (identity 1.9.0), desde el nombre del usuario en el encabezado; el correo y el rol son de solo lectura y salir con cambios sin guardar pide confirmación. | SCRUM-613 |
 
 ![Componentes de la App móvil](diagrams/c4/C4-04-Componentes-Mobile.png)
 
@@ -337,7 +354,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Sesión | `core/session` | Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol. | SCRUM-23 |
 | Autenticación | `features/autenticacion` | Login, registro de cliente hogar y registro de técnico o proveedor con su especialidad, y activación de la cuenta del técnico de un equipo con el enlace de invitación (`POST /v1/auth/password/setup`). El registro de empresa está oculto (`registroEmpresaHabilitado = false`) hasta SCRUM-26. | SCRUM-23; SCRUM-22 / SCRUM-55; SCRUM-98 |
 | Inicio por rol | `features/inicio` | Para el cliente, acceso a la nueva solicitud y categorías de Catalog; para técnico y proveedor, sus opciones (Disponibilidad y cobertura) y el aviso de verificación. | SCRUM-27 / SCRUM-441 |
-| Cuenta | `features/inicio` | Datos de la sesión, licencias y cierre de sesión. | SCRUM-441 |
+| Cuenta | `features/cuenta` | Datos de la sesión, licencias y cierre de sesión; edición del nombre y el teléfono propios con `PATCH /v1/users/me`, con el correo y el rol de solo lectura (identity 1.9.0). | SCRUM-441 / SCRUM-612 |
 | Sistema de diseño | `app/theme`, `shared/widgets`, `features/solicitudes/presentation/widgets` | Tema azul con tokens y tipografía, y componentes para las pantallas del cliente y del técnico (tarjeta de solicitud, chip de estado, selector de categoría, botones y estados vacío, de error y de carga); contraste WCAG AA y texto al 200 % probados. | SCRUM-439 (440 a 444) |
 | Solicitudes | `features/solicitudes` | Nueva solicitud en tres pasos en un solo formulario (RNF-11) y seguimiento: línea de estado, técnico asignado e indicador de búsqueda, que se actualiza con el canal en tiempo real. | SCRUM-27 / SCRUM-71 / SCRUM-442; SCRUM-31 / SCRUM-83; SCRUM-29 / SCRUM-77 |
 | Servicios del técnico | `features/solicitudes` | Lista de sus servicios asignados con filtro por estado y paginación (`GET /v1/technicians/me/service-requests`), sin dirección ni cliente (RN-SR13), y detalle con el cliente, la dirección y un mapa de solo lectura (`GET /v1/service-requests/{id}`), visibles solo entre `asignado` y `completado`. | SCRUM-34 / SCRUM-92 / SCRUM-467 |
@@ -346,21 +363,28 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Equipo del proveedor | `features/equipo` | Técnicos del equipo con filtro y paginación, alta sin contraseña y enlace de invitación para compartir, con uno nuevo si se perdió o venció (`/v1/providers/me/technicians`, identity 1.7.0). El técnico dado de alta queda pendiente de verificación (RN-TP1). | SCRUM-36 / SCRUM-98 |
 | Mapa de localidades | `features/disponibilidad` (`assets/geo`) | Límites de las 20 localidades desde un GeoJSON dentro de la app (capa «Localidad» de la SDP publicada por IDECA, CC BY 4.0, con los mismos códigos de `GET /v1/localities`); los proyecta, abre encuadrado en la zona urbana y resuelve qué localidad se tocó. Sin mapa de fondo ni servicios externos (R5, ADR-024). | SCRUM-33 / SCRUM-89 |
 | Estado en tiempo real | `core/realtime` | Canal `/v1/realtime` (ADR-023): envía el token en la primera trama, reconecta con espera creciente y expone si está conectado. El aviso no trae datos: cada pantalla vuelve a pedir el detalle por REST, y si el canal no está conectado consulta cada 30 s (RF-11, RNF-06). | SCRUM-31 / SCRUM-83 |
-| Ofertas *(planeado)* | `features/ofertas` | Oferta pendiente arriba de Servicios, con localidad, distancia y cuenta regresiva, sin la dirección (RN-SR13); aceptar o rechazar (`matching.v1.yaml` 1.0.0) y aviso con `offer.created`. | SCRUM-30 / SCRUM-80 |
-| Buzón de notificaciones *(planeado)* | — | Lista las notificaciones del usuario con el contador de no leídas y las marca como leídas (`communication.v1.yaml` 1.0.0, RIE-03, ADR-024). La geocodificación de la dirección no está en la app: la hace ServiceRequest (ADR-024). | SCRUM-452 / SCRUM-459 |
+| Ofertas | `features/ofertas` | Oferta pendiente arriba de Servicios, con localidad, distancia y cuenta regresiva, sin la dirección (RN-SR13); aceptar o rechazar (`matching.v1.yaml` 1.0.0) y aviso con `offer.created`. | SCRUM-30 / SCRUM-80 |
+| Buzón de notificaciones | `features/notificaciones` | Lista las notificaciones del usuario con el contador de no leídas, las marca como leídas y abre su solicitud (`communication.v1.yaml` 1.2.0, RIE-03, ADR-024). | SCRUM-459 |
+| Chat de la solicitud | `features/chat` | Historial paginado, envío y mensajes nuevos por la trama `chat.message`; solo lectura al completar, pagar o cancelar (RF-37, ADR-026). | SCRUM-482 |
+| Cuenta corporativa | `features/autenticacion`, `features/empresa` | Registro de la empresa cliente con su primer usuario y alta de otros usuarios con invitación (RF-06, identity 1.8.0). | SCRUM-67 |
+| Solicitudes del cliente y de la empresa | `features/solicitudes` | Lista de las propias o de la empresa con filtro y paginación, sede en la solicitud de empresa y solo lectura para la de otro usuario de la empresa (RF-08, RF-11, RN-SR14). | SCRUM-74 |
+| Pago y comprobante | `features/pagos` | Pago con la pasarela simulada (la tarjeta se tokeniza en el teléfono) y comprobante en PDF para compartir (RF-22 a RF-24). | SCRUM-116 / SCRUM-494 |
+| Mis pagos | `features/pagos` | Pagos recibidos desde Cuenta: el técnico ve los suyos y el proveedor los de su equipo, con el nombre de cada técnico y filtro por técnico; filtros por estado, sin datos de tarjeta (RF-25, `GET /v1/payments/received`, payments 1.2.0). | SCRUM-502 |
+| Calificación | `features/calificacion` | Estrellas y comentario en el detalle de una solicitud `pagado`, solo para quien la creó; reconoce `ya-calificada` y `transicion-invalida` (RF-12, service-request 1.10.0). | SCRUM-86 |
+| Historial del técnico | `features/solicitudes` | Servicios atendidos desde Cuenta, con filtros Completados, Pagados y Cancelados y la calificación recibida (RF-17, `GET /v1/technicians/me/service-requests`). | SCRUM-101 |
 
 Reglas comunes a las dos aplicaciones:
 
 - **Tenant:** ninguna app envía `tenant_id` (RN-U3 del DD). En el login y el registro todavía no hay JWT, así que el tenant sale del canal por el que llega la petición (RN-U5); en las peticiones autenticadas sale del token que propaga el API Gateway (DD, sección 10.3).
 - **Errores:** un 401 cierra la sesión y lleva al login. Las apps no tienen pantalla de acceso denegado: en el panel, los guards envían al inicio del rol; un 403 de la API, como el resto de errores, se muestra en la pantalla que lo produjo, sin perder los datos ingresados.
 - **Contratos:** Mobile consume `identity.v1.yaml` (incluido el equipo del proveedor y la activación), `catalog.v1.yaml`, `service-request.v1.yaml` (creación, detalle y lista del técnico), `matching.v1.yaml` (localidades, disponibilidad y cobertura; las ofertas con SCRUM-80) y `asyncapi/realtime.v1.yaml`; Web consume `identity.v1.yaml` (inicio de sesión, `/v1/platform/tenants`, `/v1/admin/technicians` y `/v1/auth/password/setup`) y `catalog.v1.yaml` (nombres de especialidad). Mobile tiene además el registro de empresa contra `POST /v1/auth/register/company`, que todavía no está en `identity.v1.yaml`; por eso la opción está oculta (SCRUM-26).
-- **Pendiente:** el contrato v1 de creación de solicitudes solo admite el rol `cliente` y responde 403 a los demás, mientras que el SRS (F2.1) incluye a la empresa cliente. Se debe resolver antes de cerrar SCRUM-27.
+- **Empresa cliente:** desde `service-request.v1.yaml` 1.9.0 el `empresa_contacto` también crea solicitudes, como pide el SRS (F2.1; SCRUM-28 y SCRUM-73). Antes el contrato solo admitía el rol `cliente`.
 
 ## 6.3 API Gateway
 
 **Responsabilidades:**
 
-- enrutamiento hacia el servicio correspondiente;
+- enrutamiento REST hacia Identity, ServiceRequest y Payments, más las excepciones explícitas del ADR-025 (acciones del técnico en Matching, administración del catálogo, buzón y WebSocket de Communication);
 - validación inicial del contexto de autenticación;
 - propagación de identidad, rol y tenant;
 - aplicación de políticas transversales de API;
@@ -391,7 +415,7 @@ El Gateway no contiene reglas propias de matching, solicitudes, pagos, ranking n
 | `Role` | Concepto de autorización | Conjunto de permisos para cada tipo de usuario. |
 | `AuthenticatedContext` | Objeto lógico | Propaga `userId`, `tenantId` y rol. |
 
-**Datos documentados:** `tenants`, `users`, `technician_profiles`, `password_setup_tokens`, `audit_logs` y `outbox_events` (DD V5).
+**Datos documentados:** `tenants`, `users`, `client_companies`, `technician_profiles`, `password_setup_tokens`, `audit_logs` y `outbox_events` (DD 5.12).
 
 **Componentes (C4).**
 
@@ -406,6 +430,8 @@ En el incremento del Sprint 4, Identity suma:
 - **Verificación de técnicos** (RF-19, RF-20; SCRUM-106): el `admin_tenant` aprueba, rechaza o suspende con motivo (`/v1/admin/technicians`), y cada cambio publica `technician.verification-changed` por el Outbox (ADR-007), igual que el registro publica `technician.registered`. Matching arma con ellos su proyección del técnico (P-01).
 - **Equipo del proveedor** (RF-16; SCRUM-97, SCRUM-461): el proveedor da de alta técnicos sin contraseña (`/v1/providers/me/technicians`) y recibe un enlace de invitación de un solo uso; el técnico define su contraseña con `POST /v1/auth/password/setup`. En `password_setup_tokens` solo se guarda el hash del token, y el enlace apunta al panel de cada ambiente (`Invitations__LinkBase`).
 - **Creación de tenants** (RF-21; SCRUM-462): `POST /v1/platform/tenants` crea la empresa oferente activa en `PlatformUnitOfWork` y registra `crear_tenant` en `audit_logs`; un NIT repetido responde `409 nit-registrado`.
+- **Cuenta corporativa** (RF-06; SCRUM-66): `POST /v1/auth/register/company` crea en una transacción la empresa cliente (`client_companies`) y su primer `empresa_contacto` en el tenant del canal; la empresa es una cuenta dentro del tenant, no un tenant (DEP-13). Los demás usuarios entran con la misma invitación de un solo uso del equipo del proveedor, y el token del `empresa_contacto` lleva `company_id`.
+- **En el Sprint 5:** la edición del perfil propio (`PATCH /v1/users/me`, solo nombre y teléfono, `UpdateCurrentUserHandler`, SCRUM-611), la proyección de la reputación que publica Ranking (`ReputationChangedConsumer`, SCRUM-498) y `tenant.status-changed`, que `UpdateTenantStatusHandler` deja en el Outbox al activar o desactivar un tenant (RN-T1, SCRUM-509). La recuperación de la contraseña tiene contrato (identity 1.10.0) y modelo (DD 5.19); su implementación está en revisión (SCRUM-625).
 - **Consulta interna de nombres** (SCRUM-91): `GET /internal/v1/users` (`identity-internal.v1.yaml`) devuelve por lote el nombre y el contacto de usuarios del tenant a otros servicios dentro del clúster; el servicio que llama reenvía el JWT del usuario, así que el tenant sigue saliendo del token. No pasa por el API Gateway ni tiene ruta en el Ingress. ServiceRequest la usa en el detalle de la solicitud para mostrar el cliente al técnico asignado y el técnico al cliente.
 
 ## 6.5 Actors Service
@@ -494,7 +520,7 @@ completado       -> pagado (payment.rejected no cambia el estado, RN-SR5)
 
 El código ya define los nueve estados (`ServiceRequestStatus`). Hoy se usan los de la búsqueda: la creación deja la solicitud en `buscando_tecnico` y los eventos de Matching la pasan a `asignado`, a `en_espera` o de vuelta a `buscando_tecnico` (SCRUM-29). Cada cambio guarda `matching_updated_at` para descartar un evento más viejo que el último aplicado (SCRUM-460). Las demás transiciones llegan con sus historias (RF-34, RF-35, RF-36, RF-14 y RF-22).
 
-**Datos documentados:** `service_requests`, `service_request_categories` (réplica), `outbox_events`, `processed_events` y `ratings` (planeado). `service_categories` es de Catalog Service (DD 5.4); la réplica es la tabla 5.20.
+**Datos documentados:** `service_requests`, `service_request_categories` (réplica), `outbox_events`, `processed_events` y `quotes`, `service_evidence`, `audit_logs`, `localities` (copia), `ratings` (calificaciones, SCRUM-85) y `tenant_status_replica` (estado de cada tenant, DD 5.26, SCRUM-510). `service_categories` es de Catalog Service (DD 5.4); la réplica es la tabla 5.20.
 
 **Referencias lógicas externas:** `client_id`, `technician_id`, `tenant_id`.
 
@@ -502,14 +528,15 @@ El código ya define los nueve estados (`ServiceRequestStatus`). Hoy se usan los
 
 - produce `service-request.created`;
 - produce `service-request.status-changed` cuando aplica un cambio de estado (SCRUM-466);
-- produce `service-request.completed`;
+- produce `service-request.cancelled`, `.quoted`, `.quote-accepted`, `.quote-rejected`, `.started` y `.completed`;
 - consume `matching.technician-assigned`;
 - consume `matching.no-technician-available`;
 - consume `matching.search-resumed`;
 - consume `payment.approved`;
-- consume `payment.rejected` cuando corresponda al flujo.
+- consume `payment.rejected`, que no cambia el estado (RN-SR5);
+- consume `tenant.status-changed` y guarda el estado de cada tenant en `tenant_status_replica` (`TenantStatusChangedConsumer` y `ApplyTenantStatusChangedHandler`): crear una solicitud en un tenant inactivo responde `422 tenant-inactivo` aunque el token siga vigente (RN-T1, SCRUM-510).
 
-Los demás eventos de la solicitud (cotización, inicio, cancelación y calificación) y sus consumidores están en el DD 8.4.
+`service-request.rated` (calificación, ADR-027) sale por el mismo Outbox; los consumidores de cada evento están en la matriz 8.6.
 
 **Componentes (C4).**
 
@@ -522,7 +549,7 @@ El diagrama reúne las decisiones de diseño que los demás servicios repiten: r
 | Componente | Responsabilidad | Regla/contrato |
 |---|---|---|
 | Contexto autenticado | Toma usuario (`sub`), tenant (`tenant_id`) y rol de los claims del JWT. Nunca lee el tenant del cuerpo. | RN-U3; DD 10.3 |
-| API REST de solicitudes | Creación y detalle; solo el rol `cliente` crea (403). El técnico asignado ve en el detalle la dirección, la ubicación y el contacto del cliente solo entre `asignado` y `completado` (RN-SR13), y lista sus servicios sin esos datos (`/v1/technicians/me/service-requests`, SCRUM-464). Responde `problem+json` con `X-Correlation-Id`. | `service-request.v1.yaml` 1.2.0 |
+| API REST de solicitudes | Creación, lista y detalle; crean el `cliente` y el `empresa_contacto` (con sede; `client_type` y `company_id` salen del token, RN-SR12), y los demás usuarios de la empresa ven la solicitud (RN-SR14). El técnico asignado ve en el detalle la dirección, la ubicación y el contacto del cliente solo entre `asignado` y `completado` (RN-SR13), y lista sus servicios sin esos datos (`/v1/technicians/me/service-requests`, SCRUM-464). Responde `problem+json` con `X-Correlation-Id`. | `service-request.v1.yaml` 1.2.0 |
 | Casos de uso de la solicitud | Al crear, coordina validación, agregado, persistencia y outbox en una transacción local. | RF-07; ADR-007 |
 | Reglas de creación | Ubicación en el área de Bogotá (422), categoría activa (422) y longitudes. | RN-SR1, RN-SR9 a RN-SR11 |
 | Agregado ServiceRequest | Crea en `buscando_tecnico` y solo admite transiciones válidas. | RN-SR2 a RN-SR7; DD 7.4 |
@@ -531,9 +558,11 @@ El diagrama reúne las decisiones de diseño que los demás servicios repiten: r
 | Consumidor de `catalog.category-changed` y réplica | Aplica cada evento una vez por `eventId` y mantiene `service_request_categories`. | RN-EV1; ADR-017 |
 | Directorio de usuarios | Pide a Identity el nombre y el contacto del cliente y del técnico para el detalle (`GET /internal/v1/users`), con un plazo corto: si Identity no responde, el detalle sale sin esos datos. | `identity-internal.v1.yaml`; SCRUM-91 |
 | Consumidor de matching | Aplica `matching.technician-assigned`, `.no-technician-available` y `.search-resumed` al estado, una vez por `eventId` y descartando eventos viejos. Si aplica el cambio, registra `service-request.status-changed` en el outbox en la misma transacción; si lo descarta, no. | Sección 8.6; SCRUM-29, SCRUM-466 |
-| Consumidor de pagos *(planeado)* | Aplica `payment.approved` y `payment.rejected` al estado. | Sección 8.6 |
-| Geocodificación de la dirección *(planeado)* | Si la solicitud llega sin coordenadas, busca la dirección en el geocodificador (Nominatim con el mapa de Bogotá) y responde `422 direccion-no-encontrada` si no la encuentra; `location-preview` deja confirmar el punto antes de crear. | ADR-024; contrato 1.3.0; SCRUM-456 |
-| Evidencias y calificación *(planeado)* | Fotos en Garage (RF-15) y calificación; publica `service-request.completed` y `.evaluated`. | RF-12, RF-15 |
+| Consumidor de pagos | Aplica `payment.approved` (pasa a `pagado`) una vez por `eventId`; `payment.rejected` no cambia el estado (RN-SR5). | Sección 8.6 |
+| Geocodificación de la dirección | Si la solicitud llega sin coordenadas, busca la dirección en el geocodificador (Nominatim con el mapa de Bogotá) y responde `422 direccion-no-encontrada` si no la encuentra; `location-preview` deja confirmar el punto (ADR-024). | RIE-02; service-request 1.3.0 |
+| Cotización y cancelación | Emite, acepta y rechaza cotizaciones (máximo 3, con vencimiento) y cancela antes de iniciar. | RF-34 a RF-36; 1.5.0 y 1.6.0 |
+| Ejecución y evidencias | Inicia, guarda las fotos en Garage y completa con al menos una; publica `.started` y `.completed`. | RF-14, RF-15; 1.7.0 |
+| Calificación | `RatingEndpoints` y `RateServiceRequestHandler`: el dueño califica la solicitud pagada una sola vez (RN-R1 a RN-R3); la fila de `ratings` y `service-request.rated` van en la misma transacción (ADR-027, SCRUM-85). | RF-12 |
 
 ## 6.8 Matching Service
 
@@ -563,7 +592,7 @@ El siguiente diagrama representa el flujo lógico principal del proceso de match
 
 ![Diagrama de flujo del Matching Service](diagrams/sdd/05_matching_flow.png)
 
-*Figura 14. Flujo lógico principal del Matching Service.*
+**Figura 14. Flujo lógico principal del Matching Service.**
 
 **Componentes (C4).**
 
@@ -579,29 +608,38 @@ En el Sprint 4 Matching implementó el ciclo de la asignación (DD V4, RN-M1 a R
 - **Ofertas** (RF-10; SCRUM-79): la oferta vence a los 3 minutos (RN-M8); el técnico la consulta sin la dirección y la acepta o la rechaza (`/v1/matching/offers`). Un proceso programado (`OfferExpirer`) vence las ofertas sin respuesta y ofrece la solicitud al siguiente candidato (RN-M3); otro (`WaitingRequestsSweeper`) reanuda como respaldo las solicitudes en espera que ya tienen candidato. Los dos leen solo tenant y estado con el rol `matching_scheduler` (P-06) y trabajan cada tenant con RLS.
 - **Eventos:** `matching.offer-created`, `.technician-assigned`, `.no-technician-available` y `.search-resumed` salen por un Outbox propio (ADR-007).
 
+**Clases de la figura 15** (paquete `co.quickpatch.matching`, SCRUM-583):
+
+- **api:** `OffersController` (`/v1/matching/offers`, aceptar y rechazar) y `TechniciansController` (`/v1/localities` y `/v1/technicians/me/availability` y `/coverage`). `SecurityConfig` valida el JWT RS256 de Identity (ADR-018) y `CorrelationIdFilter` propaga `X-Correlation-Id`.
+- **Consumidores de Kafka** (`infrastructure/messaging`): `ServiceRequestCreatedListener`, `ServiceRequestCancelledListener`, `ServiceRequestCompletedListener` y `TechnicianEventsListener` (`technician.registered` y `technician.verification-changed`). Cada uno entrega el evento válido a su manejador y descarta el que no cumple el contrato.
+- **application/events:** `ServiceRequestCreatedHandler` inicia el matching; `ServiceRequestCancelledHandler` cancela la oferta pendiente y la búsqueda y libera al técnico (RN-M5, RN-M6); `ServiceRequestCompletedHandler` lo devuelve a `disponible` y le ofrece la solicitud en espera más antigua (RN-M6, RN-M10); `TechnicianEventsHandler` mantiene la proyección y descarta los eventos con un `updatedAt` anterior (ADR-017). Todos registran el `eventId` en la misma transacción del tenant (`JdbcTenantTransaction` y `JdbcProcessedEventStore`).
+- **application/matching y technicians:** `MatchingEngine` busca candidatos, crea la oferta y reanuda las solicitudes en espera; `OfferService` lista, acepta, rechaza y vence ofertas; `TechnicianAvailabilityService` cambia la disponibilidad y la cobertura.
+- **Persistencia:** `JdbcMatchingStores` y `JdbcTechnicianStores` (PostGIS y RLS) y `JdbcTechnicianProjection`, donde la fila del técnico nace en `no_disponible`. `JdbcOutbox` guarda los eventos en `outbox_events` y `OutboxPublisher` los publica.
+- **Tareas programadas:** `OfferExpirer` (cada `MATCHING_EXPIRY_INTERVAL`) y `WaitingRequestsSweeper` (cada `MATCHING_SWEEP_INTERVAL`, respaldo de RN-M10).
+
 Matching no usa la geocodificación: recibe la solicitud con coordenadas.
 
 ## 6.9 Ranking Service
 
 **Tecnología asignada:** ASP.NET Core / .NET.
 
-**Dominio:** reputación y evaluación agregada.
+**Dominio:** reputación de los técnicos a partir de sus calificaciones (ADR-027, driver D3).
 
 **Responsabilidades:**
 
-- recalcular reputación de técnicos/aliados;
-- mantener ranking de servicio y, cuando aplique, ranking de materiales/proveedores;
-- consumir resultados y evaluaciones del ciclo de servicio.
+- consumir `service-request.rated` y sumar cada calificación a la reputación del técnico en su tenant, una sola vez por `eventId` y por solicitud;
+- mantener la cantidad, la suma, el promedio redondeado a un decimal y la marca de reputación baja (5 o más calificaciones con promedio menor a 3.0, AC9-E2);
+- publicar `ranking.technician-reputation-changed` por Outbox, para que Identity lo proyecte en `technician_profiles`.
 
-Los modelos persistentes definitivos de ranking permanecen sujetos a evolución del DD.
+No tiene endpoints de negocio: el gateway no le enruta nada (ADR-025). Si Ranking está caído, la calificación igual queda guardada en ServiceRequest y la reputación se pone al día cuando vuelve (AC5-E3). El ranking de materiales y proveedores sigue fuera del MVP (D3).
 
 **Componentes (C4).**
 
 ![Componentes de Ranking Service](diagrams/c4/C4-04-Componentes-Ranking.png)
 
-**Figura 16. Componentes de Ranking Service (C4 · Component; diseño). Vista `C4-04-Componentes-Ranking`.**
+**Figura 16. Componentes de Ranking Service según ADR-027 (C4 · Component; implementado en SCRUM-498 y desplegado en QA con SCRUM-512): consume `service-request.rated` y publica `ranking.technician-reputation-changed` con Outbox; sin API REST desde el gateway (ADR-025). Vista `C4-04-Componentes-Ranking`.**
 
-Todos los componentes están planeados: el servicio es hoy un esqueleto.
+Implementado en `quickpatch-ranking` (SCRUM-498), con su base `db_ranking` bajo RLS. Corre en QA desde el 28 de octubre de 2026 (`release/0.1.0`, SCRUM-512); a producción llega con la promoción del MVP (SCRUM-518).
 
 ## 6.10 Payments Service
 
@@ -619,19 +657,20 @@ Todos los componentes están planeados: el servicio es hoy un esqueleto.
 | Concepto | Persistencia | Responsabilidad |
 |---|---|---|
 | `Payment` | `payments` | Estado de una operación de pago sin almacenar PAN/CVV. |
-| `Invoice` | `invoices` | Factura asociada al pago o servicio. |
+| `Invoice` | `invoices` | Comprobante del pago aprobado, con el NIT si el pagador es una empresa; el PDF se genera al pedirlo. |
+| `PaymentTechnician` | `payment_technicians` | Proyección del proveedor de cada técnico, alimentada por `technician.registered`, para los pagos recibidos del equipo (DD 5.25, P-02). |
 | `PaymentTokenReference` | Value Object | Referencia al token suministrado por el PSP. |
 | `PaymentStatus` | Value Object / Enum conceptual | Estado controlado de la transacción. |
 
-**Eventos:** `payment.approved`, `payment.rejected`.
+**Eventos:** publica `payment.approved` y `payment.rejected`; consume `service-request.completed` y `technician.registered`.
 
 **Componentes (C4).**
 
 ![Componentes de Payments Service](diagrams/c4/C4-04-Componentes-Payments.png)
 
-**Figura 17. Componentes de Payments Service (C4 · Component; diseño). Vista `C4-04-Componentes-Payments`.**
+**Figura 17. Componentes de Payments Service (C4 · Component). Vista `C4-04-Componentes-Payments`.**
 
-Todos los componentes están planeados. El servicio nunca recibe PAN ni CVV: la app tokeniza con la pasarela y el adaptador cobra con la referencia del token (ADR-009, RNF-01).
+Implementado en el MVP con la pasarela simulada (ADR-009 modificado; SCRUM-115 y SCRUM-493): la app tokeniza la tarjeta y a Payments solo llega el token (RNF-01). El adaptador cobra detrás del mismo puerto que usará la pasarela certificada, que sigue planeada junto con su receptor de webhooks; mientras tanto, una conciliación programada cierra los pagos que quedaron sin respuesta. El pago se abre al consumir `service-request.completed`, publica `payment.approved` o `payment.rejected` por el Outbox y emite el comprobante en JSON o PDF, sin validez fiscal (RF-24). Desde el Sprint 5 expone también los pagos recibidos (`GET /v1/payments/received`, payments 1.2.0, RF-25, SCRUM-501): `ReceivedPaymentEndpoints` y `ReceivedPaymentsHandler` devuelven al técnico sus pagos pendientes y aprobados y al proveedor los de su equipo, que Payments conoce por `TechnicianRegisteredConsumer` sin llamar a Identity (ADR-017). Payments 0.3.0 está en QA (SAD 2.2, RNF-01).
 
 ## 6.11 Communication Service
 
@@ -644,19 +683,28 @@ Todos los componentes están planeados. El servicio nunca recibe PAN ni CVV: la 
 - reaccionar a eventos del ciclo de servicio;
 - generar notificaciones para clientes y técnicos;
 - ejecutar comunicaciones que no deben bloquear operaciones síncronas;
-- mantener el canal de estado en tiempo real (`/v1/realtime`, ADR-023): valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant, de los cambios que le corresponden.
+- mantener el canal de estado en tiempo real (`/v1/realtime`, ADR-023): valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant, de los cambios que le corresponden;
+- guardar y entregar el chat de cada solicitud entre el cliente dueño y el técnico asignado (RF-37, ADR-026).
 
-Chat y reclamaciones permanecen como funcionalidades futuras hasta que sean incorporadas por un Sprint y requisito explícito.
+**Chat de la solicitud (ADR-026, SCRUM-473).** Communication conoce a los participantes por una réplica (`chat_participants`) que alimenta `service-request.status-changed`, guarda los mensajes en `chat_messages` y atiende `GET` y `POST /v1/service-requests/{id}/messages` (`communication.v1.yaml` 1.3.0), una excepción de ADR-025. Al guardar un mensaje lo envía por el canal con la trama `chat.message` (`realtime.v1.yaml` 1.1.0) al otro participante. El chat queda de solo lectura al completar, pagar o cancelar la solicitud (DD, RN-CH1 a RN-CH4). Las reclamaciones siguen como funcionalidad futura.
 
 **Componentes (C4).**
 
 ![Componentes de Communication Service](diagrams/c4/C4-04-Componentes-Communication.png)
 
-**Figura 18. Componentes de Communication Service (C4 · Component; diseño). Vista `C4-04-Componentes-Communication`.**
+**Figura 18. Componentes de Communication Service (C4 · Component). Vista `C4-04-Componentes-Communication`.**
 
-El canal en tiempo real está implementado (ADR-023): `/v1/realtime` valida el token de la primera trama y cierra con el código del contrato si no llega a tiempo (4002), si es inválido (4001) o cuando vence (4004; corregido con Kestrel en SCRUM-469). Un consumidor de `service-request.created`, `service-request.status-changed` y `matching.offer-created` decide a quién avisar con los datos del propio evento (`clientId`, `technicianId`) y avisa a cada usuario conectado dentro de su tenant. El aviso de estado sale de ServiceRequest, que solo publica `status-changed` cuando aplicó el cambio; antes salía de los eventos de Matching, y uno que ServiceRequest descartaba por viejo producía un aviso falso (SCRUM-466). El aviso no trae datos: la app vuelve a pedir el detalle por REST. Como Communication todavía no tiene base de datos, recuerda en memoria los últimos `eventId` para no repetir un aviso; un aviso repetido tras un reinicio no hace daño, porque la app solo vuelve a pedir el mismo detalle.
+El canal en tiempo real está implementado (ADR-023): `/v1/realtime` valida el token de la primera trama y cierra con el código del contrato si no llega a tiempo (4002), si es inválido (4001) o cuando vence (4004; corregido con Kestrel en SCRUM-469). Un consumidor de `service-request.created`, `service-request.status-changed` y `matching.offer-created` decide a quién avisar con los datos del propio evento (`clientId`, `technicianId`) y avisa a cada usuario conectado dentro de su tenant. El aviso de estado sale de ServiceRequest, que solo publica `status-changed` cuando aplicó el cambio; antes salía de los eventos de Matching, y uno que ServiceRequest descartaba por viejo producía un aviso falso (SCRUM-466). El aviso no trae datos: la app vuelve a pedir el detalle por REST. El canal recuerda en memoria los últimos `eventId` para no repetir un aviso; un aviso repetido tras un reinicio no hace daño, porque la app solo vuelve a pedir el mismo detalle.
 
-Está planeado el buzón de notificaciones (ADR-024; SCRUM-456): la tabla `notifications` en `db_communication`, `GET /v1/notifications` y `POST /v1/notifications/{id}/read` (`communication.v1.yaml` 1.0.0), y `processed_events` en lugar de la memoria. También están planeadas las plantillas de los avisos de cotización, ejecución y pago. No hay adaptador de un proveedor externo: el correo y el push quedan fuera del MVP (R5).
+**Clases de la figura 18** (`QuickPatch.Communication`, SCRUM-583):
+
+- **Canal en tiempo real:** `RealtimeEndpoints`, `RealtimeSession` y `TokenValidator` atienden `/v1/realtime`; `ConnectionRegistry` y `WebSocketClient` guardan las conexiones abiertas de la réplica. `RealtimeEventsConsumer` consume `service-request.created`, `.status-changed` y `matching.offer-created` desde el último offset y se los entrega a `RealtimeNotifier` y `NoticeRouter`, que descartan repetidos (`RecentEventIds`) y deciden a quién avisar.
+- **Buzón:** `PersistentEventsConsumer`, con su propio grupo y desde el principio, consume 8 topics: `service-request.created`, `.status-changed`, `.quoted`, `.quote-accepted` y `.quote-rejected`, `matching.offer-created`, `technician.registered` y `technician.verification-changed`. `InboxRecorder` e `InboxRules` crean una notificación por destinatario e `InboxStore` la guarda en `notifications`. `InboxEndpoints` atiende `GET /v1/notifications` y `POST /v1/notifications/{id}/read` con `ListNotificationsHandler` y `MarkNotificationReadHandler`.
+- **Chat:** otro grupo de `PersistentEventsConsumer` lee `service-request.status-changed` para `ChatParticipantsRecorder`, que llena `chat_participants`. `ChatEndpoints` atiende `GET` y `POST /v1/service-requests/{id}/messages` con `ListChatMessagesHandler` y `SendChatMessageHandler`, que guardan en `chat_messages` (`ChatStore`) y entregan `chat.message` por `ConnectionRegistry`.
+
+Communication no consume eventos de pago.
+
+El buzón de notificaciones también está implementado (ADR-024; SCRUM-456 y SCRUM-488): la tabla `notifications` en `db_communication`, `GET /v1/notifications` y `POST /v1/notifications/{id}/read` (`communication.v1.yaml` 1.2.0), con `processed_events` para no repetir avisos. El chat de la solicitud (ADR-026) completa el servicio; su despliegue en QA es la versión 0.3.0.
 
 ## 6.12 Reglas transversales del backend
 
@@ -764,7 +812,7 @@ La arquitectura de QUICKPATCH distribuye sus procesos a lo largo de las 7 máqui
 | **Microservicios Backend (8)** | Pods independientes en clúster k3s | VM3 (`10.43.98.205`) | Ejecución de la lógica de negocio (Identity, Actors, Catalog, Matching, ServiceRequest, Ranking, Payments, Communication). |
 | **Motor de Base de Datos** | PostgreSQL + PostGIS | VM4 (`10.43.98.209`) | Almacenamiento relacional transaccional y consultas geoespaciales; una base por servicio. |
 | **Geocodificador** | Nominatim con el mapa de Bogotá y su propio PostgreSQL | VM4 (`10.43.98.209`); en QA, VM5 | Convierte en coordenadas la dirección de una solicitud que llega sin ubicación (RIE-02, ADR-024). Solo lo alcanza la VM del k3s de su ambiente. Hoy está desplegado solo en QA. |
-| **Servicio de Cache y Colas Cortas** | Redis | VM4 (`10.43.98.209`) | Cache en memoria y coordinación temporal; un usuario por servicio restringido a sus claves. |
+| **Servicio de Cache y Colas Cortas** | Redis | VM4 (`10.43.98.209`) | Coordinación temporal: el bloqueo con el que una réplica de ServiceRequest vence las cotizaciones; sin caché en el MVP. Un usuario por servicio restringido a sus claves. |
 | **Bus de Eventos (Broker)** | Apache Kafka + Kafka UI (`quickpatch-kafka`) | VM6 (`10.43.99.12`) | Mensajería distribuida asíncrona entre microservicios. |
 | **Storage de Evidencias Fotográficas** | Garage (S3-compatible) | VM6 (`10.43.99.12`) | Repositorio de objetos para evidencias fotográficas (D7) y respaldos de PostgreSQL. |
 | **Stack de Observabilidad** | Prometheus + Loki + Grafana | VM1 (`10.43.100.168`, herramientas) | Métricas, logs estructurados con `correlationId` y alertas de caída de servicio de los dos ambientes (RF-28). |
@@ -847,7 +895,7 @@ sequenceDiagram
 
 ---
 
-**Vista C4.** Los diagramas dinámicos muestran el flujo a nivel de contenedores y numerado: la Figura 22 va de la solicitud a la oferta, y la Figura 22b, de la aceptación al aviso al cliente.
+**Vista C4.** Los diagramas dinámicos muestran el flujo a nivel de contenedores y numerado: cada uno lleva como título el escenario que representa, y sus pasos nombran el evento de Kafka que viaja en cada uno. La Figura 22 va de la solicitud a la oferta, y la Figura 22b recorre el escenario completo de la asignación, desde `service-request.created` hasta que el cliente ve a su técnico (SCRUM-590).
 
 ![Creación de solicitud y matching (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-CrearSolicitud.png)
 
@@ -855,11 +903,17 @@ sequenceDiagram
 
 ### 8.3.1 Aceptación de la oferta por el técnico (SCRUM-30)
 
-El técnico ve sus ofertas pendientes con la localidad y la distancia, pero no la dirección, que solo recibe al quedar asignado (RN-SR13; `GET /v1/matching/offers?status=pendiente`). Al aceptar (`POST /v1/matching/offers/{attemptId}/accept`), Matching Service verifica en una sola transacción que la oferta siga `pendiente`, sea de ese técnico y no haya vencido, y que el técnico siga `disponible`. Si no, responde `409 oferta-no-disponible` o `409 tecnico-no-disponible`. Si todo se cumple, marca al técnico `ocupado` y publica `matching.technician-assigned` por el Outbox. ServiceRequest pasa la solicitud a `asignado`, y Communication guarda la notificación en el buzón y avisa al cliente por su WebSocket.
+El técnico ve sus ofertas pendientes con la localidad y la distancia, pero no la dirección, que solo recibe al quedar asignado (RN-SR13; `GET /v1/matching/offers?status=pendiente`). Al aceptar (`POST /v1/matching/offers/{attemptId}/accept`), Matching Service verifica en una sola transacción que la oferta siga `pendiente`, sea de ese técnico y no haya vencido, y que el técnico siga `disponible`. Si no, responde `409 oferta-no-disponible` o `409 tecnico-no-disponible`. Si todo se cumple, marca al técnico `ocupado` y publica `matching.technician-assigned` por el Outbox. ServiceRequest la consume, pasa la solicitud a `asignado` y publica `service-request.status-changed` en la misma transacción; Communication consume ese evento (no el de Matching, SCRUM-466), guarda la notificación en el buzón y avisa al cliente por su WebSocket.
 
 ![Aceptación del técnico (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-AsignacionTecnico.png)
 
-**Figura 22b. Aceptación de la oferta por el técnico y aviso al cliente (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-AsignacionTecnico`.**
+**Figura 22b. Escenario: asignación de técnico a una solicitud (C4 · Dynamic). Vista `C4-05-Dinamico-AsignacionTecnico`.**
+
+**Cotización.** Con el técnico asignado, la solicitud pasa por la cotización antes de iniciar (RF-34, RF-35). El técnico emite hasta tres cotizaciones; cada una vence a las 24 horas, y al rechazar la tercera la solicitud se cancela (RN-Q2, RN-Q6 a RN-Q8). Cada paso guarda el cambio y sus eventos en una transacción (ADR-007), y Communication avisa al otro participante por el canal en tiempo real y el buzón.
+
+![Cotización del servicio (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Cotizacion.png)
+
+**Figura 22c. Escenario: cotización del servicio (C4 · Dynamic; SCRUM-589, desde los flujos de SCRUM-591). Vista `C4-05-Dinamico-Cotizacion`.**
 
 ## 8.4 Secuencia de pago y facturación
 
@@ -924,11 +978,11 @@ sequenceDiagram
 
 ---
 
-**Vista C4.** El flujo de pago a nivel de contenedores. Payments es hoy un esqueleto, así que el diagrama es de diseño.
+**Vista C4.** El escenario de pago a nivel de contenedores, como está implementado: el pago pendiente lo crea `service-request.completed`, el cobro lo hace la pasarela simulada dentro de Payments (ADR-009 modificado) y la solicitud pasa a `pagado` con `payment.approved`. La pasarela certificada y su webhook siguen planeados (sección 6.10).
 
 ![Pago tokenizado y facturación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Pago.png)
 
-**Figura 24. Pago tokenizado y facturación (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-Pago`.**
+**Figura 24. Escenario: pago del servicio y comprobante (C4 · Dynamic; SCRUM-589). Vista `C4-05-Dinamico-Pago`.**
 
 ## 8.5 Otros flujos críticos
 
@@ -950,7 +1004,7 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 ![Calificación y reputación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Calificacion.png)
 
-**Figura 27. Calificación del servicio y recálculo de la reputación (C4 · Dynamic; diseño). Vista `C4-05-Dinamico-Calificacion`.**
+**Figura 27. Escenario: calificación del servicio y reputación del técnico (C4 · Dynamic; ADR-027, implementado en SCRUM-85 y SCRUM-498). ServiceRequest guarda la calificación y publica `service-request.rated`; Ranking recalcula y publica `ranking.technician-reputation-changed`, que Identity proyecta en `technician_profiles`. Vista `C4-05-Dinamico-Calificacion`.**
 
 **Gestión de tenants.** La única operación que omite RLS, acotada a una transacción con el rol `identity_platform` y auditada (RF-21, SCRUM-112).
 
@@ -958,36 +1012,52 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 **Figura 28. Gestión de tenants por el admin de plataforma (C4 · Dynamic). Vista `C4-05-Dinamico-GestionTenants`.**
 
+**Cancelación.** El cliente dueño (o el `admin_tenant` desde el panel) cancela una solicitud antes de `en_progreso` (RF-36). Matching retira la oferta pendiente y libera al técnico; Communication avisa con `service-request.status-changed`, porque no consume `service-request.cancelled` (matriz 8.6).
+
+![Cancelación de una solicitud (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Cancelacion.png)
+
+**Figura 28b. Escenario: cancelación de una solicitud (C4 · Dynamic; SCRUM-589). Vista `C4-05-Dinamico-Cancelacion`.**
+
+Los diagramas de secuencia de detalle de la cotización, el pago y la cancelación, con sus alternativas (rechazo, vencimiento, pasarela sin respuesta) y los errores de cada contrato, están en `docs/architecture/DIAGRAMS_SCRUM591_DYNAMIC_FLOWS.md` (SCRUM-591).
+
 ## 8.6 Productores y consumidores Kafka
 
-La matriz de eventos asíncronos formalizada en el sistema (según DD, sección 8.4) es la siguiente. Los nueve primeros tienen esquema publicado en `quickpatch-kafka` (`topics/topics.yaml`); los de ejecución, pago y calificación son de diseño hasta que se implementen sus historias.
+La matriz de eventos asíncronos del sistema (DD, sección 8.4) coincide con `topics/topics.yaml` de `quickpatch-kafka` `v0.10.0`: 20 eventos, todos con esquema publicado y productor implementado. Communication no consume los eventos de Matching ni de pago: avisa al cliente y al técnico con `service-request.status-changed`, que ServiceRequest publica después de aplicar cada uno de esos cambios.
 
 | Tópico / Evento | Microservicio Productor | Microservicios Consumidores | Propósito del Flujo |
 |---|---|---|---|
-| `catalog.category-changed` | `Catalog Service` | `ServiceRequest Service`, `Matching Service` | Publicar el estado completo de una categoría tras crearla o modificarla, para que cada consumidor mantenga su réplica local (ADR-017). |
-| `service-request.created` | `ServiceRequest Service` | `Matching Service`, `Communication Service` | Iniciar búsqueda de técnico disponible y notificar al cliente que su solicitud fue recibida. |
-| `technician.registered` | `Identity Service` | `Matching Service`, `Communication Service` | Crear la proyección del técnico en Matching (especialidad y verificación, P-01) y avisarle que su registro está en verificación. |
+| `catalog.category-changed` | `Catalog Service` | `ServiceRequest Service`, `Matching Service` | Publicar el estado completo de una categoría tras crearla o modificarla, para que cada consumidor mantenga su réplica local (ADR-017). Matching todavía no la aplica (DD 8.3.5). |
+| `service-request.created` | `ServiceRequest Service` | `Matching Service`, `Communication Service` | Iniciar la búsqueda de técnico y avisar al cliente que su solicitud fue recibida. |
+| `technician.registered` | `Identity Service` | `Matching Service`, `Communication Service`, `Payments Service` | Crear la proyección del técnico en Matching (especialidad y verificación, P-01), avisarle que su registro está en verificación y, en Payments, guardar el proveedor de cada técnico para los pagos recibidos del equipo (`payment_technicians`, P-02). |
 | `technician.verification-changed` | `Identity Service` | `Matching Service`, `Communication Service` | Actualizar la proyección cuando el administrador aprueba, rechaza o suspende (un técnico aprobado puede reanudar solicitudes en espera, RN-M10) y avisarle el resultado. |
 | `matching.offer-created` | `Matching Service` | `Communication Service` | Avisar al técnico que tiene una oferta, que vence a los 3 minutos (RN-M8). |
-| `matching.technician-assigned` | `Matching Service` | `ServiceRequest Service`, `Communication Service` | Actualizar estado a `asignado` y notificar al técnico asignado y al cliente. |
-| `matching.no-technician-available` | `Matching Service` | `ServiceRequest Service`, `Communication Service` | Colocar solicitud en `en_espera` y notificar al cliente que no hay técnicos disponibles (AC9-E4). |
-| `matching.search-resumed` | `Matching Service` | `ServiceRequest Service`, `Communication Service` | Volver la solicitud de `en_espera` a `buscando_tecnico` cuando aparece un técnico que puede atenderla (RN-M10) y avisar al cliente. |
-| `service-request.status-changed` | `ServiceRequest Service` | `Communication Service` | Avisar al cliente y al técnico asignado un cambio de estado que ServiceRequest ya aplicó (SCRUM-466). Sale en la misma transacción del cambio y nunca de un evento descartado. |
-| `service-request.completed` | `ServiceRequest Service` | `Payments Service`, `Communication Service` | Habilitar el proceso de pago y notificar al cliente que el servicio finalizó. |
-| `payment.approved` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Cambiar estado de solicitud a `pagado` y enviar comprobante/factura al cliente. |
-| `payment.rejected` | `Payments Service` | `ServiceRequest Service`, `Communication Service` | Informar rechazo de cobro y habilitar reintento de pago. |
-| `service-request.evaluated` | `ServiceRequest Service` | `Ranking Service` | Disparar el recálculo asíncrono de la reputación promedio del técnico. |
+| `matching.technician-assigned` | `Matching Service` | `ServiceRequest Service` | Pasar la solicitud a `asignado`; el aviso sale con `service-request.status-changed`. |
+| `matching.no-technician-available` | `Matching Service` | `ServiceRequest Service` | Colocar la solicitud en `en_espera` (AC9-E4). |
+| `matching.search-resumed` | `Matching Service` | `ServiceRequest Service` | Volver la solicitud de `en_espera` a `buscando_tecnico` cuando aparece un técnico que puede atenderla (RN-M10). |
+| `service-request.status-changed` | `ServiceRequest Service` | `Communication Service` | Avisar al cliente y al técnico asignado un cambio de estado que ServiceRequest ya aplicó (SCRUM-466) y mantener la réplica de participantes del chat (ADR-026). Sale en la misma transacción del cambio y nunca de un evento descartado. |
+| `service-request.cancelled` | `ServiceRequest Service` | `Matching Service` | Retirar la oferta pendiente y liberar al técnico asignado. |
+| `service-request.quoted` | `ServiceRequest Service` | `Communication Service` | Avisar al cliente que tiene una cotización (RF-34). |
+| `service-request.quote-accepted` | `ServiceRequest Service` | `Communication Service` | Avisar al técnico que el cliente aceptó la cotización (RF-35). |
+| `service-request.quote-rejected` | `ServiceRequest Service` | `Communication Service` | Avisar al técnico que el cliente rechazó la cotización. |
+| `service-request.started` | `ServiceRequest Service` | — | Registrar el inicio de la ejecución; hoy no tiene consumidores. |
+| `service-request.completed` | `ServiceRequest Service` | `Payments Service`, `Matching Service` | Abrir el pago pendiente con el total de la cotización aceptada (RN-P4) y liberar al técnico (SCRUM-94). |
+| `payment.approved` | `Payments Service` | `ServiceRequest Service` | Pasar la solicitud a `pagado`. |
+| `payment.rejected` | `Payments Service` | `ServiceRequest Service` | Registrar el rechazo y dejar la solicitud lista para reintentar el pago. |
+| `service-request.rated` (ADR-027) | `ServiceRequest Service` | `Ranking Service` | Disparar el recálculo asíncrono de la reputación promedio del técnico, una vez por calificación. |
+| `ranking.technician-reputation-changed` (ADR-027) | `Ranking Service` | `Identity Service` | Actualizar `technician_profiles.average_rating` y la marca de reputación baja (AC9-E2). |
+| `tenant.status-changed` | `Identity Service` | `ServiceRequest Service` | Mantener la réplica del estado del tenant para rechazar en segundos las solicitudes de un tenant inactivo (RN-T1, SCRUM-509 y SCRUM-510). |
 
 ## 8.7 Consumer Groups
 
 Para garantizar escalabilidad horizontal y procesamiento desacoplado en Kafka (ADR-003, AC5-E3):
 
-1. **Grupos asignados por microservicio:**
-   - `servicerequest-service-group`
-   - `matching-service-group`
-   - `payments-service-group`
-   - `communication-service-group`
-   - `ranking-service-group`
+1. **Grupos asignados por microservicio** (valor por defecto de `Kafka:ConsumerGroupId` en cada servicio; Matching lo fija en `spring.kafka.consumer.group-id`):
+   - `identity-service`
+   - `service-request-service`
+   - `matching-service`
+   - `payments-service`
+   - `ranking-service`
+   - `communication-service` (canal en tiempo real), `communication-inbox` (buzón) y `communication-chat` (réplica de participantes del chat): Communication lee los mismos eventos con tres grupos para que cada función avance su propio offset.
 2. **Aislamiento de offsets:** Cada consumer group almacena su progreso de lectura de forma independiente en Kafka. Si un servicio se detiene por mantenimiento o falla (ej. `ranking-service`, escenario AC5-E3), los eventos continúan encolándose en el tópico sin bloquear a los otros grupos; al reiniciar el pod, retoma el procesamiento desde el último offset confirmado sin pérdida de datos.
 3. **Estrategia de particionado:** Los mensajes utilizan como clave (*message key*) el `aggregate_id` (o `service_request_id`). Esto asegura que todos los eventos relacionados con una misma solicitud lleguen a la misma partición y sean consumidos en estricto orden cronológico.
 
@@ -1280,6 +1350,7 @@ Cubre el flujo Escenarios 1 → 2 → 4 → 5 → 6 → 7 (registro → matching
 ```mermaid
 sequenceDiagram
     actor C as Cliente
+    actor T as Técnico
     participant GW as API Gateway
     participant ID as Identity Service
     participant SR as ServiceRequest Service
@@ -1304,9 +1375,9 @@ sequenceDiagram
     MS->>K: matching.technician-assigned
     K->>SR: consume evento -> estado asignado
 
-    C->>GW: POST /service-requests/{id}/start
+    T->>GW: POST /service-requests/{id}/start
     GW->>SR: estado en_progreso
-    C->>GW: POST /service-requests/{id}/complete
+    T->>GW: POST /service-requests/{id}/complete
     GW->>SR: estado completado
 
     C->>GW: POST /service-requests/{id}/payment
@@ -1317,8 +1388,11 @@ sequenceDiagram
     K->>SR: consume evento -> estado pagado
 
     C->>GW: POST /service-requests/{id}/rating
-    GW->>SR: registrar Rating
-    SR->>RK: actualizar reputación
+    GW->>SR: guardar ratings y Outbox (misma transacción)
+    SR->>K: service-request.rated
+    K->>RK: consume evento -> recalcula reputación
+    RK->>K: ranking.technician-reputation-changed
+    K->>ID: consume evento -> technician_profiles
 ```
 
 ---
@@ -1330,10 +1404,10 @@ sequenceDiagram
 | 1 | Registro y creación de solicitud | Identity, Catalog, ServiceRequest | ✅ Figuras 3, 9, 10, 12 y 13 | ✅ Figuras 21, 22 y 25 | ✅ Secciones 6.2, 10.2 y 10.3 | ✅ Figuras 30 y 31 |
 | 2 | Matching y asignación | Matching, ServiceRequest, Communication | ✅ Figuras 3, 13, 15 y 18 | ✅ Figuras 21, 22 y 22b | ✅ Secciones 6.8 y 10.8 | ✅ Figuras 30 y 31 |
 | 3 | Sin técnico disponible | Matching, ServiceRequest | ✅ Figuras 13 y 15 | 🟡 Figura 21 (rama sin candidatos), sin vista C4 propia | ✅ Secciones 6.7 y 6.8 | ✅ Figuras 30 y 31 |
-| 4 | Ejecución del servicio | ServiceRequest, Communication | 🟡 Figura 13 (evidencias planeadas) | 🟡 Figura 23 (diseño) | ⏳ Sin implementar | ✅ Figuras 30 y 31 (Garage) |
-| 5 | Pago | Payments, ServiceRequest | 🟡 Figura 17 (diseño) | 🟡 Figuras 23 y 24 (diseño) | ⏳ Sin implementar | ⏳ Sin la pasarela (proveedor por definir) |
-| 6 | Aprobación/rechazo PSP | Payments, ServiceRequest | 🟡 Figura 17 (diseño) | 🟡 Figuras 23 y 24 (diseño) | ⏳ Sin implementar | ⏳ Sin la pasarela (proveedor por definir) |
-| 7 | Calificación | ServiceRequest, Ranking | 🟡 Figuras 13 y 16 (diseño) | 🟡 Figura 27 (diseño) | ⏳ Sin implementar | ✅ Figuras 30 y 31 |
+| 4 | Ejecución del servicio | ServiceRequest, Communication | ✅ Figura 13 | 🟡 Figura 23 (diseño) | ✅ Secciones 6.7 y 10.2 (evidencia en QA: `scrum-96-evidencia`) | ✅ Figuras 30 y 31 (Garage) |
+| 5 | Pago | Payments, ServiceRequest | ✅ Figura 17 (pasarela simulada) | 🟡 Figuras 23 y 24 (diseño) | ✅ Sección 6.10 (evidencia en QA: `scrum-495-comprobante`) | 🟡 Sin la pasarela certificada (proveedor por definir) |
+| 6 | Aprobación/rechazo PSP | Payments, ServiceRequest | ✅ Figura 17 (aprobado y rechazado con la pasarela simulada) | 🟡 Figuras 23 y 24 (diseño) | ✅ Sección 6.10 | 🟡 Sin la pasarela certificada (proveedor por definir) |
+| 7 | Calificación | ServiceRequest, Ranking, Identity | ✅ Figuras 10, 13 y 16 | ✅ Figura 27 | ✅ Secciones 6.7, 6.9 y 10.2 (SCRUM-85 y SCRUM-498) | 🟡 Ranking en QA (figura 31, SCRUM-512); en producción llega con la promoción del MVP (figura 30, SCRUM-518) |
 | 8 | Aislamiento multi-tenant | API Gateway, todos los servicios | ✅ Figura 3 y sección 6.12 | ✅ Figuras 25 y 28; Figura 20 (C4 · Code) | ✅ Secciones 6.12 y 10.3 | ✅ Figuras 30, 31 y 33 |
 | 9 | Falla temporal de Kafka | Cualquier productor, Kafka | ✅ Figura 3 y sección 6.12 | ✅ Figura 29; Figura 19 (C4 · Code) | ✅ Secciones 8.10 y 10.3 | ✅ Figuras 30 y 31 |
 
@@ -1349,14 +1423,15 @@ Como parte de la validación de completitud se revisa qué RF y RNF del SRS no q
 
 - **RF-13** (disponibilidad y cobertura del técnico): sección 6.8, Figura 15 y BPMN de la Figura 44 (SCRUM-88, SCRUM-89).
 - **RF-16** (equipo del proveedor): secciones 6.2 y 6.4 y BPMN de la Figura 52 (SCRUM-97, SCRUM-98, SCRUM-463).
-- **RF-17** (servicios del técnico): sección 6.2 y lista de la sección 6.7 (SCRUM-464, SCRUM-467).
+- **RF-17** (servicios del técnico): sección 6.2 y lista de la sección 6.7 (SCRUM-464, SCRUM-467). Desde el Sprint 5, el historial del técnico muestra la calificación de cada servicio (SCRUM-100, SCRUM-499 y SCRUM-101).
 - **RF-19 y RF-20** (aprobación, rechazo y suspensión de técnicos): Figura 8, sección 6.4 y BPMN de la Figura 40 (SCRUM-106, SCRUM-107, SCRUM-110).
 - **RF-21** (gestión de tenants): Figura 28 y BPMN de la Figura 42 (SCRUM-112, SCRUM-462).
+- **RF-25** (pagos recibidos del técnico y del proveedor): sección 6.10 y `GET /v1/payments/received` de payments 1.2.0 (SCRUM-500, SCRUM-501). En la app, Mis pagos (sección 6.2, SCRUM-502). El equipo del proveedor se toma de `technician.registered`.
+- **Notificaciones en la app** (RIE-03, ADR-024): buzón en `db_communication` (sección 6.11, SCRUM-456, SCRUM-459), con el aviso por el canal en tiempo real de los escenarios 2 y 4.
 
 Siguen sin escenario propio:
 
 - **RF-26 a RF-29** (CI/CD, pruebas, logging y cifrado): son de operación, no de negocio. Están en las secciones 8.1, 9 y 10.9 y en el Documento de Infraestructura.
-- **Notificaciones en la app** (RIE-03, ADR-024): el canal en tiempo real está en los escenarios 2 y 4, pero el buzón no tiene escenario; se agrega cuando se implemente (SCRUM-456, SCRUM-459).
 
 ---
 
@@ -1370,11 +1445,11 @@ El diagrama muestra la distribución aprobada en ADR-022: VM1 de herramientas y 
 
 ![Despliegue de producción (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-Produccion.png)
 
-**Figura 30. Despliegue de producción: VM1, VM3, VM4 y VM6 (C4 · Deployment, ADR-022). Vista `C4-06-Despliegue-Produccion`.**
+**Figura 30. Despliegue de producción al 27 de octubre de 2026: VM1, VM3, VM4 y VM6 (C4 · Deployment, ADR-022). VM1 solo termina el TLS; el gateway y el panel corren en el Nginx de VM3, fuera del k3s (ADR-028). Payments y Communication, punteados, llegan con la promoción del MVP (SCRUM-518; Documento de Infraestructura V4, 4.3). Vista `C4-06-Despliegue-Produccion`.**
 
 ![Despliegue de QA (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-QA.png)
 
-**Figura 31. Despliegue de QA: VM2, VM5 y VM7, con la VM1 compartida (C4 · Deployment, ADR-022). Vista `C4-06-Despliegue-QA`.**
+**Figura 31. Despliegue de QA al 3 de noviembre de 2026, con Ranking desplegado (SCRUM-512): VM2, VM5 y VM7, con la VM1 compartida (C4 · Deployment, ADR-022); el gateway y el panel en el Nginx de VM2 (ADR-028). Vista `C4-06-Despliegue-QA`.**
 
 IPs del laboratorio: VM1 10.43.100.168, VM3 10.43.98.205, VM4 10.43.98.209, VM6 10.43.99.12; QA: VM2 10.43.98.15, VM5 10.43.98.29, VM7 10.43.99.8. VM1 reenvía `quickpatch.internal` y `qa.quickpatch.internal` al NodePort 30080 de Traefik en VM3 y VM2.
 
@@ -1670,6 +1745,68 @@ La capa `Domain` concentra las reglas de negocio y no debe depender directamente
 
 Los siete servicios ASP.NET Core y `Matching Service` mantienen la misma separación conceptual, aunque cada tecnología utilice mecanismos propios para implementarla.
 
+### 10.3.1 Convención de paquetes por capa (SCRUM-586)
+
+Las cuatro capas son **proyectos** separados en .NET y **paquetes raíz** en Java, de modo que la dependencia entre capas la controla el compilador: `Domain` no referencia a nadie, `Application` solo a `Domain`, e `Infrastructure` y `Api` implementan o consumen los puertos de `Application`. Dentro de cada capa, el código se agrupa **por agregado o caso de uso**, no por tipo técnico: todo lo de los pagos está en `Payments/` y no repartido entre `Commands/`, `Handlers/` y `Results/`. Los nombres de carpeta son fijos para que un servicio se lea igual que los demás.
+
+```text
+src/
+├── QuickPatch.<Servicio>.Api/              # Interfaz: lo que entra por HTTP o WebSocket
+│   ├── Endpoints/                          #   <Recurso>Endpoints.cs: rutas, validación de entrada y mapeo a resultados HTTP
+│   ├── Http/                               #   Problems (RFC 9457), CorrelationId, middleware
+│   ├── Security/                           #   AuthenticatedUser (claims del JWT), políticas por rol
+│   ├── Bootstrap/                          #   (opcional) semillas y tareas de arranque
+│   └── Program.cs
+├── QuickPatch.<Servicio>.Application/      # Casos de uso; no conoce EF Core, Kafka ni HTTP
+│   ├── Abstractions/                       #   Puertos: repositorios, ITenantUnitOfWork, IOutbox, relojes, adaptadores externos
+│   ├── <Agregado o caso de uso>/           #   Comando o consulta, su handler y su resultado, juntos
+│   ├── Events/                             #   Contratos de los eventos que publica y consume, y los handlers de consumo
+│   └── DependencyInjection.cs
+├── QuickPatch.<Servicio>.Domain/           # Reglas de negocio puras
+│   ├── <Agregado>/                         #   Entidad raíz, value objects, enums y reglas del agregado
+│   └── Common/                             #   Tipos base compartidos dentro del servicio
+└── QuickPatch.<Servicio>.Infrastructure/   # Adaptadores de los puertos
+    ├── Persistence/                        #   DbContext, configuraciones, repositorios, Migrations/ (RLS, ADR-005)
+    ├── Messaging/                          #   Publicador del Outbox y consumidores de Kafka (ADR-007)
+    ├── Options/                            #   Opciones tipadas de configuración
+    ├── <Sistema externo>/                  #   Un adaptador por sistema: Geocoding, Storage, Providers, Documents, Scheduling...
+    └── DependencyInjection.cs
+tests/
+├── unit/QuickPatch.<Servicio>.UnitTests/   # Api/, Application/, Domain/, Infrastructure/ y Support/ (dobles de prueba)
+└── integration/QuickPatch.<Servicio>.IntegrationTests/   # Testcontainers contra PostgreSQL y Kafka reales
+```
+
+En Matching (Java + Spring Boot) se aplica la misma regla con paquetes bajo `co.quickpatch.matching`:
+
+```text
+api/              controllers/ (un @RestController por recurso), http/ (Problems, CorrelationIdFilter, manejador de errores), security/
+application/      <caso de uso>/ (matching, technicians), events/ (contratos y handlers de consumo)
+domain/           <agregado>/ (matching, technicians), events/ (eventos de dominio)
+infrastructure/   persistence/, messaging/, scheduling/, config/ (configuración de Spring que no es seguridad)
+```
+
+**Reglas:**
+
+1. Una clase va en la capa que cumple su responsabilidad, no en la carpeta de la funcionalidad de otra capa: un consumidor de Kafka es `Infrastructure/Messaging`, aunque sirva solo al chat; el registro de conexiones de WebSocket es un adaptador, no un endpoint.
+2. Las carpetas de primer nivel de `Application` y `Domain` llevan el nombre del agregado o caso de uso en el vocabulario del glosario (`Payments`, `Quotes`, `Inbox`), no un nombre técnico (`Services`, `Helpers`, `Utils`).
+3. Los puertos se declaran en `Application/Abstractions`; la implementación vive en `Infrastructure` y se registra en su `DependencyInjection.cs`.
+4. Los contratos de eventos (`Application/Events`) reproducen los esquemas de `contracts/kafka/`; ningún servicio referencia el código de otro (ADR-020 solo comparte código transversal).
+5. Las pruebas reflejan la capa que prueban (`tests/unit/.../<Capa>/`).
+6. Reorganizar paquetes no cambia contratos REST ni eventos: el refactor se acepta solo con el CI en verde.
+
+**Estado al 27 de octubre de 2026** (revisión sobre `develop` de cada repositorio, después de SCRUM-587 y SCRUM-588):
+
+| Servicio | Cumple | Diferencias por corregir | Subtarea |
+|---|---|---|---|
+| Identity | Sí | — | SCRUM-587 (verificación) |
+| Catalog | Sí | — | SCRUM-587 (verificación) |
+| ServiceRequest | Sí | — | SCRUM-587 (verificación) |
+| Payments | Sí | — (`AssemblyMarker` movido a `Domain/Common`, quickpatch-payments#12) | SCRUM-588 |
+| Communication | Sí | — (quickpatch-communication#19): `Api` en `Endpoints/` y `Http/`, puertos en `Application/Abstractions`, contratos en `Application/Events` y pruebas por capa. `Api/Realtime` agrupa el canal WebSocket (sesión, registro de conexiones y validación del token de la primera trama), que es entrada del API (ADR-023) | SCRUM-588 |
+| Matching | Sí | — (quickpatch-matching#19): `api/` en `controllers/`, `http/` y `security/` | SCRUM-588 |
+| Ranking | Sí | — (implementado en SCRUM-498 con la convención: `Domain/Reputation`, `Application`, `Infrastructure/Persistence` y `Infrastructure/Messaging`) | — |
+| Actors | — | Esqueleto: sigue la convención cuando se implemente. | — |
+
 ---
 
 ## 10.4 Contratos, DTOs y elementos compartidos
@@ -1912,7 +2049,7 @@ El técnico se registra con documentos y queda pendiente hasta que el administra
 
 ## 11.4 Registro de empresa cliente
 
-Alta de una cuenta corporativa con NIT y contacto. **Pendiente:** SCRUM-26; la opción está oculta en la app hasta que el contrato lo incluya. *Requisitos y reglas:* RF-06, DEP-13.
+Alta de una cuenta corporativa con NIT y contacto, y de sus usuarios autorizados (`identity.v1.yaml` 1.8.0; SCRUM-26, SCRUM-67 y SCRUM-484; evidencia en QA `scrum-68-cuenta-corporativa`). *Requisitos y reglas:* RF-06, DEP-13.
 
 ![Registro de empresa cliente](diagrams/bpmn/03-registro-de-empresa-cliente.png)
 
@@ -2010,20 +2147,20 @@ El proveedor registra técnicos de su equipo, que pasan por la misma verificaci�
 
 # 12. Trazabilidad entre diagramas
 
-Antes de consolidar una versión final del SDD se verifica la lista siguiente. Resultado de la revisión de la V3 contra `develop` del 17 de octubre de 2026 (SCRUM-424):
+Antes de consolidar una versión final del SDD se verifica la lista siguiente. Resultado de la revisión de la V4 contra `develop` del 3 de noviembre de 2026 (SCRUM-548, observación 1 de la revisión funcional de la sección 13.5). La V3 se revisó el 22 de octubre (SCRUM-428, sección 13.3):
 
 |Verificación|Resultado|Cómo se revisó y qué falta|
 |---|---|---|
-|Todo contenedor del diagrama de contenedores tiene repositorio, pipeline y despliegue (secciones 9 y 10).|🟡 Parcial|Los 8 microservicios, el API Gateway, las dos apps y Kafka tienen repositorio y pipeline. Redis, Garage, PostgreSQL y el Geocodificador se despliegan con Ansible desde `infrastructure/`. Actors, Ranking y Payments tienen pipeline pero no manifiestos: `primer-despliegue-servicios.yml` despliega solo Identity, Catalog, ServiceRequest, Matching y Communication. El Geocodificador está solo en QA.|
-|Todo contenedor desplegable aparece en los diagramas de despliegue de producción y QA.|🟡 Parcial|Todos aparecen en las Figuras 30 y 31, pero Actors, Ranking y Payments se dibujan corriendo en el k3s aunque no están desplegados, y el Geocodificador se dibuja en producción. Se marcan como planeados en la segunda entrega de la V3 (DSL y figuras).|
+|Todo contenedor del diagrama de contenedores tiene repositorio, pipeline y despliegue (secciones 9 y 10).|🟡 Parcial|Los 8 microservicios, el API Gateway, las dos apps y Kafka tienen repositorio y pipeline. Redis, Garage, PostgreSQL y el Geocodificador se despliegan con Ansible desde `infrastructure/`. Payments y Ranking corren en QA (Ranking desde el 28 de octubre, `release/0.1.0`, SCRUM-512). Actors sigue sin manifiesto: es el único servicio planeado.|
+|Todo contenedor desplegable aparece en los diagramas de despliegue de producción y QA.|✅ Cumple|Todos aparecen en las Figuras 30 y 31. Actors y Ranking, y el Geocodificador de producción, se dibujan con borde punteado porque todavía no están desplegados.|
 |Los diagramas dinámicos usan solo contenedores y relaciones del modelo C4.|✅ Cumple|Las vistas dinámicas se definen en `quickpatch.dsl` sobre los elementos del modelo, y `structurizr validate` no da errores (SCRUM-468).|
-|Los escenarios de validación pueden seguirse en los diagramas de contenedores, componentes, dinámicos y de despliegue.|🟡 Parcial|Matriz 8.13.4: los escenarios 1, 2, 8 y 9 se siguen en todos; el 3 no tiene vista C4 dinámica propia, y del 4 al 7 los diagramas son de diseño.|
-|Los contratos REST coinciden con el DD y con `quickpatch-api-gateway`.|✅ Cumple|La sección 5.6.1 lista los contratos de la etiqueta `v0.6.0`, que son los del DD V5. Los endpoints sin contrato publicado (cotización, ejecución, pago, calificación y registro de empresa) se nombran como diseño.|
-|Los eventos coinciden con el DD y con `quickpatch-kafka`.|✅ Cumple|La sección 5.6.2 y la matriz 8.6 tienen los 9 eventos de `topics/topics.yaml` (con `service-request.status-changed`, SCRUM-466), con su productor y sus consumidores; los demás se marcan como diseño.|
-|Los estados de `ServiceRequest` son consistentes con SRS, DD y código.|✅ Cumple|Los nueve estados de la sección 6.7 coinciden con DD 7.4 y con `ServiceRequestStatus`; el código usa hoy los de la búsqueda.|
-|Los nombres de servicios son uniformes en SAD, SDD, repositorios y despliegue.|🟡 Parcial|Los 8 servicios se llaman igual en todos. Los clientes se nombran por su framework en algunos diagramas («Angular Web», «Flutter Mobile»); SCRUM-468 los cambia por «Panel web» y «App móvil».|
+|Los escenarios de validación pueden seguirse en los diagramas de contenedores, componentes, dinámicos y de despliegue.|🟡 Parcial|Matriz 8.13.4: los escenarios 1, 2, 4, 5, 6, 8 y 9 se siguen en las vistas estáticas, y la ejecución y el pago tienen evidencia de QA. El 3 no tiene vista C4 dinámica propia, las dinámicas de ejecución y pago siguen siendo de diseño. El 7 (calificación) está implementado y tiene su vista dinámica (figura 27).|
+|Los contratos REST coinciden con el DD y con `quickpatch-api-gateway`.|✅ Cumple|La sección 5.6.1 lista los contratos de la etiqueta `v0.21.0`, incluidos la calificación (service-request 1.10.0), los pagos recibidos (payments 1.2.0) y la recuperación de la contraseña (identity 1.10.0).|
+|Los eventos coinciden con el DD y con `quickpatch-kafka`.|✅ Cumple|La sección 5.6.2 tiene los 20 eventos de `quickpatch-kafka` `v0.10.0`. La calificación usa `service-request.rated` (ADR-027), no el `service-request.evaluated` que planeaba la V3.|
+|Los estados de `ServiceRequest` son consistentes con SRS, DD y código.|✅ Cumple|Los nueve estados de la sección 6.7 coinciden con DD 7.4 y con `ServiceRequestStatus`, y el código ya los usa todos, de la búsqueda al pago.|
+|Los nombres de servicios son uniformes en SAD, SDD, repositorios y despliegue.|✅ Cumple|Los 8 servicios se llaman igual en todos, y los clientes se nombran «App móvil» y «Panel web», sin el framework (SCRUM-468).|
 |Ningún servicio modifica directamente datos propiedad de otro dominio.|✅ Cumple|Cada servicio tiene su base (ADR-014). ServiceRequest y Matching guardan réplicas propias alimentadas por eventos (ADR-017), y la consulta interna de Identity (`/internal/v1/users`) es de solo lectura.|
-|Las decisiones de seguridad multi-tenant aparecen de forma coherente en todos los diagramas.|✅ Cumple|Los servicios con base toman el tenant del JWT y usan RLS (sección 6.12); la única excepción, la gestión de tenants, está acotada y auditada (Figura 28). Communication, que todavía no tiene base, avisa solo a los usuarios conectados del tenant del evento.|
+|Las decisiones de seguridad multi-tenant aparecen de forma coherente en todos los diagramas.|✅ Cumple|Los servicios con base toman el tenant del JWT y usan RLS (sección 6.12), Communication incluido (buzón y chat en `db_communication`). La única excepción, la gestión de tenants, está acotada y auditada (Figura 28).|
 
 ---
 
@@ -2031,14 +2168,14 @@ Antes de consolidar una versión final del SDD se verifica la lista siguiente. R
 
 | Sección | Corresponde a | Estado |
 |---|---|---|
-| System Landscape, System Context y Container (3 a 5) | Arquitectura | **V3 - en revisión**; contratos de la sección 5.6 al día con `v0.6.0` y `quickpatch-kafka` |
-| Component y Code (6 y 7) | Backend + Frontend | **V3 - en revisión**; texto con el incremento del Sprint 4 (sección 13.2); figuras C4 pendientes de exportar con el DSL de la V3 |
-| Dynamic (8) | Backend + QA | **V3 - en revisión**; asignación y aceptación del técnico (SCRUM-427) |
-| Deployment (9) | DevOps | **V3 - en revisión**; falta marcar Actors, Ranking y Payments y el Geocodificador de producción como no desplegados (sección 12) |
+| System Landscape, System Context y Container (3 a 5) | Arquitectura | **V4 - lista para revisión**; contratos al día con `quickpatch-api-gateway` `v0.21.0` (Identity 1.10.0, ServiceRequest 1.11.0, Payments 1.2.0) y `quickpatch-kafka` `v0.10.0` (20 eventos) |
+| Component y Code (6 y 7) | Backend + Frontend | **V4 - lista para revisión**; componentes con los nombres del código (sección 13.4), incluidos Matching y Communication (SCRUM-583) |
+| Dynamic (8) | Backend + QA | **V4 - lista para revisión**; asignación con escenario nombrado (SCRUM-590) y calificación implementada (figura 27) |
+| Deployment (9) | DevOps | **V4 - lista para revisión**; una vista por ambiente (figuras 30 y 31, SCRUM-576); Actors en los dos ambientes, y Ranking y el Geocodificador en producción, marcados como no desplegados |
 | Organización del código (10) | Backend + Frontend | **Desarrollada - lista para revisión** |
 | Flujos de negocio (11) | Arquitectura | **Desarrollada - 15 BPMN** |
-| Escenarios de validación (8.13) | Equipo | **Matriz completa** (8.13.4): 4 escenarios validados, 1 sin vista dinámica propia y 4 en diseño |
-| Revisión funcional | Product Owner | **V2 aprobada** (SCRUM-301, sección 13.1); **V3 pendiente** (SCRUM-428) |
+| Escenarios de validación (8.13) | Equipo | **Matriz completa** (8.13.4): 8 escenarios seguidos en las vistas y 1 sin vista dinámica propia (escenario 3) |
+| Revisión funcional | Product Owner | **V2 aprobada** (SCRUM-301, sección 13.1); **V3 aprobada** (SCRUM-428, sección 13.3); **V4 aprobada con observaciones** (SCRUM-551, sección 13.5) |
 
 ## 13.1 Revisión funcional del SDD V2 (SCRUM-301)
 
@@ -2064,7 +2201,7 @@ Revisión del 8 de octubre de 2026 con los criterios de SCRUM-301: que el docume
 
 ## 13.2 Cambios del SDD V3 (SCRUM-424)
 
-La V3 lleva el documento al incremento del Sprint 4 implementado en `develop` hasta el 17 de octubre de 2026:
+La V3 lleva el documento al incremento del Sprint 4 implementado en `develop` hasta el 17 de octubre de 2026, y la segunda entrega (al final de esta sección) hasta el 22 de octubre:
 
 - **Contratos (5.6):** los contratos REST de la etiqueta `v0.6.0` de `quickpatch-api-gateway` (Identity 1.7.0 e interno 1.0.0, Catalog 1.2.0, ServiceRequest 1.3.0, Matching 1.0.0, Communication 1.0.0 y el canal en tiempo real) y los eventos de `quickpatch-kafka`, con `service-request.status-changed` (SCRUM-466). Lo que todavía no tiene contrato se nombra como diseño.
 - **Aplicaciones cliente (6.2):** en el panel, la activación de la cuenta del técnico de un equipo; en la app, los servicios del técnico, el equipo del proveedor, la activación de cuenta y el canal en tiempo real, que deja de estar planeado. Las ofertas (SCRUM-80) y el buzón (SCRUM-459) siguen planeados.
@@ -2077,10 +2214,78 @@ La V3 lleva el documento al incremento del Sprint 4 implementado en `develop` ha
 
 **Pendiente para cerrar la V3:**
 
-1. Actualizar `quickpatch.dsl` con los componentes implementados y los que faltan, y volver a exportar las vistas (segunda entrega de SCRUM-424, después de SCRUM-468).
-2. Nombrar los clientes sin el framework en los diagramas (SCRUM-468).
-3. Rehacer la Figura 4 con archivo fuente en el repositorio (SCRUM-470).
-4. Revisión funcional con el Product Owner (SCRUM-428).
+Ninguno: la revisión funcional con el Product Owner (SCRUM-428) queda en la sección 13.3.
+
+**Segunda entrega (22 de octubre de 2026).** Ya están hechos SCRUM-468 (clientes sin el framework), SCRUM-470 y SCRUM-471 (Figuras 4 y 5 con fuente PlantUML). En esta entrega:
+
+- **Modelo C4:** `quickpatch.dsl` deja de marcar como planeados la búsqueda y las ofertas de Matching, el pago y el comprobante de Payments, el canal, el buzón y el chat de Communication, la geocodificación y el Geocodificador, y el estado en tiempo real y el buzón de la app. Suma la cuenta corporativa en Identity, la cotización y la ejecución en ServiceRequest, y el chat, la empresa y el pago en la app. Siguen planeados Actors, Ranking, la calificación, la caché de Matching en Redis y la pasarela certificada con sus webhooks. Se volvieron a exportar las Figuras 3, 9, 10, 13, 15, 17, 18, 30 y 31.
+- **Contratos y eventos (5.6):** etiqueta `v0.17.0` de `quickpatch-api-gateway` y los 17 esquemas de `quickpatch-kafka` `v0.9.0`.
+- **Servicios (6.2, 6.4, 6.7, 6.10 y 6.11):** cuenta corporativa, solicitud de empresa, cotización y ejecución, pago con la pasarela simulada, buzón y chat, como en `develop`.
+- **Validación (8.13.4):** los escenarios de ejecución y pago pasan a implementados, con su evidencia de QA.
+
+---
+
+## 13.3 Revisión funcional del SDD V3 (SCRUM-428)
+
+Revisión del 22 de octubre de 2026 sobre `develop`, con los mismos criterios de la V2 (sección 13.1) más la correspondencia con el código del Sprint 4.
+
+|Criterio|Cómo se verificó|Resultado|
+|---|---|---|
+|C4 reemplaza a 4+1|Búsqueda de "4+1" y de los nombres de sus vistas|Sin restos: solo aparece en la sección 13.1, que cuenta el reemplazo.|
+|Consistencia con el SRS, el DD y los ADR|Cada RF y RNF citado se buscó en el SRS, cada regla RN-* en el DD y cada ADR en `docs/architecture/adr/`|Todos existen.|
+|No inventa alcance|Contenedores, componentes y eventos comparados con el DD 5.13, `quickpatch-api-gateway` `v0.17.0` y `quickpatch-kafka` `v0.9.0`|Sin alcance nuevo. Lo no implementado (Actors, Ranking, calificación, caché de Matching y pasarela certificada) está marcado como planeado.|
+|Corresponde al código|Componentes de las secciones 6.2 a 6.11 comparados con `develop` de cada repositorio y con las colecciones corridas en QA (SAD 2.2)|Coincide. La tecnología de Matching se corrigió en el modelo C4 a Java 25 + Spring Boot 4.1 (`pom.xml`), como dice el DD.|
+|Imágenes|Cada `![...](...)` del documento apunta a un archivo existente|Sin enlaces rotos. Las 20 vistas C4 donde aparecen el gateway o los servicios se volvieron a exportar.|
+|Observación del profesor sobre la Figura 3|Forma del API Gateway y de los microservicios|El API Gateway pasa a rectángulo y los ocho microservicios a hexágono en todas las vistas.|
+|Comprensible para el PO|Lectura de las secciones 1 a 5 y 11|Se entiende: el System Context y los BPMN describen el negocio, y cada figura tiene su texto.|
+
+**Resultado:** la V3 queda aprobada. Lo que sigue abierto (despliegue de Communication 0.3.0 en QA, servicios planeados) está registrado en las secciones 12 y 6.14 y no bloquea el documento.
+
+## 13.4 Cambios del SDD V4 (SCRUM-548)
+
+La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor del 24 de octubre de 2026 (diagramas de componentes por servicio, dinámicos con escenario y despliegue por ambiente). Corresponde a `develop` del 27 de octubre.
+
+| Cambio | Secciones | Tarea |
+|---|---|---|
+| Convención de paquetes por capa de los microservicios y su estado por servicio | 10.2 | SCRUM-586 y SCRUM-587 |
+| Componentes de Identity, Catalog, ServiceRequest y Payments con los nombres del código | 6.4, 6.6, 6.7 y 6.10 (figuras 10, 12, 13 y 17) | SCRUM-581 y SCRUM-582 |
+| Escenario de asignación del técnico con pasos numerados y eventos por nombre | 8 (figura 22b) | SCRUM-590 |
+| Componentes del Sprint 5, dinámica de la calificación y despliegue real | 6, 8 (figura 27) y 9 | SCRUM-549 y SCRUM-550 |
+| Escenarios dinámicos con título y pasos numerados para la cotización, el pago y la cancelación, desde los flujos de SCRUM-591 | 8.3, 8.4 y 8.5 (figuras 22c, 24 y 28b) | SCRUM-589 |
+| Revisión integral del Sprint 5: sistemas externos según ADR-024 (sección 4), Ranking en QA, matriz 8.6 y grupos 8.7 con los eventos y consumidores reales, perfil, `tenant.status-changed` y su réplica en Identity y ServiceRequest, y calificación e historial en la app | 4, 5, 6.2, 6.4, 6.7, 6.9, 8.6, 8.7, 9 y 12 (figuras 3, 9, 10, 13, 16, 27 y 31) | SCRUM-548 |
+| Componentes de Matching y Communication con los nombres reales de las clases: consumidores de `service-request.created`, `.cancelled` y `.completed` y de `technician.*`, `OfferExpirer` y `WaitingRequestsSweeper` en Matching; canal, buzón con sus 8 topics y chat en Communication | 6.8 y 6.11 (figuras 15 y 18) | SCRUM-583 |
+| Componentes reales de la calificación: ServiceRequest, Ranking e Identity | 6.4, 6.7 y 6.9 (figuras 10, 13 y 16) | SCRUM-584 |
+| Pagos recibidos de Payments con sus clases reales (`ReceivedPaymentEndpoints`, `ReceivedPaymentsHandler`, `TechnicianRegisteredConsumer` y `TechnicianRegisteredHandler`) y los consumidores reales de Communication, sin `payment.*` | 6.10 (figura 17), figura 18 y figura 3 | SCRUM-584 |
+| Mis pagos de la app (SCRUM-502) y Mi perfil del panel (SCRUM-613) en las tablas y en las vistas, regeneradas | 6.2 (figuras 8 y 9) y 8.13.5 (RF-25) | SCRUM-548 |
+| Observaciones 1 a 3 de la revisión funcional del PO: sección 12 con la revisión de la V4, contratos de `v0.21.0`, los 20 eventos de `quickpatch-kafka` `v0.10.0` y RF-17, RF-25 y el buzón en la sección 8.13.5 | 5.6.1, 5.6.2, 8.13.5, 12 y 13.5 | SCRUM-548 |
+| Auditoría previa a la revisión del PO: estado del documento, calificación implementada en la matriz de escenarios, secuencia de extremo a extremo con el técnico y la calificación por Kafka (ADR-027), cuenta corporativa implementada, Ranking en la convención de paquetes y referencias corregidas | 1, 6.2, 6.7, 8.13.3, 8.13.4, 10.2, 11.4 y 13 | SCRUM-548 |
+
+**Pendiente para cerrar la V4:** nada. Las figuras 15 y 18 se completaron en SCRUM-583 (fila siguiente).
+
+---
+
+## 13.5 Revisión funcional del SDD V4 (SCRUM-551)
+
+Revisión del 28 de octubre de 2026 sobre `develop`, con los criterios de las V2 y V3 (secciones 13.1 y 13.3) y los de SCRUM-548. También se comparó el SDD con el SAD V5 (2.45). El 1 de noviembre de 2026 se volvió a comparar con el SAD 2.46, que resolvió la diferencia del ciclo de vida, y con `quickpatch-kafka` `v0.10.0`.
+
+|Criterio|Cómo se verificó|Resultado|
+|---|---|---|
+|C4 reemplaza a 4+1|Búsqueda de "4+1"|Sin restos: solo aparece en las secciones 13.1 y 13.3.|
+|Consistencia con el SRS, el DD y los ADR|Cada RF, RNF y RIE citado se buscó en el SRS, cada regla RN-* en el DD 5.14 y cada ADR en `docs/architecture/adr/`|Todos existen.|
+|Consistencia con el SAD|Servicios, estados y despliegue comparados con las secciones 4.2.2, 5.1 y 7.4 del SAD 2.46 y con ADR-027|Coinciden: Actors planeado, Ranking implementado sin desplegar y la calificación por eventos. La única diferencia que había, el ciclo de vida del SAD 2.45 (sección 7.4) con el pago después de `EVALUATED`, la resolvió el SAD 2.46 (`DELIVERED` → `PAID` → `EVALUATED`), como el SDD, el SRS (RF-12) y el DD (RN-R3) (SRS, P2).|
+|No inventa alcance|Contratos de la sección 5.6.1 comparados con `develop` de `quickpatch-api-gateway`; eventos, con `develop` de `quickpatch-kafka`; componentes, con `quickpatch.dsl`|Sin alcance nuevo. Las versiones de la 5.6.1 coinciden con el gateway. Los pagos recibidos del técnico (RF-25, SCRUM-500) y la recuperación de la contraseña (SCRUM-624) siguen como diseño, y el componente de pagos recibidos está marcado `Planeado` en el modelo C4.|
+|Criterios de SCRUM-548|Secciones 6.4, 6.7, 6.9 y 9, y figuras 10, 13, 16, 27, 30 y 31|Cumplen los componentes de calificación y reputación, la vista dinámica de la calificación (figura 27) y el despliegue por ambiente. Faltan las figuras 15 y 18 (SCRUM-583).|
+|Figuras|Numeración e imágenes del documento|Figuras 1 a 52 sin huecos, todas con imagen.|
+|Comprensible para el PO|Lectura de las secciones 1 a 5 y 11|Se entiende: el System Context y los BPMN describen el negocio, y cada figura tiene su texto.|
+
+**Observaciones** (textos que quedaron de la V3; ninguna cambia el diseño):
+
+1. La sección 12 sigue con el resultado del 22 de octubre: dice que la calificación no tiene contrato y que `service-request.evaluated` está planeado. Hoy la calificación está en `service-request.v1.yaml` 1.10.0 y el evento es `service-request.rated` (ADR-027).
+2. La sección 5.6.2 dice que el esquema de `service-request.rated` llega con SCRUM-497. Ya está publicado en `quickpatch-kafka` `v0.10.0` (20 esquemas, con `ranking.technician-reputation-changed` y `tenant.status-changed`).
+3. La sección 8.13.5 dice que el buzón no tiene escenario y se agrega "cuando se implemente", pero ya está implementado. Además, RF-25 no aparece en la lista, y en RF-17 falta el historial con la calificación (SCRUM-100, SCRUM-499).
+4. Las figuras 15 y 18 (SCRUM-583) siguen pendientes.
+
+**Resultado:** la V4 queda aprobada con observaciones. Las observaciones 1 a 3 se corrigieron el 3 de noviembre de 2026 en SCRUM-548 (sección 13.4); la 4 se corrigió el 3 de noviembre de 2026 en SCRUM-583 (figuras 15 y 18). La diferencia del ciclo de vida con el SAD quedó resuelta en el SAD 2.46 (SRS, P2).
 
 ---
 

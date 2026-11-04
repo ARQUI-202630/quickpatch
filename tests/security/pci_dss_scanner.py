@@ -105,8 +105,25 @@ def main():
             print(f"[ERROR] Archivo no encontrado: {args.file}", file=sys.stderr)
             sys.exit(2)
         with open(args.file, 'r', encoding='utf-8', errors='ignore') as f:
-            lineas = f.readlines()
-        print(f"[PCI-DSS Scanner] Escaneando {len(lineas)} líneas del archivo local: {args.file}")
+            contenido = f.read()
+
+        # Si es una exportación JSON de la API de Loki, extraer los mensajes de los streams
+        if args.file.endswith('.json'):
+            try:
+                datos = json.loads(contenido)
+                resultados = datos.get('data', {}).get('result', [])
+                if resultados:
+                    for serie in resultados:
+                        for valor in serie.get('values', []):
+                            lineas.append(valor[1])
+                    print(f"[PCI-DSS Scanner] Exportación de Loki detectada: {len(lineas)} registros de logs extraídos de {len(resultados)} streams.")
+            except Exception:
+                pass
+
+        if not lineas:
+            lineas = [l.strip() for l in contenido.splitlines() if l.strip()]
+            print(f"[PCI-DSS Scanner] Escaneando {len(lineas)} líneas del archivo local: {args.file}")
+
     else:
         try:
             lineas = consultar_loki(args.loki, horas=args.horas)

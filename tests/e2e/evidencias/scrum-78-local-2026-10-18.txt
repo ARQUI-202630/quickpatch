@@ -1,0 +1,122 @@
+[QA Mock Gateway] Inicializado en http://localhost:8080
+
+======================================================
+ EJECUTANDO: SCRUM-78 (Motor de Matching y Asignación)
+ HU Padre: SCRUM-29 | RF-09 | RF-10 | RN-M9 | RN-M10
+ Modo: Simulación Preparatoria Local
+ Target: http://localhost:8080
+ Archivo: scrum-78-motor-matching.postman_collection.json
+======================================================
+
+newman
+
+QUICKPATCH — Motor de Matching y Asignación Automática (SCRUM-78 / HU SCRUM-29)
+
+□ 0. Autenticación de Actores
+└ 0.1 Login Cliente Tenant Alfa
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 563B, 44ms]
+  √  [Auth] Login de Cliente Tenant Alfa exitoso (200 OK)
+
+└ 0.2 Login Cliente Tenant Beta
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 563B, 5ms]
+  √  [Auth] Login de Cliente Tenant Beta exitoso (200 OK)
+
+└ 0.3 Login Técnico Tenant Alfa para Control RBAC
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 589B, 3ms]
+  √  [Auth] Login de Técnico para Control RBAC exitoso (200 OK)
+
+□ 1. Asignación Automática y Verificación de SLA (RN-M9, RNF-05, RF-09)
+└ 1.1 Creación de solicitud con candidato elegible → Estado asignado
+  POST http://localhost:8080/api/v1/service-requests [201 Created, 711B, 3ms]
+  √  [RF-09 / RN-M9] Solicitud creada y técnico asignado automáticamente (201 Created)
+  √  [RNF-05 / AC2-E3] SLA: Tiempo de primer intento de asignación < 60 segundos
+
+└ 1.2 Consulta de Intentos de Matching y Evaluación de Candidatos
+  GET http://localhost:8080/api/v1/matching/attempts/sr-mat-1792358828692 [200 OK, 548B, 4ms]
+  √  [SCRUM-78] 200 OK en historial de matching_attempts
+  √  [Matching Engine] Se registró intento de matching con resultado asignado
+  √  [RN-M9] Candidato seleccionado es un técnico aprobado y disponible
+  √  [RNF-05] Duración del intento de matching medida dentro del SLA (< 60.000 ms)
+
+□ 2. Exclusión de Candidatos No Elegibles y Estado En Espera (RN-M9, RN-M10, RF-10)
+└ 2.1 Solicitud sin candidatos elegibles → Estado en_espera (RN-M10)
+  POST http://localhost:8080/api/v1/service-requests [201 Created, 685B, 3ms]
+  √  [RF-10 / RN-M10] Solicitud creada pasa a en_espera por falta de candidatos (201 Created)
+
+└ 2.2 Detalle de Solicitud en_espera no expone asignación previa
+  GET http://localhost:8080/api/v1/service-requests/sr-mat-espera-1792358828862 [200 OK, 630B, 2ms]
+  √  [Consistencia] 200 OK en consulta de solicitud en espera
+  √  [RN-M10] Solicitud permanece en_espera de nuevo técnico disponible
+
+└ 2.3 Auditoría de Intentos: Técnicos pendientes y fuera de zona descartados
+  GET http://localhost:8080/api/v1/matching/attempts/sr-mat-espera-1792358828862 [200 OK, 544B, 3ms]
+  √  [Matching Engine] 200 OK en intentos de solicitud en espera
+  √  [RN-M9] Técnicos pendientes y fuera de cobertura fueron excluidos
+  √  [Estado] Resultado global de matching es sin_candidatos
+
+□ 3. Idempotencia del Consumidor de Eventos (processed_events / AC5-E5)
+└ 3.1 Primer consumo del evento service-request.created
+  POST http://localhost:8080/api/v1/matching/events/simulate-event [200 OK, 417B, 3ms]
+  √  [Idempotencia / AC5-E5] Evento procesado exitosamente por primera vez (200 OK)
+  √  [processed_events] Resultado registrado es APPLIED_FIRST_TIME
+
+└ 3.2 Reenvío duplicado del mismo evento → Descartado sin reprocesamiento
+  POST http://localhost:8080/api/v1/matching/events/simulate-event [200 OK, 424B, 3ms]
+  √  [Idempotencia] Reenvío duplicado responde 200 OK sin fallar
+  √  [processed_events] Detección de duplicado: SKIPPED_ALREADY_PROCESSED
+
+□ 4. Control de Acceso RBAC y Seguridad (IDN-017, RFC 9457)
+└ 4.1 Control RBAC: Rol Técnico intenta crear solicitud de servicio → 403 Forbidden
+  POST http://localhost:8080/api/v1/service-requests [403 Forbidden, 497B, 3ms]
+  √  [RBAC / IDN-012] 403 Forbidden para rol técnico creando solicitudes
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autorizado
+
+└ 4.2 Seguridad: Solicitud anónima de creación sin token → 401 Unauthorized
+  POST http://localhost:8080/api/v1/service-requests [401 Unauthorized, 464B, 4ms]
+  √  [Seguridad / IDN-017] 401 Unauthorized ante creación anónima
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autenticado
+
+└ 4.3 Seguridad: Consulta anónima de intentos de matching sin token → 401 Unauthorized
+  GET http://localhost:8080/api/v1/matching/attempts/sr-mat-1792358828692 [401 Unauthorized, 448B, 2ms]
+  √  [Seguridad / IDN-017] 401 Unauthorized ante consulta anónima de matching
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autenticado
+
+□ 5. Aislamiento Multi-Tenant (RLS / SAD AC6-E2)
+└ 5.1 Fuga Cross-Tenant Bloqueada: Cliente Beta consulta solicitud de Alfa → 404 Not Found
+  GET http://localhost:8080/api/v1/service-requests/sr-mat-1792358828692 [404 Not Found, 494B, 2ms]
+  √  [Aislamiento Multi-Tenant] 404 Not Found para usuario de otro tenant (RLS)
+  √  [Seguridad] Cero filtración de datos de la orden ni del técnico asignado
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-encontrado
+
+└ 5.2 Fuga Cross-Tenant Bloqueada: Cliente Beta consulta matching de Alfa → 404 Not Found
+  GET http://localhost:8080/api/v1/matching/attempts/sr-mat-1792358828692 [404 Not Found, 511B, 3ms]
+  √  [Aislamiento Multi-Tenant] 404 Not Found para intentos de matching de otro tenant (RLS)
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-encontrado
+
+┌─────────────────────────┬──────────────────┬─────────────────┐
+│                         │         executed │          failed │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│              iterations │                1 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│                requests │               15 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│            test-scripts │               15 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│      prerequest-scripts │                1 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│              assertions │               35 │               0 │
+├─────────────────────────┴──────────────────┴─────────────────┤
+│ total run duration: 1291ms                                   │
+├──────────────────────────────────────────────────────────────┤
+│ total data received: 4.59kB (approx)                         │
+├──────────────────────────────────────────────────────────────┤
+│ average response time: 5ms [min: 2ms, max: 44ms, s.d.: 10ms] │
+└──────────────────────────────────────────────────────────────┘
+
+[Newman] Ejecución de SCRUM-78 completada al 100% con éxito.
+[QA Mock Gateway] Servidor local cerrado.

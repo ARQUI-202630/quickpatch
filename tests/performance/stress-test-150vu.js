@@ -18,6 +18,7 @@ const errores5xx = new Rate('errores_5xx');
 const solicitudesExitosas = new Counter('solicitudes_exitosas');
 
 export const options = {
+    insecureSkipTLSVerify: true,
     stages: [
         { duration: '30s', target: 50 },   // Escalado inicial a carga base
         { duration: '1m', target: 150 },   // Ráfaga abrupta a 150 VU (Pico)
@@ -45,18 +46,32 @@ const BASE_URL = __ENV.BASE_URL || 'https://qa.quickpatch.internal';
  * - Obtiene dinámicamente un categoryId existente de Catalog para evitar 422.
  */
 export function setup() {
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const email = __ENV.QA_CLIENT_EMAIL || `k6.cliente.${Date.now()}.${randomSuffix}@quickpatch.test`;
+    const password = __ENV.QA_CLIENT_PASSWORD || `K6_${Date.now()}_${randomSuffix}!Aa1`;
+
+    // 1. Asegurar registro del cliente de prueba en QA
+    const regUrl = `${BASE_URL}/api/v1/auth/register/client`;
+    const regPayload = JSON.stringify({
+        email: email,
+        password: password,
+        fullName: 'Cliente de Estrés k6',
+        phone: '3001234567'
+    });
+    http.post(regUrl, regPayload, {
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Channel-Id': 'quickpatch-mobile',
+            'X-Correlation-Id': `k6-setup-reg-${Date.now()}`
+        }
+    });
+
+    // 2. Autenticación en QA
     const loginUrl = `${BASE_URL}/api/v1/auth/login`;
-    const email = __ENV.QA_CLIENT_EMAIL || 'cliente.qa@quickpatch.internal';
-    const password = __ENV.QA_CLIENT_PASSWORD;
-
-    if (!password) {
-        throw new Error('[Setup QA] Variable QA_CLIENT_PASSWORD es requerida para autenticación en QA');
-    }
-
     const loginPayload = JSON.stringify({ email, password });
     const loginHeaders = {
         'Content-Type': 'application/json',
-        'X-Channel-Id': __ENV.CHANNEL_ID || 'quickpatch-web',
+        'X-Channel-Id': 'quickpatch-mobile',
         'X-Correlation-Id': `k6-setup-login-${Date.now()}`
     };
 

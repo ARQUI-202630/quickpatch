@@ -14,7 +14,7 @@ docker build -t quickpatch-ansible .
 ./ap playbooks/diagnostico.yml -k -K
 ```
 
-`./ap` monta el repositorio completo porque dos playbooks usan archivos de otros repositorios (SCRUM-338): `deploy-gateway.yml` escribe `apps/api-gateway/nginx/gateway-nginx.conf.j2` y `deploy-kafka.yml` importa `apps/kafka/deploy/deploy-kafka.yml`, que también crea los topics de `apps/kafka/topics/topics.yaml`.
+`./ap` monta el repositorio completo porque dos playbooks usan archivos de otros repositorios (SCRUM-338): `deploy-gateway.yml` escribe `apps/api-gateway/nginx/gateway-ambiente-nginx.conf.j2` (gateway de cada ambiente, en VM3 y VM2) y `entrada-nginx.conf.j2` (entrada de VM1) y `deploy-kafka.yml` importa `apps/kafka/deploy/deploy-kafka.yml`, que también crea los topics de `apps/kafka/topics/topics.yaml`.
 
 ## Requisitos (si se instala Ansible localmente)
 

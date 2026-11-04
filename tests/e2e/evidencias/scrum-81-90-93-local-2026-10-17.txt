@@ -1,0 +1,202 @@
+﻿SCRUM-81, SCRUM-90 y SCRUM-93 — corrida local del 17 de octubre de 2026
+Responsable: Katherine Bravo — QA
+
+1. SCRUM-90: Disponibilidad y Cobertura Geográfica (Matching Service / HU SCRUM-33)
+   - Archivo: tests/e2e/scrum-incremento-tecnico.postman_collection.json (Carpeta 1)
+   - Catálogo de localidades: 20 localidades oficiales de Bogotá (SDP/IDECA) ordenadas por código (COV-001)
+   - Consulta y actualización de disponibilidad: no_disponible -> disponible (AVA-001, AVA-002)
+   - Transición inválida (RN-M6): 409 Conflict ante cambio manual cuando el técnico está ocupado en servicio (AVA-003)
+   - Cobertura geográfica por localidades: asignación de códigos y validación PostGIS (COV-002, COV-003)
+   - Validación de contrato: 400 Bad Request ante códigos inexistentes o lista vacía (COV-004)
+   - Seguridad: 401 sin token (AVA-004) y 403 Forbidden para rol cliente (AVA-005)
+
+2. SCRUM-81: Aceptación y Rechazo de Ofertas de Asignación (Matching Service / HU SCRUM-30)
+   - Archivo: tests/e2e/scrum-incremento-tecnico.postman_collection.json (Carpeta 2)
+   - Ofertas pendientes (RN-SR13): devuelve localidad y distancia pero NO dirección exacta previa (OFF-001)
+   - Aceptación legítima: transacción atómica (oferta aceptada, técnico ocupado RN-M6, solicitud asignada y publicación de matching.technician-assigned por Outbox) (OFF-002)
+   - Control de concurrencia y duplicados: 409 Conflict si la oferta ya fue respondida (OFF-003)
+   - Vencimiento de ofertas (RN-M8): 409 Conflict si la oferta expiró sin respuesta (OFF-004)
+   - Conflicto por técnico ocupado (RN-M7): 409 Conflict si el técnico ya tiene un servicio activo (OFF-005)
+   - Rechazo sin penalización (RF-10, R12): 200 OK y notificación al siguiente candidato (RN-M3) (OFF-006)
+   - Control RBAC: 403 Forbidden para rol cliente intentando responder ofertas (OFF-007)
+
+3. SCRUM-93: Detalle de Solicitud para Técnico Asignado (ServiceRequest Service / HU SCRUM-34)
+   - Archivo: tests/e2e/scrum-incremento-tecnico.postman_collection.json (Carpeta 3)
+   - Detalle para técnico asignado (RN-SR13): 200 OK con dirección exacta y contacto del cliente (nombre y teléfono resueltos desde Identity) (DTL-001)
+   - Restricción de acceso previo (RN-SR13): 403 Forbidden si el técnico consulta antes de estar asignado (buscando_tecnico) (DTL-002)
+   - Confidencialidad y privacidad: 404 Not Found si un técnico ajeno intenta consultar la solicitud (DTL-003)
+   - Perspectiva del cliente dueño: 200 OK con bloque client en null y datos del técnico asignado (DTL-004)
+
+[QA Mock Gateway] Inicializado en http://localhost:8080
+
+======================================================
+ EJECUTANDO: INCREMENTO T├ëCNICO (SCRUM-81, SCRUM-90, SCRUM-93)
+ Modo: Simulaci├│n Preparatoria Local
+ Target: http://localhost:8080
+ Archivo: scrum-incremento-tecnico.postman_collection.json
+======================================================
+
+newman
+
+QUICKPATCH ÔÇö Incremento T├®cnico (SCRUM-81, SCRUM-90, SCRUM-93)
+
+Ôûí 0. Autenticaci├│n y Tokens de Prueba
+Ôöö 0.1 Login T├®cnico Principal (usr-tec-01)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 584B, 45ms]
+  ÔêÜ  [Auth] Login t├®cnico exitoso (200 OK)
+
+Ôöö 0.2 Login T├®cnico Ocupado (usr-tec-02)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 592B, 5ms]
+  ÔêÜ  [Auth] Login t├®cnico ocupado exitoso (200 OK)
+
+Ôöö 0.3 Login T├®cnico Ajeno (usr-tec-03)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 589B, 3ms]
+  ÔêÜ  [Auth] Login t├®cnico ajeno exitoso (200 OK)
+
+Ôöö 0.4 Login Cliente Due├▒o (usr-client-01)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 558B, 4ms]
+  ÔêÜ  [Auth] Login cliente exitoso (200 OK)
+
+Ôûí 1. SCRUM-90 ÔÇö Disponibilidad y Cobertura (Matching Service)
+Ôöö 1.1 [COV-001] Cat├ílogo p├║blico de 20 localidades oficiales de Bogot├í
+  GET http://localhost:8080/api/v1/localities [200 OK, 905B, 4ms]
+  ÔêÜ  [SCRUM-90] 200 OK en listado de localidades
+  ÔêÜ  [Localidades] Devuelve exactamente las 20 localidades oficiales de Bogot├í
+  ÔêÜ  [Localidades] C├│digos oficiales 01 a 20 presentes
+
+Ôöö 1.2 [AVA-001] Consulta de disponibilidad inicial del t├®cnico
+  GET http://localhost:8080/api/v1/technicians/me/availability [200 OK, 315B, 3ms]
+  ÔêÜ  [SCRUM-90] 200 OK en consulta de disponibilidad
+  ÔêÜ  [Contrato] Atributos de disponibilidad presentes
+
+Ôöö 1.3 [AVA-002] Cambiar disponibilidad a disponible (RF-13, RN-M10)
+  PUT http://localhost:8080/api/v1/technicians/me/availability [200 OK, 311B, 6ms]
+  ÔêÜ  [SCRUM-90] 200 OK al actualizar disponibilidad
+  ÔêÜ  [SCRUM-90] Estado actualizado a disponible
+  ÔêÜ  [SCRUM-90] Flag available es true
+  ÔêÜ  [SCRUM-90] Flag busy es false
+
+Ôöö 1.4 [AVA-003] Rechazo de cambio manual si t├®cnico est├í ocupado en servicio (RN-M6)
+  PUT http://localhost:8080/api/v1/technicians/me/availability [409 Conflict, 525B, 4ms]
+  ÔêÜ  [SCRUM-90 / RN-M6] 409 Conflict si t├®cnico est├í ocupado
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato] Tipo de error transicion-invalida
+
+Ôöö 1.5 [COV-002] Consulta de cobertura inicial del t├®cnico
+  GET http://localhost:8080/api/v1/technicians/me/coverage [200 OK, 292B, 6ms]
+  ÔêÜ  [SCRUM-90] 200 OK en consulta de cobertura
+  ÔêÜ  [Contrato] Atributo localityCodes es array
+
+Ôöö 1.6 [COV-003] Configuraci├│n de cobertura geogr├ífica por localidades (RF-13)
+  PUT http://localhost:8080/api/v1/technicians/me/coverage [200 OK, 297B, 4ms]
+  ÔêÜ  [SCRUM-90] 200 OK al actualizar cobertura
+  ÔêÜ  [SCRUM-90] Localidades configuradas correctamente
+
+Ôöö 1.7 [COV-004] Rechazo de cobertura vac├¡a o con c├│digo inexistente
+  PUT http://localhost:8080/api/v1/technicians/me/coverage [400 Bad Request, 477B, 3ms]
+  ÔêÜ  [SCRUM-90] 400 Bad Request ante c├│digo inexistente
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato] Tipo de error validacion-solicitud
+
+Ôöö 1.8 [AVA-004] Rechazo de consulta sin token ÔåÆ 401 Unauthorized
+  GET http://localhost:8080/api/v1/technicians/me/availability [401 Unauthorized, 460B, 6ms]
+  ÔêÜ  [Seguridad] 401 Unauthorized sin token
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato] Tipo de error no-autenticado
+
+Ôöö 1.9 [AVA-005] Control RBAC: Rol cliente no puede gestionar disponibilidad ÔåÆ 403 Forbidden
+  PUT http://localhost:8080/api/v1/technicians/me/availability [403 Forbidden, 482B, 2ms]
+  ÔêÜ  [RBAC] 403 Forbidden para rol cliente
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato] Tipo de error no-autorizado
+
+Ôûí 2. SCRUM-81 ÔÇö Aceptaci├│n y Rechazo de Ofertas (Matching Service)
+Ôöö 2.1 [OFF-001] Consultar ofertas pendientes (sin direcci├│n exacta, RN-SR13)
+  GET http://localhost:8080/api/v1/matching/offers?status=pendiente [200 OK, 771B, 3ms]
+  ÔêÜ  [SCRUM-81] 200 OK en consulta de ofertas
+  ÔêÜ  [SCRUM-81] Lista de ofertas con al menos un elemento
+  ÔêÜ  [RN-SR13] Oferta contiene localidad y distancia pero NO direcci├│n exacta
+
+Ôöö 2.2 [OFF-002] Aceptar oferta leg├¡tima (At├│mica: ocupado, asignado, Outbox)
+  POST http://localhost:8080/api/v1/matching/offers/attempt-valid-01/accept [200 OK, 377B, 4ms]
+  ÔêÜ  [SCRUM-81] 200 OK al aceptar oferta leg├¡tima
+  ÔêÜ  [SCRUM-81] Respuesta es aceptado
+  ÔêÜ  [SCRUM-81] Atributos de respuesta presentes
+
+Ôöö 2.3 [OFF-003] Rechazo de oferta ya respondida o duplicada ÔåÆ 409 Conflict
+  POST http://localhost:8080/api/v1/matching/offers/attempt-valid-01/accept [409 Conflict, 507B, 3ms]
+  ÔêÜ  [SCRUM-81] 409 Conflict ante intento duplicado
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato] Tipo de error oferta-no-disponible
+
+Ôöö 2.4 [OFF-004] Rechazo de oferta vencida por tiempo l├¡mite (RN-M8) ÔåÆ 409 Conflict
+  POST http://localhost:8080/api/v1/matching/offers/attempt-expired-01/accept [409 Conflict, 489B, 3ms]
+  ÔêÜ  [SCRUM-81 / RN-M8] 409 Conflict ante oferta expirada
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato] Tipo de error oferta-no-disponible
+
+Ôöö 2.5 [OFF-005] Rechazo de oferta si el t├®cnico ya est├í ocupado (RN-M7) ÔåÆ 409 Conflict
+  POST http://localhost:8080/api/v1/matching/offers/attempt-second-01/accept [409 Conflict, 495B, 2ms]
+  ÔêÜ  [SCRUM-81 / RN-M7] 409 Conflict si t├®cnico est├í ocupado
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato] Tipo de error tecnico-no-disponible
+
+Ôöö 2.6 [OFF-006] Rechazo de oferta sin penalizaci├│n (RF-10, R12)
+  POST http://localhost:8080/api/v1/matching/offers/attempt-reject-01/reject [200 OK, 304B, 1ms]
+  ÔêÜ  [SCRUM-81 / R12] 200 OK al rechazar oferta sin penalizaci├│n
+  ÔêÜ  [SCRUM-81] Respuesta es rechazado
+  ÔêÜ  [RN-M3] Siguiente candidato notificado
+
+Ôöö 2.7 [OFF-007] Control RBAC: Rol cliente no puede responder ofertas ÔåÆ 403 Forbidden
+  POST http://localhost:8080/api/v1/matching/offers/attempt-valid-01/accept [403 Forbidden, 474B, 4ms]
+  ÔêÜ  [RBAC] 403 Forbidden para rol cliente
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato] Tipo de error no-autorizado
+
+Ôûí 3. SCRUM-93 ÔÇö Detalle de Solicitud para T├®cnico Asignado (ServiceRequest)
+Ôöö 3.1 [DTL-001] T├®cnico asignado ve detalle completo con contacto del cliente (RN-SR13)
+  GET http://localhost:8080/api/v1/service-requests/sr-assigned-01 [200 OK, 712B, 3ms]
+  ÔêÜ  [SCRUM-93] 200 OK en consulta de solicitud asignada
+  ÔêÜ  [SCRUM-93] Estado verificado como asignado
+  ÔêÜ  [SCRUM-93] Direcci├│n exacta visible para t├®cnico asignado
+  ÔêÜ  [RN-SR13] Contacto del cliente presente con nombre y tel├®fono
+
+Ôöö 3.2 [DTL-002] T├®cnico consulta solicitud no asignada (buscando_tecnico) ÔåÆ 403 Forbidden
+  GET http://localhost:8080/api/v1/service-requests/sr-unassigned-01 [403 Forbidden, 535B, 3ms]
+  ÔêÜ  [SCRUM-93 / RN-SR13] 403 Forbidden antes de asignaci├│n
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato] Tipo de error solicitud-no-asignada
+
+Ôöö 3.3 [DTL-003] T├®cnico ajeno consulta solicitud asignada a otro ÔåÆ 404 Not Found
+  GET http://localhost:8080/api/v1/service-requests/sr-assigned-01 [404 Not Found, 494B, 3ms]
+  ÔêÜ  [Confidencialidad] 404 Not Found para t├®cnico ajeno
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato] Tipo de error no-encontrado
+
+Ôöö 3.4 [DTL-004] Cliente due├▒o consulta su solicitud asignada (client es null)
+  GET http://localhost:8080/api/v1/service-requests/sr-assigned-01 [200 OK, 606B, 3ms]
+  ÔêÜ  [Cliente] 200 OK en consulta de solicitud propia
+  ÔêÜ  [Contrato] Para cliente el bloque client es null
+  ÔêÜ  [Contrato] Bloque technician visible con nombre de t├®cnico
+
+ÔöîÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö¼ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö¼ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÉ
+Ôöé                         Ôöé        executed Ôöé          failed Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé              iterations Ôöé               1 Ôöé               0 Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé                requests Ôöé              24 Ôöé               0 Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé            test-scripts Ôöé              24 Ôöé               0 Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé      prerequest-scripts Ôöé               0 Ôöé               0 Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé              assertions Ôöé              63 Ôöé               0 Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö┤ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö┤ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé total run duration: 2s                                      Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé total data received: 6.74kB (approx)                        Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé average response time: 5ms [min: 1ms, max: 45ms, s.d.: 8ms] Ôöé
+ÔööÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÿ
+
+[QA Mock Gateway] Servidor local cerrado.

@@ -1,0 +1,142 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN REAL EN QA — Motor de Matching y Asignación (SCRUM-78)
+Ambiente: QA Desplegado (k3s en VM2 / Ingress https://qa.quickpatch.internal)
+Fecha: 22 de octubre de 2026
+Ejecutado con: Newman CLI (reporte limpio sin credenciales ni tokens persistidos)
+Resultado: 43 de 43 aserciones exitosas (100.0% PASS RATE)
+================================================================================
+
+newman
+
+QUICKPATCH — Motor de Matching y Asignación Automática (SCRUM-78 / HU SCRUM-29)
+
+□ 0. Autenticación Dinámica de Actores y Catálogo
+└ 0.1 Consulta de Categorías Activas del Catálogo
+  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 1.59kB, 76ms]
+  √  [Catalog] 200 OK en consulta de categorías activas
+  √  [Catalog] Existen categorías activas para matching
+
+└ 0.2 Registro Dinámico Cliente Tenant Alfa
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 942ms]
+  √  [Auth] Registro Cliente Alfa exitoso (201 Created)
+
+└ 0.3 Login Cliente Tenant Alfa
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 938ms]
+  √  [Auth] Login de Cliente Tenant Alfa exitoso (200 OK)
+
+└ 0.4 Registro Dinámico Cliente Tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 908ms]
+  √  [Auth] Registro Cliente Beta exitoso (201 Created)
+
+└ 0.5 Login Cliente Tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 902ms]
+  √  [Auth] Login de Cliente Tenant Beta exitoso (200 OK)
+
+└ 0.6 Registro Dinámico Técnico Tenant Alfa
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 451B, 868ms]
+  √  [Auth] Registro de Técnico exitoso (201 Created)
+
+└ 0.7 Login Técnico Tenant Alfa
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 963ms]
+  √  [Auth] Login de Técnico exitoso (200 OK)
+
+□ 1. Elegibilidad, Cobertura y Disponibilidad del Motor (RN-M9, RF-13)
+└ 1.1 Catálogo de 20 Localidades Oficiales de Bogotá (RF-13, RN-M9)
+  GET https://qa.quickpatch.internal/api/v1/localities [200 OK, 1.06kB, 16ms]
+  √  [Matching Engine] 200 OK en catálogo de localidades
+  √  [RN-M9 / RF-13] Catálogo contiene las 20 localidades oficiales de Bogotá
+
+└ 1.2 Consulta de Disponibilidad del Técnico (RF-13)
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 441B, 17ms]
+  √  [Matching Engine] 200 OK en consulta de disponibilidad
+  √  [RF-13] Estado de disponibilidad retornado correctamente
+
+└ 1.3 Configuración de Cobertura Geográfica del Técnico (RF-13, RN-M9)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 553B, 36ms]
+  √  [Matching Engine] 200 OK al actualizar cobertura geográfica
+  √  [RN-M9] Cobertura registrada exitosamente
+
+└ 1.4 Transición de Disponibilidad del Técnico a Disponible (RF-13)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 35ms]
+  √  [Matching Engine] 200 OK al actualizar disponibilidad
+  √  [RF-13] Técnico pasa a estado disponible
+
+□ 2. Creación de Solicitud y SLA de Matching (RN-M9, RNF-05, RF-09, RN-M10)
+└ 2.1 Creación de solicitud con candidato elegible (SLA < 60s)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 864B, 23ms]
+  √  [RF-09 / RN-M9] Solicitud creada exitosamente (201 Created)
+  √  [RNF-05 / AC2-E3] SLA: Tiempo de primer intento de matching < 60 segundos
+
+└ 2.2 Consulta de Solicitud por el Cliente Dueño
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a163ff-7d84-7f0a-a764-af87f5eb2d3c [200 OK, 789B, 26ms]
+  √  [ServiceRequest] 200 OK en consulta de solicitud
+  √  [Consistencia] Solicitud creada mantiene identificador y ciclo de vida de matching
+
+└ 2.3 Solicitud en zona periférica → Búsqueda y gestión en espera (RN-M10)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 844B, 22ms]
+  √  [RF-10 / RN-M10] Solicitud periférica creada exitosamente (201 Created)
+  √  [RNF-05] SLA de creación y evaluación espacial < 60.000 ms
+
+└ 2.4 Detalle de Solicitud periférica no expone asignación previa errónea
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a163ff-7e50-75c2-83b6-c4d2e9adbcb2 [200 OK, 769B, 16ms]
+  √  [Consistencia] 200 OK en consulta de solicitud periférica
+  √  [RN-M10] Solicitud permanece en búsqueda activa o en espera
+
+□ 3. Control de Acceso RBAC y Seguridad (IDN-017, RFC 9457)
+└ 3.1 Control RBAC: Rol Técnico intenta crear solicitud de servicio → 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/service-requests [403 Forbidden, 443B, 12ms]
+  √  [RBAC / IDN-012] 403 Forbidden para rol técnico creando solicitudes
+  √  [RFC 9457] Problem Details con correlationId
+
+└ 3.2 Seguridad: Solicitud anónima de creación sin token → 401 Unauthorized
+  POST https://qa.quickpatch.internal/api/v1/service-requests [401 Unauthorized, 476B, 26ms]
+  √  [Seguridad / IDN-017] 401 Unauthorized ante creación anónima
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autenticado
+
+└ 3.3 Seguridad: Consulta anónima de ofertas de matching sin token → 401 Unauthorized
+  GET https://qa.quickpatch.internal/api/v1/matching/offers [401 Unauthorized, 577B, 12ms]
+  √  [Seguridad / IDN-017] 401 Unauthorized ante consulta anónima de matching
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autenticado
+
+└ 3.4 Control RBAC: Rol Cliente intenta auditar matching_attempts internos → 403 Forbidden
+  GET https://qa.quickpatch.internal/api/v1/matching/attempts/01a163ff-7d84-7f0a-a764-af87f5eb2d3c [403 Forbidden, 590B, 29ms]
+  √  [RBAC / Auditoría] 403 Forbidden: Cliente no puede acceder a intentos de matching internos
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-autorizado
+
+□ 4. Aislamiento Multi-Tenant (RLS / SAD AC6-E2)
+└ 4.1 Fuga Cross-Tenant Bloqueada: Cliente Beta consulta solicitud de Alfa → 404 Not Found
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a163ff-7d84-7f0a-a764-af87f5eb2d3c [404 Not Found, 457B, 18ms]
+  √  [Aislamiento Multi-Tenant] 404 Not Found para usuario de otro tenant (RLS)
+  √  [Seguridad] Cero filtración de datos de la orden entre tenants
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-encontrado
+
+└ 4.2 Fuga Cross-Tenant Bloqueada: Cliente Beta consulta solicitud periférica de Alfa → 404 Not Found
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a163ff-7e50-75c2-83b6-c4d2e9adbcb2 [404 Not Found, 457B, 15ms]
+  √  [Aislamiento Multi-Tenant] 404 Not Found para solicitud periférica de otro tenant (RLS)
+  √  [Seguridad] Aislamiento RLS en PostgreSQL verificado
+  √  [RFC 9457] Problem Details con correlationId
+  √  [Contrato RFC 9457] Tipo de error /no-encontrado
+
+┌─────────────────────────┬────────────────────┬────────────────────┐
+│                         │           executed │             failed │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              iterations │                  1 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│                requests │                 21 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│            test-scripts │                 21 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│      prerequest-scripts │                  2 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              assertions │                 43 │                  0 │
+├─────────────────────────┴────────────────────┴────────────────────┤
+│ total run duration: 7.6s                                          │
+├───────────────────────────────────────────────────────────────────┤
+│ total data received: 9.42kB (approx)                              │
+├───────────────────────────────────────────────────────────────────┤
+│ average response time: 280ms [min: 12ms, max: 963ms, s.d.: 404ms] │
+└───────────────────────────────────────────────────────────────────┘

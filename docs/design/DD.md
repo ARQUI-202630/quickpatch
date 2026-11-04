@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.6|
+|**Versión**|5.20|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-637 — Calificación en el detalle de la solicitud (5.20); SCRUM-625 — Hash del correo con HMAC y la invitación pendiente en la recuperación de la contraseña (5.19); SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -110,7 +110,7 @@ Algunos elementos de esta versión resuelven dependencias que el DD v2.2 dejaba 
 |ID|Propuesta|Dependencia que resuelve|Documento que debe reflejarla|
 |---|---|---|---|
 |P-01|Matching Service mantiene una proyección local de la especialidad y del estado de verificación de cada técnico, alimentada por los eventos `technician.registered` y `technician.verification-changed` de Identity Service.|DEP-01|**Resuelta en v4:** P-01 adoptada y alineada con el ADR-017 (`technician.registered` y `technician.verification-changed` v1, sección 1.8). Falta actualizar el pendiente de Safety del SAD (sección 3.9).|
-|P-02|Mientras Actors Service no tenga persistencia, `technician_profiles.provider_id` referencia al usuario con rol `proveedor` dentro de Identity Service (FK física).|DEP-02 (parcial)|SDD, sección 6.14|
+|P-02|Mientras Actors Service no tenga persistencia, `technician_profiles.provider_id` referencia al usuario con rol `proveedor` dentro de Identity Service (FK física). **Desde la 5.16 (SCRUM-501)** Payments guarda de cada técnico su proveedor en la proyección `payment_technicians` (sección 5.25), alimentada por `technician.registered`, para los pagos recibidos del equipo.|DEP-02 (parcial)|SDD, sección 6.14|
 |P-03|La especialidad de un técnico es una categoría de servicio: `technician_profiles.specialty_id` referencia `service_categories.id`.|DEP-02 (parcial)|SDD, sección 6.6|
 |P-04|La cobertura de un técnico se expresa por localidades de Bogotá, a partir de un catálogo de referencia `localities` en Matching Service.|RF-13 (SCRUM-33)|SDD, sección 6.8|
 |P-05|Matching Service persiste las solicitudes que debe asignar (`matching_requests`) para poder reintentar las que quedan en espera.|SCRUM-29, criterio 3|SDD, sección 8.3|
@@ -135,7 +135,7 @@ El DD v3.0 se escribió sobre la versión 2.2, en paralelo con las versiones 2.3
 |Ubicación|`lat`, `lng`|`latitude`, `longitude`|Contratos v1|
 |Endpoint de categorías|`/v1/service-categories`|`/v1/catalog/categories`|Contrato v1. El Gateway enruta por el prefijo de cada ruta (`/v1/auth`, `/v1/users` y `/v1/platform` a Identity; `/v1/catalog` a Catalog; `/v1/service-requests` a ServiceRequest); las rutas de administración de otros servicios necesitan su propia regla en el gateway|
 |Categoría inexistente|`400 VALIDATION_ERROR`|`422 categoria-no-disponible`|Contrato v1|
-|Cobertura al crear|Localidades de Bogotá|Rectángulo configurable (RN-SR9); las localidades (P-04) siguen para la cobertura del técnico en Matching|ServiceRequest no tiene las localidades|
+|Cobertura al crear|Localidades de Bogotá|Rectángulo configurable (RN-SR9); las localidades (P-04) siguen para la cobertura del técnico en Matching. **SCRUM-636:** ServiceRequest ya tiene su copia de las localidades (P-09), y crear exige el rectángulo y una localidad|ServiceRequest no tenía las localidades|
 |`service-request.created`|Sin `description`, con `clientType` y `companyId`|Con `description` (decisión del equipo); `clientType` y `companyId` llegan con RF-08|Contrato v1|
 |Réplica de categorías|—|Tabla 5.20 y evento `catalog.category-changed`|SAD 4.3: sin llamadas síncronas entre servicios|
 |`service_categories.updated_at`|—|Columna nueva; el nombre es único por tenant sin distinguir mayúsculas (`lower(name)`)|`catalog.category-changed` necesita ordenar versiones|
@@ -241,13 +241,13 @@ QUICKPATCH se descompone en 8 microservicios de dominio (SAD, sección 4.2.2), d
 
 |Servicio|Entidades persistentes en esta versión|
 |---|---|
-|Identity Service|`tenants`, `users`, `technician_profiles` y `password_setup_tokens` (v5). El equipo de un proveedor se representa con `technician_profiles.provider_id` (P-02).|
+|Identity Service|`tenants`, `users`, `technician_profiles`, `password_setup_tokens` (v5), `password_recovery_requests` y `password_recovery_attempts` (v5.18). El equipo de un proveedor se representa con `technician_profiles.provider_id` (P-02).|
 |Actors Service|Ninguna todavía. `Supplier`, `Ally` y `Client` son conceptos evolutivos (SDD, sección 6.14).|
 |Catalog Service|`service_categories`|
 |Matching Service|`technician_availability` (incluye la proyección de especialidad y verificación, P-01), `coverage_zones`, `matching_attempts`, `matching_requests` (P-05) y el catálogo de referencia `localities` (P-04).|
-|ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence` y la réplica de lectura `service_request_categories`|
+|ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence`, la réplica de lectura `service_request_categories` y la réplica del estado de los tenants `tenant_status_replica` (v5.17, RN-T1)|
 |Ranking Service|Ninguna todavía. Consume el evento `service-request.rated`; su persistencia es evolutiva (SDD, sección 6.14).|
-|Payments Service|`payments`, `invoices`|
+|Payments Service|`payments`, `invoices` y la proyección `payment_technicians` (v5.16, equipo de cada proveedor, P-02)|
 |Communication Service|`notifications` (v5, buzón de ADR-024) en `db_communication`. `Conversation` y `Complaint` son evolutivos.|
 |Transversal (en cada servicio)|`audit_logs`, `outbox_events`, `processed_events`|
 
@@ -461,6 +461,7 @@ erDiagram
         uuid category_id PK
         uuid tenant_id
         varchar name
+        varchar description
         boolean active
         timestamptz updated_at
     }
@@ -628,7 +629,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 |Servicio|Tablas implementadas|Pendiente|
 |---|---|---|
-|Identity|`tenants`, `users`, `technician_profiles` (con `provider_id`), `password_setup_tokens`, `audit_logs`, `outbox_events`|`users.company_id` y `client_companies` (RF-06)|
+|Identity|`tenants`, `users`, `technician_profiles` (con `provider_id`), `password_setup_tokens`, `audit_logs`, `outbox_events`|`users.company_id` y `client_companies` (RF-06); `password_setup_tokens.purpose`, `password_recovery_requests` y `password_recovery_attempts` (recuperación de la contraseña, SCRUM-625, `quickpatch-identity#29`)|
 |Catalog|`service_categories` (con `updated_at`), `outbox_events`|—|
 |ServiceRequest|`service_requests` (con `matching_updated_at`), `service_request_categories`, `outbox_events`, `processed_events`|`company_id` y `client_type` (RF-08); `cancelled_by`, `cancelled_by_type` y `audit_logs` (RF-36, SCRUM-475); `quotes`, `ratings` y `service_evidence`|
 |Matching|`technician_availability`, `coverage_zones`, `localities`, `matching_requests`, `matching_attempts`, `outbox_events`, `processed_events`|—|
@@ -682,7 +683,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |phone|VARCHAR(30)|Sí|—|Número de teléfono.|
 |failed_login_attempts|INTEGER|No|—|Cantidad de intentos fallidos consecutivos.|
 |locked_until|TIMESTAMPTZ|Sí|—|Fecha hasta la cual permanece bloqueada la cuenta.|
-|company_id|UUID|Sí|FK local|**Nuevo v3. Pendiente de implementar (RF-06).** Empresa cliente a la que pertenece el usuario (`client_companies.id`). Obligatorio cuando `role = 'empresa_contacto'` y nulo en los demás roles (RN-CC2).|
+|company_id|UUID|Sí|FK local|**Nuevo v3; contrato en v5.12 (RF-06, SCRUM-484).** Empresa cliente a la que pertenece el usuario (`client_companies.id`). Obligatorio cuando `role = 'empresa_contacto'` y nulo en los demás roles (RN-CC2).|
 |created_at|TIMESTAMPTZ|No|—|Fecha de creación del usuario.|
 
 **Valores iniciales de `role`:**
@@ -788,8 +789,9 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |client_id|UUID|No|Ref. lógica|Usuario que creó la solicitud.|
 |category_id|UUID|No|Ref. lógica|Categoría del servicio (Catalog Service).|
 |technician_id|UUID|Sí|Ref. lógica|Técnico asignado a la solicitud.|
-|company_id|UUID|Sí|Ref. lógica|**Nuevo v3. Pendiente de implementar (RF-08).** Empresa cliente (`client_companies.id`) cuando la crea un `empresa_contacto`; sale del token (RN-SR12).|
-|client_type|VARCHAR(10)|No|CHECK|**Nuevo v3. Pendiente de implementar (RF-08).** `hogar` o `empresa`. Se fija a partir del rol del creador: `empresa_contacto` produce `empresa` (RF-08, SCRUM-28).|
+|company_id|UUID|Sí|Ref. lógica|**Nuevo v3; implementado en v5.13 (RF-08, SCRUM-73).** Empresa cliente (`client_companies.id`) cuando la crea un `empresa_contacto`; sale del claim `company_id` del token (RN-SR12). Índice `ix_service_requests_company`.|
+|client_type|VARCHAR(10)|No|CHECK|**Nuevo v3; implementado en v5.13.** `hogar` o `empresa`. Se fija a partir del rol del creador: `empresa_contacto` produce `empresa` (RF-08, SCRUM-28). `CHECK ((client_type = 'empresa') = (company_id IS NOT NULL))`; las solicitudes anteriores quedan en `hogar`.|
+|site_name|VARCHAR(100)|Sí|—|**Nuevo v5.13 (SCRUM-73).** Nombre de la sede de la empresa (por ejemplo, `Sede Chapinero`). Solo en solicitudes de empresa.|
 |description|TEXT|No|—|Descripción del problema.|
 |location|geometry(POINT,4326)|No|—|Ubicación geográfica del servicio. Viene del GPS del teléfono o, si la solicitud llega sin coordenadas, de geocodificar `address_text` con el Nominatim propio (**v5**, ADR-024, sección 8.3.3).|
 |address_text|VARCHAR(255)|No|—|Dirección escrita.|
@@ -816,7 +818,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 - `pagado`
 - `cancelado`
 
-**Reglas de negocio:** RN-SR1 a RN-SR13 y máquina de estados (sección 7.4).
+**Reglas de negocio:** RN-SR1 a RN-SR14 y máquina de estados (sección 7.4).
 
 **Índices sugeridos:**
 
@@ -942,7 +944,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Servicio propietario:** ServiceRequest Service.
 
-**Propósito:** Almacena la valoración realizada por un cliente al finalizar un servicio.
+**Propósito:** Almacena la valoración realizada por un cliente al finalizar un servicio (RF-12, SCRUM-497).
 
 **Requisitos relacionados:** RF-12.
 
@@ -953,10 +955,10 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |service_request_id|UUID|No|FK local / UNIQUE|Solicitud calificada.|
 |technician_id|UUID|No|Ref. lógica|Técnico calificado.|
 |score|INTEGER|No|CHECK|Valor entre 1 y 5 (`CHECK (score BETWEEN 1 AND 5)`).|
-|comment|TEXT|Sí|—|Comentario opcional.|
-|created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
+|comment|TEXT|Sí|—|Comentario opcional (máximo 500 caracteres).|
+|created_at|TIMESTAMPTZ|No|—|Fecha y hora en que se registró la calificación (`ratedAt` en REST).|
 
-**Reglas de negocio:** RN-R1 a RN-R3 (sección 7.6).
+**Reglas de negocio:** RN-R1 a RN-R3 (sección 7.6). **Desde v5.20** (SCRUM-637): el detalle `GET /v1/service-requests/{id}` incluye `rating` (`score`, `comment` y `ratedAt`), `null` si la solicitud no se calificó (sección 8.3.4). **Desde v5.15** (SCRUM-499): TechnicianServiceRequest (`GET /v1/technicians/me/service-requests`) incluye `score` y `ratedAt` si la solicitud completada fue calificada.
 
 ### 5.10 Tabla `service_evidence`
 
@@ -1042,6 +1044,10 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |amount|NUMERIC(12,2)|No|—|Monto del pago; igual al total de la cotización aceptada (RN-P3).|
 |provider_token_ref|VARCHAR(255)|Sí|—|Token o referencia retornada por el PSP. Es nulo hasta que el PSP responde.|
 |status|VARCHAR(20)|No|—|Estado del pago.|
+|reason_code|VARCHAR(50)|Sí|—|**Nuevo v5.8.** Motivo del rechazo que devuelve la pasarela (por ejemplo `fondos_insuficientes` o `pasarela_sin_respuesta`); va en `payment.rejected`. Nulo si no fue rechazado.|
+|processed_at|TIMESTAMPTZ|Sí|—|**Nuevo v5.8.** Cuándo quedó `aprobado` o `rechazado`.|
+|processing_started_at|TIMESTAMPTZ|Sí|—|**Nuevo v5.9.** Cuándo pasó a `procesando`. La conciliación solo toma pagos que llevan un tiempo procesándose, para no cerrar uno que se está cobrando (AC9-E5).|
+|billing|JSONB|Sí|—|**Nuevo v5.9.** Datos de facturación del intento (sección 8.3.12): nombre, tipo y número de documento y correo del pagador, nunca datos de tarjeta. Permiten emitir el comprobante si la conciliación aprueba el cobro.|
 |created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
 
 **Estados:**
@@ -1084,7 +1090,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |payer_nit|VARCHAR(30)|Sí|—|NIT cuando corresponde a empresa.|
 |amount|NUMERIC(12,2)|No|—|Valor facturado.|
 |issued_at|TIMESTAMPTZ|No|—|Fecha de emisión.|
-|pdf_url|VARCHAR(500)|Sí|—|Ruta del comprobante generado.|
+|pdf_url|VARCHAR(500)|Sí|—|Ruta del comprobante generado. **v5.10:** no se usa en el MVP: el PDF se genera al pedirlo con los datos de esta fila y del pago (sección 8.3.16), así que queda nulo.|
 
 ### 5.14 Tabla `audit_logs`
 
@@ -1239,7 +1245,9 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Índices sugeridos:**
 
-- UNIQUE compuesto sobre `tenant_id, nit`.
+- UNIQUE compuesto sobre `tenant_id, nit` (`ux_client_companies_tenant_nit`).
+
+**v5.12 (SCRUM-484).** El NIT se guarda tal como lo valida el contrato (`^[0-9]{5,15}(-[0-9])?$`, con o sin dígito de verificación), así que `900123456-7` y `900123456` son NIT distintos para el índice. RLS forzada por tenant, como `users`; `identity_app` tiene `SELECT` e `INSERT` (la razón social y el NIT no se editan en el MVP). Contrato y flujo en la sección 8.3.18.
 
 ---
 
@@ -1256,6 +1264,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |category_id|UUID|No|PK|`id` de la categoría en Catalog Service (ref. lógica).|
 |tenant_id|UUID|No|—|Tenant dueño de la categoría.|
 |name|VARCHAR(100)|No|—|Nombre de la categoría.|
+|description|VARCHAR(255)|Sí|—|**Nuevo v5.7 (ADR-025).** Descripción de la categoría (`data.description` del evento, desde quickpatch-kafka v0.8.0). ServiceRequest la entrega en `GET /v1/service-requests/categories`.|
 |active|BOOLEAN|No|—|Si la categoría está disponible para nuevas solicitudes.|
 |updated_at|TIMESTAMPTZ|No|—|Momento del cambio en Catalog (`data.updatedAt` del evento). Un evento con un `updatedAt` anterior al guardado se descarta.|
 
@@ -1265,7 +1274,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Nueva v5 (SCRUM-461).** **Servicio propietario:** Identity Service.
 
-**Propósito:** Invitaciones para que el técnico del equipo de un proveedor defina su contraseña (sección 8.3.14). El técnico se crea sin contraseña utilizable y el proveedor le comparte el enlace por el medio que use; no hay correo en el MVP (ADR-024).
+**Propósito:** Invitaciones para que el técnico del equipo de un proveedor (sección 8.3.14) o, desde la v5.12, el usuario agregado a una empresa cliente (sección 8.3.18) defina su contraseña. El técnico se crea sin contraseña utilizable y el proveedor le comparte el enlace por el medio que use; no hay correo en el MVP (ADR-024). **Desde la v5.18** (SCRUM-597) guarda también los enlaces de recuperación de la contraseña olvidada que genera el `admin_tenant` (sección 8.3.19), distinguidos por `purpose`.
 
 **Requisitos relacionados:** RF-16.
 
@@ -1275,7 +1284,8 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |tenant_id|UUID|No|FK → `tenants`|Tenant del técnico.|
 |user_id|UUID|No|FK → `users`|Técnico invitado. Índice `ix_password_setup_tokens_user`.|
 |token_hash|CHAR(64)|No|UNIQUE|SHA-256 del token en hexadecimal. El token en claro (256 bits en base64url) se entrega una sola vez al proveedor y no se guarda.|
-|expires_at|TIMESTAMPTZ|No|—|Vence a las 72 horas. Al generar una invitación nueva, las anteriores sin usar se anulan llevando este valor al momento actual.|
+|purpose|VARCHAR(20)|No|CHECK|**Nuevo v5.18.** `invitacion` (valor por defecto) o `recuperacion` (`CHECK`). Cada flujo solo acepta los suyos: `POST /v1/auth/password/setup` rechaza un enlace de recuperación y `POST /v1/auth/password-recovery/confirm` rechaza una invitación.|
+|expires_at|TIMESTAMPTZ|No|—|La invitación vence a las 72 horas; el enlace de recuperación, a 1 hora. Al generar uno nuevo del mismo propósito, los anteriores sin usar se anulan llevando este valor al momento actual.|
 |used_at|TIMESTAMPTZ|Sí|—|Cuándo se definió la contraseña con esta invitación; nulo mientras no se use.|
 |created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
 
@@ -1309,6 +1319,123 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 - RLS por tenant como el resto de las tablas (sección 10.1). El rol `communication_app` tiene `SELECT` e `INSERT`, y `UPDATE` solo sobre `read_at`.
 
 **Retención:** el MVP no borra notificaciones. Una política de retención (por ejemplo, 90 días) queda como evolución.
+
+### 5.23 Tabla `chat_participants`
+
+**Nueva v5.11 (ADR-026, SCRUM-479).** **Servicio propietario:** Communication Service, en `db_communication`.
+
+**Propósito:** Réplica de quién participa en el chat de cada solicitud y en qué estado está la solicitud (ADR-017). Communication la llena al consumir `service-request.status-changed`, que trae `clientId`, `technicianId` y `status`; no llama a ServiceRequest.
+
+**Requisitos relacionados:** RF-37.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|service_request_id|UUID|No|PK|Solicitud (ref. lógica a `service_requests.id`).|
+|tenant_id|UUID|No|—|`tenantId` del evento.|
+|client_id|UUID|No|—|Cliente dueño de la solicitud.|
+|technician_id|UUID|Sí|—|Técnico asignado actual; nulo sin técnico.|
+|status|VARCHAR(30)|No|—|Último estado aplicado (sección 7.4).|
+|status_changed_at|TIMESTAMPTZ|No|—|`changedAt` del último evento aplicado; un evento más viejo se descarta (ADR-017).|
+
+**Reglas de negocio:** RN-CH1 a RN-CH3 (sección 7.14). RLS por tenant. El consumidor escribe con `communication_app` bajo el `tenantId` del evento.
+
+### 5.24 Tabla `chat_messages`
+
+**Nueva v5.11 (ADR-026, SCRUM-479).** **Servicio propietario:** Communication Service, en `db_communication`.
+
+**Propósito:** Mensajes del chat de cada solicitud (RF-37).
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|id|UUID|No|PK|Identificador del mensaje (UUID v7, ordenable por tiempo).|
+|tenant_id|UUID|No|—|Tenant del autor (claim `tenant_id`).|
+|service_request_id|UUID|No|FK local|`chat_participants.service_request_id`.|
+|author_id|UUID|No|Ref. lógica|Autor (claim `sub`).|
+|author_role|VARCHAR(30)|No|CHECK|`cliente` o `tecnico` según el lugar del autor en el chat (un `empresa_contacto` dueño escribe como `cliente`).|
+|body|VARCHAR(1000)|No|—|Texto plano, de 1 a 1.000 caracteres sin espacios al inicio ni al final. No se escribe en logs ni en eventos.|
+|sent_at|TIMESTAMPTZ|No|—|Hora del servidor al guardarlo.|
+
+**Restricciones e índices:** índice `(tenant_id, service_request_id, sent_at DESC, id DESC)` para el historial. RLS por tenant. `communication_app` tiene `SELECT` e `INSERT` en las dos tablas y `UPDATE` en `chat_participants`; los mensajes no se editan ni se borran en el MVP.
+
+---
+
+### 5.25 Tabla `payment_technicians`
+
+**Nueva v5.16 (SCRUM-501, P-02).** **Servicio propietario:** Payments Service, en su base `db_payments`.
+
+**Propósito:** Proyección local del equipo de cada proveedor: de cada técnico guarda el proveedor al que pertenece, si lo tiene. Payments no consulta a Identity Service (ADR-003): la alimenta el evento `technician.registered` (event-carried state transfer, ADR-017) y sirve para que el `proveedor` vea en `GET /v1/payments/received` los pagos de los técnicos de su equipo.
+
+**Requisitos relacionados:** RF-25, RF-16.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|technician_id|UUID|No|PK|`technician_profiles.user_id` del técnico en Identity Service (ref. lógica). Une con `payments.technician_id`.|
+|tenant_id|UUID|No|—|Tenant del técnico.|
+|provider_id|UUID|Sí|—|Usuario con rol `proveedor` al que pertenece el técnico (`data.providerId` del evento). Nulo para los técnicos independientes.|
+|updated_at|TIMESTAMPTZ|No|—|Versión de la fila (`data.updatedAt` del evento). Un evento con un `updatedAt` anterior o igual al guardado se descarta.|
+
+**Reglas:** el consumidor es idempotente por `eventId` (`processed_events`, RN-EV1) y aplica el evento bajo el tenant del mensaje. RLS por tenant. `payments_app` tiene `SELECT`, `INSERT` y `UPDATE`. Índice por `provider_id` para listar el equipo del proveedor.
+
+**Carga inicial.** El topic `technician.registered` conserva 7 días, así que los técnicos registrados antes de que Payments empezara a consumirlo no llegan por el evento. Se cargan una sola vez por ambiente con el playbook `cargar-equipos-pagos.yml`, que copia `tenant_id`, `user_id`, `provider_id` y `created_at` de `technician_profiles` (`db_identity`) a esta tabla, en el mismo PostgreSQL del ambiente. Es idempotente y no pisa una fila que el consumidor ya guardó con una versión más reciente. No se agrega un endpoint a Identity ni se republican eventos, para no acoplar a Payments por llamada síncrona ni hacer que Matching y Communication reprocesen todos los técnicos.
+
+---
+
+### 5.26 Tabla `tenant_status_replica`
+
+**Nueva v5.17 (SCRUM-508, SCRUM-510, RN-T1).** **Servicio propietario:** ServiceRequest Service, en su base `db_service_request`.
+
+**Propósito:** Réplica local del estado de cada tenant, alimentada por el evento `tenant.status-changed` de Identity (event-carried state transfer, ADR-017). Permite a ServiceRequest rechazar la creación de solicitudes de un tenant desactivado (`422 tenant-inactivo`) sin llamar a Identity (ADR-003) y sin esperar a que venza el token ya emitido.
+
+**Requisitos relacionados:** RF-21, RN-T1.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|tenant_id|UUID|No|PK|`tenants.id` en Identity Service (ref. lógica). Es el tenant que cambió de estado, que es también el `tenantId` del sobre del evento.|
+|status|VARCHAR(20)|No|—|`activo` o `inactivo` (restricción `CHECK`).|
+|updated_at|TIMESTAMPTZ|No|—|Versión de la fila (`data.updatedAt` del evento). Un evento con un `updatedAt` anterior o igual al guardado se descarta.|
+
+**Reglas:** **un tenant sin fila cuenta como activo**: la réplica empieza vacía y solo guarda los tenants que cambian de estado. El consumidor es idempotente por `eventId` (`processed_events`, RN-EV1) y aplica el evento bajo el tenant del mensaje; un mensaje que no cumple el contrato (estado fuera de `activo` o `inactivo`, o `data.tenantId` distinto del `tenantId` del sobre) se descarta sin bloquear la partición. RLS por tenant (`tenant_isolation`). `service_request_app` tiene `SELECT`, `INSERT` y `UPDATE`. La verificación va al inicio de la transacción de creación de la solicitud, sin agregar otra transacción.
+
+**Estado inicial al desplegar.** Como el evento es nuevo, la réplica no conoce a los tenants que ya estaban inactivos: antes de desplegar se cuentan en cada ambiente y, si hay alguno, se reemite su estado una vez desde Identity. En QA (2 de noviembre de 2026) los 4 tenants estaban activos.
+
+---
+
+### 5.27 Tabla `password_recovery_requests`
+
+**Nueva v5.18 (SCRUM-597; implementación SCRUM-625, `quickpatch-identity#29`).** **Servicio propietario:** Identity Service.
+
+**Propósito:** Solicitudes de recuperación de la contraseña olvidada. El usuario la pide con su correo (`POST /v1/auth/password-recovery`) y queda pendiente para el `admin_tenant` de su tenant, que genera el enlace y se lo entrega por el medio que use. No hay correo en el MVP (ADR-024). La solicitud no lleva token: el enlace se guarda en `password_setup_tokens` con `purpose = 'recuperacion'` (sección 5.21).
+
+**Requisitos relacionados:** RF-03 (inicio de sesión seguro) y RNF-03. El SRS V5 todavía no tiene un requisito propio para la recuperación de la contraseña.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|id|UUID|No|PK|Identificador de la solicitud.|
+|tenant_id|UUID|No|FK → `tenants`|Tenant del usuario.|
+|user_id|UUID|No|FK → `users`|Usuario que pidió recuperar la contraseña. Índice único parcial `ux_password_recovery_requests_pending` donde `status = 'pendiente'`: un usuario tiene como máximo una pendiente.|
+|status|VARCHAR(20)|No|CHECK|`pendiente` o `cerrada`.|
+|requested_at|TIMESTAMPTZ|No|—|Última vez que el usuario la pidió. Si la pide otra vez mientras sigue pendiente, se actualiza esta fecha en lugar de crear otra fila.|
+|closed_at|TIMESTAMPTZ|Sí|—|Cuándo el usuario definió la contraseña nueva; nulo mientras está pendiente.|
+|created_at|TIMESTAMPTZ|No|—|Fecha de creación.|
+
+**Reglas:** RN-U7 (sección 7.2). Los usuarios `admin_tenant` y `admin_plataforma` no usan este flujo: la contraseña de un `admin_tenant` la recupera el `admin_plataforma` por fuera de él. RLS por tenant (`tenant_isolation`), así que el `admin_tenant` solo ve las de su tenant. `identity_app` tiene `SELECT`, `INSERT` y `UPDATE`; ninguna fila se borra desde el servicio. Índice por `status, requested_at` para la lista del administrador.
+
+### 5.28 Tabla `password_recovery_attempts`
+
+**Nueva v5.18 (SCRUM-597; implementación SCRUM-625, `quickpatch-identity#29`).** **Servicio propietario:** Identity Service.
+
+**Propósito:** Registro de cada pedido de recuperación para aplicar el límite de 3 por correo por hora, exista o no la cuenta. Guarda el HMAC del correo y no el correo, para no conservar quién intentó recuperar una cuenta.
+
+**Requisitos relacionados:** RF-03, RNF-03.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|id|UUID|No|PK|Identificador del intento.|
+|tenant_id|UUID|No|FK → `tenants`|Tenant del canal por el que llegó el pedido (RN-U5).|
+|email_hash|CHAR(64)|No|—|**Desde la v5.19**, HMAC-SHA256 en hexadecimal del correo normalizado, con una clave propia de Identity Service que se entrega como Secret de cada ambiente y nunca se guarda en el repositorio. Un SHA-256 sin clave se podía revertir con un diccionario de correos y revelaba quién pidió la recuperación (Ley 1581). Índice `ix_password_recovery_attempts_email` por `email_hash, attempted_at`.|
+|attempted_at|TIMESTAMPTZ|No|—|Momento del pedido.|
+
+**Reglas:** RLS por tenant (`tenant_isolation`). `identity_app` tiene `SELECT` e `INSERT`.
 
 ---
 
@@ -1380,7 +1507,7 @@ Las reglas de negocio se documentan aparte del diccionario de datos: el dicciona
 
 ### 7.1 Reglas de `tenants`
 
-- **RN-T1:** un tenant inactivo no puede crear nuevas solicitudes.
+- **RN-T1:** un tenant inactivo no puede iniciar sesión ni crear nuevas solicitudes. Identity rechaza el login y, al activar o desactivar un tenant, publica `tenant.status-changed` v1 (sección 8.4) por Outbox en la misma transacción del cambio, con el estado completo y `updatedAt` como versión (ADR-017). ServiceRequest guarda una réplica local del estado (`tenant_status_replica`, sección 5.26), sin llamar a Identity (ADR-003), y rechaza `POST /v1/service-requests` con `422 tenant-inactivo` aunque el token siga vigente, así que la desactivación tiene efecto en segundos y no cuando vence el token. Un tenant sin fila en la réplica cuenta como activo. Los tokens emitidos antes de la desactivación siguen sirviendo para las demás operaciones hasta que expiran.
 - **RN-T2:** todo tenant corresponde a una empresa oferente identificada por su NIT; clientes hogar y empresas cliente se registran como usuarios del tenant.
 - **RN-T3:** el tenant activo del usuario debe obtenerse desde el contexto autenticado.
 
@@ -1392,6 +1519,7 @@ Las reglas de negocio se documentan aparte del diccionario de datos: el dicciona
 - **RN-U4:** después de varios intentos fallidos se puede bloquear temporalmente la cuenta.
 - **RN-U5:** en el registro y en el login, el tenant se resuelve a partir del canal por el que llega la solicitud, no de un campo del formulario (sección 10.3).
 - **RN-U6:** solo `admin_plataforma` administra tenants; `admin_tenant` administra únicamente su propio tenant.
+- **RN-U7 (v5.18):** un usuario que olvidó su contraseña la pide con su correo y el `admin_tenant` de su tenant le genera un enlace de un solo uso que vence a 1 hora; no hay correo (ADR-024). La respuesta al pedido es la misma exista o no la cuenta, con un máximo de 3 pedidos por correo por hora. Al definir la contraseña nueva se cierra la solicitud, se anulan los demás enlaces de recuperación del usuario, se marcan como usadas sus invitaciones pendientes (v5.19) y se desbloquea la cuenta (RN-U4). Para el límite, Identity guarda el HMAC-SHA256 del correo con una clave del servicio, no el correo ni un SHA-256 sin clave (v5.19, sección 5.28). Los administradores no usan este flujo (sección 8.3.19).
 
 ### 7.3 Reglas de `technician_profiles`
 
@@ -1412,11 +1540,12 @@ Matching Service aplica RN-TP1 y RN-TP2 con la copia de `verification_status` qu
 - **RN-SR6:** solo se puede pasar a `en_progreso` desde `cotizacion_aceptada`; el servicio no inicia sin una cotización aceptada.
 - **RN-SR7:** la solicitud puede pasar a `cancelado` desde cualquier estado anterior a `en_progreso`, igual que `CANCELLED` en el SAD (sección 7.4). La cancelación registra `cancelled_at` y `cancellation_reason`, anula la cotización pendiente y publica `service-request.cancelled`.
 - **RN-SR8:** pueden cancelar una solicitud el cliente que la creó (`client_id`) y el `admin_tenant` de su tenant (RF-36). ServiceRequest Service la cancela por sí mismo en los casos de RN-Q6 y RN-Q7. **Cambio v3:** la cancelación registra `cancelled_by` y `cancelled_by_type` (`cliente`, `admin_tenant` o `sistema`); la de un `admin_tenant` queda además en `audit_logs` con la acción `cancelar_solicitud_admin`. **v5.3:** en el `audit_logs` de `db_service_request` (sección 5.14), en la misma transacción.
-- **RN-SR9:** la ubicación de una solicitud debe estar dentro del área de cobertura de Bogotá D.C. (restricción R6 del SAD). El área se define en la configuración del servicio como un rectángulo de coordenadas; el valor inicial cubre el área urbana: latitud de 4.45 a 4.85 y longitud de −74.25 a −73.98. Una ubicación fuera del área se rechaza con `422 ubicacion-fuera-de-cobertura`.
+- **RN-SR9:** la ubicación de una solicitud debe estar dentro del área de cobertura de Bogotá D.C. (restricción R6 del SAD). El área se define en la configuración del servicio como un rectángulo de coordenadas; el valor inicial cubre el área urbana: latitud de 4.45 a 4.85 y longitud de −74.25 a −73.98. **SCRUM-636:** además, el punto debe caer en una de las 20 localidades de la tabla `localities` (`ST_Covers`), porque el rectángulo incluye parte de Soacha, Chía y La Calera. Se valida igual con GPS, con dirección y en la vista previa. Una ubicación fuera del área se rechaza con `422 ubicacion-fuera-de-cobertura`.
 - **RN-SR10:** la categoría de una solicitud nueva debe existir y estar activa en el tenant del usuario, según la réplica local `service_request_categories`. Si no, se rechaza con `422 categoria-no-disponible`.
 - **RN-SR11:** `description` tiene entre 10 y 1000 caracteres y `address_text` entre 5 y 255. `address_text` complementa la ubicación con los datos que el punto no tiene (torre, apartamento, indicaciones).
 - **RN-SR12 (nuevo v3):** `client_type` es `empresa` cuando el creador tiene rol `empresa_contacto` y `hogar` en los demás casos. No se recibe del cliente (RF-08).
 - **RN-SR13 (nuevo v3):** la dirección exacta y el teléfono del cliente solo se entregan al técnico asignado, y solo mientras la solicitud está entre `asignado` y `completado` (SCRUM-34, criterio 2). En el historial (RF-17) el técnico ve la solicitud sin datos de contacto.
+- **RN-SR14 (nuevo v5.13):** en una solicitud de empresa, los demás `empresa_contacto` de la misma empresa la ven en el detalle y en la lista, igual que quien la creó (SCRUM-28, criterio 4). Las acciones sobre la solicitud (cancelar, responder la cotización, calificar) siguen siendo de quien la creó; el pago de la empresa es RN-P6 (SCRUM-43).
 
 **Figura 3: Máquina de estados de `service_requests`**
 
@@ -1527,6 +1656,16 @@ Derivadas de la etapa de cotización del SAD (sección 7.4).
 - **RN-CC1:** el NIT de una empresa cliente es único dentro del tenant.
 - **RN-CC2:** todo usuario `empresa_contacto` pertenece a exactamente una empresa cliente (`company_id` no nulo), y ningún otro rol tiene empresa.
 - **RN-CC3:** solo un `empresa_contacto` de la misma empresa puede agregar otros usuarios solicitantes a ella (SCRUM-26, criterio 3). El usuario agregado hereda el tenant y la empresa de quien lo agrega.
+- **RN-CC4 (v5.12):** el usuario agregado se crea sin contraseña utilizable y la define con su invitación (sección 5.21); nadie define la contraseña de otro. El primer `empresa_contacto` la define al registrar la empresa.
+
+### 7.14 Reglas del chat (`chat_participants` y `chat_messages`)
+
+**Nuevo v5.11 (ADR-026).**
+
+- **RN-CH1:** solo participan el cliente dueño (`client_id`) y el técnico asignado actual (`technician_id`). Para cualquier otro usuario, incluido el mismo rol de otro tenant, la solicitud no tiene chat (`404`). Si la solicitud se reasigna, el técnico anterior deja de verlo. Los demás usuarios autorizados de una empresa se suman cuando el token traiga la empresa (SCRUM-26).
+- **RN-CH2:** se puede escribir con técnico asignado y en `asignado`, `cotizado`, `cotizacion_aceptada` o `en_progreso`. En `completado`, `pagado` y `cancelado` el chat es de solo lectura (`409 chat-cerrado`). Si la solicitud ya no tiene técnico (por ejemplo, volvió a `buscando_tecnico` o pasó a `en_espera`), el cliente dueño lee el historial con `writable = false` y escribir responde `409 chat-no-disponible`. Una solicitud que Communication todavía no conoce (aún no ha tenido técnico) responde `404`, como para cualquier usuario que no participa.
+- **RN-CH3:** `chat_participants` aplica un `service-request.status-changed` solo si su `changedAt` es más nuevo que `status_changed_at` (ADR-017).
+- **RN-CH4:** el texto es plano, de 1 a 1.000 caracteres, sin adjuntos, y no se escribe en logs ni en eventos.
 
 ### 7.13 Mecanismo de cumplimiento de cada regla
 
@@ -1534,7 +1673,7 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 
 |Regla|Mecanismo|
 |---|---|
-|RN-T1|Identity Service rechaza el login de usuarios de un tenant inactivo. Los tokens emitidos antes de la desactivación siguen siendo válidos hasta que expiran.|
+|RN-T1|Identity Service rechaza el login de usuarios de un tenant inactivo. **Desde la 5.17** ServiceRequest rechaza además crear solicitudes con `422 tenant-inactivo`, según la réplica `tenant_status_replica` (sección 5.26). Los tokens emitidos antes de la desactivación siguen siendo válidos para las demás operaciones hasta que expiran.|
 |RN-T2, RN-T3, RN-U3, RN-U5|El tenant sale del token o del canal (sección 10.3) y RLS lo aplica en cada transacción (sección 10.2).|
 |RN-U1|Índice único sobre `tenant_id, email`.|
 |RN-U2|Identity Service guarda solo el hash (RNF-03).|
@@ -1546,6 +1685,7 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 |RN-SR1, RN-SR2|`location` es NOT NULL; `technician_id` admite nulos.|
 |RN-SR3 a RN-SR7, RN-R3|Validación de transiciones en ServiceRequest Service (módulo *State Validation* del SDD). RN-SR3 cuenta las evidencias dentro de la misma transacción que cambia el estado.|
 |RN-SR8, RN-SR13, RN-E2, RN-Q1, RN-Q3|Autorización en ServiceRequest Service comparando el usuario del token con `client_id`, `technician_id` o el rol.|
+|RN-SR12, RN-SR14|ServiceRequest Service fija `client_type` y `company_id` con el rol y el claim `company_id` del token, y compara ese claim con `company_id` para mostrar la solicitud a los demás usuarios de la empresa.|
 |RN-M1, RN-M7|Índices únicos parciales sobre `matching_attempts` (sección 5.8). La aceptación ejecuta `UPDATE technician_availability SET status = 'ocupado' WHERE technician_id = $1 AND status = 'disponible'` y la rechaza si no actualiza ninguna fila.|
 |RN-M2|La aceptación actualiza la oferta con la condición `response = 'pendiente' AND expires_at > now()` y el técnico del token.|
 |RN-M3, RN-M8|Tarea programada de Matching Service que marca como `expirado` cada oferta vencida y ofrece la solicitud al siguiente candidato (SDD V2, antes DD §10.4).|
@@ -1573,6 +1713,8 @@ Cada regla se hace cumplir con un mecanismo concreto. Cuando la regla depende de
 |RN-CC1|Índice único sobre `tenant_id, nit` en `client_companies`.|
 |RN-CC2|`CHECK ((role = 'empresa_contacto') = (company_id IS NOT NULL))` en `users`.|
 |RN-CC3|Identity Service toma `company_id` y `tenant_id` del token, no del cuerpo de la petición.|
+|RN-CC4|Identity Service crea al usuario agregado con un hash inutilizable y le entrega la invitación de la sección 5.21.|
+|RN-U7|Identity Service guarda la solicitud en `password_recovery_requests` (un solo pendiente por usuario con índice único parcial), cuenta los pedidos por hash del correo en `password_recovery_attempts` y guarda solo el hash del enlace en `password_setup_tokens` con `purpose = 'recuperacion'`. Desde la v5.19, el hash del correo es un HMAC-SHA256 con la clave del servicio (sección 5.28). El técnico que nunca activó su invitación también puede recuperar la contraseña: al confirmarla, Identity Service marca como usadas (`used_at`) sus invitaciones pendientes (`purpose = 'invitacion'`), para que el proveedor lo vea con contraseña definida y una invitación vieja no pueda reemplazarla.|
 |RN-A1|Permisos: los roles de aplicación solo tienen `INSERT` y `SELECT` sobre `audit_logs` (sección 10.2).|
 
 ---
@@ -1642,8 +1784,9 @@ Los errores siguen el formato *Problem Details* (RFC 9457) de los contratos v1: 
 |409|`DUPLICATE_RESOURCE`|Correo, documento, NIT o nombre de categoría ya registrado en el tenant.|
 |422|`EVIDENCE_REQUIRED`|Se intenta completar sin evidencia (RN-SR3).|
 |422|`LOCATION_OUT_OF_COVERAGE`|La ubicación no está dentro de ninguna localidad de Bogotá (RN-SR1).|
-|422|`TENANT_INACTIVE`|El tenant está inactivo (RN-T1).|
+|422|`TENANT_INACTIVE`|El tenant está inactivo (RN-T1). **Publicado como `tenant-inactivo`** en los contratos v1: el login de Identity y `POST /v1/service-requests` (service-request 1.11.0).|
 |423|`ACCOUNT_LOCKED`|La cuenta está bloqueada por intentos fallidos (RN-U4). Incluye `lockedUntil`.|
+|429|`TOO_MANY_REQUESTS`|**v5.18.** Más de 3 pedidos de recuperación de contraseña para el mismo correo en una hora (RN-U7). Publicado como `demasiadas-solicitudes`, con la cabecera `Retry-After`.|
 |502|`PAYMENT_PROVIDER_ERROR`|La pasarela no respondió o respondió con error técnico. El pago queda `procesando` y se concilia (SDD V2, antes DD §10.9).|
 |503|`SERVICE_UNAVAILABLE`|El servicio o la base de datos no están disponibles (SDD, sección 8.11).|
 
@@ -1659,11 +1802,14 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |---|---|---|---|---|---|
 |POST|`/v1/auth/register/client`|Público|RF-01||Registrar cliente hogar.|
 |POST|`/v1/auth/register/technician`|Público|RF-02||Registrar técnico o proveedor; queda `pendiente`.|
-|POST|`/v1/auth/register/company`|Público|RF-06||Registrar empresa cliente y su primer `empresa_contacto` (DEP-13).|
+|POST|`/v1/auth/register/company`|Público|RF-06|Contrato v1.8.0|Registrar la empresa cliente y su primer `empresa_contacto` en el tenant del canal (sección 8.3.18).|
 |POST|`/v1/auth/login`|Público|RF-03||Autenticar y emitir tokens.|
 |POST|`/v1/auth/refresh`|Público con *refresh token*|RF-03|Nuevo|Renovar el token de acceso (SDD, sección 8.2.1).|
 |GET|`/v1/users/me`|Todos|RF-05, RF-19||Perfil actual. Para técnicos incluye `verificationStatus` (SCRUM-39, criterio 4).|
-|POST|`/v1/companies/me/users`|`empresa_contacto`|RF-06|Nuevo|Agregar otro usuario solicitante a la empresa (SCRUM-26, criterio 3).|
+|GET|`/v1/companies/me`|`empresa_contacto`|RF-06|Contrato v1.8.0|La empresa del token.|
+|POST|`/v1/companies/me/users`|`empresa_contacto`|RF-06|Contrato v1.8.0|Agregar otro usuario solicitante a la empresa con su invitación (SCRUM-26, criterio 3; RN-CC3, RN-CC4).|
+|GET|`/v1/companies/me/users?page=&size=`|`empresa_contacto`|RF-06|Contrato v1.8.0|Usuarios de la empresa del token, con `passwordDefined`.|
+|POST|`/v1/companies/me/users/{userId}/invitation`|`empresa_contacto`|RF-06|Contrato v1.8.0|Enlace nuevo para un usuario de la empresa que aún no definió su contraseña.|
 |GET|`/v1/admin/technicians?verificationStatus=`|`admin_tenant`|RF-19|Contrato v1.3.0|Listar técnicos y proveedores por estado de verificación.|
 |POST|`/v1/admin/technicians/{userId}/approve`|`admin_tenant`|RF-19|Contrato v1.3.0|Aprobar.|
 |POST|`/v1/admin/technicians/{userId}/reject`|`admin_tenant`|RF-19|Contrato v1.3.0|Rechazar con motivo.|
@@ -1671,17 +1817,21 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |POST|`/v1/providers/me/technicians`|`proveedor`|RF-16|Contrato v1.7.0|Dar de alta un técnico del equipo (RN-TP3) con su invitación (sección 8.3.14).|
 |GET|`/v1/providers/me/technicians?status=`|`proveedor`|RF-16|Contrato v1.7.0|Listar el equipo; `status` es `activo` (aprobado) o `inactivo` (pendiente, rechazado o suspendido).|
 |POST|`/v1/providers/me/technicians/{userId}/invitation`|`proveedor`|RF-16|Contrato v1.7.0|Generar un enlace nuevo y anular los anteriores sin usar.|
-|POST|`/v1/auth/password/setup`|Público, con el token de la invitación|RF-16|Contrato v1.7.0|El técnico del equipo define su contraseña.|
+|POST|`/v1/auth/password/setup`|Público, con el token de la invitación|RF-16, RF-06|Contrato v1.7.0|El técnico del equipo o, desde la 1.8.0, el usuario agregado a una empresa define su contraseña.|
+|POST|`/v1/auth/password-recovery`|Público|RF-03|Contrato v1.10.0|Pedir la recuperación de la contraseña olvidada con el correo. Responde `202` exista o no la cuenta; `429` si pasa de 3 por correo por hora (sección 8.3.19).|
+|GET|`/v1/admin/password-recovery-requests?page=&size=`|`admin_tenant`|RF-03|Contrato v1.10.0|Solicitudes de recuperación pendientes de su tenant.|
+|POST|`/v1/admin/password-recovery-requests/{id}/link`|`admin_tenant`|RF-03|Contrato v1.10.0|Generar el enlace de recuperación de un solo uso, que vence a 1 hora. Queda en `audit_logs` (`generar_enlace_recuperacion`).|
+|POST|`/v1/auth/password-recovery/confirm`|Público, con el token del enlace|RF-03|Contrato v1.10.0|Definir la contraseña nueva; el token va en el cuerpo.|
 |GET|`/internal/v1/users?ids=`|Interno: ServiceRequest con el JWT del usuario|RF-14|Contrato interno v1.0.0|Nombre y teléfono por lote (sección 8.3.4). No pasa por el Gateway.|
 |GET|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.2.0|Listar todos los tenants, activos e inactivos, ordenados por nombre.|
 |POST|`/v1/platform/tenants`|`admin_plataforma`|RF-21|Contrato v1.5.0|Crear un tenant (empresa oferente) en `activo`; NIT único en la plataforma (`409`). Queda en `audit_logs` (`crear_tenant`). No crea usuarios ni el canal.|
-|PATCH|`/v1/platform/tenants/{id}`|`admin_plataforma`|RF-21|Contrato v1.2.0|Activar o desactivar con `{ "status": "activo" \| "inactivo" }` (RN-T1). Repetir el estado no es error; desactivar el tenant de la plataforma responde `409 tenant-plataforma`. Queda en `audit_logs`.|
+|PATCH|`/v1/platform/tenants/{id}`|`admin_plataforma`|RF-21|Contrato v1.2.0|Activar o desactivar con `{ "status": "activo" \| "inactivo" }` (RN-T1). Repetir el estado no es error; desactivar el tenant de la plataforma responde `409 tenant-plataforma`. Queda en `audit_logs`. Si el estado cambia, publica `tenant.status-changed` (sección 8.4).|
 
 #### 8.2.2 Catalog Service
 
 |Método|Endpoint|Roles|RF|v3|Descripción|
 |---|---|---|---|---|---|
-|GET|`/v1/catalog/categories`|Todos (con token); público con `X-Channel-Id` para el registro de técnicos|RF-02, RF-07|Contrato v1|Categorías activas del tenant. El registro de técnicos la usa para elegir especialidad (P-03).|
+|GET|`/v1/catalog/categories`|Todos (con token); público con `X-Channel-Id` para el registro de técnicos|RF-02, RF-07|Obsoleta (catalog 1.3.0, ADR-025)|Reemplazada por `GET /v1/service-requests/categories`. Se retira del gateway cuando la app y el panel ya no la usen. La administración del catálogo sigue en Catalog como excepción del ADR-025.|
 |POST|`/v1/catalog/admin/categories`|`admin_tenant`|—|Nuevo|Crear categoría.|
 |PATCH|`/v1/catalog/admin/categories/{id}`|`admin_tenant`|—|Nuevo|Cambiar descripción o activar y desactivar.|
 
@@ -1689,7 +1839,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 
 |Método|Endpoint|Roles|RF|v3|Descripción|
 |---|---|---|---|---|---|
-|GET|`/v1/localities`|Público y todos|RF-13|Contrato v1.0.0|Localidades de Bogotá, sin polígono.|
+|GET|`/v1/localities`|Público y todos|RF-13|Obsoleta (matching 1.1.0, ADR-025)|Reemplazada por `GET /v1/service-requests/localities`. Disponibilidad, cobertura y ofertas siguen en Matching como excepción del ADR-025.|
 |GET|`/v1/technicians/me/availability`|`tecnico`|RF-13|Contrato v1.0.0|Consultar disponibilidad.|
 |PUT|`/v1/technicians/me/availability`|`tecnico`|RF-13|Contrato v1.0.0|Cambiar entre `disponible` y `no_disponible`.|
 |GET|`/v1/technicians/me/coverage`|`tecnico`|RF-13|Contrato v1.0.0|Consultar localidades cubiertas.|
@@ -1702,10 +1852,12 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 
 |Método|Endpoint|Roles|RF|v3|Descripción|
 |---|---|---|---|---|---|
-|POST|`/v1/service-requests`|`cliente`, `empresa_contacto`|RF-07, RF-08|Contrato v1.3.0 (ubicación opcional)|Crear solicitud; sin `location`, se geocodifica `addressText` (sección 8.3.3).|
+|POST|`/v1/service-requests`|`cliente`, `empresa_contacto`|RF-07, RF-08|Contrato v1.3.0 (ubicación opcional); `empresa_contacto` y `siteName` desde v1.9.0|Crear solicitud; sin `location`, se geocodifica `addressText` (sección 8.3.3).|
+|GET|`/v1/service-requests/categories`|Todos (con token); público con `X-Channel-Id` para el registro de técnicos|RF-02, RF-07|Contrato v1.8.0 (ADR-025)|Categorías activas del tenant desde la réplica `service_request_categories`, que guarda la descripción desde quickpatch-kafka v0.8.0.|
+|GET|`/v1/service-requests/localities`|Público y todos|RF-13|Contrato v1.8.0 (ADR-025)|Localidades de Bogotá desde la copia P-09, sin polígono.|
 |POST|`/v1/service-requests/location-preview`|`cliente`, `empresa_contacto`|RF-07|Contrato v1.3.0|Vista previa de la geocodificación: punto, localidad y dirección reconocida, sin crear nada (sección 8.3.3).|
-|GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Contrato v1.4.0 (`admin_tenant`); el cliente, pendiente|Listar: el cliente ve las suyas; el `admin_tenant`, todas las de su tenant, sin dirección, ubicación ni contacto (sección 8.3.15).|
-|GET|`/v1/service-requests/{id}`|Cliente dueño, técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato.|
+|GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Contrato v1.4.0 (`admin_tenant`); `cliente` y `empresa_contacto` desde v1.9.0|Listar: el cliente ve las suyas, el `empresa_contacto` las de su empresa (RN-SR14) y el `admin_tenant` todas las del tenant. Sin dirección, ubicación ni contacto; con `clientType`, `companyId`, `siteName` y `description` (sección 8.3.15).|
+|GET|`/v1/service-requests/{id}`|Cliente dueño, `empresa_contacto` de la misma empresa (v1.9.0, RN-SR14), técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato. **v1.12.0** (5.20, SCRUM-637): incluye `rating`, `null` mientras no se califique.|
 |POST|`/v1/service-requests/{id}/cancel`|Cliente dueño, `admin_tenant`|RF-36|Contrato v1.5.0|Cancelar con motivo (sección 8.3.9).|
 |GET|`/v1/service-requests/{id}/quotes`|Cliente dueño, técnico asignado|RF-34, RF-35|Contrato v1.6.0|Cotizaciones de la solicitud, de la más antigua a la más reciente.|
 |POST|`/v1/service-requests/{id}/quotes`|Técnico asignado|RF-34|Contrato v1.6.0|Emitir cotización (sección 8.3.7).|
@@ -1727,10 +1879,10 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |---|---|---|---|---|---|
 |GET|`/v1/service-requests/{id}/payment`|Cliente dueño, `empresa_contacto` de la empresa|RF-22, RF-23|Nuevo|Estado del pago actual de la solicitud.|
 |POST|`/v1/service-requests/{id}/payment`|Cliente dueño, `empresa_contacto` de la empresa|RF-22, RF-23||Procesar el pago pendiente o reintentar tras un rechazo (RN-P4, RN-P5).|
-|GET|`/v1/payments/{id}/invoice`|Pagador, `admin_tenant`|RF-24||Comprobante en JSON o PDF según `Accept`.|
-|GET|`/v1/payments/received?page=&size=`|`tecnico`|RF-25||Pagos de los servicios del técnico autenticado.|
+|GET|`/v1/payments/{id}/invoice`|Pagador, `admin_tenant`|RF-24|Contrato 1.1.0|Comprobante en JSON o PDF según `Accept` (sección 8.3.16).|
+|GET|`/v1/payments/received?technicianId=&status=&page=&size=`|`tecnico`, `proveedor`|RF-25|Contrato 1.2.0|Pagos recibidos, del más reciente al más antiguo, sin los `rechazado` y sin datos de tarjeta (RN-P1). **Visibilidad por rol:** el `tecnico` ve solo los suyos (el técnico sale del token) y no usa `technicianId` (`400` si lo envía); el `proveedor` ve los de los técnicos de su equipo según la proyección `payment_technicians` (sección 5.25) y puede acotar uno con `technicianId`: un técnico que no es de su equipo, independiente o de otro proveedor, devuelve la lista vacía. Otro rol responde `403`. El tenant sale siempre del token (RLS).|
 
-Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la solicitud que se paga, pero las atiende Payments Service: el Gateway enruta por el sufijo `/payment`.
+Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la solicitud que se paga, pero las atiende Payments Service: el Gateway enruta por el sufijo `/payment`. **v5.8:** en k3s lo hace un `IngressRoute` de Traefik con `PathRegexp` sobre `/v1/service-requests/{id}/payment`, que tiene más prioridad que el prefijo `/v1/service-requests` de ServiceRequest (manifiesto de Payments). Contrato: `payments.v1.yaml` 1.0.0 (SCRUM-42) y 1.1.0, con el comprobante (SCRUM-44); los pagos recibidos llegan con SCRUM-45. **v5.10:** el prefijo `/v1/payments` es solo de Payments y el mismo `IngressRoute` lo enruta con `PathPrefix`.
 
 #### 8.2.6 Communication Service
 
@@ -1739,6 +1891,8 @@ Las rutas de pago empiezan por `/v1/service-requests/{id}` porque nombran la sol
 |GET|`/v1/realtime` (WebSocket)|`cliente`, `empresa_contacto`, `tecnico`, `admin_tenant`|RF-11, RNF-06|Contrato AsyncAPI 1.0.0|Canal de avisos en tiempo real (ADR-023, sección 8.5). Se describe en `asyncapi/realtime.v1.yaml`, no en OpenAPI.|
 |GET|`/v1/notifications?unread=&page=&size=`|`cliente`, `empresa_contacto`, `tecnico`, `admin_tenant`|RIE-03|Contrato v1.0.0|Buzón del usuario del token, del más reciente al más antiguo, con `unreadCount` (ADR-024, sección 5.22).|
 |POST|`/v1/notifications/{id}/read`|Los mismos|RIE-03|Contrato v1.0.0|Marcar como leída; idempotente. Una notificación de otro usuario o tenant responde `404`.|
+|GET|`/v1/service-requests/{id}/messages?page=&size=`|Participantes: cliente dueño (o `empresa_contacto` dueño) y técnico asignado|RF-37|Contrato v1.3.0|Historial del chat, del más reciente al más antiguo, con `writable` (sección 8.3.17, ADR-026).|
+|POST|`/v1/service-requests/{id}/messages`|Los mismos|RF-37|Contrato v1.3.0|Enviar un mensaje; se entrega por el canal (`chat.message`). `409 chat-cerrado` o `chat-no-disponible` (RN-CH2).|
 
 **Tipos de notificación (`communication.v1.yaml` 1.2.0).** Cada uno nace de un evento que ya existe. Los de estado salen de `service-request.status-changed`, igual que el aviso en tiempo real (sección 8.5, SCRUM-466):
 
@@ -1831,7 +1985,7 @@ El token de acceso dura 15 minutos y el de renovación 7 días (SDD V2, antes DD
 }
 ```
 
-`client_type`, `company_id`, `client_id` y `tenant_id` no se reciben: salen del token (RN-SR12, RN-U3). El formulario de la aplicación lo divide en máximo 3 pasos (RNF-11; SCRUM-332, antes DD §12).
+`client_type`, `company_id`, `client_id` y `tenant_id` no se reciben: salen del token (RN-SR12, RN-U3). **v5.13 (contrato 1.9.0, SCRUM-73):** el `empresa_contacto` puede enviar `siteName` (2 a 100 caracteres) con el nombre de la sede; un `cliente` que lo envía recibe `400` en `siteName`. La solicitud de empresa sigue el mismo flujo de matching, cotización, ejecución y pago que la de hogar. El formulario de la aplicación lo divide en máximo 3 pasos (RNF-11; SCRUM-332, antes DD §12).
 
 **Respuesta `201 Created`:**
 
@@ -1858,7 +2012,7 @@ El token de acceso dura 15 minutos y el de renovación 7 días (SDD V2, antes DD
 
 **Localidad del punto (propuesta P-09).** Las 20 localidades son de Matching Service (`localities`, sección 5.18). Para responder la vista previa sin llamar a Matching, ServiceRequest tendría una copia de solo lectura del mismo catálogo de referencia, cargada por migración desde la misma capa oficial que la migración `V3` de Matching (IDECA, generalizada a 0,0002°), sin `tenant_id` ni RLS. Como es un catálogo estático y oficial, las dos copias dan la misma localidad; si cambia, se actualizan las dos migraciones. La alternativa es una consulta interna a Matching, que agrega una llamada síncrona entre servicios.
 
-**Errores (contrato v1):** `400 validacion`; `422 ubicacion-fuera-de-cobertura` si la ubicación está fuera del área de cobertura (RN-SR9); `422 categoria-no-disponible` si la categoría no existe o no está activa en el tenant (RN-SR10); **v5:** `422 direccion-no-encontrada` si llega sin `location` y la dirección no se pudo geocodificar. **Pendiente:** `422 tenant-inactivo` (RN-T1) exige que ServiceRequest conozca el estado del tenant; hoy solo lo rechaza el login.
+**Errores (contrato v1):** `400 validacion`; `422 ubicacion-fuera-de-cobertura` si la ubicación está fuera del área de cobertura (RN-SR9); `422 categoria-no-disponible` si la categoría no existe o no está activa en el tenant (RN-SR10); **v5:** `422 direccion-no-encontrada` si llega sin `location` y la dirección no se pudo geocodificar. **v5.17 (contrato 1.11.0, SCRUM-510):** `422 tenant-inactivo` (RN-T1, detalle `tenant is disabled`) si el tenant del token fue desactivado, aunque el token siga vigente; ServiceRequest lo sabe por la réplica `tenant_status_replica` (sección 5.26) y no consulta a Identity.
 
 **Efecto:** inserta en `service_requests` y publica `service-request.created` en la misma transacción (ADR-007).
 
@@ -1895,8 +2049,11 @@ La respuesta tiene la misma estructura para todos los roles, pero algunos bloque
 |`client`|No|Sí, entre `asignado` y `completado` (RN-SR13)|Sí|
 |`location` y `addressText`|Sí|Sí, entre `asignado` y `completado` (RN-SR13)|Sí|
 |`cancellation`|Sí|Sí|Sí, con `cancelledBy`|
+|`rating` (v1.12.0)|Sí, cuando la calificó (solo en `pagado`, RN-R3)|No: en `pagado` ya no consulta el detalle (RN-SR13)|Sin contrato todavía|
 
 **Contrato v1.1.0 (v4).** El contrato publicado conserva los campos de la versión 1.0.0 (`categoryId` en lugar del bloque `category`) y agrega `assignedAt`, `technician` (`id`, `fullName`) y `client` (`id`, `fullName`, `phone`) como campos opcionales y nulables. El técnico asignado consulta el detalle solo entre `asignado` y `completado`: fuera de ese rango responde `403 no-autorizado` (SCRUM-34, criterio 2), y un técnico que no es el asignado recibe `404` (sección 8.1). La vista del `admin_tenant`, el bloque `category`, `timeline` y `cancellation` quedan para cuando tengan historia.
+
+**Contrato v1.12.0 (v5.20, SCRUM-637).** El detalle agrega `rating` (`score` de 1 a 5, `comment` opcional de hasta 500 caracteres y `ratedAt`), opcional y `null` mientras la solicitud no se califique. Sale de la tabla `ratings` (sección 5.9) de la misma base, sin consultar a Ranking (ADR-027). Así la app sabe al volver a abrir el detalle si ya calificó (SCRUM-86) y muestra la calificación (SCRUM-32). Es un cambio compatible: no hay campos obligatorios nuevos y no cambia quién ve el detalle; el comentario solo lo ve quien ya puede ver el detalle, y RN-SR13 sigue igual.
 
 ServiceRequest Service no guarda el nombre del técnico ni del cliente: los obtiene de Identity Service con una consulta interna por lote, que es una de las excepciones de lectura permitidas por el principio del SAD (sección 4.3) porque el usuario necesita la respuesta de inmediato. Si Identity no responde, los bloques `technician` y `client` llegan con `fullName` y `phone` en `null`. **Contrato v5 (SCRUM-91):** `identity-internal.v1.yaml` 1.0.0, `GET /internal/v1/users?ids=` con hasta 20 ids. No pasa por el Gateway: ServiceRequest llama al Service de Kubernetes de Identity (el Ingress no publica `/internal`) y reenvía el JWT del usuario que pidió el detalle, así que el tenant sale del token y no hace falta una credencial nueva entre servicios. Los ids de otro tenant o inexistentes se omiten sin error. ServiceRequest espera como máximo 2 segundos.
 
@@ -2055,7 +2212,7 @@ Al rechazar la tercera, `serviceRequestStatus` es `cancelado` y `remainingQuotes
 }
 ```
 
-`paymentToken` lo genera el widget de la pasarela en el dispositivo del cliente; el número de tarjeta y el CVV nunca llegan al backend (ADR-009, K2, RN-P1). El monto no se recibe: es el de la cotización aceptada (RN-P3). `billing` son los datos que van en el comprobante (RF-24). Para una empresa, la aplicación los precarga con la razón social y el NIT de `client_companies`, y `documentType` es `NIT`.
+`paymentToken` lo genera el widget de la pasarela en el dispositivo del cliente; el número de tarjeta y el CVV nunca llegan al backend (ADR-009, K2, RN-P1). **v5.8:** en el MVP la pasarela es simulada (ADR-009, modificación del 20 de octubre de 2026): la app cambia una de las tres tarjetas de prueba por un token `tok_sim_aprobada_…`, `tok_sim_rechazada_…` o `tok_sim_error_…`, y el adaptador `PasarelaSimulada` de Payments decide el resultado por el token. Un token que no empieza por `tok_` responde `400 VALIDATION_ERROR`. El monto no se recibe: es el de la cotización aceptada (RN-P3). `billing` son los datos que van en el comprobante (RF-24). Para una empresa, la aplicación los precarga con la razón social y el NIT de `client_companies`, y `documentType` es `NIT`.
 
 **Respuesta `200 OK`:**
 
@@ -2121,6 +2278,92 @@ Cuenta solo las solicitudes del tenant del `admin_tenant` (RLS). `byStatus` siem
 |`GET /v1/service-requests`|`admin_tenant`|`service_request_app` (RLS)|Una solicitud de otro tenant no aparece en la lista.|
 |`GET /v1/platform/service-requests/summary`|`admin_plataforma`|`service_request_platform` (sección 10.2)|Un `admin_tenant` recibe 403; la respuesta no trae ninguna columna fuera de tenant, estado y conteos.|
 
+#### 8.3.16 Comprobante — `GET /v1/payments/{id}/invoice`
+
+```json
+{
+  "invoiceId": "8f7e6d5c-4b3a-4291-8f7e-6d5c4b3a2910",
+  "invoiceNumber": "QP-20261021-1B2C3D4E5F",
+  "paymentId": "1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b",
+  "serviceRequestId": "7d1f6a52-0c8e-4f0b-9b8e-2a6c5f3d1e90",
+  "payer": { "name": "Inversiones Andinas S.A.S.", "documentType": "NIT", "documentNumber": "900123456-7", "email": "pagos@andinas.com.co" },
+  "amount": "185000.00",
+  "currency": "COP",
+  "concept": "Servicio técnico de la solicitud 7d1f6a52-0c8e-4f0b-9b8e-2a6c5f3d1e90",
+  "issuedAt": "2026-10-21T15:02:10Z",
+  "fiscalValidity": false
+}
+```
+
+**v5.10 (SCRUM-44, RF-24).** `id` es el del pago. Payments emite la fila de `invoices` en la misma transacción que aprueba el pago (sección 8.3.12), así que todo pago `aprobado` tiene comprobante. `payer` sale de `payments.billing`: son los datos que el pagador envió al pagar. Si facturó con NIT, el comprobante lo lleva (y `invoices.payer_nit`). Con `Accept: application/pdf` la respuesta es un PDF de una página con los mismos datos, generado al pedirlo, con `Content-Disposition: attachment; filename="<invoiceNumber>.pdf"`. Otro tipo en `Accept` responde `406`.
+
+**Sin validez fiscal.** El comprobante se rotula como comprobante de pago y no como factura electrónica (`fiscalValidity = false`). Es la opción (a) de la decisión DR-03 del SRS (antes P3) y del killer K14 del SAD. La factura electrónica validada por la DIAN queda para producción real.
+
+|Quién|Resultado|
+|---|---|
+|Cliente o `empresa_contacto` que pagó (`payments.client_id`)|200|
+|`admin_tenant` del mismo tenant|200|
+|Otro cliente del tenant, cualquier usuario de otro tenant (RLS) o pago sin comprobante|404 `no-encontrado`|
+|Técnico u otro rol|403|
+
+#### 8.3.17 Chat de la solicitud — `/v1/service-requests/{id}/messages`
+
+```json
+{
+  "items": [
+    { "id": "019a0b1c-...", "authorId": "2b8f6c1e-...", "authorRole": "tecnico", "text": "Llego a las 3 p. m. ¿La portería tiene mi nombre?", "sentAt": "2026-10-21T17:40:02Z" }
+  ],
+  "page": 1, "size": 30, "totalItems": 1,
+  "writable": true
+}
+```
+
+**v5.11 (ADR-026, RF-37).** Lo atiende Communication como excepción de ADR-025; Traefik lo enruta por el sufijo `/messages` con más prioridad que el prefijo de ServiceRequest. `POST` recibe `{ "text": "..." }` (1 a 1.000 caracteres; si no, `400`) y responde `201` con el mensaje. Communication lo guarda y envía la trama `chat.message` del canal (sección 8.5) al otro participante y a las demás conexiones del autor. `writable` dice si se puede escribir (RN-CH2).
+
+|Quién|`GET`|`POST`|
+|---|---|---|
+|Cliente dueño o técnico asignado|200|201, o 409 según RN-CH2|
+|Otro cliente o técnico del tenant, técnico anterior, cualquier usuario de otro tenant|404|404|
+|`admin_tenant`, `admin_plataforma`, `proveedor`|403|403|
+
+#### 8.3.18 Cuenta corporativa — `POST /v1/auth/register/company` y `/v1/companies/me/users`
+
+**Contrato `identity.v1.yaml` 1.8.0 (v5.12, RF-06, SCRUM-26 y SCRUM-484).**
+
+```json
+{
+  "company": { "legalName": "Inversiones Andinas S.A.S.", "nit": "900123456-7", "contactEmail": "mantenimiento@andinas.com.co", "contactPhone": "+5716012345" },
+  "user": { "email": "laura.mora@andinas.com.co", "password": "<contraseña>", "fullName": "Laura Mora", "phone": "+573001112233" }
+}
+```
+
+**Registro.** Es público y el tenant sale del canal (`X-Channel-Id`, RN-U5), igual que el registro de cliente. Identity crea en una sola transacción la fila de `client_companies` y el usuario `empresa_contacto` con su `company_id` (RN-CC2), y responde `201` con `company` y `user`. La empresa cliente es una cuenta dentro del tenant de la empresa oferente; no se crea un tenant (SAD 7.1, DEP-13). Errores: `400 validacion` por campo (`company.nit`, `user.password`…), `409 nit-registrado` (RN-CC1), `409 correo-registrado` (RN-U1), `403 tenant-inactivo` y `503 canal-sin-tenant`. No inicia sesión.
+
+**Token.** El JWT del `empresa_contacto` lleva el claim `company_id`; `UserProfile` suma `companyId` (nulo en los demás roles). ServiceRequest lo usa para `client_type` y `company_id` de la solicitud (RN-SR12) y Payments para el pago de la empresa (RN-P6); ninguno lo recibe del cuerpo.
+
+**Usuarios de la empresa.** `POST /v1/companies/me/users` recibe `email`, `fullName` y `phone` opcional; el tenant y la empresa salen del token (RN-CC3). El usuario se crea con rol `empresa_contacto` y sin contraseña utilizable, y la respuesta trae su `invitation`, igual que el equipo del proveedor (sección 8.3.14): enlace de un solo uso que vence a las 72 horas, con el token después de `#`; Identity solo guarda su hash (sección 5.21). El usuario define la contraseña con `POST /v1/auth/password/setup` (RN-CC4).
+
+|Ruta|`empresa_contacto` de la empresa|Otro rol|Usuario de otra empresa u otro tenant|
+|---|---|---|---|
+|`GET /v1/companies/me`|200|403|— (solo ve la suya)|
+|`GET /v1/companies/me/users`|200, solo los de su empresa|403|— (no aparecen)|
+|`POST /v1/companies/me/users`|201, o 409 `correo-registrado`|403|—|
+|`POST /v1/companies/me/users/{userId}/invitation`|201, o 409 `contrasena-definida`|403|404|
+
+#### 8.3.19 Recuperación de la contraseña — `/v1/auth/password-recovery` y `/v1/admin/password-recovery-requests`
+
+**Nuevo v5.18 (SCRUM-597).** Contrato `identity.v1.yaml` 1.10.0 (`quickpatch-api-gateway` v0.20.0); implementación SCRUM-625 (`quickpatch-identity#29`). Como no hay correo en el MVP (ADR-024), el enlace no le llega al usuario por iniciativa propia: lo genera el `admin_tenant` y se lo entrega por el medio que use, igual que las invitaciones del equipo del proveedor (sección 8.3.14).
+
+1. **El usuario lo pide.** `POST /v1/auth/password-recovery` con `{ "email": "..." }`, sin token; el tenant sale del canal (RN-U5). Responde **`202`** exista o no la cuenta, para no revelar quién está registrado. Si la cuenta existe y no es de un administrador, queda una solicitud `pendiente` en `password_recovery_requests` (sección 5.27); si ya había una, se actualiza su `requested_at`. No genera ningún token. Más de 3 pedidos para el mismo correo en una hora responden **`429 demasiadas-solicitudes`** con `Retry-After`, cuente o no el correo con una cuenta (sección 5.28). Un tenant inactivo responde `403 tenant-inactivo`.
+2. **El `admin_tenant` ve las pendientes.** `GET /v1/admin/password-recovery-requests?page=&size=` devuelve, paginadas, las solicitudes pendientes de su tenant con `id`, `userId`, `email`, `fullName`, `role` y `requestedAt`. RLS impide ver las de otro tenant.
+3. **El `admin_tenant` genera el enlace.** `POST /v1/admin/password-recovery-requests/{id}/link` responde `201` con `link`, `token` y `expiresAt`, igual que una invitación. El enlace es de un solo uso, vence a **1 hora** y anula los enlaces de recuperación anteriores sin usar del usuario. Identity solo guarda el hash SHA-256 (`password_setup_tokens` con `purpose = 'recuperacion'`, sección 5.21); el token en claro solo existe en esta respuesta. El token va después de `#` en el enlace porque el fragmento no se envía al servidor y no queda en sus registros. Queda en `audit_logs` (`generar_enlace_recuperacion`) sin el token. Una solicitud de otro tenant o inexistente responde `404`; una ya cerrada, `409`.
+4. **El usuario define la contraseña.** `POST /v1/auth/password-recovery/confirm` con `{ "token": "...", "password": "..." }`: **el token va en el cuerpo**, no en la URL, para que no quede en los registros del Gateway. Responde `204`. En una sola transacción guarda el hash nuevo, marca el enlace como usado, anula los demás enlaces de recuperación del usuario, marca como usadas sus invitaciones pendientes (v5.19: el técnico que nunca activó la suya queda con la contraseña definida), cierra la solicitud y desbloquea la cuenta (RN-U4). Un token usado, vencido, anulado, de otro tenant o que sea una invitación responde igual, `400 enlace-invalido`, para no revelar cuál fue el caso. Después el usuario entra con el login normal.
+
+|Ruta|`admin_tenant` de su tenant|Otro rol|`admin_tenant` de otro tenant|
+|---|---|---|---|
+|`GET /v1/admin/password-recovery-requests`|200|403|— (no aparecen)|
+|`POST /v1/admin/password-recovery-requests/{id}/link`|201, o 409 si ya se cerró|403|404|
+
 ### 8.4 Eventos Kafka
 
 Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de partición es el identificador de la entidad principal (`serviceRequestId` en los eventos de solicitud, matching y pago; `technicianId` en los de técnicos), para que Kafka entregue en orden los eventos de una misma entidad. Los errores de consumo siguen la política de reintentos y DLQ del SDD (sección 8.9).
@@ -2144,7 +2387,8 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 |`service-request.rated`|ServiceRequest|Ranking, Communication|Ranking actualiza la reputación del técnico (D3, DEP-04).|Nuevo|
 |`payment.approved`|Payments|ServiceRequest, Communication|La solicitud pasa a `pagado`; Payments emite la factura.||
 |`payment.rejected`|Payments|ServiceRequest, Communication|La solicitud permanece en `completado` (RN-SR5).||
-|`catalog.category-changed`|Catalog|ServiceRequest, Matching|Estado completo de una categoría para las réplicas locales (`service_request_categories`).|Contrato v1|
+|`catalog.category-changed`|Catalog|ServiceRequest, Matching|Estado completo de una categoría para las réplicas locales (`service_request_categories`). Desde ADR-025, ServiceRequest sirve con ella la lista de categorías de las apps.|Contrato v1; `description` opcional desde quickpatch-kafka v0.8.0 (5.7)|
+|`tenant.status-changed`|Identity|ServiceRequest|El administrador de la plataforma activó o desactivó un tenant (RF-21). Lleva el estado completo (`activo` o `inactivo`) y `updatedAt` como versión (ADR-017). Se publica por Outbox en la misma transacción del cambio de `tenants.status`, solo si el estado cambió, y el `tenantId` del sobre y la clave del mensaje son los del tenant que cambió, no los del administrador. ServiceRequest guarda la réplica `tenant_status_replica` (sección 5.26) y rechaza crear solicitudes de un tenant inactivo (RN-T1). Un topic de una partición; el consumidor descarta el evento si ya tiene un `updatedAt` más reciente.|Contrato v1 (5.17, SCRUM-508). Topic con retención de 7 días.|
 
 _Cuadro 11: Eventos Kafka, productores y consumidores_
 
@@ -2186,8 +2430,8 @@ Todos los campos son obligatorios salvo que se indique "opcional". Los eventos n
 |`service-request.cancelled`|`serviceRequestId`, `clientId`, `technicianId` (opcional), `cancelledByType`, `reason`, `cancelledAt`|
 |`service-request.completed`|`serviceRequestId`, `clientId`, `companyId` (opcional), `technicianId`, `quoteId`, `totalAmount`, `completedAt`|
 |`service-request.rated`|`serviceRequestId`, `technicianId`, `score`, `ratedAt`|
-|`payment.approved`|`paymentId`, `serviceRequestId`, `amount`, `invoiceId`, `approvedAt`|
-|`payment.rejected`|`paymentId`, `serviceRequestId`, `amount`, `reasonCode` (opcional), `rejectedAt`|
+|`payment.approved`|`paymentId`, `serviceRequestId`, `clientId`, `companyId` (opcional), `technicianId`, `amount`, `invoiceId`, `approvedAt`|
+|`payment.rejected`|`paymentId`, `serviceRequestId`, `clientId`, `companyId` (opcional), `technicianId`, `amount`, `reasonCode` (opcional), `rejectedAt`|
 
 _Cuadro 12: Contenido de `data` por evento_
 
@@ -2210,11 +2454,12 @@ _Cuadro 12: Contenido de `data` por evento_
 |`service-request.status-changed` (`serviceRequestId`, `status`, `occurredAt`)|Cliente dueño (`clientId`) y técnico asignado (`technicianId`), si lo hay|`service-request.created` (`buscando_tecnico`) y el evento de Kafka `service-request.status-changed` (el `status` que trae). Desde 5.1 no sale de los eventos de Matching (SCRUM-466)|`GET /v1/service-requests/{id}`|
 |`offer.created` (`attemptId`, `serviceRequestId`, `expiresAt`, `occurredAt`)|Técnico de la oferta|`matching.offer-created`|`GET /v1/matching/offers`|
 |`service-request.counts-changed` (`occurredAt`)|`admin_tenant` del tenant|Cada `service-request.status-changed` del tenant|`GET /v1/admin/service-requests/summary` (sin contrato todavía)|
+|`chat.message` (`serviceRequestId` y el mensaje: `id`, `authorId`, `authorRole`, `text`, `sentAt`). **v5.11, `realtime.v1.yaml` 1.1.0**|El otro participante y las demás conexiones del autor (RN-CH1)|No sale de Kafka: lo envía Communication al guardar el mensaje (ADR-026)|Nada: trae el mensaje completo|
 
 _Cuadro 13: Avisos del canal en tiempo real_
 
 - **Enrutamiento sin tablas:** Communication decide a quién avisar solo con el evento. Por eso `service-request.status-changed` lleva `clientId` y `technicianId`, igual que `service-request.started`, `.cancelled` y `.completed`, y los eventos de matching que avisan al cliente llevan `clientId` (v4).
-- **Fuente del aviso de estado (5.1, SCRUM-466):** el aviso sale del dueño del estado. ServiceRequest publica `service-request.status-changed` por Outbox en la misma transacción del cambio y solo si lo aplicó. Antes Communication lo armaba de los eventos de Matching, y si ServiceRequest descartaba uno por viejo (`matching_updated_at`, ADR-017) el aviso salía igual: el técnico veía «asignado» y el detalle respondía 404. Además, cuando la app recibe el aviso, el detalle ya tiene el estado nuevo. El buzón (sección 8.2.6) también crea sus notificaciones de estado con este evento (5.4, SCRUM-456), así que Communication ya no consume los eventos de estado de Matching. Communication no guarda réplicas ni conexiones en la base: las conexiones viven en memoria, en una sola réplica (ADR-023, punto 6).
+- **Fuente del aviso de estado (5.1, SCRUM-466):** el aviso sale del dueño del estado. ServiceRequest publica `service-request.status-changed` por Outbox en la misma transacción del cambio y solo si lo aplicó. Antes Communication lo armaba de los eventos de Matching, y si ServiceRequest descartaba uno por viejo (`matching_updated_at`, ADR-017) el aviso salía igual: el técnico veía «asignado» y el detalle respondía 404. Además, cuando la app recibe el aviso, el detalle ya tiene el estado nuevo. El buzón (sección 8.2.6) también crea sus notificaciones de estado con este evento (5.4, SCRUM-456), así que Communication ya no consume los eventos de estado de Matching. Communication no guarda conexiones en la base: viven en memoria, en una sola réplica (ADR-023, punto 6). Desde 5.11 sí guarda una réplica para el chat (`chat_participants`, ADR-026), que no cambia el enrutamiento de los avisos.
 - **Aislamiento:** un aviso solo se entrega a conexiones con el mismo `tenant_id` que el `tenantId` del evento.
 - **Idempotencia:** Communication descarta los eventos que ya procesó por `eventId` mientras está en ejecución. El aviso es idempotente por naturaleza: si llega repetido, la app vuelve a pedir el mismo detalle. Cuando Communication tenga base de datos (buzón de notificaciones, ADR-024), la deduplicación pasa a `processed_events` (RN-EV1).
 - **Cierres:** `4000` trama inválida, `4001` token inválido, `4002` sin autenticación en 10 segundos, `4003` rol que no usa el canal (`admin_plataforma`, `proveedor`), `4004` token vencido durante la conexión, `1001` reinicio del servidor, `1009` trama de más de 8 KB y `1011` error interno. Con 4000 a 4003 la app no reintenta con el mismo token; con 1001, 1011 y 4004 se reconecta.
@@ -2341,7 +2586,8 @@ _Cuadro 14: Diferencias entre el SDD y el DD v3 en contratos_
 |`POST /v1/platform/tenants`|`identity.v1.yaml` 1.5.0|Identity (SCRUM-462)|—|—|
 |Equipo del proveedor, invitación y `POST /v1/auth/password/setup`|`identity.v1.yaml` 1.7.0|Identity (SCRUM-97, SCRUM-461)|—|—|
 |`GET /v1/notifications` y `POST /v1/notifications/{id}/read`|`communication.v1.yaml` 1.0.0|Pendiente (SCRUM-456)|—|—|
-|`POST /v1/auth/register/company`, `POST /v1/auth/refresh` y `POST /v1/companies/me/users`|Sin contrato|Pendiente|—|—|
+|`POST /v1/auth/register/company`, `GET /v1/companies/me` y `/v1/companies/me/users` con su invitación|`identity.v1.yaml` 1.8.0|Pendiente (SCRUM-66)|—|—|
+|`POST /v1/auth/refresh`|Sin contrato|Pendiente|—|—|
 |WebSocket `/v1/realtime`|`asyncapi/realtime.v1.yaml` 1.0.0|Communication (ADR-023)|—|—|
 |Resto de ServiceRequest (listado del cliente, cotizaciones, inicio, evidencia, cierre, calificación, historial y resumen) y Payments|Sin contrato|Pendiente|—|—|
 
@@ -2586,7 +2832,7 @@ El modelo de esta versión depende de las siguientes decisiones de diseño, que 
 |DEP-10|`quotes`, estado `cancelado`, `service_evidence`|Requisitos en el SRS para la cotización, la cancelación y la evidencia fotográfica obligatoria, que el SAD define y el SRS v3.1 no incluye.|SAD, sección 7.4 y D7|**Resuelta** con el SRS v3.2 (RF-15, RF-34, RF-35 y RF-36).|
 |DEP-11|RN-R3|Orden entre evaluación y pago. El SRS (RF-12) permite calificar desde `completado` y el SAD (sección 7.4) libera el pago después de la evaluación, mientras que el SDD (escenario 7) y RF-27 ponen el pago antes de la calificación. Este documento sigue al SDD y a RF-27.|RF-12, RF-27; SDD, escenario 7|**Resuelta** con el SRS V4: RF-12 habilita la calificación cuando la solicitud está en `pagado`, igual que RN-R3. Falta actualizar el ciclo de vida del SAD (sección 7.4), como registra el SRS (P2), y el criterio de SCRUM-32.|
 |DEP-12|Sección 14.2|Resuelto mediante ADR-012: Identity, Actors, Catalog, ServiceRequest, Ranking, Payments y Communication usan ASP.NET Core / .NET 10; Matching usa Java 25 + Spring Boot 4.1.1. Para persistencia se adopta EF Core + Npgsql en .NET y Spring Data/JPA en Matching.|ADR-012; Infraestructura 5.6 y 5.7|Resuelta (ADR-012).|
-|DEP-13|`tenants`, `register/company`|RF-06 asocia cada empresa cliente a un tenant propio; el SAD (sección 7.1) define el tenant como la empresa oferente y a las empresas cliente como usuarios de ese tenant. Este documento sigue al SAD, así que RF-06 no queda cubierto tal como está redactado.|RF-06; SAD, sección 7.1|Parcial: la tabla `client_companies` (sección 5.19) cubre la razón social, el NIT y los varios usuarios de SCRUM-26, dentro del tenant de la empresa oferente. La diferencia con la redacción de RF-06 se mantiene.|
+|DEP-13|`tenants`, `register/company`|RF-06 asocia cada empresa cliente a un tenant propio; el SAD (sección 7.1) define el tenant como la empresa oferente y a las empresas cliente como usuarios de ese tenant. Este documento sigue al SAD, así que RF-06 no queda cubierto tal como está redactado.|RF-06; SAD, sección 7.1|Resuelta en v5.12 (SCRUM-484): el SRS V4 ya redacta RF-06 como una cuenta corporativa dentro del tenant, y `identity.v1.yaml` 1.8.0 la registra en el tenant del canal con `client_companies` (secciones 5.19 y 8.3.18).|
 |DEP-14|`payments`|El SAD (sección 8.1) lista la entidad `PayoutRecord`, pero R1 excluye la liquidación a técnicos. Este documento no la modela.|R1; SAD, sección 8.1|Abierta.|
 |DEP-15|`GET /v1/admin/service-requests/summary`|SCRUM-38 pide ver las solicitudes de todos los tenants y filtrar por tenant; con RLS (ADR-005) el `admin_tenant` solo ve su tenant. Ver todos exigiría una operación de plataforma nueva para `admin_plataforma` en la sección 10.4.|SCRUM-38; ADR-005|**Resuelta v5.2 (SCRUM-485):** el `admin_plataforma` ve solo conteos por tenant con `GET /v1/platform/service-requests/summary` y el rol `service_request_platform` (secciones 8.3.15, 10.2 y 10.4).|
 |DEP-16|RN-Q8, `QUOTE_TTL`|Tiempo que tiene el cliente para responder una cotización. Se propone 24 horas.|RF-35|**Nueva v3.** Abierta.|
@@ -2632,7 +2878,21 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.4|SCRUM-456, SCRUM-472|**Buzón desde `status-changed` y cancelación en el buzón.** `communication.v1.yaml` 1.1.0: los tipos de estado del buzón salen de `service-request.status-changed` (sección 8.2.6) y se agrega `solicitud-cancelada` para el cliente y el técnico asignado (RF-36); el CHECK de `notifications.type` lo admite (sección 5.22). Communication deja de consumir `matching.technician-assigned`, `matching.no-technician-available` y `matching.search-resumed` (Cuadros de eventos y sección 8.4).|
 |5.5|SCRUM-487|**Contratos de la cotización (RF-34, RF-35, SCRUM-486).** `service-request.v1.yaml` 1.6.0 con listar, emitir, aceptar y rechazar cotizaciones y `409 limite-de-cotizaciones` (secciones 8.2.4, 8.3.7 y 8.3.8); eventos `service-request.quoted`, `quote-accepted` y `quote-rejected` v1 en quickpatch-kafka v0.6.0 (Cuadros de eventos); columna `quotes.rejection_reason` (sección 5.11) y `QUOTE_TTL` configurable (RN-Q8). `communication.v1.yaml` 1.2.0 agrega `cotizacion-recibida`, `cotizacion-aceptada` y `cotizacion-rechazada`, y `tecnico-asignado` y `solicitud-asignada` quedan solo para la llegada a `asignado` desde `buscando_tecnico` (sección 8.2.6). DEP-20 se resuelve en la parte de la cotización.|
 |5.6|SCRUM-94|**Inicio, evidencia y cierre del servicio (RF-14, RF-15, SCRUM-35).** `service-request.v1.yaml` 1.7.0 con `start`, `evidence` (subir, listar y descargar) y `complete`, y `startedAt` y `completedAt` en el detalle (secciones 8.2.4, 8.3.10 y 8.3.11). Nueva regla RN-E4: como máximo 10 evidencias por solicitud (sección 7.7). Eventos `service-request.started` y `service-request.completed` v1 en quickpatch-kafka v0.7.0 (Cuadro 11): `completed` lo consume Matching para liberar al técnico (RN-M6); `started` queda sin consumidor porque el aviso sale de `status-changed`.|
-|5.7|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.7|ADR-025|**REST solo hacia Identity, ServiceRequest y Payments.** ServiceRequest sirve las categorías y las localidades (`service-request.v1.yaml` 1.8.0, sección 8.2.4) desde la réplica `service_request_categories`, que suma `description`, y la copia `localities`. `catalog.category-changed` agrega `description` opcional (quickpatch-kafka v0.8.0). `GET /v1/catalog/categories` y `GET /v1/localities` quedan obsoletas (secciones 8.2.2 y 8.2.3).|
+|5.8|SCRUM-42|**Pago con la pasarela simulada (RF-22, RF-23, ADR-009 modificado).** `payments.v1.yaml` 1.0.0: `GET` y `POST /v1/service-requests/{id}/payment`, enrutados por un `IngressRoute` de Traefik (sección 8.2.5). Tokens de la pasarela simulada en la sección 8.3.12. La tabla `payments` suma `reason_code` y `processed_at` (sección 5.12). `payment.approved` y `payment.rejected` (quickpatch-kafka) llevan también `clientId`, `companyId` y `technicianId`, para que Communication avise sin consultar a otro servicio (Cuadro 12).|
+|5.9|SCRUM-115|**Implementación del pago (quickpatch-payments).** `payments` suma `processing_started_at` y `billing` (sección 5.12). La conciliación usa el rol `payments_scheduler` ya previsto en la sección 10.2, con `SELECT` sobre `id`, `tenant_id`, `status`, `provider_token_ref` y `processing_started_at`. Quien paga es el creador de la solicitud; RN-P6 (cualquier `empresa_contacto` de la empresa) queda para SCRUM-43, porque el token aún no trae la empresa.|
+|5.10|SCRUM-44|**Comprobante del pago (RF-24).** `payments.v1.yaml` 1.1.0 con `GET /v1/payments/{id}/invoice` en JSON o PDF según `Accept`, para el pagador y el `admin_tenant` (secciones 8.2.5 y 8.3.16). El PDF se genera al pedirlo y `invoices.pdf_url` queda nulo (sección 5.13). Es un comprobante sin validez fiscal (SRS DR-03, antes P3). El `IngressRoute` de Payments suma el prefijo `/v1/payments`.|
+|5.11|SCRUM-479|**Chat de la solicitud (RF-37, ADR-026).** Tablas `chat_participants` (réplica de `service-request.status-changed`) y `chat_messages` en `db_communication` (secciones 5.23 y 5.24), reglas RN-CH1 a RN-CH4 (sección 7.14), `communication.v1.yaml` 1.3.0 con `GET` y `POST /v1/service-requests/{id}/messages` (secciones 8.2.6 y 8.3.17) y la trama `chat.message` del canal (`realtime.v1.yaml` 1.1.0, sección 8.5).|
+|5.12|SCRUM-484|**Cuenta corporativa (RF-06, SCRUM-26).** `identity.v1.yaml` 1.8.0 con `POST /v1/auth/register/company`, `GET /v1/companies/me` y `GET` y `POST /v1/companies/me/users` con la invitación de la sección 5.21 (secciones 8.2.1 y 8.3.18). Claim `company_id` en el token y `companyId` en el perfil. Nueva regla RN-CC4 (nadie define la contraseña de otro usuario). DEP-13 queda resuelta: el SRS V4 ya ubica la empresa cliente dentro del tenant.|
+|5.13|SCRUM-73|**Solicitud de empresa (RF-08, SCRUM-28).** `service-request.v1.yaml` 1.9.0: el `empresa_contacto` crea solicitudes con `siteName` opcional; `client_type` y `company_id` se implementan y salen del token (RN-SR12); `site_name` nueva en `service_requests` (sección 5.5). RN-SR14: los demás usuarios de la empresa ven la solicitud. `GET /v1/service-requests` se abre al `cliente` y al `empresa_contacto`, con `clientType` para que el panel distinga las de empresa (secciones 8.2.4 y 8.3.3).|
+|5.14|SCRUM-636|**Cobertura por localidades (RN-SR9).** Crear una solicitud, con GPS o con dirección, exige el rectángulo y una de las 20 localidades, igual que la vista previa (sección 8.3.3). El rectángulo solo aceptaba puntos en Soacha. Sin cambio de contrato: `422 ubicacion-fuera-de-cobertura` ya estaba documentado.|
+|5.15|SCRUM-499|**Historial técnico con calificación (RF-12, SCRUM-497).** `service-request.v1.yaml` 1.10.0: TechnicianServiceRequest ahora incluye campos opcionales `score` y `ratedAt` cuando una solicitud completada ha sido calificada. Se actualiza la descripción de `ratings.created_at` para usar `ratedAt` en el contrato REST (sección 8.3.11).|
+|5.16|SCRUM-501|**Equipo del proveedor en Payments y pagos recibidos del proveedor (RF-25, P-02).** Nueva tabla `payment_technicians` (sección 5.25), proyección del proveedor de cada técnico alimentada por `technician.registered` y cargada una vez por ambiente con `cargar-equipos-pagos.yml`. `GET /v1/payments/received` (contrato 1.2.0) lo admite también para el `proveedor`, con sus reglas de visibilidad por rol (sección 8.3, SCRUM-500). Se actualiza P-02 y el Cuadro 8.|
+|5.17|SCRUM-508|**RN-T1 con la réplica del estado del tenant (RF-21).** Nueva tabla `tenant_status_replica` en ServiceRequest (sección 5.26), alimentada por el evento `tenant.status-changed` de Identity (sección 8.4), y `422 tenant-inactivo` al crear una solicitud (contrato service-request 1.11.0, SCRUM-510). Se actualizan RN-T1 (7.1 y su tabla de reglas), el Cuadro 8, el Cuadro 10, los errores de la creación (8.3.3) y el endpoint de plataforma.|
+|5.18|SCRUM-597|**Recuperación de la contraseña olvidada (RF-03, ADR-024).** Contrato `identity.v1.yaml` 1.10.0 con `POST /v1/auth/password-recovery`, `GET /v1/admin/password-recovery-requests`, `POST /v1/admin/password-recovery-requests/{id}/link` y `POST /v1/auth/password-recovery/confirm` (secciones 8.2.1 y 8.3.19). Nuevas tablas `password_recovery_requests` y `password_recovery_attempts` (secciones 5.27 y 5.28) y columna `purpose` en `password_setup_tokens` (5.21): el enlace de recuperación lo genera el `admin_tenant`, vence a 1 hora y no hay correo. Nueva regla RN-U7, error `429` y Cuadro 8.|
+|5.19|SCRUM-625|**Decisiones de la recuperación de la contraseña (`quickpatch-identity#29`).** `password_recovery_attempts.email_hash` pasa de SHA-256 a HMAC-SHA256 con una clave del servicio (sección 5.28). Al confirmar la recuperación se marcan como usadas las invitaciones pendientes del usuario (RN-U7). Se aprueba el modelo de las tablas 5.27 y 5.28 y de la columna `purpose` (5.21) tal como lo implementa el PR.|
+|5.20|SCRUM-637|**Calificación en el detalle de la solicitud (RF-12).** `service-request.v1.yaml` 1.12.0: `GET /v1/service-requests/{id}` agrega `rating` (`score`, `comment` y `ratedAt`), opcional y `null` mientras no se califique, para SCRUM-86 y SCRUM-32. Cambio compatible; RN-SR13 no cambia. Secciones 5.9, 8.2.4 y 8.3.4.|
+|5.21|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 

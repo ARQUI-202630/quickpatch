@@ -18,7 +18,7 @@
   vars:
     ambiente: qa
     ref: "{{ 'main' if ambiente == 'produccion' else 'develop' }}"
-    servicios: [identity, catalog, service_request, matching, communication]
+    servicios: [identity, catalog, service_request, matching, communication, payments]
     amb:
       qa:
         kubeconfig: config-qa

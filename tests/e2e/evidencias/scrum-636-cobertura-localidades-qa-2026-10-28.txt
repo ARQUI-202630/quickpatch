@@ -1,0 +1,169 @@
+scrum-600-fuera-de-bogota contra QA, 2026-10-28
+Colección: tests/e2e/scrum-600-fuera-de-bogota.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-10-28T15:28:42.645Z. Duración: 43 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+Repetición de SCRUM-600 después de SCRUM-636 (ServiceRequest release/0.10.0 desplegado en QA el 28 de octubre de 2026).
+La primera corrida, del mismo día, es scrum-600-fuera-de-bogota-qa-2026-10-28.txt.
+  - Crear solo con la dirección «Calle 5 # 38-70, Cali» o «Carrera 3 # 14-20, Villavicencio» responde 422
+    ubicacion-fuera-de-cobertura, igual que la vista previa (antes: 201). Carpeta 2.
+  - Un GPS en Soacha (4,5794; -74,2168), dentro del rectángulo de RN-SR9 pero fuera de las 20 localidades, responde 422
+    ubicacion-fuera-de-cobertura (antes: 201). Carpeta 3.
+  - Sigue como límite documentado (SRS 2.3.1, carpeta 4): una calle de Bogotá con otra ciudad escrita se ubica en Bogotá.
+  - Ningún caso crea una solicitud.
+
+newman
+
+QUICKPATCH — SCRUM-600 Dirección fuera de Bogotá contra QA
+
+□ 0. Preparación: un cliente nuevo y una categoría de QA
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 1062ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 840ms]
+  √  200 con rol cliente
+
+└ El cliente toma la primera categoría del catálogo
+  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 2.11kB, 46ms]
+  √  200
+  √  hay categorías
+
+□ 1. Dirección escrita fuera de Bogotá: la vista previa la rechaza
+└ Control: una dirección de Bogotá sí se ubica
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [200 OK, 429B, 911ms]
+  √  200 con punto dentro del área de cobertura de Bogotá
+
+└ Cali → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 586B, 234ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: fuera de Bogotá
+
+└ Soacha, vecina de Bogotá → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 586B, 224ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: fuera de Bogotá
+
+└ Chía, vecina de Bogotá → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 586B, 256ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: fuera de Bogotá
+
+└ Villavicencio → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 586B, 192ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: fuera de Bogotá
+
+└ El Poblado, Medellín → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 586B, 146ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: fuera de Bogotá
+
+└ Cali sin ninguna coincidencia → 422 dirección no encontrada
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [422 Unprocessable Entity, 542B, 88ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo direccion-no-encontrada
+
+□ 2. Crear la solicitud solo con la dirección: se rechaza igual que en la vista previa
+└ Cali sin coincidencia, solo con la dirección → 422 dirección no encontrada
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 542B, 81ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo direccion-no-encontrada
+
+└ Cali, solo con la dirección → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 173ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: solo en Bogotá
+
+└ Villavicencio, solo con la dirección → 422 fuera de cobertura
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 188ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: solo en Bogotá
+
+□ 3. GPS fuera de Bogotá: RN-SR9 rechaza el punto
+└ GPS en Soacha, dentro del rectángulo → 422
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 47ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: solo en Bogotá
+
+└ GPS en Medellín → 422
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 39ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: solo en Bogotá
+
+└ GPS en Cali → 422
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 39ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: solo en Bogotá
+
+└ GPS en Tunja → 422
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 40ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: solo en Bogotá
+
+└ GPS en Chía, al norte del área de cobertura → 422
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 558B, 34ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo ubicacion-fuera-de-cobertura
+  √  detalle: solo en Bogotá
+
+□ 4. Límite documentado: una calle de Bogotá con otra ciudad escrita (SRS 2.3.1)
+└ LÍMITE: una calle de Bogotá con Medellín escrita se ubica en Bogotá (Suba)
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [200 OK, 432B, 163ms]
+  √  200 con punto dentro del área de cobertura de Bogotá
+
+└ LÍMITE: una calle de Bogotá con Bucaramanga escrita se ubica en Bogotá (Usaquén)
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [200 OK, 439B, 91ms]
+  √  200 con punto dentro del área de cobertura de Bogotá
+
+└ LÍMITE: una calle de Bogotá con Tunja escrita se ubica en Bogotá (La Candelaria)
+  POST https://qa.quickpatch.internal/api/v1/service-requests/location-preview [200 OK, 461B, 119ms]
+  √  200 con punto dentro del área de cobertura de Bogotá
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  21 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  21 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  62 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 6.7s                                           │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 8.52kB (approx)                               │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 238ms [min: 34ms, max: 1062ms, s.d.: 295ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:54956) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)

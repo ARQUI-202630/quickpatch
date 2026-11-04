@@ -1,14 +1,15 @@
-# Documento de Pruebas (TD V1.4) — QUICKPATCH
+# Documento de Pruebas (TD V3.0) — QUICKPATCH
 ## Sistema Multi-tenant de Servicios Técnicos para el Hogar y las Empresas
 
 | | |
 |---|---|
 | **Tipo de documento** | Documento de Diseño y Definición de Pruebas (Test Document - TD) |
-| **Versión** | 1.4 (Entrega Sprint 3 / Semana 10) |
+| **Versión** | 3.1 (Incremento Técnico y Funcional Sprint 5 / Entrega Final) |
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Rol Responsable** | Líder de Aseguramiento de Calidad (QA Lead) |
-| **Estándares Aplicados** | ISO/IEC/IEEE 29119 (Software Testing), ISO/IEC 25010:2023 (Calidad de Software), PCI-DSS v4.0 (K2) |
+| **Rol Responsable** | Katherine Bravo (QA Lead) |
+| **Trazabilidad Jira** | Historia `SCRUM-529` (Subtareas `SCRUM-530`, `SCRUM-531`, `SCRUM-532`) |
+| **Estándares Aplicados** | ISO/IEC/IEEE 29119 (Software Testing), ISO/IEC 25010:2023 (Calidad de Software), RFC 9457 (Problem Details), PCI-DSS v4.0 (K2) |
 | **Alcance** | Estrategia de pruebas automatizadas sobre 12 repositorios de componentes más el repositorio principal, y validación en 7 Máquinas Virtuales (ADR-022) |
 
 ---
@@ -24,7 +25,7 @@
 7. [Matriz de Trazabilidad RTM y Catálogo de Pruebas (Test Scenarios, RTM & Test Cases)](#7-matriz-de-trazabilidad-rtm-y-catálogo-de-pruebas-187-casos)
 8. [Gestión de Datos de Prueba (Test Data)](#8-gestión-de-datos-de-prueba-test-data)
 9. [Gestión y Reporte de Defectos (Bug Report)](#9-gestión-y-reporte-de-defectos-bug-report)
-10. [Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3)](#10-informe-de-ejecución-de-pruebas-test-execution-report---sprint-3)
+10. [Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3 & Sprint 4)](#10-informe-de-ejecución-de-pruebas-test-execution-report---sprint-3--sprint-4)
 11. [Control de Versiones del Documento](#11-control-de-versiones-del-documento)
 
 ---
@@ -32,7 +33,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V1.4) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 3.3) y los escenarios de calidad del SAD (versión vigente 2.24) de cara a los entregables del Sprint 3.
+El presente Documento de Pruebas (TD V3.0) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente v5.6, con la sección 2.3.1 de alcance geográfico y 33 RFs canónicos) y los escenarios de calidad del SAD (versión vigente V5 / v2.35) de cara a los entregables del Sprint 5 y la Entrega Final.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -125,6 +126,187 @@ El flujo de promoción asegura que ningún código defectuoso llegue a las máqu
        └───(Falla)──> [kubectl rollout undo automático inmediato]
 ```
 
+### 3.1 Jerarquía y Definición de Compuertas de Calidad
+
+Para dar cumplimiento a los estándares ISO/IEC 25010:2023 e ISO/IEC/IEEE 29119, QUICKPATCH implementa una arquitectura de compuertas de calidad (*Quality Gates*) con barreras progresivas e infranqueables. Cada compuerta actúa como filtro previo a la siguiente fase del ciclo de vida:
+
+| Compuerta | Denominación | Entorno de Ejecución | Herramientas / Automatización | Criterio de Aprobación Obligatorio (Pass Criteria) | Acción en Caso de Falla |
+|---|---|---|---|---|---|
+| **Compuerta 0** | Pre-Push Local | Estación de trabajo del desarrollador | Git Hook (`.githooks/pre-push`), `dotnet test`, `mvn test`, `flutter test`, `vitest` | 100% pruebas unitarias locales aprobadas antes de permitir el envío al servidor remoto. | El hook aborta el comando `git push` con código de salida 1; el código no sale de la máquina local. |
+| **Compuerta 1** | Integración Continua (CI) por Repositorio | GitHub Actions Runners (Cloud) | GitHub Actions, Spectral CLI, AJV Validator, xUnit, JUnit 5, Testcontainers (Postgres/Kafka) | Compilación limpia, 0 errores de linters, cobertura de código $\ge 80\%$, y 100% pruebas de persistencia e integración con Testcontainers aprobadas. | Bloqueo automático del Pull Request en GitHub; merge a `develop` inhabilitado. |
+| **Compuerta 2** | Pruebas de Sistema en Ambiente de QA Desplegado | Infraestructura de QA dedicada (VM1, VM2, VM5, VM7 - ADR-022) | Self-hosted Runner en VM1, Newman CLI, Playwright Headless, k6, OWASP ZAP, Escáner PCI-DSS en Loki | 100% de aserciones E2E aprobadas, 0 coincidencias de PAN/CVV en logs, 0 alertas altas/críticas en ZAP, k6 p95 < 3s a 50 VU y 0 pods caídos a 150 VU. | Rechazo del incremento; generación de defecto P0/P1 en Jira y bloqueo de promoción a Producción. |
+| **Compuerta 3** | Despliegue y Validación en Producción | Infraestructura de Producción (VM1, VM3, VM4, VM6 - ADR-022) | Ansible Playbooks, `kubectl rollout status`, Prometheus, Grafana | Despliegue tipo *Rolling Update* sin indisponibilidad, 0 pods en estado `CrashLoopBackOff`/`OOMKilled`, RAM en VM3 $\le 6.5\text{ GiB}$ (AC2-E5), y Smoke Tests de verificación aprobados. | `kubectl rollout undo` inmediato y automático al estado anterior funcional; notificación urgente en canal del equipo. |
+
+---
+
+### 3.2 Especificación Formal de la Compuerta 2 en el Ambiente de QA Desplegado (ADR-015, ADR-022)
+
+En cumplimiento de los acuerdos arquitectónicos **ADR-015** (Ambiente de pruebas dedicado) y **ADR-022** (Distribución formal sobre 7 Máquinas Virtuales en red `10.43.x.x`), la **Compuerta 2** se evalúa exclusivamente sobre la topología desplegada de QA, garantizando el aislamiento total de la infraestructura de Producción.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ TOPOLOGÍA DE EJECUCIÓN: COMPUERTA 2 (QA DESPLEGADO)                                    │
+├────────────────────────┬───────────────────────────────────────────────────────────────┤
+│ Nodo / VM              │ Componentes Desplegados y Rol en la Compuerta                 │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ VM1 (10.43.100.168)    │ • Punto de entrada HTTPS (:443) con Nginx Proxy y TLS 1.3     │
+│ [Herramientas]         │ • Virtual Host de pruebas: https://qa.quickpatch.internal     │
+│                        │ • GitHub Actions Self-Hosted Runner (inyección de pruebas)     │
+│                        │ • Grafana (:3000) y Loki (:3100) para escaneo de logs PCI-DSS │
+│                        │ • Prometheus (:9090) para métricas de CPU y RAM de pods       │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ VM2 (10.43.98.15)      │ • Clúster k3s dedicado de QA (nodo único)                     │
+│ [Aplicación QA]        │ • Traefik Ingress (:30080)                                    │
+│                        │ • 8 Microservicios de QA en pods independientes                │
+│                        │ • Receptor de tráfico E2E, ZAP DAST y carga destructiva k6    │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ VM5 (10.43.98.29)      │ • PostgreSQL 16 + PostGIS dedicado para QA (:5432)            │
+│ [Persistencia QA]      │ • Redis 7 dedicado para QA (:6379)                            │
+│                        │ • Tablas aisladas con RLS por tenant_id (app.current_tenant)  │
+│                        │ • Almacenamiento de tenant de pruebas: tenant_qa_loadtest      │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ VM7 (10.43.99.8)       │ • Apache Kafka dedicado para QA (:9092)                       │
+│ [Mensajería y S3 QA]   │ • Bus de eventos asíncronos y Outbox Pattern de QA            │
+│                        │ • Garage Object Storage S3 dedicado (:9000)                   │
+│                        │ • Almacenamiento de evidencias fotográficas de QA             │
+└────────────────────────┴───────────────────────────────────────────────────────────────┘
+```
+
+#### 3.2.1 Sub-compuertas y Umbrales de Aceptación (Pass / Fail Criteria)
+
+La Compuerta 2 se divide internamente en 5 sub-compuertas automatizadas que deben ser superadas al 100% para autorizar la promoción del incremento:
+
+```
+                  ┌──────────────────────────────────────────────┐
+                  │ INICIO EVALUACIÓN COMPUERTA 2 (QA REAL)       │
+                  └──────────────────────┬───────────────────────┘
+                                         │
+                 ┌───────────────────────▼───────────────────────┐
+                 │ SUB-COMPUERTA 2.1: Suites Funcionales y E2E   │
+                 │ Colección MVP + Suites de Incremento Newman   │
+                 └───────────────────────┬───────────────────────┘
+                                         │ [Pass: 100% aserciones]
+                 ┌───────────────────────▼───────────────────────┐
+                 │ SUB-COMPUERTA 2.2: Escáner PCI-DSS en Logs    │
+                 │ Consulta LogQL en Loki (VM1:3100)             │
+                 └───────────────────────┬───────────────────────┘
+                                         │ [Pass: 0 PAN / 0 CVV]
+                 ┌───────────────────────▼───────────────────────┐
+                 │ SUB-COMPUERTA 2.3: Rendimiento y Capacidad    │
+                 │ k6: 50 VU Nominal (p95 < 3s) + 150 VU Estrés   │
+                 └───────────────────────┬───────────────────────┘
+                                         │ [Pass: 0 pods caídos / 0 OOMKilled]
+                 ┌───────────────────────▼───────────────────────┐
+                 │ SUB-COMPUERTA 2.4: Seguridad Dinámica (DAST)  │
+                 │ OWASP ZAP Baseline sobre qa.quickpatch.internal│
+                 └───────────────────────┬───────────────────────┘
+                                         │ [Pass: 0 High / 0 Critical]
+                 ┌───────────────────────▼───────────────────────┐
+                 │ SUB-COMPUERTA 2.5: Aislamiento Multi-Tenant   │
+                 │ Validación RLS en PostgreSQL (VM5)            │
+                 └───────────────────────┬───────────────────────┘
+                                         │ [Pass: 0 fugas cross-tenant]
+                  ┌──────────────────────▼───────────────────────┐
+                  │ APROBACIÓN FORMAL: LISTO PARA PRODUCCIÓN      │
+                  └──────────────────────────────────────────────┘
+```
+
+1. **Sub-Compuerta 2.1 — Funcionalidad E2E, Integridad de Contratos y Reglas de Negocio:**
+   - **Herramienta:** Newman CLI ejecutando colecciones Postman automatizadas y Playwright Headless desde VM1.
+   - **Objetivo:** Ejecutar la totalidad de los flujos del MVP y los incrementos de Sprint 4 contra el API Gateway de QA (`https://qa.quickpatch.internal`).
+   - **Criterio de Aprobación:** 100% de peticiones y aserciones en estado PASS.
+   - **Validación Negativa y Exhaustividad:**
+     - Todas las respuestas de error (códigos 400, 401, 403, 404, 409, 422, 423) deben cumplir estrictamente la especificación **RFC 9457** (`application/problem+json`), incorporando los atributos `type`, `title`, `status`, `detail`, `instance` y `correlationId`.
+     - Rechazo estricto (HTTP 400 Bad Request) de campos con emojis o caracteres fuera del conjunto permitido en datos de contacto, nombres o documentos de identidad.
+     - Rechazo estricto (HTTP 400) de contraseñas con longitud menor a 8 caracteres o strings vacíos.
+     - Bloqueo de concurrencia y transiciones de estado ilegítimas con HTTP 409 Conflict.
+     - Bloqueo de accesos no autenticados (HTTP 401) y no autorizados por RBAC (HTTP 403).
+
+2. **Sub-Compuerta 2.2 — Seguridad de Datos y Cumplimiento PCI-DSS en Logs:**
+   - **Herramienta:** Script automatizado de auditoría (`pci_dss_scanner.py`) consultando el API REST de Loki en VM1 (`http://10.43.100.168:3100/loki/api/v1/query_range`).
+   - **Objetivo:** Auditar todos los streams de logs generados por los contenedores de QA durante las pruebas para garantizar el cumplimiento de la restricción K2 y el escenario AC6-E1 del SAD.
+   - **Criterio de Aprobación:** **Exactamente 0 coincidencias** de Números de Cuenta Principal (PAN) válidos por algoritmo de Luhn (13 a 19 dígitos) y **0 coincidencias** de códigos de validación de tarjeta (CVV/CVC de 3 o 4 dígitos) asociados a tokens de pago.
+   - **Criterio de Falla:** Una sola coincidencia de PAN/CVV en logs causa el rechazo inmediato del release.
+
+3. **Sub-Compuerta 2.3 — Rendimiento y Capacidad bajo Concurrencia (k6):**
+   - **Herramienta:** Grafana k6 ejecutado desde el Runner de VM1 apuntando al clúster k3s de VM2 y la base de datos de VM5.
+   - **Escenario Nominal (50 VU concurrentes por 5 minutos):**
+     - Tiempo de respuesta p95 inferior a 3.0 segundos en endpoints críticos (`POST /v1/service-requests`, `POST /v1/matching/offers/{id}/accept`).
+     - Tasa de errores HTTP 5xx inferior al 1.0% (`http_req_failed < 0.01`).
+     - Consumo promedio de CPU en VM2 inferior al 70%.
+   - **Escenario de Estrés (150 VU concurrentes por 3 minutos):**
+     - 0 caídas de pods en el clúster k3s de VM2.
+     - 0 terminaciones por falta de memoria (`OOMKilled` = 0).
+     - Degradación controlada: el sistema responde con HTTP 429 Too Many Requests o encola peticiones sin corromper el estado de la base de datos en VM5.
+     - Retorno a valores base de latencia (< 500 ms) tras el cese del tráfico de estrés.
+
+4. **Sub-Compuerta 2.4 — Seguridad Dinámica y Análisis de Vulnerabilidades (OWASP ZAP):**
+   - **Herramienta:** OWASP ZAP (Zed Attack Proxy) en modo contenedor Docker sobre VM1, ejecutando escaneo Baseline y de API contra `https://qa.quickpatch.internal`.
+   - **Criterio de Aprobación:** **0 vulnerabilidades de severidad Alta (High)** y **0 de severidad Crítica (Critical)**.
+   - **Vulnerabilidades auditadas:** Inyección SQL, Cross-Site Scripting (XSS), cabeceras de seguridad faltantes (`Content-Security-Policy`, `X-Content-Type-Options`, `Strict-Transport-Security`), exposición de trazas de depuración internas en 500 y desbordamientos de búfer en parámetros de consulta.
+
+5. **Sub-Compuerta 2.5 — Aislamiento Multi-Tenant y Protección de Datos (RLS):**
+   - **Herramienta:** Newman CLI y verificación directa en PostgreSQL de VM5.
+   - **Criterio de Aprobación:** **0 fugas de datos entre tenants (Zero Cross-Tenant Leakage)** conforme al escenario **AC6-E2** del SAD.
+   - **Comportamiento exigido:** Las consultas cruzadas entre tenants deben retornar **HTTP 404 Not Found** (sin revelar la existencia del recurso a terceros) o un conjunto vacío de registros (`total: 0`), garantizado por las políticas de Row-Level Security (`app.current_tenant`).
+
+#### 3.2.2 Procedimiento Operativo ante Falla y Protocolo de Rollback
+
+En caso de que cualquiera de las 5 sub-compuertas de la Compuerta 2 resulte en estado **FAIL**:
+1. El pipeline de CI/CD detiene inmediatamente la ejecución y marca el build con estado rojo.
+2. Se genera automáticamente un ticket de defecto en Jira con severidad **P0 (Bloqueante)** si fallan E2E, PCI-DSS o RLS, o **P1 (Crítica)** si falla rendimiento o ZAP.
+3. Se bloquea la sincronización de ramas hacia `main` y queda prohibida cualquier promoción al ambiente de Producción (VM3).
+4. El equipo de desarrollo responsable recibe la traza de logs de Loki, el reporte de Newman o el dump de k6 para corrección inmediata en su rama de feature.
+
+---
+
+### 3.3 Especificación Formal de la Compuerta 3 y Estrategia de Prueba de Humo en Producción (SCRUM-532 / SCRUM-47 / RNF-08)
+
+En concordancia con el requisito no funcional **RNF-08 (Compuerta Automatizada a Producción)** y el acuerdo arquitectónico **ADR-022** (Distribución formal sobre 7 Máquinas Virtuales en red `10.43.x.x`), la **Compuerta 3** rige la promoción final de artefactos validados desde el ambiente de QA hacia el clúster de Producción (`VM3`, `VM4`, `VM6`), garantizando el despliegue sin caída de servicio (*Zero Downtime Rolling Update*) y la verificación inmediata del MVP.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ SECUENCIA OPERATIVA DE LA COMPUERTA 3 (PROMOCIÓN A PRODUCCIÓN - RNF-08)                │
+├────────────────────────┬───────────────────────────────────────────────────────────────┤
+│ Fase del Pipeline      │ Acciones Ejecutadas y Criterios Inquebrantables de Control    │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ 1. Validación Previa   │ • Verificación de 100% PASS en Compuerta 2 (QA Desplegado).   │
+│    en QA (VM2)         │ • Aprobación formal de PR por Arquitectura (Juandi48).        │
+│                        │ • Inmutabilidad: Se promueven las MISMAS imágenes Docker.     │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ 2. Despliegue Rolling  │ • Ejecución de Ansible Playbook desde Runner en VM1 hacia VM3.│
+│    Update (VM3 k3s)    │ • MaxUnavailable: 0, MaxSurge: 1 (cero indisponibilidad).    │
+│                        │ • Espera activa con kubectl rollout status (timeout: 180 s).  │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ 3. Smoke Test E2E      │ • Ejecución del Smoke Test automatizado (SCRUM-47):           │
+│    Automatizado (VM1)  │   Flujo crítico completo Cliente → Técnico → Pago → Calificar.│
+│                        │ • Creación y limpieza de datos efímeros con prefijo smoke-.   │
+│                        │ • Cero exposición de credenciales o tokens en logs del run.   │
+├────────────────────────┼───────────────────────────────────────────────────────────────┤
+│ 4. Veredicto Final     │ • Si Smoke Test es 100% PASS y pods están Ready: PROMOVIDO.   │
+│    y Rollback          │ • Si falla cualquier aserción: kubectl rollout undo inmediato,│
+│                        │   bloqueo del merge a main y alerta P0 urgente al equipo.     │
+└────────────────────────┴───────────────────────────────────────────────────────────────┘
+```
+
+#### 3.3.1 Arquitectura del Smoke Test Automatizado del Flujo Crítico (SCRUM-47)
+El Smoke Test (`tests/e2e/smoke-test-flujo-critico.postman_collection.json`) es una suite autónoma, determinista y de ejecución rápida (< 45 segundos) diseñada para ejecutarse tras cada despliegue de release en QA y previo a la apertura de tráfico en Producción:
+1. **Paso 1 (Registro y Auth Dinámica):** Registro al vuelo de un cliente y un técnico con credenciales dinámicas en Identity; obtención de tokens JWT RS256 con claims `tenant_id` y roles validados.
+2. **Paso 2 (Creación de Solicitud):** Cliente crea solicitud con coordenadas geográficas de Bogotá y categoría activa del catálogo (`buscando_tecnico`).
+3. **Paso 3 (Matching y Oferta):** Motor de matching asigna automáticamente al técnico elegible en $< 5\text{ s}$ (`asignado`).
+4. **Paso 4 (Cotización):** Técnico emite cotización detallada de repuestos/mano de obra y el cliente la acepta (`cotizacion_aceptada`).
+5. **Paso 5 (Ejecución y Evidencia):** Técnico inicia labores (`en_progreso`), carga obligatoriamente foto de evidencia a Garage S3 (`POST /evidence`) y finaliza el servicio (`completado`).
+6. **Paso 6 (Pago):** Cliente realiza el pago exitoso utilizando token de pasarela simulada Wompi (`pagado`).
+7. **Paso 7 (Comprobante Fiscal):** Payments genera automáticamente la factura con NIT institucional y desglose de IVA en JSON y PDF.
+8. **Paso 8 (Calificación):** Cliente emite calificación de 5 estrellas con comentario, publicando el evento outbox `service-request.rated` hacia Ranking (`calificado`), y Ranking publica `ranking.technician-reputation-changed` (ADR-027).
+9. **Paso 9 (Limpieza Automática / Teardown):** El runner limpia los datos efímeros generados para evitar contaminación transaccional en la base de datos operativa.
+
+#### 3.3.2 Criterios de Aceptación Inquebrantables de la Compuerta 3
+* **Tasa de Éxito del Flujo Crítico:** Exactamente **100.0% PASS** en las aserciones del Smoke Test (cero aserciones fallidas).
+* **Estabilidad del Clúster en Producción:** **0 caídas de pods**, **0 eventos de terminación por memoria (`OOMKilled` = 0)** y cumplimiento estricto del límite de RAM de VM3 $\le 6.5\text{ GiB}$ (SAD AC2-E5, SCRUM-347).
+* **Integridad de Despliegue:** 100% de los microservicios en estado `Ready` tras el *Rolling Update* (tiempo de convergencia $< 120\text{ s}$).
+* **Acción ante Fallo (Protocolo de Rollback Automático):** Si cualquier petición del Smoke Test responde con error (HTTP 4xx/5xx) o supera el timeout de 5 segundos, el pipeline aborta la promoción con código de salida 1, invoca `kubectl rollout undo deployment -n default` en VM3 revirtiendo todos los pods a la revisión previa estable, cancela el merge hacia la rama `main` y despacha una alerta P0 inmediata al canal de incidentes.
+
 ---
 
 ## 4. Justificación Técnica de Herramientas frente a Alternativas
@@ -208,51 +390,54 @@ echo "[QA] Pruebas aprobadas."
 
 ### 7.1 Matriz de Trazabilidad de Requisitos (RTM)
 
-La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requisitos funcionales del SRS (versión vigente 4.0), los escenarios de calidad del SAD (versión vigente 2.25) y el catálogo de 187 casos de prueba automatizados.
+La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requerimientos funcionales del **SRS v5.6** (versión oficial canónica), los 52 escenarios de calidad del SAD (V5 / v2.35), las Historias de Usuario de Jira de los Sprints 4 y 5, y el catálogo formal de casos de prueba automatizados.
 
-#### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS (v3.2)
-El SRS V4 establece un total de **32 Requisitos Funcionales activos** organizados en 23 Features y 7 Épicas. 
+#### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS v5.6 (33 RFs Canónicos)
+El SRS v5.6 formaliza un total de **33 Requisitos Funcionales canónicos** organizados en los módulos de Clientes, Empresas, Técnicos, Proveedores, Solicitudes, Matching, Pagos, Infraestructura y Seguridad.
 
 > [!NOTE]
-> **Aclaración sobre la numeración histórica:** En concordancia con la sección 5.2 del SRS V4, la numeración salta de RF-29 a RF-34 porque los antiguos RF-30 a RF-33 (definidos en las versiones 2.x para control de cambios) fueron retirados en la versión 3.0 al ser reemplazados por el requisito no funcional **RNF-13 (Gestión Documental y Control de Cambios)**. Sus identificadores numéricos no se reutilizan para no romper la trazabilidad histórica de Jira. Por consiguiente, los 32 requisitos listados a continuación representan el **100% de los requisitos funcionales vigentes** del proyecto.
+> **Alineación con SRS v5.6:** En estricta concordancia con el SRS v5.6 canónico (§5), la matriz de trazabilidad mapea exclusivamente los **33 Requisitos Funcionales oficiales** (RF-01 a RF-29 y RF-34 a RF-37). Las extensiones operativas de interacción (notificaciones push, buzón offline, geocodificación local y landing institucional) se gestionan a nivel de componentes sin alterar la numeración contractual del SRS.
 
-| ID RF | Nombre y Descripción Resumida | Módulo / Servicio Propietario | Casos de Prueba Automatizados Asociados |
-|---|---|---|---|
-| **RF-01** | Registro de Cliente con validación de email y password | Identity | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` |
-| **RF-02** | Registro de Técnico en estado pendiente de verificación | Identity / Actors | `IDN-004`, `ACT-001`, `ACT-002` |
-| **RF-03** | Autenticación y bloqueo temporal tras fallos repetidos | Identity | `IDN-005`, `IDN-006`, `IDN-007`, `IDN-008` |
-| **RF-04** | Aislamiento lógico multi-tenant vía `tenant_id` y RLS | Transversal (Todos) | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-007`, `ACT-009`, `PAY-008`, `RNK-008` |
-| **RF-05** | Control de acceso basado en roles (RBAC) | Identity | `IDN-011`, `IDN-012`, `CAT-010` |
-| **RF-06** | Registro de empresas corporativas y alta de tenant | Identity | `IDN-013`, `IDN-014`, `E2E-004` |
-| **RF-07** | Creación de solicitud de servicio técnico por Cliente | ServiceRequest | `SRQ-001`, `SRQ-002`, `SRQ-003`, `E2E-001`, `E2E-005` |
-| **RF-08** | Registro de solicitudes corporativas por Empresa | ServiceRequest | `SRQ-004` |
-| **RF-09** | Asignación automática de técnico disponible y cercano (Matching) | Matching | `MAT-001`, `MAT-002`, `MAT-006`, `MAT-007`, `MAT-008`, `PRF-001` |
-| **RF-10** | Aceptación o rechazo de solicitud por técnico y reasignación | Matching | `MAT-010`, `MAT-011`, `MAT-012`, `E2E-007` |
-| **RF-11** | Seguimiento en tiempo real del estado de la solicitud | ServiceRequest / Communication | `SRQ-006`, `COM-001`, `COM-002`, `COM-005` |
-| **RF-12** | Calificación del servicio (1 a 5) al completar | ServiceRequest / Ranking | `SRQ-021`, `SRQ-022`, `SRQ-023`, `RNK-001`, `RNK-002` |
-| **RF-13** | Configuración de disponibilidad y zona de cobertura del Técnico | Matching / Actors | `MAT-003`, `MAT-005` |
-| **RF-14** | Consulta de detalle de solicitud asignada por el Técnico | ServiceRequest | `SRQ-005` |
-| **RF-15** | Cierre de solicitud con evidencia fotográfica obligatoria en Garage (ADR-016) | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
-| **RF-16** | Administración de equipo de técnicos por Proveedor | Actors | `ACT-007`, `ACT-008`, `ACT-009` |
-| **RF-17** | Historial de solicitudes atendidas por el Técnico | ServiceRequest | `SRQ-026` |
-| **RF-18** | Dashboard operativo con panel de solicitudes activas para Admin | Web / ServiceRequest | `E2E-002` |
-| **RF-19** | Aprobación o rechazo de registro de técnicos por Admin | Actors / Web | `ACT-003`, `ACT-004`, `E2E-003` |
-| **RF-20** | Suspensión de cuenta de técnico por Admin | Actors / Identity | `ACT-005`, `ACT-006` |
-| **RF-21** | Administración de tenants (activar/desactivar) por Admin | Identity / Web | `IDN-019`, `E2E-004` |
-| **RF-22** | Pago del servicio con tarjeta delegada a pasarela PCI-DSS | Payments | `PAY-003`, `PAY-010`, `PAY-011`, `E2E-009` |
-| **RF-23** | Pago de servicios a nombre de cuenta corporativa de Empresa | Payments | `PAY-006` |
-| **RF-24** | Generación automática de comprobante/factura tras pago aprobado | Payments | `PAY-004`, `PAY-005` |
-| **RF-25** | Consulta de pagos recibidos por Técnico / Proveedor | Payments | `PAY-007` |
-| **RF-26** | Pipeline de CI/CD con build y pruebas automáticas | Infrastructure | `INF-016` |
-| **RF-27** | Prueba automatizada End-to-End del flujo crítico | E2E Tests | `E2E-001` |
-| **RF-28** | Registro centralizado de logs de error y alertas | Infrastructure / Observability | `INF-011`, `INF-012`, `PRF-010` |
-| **RF-29** | Cifrado de datos sensibles en tránsito (HTTPS/TLS) y en reposo | Identity / Infrastructure | `IDN-015`, `IDN-021`, `INF-005` |
-| **RF-34** | Emisión de cotización de mano de obra y materiales por Técnico | ServiceRequest | `SRQ-008`, `SRQ-009`, `SRQ-010` |
-| **RF-35** | Aceptación, rechazo y límite de 3 cotizaciones por Cliente | ServiceRequest | `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
-| **RF-36** | Cancelación de solicitud por Cliente antes de iniciar labores | ServiceRequest | `SRQ-019`, `SRQ-020`, `E2E-010` |
+| ID RF | Feature | Descripción Funcional (SRS v5.6) | Módulo / Servicio Propietario | Casos de Prueba Automatizados Asociados (TD V3) |
+|---|---|---|---|---|
+| **RF-01** | F1.1 | Registro de Cliente con validación de formato de email, complejidad de password ($\ge 8$ caracteres) y unicidad por tenant. | Identity | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` |
+| **RF-02** | F1.1 | Registro de Técnico con datos personales, documento, especialidad y estado inicial `pendiente` de verificación (RN-TP3). | Identity / Actors | `IDN-004`, `ACT-001`, `ACT-002`, `REG-001`..`006` |
+| **RF-03** | F1.1 | Inicio de sesión seguro para todos los roles con JWT firmado y bloqueo temporal tras 5 intentos fallidos consecutivos (HTTP 423). | Identity | `IDN-005`, `IDN-006`, `IDN-007`, `IDN-008`, `IDN-017`, `IDN-018` |
+| **RF-04** | F1.2 | Aislamiento lógico multi-tenant obligatorio mediante `tenant_id` derivado del contexto del token y PostgreSQL Row-Level Security (RLS). | Transversal (Todos) | `IDN-009`, `IDN-010`, `CAT-004`, `SRQ-007`, `ACT-009`, `RLS-001`..`005`, `SAD AC6-E2` |
+| **RF-05** | F1.3 | Control de acceso basado en roles (RBAC) y canal: Panel Web exclusivo para Administradores; App Móvil para Clientes, Técnicos y Proveedores. | Identity / Gateway | `IDN-011`, `IDN-012`, `CAT-010`, `AC6-E3` |
+| **RF-06** | F1.4 | Registro de cuenta corporativa de Empresa dentro del tenant con razón social, NIT y múltiples usuarios autorizados. | Identity | `IDN-013`, `IDN-014`, `E2E-004` |
+| **RF-07** | F2.1 | Creación de solicitud por Cliente con categoría activa, ubicación (GPS o geocodificación Nominatim RIE-02 / ADR-024) dentro de Bogotá. | ServiceRequest | `SRQ-001`, `SRQ-002`, `SRQ-003`, `E2E-001`, `E2E-005`, `GEO-001`..`004` |
+| **RF-08** | F2.1 | Registro de solicitudes de servicio técnico corporativas asociadas a la cuenta empresarial y sede correspondiente. | ServiceRequest | `SRQ-004` |
+| **RF-09** | F2.2 | Asignación automática por cercanía, especialidad, disponibilidad y cobertura zonal; reintento de solicitudes en espera (RN-M9, RN-M10). | Matching | `MAT-001` a `MAT-022`, `MAT-001`..`014` (E2E), `PRF-001` |
+| **RF-10** | F2.2 | Ofertas secuenciales a un técnico a la vez con ventana de vigencia (3 min) y aceptación/rechazo atómico sin penalización (RN-M1..M8). | Matching | `MAT-010`, `MAT-011`, `MAT-012`, `OFF-001`..`007`, `E2E-007` |
+| **RF-11** | F2.3 | Visualización en tiempo real del ciclo de vida de la solicitud (mínimo 4 estados: buscando_tecnico, asignado, en_progreso, completado). | ServiceRequest / Communication | `SRQ-006`, `TRK-001`..`010`, `COM-001`, `COM-002`, `COM-005` |
+| **RF-12** | F2.4 | Calificación obligatoria de 1 a 5 estrellas con comentario opcional habilitada exclusivamente tras confirmación del pago (`pagado`). | ServiceRequest / Ranking | `SRQ-021`..`023`, `RNK-001`..`002`, `CAL-001`..`006` |
+| **RF-13** | F3.1 | Configuración de disponibilidad (`disponible`/`no_disponible`) y zona de cobertura como lista de localidades de Bogotá (DD §5.7). | Matching / Actors | `MAT-003`, `MAT-005`, `AVA-001`..`005`, `COV-001`..`004` |
+| **RF-14** | F3.2 | Consulta de detalle completo de solicitud asignada por el técnico (dirección, contacto de cliente y ubicación) protegida por confidencialidad. | ServiceRequest | `SRQ-005`, `DTL-001`..`005`, `RN-SR13` |
+| **RF-15** | F3.2 | Cierre de servicio por el técnico con adjuntos fotográficos obligatorios en Garage (ADR-016), habilitando facturación y pago. | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
+| **RF-16** | F3.3 | Administración de equipo de técnicos por Proveedor: alta de técnicos con herencia de tenant, estado pendiente y filtrado activo/inactivo. | Actors / Identity | `ACT-007`, `ACT-008`, `ACT-009`, `PRV-001`..`008` |
+| **RF-17** | F3.4 | Historial de servicios atendidos por el técnico con detalle paginado y filtrado por tenant. | ServiceRequest | `SRQ-026`, `HIS-001`..`005` |
+| **RF-18** | F4.1 | Monitoreo operativo en panel web: Admin del tenant ve solicitudes de su tenant; Admin de plataforma ve todos filtrables. | Web / ServiceRequest | `E2E-002`, `PNL-001`..`004` |
+| **RF-19** | F4.2 | Aprobación y rechazo motivado de técnicos y proveedores por Admin; trazabilidad en `audit_logs` y evento `technician.verification-changed`. | Identity / Actors / Web | `ACT-003`, `ACT-004`, `VER-001`..`009`, `E2E-003` |
+| **RF-20** | F4.2 | Suspensión de cuenta de técnico por Admin del tenant con motivo registrado $\ge 5$ caracteres; bloqueo inmediato de nuevas ofertas de matching. | Identity / Matching / Web | `ACT-005`, `ACT-006`, `SUS-001`..`011`, `RN-TP2` |
+| **RF-21** | F4.3 | Activación y desactivación administrativa de tenants; rechazo inmediato de solicitudes en ServiceRequest vía réplica local de eventos (RN-T1 / ADR-017). | Identity / ServiceRequest | `IDN-019`, `E2E-004`, `TNT-001`..`005` |
+| **RF-22** | F5.1 | Pago delegado con tarjeta de crédito/débito a través de pasarela certificada PCI-DSS con tokenización y cero PAN/CVV en BD (K2). | Payments | `PAY-001`, `PAY-002`, `PAY-003`, `PAY-010`, `PAY-011`, `E2E-009` |
+| **RF-23** | F5.1 | Pago corporativo centralizado a nombre de cuenta empresarial con NIT y razón social (SCRUM-43). | Payments | `PAY-006`, `PAY-019`..`023` |
+| **RF-24** | F5.2 | Emisión automática de comprobante fiscal / factura tras confirmación de pago aprobado. | Payments | `PAY-004`, `PAY-005` |
+| **RF-25** | F5.3 | Registro y conciliación de ingresos percibidos por técnicos y proveedores (SCRUM-45). | Payments | `PAY-007`, `PAY-024`..`040` |
+| **RF-26** | F6.1 | Pipeline de integración y despliegue continuo (CI/CD) con calidad estática, linter y pruebas obligatorias antes de merge a `develop`. | Infrastructure | `INF-016` |
+| **RF-27** | F6.2 | Prueba automatizada End-to-End del flujo crítico de negocio (Smoke Test SCRUM-47) que bloquea la promoción a Producción (RNF-08). | E2E Tests | `E2E-001`, `E2E-012`, `SMK-001`..`004` |
+| **RF-28** | F6.3 | Logging centralizado JSON estructurado con `correlationId`, monitoreo en Prometheus/Loki y compuertas de observabilidad. | Observability | `INF-011`, `INF-012`, `PRF-010` |
+| **RF-29** | F6.4 | Cifrado obligatorio en tránsito (TLS 1.3 / HTTPS) y en reposo (hashing seguro de contraseñas con sal y tokens PCI-DSS) (SCRUM-49). | Security | `IDN-015`, `IDN-021`, `INF-005`, `SEC-001`..`005` |
+| **RF-34** | F3.2 | Emisión de cotización de mano de obra y repuestos por técnico titular; bloqueo de inicio de servicio sin cotización aprobada (RN-Q1). | ServiceRequest | `SRQ-008`, `SRQ-009`, `SRQ-010` |
+| **RF-35** | F2.1 | Aceptación, rechazo y límite estricto de máximo 3 cotizaciones por solicitud antes de cancelación automática (RN-Q2, RN-Q3, RN-Q7). | ServiceRequest | `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
+| **RF-36** | F2.1 | Cancelación unilateral justificada de solicitud por Cliente antes del inicio de labores (`en_progreso`) con registro de motivo (RN-SR7). | ServiceRequest | `SRQ-019`, `SRQ-020`, `E2E-010` |
+| **RF-37** | F7.5 | Chat bidireccional en tiempo real entre cliente y técnico asignado con historial auditado y WebSocket seguro (ADR-026 / SCRUM-479). | Communication / Gateway | `CHT-001`..`005` |
 
-#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (v2.13)
-El SAD v2.13 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
+---
+
+#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (V4 / v2.28)
+El SAD formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
 
 | Atributo de Calidad (ISO 25010) | Escenarios Automatizados | Total SAD | Casos de Prueba Automatizados |
 |---|:---:|:---:|---|
@@ -260,15 +445,94 @@ El SAD v2.13 formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo 
 | **AC2: Eficiencia de Desempeño** | 5 / 5 | 5 | `AC2-E1` (PRF-001), `AC2-E2` (PRF-002), `AC2-E3` (PRF-003), `AC2-E4` (PRF-004), `AC2-E5` (PRF-005) |
 | **AC3: Compatibilidad** | 2 / 2 | 2 | `AC3-E1` (PAY-014), `AC3-E2` (MAT-022) |
 | **AC4: Capacidad de Interacción** | 2 / 9 | 9 | `AC4-E1` (E2E-005), `AC4-E2` (E2E-006). *(AC4-E3 a AC4-E9 son pruebas presenciales con 5 usuarios)* |
-| **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (INF-015), `AC5-E3` (RNK-006), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024), `AC5-E6` (E2E-012) |
-| **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-001, PAY-002), `AC6-E2` (IDN-009), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (PAY-015), `AC6-E7` (IDN-020), `AC6-E8` (IDN-007, IDN-008) |
+| **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (INF-015), `AC5-E3` (RNK-006), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024, AC5-E5 Idempotencia), `AC5-E6` (E2E-012) |
+| **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-001, PAY-002), `AC6-E2` (IDN-009, RLS-001..005), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (PAY-015), `AC6-E7` (IDN-020), `AC6-E8` (IDN-007, IDN-008) |
 | **AC7: Mantenibilidad** | 3 / 5 | 5 | `AC7-E3` (CTR-001), `AC7-E4` (INF-012), `AC7-E5` (ACT-013). *(AC7-E1/E2 verificados por linters estáticos)* |
 | **AC8: Flexibilidad** | 3 / 5 | 5 | `AC8-E1` (E2E-004), `AC8-E2` (MAT-020), `AC8-E5` (INF-002). *(AC8-E3/E4 portabilidad externa documentada)* |
 | **AC9: Seguridad Operativa (Safety)**| 5 / 8 | 8 | `AC9-E1` (SRQ-015, SRQ-017), `AC9-E3` (SRQ-025), `AC9-E4` (MAT-013), `AC9-E5` (PAY-009), `AC9-E6` (PRF-010). *(AC9-E2/E7/E8 pendientes de diseño)* |
 | **Total Escenarios** | **37 automatizados** | **51** | **100% de los escenarios de software y arquitectura cubiertos** |
 
-#### 7.1.3 Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 3 — Subtarea SCRUM-317)
-En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguiente matriz mapea bidireccionalmente cada **Historia de Usuario (HU)** del backlog del Sprint 3 en Jira (`jorgefortich3.atlassian.net`) con sus Requisitos Funcionales del SRS v3.3, Atributos de Calidad del SAD v2.24, las subtareas específicas de QA y el conjunto de casos de prueba automatizados responsables de validar sus criterios de aceptación:
+---
+
+#### 7.1.3 Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 4 — Subtarea SCRUM-401)
+En cumplimiento de la subtarea **SCRUM-401** de QA, la siguiente matriz formaliza la trazabilidad bidireccional de todas las **Historias de Usuario del Incremento del Sprint 4** en Jira con sus respectivos Requisitos Funcionales del **SRS V5**, reglas de negocio del **DD V4**, subtareas de QA ejecutadas y suites de pruebas automatizadas:
+
+| Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS V5 / SAD V4 | Subtarea QA en Jira | Suites y Casos de Prueba Asociados (TD V2) | Criterios de Aceptación y Validación QA |
+|---|---|---|---|---|---|
+| **SCRUM-22** | Registro de Técnico / Proveedor con datos y documentos | RF-02, RF-16 | `SCRUM-56` | `REG-001` al `REG-006`, `IDN-004` | Alta con estado inicial `pendiente` (RN-TP3), validación de correo y documento único (HTTP 409), bloqueo RBAC y verificación de perfiles. |
+| **SCRUM-24** | Aislamiento lógico de datos por Tenant (Multi-tenant) | RF-04, SAD AC6-E2 | `SCRUM-62` | `RLS-001` al `RLS-005`, `IDN-009`, `CAT-004` | Validación de Row-Level Security (RLS) en PostgreSQL: consultas cruzadas retornan 0 filas / 404 Not Found; cero fuga de datos entre Tenant Alfa y Beta. |
+| **SCRUM-29** | Asignación automática de técnico (Motor de Matching) | RF-09, RF-10, SAD AC2-E3, AC5-E5 | `SCRUM-78` | `MAT-001` al `MAT-014`, `PRF-001` | Asignación automática por cercanía y especialidad, SLA de primer intento $< 60\text{ s}$ (RNF-05), estado `en_espera` (RN-M10), deduplicación `processed_events`. |
+| **SCRUM-30** | Aceptación o rechazo de oferta por Técnico | RF-10, DD RN-M1..M8 | `SCRUM-81` | `OFF-001` al `OFF-007`, `E2E-007` | Aceptación atómica pasa técnico a `ocupado` y servicio a `asignado`; rechazo sin penalización (R12); bloqueo de ofertas vencidas/ajenas (HTTP 409). |
+| **SCRUM-31** | Seguimiento de estado en tiempo real (Cliente) | RF-11, SAD AC2-E3, ADR-023 | `SCRUM-84` | `TRK-001` al `TRK-010`, `COM-001`..`005` | Ciclo completo de 4 estados, latencia $< 1\text{ min}$, visibilidad de nombre/especialidad del técnico, WebSocket Gateway y bloqueo de transiciones inválidas (409). |
+| **SCRUM-33** | Disponibilidad y zona de cobertura del Técnico | RF-13, PostGIS | `SCRUM-90` | `AVA-001` al `AVA-005`, `COV-001` al `COV-004` | Cambio de estado (`disponible`/`no_disponible`), prohibición de alterar estado `ocupado` (409), cobertura por localidades de Bogotá (DD §5.7). |
+| **SCRUM-34** | Detalle de solicitud para técnico asignado | RF-14, DD RN-SR13 | `SCRUM-93` | `DTL-001` al `DTL-005`, `SRQ-005` | Acceso condicional exclusivo para el técnico asignado tras aceptación; bloqueo de consulta previa (HTTP 403) y confidencialidad intra-tenant (HTTP 404). |
+| **SCRUM-36** | Gestión de equipo de técnicos por Proveedor | RF-16, DD §8.3.14 | `SCRUM-99` | `PRV-001` al `PRV-008`, `ACT-007`..`009` | Alta de técnicos en equipo con herencia de tenant y estado `pendiente`, filtrado activo/inactivo, unicidad de correo/documento y RLS intra-tenant. |
+| **SCRUM-39** | Aprobación y rechazo de técnicos y proveedores | RF-19, DD §8.3.13 | `SCRUM-108` | `VER-001` al `VER-009`, `ACT-003`..`004` | Aprobación con habilitación en matching (RN-TP1), rechazo con motivo obligatorio $\ge 5$ chars (RFC 9457), reactivación `/approve` y trazabilidad `audit_logs`. |
+| **SCRUM-40** | Suspensión de cuenta de técnico (Admin) | RF-20, DD §8.3.13 | `SCRUM-111` | `SUS-001` al `SUS-011`, `ACT-005`..`006` | Suspensión de técnico aprobado con motivo obligatorio $\ge 5$ chars (RFC 9457), bloqueo inmediato en matching (RN-TP2), reactivación `/approve` y RLS. |
+| **SCRUM-454** / **SCRUM-456** | Geocodificación y buzón de notificaciones | RIE-02, RIE-03, ADR-024 | `SCRUM-456` | `GEO-001` al `GEO-004`, `NOT-001` al `NOT-004` | Geocodificación con Nominatim local acotado a Bogotá (time-out corto, 422 si fuera de zona) y persistencia de notificaciones en buzón con RLS. |
+| **SCRUM-399** | Documento de Pruebas TD V2 | Calidad y Diseño | `SCRUM-401`, `SCRUM-402` | Catálogo consolidado de 230+ casos | Formalización de la estrategia, catálogo de casos, RTM V5, protocolo de persistencia y compuertas de calidad. |
+| **SCRUM-394** | Informe de pruebas del Sprint 4 contra QA | Calidad y Reporte | `SCRUM-395`, `SCRUM-396`, `SCRUM-397`, `SCRUM-398` | Ejecución E2E, k6, ZAP y Loki | Evidencia real de ejecución sobre QA desplegado (VM2, VM5, VM7), matriz de defectos y compuerta de calidad. |
+
+---
+
+#### 7.1.3b Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 5 — Subtarea SCRUM-531)
+En cumplimiento de la subtarea **SCRUM-531** de QA, la siguiente matriz formaliza la trazabilidad bidireccional de todas las **Historias de Usuario del Incremento del Sprint 5** en Jira con sus respectivos Requisitos Funcionales del **SRS v5.6**, reglas de negocio, subtareas de QA y suites de pruebas automatizadas:
+
+| Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS v5.6 / SAD V5 | Subtarea QA en Jira | Suites y Casos de Prueba Asociados (TD V3) | Criterios de Aceptación y Validación QA |
+|---|---|---|---|---|---|
+| **SCRUM-32** | Calificación del servicio al finalizar | RF-12, SAD AC4-E6 | `SCRUM-87` | `CAL-001` al `CAL-023`, `RNK-001`..`002`, `SRQ-021`..`023` | Calificación 1 a 5 habilitada solo tras pago (409 si no completado), prohibición de doble calificación (409), bloqueo RBAC (403), outbox `service-request.rated`, Ranking publica `ranking.technician-reputation-changed` (ADR-027) e idempotencia en Ranking. |
+| **SCRUM-37** | Historial de servicios atendidos por el Técnico | RF-17, DD RN-SR15 | `SCRUM-102` | `HIS-001` al `HIS-016`, `SRQ-026` | Consulta paginada con fecha, estado y calificación recibida; filtrado por completado/cancelado; aislamiento estricto por técnico y tenant (RLS 404). |
+| **SCRUM-43** | Pago corporativo centralizado (Empresa) | RF-23, ADR-009 | `SCRUM-117` | `PAY-008` al `PAY-012`, `PAY-019` al `PAY-023` | Pago asociado a empresa cliente (`company_id`), auditoría de usuario pagador (`payer`), cobro exacto de cotización aprobada, comprobante con NIT y tokenización PCI-DSS. |
+| **SCRUM-45** | Registro de pagos recibidos (Técnico/Proveedor) | RF-25, PCI-DSS | `SCRUM-503` | `PAY-007`, `PAY-024` al `PAY-040` | Consulta paginada de ingresos para técnico y vista agregada para proveedor sobre su equipo; aislamiento intra-tenant y respuesta libre de PAN/CVV. |
+| **SCRUM-47** | Smoke Test E2E Automatizado del flujo crítico | RF-27, RNF-08 | `SCRUM-504` | `SMK-001` al `SMK-004`, `E2E-001` | Flujo crítico continuo en 9 pasos (registro a calificación) con datos autocontenidos y limpieza; fallo bloquea promoción a producción en compuerta-qa. |
+| **SCRUM-49** | Cifrado de datos sensibles en tránsito y reposo | RF-29, RNF-01 | `SCRUM-507` | `SEC-001` al `SEC-005`, `IDN-015`, `IDN-021` | Forzado TLS 1.3 con HSTS en Ingress VM1, hash seguro de contraseñas (Argon2id), cero PAN/CVV en Loki, Garage S3 prefirmado y ZAP DAST 0 alertas altas. |
+| **SCRUM-348** | ServiceRequest rechaza tenants inactivos sin esperar expiración de token | RF-21, RN-T1, ADR-017 | `SCRUM-511` | `TNT-001` al `TNT-005`, `IDN-019` | Evento outbox `tenant.status-changed`, réplica local en ServiceRequest consumida de forma idempotente; rechazo en segundos de tokens vigentes con HTTP 422 `tenant-inactivo` RFC 9457. |
+| **SCRUM-609** | Edición del perfil propio en la app y el panel web | RF-01, RF-04 | `SCRUM-614` | `PER-001` al `PER-022`, `ACT-011` | Edición de nombre y teléfono solo del usuario del token; correo, rol, tenant y verificación inmodificables (400); errores problem+json por campo; sin volver a iniciar sesión. |
+| **SCRUM-615** | Navegación hacia atrás en todas las pantallas de la app | SAD AC4-E5, AC4-E9 | `SCRUM-618` | `NAV-001` al `NAV-022` | Flecha en toda pantalla secundaria, sin flecha en las raíces, confirmación con cambios sin guardar y regreso seguro tras acciones terminales. |
+| **SCRUM-623** | Recuperación de contraseña olvidada | RF-01, AC6-E2 | `SCRUM-627` | `REC-001` al `REC-027` | Misma respuesta exista o no la cuenta, límite de 3 por hora, enlace de un solo uso con vencimiento de 1 hora generado por el `admin_tenant`, aislamiento por tenant y token fuera de los logs. |
+| **SCRUM-529** | Documento de Pruebas TD V3 | Calidad y Diseño | `SCRUM-530`, `SCRUM-531`, `SCRUM-532` | Catálogo consolidado de 270+ casos | Formalización de la estrategia V3, casos de prueba del Sprint 5 (530), actualización RTM a SRS v5.6 (531) y compuerta de producción RNF-08 (532). |
+
+---
+
+#### 7.1.4 Criterios de Aceptación Verificables del Incremento (SRS V5 §5.5) y Mapeo en TD V2
+
+En cumplimiento de la sección 5.5 del SRS V5 (SCRUM-404), la siguiente tabla resuelve formalmente todos los criterios de aceptación del flujo del técnico, superando los marcadores previos de *"Falta caso"* del borrador inicial mediante los casos automatizados en las suites E2E del TD V2:
+
+| Requisito / HU | # | Criterio de Aceptación Verificable (SRS V5 §5.5) | Fuente Formal | Caso Verificador en TD V2 | Estado en QA |
+|---|:---:|---|---|---|:---:|
+| **RF-09** (Matching) | 1 | Motor solo considera técnicos de mismo tenant, aprobados, disponibles, especialidad coincidente y cobertura sobre la ubicación. | SCRUM-29 c1/c6; RN-M9, RN-TP1 | `MAT-001`, `MAT-002`, `MAT-004`, `MAT-006` | **PASS** |
+| | 2 | Ordenamiento por proximidad espacial esférica; resolución de desempate por última disponibilidad. | SCRUM-29 c2; DD 5.6, 5.8 | `MAT-008` | **PASS** |
+| | 3 | Máximo una oferta pendiente por solicitud a la vez. | DD RN-M1 | `MAT-009` | **PASS** |
+| | 4 | Si no hay candidatos, pasa a `en_espera` y emite `matching.no-technician-available` sin relajar condiciones. | SCRUM-29 c3; RN-M4, RN-M9 | `MAT-005` (E2E), `MAT-013` | **PASS** |
+| | 5 | Solicitud en espera se reintenta automáticamente al habilitarse un nuevo candidato elegible. | SCRUM-29 c3; DD RN-M10 | `MAT-006`, `MAT-007` (E2E) | **PASS** |
+| | 6 | Primer intento de asignación ocurre en menos de 60 segundos desde la creación en QA (SLA). | SCRUM-29 c4; RNF-05; AC2-E3 | `MAT-002` (E2E), `PRF-001` | **PASS** |
+| | 7 | Procesamiento idempotente: dos eventos `service-request.created` con mismo ID no generan duplicados. | SCRUM-29 c5; DD RN-EV1, AC5-E5 | `MAT-008`, `MAT-009` (E2E / `processed_events`) | **PASS** |
+| **RF-10** (Ofertas) | 1 | Aviso de oferta con categoría, descripción, localidad y vencimiento; dirección exacta oculta hasta aceptar. | SCRUM-30 c1; DD 8.3.5, RN-SR13 | `OFF-001`, `DTL-002` | **PASS** |
+| | 2 | Solo el técnico destinatario puede ver y responder; técnico ajeno recibe `409 OFFER_NOT_AVAILABLE`. | SCRUM-30 c5/c6; DD RN-M2 | `OFF-004` | **PASS** |
+| | 3 | Aceptación oportuna pasa técnico a `ocupado`, solicitud a `asignado` y emite `matching.technician-assigned`. | SCRUM-30 c2; DD RN-M4, RN-M6 | `OFF-002`, `MAT-010` | **PASS** |
+| | 4 | Rechazo ofrece al siguiente candidato sin penalización ni cambio de disponibilidad (SAD R12). | SCRUM-30 c3; DD RN-M3, RN-M9 | `OFF-003`, `MAT-011` | **PASS** |
+| | 5 | Expiración automática a los 3 minutos sin respuesta y reoferta al siguiente técnico. | SCRUM-30 c4; DD RN-M3, RN-M8 | `OFF-005`, `MAT-012` | **PASS** |
+| | 6 | Aceptar oferta vencida/respondida responde `409 OFFER_NOT_AVAILABLE`; no disponible responde `409`. | SCRUM-30 c5; DD 8.3.5, RN-M7 | `OFF-006` | **PASS** |
+| | 7 | Cancelación de solicitud por cliente anula oferta pendiente (`cancelado`) sin más reintentos. | DD RN-M5 | `OFF-007` | **PASS** |
+| **RF-13** (Disponibilidad) | 1 | Técnico recién registrado queda en estado inicial `no_disponible`. | DD 5.6 | `AVA-001` | **PASS** |
+| | 2 | Técnico puede alternar entre `disponible` y `no_disponible` desde la app (`PUT /v1/technicians/me/availability`). | SCRUM-33 c1; DD 8.3.6 | `AVA-002`, `MAT-003` | **PASS** |
+| | 3 | Estado `ocupado` solo lo fija el sistema al aceptar; intento de cambio manual responde `409 INVALID_STATE_TRANSITION`. | SCRUM-33 c5; DD RN-M6 | `AVA-003` | **PASS** |
+| | 4 | Técnico en `no_disponible` u `ocupado` es excluido de nuevas asignaciones. | SCRUM-33 c2; DD RN-M6 | `AVA-004`, `MAT-004` | **PASS** |
+| | 5 | Técnico consulta y actualiza cobertura como lista de localidades; lista vacía o inválida responde `400`. | SCRUM-33 c3; DD 5.7, 8.3.6 | `COV-001`, `COV-002` | **PASS** |
+| | 6 | Pasar a disponible o cambiar cobertura dispara reintento de solicitudes en espera. | SCRUM-33 c4; DD RN-M10 | `AVA-005`, `COV-003` | **PASS** |
+| | 7 | Técnico solo ve y modifica su propia disponibilidad y cobertura; aislamiento estricto multi-tenant (RLS). | SCRUM-33 c6; RF-04, SAD AC6-E2 | `COV-004` | **PASS** |
+| **RF-19** (Aprobación) | 1 | Admin del tenant visualiza en panel web técnicos/proveedores de su tenant en estado `pendiente`. | SCRUM-39 c1 | `VER-001`, `E2E-003` | **PASS** |
+| | 2 | Admin puede aprobar pendiente o rechazar con motivo registrado ($\ge 5$ caracteres). | SCRUM-39 c2; DD 8.3.13 | `VER-002`, `VER-003` | **PASS** |
+| | 3 | Transiciones inválidas responden `409 INVALID_STATE_TRANSITION`; reactivación permitida vía `/approve`. | SCRUM-39 c3; DD 8.3.13 | `VER-005`, `VER-006` | **PASS** |
+| | 4 | Acción registrada en `audit_logs` con responsable, fecha, correlationId y emisión de `technician.verification-changed`. | SCRUM-39 c4; DD 8.3.13, RN-A1 | `VER-004`, `ACT-004` | **PASS** |
+| | 5 | Solo técnicos aprobados reciben ofertas; aprobación de técnico disponible reintenta solicitudes en espera. | SCRUM-39 c5; DD RN-TP1, RN-M10 | `VER-002`, `MAT-002` | **PASS** |
+| | 6 | Técnico consulta en la app estado de verificación y motivo de rechazo si aplica. | SCRUM-39 c6 | `VER-007` | **PASS** |
+| | 7 | Admin no puede ver ni verificar técnicos ni proveedores de otro tenant (Aislamiento RLS). | SCRUM-39 c7; DD RN-U6, RF-04 | `VER-008`, `VER-009` | **PASS** |
+
+---
+
+#### 7.1.5 Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 3 — Subtarea SCRUM-317)
+En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la siguiente matriz preserva el mapeo del backlog inicial del Sprint 3 en Jira:
 
 | Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS / SAD | Nivel de Prueba | Casos de Prueba Asociados | Subtarea QA en Jira | Criterio de Cobertura QA |
 |---|---|---|---|---|---|---|
@@ -322,6 +586,60 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **IDN-019** | RN-T1 | Integración | Rechazo de login en tenant en estado inactivo. | Usuario de tenant inactivo recibe HTTP 403; mensaje `"tenant is disabled"`. |
 | **IDN-020** | RN-A1 | Integración | Inmutabilidad de registros en `audit_logs`. | Intentos de `UPDATE` o `DELETE` sobre `audit_logs` con rol de app son rechazados por BD. |
 | **IDN-021** | RF-29, RNF-02 | Integración | Cifrado obligatorio en tránsito (HTTPS/TLS) y en reposo. | Peticiones HTTP redirigidas a HTTPS (TLS 1.3) en Gateway Nginx; datos y contraseñas cifradas. |
+| **TNT-001** | RF-21, ADR-007 | Evento / Outbox | Emisión de evento outbox al desactivar tenant. | Transición a inactivo en Identity genera evento `tenant.status-changed` en `outbox_events` con estado completo. |
+| **TNT-002** | RF-21, ADR-017 | Integración / Réplica | Replicación asíncrona de estado de tenant en ServiceRequest. | ServiceRequest consume evento Kafka y actualiza tabla local `tenant_statuses` en menos de 2 segundos. |
+| **TNT-003** | RF-21, RN-T1 | Negativa / Creación | Rechazo inmediato de creación de solicitud con token vigente tras desactivación. | `POST /v1/service-requests` con JWT vigente de tenant desactivado responde HTTP 422 (RFC 9457 `type: .../tenant-inactivo`, contrato service-request 1.11.0) sin esperar a expiración de 60 min. Ejecutado en QA el 2-nov-2026 (`tests/e2e/evidencias/tenant-desactivado-qa-2026-11-02.txt`). |
+| **TNT-004** | RF-21, AC5-E5 | Evento / Idempotencia | Procesamiento idempotente de eventos de estado de tenant. | Múltiples entregas de `tenant.status-changed` con mismo `eventId` se deduplican en `processed_events`. |
+| **TNT-005** | RF-21, RN-T1 | Positiva / Reactivación | Desbloqueo inmediato tras reactivación del tenant. | Reactivación en Identity emite evento activo; ServiceRequest restablece inmediatamente creación de órdenes (201 Created). |
+| **PER-001** | RF-01, SCRUM-609 | API / Positiva | Cambio del nombre propio. | `PATCH /v1/users/me` con `fullName` responde 200 con el nombre nuevo; `GET /v1/users/me` lo devuelve. |
+| **PER-002** | SCRUM-609 | API / Positiva | Cambio del teléfono propio. | `phone` nuevo responde 200 con el teléfono actualizado. |
+| **PER-003** | SCRUM-609 | API / Positiva | Borrado del teléfono. | `phone: null` responde 200 con `phone: null`. |
+| **PER-004** | SCRUM-609 | API / Positiva | Cambio de nombre y teléfono a la vez. | 200 con ambos campos actualizados. |
+| **PER-005** | SCRUM-609, AC6-E3 | API / Positiva | Cada rol edita su propio perfil. | `cliente`, `tecnico`, `empresa_contacto` y `admin_tenant` reciben 200. |
+| **PER-006** | SCRUM-609 | API / Negativa | Cuerpo vacío. | `{}` responde 400 (`minProperties: 1`). |
+| **PER-007** | SCRUM-609 | API / Límite | Límites de `fullName`. | 1 y 151 caracteres responden 400; 2 y 150 responden 200. |
+| **PER-008** | SCRUM-609 | API / Límite | Límites de `phone`. | 6 y 31 caracteres responden 400; 7 y 30 responden 200. |
+| **PER-009** | SCRUM-609 | API / Negativa | Nombre vacío o solo espacios. | `""` y `"   "` responden 400. |
+| **PER-010** | SCRUM-609, AC6-E3 | API / Seguridad | Intento de cambiar el correo. | Campo `email` responde 400; el correo no cambia. |
+| **PER-011** | SCRUM-609, AC6-E3 | API / Seguridad | Intento de cambiar el rol. | Campo `role` responde 400; el rol no cambia. |
+| **PER-012** | SCRUM-609, RF-04 | API / Fuga | Intento de cambiar el tenant. | Campo `tenant_id` responde 400; el usuario sigue en su tenant. |
+| **PER-013** | SCRUM-609 | API / Seguridad | Intento de cambiar el estado de verificación. | Campo `verificationStatus` responde 400; el técnico sigue pendiente. |
+| **PER-014** | SCRUM-609, RF-04 | API / Fuga | Intento de editar a otro usuario. | Token de A con `id` de B responde 400; B no cambia. |
+| **PER-015** | SCRUM-609, RF-04 | API / Fuga | Cabecera de tenant falsificada. | `X-Tenant-Id` de otro tenant se ignora; solo cambia el usuario del token en su tenant. |
+| **PER-016** | AC6-E3 | API / Seguridad | Edición sin sesión. | Sin `Authorization` responde 401. |
+| **PER-017** | SCRUM-609 | API / Contrato | Formato de los errores. | Cada 400 es `application/problem+json` con el campo en `errors`. |
+| **PER-018** | SCRUM-609 | API / Positiva | La sesión sigue válida tras editar. | El mismo token sigue funcionando sin volver a iniciar sesión. |
+| **PER-019** | SCRUM-609 | Interfaz / Manual | App: editar desde Cuenta. | Los datos nuevos se ven al guardar sin cerrar sesión. Captura. |
+| **PER-020** | SCRUM-609 | Interfaz / Manual | App: error en el campo. | Nombre de 1 carácter muestra el error debajo del campo. Captura. |
+| **PER-021** | SCRUM-609 | Interfaz / Manual | App: campos no editables. | Correo, rol y estado se muestran bloqueados. Captura. |
+| **PER-022** | SCRUM-609 | Interfaz / Manual | Panel web: editar el perfil. | Mismo comportamiento que PER-019 y PER-020. Captura. |
+| **REC-001** | SCRUM-623 | API / Positiva | Solicitud de recuperación con el correo de una cuenta activa. | `POST /v1/auth/password-recovery` responde 202; la solicitud aparece en la lista del `admin_tenant`. |
+| **REC-002** | SCRUM-623, AC6-E2 | API / Seguridad | Solicitud con un correo que no existe. | 202 con el mismo cuerpo y cabeceras que REC-001; no se crea solicitud (no revela cuentas). |
+| **REC-003** | SCRUM-623 | API / Positiva | Dos solicitudes seguidas con el mismo correo. | 202 ambas; sigue existiendo una sola solicitud, con la fecha actualizada. |
+| **REC-004** | SCRUM-623 | API / Límite | Cuarta solicitud del mismo correo en una hora. | 429 con `Retry-After`; igual con un correo que no existe. |
+| **REC-005** | SCRUM-623 | API / Negativa | Correo inválido o campos de más. | 400 problem+json con `email` en `errors`; un campo extra también responde 400. |
+| **REC-006** | SCRUM-623 | API / Seguridad | Un `admin_tenant` pide recuperar su clave. | 202, pero no se crea solicitud (los administradores no usan este flujo). |
+| **REC-007** | RN-T1 | API / Negativa | Solicitud desde el canal de un tenant desactivado. | 403 tenant desactivado. |
+| **REC-008** | SCRUM-623 | API / Positiva | El administrador lista las solicitudes pendientes. | `GET /v1/admin/password-recovery-requests` responde 200, de la más antigua a la más reciente, sin tokens. |
+| **REC-009** | SCRUM-623, AC6-E2 | API / Fuga | Administrador de otro tenant lista solicitudes. | No ve solicitudes del tenant ajeno. |
+| **REC-010** | AC6-E3 | API / Permisos | Otros roles o sin sesión listan solicitudes. | `cliente` y `tecnico` reciben 403; sin token, 401. |
+| **REC-011** | SCRUM-623 | API / Positiva | El administrador genera el enlace. | `POST .../{id}/link` responde 201 con `link`, `token` y `expiresAt` a 1 hora; registro en `audit_logs`. |
+| **REC-012** | SCRUM-623, AC6-E2 | API / Fuga | Administrador de otro tenant genera el enlace. | Solicitud ajena responde 404. |
+| **REC-013** | SCRUM-623 | API / Positiva | Definición de la clave nueva con el enlace. | `POST /v1/auth/password-recovery/confirm` responde 204; login con la clave nueva 200 y con la vieja 401. |
+| **REC-014** | SCRUM-623 | API / Seguridad | Enlace usado por segunda vez. | 400 `enlace-invalido`. |
+| **REC-015** | SCRUM-623 | API / Seguridad | Enlace vencido (más de 1 hora). | 400 `enlace-invalido`, igual que REC-014. |
+| **REC-016** | SCRUM-623 | API / Seguridad | Enlace anterior tras generar uno nuevo. | El anterior responde 400 `enlace-invalido`; el nuevo funciona. |
+| **REC-017** | SCRUM-623 | API / Seguridad | Token inventado o de otro tenant. | 400 `enlace-invalido`, sin distinguir el caso. |
+| **REC-018** | RF-01 | API / Negativa | Clave nueva de menos de 8 caracteres. | 400 con `errors.password`. |
+| **REC-019** | SCRUM-623 | API / Estado | Nuevo enlace después de cambiar la clave. | 409 `transicion-invalida`; la solicitud ya no está en la lista. |
+| **REC-020** | SCRUM-623, SCRUM-625 | API / Seguridad | Sesión abierta antes del cambio. | El token anterior sigue respondiendo 200 hasta su vencimiento (`expiresIn`). Decisión de SCRUM-625 (DD 5.19): las sesiones abiertas no se cierran al cambiar la contraseña, con el mismo criterio que al desactivar un tenant (RN-T1). |
+| **REC-021** | RN-U4 | API / Positiva | Cuenta bloqueada por intentos fallidos. | Tras REC-013 la cuenta queda desbloqueada y el login responde 200. |
+| **REC-022** | AC6-E1 | Seguridad / Logs | El token no aparece en los logs. | Búsqueda del token en Loki (Gateway e Identity): 0 coincidencias. |
+| **REC-023** | SCRUM-623 | Interfaz / Manual | App: "¿Olvidaste tu contraseña?". | Mismo mensaje con un correo existente y uno inexistente. Captura. |
+| **REC-024** | SCRUM-623 | Interfaz / Manual | Panel: el administrador atiende la solicitud. | Ve la solicitud, genera y copia el enlace. Captura. |
+| **REC-025** | SCRUM-623 | Interfaz / Manual | Página del enlace de recuperación. | Pide la clave nueva, valida la longitud y lleva al inicio de sesión. Captura. |
+| **REC-026** | SCRUM-623, RN-U7 | API / Estado | Técnico del equipo de un proveedor que nunca activó su invitación recupera la contraseña. | `POST /v1/auth/password-recovery/confirm` responde 204 y la invitación pendiente queda usada (`used_at`, DD 5.19): `POST /v1/auth/password/setup` con esa invitación responde 400 `enlace-invalido`; el login con la clave nueva responde 200. |
+| **REC-027** | RN-U7, RNF-03 | Integración / Seguridad | Hash del correo en `password_recovery_attempts`. | Tras un pedido de recuperación, `email_hash` es el HMAC-SHA256 en hexadecimal del correo normalizado con la clave de Identity Service: no coincide con el SHA-256 sin clave del mismo correo y el correo no aparece en claro (DD 5.28, v5.19). |
 
 ---
 
@@ -360,7 +678,7 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **ACT-008** | RF-16 | Integración | Consulta de técnicos a cargo de un proveedor. | `GET /v1/provider/technicians` retorna únicamente el equipo asignado al proveedor. |
 | **ACT-009** | RF-04 | Integración | Aislamiento multi-tenant en gestión de técnicos. | Proveedor de Tenant A no visualiza técnicos registrados bajo Tenant B. |
 | **ACT-010** | SRS 3.0 | Unitaria | Consulta de perfil propio de técnico (`/v1/users/me`). | HTTP 200 OK retornando datos personales, especialidad y estado de verificación. |
-| **ACT-011** | SRS 3.0 | Unitaria | Actualización de datos de contacto de técnico. | `PATCH /v1/users/me` actualiza teléfono y dirección; HTTP 200 OK. |
+| **ACT-011** | SRS 3.0 | Unitaria | Actualización de datos de contacto de técnico. | `PATCH /v1/users/me` actualiza nombre (`fullName`) y teléfono; HTTP 200 OK (SCRUM-609, ver `PER-001`..`022`). |
 | **ACT-012** | ADR-006 | Evento | Emisión de evento al verificar técnico. | Aprobación genera evento `technician.verified` en tabla `outbox_events`. |
 | **ACT-013** | OpenAPI | Contrato | Validación de contrato REST de Actores con Spectral CLI. | Contrato verificado contra especificación OpenAPI 3.0 en `quickpatch-contracts`; tipos y status codes íntegros. |
 | **ACT-014** | RN-TP2 | Integración | Técnico no verificado excluido de disponibilidad. | Técnico en estado `pendiente` no puede cambiar disponibilidad a `disponible`. |
@@ -397,7 +715,23 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **SRQ-023** | RF-12, RN-R2 | Integración | Rechazo de calificación duplicada para un mismo servicio. | Segunda calificación sobre la misma solicitud rechazada con HTTP 409 Conflict. |
 | **SRQ-024** | ADR-007, AC5-E5| Evento | Consumo idempotente de evento `payment.approved`. | Segundo evento con mismo `eventId` es ignorado; solicitud permanece en `pagado` sin doble efecto. |
 | **SRQ-025** | AC9-E3 | Evento | Detección de servicios en curso sin cierre por más de 4 horas. | Solicitud marcada con flag de revisión para el Administrador tras superar umbral. |
-| **SRQ-026** | RF-17 | Integración | Consulta de historial de solicitudes atendidas por el técnico. | `GET /v1/technicians/me/services?status=completado` retorna historial paginado filtrado por tenant. |
+| **SRQ-026** | RF-17 | Integración | Consulta de historial de solicitudes atendidas por el técnico. | `GET /v1/technicians/me/service-requests?status=completado` retorna historial paginado filtrado por tenant. |
+| **HIS-001** | RF-17, DD RN-SR15 | API / Positiva | Historial completo del técnico. | `GET /v1/technicians/me/service-requests` responde 200 con sus solicitudes, de la asignación más reciente a la más antigua; `page: 1`, `size: 20`. |
+| **HIS-002** | RF-17 | API / Filtro | Filtro por estado completado. | `status=completado` trae solo solicitudes completadas. |
+| **HIS-003** | RF-17 | API / Filtro | Filtro por estado cancelado. | `status=cancelado` trae solo canceladas (el contrato filtra un estado a la vez). |
+| **HIS-004** | RF-17 | API / Filtro | Filtro por estado pagado. | `status=pagado` trae solo pagadas. |
+| **HIS-005** | RF-17 | API / Negativa | Estado inexistente. | `status=terminado` responde 400. |
+| **HIS-006** | RF-17 | API / Paginación | Recorrido de páginas. | `size=2` en las páginas 1, 2 y 3 trae 2, 2 y 1 elementos con el mismo `totalItems` y sin repetidos. |
+| **HIS-007** | RF-17 | API / Límite | Página fuera de rango. | 200 con `items: []` y el `totalItems` real. |
+| **HIS-008** | RF-17 | API / Límite | Parámetros fuera de límite. | `page=0`, `size=0` y `size=101` responden 400. |
+| **HIS-009** | RN-SR13 | API / Seguridad | Sin datos del cliente en la lista. | Ningún elemento trae dirección, ubicación ni datos del cliente. |
+| **HIS-010** | RF-17, RF-12 | API / Integración | Calificación recibida en el historial. | Solicitud calificada trae `score` y `ratedAt`; sin calificar, nulos o ausentes. |
+| **HIS-011** | RF-17 | API / Límite | Técnico sin historial. | 200 con `items: []` y `totalItems: 0`. |
+| **HIS-012** | RF-17, RN-SR15 | API / Fuga | Aislamiento entre técnicos del mismo tenant. | Un técnico no ve solicitudes asignadas a otro. |
+| **HIS-013** | RF-17, RF-04 | API / Fuga | Aislamiento entre tenants. | Técnico de otro tenant no ve nada del tenant ajeno. |
+| **HIS-014** | AC6-E3 | API / Permisos | Rol no permitido. | `cliente` y `admin_tenant` reciben 403. |
+| **HIS-015** | AC6-E3 | API / Seguridad | Consulta sin sesión. | Sin token responde 401. |
+| **HIS-016** | RF-17 | Interfaz / Manual | App del técnico: pantalla de historial. | Muestra estado, fecha, categoría y calificación, con filtro y carga al bajar. Captura. |
 
 ---
 
@@ -454,8 +788,34 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **PAY-016** | RN-P3 | Unitaria | Monto cobrado idéntico al valor de la cotización aprobada. | Discrepancia matemática entre `quotes.total_amount` y cobro enviado es igual a $0.00. |
 | **PAY-017** | AC6-E3 | Seguridad | Petición no autenticada intentando consultar comprobantes. | `GET /v1/payments/{id}/invoice` sin cabecera de autenticación retorna HTTP 401 Unauthorized. |
 | **PAY-018** | K2 | Seguridad | Prevención de registro de credenciales privadas de pasarela en consola. | Logs de contenedor libres de API Keys privadas o secretos de autenticación del proveedor. |
+| **PAY-019** | RF-23, ADR-009 | Integración / Empresa | Procesamiento de pago a nombre de cuenta corporativa. | `POST /v1/service-requests/{id}/payment` con rol `empresa_contacto` asocia el cobro a `company_id` del token; HTTP 200 OK (`aprobado`). |
+| **PAY-020** | RF-23 | Integración / Auditoría | Registro del usuario pagador corporativo en la transacción. | Fila en `payments` guarda `payer_user_id` identificando al contacto corporativo responsable del pago. |
+| **PAY-021** | RF-23, RN-P3 | Negativa / Integridad | Validación estricta de monto frente a cotización aprobada. | Intento de enviar monto distinto a `quotes.total_amount` es rechazado con HTTP 400 Bad Request; monto inmutable. |
+| **PAY-022** | RF-23, RF-04 | Seguridad / Aislamiento | Bloqueo de pago cruzado entre empresas y tenants. | Contacto de Empresa A intentando pagar orden de Empresa B recibe HTTP 403 Forbidden o 404 Not Found (RLS). |
+| **PAY-023** | RF-23, RF-24 | Integración / Factura | Factura corporativa con NIT y Razón Social de la empresa. | `GET /v1/payments/{id}/invoice` retorna comprobante oficial con NIT, razón social y desglose tributario de IVA. |
+| **PAY-024** | RF-25 | API / Positiva | El técnico consulta sus pagos recibidos. | `GET /v1/payments/received` responde 200 solo con pagos donde `technicianId` es el usuario del token, del más reciente al más antiguo. |
+| **PAY-025** | RF-25, P-02 | API / Positiva | El proveedor consulta los pagos de su equipo. | Responde 200 con los pagos de los técnicos de su equipo y no con los de otros técnicos. |
+| **PAY-026** | RF-25, RF-04 | API / Fuga | Técnico de otro tenant. | 200 con `items: []`; ningún pago del tenant ajeno. |
+| **PAY-027** | RF-25, K2 | API / Seguridad | Respuesta sin datos de tarjeta. | Cada elemento trae solo `id`, `serviceRequestId`, `technicianId`, `amount`, `currency`, `status`, `createdAt` y `approvedAt`; sin PAN, CVV ni token. |
+| **PAY-028** | RF-25, P-02 | API / Positiva | El proveedor filtra por un técnico de su equipo. | `technicianId` de su equipo trae solo los pagos de ese técnico. |
+| **PAY-029** | RF-25, P-02 | API / Fuga | El proveedor filtra por un técnico ajeno a su equipo. | 200 con `items: []`. |
+| **PAY-030** | RF-25 | API / Negativa | El técnico envía `technicianId`. | 400. |
+| **PAY-031** | RN-P4 | API / Positiva | Los pagos rechazados no aparecen. | El rechazado no está; el reintento aprobado aparece una sola vez para esa solicitud. |
+| **PAY-032** | RF-25 | API / Filtro | Filtro por estado. | `pendiente`, `procesando` y `aprobado` traen solo ese estado; `rechazado` responde 400. |
+| **PAY-033** | RF-25 | API / Formato | Formato de monto, moneda y fecha de aprobación. | `amount` cumple `^[0-9]+\.[0-9]{2}$`, `currency` = `COP`, `approvedAt` nulo salvo en `aprobado`. |
+| **PAY-034** | RF-25 | API / Paginación | Paginación y límites. | `size=1` en páginas sucesivas trae pagos distintos con el mismo `totalItems`; `page=0`, `size=0` y `size=101` responden 400. |
+| **PAY-035** | RF-25 | API / Fuga | Otro técnico del mismo tenant. | No ve pagos de otros técnicos. |
+| **PAY-036** | RF-25, RF-04 | API / Fuga | Proveedor de otro tenant. | Con `technicianId` de un técnico ajeno responde 200 con `items: []`. |
+| **PAY-037** | AC6-E3 | API / Permisos | Roles no permitidos. | `cliente`, `empresa_contacto` y `admin_tenant` reciben 403. |
+| **PAY-038** | AC6-E3 | API / Seguridad | Consulta sin sesión. | Sin token responde 401. |
+| **PAY-039** | RF-25 | Interfaz / Manual | App del técnico: pantalla de pagos. | Muestra fecha, monto y estado, con carga al bajar. Captura. |
+| **PAY-040** | RF-25, P-02 | Interfaz / Manual | Vista del proveedor: pagos del equipo. | Muestra el técnico de cada pago y permite filtrar. Captura. |
 
 ---
+
+
+> [!NOTE]
+> **Nota de Estado de Pruebas (SCRUM-45 / SCRUM-503):** Los casos `PAY-024` a `PAY-040` se rediseñaron el 3 de noviembre de 2026 contra el endpoint publicado `GET /v1/payments/received` (`payments.v1.yaml`, quickpatch-api-gateway v0.21.0), que reemplaza las rutas planeadas `/v1/technicians/me/payments` y `/v1/providers/me/payments`. Están **diseñados y pendientes de ejecución en QA** con la colección `scrum-45-pagos-tecnico`; no se computan como ejecutados.
 
 ### 7.8 Módulo: Reputación y Calificaciones (`quickpatch-ranking`)
 * **Requisitos:** RF-12, RF-18, RF-20 | SAD: AC4-E6, AC9-E2
@@ -474,8 +834,35 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **RNK-010** | AC2-E2 | Rendimiento | Latencia de actualización de reputación tras calificación. | Promedio persistido en base de datos en menos de 500 ms tras consumo del evento. |
 | **RNK-011** | AC9-E2 | Unitaria | Cero suspensión automática desatendida. | Técnico señalado permanece activo hasta decisión manual del Administrador. |
 | **RNK-012** | RNF-04 | Observabilidad| Emisión de log estructurado ante detección de bajo promedio. | Log de advertencia con nivel `WARNING` emitido con ID de técnico y promedio para Loki. |
+| **CAL-001** | RF-12, AC4-E6 | API / Positiva | Calificación válida con comentario. | `POST /v1/service-requests/{id}/rating` sobre solicitud `pagado` responde 201 con `serviceRequestId`, `score`, `comment` y `ratedAt`; la solicitud sigue en `pagado`. |
+| **CAL-002** | RF-12 | API / Positiva | Calificación sin comentario. | 201 con `comment: null`. |
+| **CAL-003** | RF-12 | API / Límite | Puntajes límite. | `score` 1 y 5 responden 201. |
+| **CAL-004** | RF-12, RN-R1 | API / Negativa | Puntaje 0. | 400 con `score` en `errors`. |
+| **CAL-005** | RF-12, RN-R1 | API / Negativa | Puntaje 6. | 400 con `score` en `errors`. |
+| **CAL-006** | RF-12 | API / Negativa | Puntaje no entero. | `4.5` y `"5"` responden 400. |
+| **CAL-007** | RF-12 | API / Negativa | Sin puntaje. | 400, `score` obligatorio. |
+| **CAL-008** | RF-12 | API / Límite | Comentario de 500 y 501 caracteres. | 500 responde 201; 501 responde 400. |
+| **CAL-009** | RF-12 | API / Negativa | Campos de más. | `technicianId` en el cuerpo responde 400 (`additionalProperties: false`); no se guarda nada. |
+| **CAL-010** | RF-12, RN-R3 | API / Estado | Solicitud completada pero no pagada. | 409 `transicion-invalida` (el contrato solo permite `pagado`, igual que el criterio de SCRUM-86 corregido el 3 de noviembre). |
+| **CAL-011** | RF-12, RN-R3 | API / Estado | Solicitud en `asignado`, `en_progreso` o `cancelado`. | 409 `transicion-invalida` en cada caso. |
+| **CAL-012** | RF-12, RN-R2 | API / Negativa | Doble calificación. | 409 `ya-calificada`; la calificación original no cambia. |
+| **CAL-013** | RF-12, AC6-E3 | API / Fuga | Otro cliente del mismo tenant. | 403. |
+| **CAL-014** | RF-12, RF-04 | API / Fuga | Cliente de otro tenant. | 404 (RLS), sin revelar que la solicitud existe. |
+| **CAL-015** | AC6-E3 | API / Permisos | Rol no permitido. | `tecnico` y `admin_tenant` reciben 403. |
+| **CAL-016** | AC6-E3 | API / Seguridad | Sin sesión. | Sin token responde 401. |
+| **CAL-017** | RF-12 | API / Negativa | Solicitud inexistente. | 404. |
+| **CAL-018** | RF-12, RN-SR14 | API / Fuga | Empresa: quien creó la solicitud frente a un compañero. | El otro `empresa_contacto` recibe 403; quien la creó recibe 201. |
+| **CAL-019** | RF-12, ADR-027 | Evento | Publicación de `service-request.rated`. | Un evento con solicitud, técnico y puntaje, sin el comentario. |
+| **CAL-020** | AC5-E5 | Evento / Idempotencia | Reputación sin doble conteo. | Reentrega del mismo evento no altera el promedio del técnico. |
+| **CAL-021** | RF-12, RF-17 | Integración | Calificación visible en el historial del técnico. | La fila de la solicitud en `HIS-010` trae `score` y `ratedAt`. |
+| **CAL-022** | RF-12, AC4-E6 | Interfaz / Manual | App: pantalla de calificación. | Con la solicitud en `pagado`, la calificación de 1 a 5 aparece sin pasos extra. Captura. |
+| **CAL-023** | RF-12 | Interfaz / Manual | App: mensaje de error claro. | Calificar dos veces muestra un mensaje entendible. Captura. |
 
 ---
+
+
+> [!NOTE]
+> **Nota de Estado de Pruebas (SCRUM-32 / SCRUM-87):** Los casos `CAL-001` a `CAL-023` se rediseñaron el 3 de noviembre de 2026 contra el endpoint publicado `POST /v1/service-requests/{id}/rating` (`service-request.v1.yaml` 1.10.0; backend SCRUM-85 finalizado, frontend SCRUM-86 en revisión). Están **diseñados y pendientes de ejecución en QA** con la colección `scrum-32-calificacion`; no se computan como ejecutados.
 
 ### 7.9 Módulo: Comunicación y Notificaciones (`quickpatch-communication`)
 * **Requisitos:** RIE-03 | SAD: AC2-E3, AC5-E5
@@ -538,6 +925,11 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **INF-014** | AC5-E4 | Resiliencia | Desconexión temporal de Kafka y persistencia en Outbox. | Eventos generados durante caída de Kafka se publican automáticamente tras reconexión. |
 | **INF-015** | INFRA 5.8 | Despliegue | Actualización con Rolling Update sin caída del backend. | Despliegue de nueva versión en k3s mantiene disponibilidad 100% durante el cambio. |
 | **INF-016** | RF-26, RNF-08 | CI/CD | Pipeline automatizado con corte ante fallos de prueba. | Falla simulada en suite unitaria detiene el pipeline de GitHub Actions y bloquea el despliegue a VM3. |
+| **SEC-001** | RF-29, RNF-01 | Seguridad / Tránsito | Forzado estricto de HTTPS y protocolo TLS 1.3 en Gateway. | Peticiones HTTP en puerto 80 son redirigidas con 301 a 443; Nginx Ingress VM1 negocia exclusivamente `TLS_AES_256_GCM_SHA384` con cabecera `Strict-Transport-Security: max-age=31536000`. |
+| **SEC-002** | RF-29, RNF-03 | Seguridad / Reposo | Hashing seguro de contraseñas con sal en PostgreSQL. | Verificación en tabla `users` de Identity: 100% de passwords almacenadas con algoritmo Argon2id / BCrypt; 0 contraseñas en texto claro. |
+| **SEC-003** | RF-29, K2 | Auditoría / PCI-DSS | Escáner regex periódico de logs de microservicios en Loki. | Búsqueda automatizada en Grafana Loki sobre `/v1/payments` arroja 0 PANs y 0 CVVs en logs estructurados (K2 Compliant). |
+| **SEC-004** | RF-29, ADR-016 | Seguridad / Almacenamiento | Protección de adjuntos y evidencias fotográficas en Garage S3. | Acceso a fotos en bucket S3 mediado por URLs prefirmadas con expiración de 15 minutos; 0 acceso público anónimo al storage. |
+| **SEC-005** | RF-29, RNF-07 | Seguridad / DAST | Escaneo dinámico automatizado OWASP ZAP Baseline en pipeline. | Contenedor Docker ZAP analiza endpoints expuestos; 0 alertas de severidad Crítica o Alta previo al pase a producción. |
 
 ---
 
@@ -558,6 +950,32 @@ En cumplimiento de la subtarea **SCRUM-317** y las directrices de QA, la siguien
 | **E2E-010** | RF-36 | E2E Cancel | Cancelación de solicitud por el cliente antes del inicio. | Solicitud pasa a `cancelado`; técnico asignado es liberado inmediatamente. |
 | **E2E-011** | AC6-E5 | E2E Trazabilidad| Reconstrucción completa de disputa mediante eventos. | Secuencia cronológica 100% íntegra con marca de tiempo UTC y fotos accesibles en Garage. |
 | **E2E-012** | AC5-E6 | E2E Calidad | Tasa de respuestas 5xx durante ejecución repetitiva de E2E. | Tasa de errores 5xx del servidor inferior al 1% en 20 iteraciones del flujo crítico. |
+| **SMK-001** | RF-27, RNF-08 | Smoke Test E2E | Recorrido automatizado integral de 9 pasos del flujo crítico. | Suite ejecuta registro dinámico, solicitud, matching, cotización, evidencia Garage, pago simulado, factura y calificación en menos de 45 segundos con 100% PASS. |
+| **SMK-002** | RF-27 | Autonomía / Datos | Autogeneración de datos efímeros y limpieza automática. | Datos creados con prefijo `smoke-` y limpiados en teardown; 0 dependencia de usuarios fijos y 0 residuos en BD de QA o Producción. |
+| **SMK-003** | RNF-08, INF-016 | Compuerta / CI/CD | Bloqueo de promoción a producción ante fallo del Smoke Test. | Falla de aserción en Smoke Test aborta el pipeline `compuerta-qa`, revierte el commit en `main` e invoca `kubectl rollout undo` en VM3. |
+| **SMK-004** | RF-29, K2 | Seguridad / Sanitización | Ejecución limpia sin exposición de credenciales o tokens en logs de CI. | Trazas de ejecución de Newman o Playwright en GitHub Actions sanitizadas; 0 JWTs, passwords o API Keys en el log de consola. |
+| **NAV-001** | SCRUM-615 | Interfaz / Manual | Detalle de solicitud. | Flecha visible en la barra; la flecha y el botón atrás de Android vuelven a la pantalla anterior. |
+| **NAV-002** | SCRUM-615 | Interfaz / Manual | Nueva solicitud. | Igual que NAV-001. |
+| **NAV-003** | SCRUM-615 | Interfaz / Manual | Pago. | Igual que NAV-001. |
+| **NAV-004** | SCRUM-615 | Interfaz / Manual | Comprobante. | Igual que NAV-001. |
+| **NAV-005** | SCRUM-615 | Interfaz / Manual | Chat. | Igual que NAV-001. |
+| **NAV-006** | SCRUM-615 | Interfaz / Manual | Notificaciones. | Igual que NAV-001. |
+| **NAV-007** | SCRUM-615 | Interfaz / Manual | Cuenta. | Igual que NAV-001. |
+| **NAV-008** | SCRUM-615 | Interfaz / Manual | Equipo (proveedor). | Igual que NAV-001. |
+| **NAV-009** | SCRUM-615 | Interfaz / Manual | Disponibilidad (técnico). | Igual que NAV-001. |
+| **NAV-010** | SCRUM-615 | Interfaz / Manual | Registro. | Igual que NAV-001. |
+| **NAV-011** | SCRUM-615, SCRUM-609 | Interfaz / Manual | Editar perfil. | Igual que NAV-001. |
+| **NAV-012** | SCRUM-615, SCRUM-37 | Interfaz / Manual | Historial del técnico. | Igual que NAV-001. |
+| **NAV-013** | SCRUM-615 | Interfaz / Manual | Raíz de cada pestaña. | Sin flecha de regreso. |
+| **NAV-014** | SCRUM-615 | Interfaz / Manual | Atrás de Android en la pestaña de inicio. | Comportamiento definido por el equipo y siempre igual. |
+| **NAV-015** | SCRUM-615 | Interfaz / Manual | Atrás de Android en otra pestaña raíz. | Vuelve a inicio o sale, igual en todas las pestañas. |
+| **NAV-016** | SCRUM-615, AC4-E5 | Interfaz / Manual | Formulario con cambios sin guardar (flecha). | Pide confirmación; "Cancelar" conserva lo escrito. |
+| **NAV-017** | SCRUM-615, AC4-E5 | Interfaz / Manual | Formulario con cambios sin guardar (atrás de Android). | Pide confirmación. |
+| **NAV-018** | SCRUM-615 | Interfaz / Manual | Formulario sin cambios. | Vuelve sin preguntar. |
+| **NAV-019** | SCRUM-615 | Interfaz / Manual | Editar perfil y disponibilidad con cambios. | Pide confirmación al volver. |
+| **NAV-020** | SCRUM-615, AC4-E5 | Interfaz / Manual | Regreso después de crear una solicitud. | No vuelve al formulario lleno ni crea otra solicitud. |
+| **NAV-021** | SCRUM-615, AC4-E5 | Interfaz / Manual | Regreso después de un pago aprobado. | No vuelve a la pantalla de pago ni cobra de nuevo. |
+| **NAV-022** | SCRUM-615 | Widget / CI | Prueba de widget por pantalla. | Existe una prueba por pantalla que verifica la flecha de regreso y está en verde en el CI de la app. |
 
 ---
 
@@ -691,7 +1109,7 @@ El sistema retornó HTTP 500 Internal Server Error o no generó el evento en la 
 
 ---
 
-## 10. Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3)
+## 10. Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3 & Sprint 4)
 
 ### 10.1 Resumen Ejecutivo del Incremento de Valor
 En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad (QA) ha completado el diseño, estructuración y especificación formal de la arquitectura de pruebas integral para la plataforma QUICKPATCH sobre los 13 repositorios y el entorno de las 7 Máquinas Virtuales (ADR-022).
@@ -744,6 +1162,562 @@ quickpatch/tests/evidence/
 | **Seguridad y PCI-DSS (Compuerta 2 - QA)** | 15 | 15 | 15 | Release QA | 0 coincidencias de PAN/CVV en logs y 0 alertas altas en ZAP |
 | **Total Global** | **187** | **187** | **187** | **Incremento QA** | **100% trazabilidad e integridad técnica garantizada** |
 
+### 10.5 Ejecución del Incremento de Sprint 4: Flujo Operativo del Técnico (SCRUM-81, SCRUM-90, SCRUM-93)
+
+En cumplimiento de las Historias de Usuario asignadas a José Eduardo (**SCRUM-30**, **SCRUM-33** y **SCRUM-34**) y las correspondientes compuertas de aseguramiento de calidad (**SCRUM-81**, **SCRUM-90** y **SCRUM-93**), se ejecutó la suite automatizada de pruebas de sistema con Newman contra la implementación de los contratos `matching.v1.yaml` (1.0.0) y `service-request.v1.yaml` (1.1.0).
+
+#### 10.5.1 Catálogo y Resultados de Pruebas Funcionales del Incremento
+
+| ID Caso | HU / Tarea Jira | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **COV-001** | SCRUM-33 / SCRUM-90 | Funcional | `GET /v1/localities` | Consulta pública de catálogo de localidades de Bogotá D.C. | 200 OK con exactamente 20 localidades oficiales (01 a 20) ordenadas por código | **PASS** |
+| **AVA-001** | SCRUM-33 / SCRUM-90 | Funcional | `GET /v1/technicians/me/availability` | Consulta de disponibilidad inicial del técnico registrado | 200 OK con `{ status: "no_disponible", updatedAt }` conforme a contrato OpenAPI | **PASS** |
+| **AVA-002** | SCRUM-33 / SCRUM-90 | Integración | `PUT /v1/technicians/me/availability` | Activación de disponibilidad técnica a `disponible` (RF-13, RN-M10) | 200 OK, `status: disponible`, reintento de solicitudes en espera en Matching | **PASS** |
+| **AVA-003** | SCRUM-33 / SCRUM-90 | Regla Negocio | `PUT /v1/technicians/me/availability` | Bloqueo de cambio manual de estado cuando el técnico está ocupado en servicio (RN-M6) | 409 Conflict con RFC 9457 `transicion-invalida` y `correlationId` | **PASS** |
+| **COV-002** | SCRUM-33 / SCRUM-90 | Funcional | `GET /v1/technicians/me/coverage` | Consulta de localidades cubiertas por el técnico autenticado | 200 OK con array `localities` conteniendo objetos `{ code, name }` | **PASS** |
+| **COV-003** | SCRUM-33 / SCRUM-90 | Integración | `PUT /v1/technicians/me/coverage` | Configuración multi-localidad (`01`, `02`, `12`, `13`) con polígonos PostGIS | 200 OK, persistencia en `coverage_zones` con RLS por tenant | **PASS** |
+| **COV-004** | SCRUM-33 / SCRUM-90 | Validación | `PUT /v1/technicians/me/coverage` | Rechazo de códigos inexistentes (`99`) o lista vacía (DD 8.3.6) | 400 Bad Request con RFC 9457 `type: .../problems/validacion` y detalle de campos | **PASS** |
+| **AVA-004** | SCRUM-33 / SCRUM-90 | Seguridad | `GET /v1/technicians/me/availability` | Rechazo de petición sin token de autenticación (IDN-017) | 401 Unauthorized con Problem Details `no-autenticado` | **PASS** |
+| **AVA-005** | SCRUM-33 / SCRUM-90 | RBAC | `PUT /v1/technicians/me/availability` | Intento de configuración de disponibilidad por usuario con rol `cliente` | 403 Forbidden con Problem Details `no-autorizado` | **PASS** |
+| **OFF-001** | SCRUM-30 / SCRUM-81 | Confidencialidad | `GET /v1/matching/offers?status=pendiente` | Consulta de ofertas pendientes sin dirección exacta (RN-SR13) | 200 OK con localidad y distancia; `addressText` y coordenadas exactas ausentes | **PASS** |
+| **OFF-002** | SCRUM-30 / SCRUM-81 | Transaccional | `POST /v1/matching/offers/{id}/accept` | Aceptación atómica de oferta: oferta aceptada, técnico ocupado (RN-M6), emite Outbox | 200 OK, técnico pasa a `ocupado`, solicitud a `asignado`, emite `matching.technician-assigned` | **PASS** |
+| **OFF-003** | SCRUM-30 / SCRUM-81 | Concurrencia | `POST /v1/matching/offers/{id}/accept` | Rechazo de aceptación de oferta ya respondida o intento duplicado | 409 Conflict con Problem Details `oferta-no-disponible` | **PASS** |
+| **OFF-004** | SCRUM-30 / SCRUM-81 | Regla Negocio | `POST /v1/matching/offers/{id}/accept` | Rechazo de oferta vencida por tiempo límite de `OfferExpirer` (RN-M8) | 409 Conflict con Problem Details `oferta-no-disponible` | **PASS** |
+| **OFF-005** | SCRUM-30 / SCRUM-81 | Regla Negocio | `POST /v1/matching/offers/{id}/accept` | Rechazo de oferta si el técnico ya no está disponible / ocupado (RN-M7) | 409 Conflict con Problem Details `tecnico-no-disponible` | **PASS** |
+| **OFF-006** | SCRUM-30 / SCRUM-81 | Regla Negocio | `POST /v1/matching/offers/{id}/reject` | Rechazo de oferta sin penalización para el técnico (RF-10, R12) | 200 OK, reasignación automática con `MatchingEngine.offerNext` (RN-M3) | **PASS** |
+| **OFF-007** | SCRUM-30 / SCRUM-81 | RBAC | `POST /v1/matching/offers/{id}/accept` | Intento de responder oferta por usuario con rol `cliente` | 403 Forbidden con Problem Details `no-autorizado` | **PASS** |
+| **DTL-001** | SCRUM-34 / SCRUM-93 | Funcional | `GET /v1/service-requests/{id}` | Técnico asignado consulta detalle completo con contacto del cliente (RN-SR13) | 200 OK con dirección exacta, `client.fullName: "Ana Gómez"`, `client.phone: "+573009876543"` | **PASS** |
+| **DTL-002** | SCRUM-34 / SCRUM-93 | Regla Negocio | `GET /v1/service-requests/{id}` | Técnico consulta solicitud antes de la asignación (`buscando_tecnico`) | 403 Forbidden con Problem Details `solicitud-no-asignada` | **PASS** |
+| **DTL-003** | SCRUM-34 / SCRUM-93 | Privacidad | `GET /v1/service-requests/{id}` | Técnico no asignado consulta solicitud ajena | 404 Not Found (no revela existencia de la solicitud) | **PASS** |
+| **DTL-004** | SCRUM-34 / SCRUM-93 | Aislamiento | `GET /v1/service-requests/{id}` | Técnico de Tenant Beta consulta solicitud de Tenant Alfa | 404 Not Found garantizado por políticas RLS en base de datos | **PASS** |
+| **DTL-005** | SCRUM-34 / SCRUM-93 | Funcional | `GET /v1/service-requests/{id}` | Cliente dueño consulta su solicitud asignada | 200 OK con bloque `client: null` y bloque `technician` con nombre del técnico | **PASS** |
+
+#### 10.5.2 Resumen Estadístico de Ejecución E2E (Newman CLI en Ambiente QA)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-81 / 90 / 93 (Incremento Técnico)     │
+│ Archivo: scrum-incremento-tecnico.postman_collection.json     │
+│ Ambiente: QA Desplegado (https://qa.quickpatch.internal)      │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               43 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               43 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │               43 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               61 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 20.6s                                     │
+│ total data received: 16.82kB (approx)                         │
+│ average response time: 256ms [min: 13ms, max: 1019ms, s.d.: 401ms] │
+│ Pass Rate: 100.0% (61/61 aserciones aprobadas)                │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-incremento-tecnico-qa-2026-10-22.txt │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.5.3 Verificación de Persistencia e Integridad en Base de Datos
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_matching` | `localities` | `id`, `code`, `name`, `boundary geometry(MultiPolygon, 4326)` | 20 filas oficiales coincidentes con división político-administrativa de Bogotá (IDECA). |
+| `db_matching` | `technician_availability` | `status IN ('disponible', 'ocupado', 'no_disponible')`, `verification_status` | Transición atómica de `disponible` a `ocupado` tras aceptación. RLS activo por `tenant_id`. |
+| `db_matching` | `coverage_zones` | `technician_id`, `tenant_id`, `coverage_area geometry(MultiPolygon, 4326)` | Índice GiST activo. Cobertura persistida mediante unión espacial de polígonos seleccionados. |
+| `db_matching` | `matching_attempts` | `response IN ('pendiente', 'aceptado', 'rechazado', 'expirado')`, `expires_at` | Registro atómico de respuesta y marca temporal `responded_at`. Restricción única de oferta pendiente. |
+| `db_matching` | `outbox_events` | `event_type = 'matching.technician-assigned'`, `payload jsonb` | Evento transaccional registrado en la misma transacción que el cambio a `ocupado` (ADR-007). |
+| `db_service_request` | `service_requests` | `status = 'asignado'`, `technician_id`, `assigned_at`, `matching_updated_at` | Transición de estado consistente. Idempotencia garantizada por `matching_updated_at` (ADR-017). |
+| `db_identity` | `users` / `technician_profiles` | `id`, `full_name`, `phone`, `role`, `verification_status` | Resolución de nombres y teléfonos para endpoint interno sin exponer credenciales ni contraseñas. |
+
+### 10.6 Ejecución de Pruebas: Registro de Técnico y Aislamiento por Tenant (SCRUM-56, SCRUM-62, SCRUM-400)
+
+En cumplimiento de las Historias de Usuario asignadas a Juan Diego Rojas (**SCRUM-22**), Sebastián Sánchez Olaya (**SCRUM-24**) y la consolidación de los casos de prueba del incremento técnico (**SCRUM-400** / **SCRUM-399**), el equipo de QA ejecutó las suites automatizadas de pruebas de sistema para el registro de técnicos/proveedores (Identity Service) y de aislamiento lógico multi-tenant mediante Row-Level Security (RLS) y contratos OpenAPI (`identity.v1.yaml`, `catalog.v1.yaml`, `service-request.v1.yaml`).
+
+#### 10.6.1 Catálogo y Resultados de Pruebas de Registro de Técnico/Proveedor (SCRUM-56 / HU SCRUM-22)
+
+| ID Caso | HU / Tarea Jira | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **REG-001** | SCRUM-22 / SCRUM-56 | Semilla | `GET /v1/catalog/categories` | Obtención dinámica de categoría activa de catálogo para especialidad | 200 OK con categorías activas existentes en el tenant | **PASS** |
+| **REG-002** | SCRUM-22 / SCRUM-56 | Funcional | `POST /v1/auth/register/technician` | Registro legítimo de técnico con datos obligatorios (RN-U1) | 201 Created con `role: "tecnico"`, `verificationStatus: "pendiente"` y correlationId | **PASS** |
+| **REG-003** | SCRUM-22 / SCRUM-56 | Negativa / Unicidad | `POST /v1/auth/register/technician` | Rechazo por documento de identidad duplicado en base de datos | 409 Conflict con RFC 9457 `type: .../documento-registrado` y `correlationId` | **PASS** |
+| **REG-004** | SCRUM-22 / SCRUM-56 | Negativa / Unicidad | `POST /v1/auth/register/technician` | Rechazo por correo electrónico duplicado en base de datos | 409 Conflict con RFC 9457 `type: .../correo-registrado` y `correlationId` | **PASS** |
+| **REG-005** | SCRUM-22 / SCRUM-56 | Validación | `POST /v1/auth/register/technician` | Rechazo por ausencia de documento o contraseña menor a 8 caracteres | 400 Bad Request con RFC 9457 `type: .../problems/validacion` y campos afectados | **PASS** |
+| **REG-006** | SCRUM-22 / SCRUM-56 | Funcional | `GET /v1/users/me` | Autenticación y consulta de perfil propio del técnico recién registrado | 200 OK confirmando estado `pendiente` y rol `tecnico` en sesión JWT | **PASS** |
+| **REG-007** | SCRUM-22 / SCRUM-56 | Seguridad / RBAC | `POST /v1/service-requests` | Bloqueo estricto de técnico intentando emitir solicitudes de cliente (IDN-012) | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+
+#### 10.6.2 Catálogo y Resultados de Pruebas de Aislamiento Lógico por Tenant (SCRUM-62 / HU SCRUM-24 - SAD AC6-E2)
+
+| ID Caso | Requisito / AC | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **RLS-001** | SCRUM-24 / AC6-E2 | Autenticación | `POST /v1/auth/login` | Login exitoso de cliente en Tenant Alfa | 200 OK con JWT firmado para Tenant Alfa | **PASS** |
+| **RLS-002** | SCRUM-24 / AC6-E2 | Creación | `POST /v1/service-requests` | Creación de orden de servicio privada en Tenant Alfa | 201 Created con identificador único persistido (`sr-qa-001`) | **PASS** |
+| **RLS-003** | SCRUM-24 / AC6-E2 | Autenticación | `POST /v1/auth/login` | Login exitoso de cliente en Tenant Beta | 200 OK con JWT firmado para Tenant Beta | **PASS** |
+| **RLS-004** | SCRUM-24 / AC6-E2 | Seguridad RLS | `GET /v1/service-requests/{id}` | Cliente de Tenant Beta intenta consultar la solicitud de Tenant Alfa | 404 Not Found (cero fuga cross-tenant), sin exponer existencia ni metadatos | **PASS** |
+| **RLS-005** | SCRUM-24 / AC6-E2 | Aislamiento | `GET /v1/catalog/categories` | Cliente de Tenant Beta consulta catálogo de categorías | 200 OK excluyendo estrictamente categorías exclusivas de Tenant Alfa | **PASS** |
+| **RLS-006** | SCRUM-24 / AC6-E2 | Control Positivo | `GET /v1/service-requests/{id}` | Cliente de Tenant Alfa consulta su propia solicitud de servicio | 200 OK retornando la orden íntegra en su propio tenant | **PASS** |
+
+#### 10.6.3 Resumen Estadístico de Ejecución E2E (Newman CLI en Ambiente QA)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-56 (Registro y Perfil de Técnico)     │
+│ Archivo: scrum-56-registro-tecnico.postman_collection.json    │
+│ Ambiente: QA Desplegado (https://qa.quickpatch.internal)      │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │                8 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │                8 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │                3 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               23 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 2.5s                                      │
+│ total data received: 4.18kB (approx)                          │
+│ average response time: 243ms [min: 11ms, max: 954ms, s.d.: 373ms] │
+│ Pass Rate: 100.0% (23/23 aserciones aprobadas)                │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-56-registro-tecnico-qa-2026-10-22.txt │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.6.4 Verificación de Persistencia y Políticas de Base de Datos
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_identity` | `users` | `id`, `email`, `role = 'tecnico'`, `tenant_id` | Restricción de unicidad en `(email, tenant_id)` y `(document_id, tenant_id)`. |
+| `db_identity` | `technician_profiles` | `user_id`, `specialty_id`, `verification_status = 'pendiente'` | Estado inicial pendiente verificado; sin asignación de servicios hasta aprobación. |
+| `db_catalog` | `categories` | `id`, `name`, `tenant_id`, `is_active` | Aislamiento RLS en consultas; categorías privadas filtradas por `app.current_tenant`. |
+| `db_service_request` | `service_requests` | `id`, `tenant_id`, `client_id`, `category_id`, `status` | Acceso denegado con 404 entre tenants distintos; política RLS activa en PostgreSQL. |
+
+### 10.7 Ejecución de Pruebas: Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31)
+
+En cumplimiento de los criterios de aceptación de la Historia de Usuario **SCRUM-31** (*"Como cliente, quiero ver el estado de mi solicitud en tiempo real para saber cuándo llegará el técnico"*) y los componentes técnicos integrados en la arquitectura (**SCRUM-451** - canal WebSocket en Gateway bajo ADR-023; **SCRUM-466** - aviso transaccional de cambio de estado en Outbox bajo ADR-007; **SCRUM-82** - máquina de estados en ServiceRequest; **SCRUM-83** - interfaz de seguimiento en tiempo real), el equipo de QA diseñó y ejecutó la suite automatizada E2E correspondiente a la subtarea **SCRUM-84**.
+
+#### 10.7.1 Catálogo de Casos y Resultados de Pruebas (SCRUM-84)
+
+| ID Caso | Requisito / Criterio | Tipo | Endpoint / Canal | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **TRK-001** | ADR-023 / SCRUM-451 | Handshake Realtime | `GET /api/v1/realtime` | Handshake WebSocket con JWT válido y suscripción al topic de estados | 200 OK, `status: connected`, cabecera `X-Realtime-Channel: active` | **PASS** |
+| **TRK-002** | IDN-017 / Seguridad | Negativa | `GET /api/v1/realtime` | Rechazo de conexión y suscripción anónima sin cabecera Authorization | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **TRK-003** | SCRUM-31 / Criterio 1 | Funcional / Ciclo | `POST /api/v1/service-requests` | Creación de orden de servicio e inicio en estado 1: `buscando_tecnico` | 201 Created con `status: buscando_tecnico` y técnico no asignado (`null`) | **PASS** |
+| **TRK-004** | SCRUM-30 / SCRUM-31 | Transición / Matching | `POST /api/v1/matching/offers/{id}/accept` | Técnico acepta oferta de asignación pasando orden a estado 2: `asignado` | 200 OK, evento outbox `matching.technician-assigned` emitido | **PASS** |
+| **TRK-005** | SCRUM-31 / Criterio 3 | Funcional / Visibilidad | `GET /api/v1/service-requests/{id}` | Cliente consulta orden en estado `asignado` y verifica visibilidad de datos del técnico | 200 OK con asignación a técnico y datos visibles | **PASS** |
+| **TRK-006** | SCRUM-35 / Cotización | Funcional / Cotización | `POST /api/v1/service-requests/{id}/quotes` | Técnico envía cotización previa a ejecución y cliente la acepta | 201 Created (Quote) y 200 OK (QuoteDecision) | **PASS** |
+| **TRK-007** | SCRUM-35 / Inicio | Transición / Ciclo | `POST /api/v1/service-requests/{id}/start` | Técnico inicia labor y actualiza estado a 3: `en_progreso` conforme a ServiceRequest v1.7.0 | 200 OK, transición atómica registrada en base de datos | **PASS** |
+| **TRK-008** | SCRUM-31 / Criterio 2 | Rendimiento / Latencia | `GET /api/v1/service-requests/{id}` | Cliente observa actualización a `en_progreso` con latencia < 1 minuto | 200 OK confirmando estado `en_progreso` en tiempo real | **PASS** |
+| **TRK-009** | SCRUM-35 / Evidencia | Integración S3/Garage | `POST /api/v1/service-requests/{id}/evidence` | Técnico sube foto obligatoria de evidencia previa a completar labor | 201 Created con URL de evidencia almacenada en Garage | **PASS** |
+| **TRK-010** | SCRUM-35 / Cierre | Transición / Ciclo | `POST /api/v1/service-requests/{id}/complete` | Técnico finaliza servicio y actualiza estado a 4: `completado` | 200 OK, ciclo completo de 4 estados satisfecho (4/4) | **PASS** |
+| **TRK-011** | RN-SR6 / Máquina Estados | Negativa / Integridad | `POST /api/v1/service-requests/{id}/complete` | Intento de transición inválida (completar un servicio ya completado) | 409 Conflict con RFC 9457 `type: .../transicion-invalida` | **PASS** |
+| **TRK-012** | RBAC / Control Acceso | Negativa / Seguridad | `POST /api/v1/service-requests/{id}/start` | Cliente intenta modificar unilateralmente el estado de su servicio | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **TRK-013** | IDN-017 / Seguridad | Negativa / Auth | `GET /api/v1/service-requests/{id}` | Petición anónima de consulta sin token de autorización | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **TRK-014** | Privacidad Intra-Tenant | Negativa / Aislamiento | `GET /api/v1/service-requests/{id}` | Cliente ajeno del mismo tenant intenta consultar orden de otro usuario | 404 Not Found con RFC 9457 `type: .../no-encontrado` | **PASS** |
+| **TRK-015** | SAD AC6-E2 / RLS | Negativa / Multi-Tenant | `GET /api/v1/service-requests/{id}` | Cliente de Tenant Beta intenta consultar orden perteneciente a Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
+
+#### 10.7.2 Resumen Estadístico de Ejecución E2E (Newman CLI en Ambiente QA)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-84 (Seguimiento de Estado en Tiempo Real) │
+│ Archivo: scrum-84-seguimiento-estado.postman_collection.json  │
+│ Ambiente: QA Desplegado (https://qa.quickpatch.internal)      │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               36 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               36 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │               36 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               42 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 16.1s                                     │
+│ total data received: 14.94kB (approx)                         │
+│ average response time: 312ms [min: 9ms, max: 981ms, s.d.: 416ms] │
+│ Pass Rate: 100.0% (42/42 aserciones exitosas)                 │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-84-seguimiento-estado-qa-2026-10-22.txt │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.7.3 Verificación de Persistencia y Eventos Outbox (ADR-007 / ADR-023)
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_service_request` | `service_requests` | `id`, `status IN ('buscando_tecnico', 'asignado', 'en_progreso', 'completado')`, `technician_id`, `tenant_id`, `client_id` | Verificación de los 4 estados secuenciales. Regla de negocio de transición atómica e integridad de cliente y técnico. |
+| `db_service_request` | `outbox_events` | `event_type = 'service-request.status-changed'`, `payload jsonb`, `tenant_id` | Publicación transaccional garantizada en cada transición de estado para notificación en tiempo real a clientes y técnicos (SCRUM-466). |
+| `db_identity` | `users` / `technician_profiles` | `full_name`, `specialty`, `role = 'tecnico'` | Datos públicos del técnico asignado resueltos para visualización del cliente (`fullName`, `specialty`) sin comprometer datos confidenciales. |
+| `gateway` | `/api/v1/realtime` | Handshake WebSocket con validación JWT, `sub_topics: ['service-request.status-changed']` | Conexión autorizada sobre Gateway (VM1), aislamiento de eventos por `tenant_id` y `user_id` (ADR-023 / SCRUM-451). |
+
+### 10.8 Ejecución de Pruebas: Gestión de Equipo de Técnicos - Proveedor (SCRUM-99 / HU SCRUM-36)
+
+En cumplimiento de los requerimientos funcionales del SRS (**RF-16** / F3.3) y las reglas de arquitectura y diseño detallado (**RN-TP3**, **RN-TP4** en DD §7.3 y §8.3.14), el equipo de Aseguramiento de Calidad (QA) diseñó y ejecutó la suite automatizada E2E correspondiente a la subtarea **SCRUM-99** (Historia de Usuario **SCRUM-36** - *"Gestión de equipo de técnicos por parte del Proveedor"*).
+
+#### 10.8.1 Catálogo de Casos y Resultados de Pruebas (SCRUM-99)
+
+| ID Caso | Requisito / Regla | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **PRV-001** | RF-16 / RN-TP3 | Funcional / Registro | `POST /v1/providers/me/technicians` | Proveedor da de alta un técnico en su equipo con datos obligatorios | 201 Created retornando `UserProfile` con `id`, `role: "tecnico"`, `verificationStatus: "pendiente"` y sin campo de especialidad excedente | **PASS** |
+| **PRV-002** | ADR-007 / Outbox | Integración | `POST /v1/providers/me/technicians` | Emisión transaccional del evento outbox `technician.registered` tras alta | 201 Created con aviso `noticeEmitted: "technician.registered"` | **PASS** |
+| **PRV-003** | RN-TP4 / DD §8.3.14 | Consulta / Equipo | `GET /v1/providers/me/technicians` | Proveedor consulta la lista completa de técnicos de su equipo | 200 OK con array de técnicos y datos completos (`fullName`, `phone`) | **PASS** |
+| **PRV-004** | DD §8.3.14 | Filtro / Inactivos | `GET /v1/providers/me/technicians?status=inactivo` | Proveedor filtra técnicos inactivos (pendientes, rechazados o suspendidos) | 200 OK incluyendo al técnico registrado en estado `pendiente` | **PASS** |
+| **PRV-005** | RN-TP1 / DD §8.3.14 | Filtro / Activos | `GET /v1/providers/me/technicians?status=activo` | Proveedor filtra técnicos activos (aprobados por `admin_tenant`) | 200 OK con `totalItems: 0` (técnico pendiente no se lista como activo) | **PASS** |
+| **PRV-006** | Validación / RFC 9457 | Negativa / Validación | `POST /v1/providers/me/technicians` | Proveedor envía solicitud incompleta (omite cédula o correo) | 400 Bad Request con RFC 9457 `type: .../problems/validacion` | **PASS** |
+| **PRV-007** | RN-U1 / Unicidad | Negativa / Integridad | `POST /v1/providers/me/technicians` | Intento de registro con cédula/documento de identidad duplicado | 409 Conflict con RFC 9457 `type: .../documento-registrado` | **PASS** |
+| **PRV-008** | RN-U1 / Unicidad | Negativa / Integridad | `POST /v1/providers/me/technicians` | Intento de registro con correo electrónico duplicado en el tenant | 409 Conflict con RFC 9457 `type: .../correo-registrado` | **PASS** |
+| **PRV-009** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/providers/me/technicians` | Cliente intenta dar de alta un técnico en endpoint de proveedores | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **PRV-010** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/providers/me/technicians` | Técnico intenta invocar endpoint de alta de técnicos en equipo | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **PRV-011** | IDN-017 / Seguridad | Negativa / Auth | `GET /v1/providers/me/technicians` | Solicitud anónima sin cabecera Authorization Bearer | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **PRV-012** | RN-TP4 / Privacidad | Aislamiento Intra-Tenant | `GET /v1/providers/me/technicians` | Proveedor 2 consulta su equipo (mismo tenant) sin ver técnicos de Proveedor 1 | 200 OK con `totalItems: 0` (cero fuga de información entre proveedores del tenant) | **PASS** |
+| **PRV-013** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/providers/me/technicians` | Proveedor de Tenant Beta consulta su equipo sin ver técnicos de Tenant Alfa | 200 OK con `totalItems: 0` garantizado por Row-Level Security en PostgreSQL | **PASS** |
+
+#### 10.8.2 Resumen Estadístico de Ejecución E2E (Newman CLI en Ambiente QA)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-99 (Gestión de Equipo de Técnicos)     │
+│ Archivo: scrum-99-equipo-proveedor.postman_collection.json    │
+│ Ambiente: QA Desplegado (https://qa.quickpatch.internal)      │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               25 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               25 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │               25 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               43 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 15s                                       │
+│ total data received: 11.25kB (approx)                         │
+│ average response time: 520ms [min: 12ms, max: 1000ms, s.d.: 442ms] │
+│ Pass Rate: 100.0% (43/43 aserciones exitosas)                 │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-99-equipo-proveedor-qa-2026-10-22.txt │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.8.3 Verificación de Persistencia y Reglas de Base de Datos (PostgreSQL)
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_identity` | `users` | `id`, `email`, `role = 'tecnico'`, `tenant_id` | Usuario creado con rol técnico y tenant heredado del proveedor autenticado (RN-TP3, RN-U3). Restricción de unicidad en `(email, tenant_id)`. |
+| `db_identity` | `technician_profiles` | `user_id`, `provider_id`, `specialty_id`, `verification_status = 'pendiente'` | `provider_id` enlazado como clave foránea física al usuario proveedor del mismo tenant (RN-TP3, P-02). Estado inicial `pendiente` obligatorio (RN-TP1). |
+| `db_identity` | `outbox_events` | `event_type = 'technician.registered'`, `payload jsonb`, `tenant_id` | Publicación transaccional outbox hacia Kafka para inicializar disponibilidad en Matching y enviar correo de activación con Communication (ADR-007). |
+| `db_identity` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` y `provider_id = current_setting('app.current_user_id')` | Aislamiento lógico multi-tenant y exclusividad de gestión de equipo por proveedor (RN-TP4, SAD AC6-E2). |
+
+### 10.9 Ejecución de Pruebas: Aprobación y Rechazo de Técnicos y Proveedores (SCRUM-108 / HU SCRUM-39)
+
+En cumplimiento de los requerimientos funcionales del SRS (**RF-19** / F3.4) y las reglas de diseño detallado para el ciclo de vida y verificación de perfiles (**RN-TP1**, DD §8.2.1 y §8.3.13), el equipo de Aseguramiento de Calidad (QA) diseñó y ejecutó la suite automatizada E2E correspondiente a la subtarea **SCRUM-108** (Historia de Usuario **SCRUM-39** - *"Aprobación/rechazo de técnicos y proveedores por parte del Administrador"*).
+
+#### 10.9.1 Catálogo de Casos y Resultados de Pruebas (SCRUM-108)
+
+| ID Caso | Requisito / Regla | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **APR-001** | RF-19 / DD §8.2.1 | Consulta / Filtro | `GET /v1/admin/technicians?verificationStatus=pendiente` | Admin lista técnicos pendientes con documento, correo y especialidad | 200 OK retornando técnicos pendientes del tenant actual | **PASS** |
+| **APR-002** | RF-19 / DD §8.2.1 | Consulta / Filtro | `GET /v1/admin/technicians?verificationStatus=aprobado` | Admin lista técnicos que ya han sido aprobados en el tenant | 200 OK con array de técnicos aprobados y datos de verificación | **PASS** |
+| **APR-003** | RF-19 / RN-TP1 | Transición / Aprobación | `POST /v1/admin/technicians/{id}/approve` | Admin aprueba técnico en estado pendiente (`usr-tec-pending-01`) | 200 OK con `verificationStatus: "aprobado"` y evento outbox emitido | **PASS** |
+| **APR-004** | Consistencia / Estado | Verificación | `GET /v1/admin/technicians?verificationStatus=pendiente` | Verificación de que el técnico aprobado no vuelve a figurar en pendientes | 200 OK confirmando remoción inmediata de la bandeja de pendientes | **PASS** |
+| **APR-005** | Máquina Estados | Negativa / Transición | `POST /v1/admin/technicians/{id}/approve` | Intento de aprobar un técnico que ya se encuentra en estado aprobado | 409 Conflict con RFC 9457 `type: .../transicion-invalida` | **PASS** |
+| **APR-006** | RF-19 / DD §8.3.13 | Transición / Rechazo | `POST /v1/admin/technicians/{id}/reject` | Admin rechaza técnico pendiente con motivo obligatorio (`reason >= 5 car`) | 200 OK con `verificationStatus: "rechazado"`, motivo persistido y evento outbox | **PASS** |
+| **APR-007** | Validación / RFC 9457 | Negativa / Validación | `POST /v1/admin/technicians/{id}/reject` | Intento de rechazar técnico sin motivo o con longitud menor a 5 caracteres | 400 Bad Request con RFC 9457 `type: .../problems/validacion` | **PASS** |
+| **APR-008** | Máquina Estados | Negativa / Transición | `POST /v1/admin/technicians/{id}/reject` | Intento de rechazar un perfil que ya está aprobado | 409 Conflict con RFC 9457 `type: .../transicion-invalida` | **PASS** |
+| **APR-009** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/admin/technicians/{id}/approve` | Cliente intenta invocar el endpoint administrativo de aprobación | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **APR-010** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/admin/technicians/{id}/approve` | Técnico intenta auto-aprobarse en el sistema | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **APR-011** | IDN-017 / Seguridad | Negativa / Auth | `GET /v1/admin/technicians` | Solicitud anónima sin cabecera Authorization Bearer | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **APR-012** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `POST /v1/admin/technicians/{id}/approve` | Admin de Tenant Beta intenta aprobar técnico perteneciente a Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
+| **APR-013** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/admin/technicians?verificationStatus=pendiente` | Admin de Tenant Beta consulta técnicos pendientes sin ver datos de Alfa | 200 OK retornando exclusivamente técnicos de Tenant Beta | **PASS** |
+
+#### 10.9.2 Resumen Estadístico de Ejecución E2E (Newman CLI en Ambiente QA)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-108 (Aprobación/Rechazo de Técnicos)  │
+│ Archivo: scrum-108-aprobacion-rechazo.postman_collection.json │
+│ Ambiente: QA Desplegado (https://qa.quickpatch.internal)      │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               30 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               30 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │               30 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               40 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 13.9s                                     │
+│ total data received: 53.99kB (approx)                         │
+│ average response time: 385ms [min: 7ms, max: 1001ms, s.d.: 452ms] │
+│ Pass Rate: 100.0% (40/40 aserciones exitosas)                 │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-108-aprobacion-rechazo-qa-2026-10-22.txt │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.9.3 Verificación de Persistencia y Reglas de Base de Datos (PostgreSQL)
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_identity` | `technician_profiles` | `user_id`, `verification_status IN ('pendiente', 'aprobado', 'rechazado', 'suspendido')`, `verified_at`, `verified_by` | Transición atómica de `pendiente` a `aprobado` y a `rechazado`. Registro auditable de responsable (`verified_by`). |
+| `db_identity` | `audit_logs` | `action IN ('aprobar_tecnico', 'rechazar_tecnico')`, `user_id`, `tenant_id`, `details` | Trazabilidad administrativa persistida con fecha, administrador actuante y motivo en caso de rechazo (SCRUM-40). |
+| `db_identity` | `outbox_events` | `event_type = 'technician.verification-changed'`, `payload jsonb`, `tenant_id` | Publicación transaccional outbox hacia Kafka para habilitar participación en matching al pasar a `aprobado` (RN-TP1, RN-M10, ADR-007). |
+| `db_identity` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` | Bloqueo absoluto de operaciones cruzadas entre administradores y técnicos de distintos tenants (SAD AC6-E2). |
+
+### 10.10 Ejecución de Pruebas: Suspensión de Cuenta de Técnico (SCRUM-111 / HU SCRUM-40)
+
+En cumplimiento de los requerimientos funcionales del SRS (**RF-20** / F3.4) y las reglas de diseño detallado para la exclusión operativa de técnicos (**RN-TP2**, DD §7.3, §8.2.1 y §8.3.13), el equipo de Aseguramiento de Calidad (QA) diseñó y ejecutó la suite automatizada E2E correspondiente a la subtarea **SCRUM-111** (Historia de Usuario **SCRUM-40** - *"Suspensión de cuenta de técnico por parte del Administrador"*).
+
+#### 10.10.1 Catálogo de Casos y Resultados de Pruebas (SCRUM-111)
+
+| ID Caso | Requisito / Regla | Tipo | Endpoint / Operación | Descripción del Escenario de Prueba | Resultado Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **SUS-001** | RF-20 / RN-TP2 | Transición / Suspensión | `POST /v1/admin/technicians/{id}/suspend` | Admin suspende técnico aprobado con motivo válido (`reason >= 5 car`) | 200 OK con `verificationStatus: "suspendido"`, `matchingBlocked: true` y evento outbox emitido | **PASS** |
+| **SUS-002** | RF-20 / DD §8.3.13 | Consulta / Consistencia | `GET /v1/admin/technicians?verificationStatus=suspendido` | Admin consulta técnicos suspendidos y confirma presencia del perfil suspendido | 200 OK retornando el técnico en la lista de suspendidos con su motivo | **PASS** |
+| **SUS-003** | Reactivación / DD §8.3.13 | Transición / Reactivación | `POST /v1/admin/technicians/{id}/approve` | Admin reactiva técnico suspendido pasándolo nuevamente a estado aprobado | 200 OK con `verificationStatus: "aprobado"` y evento outbox emitido | **PASS** |
+| **SUS-004** | Validación / RFC 9457 | Negativa / Validación | `POST /v1/admin/technicians/{id}/suspend` | Intento de suspender técnico sin motivo o con longitud menor a 5 caracteres | 400 Bad Request con RFC 9457 `type: .../problems/validacion` | **PASS** |
+| **SUS-005** | Máquina Estados | Negativa / Transición | `POST /v1/admin/technicians/{id}/suspend` | Intento de suspender a un técnico que ya se encuentra en estado suspendido | 409 Conflict con RFC 9457 `type: .../transicion-invalida` | **PASS** |
+| **SUS-006** | Máquina Estados | Negativa / Transición | `POST /v1/admin/technicians/{id}/suspend` | Intento de suspender a un técnico en estado pendiente (no aprobado) | 409 Conflict con RFC 9457 `type: .../transicion-invalida` | **PASS** |
+| **SUS-007** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/admin/technicians/{id}/suspend` | Cliente intenta suspender la cuenta de un técnico | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **SUS-008** | RBAC / Seguridad | Negativa / Permisos | `POST /v1/admin/technicians/{id}/suspend` | Técnico intenta suspender la cuenta de otro técnico | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **SUS-009** | IDN-017 / Seguridad | Negativa / Auth | `POST /v1/admin/technicians/{id}/suspend` | Solicitud anónima de suspensión sin cabecera Authorization Bearer | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **SUS-010** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `POST /v1/admin/technicians/{id}/suspend` | Admin de Tenant Beta intenta suspender técnico perteneciente a Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
+| **SUS-011** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/admin/technicians?verificationStatus=suspendido` | Admin de Tenant Beta consulta suspendidos sin ver perfiles de Tenant Alfa | 200 OK con `totalItems: 0` (aislamiento estricto por tenant) | **PASS** |
+
+#### 10.10.2 Resumen Estadístico de Ejecución E2E (Newman CLI en Ambiente QA)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-111 (Suspensión de Cuenta de Técnico) │
+│ Archivo: scrum-111-suspension-tecnico.postman_collection.json │
+│ Ambiente: QA Desplegado (https://qa.quickpatch.internal)      │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               29 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               29 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │               29 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               39 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ total run duration: 12.7s                                     │
+│ total data received: 25.39kB (approx)                         │
+│ average response time: 362ms [min: 10ms, max: 1005ms, s.d.: 440ms] │
+│ Pass Rate: 100.0% (39/39 aserciones exitosas)                 │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-111-suspension-tecnico-qa-2026-10-22.txt │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.10.3 Verificación de Persistencia y Reglas de Base de Datos (PostgreSQL)
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_identity` | `technician_profiles` | `user_id`, `verification_status = 'suspendido'`, `suspension_reason`, `suspended_at`, `suspended_by` | Persistencia del estado suspendido con marca de tiempo, administrador y motivo obligatorio (RF-20). |
+| `db_identity` | `audit_logs` | `action = 'suspender_tecnico'`, `user_id`, `tenant_id`, `details` | Trazabilidad administrativa inmutable en registro de auditoría con fecha y responsable (SCRUM-40). |
+| `db_identity` | `outbox_events` | `event_type = 'technician.verification-changed'`, `payload jsonb`, `tenant_id` | Publicación hacia Kafka para actualizar `technician_availability` en Matching y bloquear asignaciones (RN-TP2, P-01). |
+| `db_identity` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` | Imposibilidad de suspensión de perfiles fuera del tenant del administrador autenticado (SAD AC6-E2). |
+
+---
+
+### 10.11 Evidencias E2E de Asignación Automática y Motor de Matching (SCRUM-78 / HU SCRUM-29)
+
+En cumplimiento de los requerimientos funcionales del SRS (**RF-09** / F2.1, **RF-10** / F2.2), las reglas de negocio de matching (**RN-M9**, **RN-M10**), el escenario de latencia del SAD (**RNF-05** / **AC2-E3**), la garantía de procesamiento idempotente (**AC5-E5**) y el aislamiento multi-tenant estricto (**SAD AC6-E2**), se formaliza la suite de pruebas automatizadas y evidencias de ejecución para el motor de matching y asignación automática de solicitudes de servicio (**SCRUM-78**).
+
+#### 10.11.1 Matriz de Casos de Prueba Ejecutados
+
+| ID Caso | Módulo / Requisito | Tipo de Prueba | Endpoint / Operación | Condición / Escenario Evaluado | Resultado Esperado vs Obtenido | Estado |
+|---|---|---|---|---|---|:---:|
+| **MAT-001** | RF-09 / RN-M9 | Positiva / Asignación | `POST /v1/service-requests` | Creación de solicitud con candidato elegible (aprobado, disponible, especialidad coincidente y en cobertura) | 201 Created con `status: "asignado"`, `technicianId: "usr-tec-approved-01"` y `assignedAt` registrado | **PASS** |
+| **MAT-002** | RNF-05 / AC2-E3 | Rendimiento / SLA | `POST /v1/service-requests` | Latencia de emparejamiento del primer intento de asignación | Tiempo de respuesta $< 60.000\text{ ms}$ (SLA de emparejamiento en QA) | **PASS** |
+| **MAT-003** | Trazabilidad / DD §7.5 | Consulta / Intentos | `GET /v1/matching/attempts/{id}` | Historial de intentos de asignación registrados en `matching_attempts` | 200 OK con `attemptCount >= 1`, `status: "asignado"` y `firstAttemptDurationMs < 60.000` | **PASS** |
+| **MAT-004** | RN-M9 / Exclusión | Negativa / Filtrado | `GET /v1/matching/attempts/{id}` | Descarte de candidatos con `verification_status != 'aprobado'` o especialidad distinta | `candidateEvaluation` registra candidatos no aprobados descartados y asigna solo al elegible | **PASS** |
+| **MAT-005** | RF-10 / RN-M10 | Transición / Sin Candidato | `POST /v1/service-requests` | Solicitud en zona periférica sin técnicos elegibles disponibles | 201 Created con `status: "en_espera"` y `technicianId: null` | **PASS** |
+| **MAT-006** | Consistencia / Estado | Consulta / Detalle | `GET /v1/service-requests/{id}` | Detalle de solicitud en espera de disponibilidad técnica | 200 OK confirmando estado `en_espera` sin asignación prematura | **PASS** |
+| **MAT-007** | RN-M10 / Auditoría | Consulta / Intentos | `GET /v1/matching/attempts/{id}` | Intentos de matching para solicitud en espera | 200 OK con `attemptCount: 0`, `status: "sin_candidatos"` y motivos de descarte (`excludedOutOfCoverage >= 1`) | **PASS** |
+| **MAT-008** | AC5-E5 / Idempotencia | Integración / Kafka | `POST /v1/matching/events/simulate-event` | Primer consumo de evento `service-request.created` con `X-Event-Id` único | 200 OK con registro `idempotentOutcome: "APPLIED_FIRST_TIME"` en `processed_events` | **PASS** |
+| **MAT-009** | AC5-E5 / Idempotencia | Negativa / Duplicado | `POST /v1/matching/events/simulate-event` | Reenvío duplicado del mismo evento con idéntico `X-Event-Id` | 200 OK sin reprocesamiento (`idempotentOutcome: "SKIPPED_ALREADY_PROCESSED"`) | **PASS** |
+| **MAT-010** | RBAC / IDN-012 | Negativa / Permisos | `POST /v1/service-requests` | Técnico intenta crear una solicitud de servicio de cliente | 403 Forbidden con RFC 9457 `type: .../no-autorizado` | **PASS** |
+| **MAT-011** | IDN-017 / Seguridad | Negativa / Auth | `POST /v1/service-requests` | Solicitud anónima de creación de servicio sin cabecera Bearer Token | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **MAT-012** | IDN-017 / Seguridad | Negativa / Auth | `GET /v1/matching/attempts/{id}` | Consulta anónima de intentos de matching sin token de autenticación | 401 Unauthorized con RFC 9457 `type: .../no-autenticado` | **PASS** |
+| **MAT-013** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/service-requests/{id}` | Cliente de Tenant Beta intenta consultar solicitud perteneciente a Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
+| **MAT-014** | SAD AC6-E2 / RLS | Aislamiento Multi-Tenant | `GET /v1/matching/attempts/{id}` | Cliente de Tenant Beta intenta consultar auditoría de matching de Tenant Alfa | 404 Not Found con RFC 9457 garantizado por Row-Level Security | **PASS** |
+
+#### 10.11.2 Resumen Estadístico de Ejecución E2E (Newman CLI en Ambiente QA)
+
+```text
+┌───────────────────────────────────────────────────────────────┐
+│ EJECUCIÓN FORMAL: SCRUM-78 (Motor de Matching y Asignación)   │
+│ Archivo: scrum-78-motor-matching.postman_collection.json      │
+│ Ambiente: QA Desplegado (https://qa.quickpatch.internal)      │
+├─────────────────────────┬──────────────────┬──────────────────┤
+│                         │         executed │           failed │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              iterations │                1 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│                requests │               21 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│            test-scripts │               21 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│      prerequest-scripts │                2 │                0 │
+├─────────────────────────┼──────────────────┼──────────────────┤
+│              assertions │               43 │                0 │
+├─────────────────────────┴──────────────────┴──────────────────┤
+│ Duración Total: 7.6 s (Tiempo promedio respuesta: 280 ms)     │
+│ Tasa de Éxito (Pass Rate): 100.0% (43/43 aserciones exitosas) │
+│ Evidencia almacenada: tests/e2e/evidencias/                   │
+│                       scrum-78-qa-2026-10-22.txt              │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### 10.11.3 Verificación de Persistencia y Reglas de Base de Datos (PostgreSQL)
+
+| Base de Datos | Tabla | Columnas / Restricciones Validadas | Verificación de Integridad |
+|---|---|---|---|
+| `db_service_request` | `service_requests` | `id`, `status` (`'asignado'` / `'en_espera'`), `technician_id`, `assigned_at`, `tenant_id` | Transición automática de estado impulsada por eventos de Matching sin acoplamiento síncrono (D1, RF-09). |
+| `db_matching` | `matching_attempts` | `id`, `service_request_id`, `technician_id`, `status`, `duration_ms`, `evaluated_candidates` | Trazabilidad inmutable de ofertas secuenciales de 60s y registro del SLA de emparejamiento (RF-10, RNF-05). |
+| `db_matching` | `processed_events` | `event_id`, `event_type`, `processed_at`, `consumer_group` | Control de deduplicación de eventos Kafka, evitando asignaciones repetidas ante reintentos de red (AC5-E5). |
+| `db_matching` | `technician_availability` | `technician_id`, `is_available`, `active_service_id`, `updated_at` | Actualización de disponibilidad tras asignación exitosa (`is_available = false`, RN-M9). |
+| `db_matching` | Políticas RLS | `USING (tenant_id = current_setting('app.current_tenant'))` | Bloqueo absoluto de ofertas cruzadas: un técnico del Tenant Beta jamás recibe solicitudes del Tenant Alfa (SAD AC6-E2). |
+
+### 10.12 Evidencias Fotográficas y Gráficas de Ejecución Real en Ambiente QA (Compuerta 2 — Sprint 4)
+
+A continuación se incorporan las evidencias fotográficas y capturas de pantalla de terminal obtenidas durante la ejecución real de las compuertas de aseguramiento de calidad sobre la topología de máquinas virtuales de QA (VM1: Observabilidad y Herramientas, VM2: Cómputo k3s Microservicios, VM5: Persistencia PostgreSQL, VM7: Kafka/Garage S3 — ADR-015, ADR-022).
+
+#### 10.12.1 Pruebas de Carga Sostenida (50 VU) con Grafana k6 en Windows PowerShell
+
+Ejecución automatizada de `tests/performance/load-test-50vu.js` contra el Ingress Nginx del cluster de QA (`https://qa.quickpatch.internal:443`). Se simularon 50 usuarios virtuales concurrentes durante 2 minutos y 30 segundos, evaluando los flujos concurrentes de consulta de catálogo y creación transaccional de solicitudes de servicio técnico.
+
+![Pruebas de Carga 50 VU con Grafana k6 en QA](img/k6-load-50vu-qa.png)
+
+- **Throughput y Volumen:** 8,259 peticiones HTTP procesadas con 2,752 iteraciones completadas satisfactoriamente (caudal medio sostenido de 53.92 req/s).
+- **Tasa de Acierto y Confiabilidad:** 100.00% de aserciones exitosas (11,008 de 11,008 checks superados), tasa de fallo del 0.00% (0 errores en 8,259 requests).
+- **Latencias Obtenidas (Percentil 95):**
+  - Catálogo de Servicios (`GET /v1/catalog`): p95 = 38.72 ms (ampliamente inferior al SLA del SAD AC2-E4 de 200 ms).
+  - Solicitudes de Servicio (`POST /v1/service-requests`): p95 = 130.12 ms (supera holgadamente el criterio de aceptación del SAD AC2-E1 de 2,000 ms).
+- **Auto-Cancelación Transaccional (PR #121):** Se incorporó la cancelación inmediata de cada solicitud creada (`cancelar()`) en cada iteración, previniendo la sobrecarga de la base de datos PostgreSQL en VM5 y la saturación de la cola outbox en VM7.
+- **Credenciales Dinámicas por Iteración:** Generación aleatoria de contraseñas y sufijos en `setup()` conforme a las recomendaciones de seguridad de la revisión de PR #106.
+
+#### 10.12.2 Pruebas de Estrés Pico Inesperado (150 VU) con Grafana k6 en Windows PowerShell
+
+Ejecución de `tests/performance/stress-test-150vu.js` inyectando 150 usuarios virtuales concurrentes sobre la infraestructura de QA para evaluar la capacidad de resiliencia del cluster k3s y degradación controlada bajo estrés (SAD AC2-E5).
+
+![Pruebas de Estrés 150 VU con Grafana k6 en QA](img/k6-stress-150vu-qa.png)
+
+- **Throughput y Volumen:** 38,876 peticiones HTTP procesadas con un caudal medio de 160.45 req/s.
+- **Resiliencia Operativa:** 0 errores de servidor (0.00% respuestas 5xx).
+- **Latencia Percentil 95:** p95 global de 415.39 ms, cumpliendo holgadamente el umbral de degradación de RNF-02 ($\le 2,000\text{ ms}$).
+- **Estabilidad de Pods:** Cero reinicios de contenedores (`Restarts = 0`), cero caídas por agotamiento de memoria (`0 OOMKilled`).
+
+#### 10.12.3 Monitoreo de Tráfico Transaccional en Vivo sobre Ingress Nginx (VM1)
+
+Inspección de telemetría y logs en tiempo real capturados directamente en el Ingress Controller Nginx del cluster de QA durante la inyección de tráfico concurrente con Grafana k6.
+
+![Logs en Vivo del Ingress Nginx en VM1](img/nginx-ingress-k6-traffic.png)
+
+- **Flujo Observado:** Se aprecian las peticiones entrantes `POST /v1/service-requests` y `GET /v1/catalog` respondiendo con códigos de éxito `HTTP 201 Created` y `HTTP 200 OK`, con tiempos de respuesta en el rango de los 3 ms a 28 ms por request en el gateway perimetral.
+
+#### 10.12.4 Exportación de Logs Estructurados desde Grafana Loki API (VM1)
+
+Extracción de telemetría viva de los microservicios en formato JSON estructurado (.NET `AddJsonConsole`) directamente desde el endpoint REST de Loki (`http://10.43.100.168:3100/loki/api/v1/query_range`), eliminando intermediarios sintéticos y garantizando la trazabilidad real del ambiente k3s.
+
+![Consulta y Exportación de Logs Estructurados en Grafana Loki API](img/loki-qa-vm1-export.png)
+
+- **Parámetros de Consulta:** Query LogQL `{vm="vm2"}` ejecutada directamente en la VM1.
+- **Volumen de Telemetría:** 2,649 líneas de logs procesadas y 580 KB de datos estructurados de los microservicios (.NET en k3s VM2: `ServiceRequest.Infrastructure... QuoteExpirer.cs`).
+- **Resultado del Escaneo PCI-DSS:** Las trazas exportadas en `tests/security/evidencias/loki_qa_k3s.json` fueron analizadas con el script auditor `tests/security/pci_dss_scanner.py`, arrojando **0 hallazgos de PAN (Primary Account Number)** y **0 hallazgos de CVV**, acreditando el cumplimiento formal de PCI-DSS Req 3.4 y SAD AC6-E1.
+
+#### 10.12.5 Transferencia Cifrada de Evidencias desde VM1 hacia Estación de QA
+
+Descarga formal y segura de los artefactos brutos de ejecución (`zap.html`, `loki_qa_k3s.json`) desde la máquina virtual VM1 hacia el entorno local de control de versiones de QA mediante el protocolo SCP cifrado vía SSH.
+
+![Transferencia Segura SCP de Evidencias desde VM1](img/scp-transfer-evidencias.png)
+
+- **Integridad:** Asegura la cadena de custodia de las evidencias de auditoría y pruebas no funcionales, garantizando que los reportes incorporados al repositorio provienen directamente de la ejecución física en la infraestructura asignada.
+
+#### 10.12.6 Escaneo de Seguridad Dinámica DAST con OWASP ZAP Baseline en Docker (VM1)
+
+Ejecución del contenedor oficial `zaproxy/zap-stable` sobre VM1 para llevar a cabo el análisis dinámico de vulnerabilidades (DAST) contra la API Gateway expuesta en QA (`http://10.43.100.168`).
+
+![Escaneo de Seguridad Dinámica DAST con OWASP ZAP en Docker VM1](img/zap-dast-vm1-docker.png)
+
+- **Cobertura de Reglas:** 59 reglas de inspección DAST evaluadas en modo pasivo/activo baseline.
+- **Hallazgos:** Cero vulnerabilidades críticas o de severidad alta (**0 FAIL**), confirmando que las cabeceras de seguridad (`Content-Type-Options`, `X-Frame-Options`, directivas CORS) y la protección contra inyecciones cumplen con los estándares de seguridad perimetral de la arquitectura.
+
+#### 10.12.7 Ejecución de Pruebas de API E2E con Newman contra Ingress de QA (Corrida Preliminar)
+
+Ejecución de la suite oficial `tests/e2e/scrum-56-registro-tecnico.postman_collection.json` contra el ambiente desplegado de QA (`https://qa.quickpatch.internal`), evaluando el ciclo de vida completo del técnico bajo contratos OpenAPI y control de acceso RBAC.
+
+![Ejecución de Pruebas E2E de Registro de Técnico con Newman en QA](img/newman-scrum56-qa.png)
+
+- **Aserciones Funcionales Superadas:** 20 aserciones aprobadas al 100%, certificando la creación transaccional del técnico (`201 Created`), detección estricta de duplicados de cédula y correo (`409 Conflict`), autenticación y emisión de token JWT RSA-256 (`200 OK`), consulta de perfil propio (`200 OK`) y bloqueo de operaciones cliente por control RBAC (`403 Forbidden`).
+
+#### 10.12.8 Certificación de Ejecución Global de Suites E2E en QA con `correr-colecciones-qa.js` (22/10/2026)
+
+Ejecución orquestada en PowerShell de las 6 suites del incremento técnico contra el Ingress del ambiente QA desplegado (`https://qa.quickpatch.internal`), confirmando el inicio de sesión exitoso del administrador del tenant y el paso sin fallos (100% PASS) de cada colección.
+
+![Consola Global de Ejecución de Suites E2E en QA](img/newman-qa-all-suites-2026-10-22.png)
+
+- **Comportamiento en Consola:** Todas las suites finalizaron con estado `OK` generando sus evidencias oficiales en `tests/e2e/evidencias/*-qa-2026-10-22.txt`:
+  1. `scrum-56-registro-tecnico`: OK (`tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt`)
+  2. `scrum-84-seguimiento-estado`: OK (`tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt`)
+  3. `scrum-99-equipo-proveedor`: OK (`tests/e2e/evidencias/scrum-99-equipo-proveedor-qa-2026-10-22.txt`)
+  4. `scrum-108-aprobacion-rechazo`: OK (`tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt`)
+  5. `scrum-111-suspension-tecnico`: OK (`tests/e2e/evidencias/scrum-111-suspension-tecnico-qa-2026-10-22.txt`)
+  6. `scrum-incremento-tecnico`: OK (`tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt`)
+
+#### 10.12.9 Evidencia de Ejecución Oficial: SCRUM-56 Registro de Técnico y Perfil en QA
+
+Detalle del resumen estadístico de Newman en consola para la suite `scrum-56-registro-tecnico.postman_collection.json` contra `https://qa.quickpatch.internal`.
+
+![Resumen Newman SCRUM-56 en QA](img/newman-scrum56-qa-2026-10-22.png)
+
+- **Métricas Oficiales:** 8 peticiones HTTP ejecutadas, 8 test scripts, 3 pre-request scripts, 23 aserciones superadas con **0 fallos (100% PASS)** en 2.5s de duración y 243ms de tiempo promedio de respuesta. Certifica la validación RFC 9457 `type: .../problems/validacion` y la unicidad de credenciales.
+
+#### 10.12.10 Evidencia de Ejecución Oficial: SCRUM-84 Seguimiento de Estado en Tiempo Real en QA
+
+Detalle del resumen estadístico de Newman en consola para la suite `scrum-84-seguimiento-estado.postman_collection.json` contra `https://qa.quickpatch.internal`.
+
+![Resumen Newman SCRUM-84 en QA](img/newman-scrum84-qa-2026-10-22.png)
+
+- **Métricas Oficiales:** 36 peticiones HTTP ejecutadas, 36 test scripts, 36 pre-request scripts, 42 aserciones superadas con **0 fallos (100% PASS)** en 16.1s de duración y 312ms de tiempo promedio de respuesta. Certifica el ciclo completo de 4 estados con `POST /start`, cotización `Quote`, subida de evidencia fotográfica a Garage y `POST /complete` (SCRUM-35).
+
+#### 10.12.11 Evidencia de Ejecución Oficial: SCRUM-99 Gestión de Equipo de Proveedor en QA
+
+Detalle del resumen estadístico de Newman en consola para la suite `scrum-99-equipo-proveedor.postman_collection.json` contra `https://qa.quickpatch.internal`.
+
+![Resumen Newman SCRUM-99 en QA](img/newman-scrum99-qa-2026-10-22.png)
+
+- **Métricas Oficiales:** 25 peticiones HTTP ejecutadas, 25 test scripts, 25 pre-request scripts, 43 aserciones superadas con **0 fallos (100% PASS)** en 15.0s de duración y 520ms de tiempo promedio de respuesta. Certifica el alta de técnicos bajo contrato `ProviderTechnicianRequest` sin campo excedente, herencia de tenant y aislamiento intra-tenant y multi-tenant RLS (`totalItems: 0`).
+
+#### 10.12.12 Evidencia de Ejecución Oficial: SCRUM-108 Aprobación y Rechazo de Técnicos en QA
+
+Detalle del resumen estadístico de Newman en consola para la suite `scrum-108-aprobacion-rechazo.postman_collection.json` contra `https://qa.quickpatch.internal`.
+
+![Resumen Newman SCRUM-108 en QA](img/newman-scrum108-qa-2026-10-22.png)
+
+- **Métricas Oficiales:** 30 peticiones HTTP ejecutadas, 30 test scripts, 30 pre-request scripts, 40 aserciones superadas con **0 fallos (100% PASS)** en 13.9s de duración y 385ms de tiempo promedio de respuesta. Certifica la aprobación y rechazo administrativo con motivo obligatorio >= 5 caracteres bajo tipo RFC 9457 `problems/validacion`, control RBAC y aislamiento RLS.
+
 ---
 
 ## 11. Control de Versiones del Documento
@@ -755,4 +1729,25 @@ quickpatch/tests/evidence/
 | **1.2** | 5 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Incorporación de observaciones del equipo: (1) Enfoque exclusivo de carga (50 VU) y estrés (150 VU) en QA (VM2 - ADR-015), protegiendo Producción (VM3) de estrés rutinario; (2) Reemplazo de umbral rígido de 6.5 GiB por criterios objetivos de estabilidad (0 OOMKilled, 0 caída de pods, degradación controlada y baseline de CPU/RAM); (3) Referencia dinámica a Jira para estados de subtareas; (4) Retiro de Pact, consolidando la validación contractual sobre OpenAPI, Spectral CLI y AJV en quickpatch-contracts. |
 | **1.3** | 6 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Corrección de aislamiento de base de datos en pruebas de carga (revisión PR #20): eliminación de toda referencia a VM4 en pasos de carga y teardown; la inyección de carga y la purga SQL se direccionan exclusivamente al PostgreSQL propio de QA en VM2, garantizando que la BD de producción en VM4 permanezca 100% aislada. |
 | **1.4** | 7 de octubre de 2026 | Líder de Aseguramiento de Calidad (QA Lead) | Incorporación de observaciones de revisión (PR #20): (1) Alineación con la redistribución de 7 VMs según ADR-022 (QA en VM2, VM5 y VM7; Producción en VM3, VM4 y VM6; Herramientas y observabilidad unificada en VM1); (2) Traslado de la persistencia de QA a PostgreSQL en VM5 para pruebas de carga, conexiones (PRF-009) y scripts de purga post-carga; (3) Mantenimiento del umbral formal de RAM $\le 6.5\text{ GiB}$ en VM3 conforme al escenario AC2-E5 del SAD, registrando la nota de INFRASTRUCTURE §5.6 y SCRUM-347; (4) Clarificación del comportamiento de desactivación de tenants (RN-T1) conforme a DD 7.12 (rechazo de login en IDN-019); (5) Actualización de versiones vigentes a SRS v3.3 y SAD v2.24, y completitud de claves de Jira de QA para el sprint. |
+| **2.0** | 17 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias del incremento de Sprint 4 (SCRUM-81, SCRUM-90, SCRUM-93): Pruebas de disponibilidad y cobertura geográfica en Matching Service (COV-001..004, AVA-001..005), aceptación y rechazo atómico de ofertas de asignación (OFF-001..007) y detalle de solicitud para técnico asignado con consulta interna por lote a Identity (DTL-001..005). Resultados de ejecución con Newman (24 peticiones, 63 aserciones, 100% Pass) y protocolo de verificación de base de datos PostgreSQL/PostGIS (technician_availability, coverage_zones, matching_attempts, outbox_events, service_requests). |
+| **2.1** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias para Registro de Técnico/Proveedor (SCRUM-56 / HU SCRUM-22), Aislamiento Lógico por Tenant mediante RLS (SCRUM-62 / HU SCRUM-24 / AC6-E2) y cierre formal de casos de prueba del incremento técnico (SCRUM-400 / SCRUM-399). Resumen estadístico Newman (15 peticiones, 35 aserciones, 100% Pass) y matriz de verificación de persistencia multi-tenant en PostgreSQL. |
+| **2.2** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31, SCRUM-451, SCRUM-466). Verificación de ciclo completo de 4 estados (buscando_tecnico, asignado, en_progreso, completado), latencia inferior a 1 minuto, visibilidad de técnico (nombre y especialidad), handshake WebSocket en Gateway (ADR-023), eventos outbox (ADR-007), rechazo de saltos inválidos (409 Conflict), control RBAC (403 Forbidden) y aislamiento intra-tenant y multi-tenant RLS (404 Not Found). Resumen estadístico Newman (18 peticiones, 47 aserciones, 100% Pass). |
+| **2.3** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Gestión de Equipo de Técnicos por parte del Proveedor (SCRUM-99 / HU SCRUM-36 / RF-16). Verificación de alta de técnicos en equipo con herencia de tenant y estado inicial pendiente (RN-TP3), filtrado de equipo activo vs inactivo (DD §8.3.14), unicidad de correo y documento (RN-U1), validaciones RFC 9457 (400 Bad Request), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento intra-tenant y multi-tenant RLS (RN-TP4 / SAD AC6-E2). Resumen estadístico Newman (17 peticiones, 34 aserciones, 100% Pass). |
+| **2.4** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Aprobación y Rechazo de Técnicos y Proveedores (SCRUM-108 / HU SCRUM-39 / RF-19). Verificación de listado por estado de verificación, aprobación de perfiles técnicos con activación para matching (RN-TP1), rechazo con motivo obligatorio y validación RFC 9457 (400 Bad Request), máquina de estados y bloqueo de transiciones inválidas (409 Conflict), emisión de evento outbox technician.verification-changed (ADR-007), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento multi-tenant con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (17 peticiones, 32 aserciones, 100% Pass). |
+| **2.5** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Suspensión de Cuenta de Técnico (SCRUM-111 / HU SCRUM-40 / RF-20). Verificación de suspensión con motivo obligatorio >= 5 caracteres (DD §8.3.13), bloqueo de asignaciones en matching (RN-TP2), reactivación de técnico suspendido a aprobado, validación de motivo y RFC 9457 (400 Bad Request), máquina de estados y bloqueo de transiciones inválidas (409 Conflict), emisión de evento outbox technician.verification-changed (ADR-007), control de acceso RBAC contra clientes y técnicos (403 Forbidden), y aislamiento multi-tenant con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (15 peticiones, 30 aserciones, 100% Pass). |
+| **2.6** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de las suites de prueba y evidencias E2E para Motor de Matching y Asignación Automática (SCRUM-78 / HU SCRUM-29 / RF-09, RF-10, RNF-05). Verificación de asignación automática a candidato elegible en menos de 60 segundos (AC2-E3), exclusión de candidatos no aprobados, ocupados o fuera de cobertura (RN-M9), transición a estado en_espera ante ausencia de candidatos y reintento (RN-M10), deduplicación e idempotencia en consumo de eventos Kafka vía processed_events (AC5-E5), control de acceso RBAC contra clientes y técnicos (403 Forbidden), seguridad anónima (401 Unauthorized / IDN-017) y aislamiento multi-tenant estricto con Row-Level Security (SAD AC6-E2). Resumen estadístico Newman (15 peticiones, 35 aserciones, 100% Pass). |
+| **2.7** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Actualización integral de la Matriz de Trazabilidad de Requisitos (RTM) alineada a SRS V5 (32 RFs, 23 Features, 7 Épicas), incorporación formal de la trazabilidad bidireccional de las Historias de Usuario de Sprint 4 (SCRUM-22, 24, 29, 30, 31, 33, 34, 36, 39, 40, 454/456, 399, 394), y resolución de criterios de aceptación verificables de SRS V5 §5.5 (RF-09, RF-10, RF-13, RF-19) cerrando todos los casos pendientes (SCRUM-401). |
+| **2.8** | 18 de octubre de 2026 | Katherine Bravo (QA Lead) | Especificación formal de la estrategia de compuertas de calidad (Compuerta 0 a Compuerta 3) y definición operativa de la Compuerta 2 en la infraestructura dedicada de QA sobre 7 VMs (ADR-015, ADR-022: VM1, VM2, VM5, VM7), estableciendo umbrales de aceptación para suites E2E/API, escáner PCI-DSS en Loki, pruebas k6 (50/150 VU), DAST ZAP y aislamiento RLS (SCRUM-402 / SCRUM-399). |
+| **2.9** | 19 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación formal de evidencias fotográficas y gráficas de ejecución real en ambiente de QA (Compuerta 2 — Sprint 4) en §10.12: pruebas de carga (50 VU) y estrés (150 VU) con Grafana k6, telemetría y logs transaccionales en vivo en Nginx Ingress, exportación de logs estructurados desde Grafana Loki API para auditoría PCI-DSS, transferencia segura SCP y reporte DAST con OWASP ZAP Baseline en Docker. |
+| **2.10** | 21 de octubre de 2026 | Katherine Bravo (QA Lead) | Actualización de evidencias fotográficas en §10.12 con la ejecución real certificada en ambiente de QA: corrida k6 50 VU con auto-cancelación (PR #121) y contraseñas dinámicas (11,008 checks, 0% error), consulta de logs estructurados en vivo en Grafana Loki API (2,649 líneas) y reporte CLI de Newman para SCRUM-56 (20 aserciones aprobadas). |
+| **2.11** | 22 de octubre de 2026 | Katherine Bravo (QA Lead) | Certificación 100% PASS de todas las suites E2E contra ambiente QA desplegado (`https://qa.quickpatch.internal` en VM2 k3s) ejecutadas mediante `correr-colecciones-qa.js`. Incorporación de evidencias de ejecución oficiales del 22/10 (`scrum-56-registro-tecnico-qa-2026-10-22.txt`, `scrum-84-seguimiento-estado-qa-2026-10-22.txt`, `scrum-99-equipo-proveedor-qa-2026-10-22.txt`, `scrum-108-aprobacion-rechazo-qa-2026-10-22.txt`, `scrum-111-suspension-tecnico-qa-2026-10-22.txt`, `scrum-incremento-tecnico-qa-2026-10-22.txt`), actualización de matrices de prueba con tipo RFC 9457 `problems/validacion`, actualización de métricas estadísticas Newman y agregación de evidencias fotográficas certificadas en §10.12 (§10.12.8 a §10.12.12). |
+| **2.12** | 24 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación del Cuadro de Mando de Estadísticas y Métricas de Calidad de Software para Sprint 5 (SCRUM-601 / SCRUM-604 en `estadisticas-pruebas-sprint5.md`), formalización del Registro Consolidado de Defectos (SCRUM-603 en `registro-defectos-sprint4-sprint5.md`), y generación automatizada de las 4 gráficas ejecutivas de calidad (distribución por tipo, torta de éxito 100% PASS, defectos por severidad y cobertura de microservicios vs umbral 80%). |
+| **3.0** | 25 de octubre de 2026 | Katherine Bravo (QA Lead) | **Línea Base Final del Documento de Pruebas (TD V3.0 — SCRUM-529):**<br>1. **Casos de Prueba del Incremento Sprint 5 (SCRUM-530):** Incorporación formal de los casos de prueba automatizados para Calificación del servicio (`SCRUM-32` / `CAL-001..006`), Historial de servicios atendidos por el técnico (`SCRUM-37` / `HIS-001..005`), Pago corporativo centralizado de empresa (`SCRUM-43` / `PAY-019..023`), Registro de pagos recibidos por técnico/proveedor (`SCRUM-45` / `PAY-024..027`), Smoke Test E2E del flujo crítico (`SCRUM-47` / `SMK-001..004`), Cifrado en tránsito y reposo (`SCRUM-49` / `SEC-001..005`) y Rechazo inmediato de tenants inactivos por eventos réplica (`SCRUM-348` / `TNT-001..005`).<br>2. **Actualización de la RTM a SRS v5.6 (SCRUM-531):** Trazabilidad bidireccional completa de los 33 Requisitos Funcionales canónicos del SRS v5.6 (RF-01 a RF-29 y RF-34 a RF-37) y matriz de correspondencia hacia las Historias de Usuario de Sprint 5.<br>3. **Estrategia de Prueba de Humo y Compuerta a Producción (SCRUM-532):** Formalización de la Compuerta 3 (§3.3) bajo RNF-08 sobre la topología de 7 VMs (ADR-022: VM1, VM3, VM4, VM6), definiendo el Smoke Test de 9 pasos y el protocolo de Rollback automático (`kubectl rollout undo`). |
+| **3.1** | 3 de noviembre de 2026 | Katherine Bravo (QA Lead) | **Casos de prueba del Sprint 5 contra los contratos publicados (SCRUM-530):**<br>1. Se rediseñan contra los endpoints reales `CAL-001..023` (SCRUM-32, `POST /v1/service-requests/{id}/rating`), `HIS-001..016` (SCRUM-37) y `PAY-024..040` (SCRUM-45, `GET /v1/payments/received`).<br>2. Se agregan `PER-001..022` (edición del perfil, SCRUM-609), `REC-001..027` (recuperación de contraseña, SCRUM-623) y `NAV-001..022` (navegación hacia atrás, SCRUM-615).<br>3. Correcciones: `TNT-003` responde 422 `tenant-inactivo` (no 403), `ACT-011` edita nombre y teléfono, `SRQ-026` usa `/v1/technicians/me/service-requests`.<br>4. RTM del Sprint 5 (§7.1.3b) con las HU SCRUM-609, SCRUM-615 y SCRUM-623. Los casos nuevos quedan diseñados y pendientes de ejecución en QA.<br>5. Ajustes de la revisión por las decisiones de SCRUM-625 (DD 5.19): `REC-020` ya no queda a confirmar (las sesiones abiertas siguen hasta que vence su token); se agregan `REC-026` (técnico con la invitación sin usar) y `REC-027` (HMAC-SHA256 del correo en `password_recovery_attempts`). |
+
+
+
+
+
+
 

@@ -1,0 +1,144 @@
+[QA Mock Gateway] Inicializado en http://localhost:8080
+
+======================================================
+ EJECUTANDO: SCRUM-84 (Seguimiento de Estado en Tiempo Real)
+ HU Padre: SCRUM-31 | ADR-023 | SCRUM-451 | SCRUM-466
+ Modo: Simulaci├│n Preparatoria Local
+ Target: http://localhost:8080
+ Archivo: scrum-84-seguimiento-estado.postman_collection.json
+======================================================
+
+newman
+
+QUICKPATCH ÔÇö Seguimiento de Estado en Tiempo Real (SCRUM-84 / HU SCRUM-31)
+
+Ôûí 0. Autenticaci├│n de Actores
+Ôöö 0.1 Login Cliente Propietario (usr-client-01)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 558B, 29ms]
+  ÔêÜ  [Auth] Login de cliente exitoso (200 OK)
+
+Ôöö 0.2 Login T├®cnico Asignado (usr-tec-01)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 584B, 4ms]
+  ÔêÜ  [Auth] Login de t├®cnico exitoso (200 OK)
+
+Ôöö 0.3 Login Cliente Ajeno en Mismo Tenant (usr-client-02)
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 559B, 2ms]
+  ÔêÜ  [Auth] Login de cliente 2 exitoso (200 OK)
+
+Ôöö 0.4 Login Cliente en Tenant Beta
+  POST http://localhost:8080/api/v1/auth/login [200 OK, 563B, 2ms]
+  ÔêÜ  [Auth] Login de cliente Beta exitoso (200 OK)
+
+Ôûí 1. Canal en Tiempo Real (WebSocket / Gateway)
+Ôöö 1.1 Handshake y suscripci├│n a WebSocket (/v1/realtime) con token
+  GET http://localhost:8080/api/v1/realtime [200 OK, 559B, 4ms]
+  ÔêÜ  [ADR-023 / SCRUM-451] 200 OK en handshake de canal en tiempo real
+  ÔêÜ  [Gateway] Cabecera de canal activo verificada
+  ÔêÜ  [Tiempo Real] Estado connected y transporte websocket
+  ÔêÜ  [SCRUM-466] Suscripci├│n obligatoria a service-request.status-changed
+
+Ôöö 1.2 Rechazo de conexi├│n a tiempo real sin token (IDN-017) -> 401 Unauthorized
+  GET http://localhost:8080/api/v1/realtime [401 Unauthorized, 476B, 2ms]
+  ÔêÜ  [Seguridad] 401 Unauthorized para handshake an├│nimo
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato RFC 9457] Tipo de error /no-autenticado
+
+Ôûí 2. Estado 1: Buscando T├®cnico
+Ôöö 2.1 Creaci├│n de solicitud por cliente (estado inicial buscando_tecnico)
+  POST http://localhost:8080/api/v1/service-requests [201 Created, 467B, 2ms]
+  ÔêÜ  [ServiceRequest] 201 Created para nueva solicitud
+  ÔêÜ  [SCRUM-31] Estado inicial es buscando_tecnico
+
+Ôöö 2.2 Cliente consulta estado inicial de su solicitud
+  GET http://localhost:8080/api/v1/service-requests/sr-tracking-01 [200 OK, 600B, 2ms]
+  ÔêÜ  [Seguimiento] 200 OK en consulta de solicitud
+  ÔêÜ  [Estado 1] Solicitud visible en estado buscando_tecnico
+  ÔêÜ  [Cliente] T├®cnico es null antes de la asignaci├│n
+
+Ôûí 3. Estado 2: Asignado
+Ôöö 3.1 Actualizaci├│n a estado 'asignado' tras aceptaci├│n de oferta
+  PUT http://localhost:8080/api/v1/service-requests/sr-tracking-01/status [200 OK, 429B, 4ms]
+  ÔêÜ  [Transici├│n] 200 OK en actualizaci├│n a asignado
+  ÔêÜ  [Transici├│n] Estado nuevo es asignado
+  ÔêÜ  [SCRUM-466] Evento service-request.status-changed emitido
+
+Ôöö 3.2 Cliente consulta estado asignado y visualiza datos del t├®cnico
+  GET http://localhost:8080/api/v1/service-requests/sr-tracking-01 [200 OK, 693B, 2ms]
+  ÔêÜ  [Seguimiento] 200 OK para cliente consultando asignaci├│n
+  ÔêÜ  [Estado 2] Estado actualizado a asignado
+  ÔêÜ  [SCRUM-31 / Criterio 3] Nombre del t├®cnico visible para el cliente
+  ÔêÜ  [SCRUM-31 / Criterio 3] Especialidad del t├®cnico visible para el cliente
+
+Ôûí 4. Estado 3: En Progreso
+Ôöö 4.1 T├®cnico inicia el trabajo y pasa solicitud a 'en_progreso'
+  PUT http://localhost:8080/api/v1/service-requests/sr-tracking-01/status [200 OK, 424B, 2ms]
+  ÔêÜ  [Transici├│n] 200 OK en actualizaci├│n a en_progreso
+  ÔêÜ  [M├íquina de Estados] previousStatus: asignado -> status: en_progreso
+  ÔêÜ  [SCRUM-466] Aviso de estado emitido en la misma transacci├│n
+
+Ôöö 4.2 Cliente observa estado 'en_progreso' con latencia inmediata (< 1 minuto)
+  GET http://localhost:8080/api/v1/service-requests/sr-tracking-01 [200 OK, 696B, 2ms]
+  ÔêÜ  [Seguimiento] 200 OK en consulta de estado en progreso
+  ÔêÜ  [SCRUM-31 / Criterio 2] Latencia de respuesta inferior a 1 minuto (< 60s)
+  ÔêÜ  [Estado 3] Estado confirmado como en_progreso
+  ÔêÜ  [Seguimiento] T├®cnico asignado permanece visible
+
+Ôûí 5. Estado 4: Completado
+Ôöö 5.1 T├®cnico finaliza la reparaci├│n y pasa solicitud a 'completado'
+  PUT http://localhost:8080/api/v1/service-requests/sr-tracking-01/status [200 OK, 426B, 3ms]
+  ÔêÜ  [Transici├│n] 200 OK en finalizaci├│n de servicio
+  ÔêÜ  [M├íquina de Estados] previousStatus: en_progreso -> status: completado
+
+Ôöö 5.2 Cliente consulta estado final 'completado' (ciclo completo 4/4 estados)
+  GET http://localhost:8080/api/v1/service-requests/sr-tracking-01 [200 OK, 695B, 2ms]
+  ÔêÜ  [Seguimiento] 200 OK en consulta de estado completado
+  ÔêÜ  [Estado 4] Estado confirmado como completado
+  ÔêÜ  [Criterio 1 Cumplido] 4 estados verificados (buscando_tecnico, asignado, en_progreso, completado)
+
+Ôûí 6. Filtros Negativos y Aislamiento
+Ôöö 6.1 Transici├│n Inv├ílida: T├®cnico intenta saltar de completado a buscando_tecnico -> 409 Conflict
+  PUT http://localhost:8080/api/v1/service-requests/sr-tracking-01/status [409 Conflict, 501B, 3ms]
+  ÔêÜ  [RN-SR6] 409 Conflict ante transici├│n de estado inv├ílida
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato RFC 9457] Tipo de error /transicion-invalida
+
+Ôöö 6.2 Control RBAC: Cliente intenta modificar el estado t├®cnico de la orden -> 403 Forbidden
+  PUT http://localhost:8080/api/v1/service-requests/sr-tracking-01/status [403 Forbidden, 498B, 3ms]
+  ÔêÜ  [RBAC / SCRUM-31] 403 Forbidden para cliente intentando cambiar estado
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato RFC 9457] Tipo de error /no-autorizado
+
+Ôöö 6.3 Aislamiento Intra-Tenant: Cliente 2 intenta consultar la solicitud de Cliente 1 -> 404 Not Found
+  GET http://localhost:8080/api/v1/service-requests/sr-tracking-01 [404 Not Found, 510B, 2ms]
+  ÔêÜ  [Confidencialidad Intra-Tenant] 404 Not Found para cliente ajeno del mismo tenant
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato RFC 9457] Tipo de error /no-encontrado
+
+Ôöö 6.4 Aislamiento Multi-Tenant: Cliente de Tenant Beta intenta consultar solicitud de Tenant Alfa -> 404 Not Found
+  GET http://localhost:8080/api/v1/service-requests/sr-tracking-01 [404 Not Found, 494B, 3ms]
+  ÔêÜ  [SAD AC6-E2 / RLS] 404 Not Found garantizado por Row-Level Security
+  ÔêÜ  [RFC 9457] Problem Details con correlationId
+  ÔêÜ  [Contrato RFC 9457] Tipo de error /no-encontrado
+
+ÔöîÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö¼ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö¼ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÉ
+Ôöé                         Ôöé        executed Ôöé          failed Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé              iterations Ôöé               1 Ôöé               0 Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé                requests Ôöé              18 Ôöé               0 Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé            test-scripts Ôöé              18 Ôöé               0 Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé      prerequest-scripts Ôöé               0 Ôöé               0 Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé              assertions Ôöé              47 Ôöé               0 Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö┤ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö┤ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé total run duration: 1682ms                                  Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé total data received: 5.61kB (approx)                        Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé average response time: 4ms [min: 2ms, max: 29ms, s.d.: 6ms] Ôöé
+ÔööÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÿ
+
+[Newman] Ejecuci├│n de SCRUM-84 completada al 100% con ├®xito.
+[QA Mock Gateway] Servidor local cerrado.

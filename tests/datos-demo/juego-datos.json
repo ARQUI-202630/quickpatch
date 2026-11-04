@@ -1,0 +1,132 @@
+{
+  "_comentario": "Juego de datos de demostración para QA y producción (SCRUM-632, SCRUM-633). Cubre clientes hogar, empresas clientes, técnicos independientes y un proveedor con un técnico de su equipo, todos en el tenant del ambiente. Sin contraseñas en el repositorio (QP_DEMO_PASSWORD). Correos con el dominio demo.quickpatch.test. Direcciones geocodificables en Bogotá. Incluye las 6 categorías base, que el script crea si faltan. Los NIT llevan el dígito de verificación de la DIAN y el script lo valida.",
+  "categorias": [
+    { "nombre": "Aire acondicionado", "descripcion": "Instalación, mantenimiento y recarga de gas." },
+    { "nombre": "Cerrajería", "descripcion": "Aperturas, cambio de guardas y chapas." },
+    { "nombre": "Eléctrico", "descripcion": "Instalaciones, tomas, breakers y cortos." },
+    { "nombre": "Electrodomésticos", "descripcion": "Reparación de lavadoras, neveras y estufas." },
+    { "nombre": "Pintura", "descripcion": "Pintura de interiores y exteriores." },
+    { "nombre": "Plomería", "descripcion": "Fugas, grifería, tuberías y destapes." }
+  ],
+  "clientes": [
+    {
+      "email": "demo.cliente1@demo.quickpatch.test",
+      "nombre": "Carolina Gómez Restrepo",
+      "telefono": "3001230001"
+    },
+    {
+      "email": "demo.cliente2@demo.quickpatch.test",
+      "nombre": "Andrés Felipe Morales",
+      "telefono": "3001230002"
+    },
+    {
+      "email": "demo.cliente3@demo.quickpatch.test",
+      "nombre": "Mariana Lucía Torres",
+      "telefono": "3001230003"
+    }
+  ],
+  "empresas": [
+    {
+      "razonSocial": "Inmobiliaria & Coworking Bogotá S.A.S.",
+      "nit": "900123456-8",
+      "usuario": {
+        "email": "demo.empresa1@demo.quickpatch.test",
+        "nombre": "Santiago Ramírez (Administrador Coworking)",
+        "telefono": "3001230011"
+      }
+    },
+    {
+      "razonSocial": "Restaurantes y Cafés Andinos S.A.S.",
+      "nit": "901987654-0",
+      "usuario": {
+        "email": "demo.empresa2@demo.quickpatch.test",
+        "nombre": "Valeria Jaramillo (Operaciones Retail)",
+        "telefono": "3001230012"
+      }
+    }
+  ],
+  "proveedores": [
+    {
+      "email": "demo.proveedor1@demo.quickpatch.test",
+      "nombre": "Héctor Fabio Proveedor",
+      "telefono": "3004560001",
+      "documento": "1000000030",
+      "categoria": "Plomería",
+      "equipo": [
+        {
+          "email": "demo.tecnico.proveedor1@demo.quickpatch.test",
+          "nombre": "Néstor Raúl Cárdenas (Técnico de Equipo)",
+          "telefono": "3004560002",
+          "documento": "1000000031",
+          "categoria": "Plomería"
+        }
+      ]
+    }
+  ],
+  "tecnicos": [
+    {
+      "email": "demo.tecnico1@demo.quickpatch.test",
+      "nombre": "Carlos Alberto Pérez",
+      "telefono": "3001230021",
+      "documento": "1000000021",
+      "categoria": "Plomería"
+    },
+    {
+      "email": "demo.tecnico2@demo.quickpatch.test",
+      "nombre": "Jorge Enrique Duarte",
+      "telefono": "3001230022",
+      "documento": "1000000022",
+      "categoria": "Plomería"
+    },
+    {
+      "email": "demo.tecnico3@demo.quickpatch.test",
+      "nombre": "Mauricio Silva Peña",
+      "telefono": "3001230023",
+      "documento": "1000000023",
+      "categoria": "Cerrajería"
+    },
+    {
+      "email": "demo.tecnico4@demo.quickpatch.test",
+      "nombre": "Héctor Fabio Ospina",
+      "telefono": "3001230024",
+      "documento": "1000000024",
+      "categoria": "Eléctrico"
+    }
+  ],
+  "cobertura": [
+    "01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
+    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"
+  ],
+  "solicitudes": [
+    {
+      "cliente": "demo.cliente1@demo.quickpatch.test",
+      "categoria": "Plomería",
+      "descripcion": "[DEMO] Fuga de agua continua en grifería del lavamanos principal",
+      "direccion": "Calle 72 # 10-34, Bogotá"
+    },
+    {
+      "cliente": "demo.cliente2@demo.quickpatch.test",
+      "categoria": "Cerrajería",
+      "descripcion": "[DEMO] Cambio de cerradura de seguridad y copia de llaves",
+      "direccion": "Carrera 15 # 85-30, Bogotá"
+    },
+    {
+      "cliente": "demo.cliente3@demo.quickpatch.test",
+      "categoria": "Eléctrico",
+      "descripcion": "[DEMO] Cortocircuito en panel de interruptores de cocina",
+      "direccion": "Calle 53 # 13-25, Bogotá"
+    },
+    {
+      "cliente": "demo.empresa1@demo.quickpatch.test",
+      "categoria": "Plomería",
+      "descripcion": "[DEMO] Mantenimiento preventivo de batería de baños piso 3 oficinas",
+      "direccion": "Avenida Carrera 68 # 24-30, Bogotá"
+    },
+    {
+      "cliente": "demo.empresa2@demo.quickpatch.test",
+      "categoria": "Eléctrico",
+      "descripcion": "[DEMO] Revisión de acometida y tomas de corriente en barra comercial",
+      "direccion": "Calle 134 # 9-51, Bogotá"
+    }
+  ]
+}

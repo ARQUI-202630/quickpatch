@@ -42,13 +42,15 @@
         regexp: '\s{{ gateway_hosts.qa | regex_escape }}$'
         line: "{{ ip.vm1 }} {{ gateway_hosts.qa }}"   # QA se alcanza por el proxy de VM1, como un usuario
 
-    # deploy-panel.yml publica el panel de QA en VM2 por SSH con esta llave.
+    # El runner publica el panel de cada ambiente por SSH en su gateway (VM2 en QA, VM3 en producción) con esta llave.
+    # Solo esta parte: --tags llave-runner (no toca el runner ni los kubeconfig).
     - name: Carpeta .ssh del usuario de despliegue
       ansible.builtin.file:
         path: "/home/{{ deploy_user }}/.ssh"
         state: directory
         owner: "{{ deploy_user }}"
         mode: "0700"
+      tags: [llave-runner]
 
     - name: Llave SSH del runner
       ansible.builtin.command: >
@@ -56,6 +58,7 @@
         -f /home/{{ deploy_user }}/.ssh/id_ed25519
       args:
         creates: "/home/{{ deploy_user }}/.ssh/id_ed25519"
+      tags: [llave-runner]
 
     - name: La llave pertenece al usuario de despliegue
       ansible.builtin.file:
@@ -65,17 +68,21 @@
       loop:
         - { archivo: id_ed25519, modo: "0600" }
         - { archivo: id_ed25519.pub, modo: "0644" }
+      tags: [llave-runner]
 
     - name: Leer la llave pública del runner
       ansible.builtin.slurp:
         src: "/home/{{ deploy_user }}/.ssh/id_ed25519.pub"
       register: llave_runner
+      tags: [llave-runner]
 
-    - name: Autorizar la llave del runner en QA (VM2)
+    - name: Autorizar la llave del runner en las VMs de aplicación (VM2 de QA y VM3 de producción)
       ansible.posix.authorized_key:
         user: "{{ deploy_user }}"
         key: "{{ llave_runner.content | b64decode }}"
-      delegate_to: vm2
+      delegate_to: "{{ item }}"
+      loop: [vm2, vm3]
+      tags: [llave-runner]
 
     - name: Instalar k6 para la prueba de carga en QA, versión {{ k6_version }}
       ansible.builtin.unarchive:
@@ -92,6 +99,7 @@
         src: "{{ playbook_dir }}/../files/compuerta-qa.sh"
         dest: /usr/local/bin/compuerta-qa
         mode: "0755"
+      tags: [compuerta]   # solo esta parte: --tags compuerta
 
     - name: Carpeta del runner
       ansible.builtin.file:

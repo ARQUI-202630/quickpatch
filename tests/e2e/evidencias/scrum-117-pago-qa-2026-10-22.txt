@@ -1,0 +1,362 @@
+scrum-117-pago contra QA, 2026-10-22
+Colección: tests/e2e/scrum-117-pago.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-10-22T15:43:18.432Z. Duración: 76 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-117 Pago con la pasarela simulada de punta a punta
+
+❏ 0. Preparación: categoría propia, técnico aprobado y clientes
+↳ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 943ms]
+  ✓  200 con rol admin_tenant
+
+↳ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 439B, 32ms]
+  ✓  201
+
+↳ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 442B, 924ms]
+  ✓  201
+
+↳ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16448-14bd-7fc7-8a9f-1558b69953d2/approve [200 OK, 321B, 32ms]
+  ✓  200
+
+↳ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 861ms]
+  ✓  200 con rol tecnico
+
+↳ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [404 Not Found, 715B, 54ms]
+
+Attempting to set next request to b7dd7154-9463-4fa9-bc30-a506ded17c4d
+
+↳ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 38ms]
+  ✓  200
+
+↳ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 28ms]
+  ✓  200
+
+↳ Registro de otro técnico, sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 908ms]
+  ✓  201
+
+↳ Login del otro técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 977ms]
+  ✓  200 con rol tecnico
+
+↳ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 906ms]
+  ✓  201
+
+↳ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 972ms]
+  ✓  200 con rol cliente
+
+↳ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 432B, 912ms]
+  ✓  201
+
+↳ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 959ms]
+  ✓  200 con rol cliente
+
+↳ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 439B, 893ms]
+  ✓  201
+
+↳ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 913ms]
+  ✓  200 con rol cliente
+
+❏ 1. Hasta el servicio completado
+↳ Crear la solicitud 1 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 834B, 902ms]
+  ✓  201
+
+↳ El técnico ve la oferta de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 25ms]
+
+Attempting to set next request to ee0d3c0e-6c61-4770-b909-1ee263c0adb1
+
+↳ El técnico ve la oferta de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 818B, 23ms]
+  ✓  la oferta está pendiente para el técnico
+
+↳ El técnico acepta la oferta de la solicitud 1
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/af020d67-4fce-4563-8096-9f8ca4d86df6/accept [200 OK, 447B, 24ms]
+  ✓  200
+
+↳ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781 [200 OK, 759B, 21ms]
+
+Attempting to set next request to a2b4c021-5a66-4222-9edd-69ea3d75567f
+
+↳ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781 [200 OK, 888B, 55ms]
+  ✓  asignado al técnico de la prueba
+
+↳ El técnico cotiza 185.000
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/quotes [201 Created, 648B, 30ms]
+  ✓  201 con el contrato Quote
+
+↳ El cliente acepta
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/quotes/01a16448-55d6-78af-863b-d2d2cb2ac550/accept [200 OK, 366B, 761ms]
+  ✓  200 con el contrato QuoteDecision
+
+↳ El técnico inicia
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/start [200 OK, 342B, 22ms]
+  ✓  200
+
+↳ El técnico sube la foto
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/evidence [201 Created, 445B, 46ms]
+  ✓  201
+
+↳ El técnico completa
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/complete [200 OK, 343B, 23ms]
+  ✓  200
+
+❏ 2. Pago pendiente y accesos
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [404 Not Found, 569B, 25ms]
+
+Attempting to set next request to dc2800c2-2f5a-44c2-9a84-0624a04f39b7
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 23ms]
+  ✓  200 con el contrato Payment en pendiente
+
+↳ El técnico no consulta el pago → 403
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [403 Forbidden, 443B, 15ms]
+  ✓  403
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ Otro cliente no ve el pago → 404
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [404 Not Found, 457B, 21ms]
+  ✓  404
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ El cliente de otro tenant no ve el pago → 404 (RLS)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [404 Not Found, 569B, 18ms]
+  ✓  404
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ Otro cliente no paga → 404
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [404 Not Found, 457B, 25ms]
+  ✓  404
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ El número de la tarjeta en vez del token → 400 en paymentToken
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [400 Bad Request, 553B, 26ms]
+  ✓  400
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo validacion
+  ✓  error en paymentToken
+
+↳ Un campo que el contrato no define → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [400 Bad Request, 444B, 21ms]
+  ✓  400
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo validacion
+
+❏ 3. Rechazo y pasarela sin respuesta
+↳ Tarjeta rechazada por fondos → 200 rechazado
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 528B, 51ms]
+  ✓  200 con el contrato Payment en rechazado
+
+↳ La solicitud sigue en completado (RN-SR5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781 [200 OK, 949B, 27ms]
+  ✓  completado
+
+↳ La pasarela no responde → 502 pasarela-sin-respuesta
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [502 Bad Gateway, 571B, 37ms]
+  ✓  502
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo pasarela-sin-respuesta
+
+↳ Pagar otra vez mientras se concilia → 409 pago-en-curso
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [409 Conflict, 476B, 22ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo pago-en-curso
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 21ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 27ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 21ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 27ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 19ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 23ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 17ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 23ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 307ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 16ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 24ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 23ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 37ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 19ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 28ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 23ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 22ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 25ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 21ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 19ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 23ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 479B, 22ms]
+
+Attempting to set next request to a0db20e8-e3db-4a68-8040-79374e9aef4b
+
+↳ La conciliación cierra el pago como rechazado (AC9-E5)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 527B, 20ms]
+  ✓  200 con el contrato Payment en rechazado
+
+❏ 4. Pago aprobado
+↳ Tarjeta aprobada → 200 aprobado con comprobante
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 543B, 41ms]
+  ✓  200 con el contrato Payment en aprobado
+
+↳ ServiceRequest pasa la solicitud a pagado (payment.approved, RN-SR4)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781 [200 OK, 949B, 43ms]
+
+Attempting to set next request to d1f682f4-27f1-47f8-a570-a8dba121550f
+
+↳ ServiceRequest pasa la solicitud a pagado (payment.approved, RN-SR4)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781 [200 OK, 945B, 27ms]
+  ✓  pagado
+
+↳ Pagar otra vez → 409 ya-pagado
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [409 Conflict, 457B, 21ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ya-pagado
+
+↳ El pago queda aprobado
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16448-41d9-7fb1-9d9e-108c26d57781/payment [200 OK, 541B, 20ms]
+  ✓  200 con el contrato Payment en aprobado
+
+❏ Limpieza
+↳ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16448-14bd-7fc7-8a9f-1558b69953d2/suspend [200 OK, 348B, 29ms]
+  ✓  200
+
+↳ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a16448-148a-72c7-a230-2155fe21533a [200 OK, 435B, 27ms]
+  ✓  200
+
+┌─────────────────────────┬────────────────────┬────────────────────┐
+│                         │           executed │             failed │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              iterations │                  1 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│                requests │                 69 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│            test-scripts │                 69 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│      prerequest-scripts │                 69 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              assertions │                 57 │                  0 │
+├─────────────────────────┴────────────────────┴────────────────────┤
+│ total run duration: 1m 8.4s                                       │
+├───────────────────────────────────────────────────────────────────┤
+│ total data received: 23.75kB (approx)                             │
+├───────────────────────────────────────────────────────────────────┤
+│ average response time: 197ms [min: 15ms, max: 977ms, s.d.: 345ms] │
+└───────────────────────────────────────────────────────────────────┘
+(node:13374) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+npm warn deprecated har-validator@5.1.5: this library is no longer supported
+npm warn deprecated uuid@3.4.0: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+npm warn deprecated @faker-js/faker@5.5.3: Please update to a newer version.
+(node:13400) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:13400) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(node:13400) [DEP0044] DeprecationWarning: The `util.isArray` API is deprecated. Please use `Array.isArray()` instead.

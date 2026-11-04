@@ -1,0 +1,161 @@
+scrum-111-suspension-tecnico contra QA, 2026-10-22
+Colección: tests/e2e/scrum-111-suspension-tecnico.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-10-22T21:31:22.590Z. Duración: 17 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-111 Suspensión de Cuenta de Técnico (Admin)
+
+□ 0. Preparación: categoría propia, técnico aprobado y clientes
+└ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 966ms]
+  √  200 con rol admin_tenant
+
+└ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 439B, 25ms]
+  √  201
+
+└ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 442B, 874ms]
+  √  201
+
+└ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/approve [200 OK, 321B, 21ms]
+  √  200
+
+└ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 911ms]
+  √  200 con rol tecnico
+
+└ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 33ms]
+  √  200
+
+└ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 19ms]
+  √  200
+
+└ Registro de otro técnico, sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 910ms]
+  √  201
+
+└ Login del otro técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 974ms]
+  √  200 con rol tecnico
+
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 952ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 846ms]
+  √  200 con rol cliente
+
+└ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 432B, 902ms]
+  √  201
+
+└ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 1005ms]
+  √  200 con rol cliente
+
+└ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 439B, 933ms]
+  √  201
+
+└ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 909ms]
+  √  200 con rol cliente
+
+□ 1. Suspensión y Reactivación de Técnico (RF-20 / RN-TP2 / DD §8.3.13)
+└ 1.1 Admin suspende técnico en estado aprobado
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/suspend [200 OK, 379B, 27ms]
+  √  [RF-20 / RN-TP2] 200 OK al suspender técnico aprobado con motivo válido
+
+└ 1.2 Admin consulta técnicos suspendidos
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians?verificationStatus=suspendido&size=100 [200 OK, 15.02kB, 25ms]
+  √  [Consistencia] Técnico suspendido aparece en lista de suspendidos
+
+└ 1.3 Reactivación: Admin aprueba y reactiva técnico suspendido (tecnicoId)
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/approve [200 OK, 321B, 18ms]
+  √  [Reactivación / DD §8.3.13] 200 OK al reactivar técnico suspendido a aprobado
+
+□ 2. Reglas de Negocio, Validación y Máquina de Estados
+└ 2.1 Validación: Intento de suspender con motivo menor a 5 caracteres -> 400 Bad Request
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/suspend [400 Bad Request, 556B, 13ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo validacion
+
+└ 2.2 Admin suspende técnico para probar transición de re-suspensión
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/suspend [200 OK, 369B, 19ms]
+  √  200
+
+└ 2.3 Transición Inválida: Intento de suspender técnico ya suspendido -> 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/suspend [409 Conflict, 491B, 14ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ 2.4 Transición Inválida: Intento de suspender técnico en estado pendiente (tecnico2Id) -> 409 Conflict
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-b8b6-740b-8b4c-d68691c9a80a/suspend [409 Conflict, 491B, 17ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ 2.5 Reactivar técnico a aprobado para aislamiento y limpieza
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/approve [200 OK, 321B, 18ms]
+  √  200
+
+□ 3. Control de Acceso RBAC y Aislamiento Multi-Tenant (RLS)
+└ 3.1 Control RBAC: Rol Cliente intenta suspender técnico -> 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/suspend [403 Forbidden, 443B, 14ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ 3.2 Control RBAC: Rol Técnico intenta auto-suspenderse -> 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/suspend [403 Forbidden, 443B, 10ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ 3.3 Seguridad: Petición anónima sin token -> 401 Unauthorized
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/suspend [401 Unauthorized, 476B, 11ms]
+  √  401
+  √  Problem Details (RFC 9457) con correlationId
+
+└ 3.4 Aislamiento Multi-Tenant (RLS): Actor de Tenant Beta no ve técnicos de Alfa -> 404
+  GET https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d [404 Not Found, 443B, 12ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+□ Limpieza
+└ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16586-afcc-72d2-8b51-2c0d284e391d/suspend [200 OK, 348B, 18ms]
+  √  200
+
+└ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a16586-af59-7bee-8645-43964168277b [200 OK, 434B, 20ms]
+  √  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  29 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  29 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  29 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  39 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 12.7s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 25.39kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 362ms [min: 10ms, max: 1005ms, s.d.: 440ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:15748) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)

@@ -24,6 +24,10 @@
     {
       "key": "platformAdminPassword",
       "value": ""
+    },
+    {
+      "key": "userPassword",
+      "value": ""
     }
   ],
   "item": [
@@ -122,7 +126,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.collectionVariables.set('sufijo', Date.now().toString(36));"
+                  "pm.collectionVariables.set('sufijo', Date.now().toString(36));",
+                  "if (!pm.collectionVariables.get('userPassword')) pm.collectionVariables.set('userPassword', 'Qp_' + Date.now() + '_User9!');"
                 ]
               }
             },
@@ -231,7 +236,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"cliente.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Cliente de prueba\",\n  \"phone\": \"3001234567\"\n}"
+              "raw": "{\n  \"email\": \"cliente.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{userPassword}}\",\n  \"fullName\": \"Cliente de prueba\",\n  \"phone\": \"3001234567\"\n}"
             }
           },
           "event": [
@@ -278,7 +283,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"cliente.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\"\n}"
+              "raw": "{\n  \"email\": \"cliente.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{userPassword}}\"\n}"
             }
           },
           "event": [
@@ -375,7 +380,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"cliente.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Cliente repetido\"\n}"
+              "raw": "{\n  \"email\": \"cliente.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{userPassword}}\",\n  \"fullName\": \"Cliente repetido\"\n}"
             }
           },
           "event": [
@@ -877,7 +882,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"bloqueo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Cliente bloqueo\"\n}"
+              "raw": "{\n  \"email\": \"bloqueo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{userPassword}}\",\n  \"fullName\": \"Cliente bloqueo\"\n}"
             }
           },
           "event": [
@@ -980,7 +985,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"bloqueo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\"\n}"
+              "raw": "{\n  \"email\": \"bloqueo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{userPassword}}\"\n}"
             }
           },
           "event": [
@@ -1033,7 +1038,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"otro.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Otro cliente\"\n}"
+              "raw": "{\n  \"email\": \"otro.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{userPassword}}\",\n  \"fullName\": \"Otro cliente\"\n}"
             }
           },
           "event": [
@@ -1080,7 +1085,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"otro.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\"\n}"
+              "raw": "{\n  \"email\": \"otro.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{userPassword}}\"\n}"
             }
           },
           "event": [
@@ -1781,7 +1786,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"tecnico.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Técnico de prueba\",\n  \"phone\": \"3007654321\",\n  \"documentId\": \"{{documento}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
+              "raw": "{\n  \"email\": \"tecnico.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{userPassword}}\",\n  \"fullName\": \"Técnico de prueba\",\n  \"phone\": \"3007654321\",\n  \"documentId\": \"{{documento}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
             }
           },
           "event": [
@@ -1842,7 +1847,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"tecnico2.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\",\n  \"fullName\": \"Técnico repetido\",\n  \"phone\": \"3007654321\",\n  \"documentId\": \"{{documento}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
+              "raw": "{\n  \"email\": \"tecnico2.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{userPassword}}\",\n  \"fullName\": \"Técnico repetido\",\n  \"phone\": \"3007654321\",\n  \"documentId\": \"{{documento}}\",\n  \"specialtyId\": \"{{categoriaId}}\",\n  \"role\": \"tecnico\"\n}"
             }
           },
           "event": [
@@ -1894,7 +1899,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"tecnico.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Segura123\"\n}"
+              "raw": "{\n  \"email\": \"tecnico.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{userPassword}}\"\n}"
             }
           },
           "event": [

@@ -1,6 +1,6 @@
 # ADR-022 — Redistribución de las 7 VMs: 3 de producción, 3 de QA y 1 de herramientas
 
-- **Estado:** Aceptado; implementación en curso (SCRUM-334; `quickpatch-infrastructure` PRs #20 a #23). Modifica a ADR-015 y actualiza la ubicación de los componentes de ADR-011, ADR-014 y ADR-016
+- **Estado:** Aceptado; implementación en curso (SCRUM-334; `quickpatch-infrastructure` PRs #20 a #23). Modifica a ADR-015 y actualiza la ubicación de los componentes de ADR-011, ADR-014 y ADR-016. **La regla 3 y la ubicación del API Gateway y del panel (el k3s de VM3) las precisa y reemplaza ADR-028:** un Nginx de gateway en VM3 y otro en VM2, con VM1 como entrada TLS
 - **Fecha:** 6 de octubre de 2026
 - **Decisión:** VM1 es la VM de herramientas y la única entrada desde la VPN. Producción ocupa VM3 (aplicación), VM4 (datos) y VM6 (mensajería y almacenamiento). QA es una copia de producción en VM2, VM5 y VM7
 - **Atributos priorizados:** AC7 Maintainability (Testability: QA reproduce la topología de producción, incluida la red entre VMs) y AC5 Reliability (las pruebas de QA ya no compiten por una sola VM)
@@ -37,7 +37,7 @@ Reglas:
 
 1. **Mismos componentes y versiones en los dos ambientes**, aprovisionados con los mismos playbooks de Ansible parametrizados por ambiente (SCRUM-346).
 2. **Aislamiento entre ambientes:** las VMs de QA no pueden conectarse a las de producción, ni al revés. Solo VM1 llega a las dos.
-3. **TLS termina en VM1**, que reenvía al gateway del ambiente (Traefik en el k3s de VM3 o VM2). Dentro de cada ambiente, el gateway enruta `/api/<servicio>` al servicio.
+3. **TLS termina en VM1**, que reenvía al gateway del ambiente (Traefik en el k3s de VM3 o VM2). Dentro de cada ambiente, el gateway enruta `/api/<servicio>` al servicio. (ADR-028: el gateway del ambiente es un Nginx en VM3 o VM2, delante del Traefik de su k3s.)
 4. **Recursos por servicio:** cada servicio tiene su base de datos con roles propios (ADR-014, ADR-019), su usuario de Redis restringido a sus claves (`<servicio>:*`) si usa caché, y su llave de Garage limitada a sus buckets si guarda archivos. El detalle está en el Documento de Infraestructura.
 5. **Respaldo:** el `pg_dump` diario de producción va de VM4 al Garage de VM6. QA no tiene respaldo: sus datos son de prueba.
 6. **Observabilidad:** las 7 VMs envían métricas y logs a VM1, con la etiqueta de su ambiente.
@@ -68,7 +68,7 @@ Reglas:
 ## Plan de migración (SCRUM-343 a SCRUM-347, DevOps)
 
 1. VM1: instalar Prometheus, Loki y Grafana y redirigir las métricas y los logs de las 7 VMs; después apagar la observabilidad de VM7.
-2. Producción: mover Redis de VM5 a VM4 y Garage de VM7 a VM6 (copiando los buckets y respaldos), y desplegar el API Gateway y el panel en el k3s de VM3. Después cambiar el proxy de VM1.
+2. Producción: mover Redis de VM5 a VM4 y Garage de VM7 a VM6 (copiando los buckets y respaldos), y desplegar el API Gateway y el panel en el k3s de VM3 (reemplazado por ADR-028: un Nginx en cada VM de aplicación). Después cambiar el proxy de VM1.
 3. QA: repartir el QA todo en uno de VM2 en VM2 (k3s), VM5 (PostgreSQL y Redis) y VM7 (Kafka y Garage).
 4. Firewall por VM según la tabla de reglas del Documento de Infraestructura.
 5. Verificación: medición de RAM y disco, pruebas de humo y reglas de firewall en los dos ambientes.

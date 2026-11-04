@@ -1,27 +1,31 @@
 # Prueba de humo del panel web publicado en QA (SCRUM-448), con los servicios reales y sin rutas simuladas.
-# Corre a mano desde la pestaña Actions, en el runner de VM1 (el único que llega a la red del laboratorio), después de
-# publicar un release/* de quickpatch-web. La app móvil se prueba aparte en un emulador (quickpatch-mobile,
-# integration_test/humo_qa_test.dart), porque el runner no tiene Android.
+# Corre en el runner de VM1 (el único que llega a la red del laboratorio) al preparar una versión (release/*, igual que
+# pruebas-sistema.yml), a mano desde la pestaña Actions o empujando una rama humo/*. La compuerta de producción
+# (compuerta-qa, RNF-08) exige que haya pasado después de que la versión llegó a QA (SCRUM-505); si falla, bloquea main.
+# La app móvil se prueba aparte en un emulador (quickpatch-mobile, integration_test/humo_qa_test.dart), porque el
+# runner no tiene Android.
 #
 # Usa las cuentas iniciales de QA (secretos del repositorio). Las capturas quedan como artefacto para el informe
 # de pruebas (SCRUM-449).
 #
-# Se lanza a mano (workflow_dispatch, cuando el archivo esté en main) o empujando una rama humo/*: GitHub solo deja
-# lanzar a mano los workflows que ya existen en la rama por defecto.
+# GitHub solo deja lanzar a mano (workflow_dispatch) los workflows que ya existen en la rama por defecto.
 #
 # SEGURIDAD: solo `push` y `workflow_dispatch`, nunca `pull_request`: el repo es público.
 name: Humo de los frontends en QA
 
 on:
   push:
-    branches: ["humo/**"]
+    branches: ["humo/**", "release/**"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# Grupo propio: con el de pruebas-sistema.yml, dos workflows disparados por el mismo push compiten por un solo
+# lugar pendiente y un segundo push ya cancelaría a uno. Separados, hacen falta varios push seguidos para que
+# GitHub cancele un run pendiente (la compuerta bloquearía con «cancelled»). Igual se serializan en el runner de VM1.
 concurrency:
-  group: pruebas-sistema
+  group: humo-frontends
   cancel-in-progress: false
 
 env:

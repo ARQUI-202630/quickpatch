@@ -1,0 +1,28 @@
+TLS de la entrada Nginx de VM1 (QA), 2026-10-27 (SCRUM-543, RNF-02)
+Comando: openssl s_client -connect qa.quickpatch.internal:443 -servername qa.quickpatch.internal -<versión>; OpenSSL 3.5.5 27 Jan 2026 (Library: OpenSSL 3.5.5 27 Jan 2026).
+Nota: este OpenSSL no ofrece TLS 1.0 ni 1.1 desde el cliente, así que esta prueba no demuestra que el servidor los rechace; eso lo fija ssl_protocols en entrada-nginx.conf.j2.
+
+Fecha de la corrida: 2026-10-27T20:43:16Z
+
+== -tls1_2
+New, TLSv1.2, Cipher is ECDHE-RSA-AES256-GCM-SHA384
+    Protocol  : TLSv1.2
+    Cipher    : ECDHE-RSA-AES256-GCM-SHA384
+    Verify return code: 18 (self-signed certificate)
+
+== -tls1_3
+New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
+Verify return code: 18 (self-signed certificate)
+    Protocol  : TLSv1.3
+    Cipher    : TLS_AES_256_GCM_SHA384
+    Verify return code: 18 (self-signed certificate)
+    Protocol  : TLSv1.3
+    Cipher    : TLS_AES_256_GCM_SHA384
+    Verify return code: 18 (self-signed certificate)
+
+== Certificado presentado
+subject=CN=quickpatch.internal
+issuer=CN=quickpatch.internal
+notBefore=Oct 16 03:35:55 2026 GMT
+notAfter=Oct 13 03:35:55 2036 GMT
+sha256 Fingerprint=83:BE:B1:15:D3:AD:6A:99:79:A0:98:3B:CA:6F:2A:23:3F:C4:2A:A0:B6:D3:25:91:3A:4C:15:76:DC:9B:9E:9B

@@ -1,0 +1,231 @@
+scrum-75-solicitud-empresa contra QA, 2026-10-22
+Colección: tests/e2e/scrum-75-solicitud-empresa.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-10-22T03:11:26.844Z. Duración: 31 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-75 Solicitud de empresa de punta a punta
+
+□ 0. Preparación: categoría propia, técnico aprobado y clientes
+└ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1060ms]
+  √  200 con rol admin_tenant
+
+└ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 437B, 42ms]
+  √  201
+
+└ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 882ms]
+  √  201
+
+└ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16197-a641-74cb-82f4-5da1f9485b2d/approve [200 OK, 321B, 37ms]
+  √  200
+
+└ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 897ms]
+  √  200 con rol tecnico
+
+└ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 45ms]
+  √  200
+
+└ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 437B, 38ms]
+  √  200
+
+└ Registro de otro técnico, sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 957ms]
+  √  201
+
+└ Login del otro técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 917ms]
+  √  200 con rol tecnico
+
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 1003ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 905ms]
+  √  200 con rol cliente
+
+└ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 432B, 841ms]
+  √  201
+
+└ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 903ms]
+  √  200 con rol cliente
+
+└ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 439B, 1022ms]
+  √  201
+
+└ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 905ms]
+  √  200 con rol cliente
+
+□ 1. La empresa y sus usuarios
+└ Registro de Empresa
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [201 Created, 718B, 895ms]
+  √  201
+
+└ Login de la empresa
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.33kB, 911ms]
+  √  200 como empresa_contacto de su empresa
+
+└ La empresa agrega a un colega
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users [201 Created, 688B, 934ms]
+  √  201
+
+└ El colega define su contraseña
+  POST https://qa.quickpatch.internal/api/v1/auth/password/setup [204 No Content, 159B, 1289ms]
+  √  204
+
+└ Login de el colega
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.34kB, 1014ms]
+  √  200 como empresa_contacto de su empresa
+
+└ Registro de Otra Empresa
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [201 Created, 722B, 1270ms]
+  √  201
+
+└ Login de la otra empresa
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.34kB, 904ms]
+  √  200 como empresa_contacto de su empresa
+
+□ 2. Crear la solicitud de empresa
+└ Sede de un carácter → 400 en siteName
+  POST https://qa.quickpatch.internal/api/v1/service-requests [400 Bad Request, 539B, 31ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo validacion
+  √  error en siteName
+
+└ Un cliente hogar no indica sede → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests [400 Bad Request, 544B, 30ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo validacion
+  √  error en siteName
+
+└ La empresa crea la solicitud con su sede
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 889B, 35ms]
+  √  201 de empresa con la empresa del token
+
+□ 3. El mismo flujo de matching que las de hogar
+└ El técnico recibe la oferta
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 38ms]
+
+Attempting to set next request to 5e096b42-cc20-4f98-bf4d-170e75fdbe5a
+
+└ El técnico recibe la oferta
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 826B, 39ms]
+  √  la oferta está pendiente para el técnico
+
+└ El técnico acepta
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/6a842f5b-c77d-40e2-b32d-e5bbf2804b13/accept [200 OK, 447B, 40ms]
+  √  200
+
+└ La solicitud de empresa queda asignada
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16197-ee68-7033-9df7-79901c42b87f [200 OK, 815B, 42ms]
+
+Attempting to set next request to 9b9778ac-d9e6-441a-9b83-dd4f64357717
+
+└ La solicitud de empresa queda asignada
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16197-ee68-7033-9df7-79901c42b87f [200 OK, 943B, 109ms]
+  √  asignado al técnico de la prueba
+
+└ El técnico asignado ve la sede en el detalle
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16197-ee68-7033-9df7-79901c42b87f [200 OK, 1.03kB, 39ms]
+  √  200
+  √  de empresa, con su sede
+
+□ 4. Quién la ve (RN-SR14)
+└ El colega la ve en el detalle
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16197-ee68-7033-9df7-79901c42b87f [200 OK, 943B, 42ms]
+  √  200
+  √  la misma solicitud de empresa
+
+└ El colega la ve en la lista de la empresa
+  GET https://qa.quickpatch.internal/api/v1/service-requests [200 OK, 761B, 79ms]
+  √  200
+  √  aparece con su tipo y su sede
+
+└ Otra empresa no la ve → 404
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16197-ee68-7033-9df7-79901c42b87f [404 Not Found, 457B, 33ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ Ni en su lista
+  GET https://qa.quickpatch.internal/api/v1/service-requests [200 OK, 272B, 36ms]
+  √  200
+  √  no aparece
+
+└ Un cliente hogar del tenant no la ve → 404
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16197-ee68-7033-9df7-79901c42b87f [404 Not Found, 457B, 37ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ El cliente de Beta no la ve → 404 (RLS)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a16197-ee68-7033-9df7-79901c42b87f [404 Not Found, 457B, 31ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ El administrador la ve en su lista como de empresa
+  GET https://qa.quickpatch.internal/api/v1/service-requests?size=100 [200 OK, 37.21kB, 94ms]
+  √  200
+  √  clientType empresa con la sede
+
+□ 5. Cerrar
+└ El colega no cancela: las acciones son de quien la creó → 404
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16197-ee68-7033-9df7-79901c42b87f/cancel [404 Not Found, 457B, 40ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ Quien la creó la cancela
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a16197-ee68-7033-9df7-79901c42b87f/cancel [200 OK, 370B, 39ms]
+  √  200
+
+└ El técnico queda libre
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 435B, 30ms]
+
+Attempting to set next request to 37fedbd5-d53e-4b86-b553-9e2e804fc715
+
+└ El técnico queda libre
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 437B, 48ms]
+  √  técnico disponible
+
+□ Limpieza
+└ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a16197-a641-74cb-82f4-5da1f9485b2d/suspend [200 OK, 348B, 47ms]
+  √  200
+
+└ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a16197-a5c2-7ecb-9e83-f823142827a9 [200 OK, 432B, 40ms]
+  √  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  44 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  44 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  44 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  56 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 28.3s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 56.49kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 424ms [min: 30ms, max: 1289ms, s.d.: 463ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:10296) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)

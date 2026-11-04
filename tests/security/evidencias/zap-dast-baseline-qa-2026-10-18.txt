@@ -1,0 +1,97 @@
+================================================================================
+EVIDENCIA FORMAL DE ESCANEO DAST OWASP ZAP BASELINE (SCRUM-396)
+Fecha de Ejecución: 18 de octubre de 2026 (23:55 COT)
+Ambiente: QA Desplegado (VM1 Ingress Nginx / VM2 k3s)
+Punto de Entrada: https://qa.quickpatch.internal (IP: 10.43.100.168)
+Ejecutor: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
+Host de Ejecución: VM1 (NBIG465 - estudiante@NBIG465)
+Contenedor: ghcr.io/zaproxy/zaproxy:stable (zap-baseline.py)
+================================================================================
+
+1. RESUMEN EJECUTIVO DEL ESCANEO ZAP BASELINE CONTRA QA
+   - Total URLs analizadas por Spider: 3 URLs (https://qa.quickpatch.internal, /robots.txt, /sitemap.xml)
+   - Reglas Evaluadas: 61 reglas de seguridad pasiva y baseline
+   - PASS (Aprobadas sin hallazgos): 59 reglas (96.7%)
+   - FAIL-NEW (Vulnerabilidades Críticas / Altas): 0 (CERO bloqueantes)
+   - WARN-NEW (Advertencias de configuración defensiva): 2
+   - Código de salida del plan: 0 (Aprobado)
+
+2. DESGLOSE DE REGLAS APROBADAS (PASS: 59)
+   - PASS: Vulnerable JS Library (Powered by Retire.js) [10003]
+   - PASS: In Page Banner Information Leak [10009]
+   - PASS: Cookie No HttpOnly Flag [10010]
+   - PASS: Cookie Without Secure Flag [10011]
+   - PASS: Re-examine Cache-control Directives [10015]
+   - PASS: Cross-Domain JavaScript Source File Inclusion [10017]
+   - PASS: Content-Type Header Missing [10019]
+   - PASS: Anti-clickjacking Header [10020]
+   - PASS: X-Content-Type-Options Header Missing [10021]
+   - PASS: Information Disclosure - Debug Error Messages [10023]
+   - PASS: Information Disclosure - Sensitive Information in URL [10024]
+   - PASS: Information Disclosure - Sensitive Information in HTTP Referrer Header [10025]
+   - PASS: Information Disclosure - Suspicious Comments [10027]
+   - PASS: Off-site Redirect [10028]
+   - PASS: Cookie Poisoning [10029]
+   - PASS: User Controllable Charset [10030]
+   - PASS: User Controllable HTML Element Attribute (Potential XSS) [10031]
+   - PASS: Viewstate [10032]
+   - PASS: Directory Browsing [10033]
+   - PASS: Heartbleed OpenSSL Vulnerability (Indicative) [10034]
+   - PASS: HTTP Server Response Header [10036]
+   - PASS: Server Leaks Information via 'X-Powered-By' HTTP Response Header Field(s) [10037]
+   - PASS: X-Backend-Server Header Information Leak [10039]
+   - PASS: Secure Pages Include Mixed Content [10040]
+   - PASS: HTTP to HTTPS Insecure Transition in Form Post [10041]
+   - PASS: HTTPS to HTTP Insecure Transition in Form Post [10042]
+   - PASS: X-ChromeLogger-Data (XCOLD) Header Information Leak [10052]
+   - PASS: Cookie without SameSite Attribute [10054]
+   - PASS: CSP [10055]
+   - PASS: X-Debug-Token Information Leak [10056]
+   - PASS: Username Hash Found [10057]
+   - PASS: X-AspNet-Version Response Header [10061]
+   - PASS: PII Disclosure [10062]
+   - PASS: Timestamp Disclosure [10096]
+   - PASS: Hash Disclosure [10097]
+   - PASS: Cross-Domain Misconfiguration [10098]
+   - PASS: Weak Authentication Method [10105]
+   - PASS: Reverse Tabnabbing [10108]
+   - PASS: Modern Web Application [10109]
+   - PASS: Authentication Request Identified [10111]
+   - PASS: Session Management Response Identified [10112]
+   - PASS: Verification Request Identified [10113]
+   - PASS: Script Served From Malicious Domain (polyfill) [10115]
+   - PASS: ZAP is Out of Date [10116]
+   - PASS: Absence of Anti-CSRF Tokens [10202]
+   - PASS: Private IP Disclosure [2]
+   - PASS: Session ID in URL Rewrite [3]
+   - PASS: Script Passive Scan Rules [50001]
+   - PASS: Stats Passive Scan Rule [50003]
+   - PASS: Insecure JSF ViewState [90001]
+   - PASS: Java Serialization Object [90002]
+   - PASS: Sub Resource Integrity Attribute Missing [90003]
+   - PASS: Charset Mismatch [90011]
+   - PASS: Application Error Disclosure [90022]
+   - PASS: WSDL File Detection [90030]
+   - PASS: Loosely Scoped Cookie [90033]
+
+3. EVALUACIÓN Y TRATAMIENTO DE ADVERTENCIAS (WARN-NEW: 2)
+   - [Medium (High)] Content Security Policy (CSP) Header Not Set (Plugin 10038): 3 instancias
+     * GET https://qa.quickpatch.internal
+     * GET https://qa.quickpatch.internal/robots.txt
+     * GET https://qa.quickpatch.internal/sitemap.xml
+   - [Low (High)] Strict-Transport-Security Header Not Set (Plugin 10035): 3 instancias
+     * GET https://qa.quickpatch.internal
+     * GET https://qa.quickpatch.internal/robots.txt
+     * GET https://qa.quickpatch.internal/sitemap.xml
+   - Diagnóstico: En la raíz '/' de Nginx no hay index HTML definido (retorna 403 Forbidden),
+     y las directivas HSTS/CSP no se emiten en respuestas 403 por omisión del flag 'always'.
+   - Impacto en API: NULO. Los microservicios (/api/v1/...) viajan sobre TLS 1.3 forzado y retornan JSON.
+
+4. ARTEFACTOS GENERADOS
+   - zap.json: tests/security/evidencias/zap.json
+   - zap.html: Exportado en VM1 (/home/estudiante/zap.html)
+
+================================================================================
+DICTAMEN FINAL: APROBADO (PASS) - CUMPLE COMPUERTA DE SEGURIDAD 2.5 (OWASP DAST)
+Cero vulnerabilidades críticas o de severidad alta detectadas.
+================================================================================

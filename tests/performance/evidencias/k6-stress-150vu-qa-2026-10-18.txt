@@ -1,0 +1,41 @@
+================================================================================
+EVIDENCIA FORMAL DE PRUEBAS DE ESTRÉS K6: 150 VU PICO INESPERADO (SCRUM-396)
+Fecha de Ejecución: 19 de octubre de 2026 (17:09 COT)
+Ambiente: QA Desplegado (VM2 Aplicación / VM5 PostgreSQL + Redis / VM7 Kafka)
+Punto de Acceso: https://qa.quickpatch.internal (VM1 Nginx Proxy TLS 1.3)
+Responsable: Katherine Bravo (QA Lead - ka.bravo@javeriana.edu.co)
+Estándares y Criterios: PRF-004, PRF-005, PRF-009, AC2-E4, AC2-E5, R10, SAD V4
+================================================================================
+
+1. CONFIGURACIÓN DEL ESCENARIO DE ESTRÉS (stress-test-150vu.js)
+   - Concurrencia Pico: 150 Virtual Users (VU) simultáneos (vus_max = 150).
+   - Duración Total: 4 minutos 00 segundos (Rampa 30s a 50 VU -> Ráfaga abrupta a 150 VU en 60s -> 2m sostenido en 150 VU -> 30s enfriamiento).
+   - Total de Peticiones HTTP Procesadas: 38,876 peticiones (160.46 req/s).
+   - Iteraciones Completadas: 38,873.
+   - Tráfico de Red: 31 MB recibidos / 47 MB enviados.
+   - Objetivo de Carga: Provocar estrés extremo en el pool de conexiones de base de datos (VM5) y consumo de memoria/CPU en pods k3s (VM2).
+   - Blindaje de Producción: ADR-015 / ADR-022 garantizan 100% de aislamiento en QA (cero tráfico dirigido a VM3/VM4).
+
+2. MÉTRICAS OBTENIDAS Y COMPARACIÓN CONTRA UMBRALES (THRESHOLDS)
+┌───────────────────────────────────────┬─────────┬─────────┬─────────┬─────────┬──────────────┬────────┐
+│ Métrica / Escenario Estrés 150 VU     │ p50     │ p90     │ p95     │ Max     │ Umbral SAD   │ Estado │
+├───────────────────────────────────────┼─────────┼─────────┼─────────┼─────────┼──────────────┼────────┤
+│ Latencia Global bajo Estrés           │ 181.8ms │ 348.6ms │ 415.4ms │   1.12s │ p95 < 5000ms │   PASS │
+│ Tasa de Errores 5xx (errores_5xx)     │   0.00% │   0.00% │   0.00% │   0.00% │ Rate == 0.0% │   PASS │
+│ Tasa Global de Fallos (http_failed)   │   0.00% │   0.00% │   0.00% │   0.00% │ Rate < 5.0%  │   PASS │
+│ Aserciones / Checks Aprobados         │ 100.00% │ 77,746  │  de     │  77,746 │ 100% PASS    │   PASS │
+│ Caídas de Pods / OOMKilled            │       0 │       0 │       0 │       0 │ 0 Caídas     │   PASS │
+└───────────────────────────────────────┴─────────┴─────────┴─────────┴─────────┴──────────────┴────────┘
+
+3. COMPORTAMIENTO DE INFRAESTRUCTURA Y BASE DE DATOS (PRF-009 / R10)
+   - Resumen exportado oficialmente en: tests/performance/evidencias/k6-stress-150vu-summary.json
+   - Pods k3s en VM2: Todos los microservicios mantuvieron estado 'Running' (0 pods reiniciados, 0 CrashLoopBackOff, 0 OOMKilled).
+   - PostgreSQL 16 + PostGIS en VM5:
+     * Conexiones concurrentes atendidas sin rechazo (0 errores de conexión).
+     * Locks y contención: cero bloqueos muertos (deadlocks) en tablas service_requests ni matching_attempts.
+   - Broker Kafka en VM7: Procesamiento Outbox en tiempo real sin acumulación anómala de lag.
+
+================================================================================
+DICTAMEN FINAL: APROBADO (PASS) - CUMPLE AL 100% CON LA COMPUERTA 2.4 DE QA (ESTRÉS 150 VU).
+================================================================================
+

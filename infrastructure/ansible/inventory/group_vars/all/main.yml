@@ -50,6 +50,14 @@ gateway_hosts:
   qa_beta: "beta.qa.{{ gateway_domain }}"   # tenant Beta de QA (SCRUM-62): el Nginx fija el canal quickpatch-beta por este nombre
   grafana: "grafana.{{ gateway_domain }}"
 
+# Gateway de cada ambiente (SCRUM-573): un Nginx en VM3 (producción) y otro en VM2 (QA), en HTTP por gateway_puerto, al que solo llega
+# VM1 (firewall.yml). VM1 queda como entrada TLS. gateway_propio dice qué ambientes ya se atienden así: con false el Nginx de VM1
+# atiende ese ambiente por sí mismo, como antes (marcha atrás); se cambia a true cuando `verificar-gateway-ambiente.yml` pasa.
+gateway_puerto: 8080
+gateway_propio:
+  qa: true             # QA se atiende por el gateway de VM2 (verificado el 2026-10-25)
+  produccion: true     # producción se atiende por el gateway de VM3 (verificado el 2026-10-25)
+
 # --- Versiones fijadas ---------------------------------------------------------
 images:
   postgis: postgis/postgis:16-3.4
@@ -98,9 +106,11 @@ postgres_databases:
   - communication
 # Tope del pool de conexiones de cada servicio .NET (`Maximum Pool Size` de Npgsql, en el Secret app-connection). Sin tope el
 # driver abre hasta 100 por servicio y, con max_connections = 100, la base rechaza conexiones bajo estrés (hallazgo del 8 y el 14 de
-# octubre). Con Matching en 10 (HikariCP) y Communication en 8 (una réplica, buzón de notificaciones), la suma es 70 de las 97
-# conexiones útiles. Cada réplica abre su propio pool.
-pool_conexiones: { identity: 12, catalog: 15, service_request: 25, communication: 8 }
+# octubre). Con Matching en 10 (HikariCP), Communication en 8 (una réplica, buzón de notificaciones) y Payments en 8, la suma es 78 de las 97
+# conexiones útiles (100 de max_connections menos 3 reservadas). Ranking y Actors también llevan 8: sin entrada la plantilla usa 20, y
+# solo Ranking con 20 ya daría 98. Con los dos en 8 la suma es 94 de 97, con una réplica por servicio: otro servicio o otra réplica
+# exige revisar este presupuesto o subir max_connections. Cada réplica abre su propio pool.
+pool_conexiones: { identity: 12, catalog: 15, service_request: 25, communication: 8, payments: 8, ranking: 8, actors: 8 }
 postgis_databases: [matching, service_request]   # service_request guarda la ubicación de la solicitud: geometry(Point, 4326)
 
 # Los valores que cambian entre ambientes (secretos, memoria de Redis y Kafka, retención, capacidad de Garage)
