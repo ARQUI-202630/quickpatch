@@ -99,10 +99,18 @@
           - t: tenant_status_replica
             w: t.tenant_id IN (SELECT id FROM tenants_borrar)
       - base: db_identity
-        totales: [tenants, users, technician_profiles, client_companies, password_setup_tokens, audit_logs]
+        totales: [tenants, users, technician_profiles, client_companies, password_setup_tokens, password_recovery_requests, password_recovery_attempts, audit_logs]
         pasos:
           - t: password_setup_tokens
             w: NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.user_id)
+          # Recuperación de la contraseña (identity 0.8.0): las solicitudes apuntan a users y a tenants; los intentos solo guardan el
+          # HMAC del correo para el límite de 3 pedidos por hora, así que en QA se borran todos (no son datos de demostración).
+          - t: password_recovery_requests
+            w: >-
+              NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.user_id)
+              OR t.tenant_id IN (SELECT id FROM tenants_borrar)
+          - t: password_recovery_attempts
+            w: TRUE
           - t: technician_profiles
             w: NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.user_id)
           - t: audit_logs
