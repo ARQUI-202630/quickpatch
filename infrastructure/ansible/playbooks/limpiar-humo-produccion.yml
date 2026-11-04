@@ -1,0 +1,232 @@
+# Borra de PRODUCCIÓN (VM4) los datos que deja la prueba de humo del flujo crítico (SCRUM-523): los usuarios de prueba y todo lo que
+# cuelga de ellos. Es lo contrario de limpiar-qa-uat.yml: allí se conserva una lista y se borra el resto; aquí solo se borra lo que
+# cumple un filtro estricto y se aborta si algo no cuadra. Solo producción (VM4): el grupo está fijo.
+#
+#   ./ap playbooks/limpiar-humo-produccion.yml -e desde=2026-11-04T08:00:00Z                    solo cuenta lo que se borraría
+#   ./ap playbooks/limpiar-humo-produccion.yml -e desde=... -e ensayo=si                        borra dentro de una transacción y la revierte
+#   ./ap playbooks/limpiar-humo-produccion.yml -e desde=... -e aplicar=si                       respalda las seis bases y borra
+#   -e esperados=2                                                                              cuántos usuarios de prueba debe haber (por defecto 2)
+#
+# Qué se borra: los usuarios con rol cliente o tecnico, correo @quickpatch.test y created_at >= desde; sus solicitudes (como cliente o
+# como técnico) con cotizaciones, calificaciones, evidencias, intentos de asignación, chats, notificaciones, pagos y facturas; y su
+# reputación en Ranking. Nunca toca administradores ni tenants.
+# Qué NO se borra: los eventos de Kafka y las tablas outbox_events y processed_events; las filas de audit_logs de las acciones de los
+# administradores sobre los usuarios de prueba (aprobar, suspender), que son acciones reales de un administrador; la categoría de la
+# prueba (queda inactiva, la desactiva la propia prueba) ni la foto de la evidencia en Garage.
+#
+# Antes de borrar comprueba que hay exactamente `esperados` usuarios, que ninguno es administrador, que hay como mucho 3 solicitudes y
+# que no hay eventos sin publicar; si algo no cuadra, para sin cambiar nada. Cada base va en una sola transacción; las claves salen de
+# Identity y de ServiceRequest, que se borran al final, así que si algo falla a mitad se puede repetir. El respaldo (pg_dump -Fc, solo
+# lectura para root) queda en {{ stack_dir }}/postgres/limpieza-humo-<fecha>/ en VM4 y se restaura con pg_restore --clean.
+- name: Limpiar los datos de la prueba de humo en producción
+  hosts: database
+  gather_facts: false
+  become: true
+  vars:
+    dir: "{{ stack_dir }}/postgres"
+    psql: docker compose -f {{ dir }}/compose.yml exec -T -u postgres postgres psql -X -v ON_ERROR_STOP=1 -q -At
+    modo: "{{ 'aplicar' if aplicar | default('no') == 'si' else ('ensayo' if ensayo | default('no') == 'si' else 'conteo') }}"
+    esperados_usuarios: "{{ esperados | default(2) | int }}"
+    bases_respaldo: [db_identity, db_service_request, db_matching, db_communication, db_payments, db_ranking]
+    usuarios_filtro: >-
+      role IN ('cliente', 'tecnico') AND email LIKE '%@quickpatch.test' AND created_at >= '{{ desde | default('') }}'
+    # Cada paso borra de t las filas que cumplen w; el orden respeta las claves foráneas. Las tablas temporales del_users y del_req las
+    # crea la tarea «Contar o borrar en cada base».
+    bases:
+      - base: db_matching
+        totales: [matching_requests, matching_attempts, technician_availability, coverage_zones]
+        pasos:
+          - t: matching_attempts
+            w: t.service_request_id IN (SELECT id FROM del_req) OR t.technician_id IN (SELECT id FROM del_users)
+          - t: matching_requests
+            w: t.service_request_id IN (SELECT id FROM del_req)
+          - t: technician_availability
+            w: t.technician_id IN (SELECT id FROM del_users)
+          - t: coverage_zones
+            w: t.technician_id IN (SELECT id FROM del_users)
+      - base: db_communication
+        totales: [notifications, chat_participants, chat_messages]
+        pasos:
+          - t: chat_messages
+            w: t.service_request_id IN (SELECT id FROM del_req)
+          - t: chat_participants
+            w: t.service_request_id IN (SELECT id FROM del_req)
+          - t: notifications
+            w: t.user_id IN (SELECT id FROM del_users) OR t.service_request_id IN (SELECT id FROM del_req)
+      - base: db_payments
+        totales: [payments, invoices, payment_technicians]
+        pasos:
+          - t: invoices
+            w: t.payment_id IN (SELECT p.id FROM payments p WHERE p.service_request_id IN (SELECT id FROM del_req))
+          - t: payments
+            w: t.service_request_id IN (SELECT id FROM del_req)
+          - t: payment_technicians
+            w: t.technician_id IN (SELECT id FROM del_users)
+      - base: db_ranking
+        totales: [applied_ratings, technician_reputations]
+        pasos:
+          - t: applied_ratings
+            w: t.technician_id IN (SELECT id FROM del_users) OR t.service_request_id IN (SELECT id FROM del_req)
+          - t: technician_reputations
+            w: t.technician_id IN (SELECT id FROM del_users)
+      - base: db_service_request
+        totales: [service_requests, quotes, ratings, service_evidence]
+        pasos:
+          - t: quotes
+            w: t.service_request_id IN (SELECT id FROM del_req)
+          - t: ratings
+            w: t.service_request_id IN (SELECT id FROM del_req)
+          - t: service_evidence
+            w: t.service_request_id IN (SELECT id FROM del_req)
+          - t: audit_logs
+            w: t.target_id IN (SELECT id FROM del_req)
+          - t: service_requests
+            w: t.id IN (SELECT id FROM del_req)
+      - base: db_identity
+        totales: [users, technician_profiles, password_setup_tokens, password_recovery_requests, audit_logs]
+        pasos:
+          - t: password_setup_tokens
+            w: t.user_id IN (SELECT id FROM del_users)
+          - t: password_recovery_requests
+            w: t.user_id IN (SELECT id FROM del_users)
+          - t: technician_profiles
+            w: t.user_id IN (SELECT id FROM del_users)
+          - t: audit_logs
+            w: t.actor_user_id IN (SELECT id FROM del_users)
+          - t: users
+            w: t.id IN (SELECT id FROM del_users)
+  tasks:
+    - name: Exigir la hora de inicio de la corrida
+      ansible.builtin.assert:
+        that:
+          - desde is defined
+          - desde is match('^20[0-9]{2}-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9]Z$')
+        fail_msg: "Falta -e desde=AAAA-MM-DDThh:mm:ssZ (hora UTC de inicio de la prueba de humo)."
+        quiet: true
+
+    - name: Ids de los usuarios de prueba que se borran
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d db_identity"
+        stdin: "SELECT id FROM users WHERE {{ usuarios_filtro }} ORDER BY id;"
+      register: usuarios
+      changed_when: false
+
+    - name: Administradores que hay en producción (deben seguir ahí)
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d db_identity"
+        stdin: "SELECT count(*) FROM users WHERE role IN ('admin_tenant', 'admin_plataforma');"
+      register: admins
+      changed_when: false
+
+    - name: Ids de las solicitudes de esos usuarios
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d db_service_request"
+        stdin: >-
+          SELECT id FROM service_requests
+          WHERE client_id IN ('{{ usuarios.stdout_lines | join("', '") }}')
+          OR technician_id IN ('{{ usuarios.stdout_lines | join("', '") }}') ORDER BY id;
+      register: solicitudes
+      changed_when: false
+      when: usuarios.stdout_lines | length > 0
+
+    - name: Eventos de outbox sin publicar
+      ansible.builtin.command:
+        cmd: "{{ psql }} -d {{ item }}"
+        stdin: "SELECT count(*) FROM outbox_events WHERE published_at IS NULL;"
+      loop: [db_identity, db_service_request, db_matching, db_payments, db_ranking]
+      register: pendientes
+      changed_when: false
+
+    - name: Comprobar que lo que se borra cuadra
+      ansible.builtin.assert:
+        that:
+          - usuarios.stdout_lines | length == esperados_usuarios | int
+          - usuarios.stdout_lines | select('match', '^[0-9a-f-]{36}$') | list | length == usuarios.stdout_lines | length
+          - admins.stdout | int >= 1
+          - (solicitudes.stdout_lines | default([])) | length <= 3
+          - (solicitudes.stdout_lines | default([])) | select('match', '^[0-9a-f-]{36}$') | list | length == (solicitudes.stdout_lines | default([])) | length
+          - pendientes.results | map(attribute='stdout') | map('int') | sum == 0 or modo != 'aplicar'
+        fail_msg: >-
+          Lo que se borraría no cuadra con el plan; no se cambió nada. Usuarios que cumplen el filtro: {{ usuarios.stdout_lines | length }}
+          (deben ser {{ esperados_usuarios }}); administradores: {{ admins.stdout }}; solicitudes:
+          {{ (solicitudes.stdout_lines | default([])) | length }} (como mucho 3); eventos sin publicar:
+          {{ pendientes.results | map(attribute='stdout') | list }}.
+        quiet: true
+
+    - name: Totales antes
+      ansible.builtin.command:
+        cmd: "{{ psql }} -F ': ' -d {{ item.base }}"
+        stdin: >-
+          {% for tabla in item.totales %}SELECT '{{ item.base }} / {{ tabla }}', count(*) FROM {{ tabla }}
+          {{ 'UNION ALL' if not loop.last else ';' }} {% endfor %}
+      loop: "{{ bases }}"
+      loop_control: { label: "{{ item.base }}" }
+      register: antes
+      changed_when: false
+
+    - name: Respaldo de las seis bases antes de borrar
+      when: modo == 'aplicar'
+      ansible.builtin.shell: |
+        set -euo pipefail
+        umask 077
+        destino={{ dir }}/limpieza-humo-$(date -u +%Y%m%dT%H%M%SZ)
+        mkdir -p "$destino"
+        for b in {{ bases_respaldo | join(' ') }}; do
+          docker compose -f {{ dir }}/compose.yml exec -T -u postgres postgres pg_dump -Fc -d "$b" > "$destino/$b.dump"
+        done
+        ls -la "$destino"
+      args: { executable: /bin/bash }
+      register: respaldo
+      changed_when: true
+
+    # Matching, Communication, Payments y Ranking, luego ServiceRequest e Identity (de donde salen las claves): si algo falla a mitad,
+    # las claves siguen ahí y se puede repetir.
+    - name: Contar o borrar en cada base
+      ansible.builtin.command:
+        cmd: "{{ psql }} -F ': ' -d {{ item.base }}"
+        stdin: |
+          BEGIN;
+          CREATE TEMP TABLE del_users (id uuid PRIMARY KEY) ON COMMIT DROP;
+          CREATE TEMP TABLE del_req (id uuid PRIMARY KEY) ON COMMIT DROP;
+          INSERT INTO del_users VALUES {% for i in usuarios.stdout_lines %}('{{ i }}'){{ ',' if not loop.last }}{% endfor %};
+          {% if (solicitudes.stdout_lines | default([])) | length > 0 %}
+          INSERT INTO del_req VALUES {% for i in solicitudes.stdout_lines %}('{{ i }}'){{ ',' if not loop.last }}{% endfor %};
+          {% endif %}
+          {% for p in item.pasos %}
+          {% if modo == 'conteo' %}
+          SELECT '{{ item.base }} / {{ p.t }}', count(*) FROM {{ p.t }} t WHERE {{ p.w }};
+          {% else %}
+          WITH d AS (DELETE FROM {{ p.t }} t WHERE {{ p.w }} RETURNING 1) SELECT '{{ item.base }} / {{ p.t }}', count(*) FROM d;
+          {% endif %}
+          {% endfor %}
+          {{ 'COMMIT' if modo == 'aplicar' else 'ROLLBACK' }};
+      loop: "{{ bases }}"
+      loop_control: { label: "{{ item.base }}" }
+      register: resultado
+      changed_when: modo == 'aplicar'
+
+    - name: Totales después
+      ansible.builtin.command:
+        cmd: "{{ psql }} -F ': ' -d {{ item.base }}"
+        stdin: >-
+          {% for tabla in item.totales %}SELECT '{{ item.base }} / {{ tabla }}', count(*) FROM {{ tabla }}
+          {{ 'UNION ALL' if not loop.last else ';' }} {% endfor %}
+      loop: "{{ bases }}"
+      loop_control: { label: "{{ item.base }}" }
+      register: despues
+      changed_when: false
+
+    - name: Resultado
+      ansible.builtin.debug:
+        msg:
+          - >-
+            {{ {'conteo': 'SOLO CONTEO (nada cambió; -e ensayo=si prueba el borrado y lo revierte, -e aplicar=si borra)',
+            'ensayo': 'ENSAYO (se borró dentro de una transacción y se revirtió: nada cambió)',
+            'aplicar': 'BORRADO'}[modo] }}
+          - >-
+            Usuarios de prueba: {{ usuarios.stdout_lines | length }}; solicitudes: {{ (solicitudes.stdout_lines | default([])) | length }};
+            administradores intactos: {{ admins.stdout }}
+          - "Filas que {{ 'se borrarían' if modo != 'aplicar' else 'se borraron' }}: {{ resultado.results | map(attribute='stdout_lines') | flatten }}"
+          - "Totales antes: {{ antes.results | map(attribute='stdout_lines') | flatten }}"
+          - "Totales después: {{ despues.results | map(attribute='stdout_lines') | flatten }}"
+          - "{{ respaldo.stdout_lines | default(['(sin respaldo: no se borró nada)']) }}"
