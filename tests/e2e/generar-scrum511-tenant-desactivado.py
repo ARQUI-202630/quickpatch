@@ -137,7 +137,7 @@ coleccion = {
             "/v1/users/me, 200); un login nuevo y un registro nuevo en Beta se rechazan con 403 tenant-inactivo. Al "
             "reactivar, la creación deja de responder tenant-inactivo. Beta siempre queda activo al terminar. "
             "Variables: baseUrl, platformAdminEmail y platformAdminPassword (secretos de QA, nunca en el repositorio); "
-            "sin ellos se omiten todos los pasos. Contratos: identity.v1.yaml 1.5.0, service-request.v1.yaml 1.11.0."
+            "sin ellos se omiten todos los pasos. Contratos: identity.v1.yaml 1.10.0, service-request.v1.yaml 1.11.0 (api-gateway v0.21.0)."
         ),
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     },

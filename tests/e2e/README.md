@@ -177,7 +177,9 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scru
 
 **Límite:** no se ve un 201 después de reactivar porque Beta no tiene categorías; el contraste se hace con el tipo de error. El 201 lo cubren las pruebas de integración de quickpatch-service-request (`TenantStatusFlowTests`).
 
-**Evidencia:** la corrida manual del 2 de noviembre de 2026 está en `evidencias/tenant-desactivado-qa-2026-11-02.txt` (0 verificaciones fallidas). La colección se revisó contra un servidor de prueba local que imita las respuestas de los contratos: 20 peticiones y 24 aserciones sin fallos; sin Beta se detiene en la preparación, y sin secretos omite todo. La primera corrida en QA queda en el job de Newman de `pruebas-sistema.yml`.
+**Evidencia:** la corrida manual del 2 de noviembre de 2026 está en `evidencias/tenant-desactivado-qa-2026-11-02.txt` (0 verificaciones fallidas). La colección corrió contra QA el 4 de noviembre de 2026: con el runner, 16 peticiones y 24 aserciones sin fallos (`evidencias/scrum-511-tenant-desactivado-qa-2026-11-04.txt`), y en el job de Newman de `pruebas-sistema.yml` (corrida 41794907667 sobre `develop`), 17 peticiones y 24 aserciones sin fallos.
+
+**Datos que quedan:** cada corrida registra un cliente nuevo en Beta y no lo borra, así que los clientes de prueba se acumulan en ese tenant, como pasa con los datos de k6. No afectan al tenant principal ni a otras colecciones.
 
 ## Pagos recibidos del técnico y del proveedor (SCRUM-503)
 
@@ -239,6 +241,24 @@ Al final suspende a los dos técnicos y desactiva la categoría.
 4. **Empresa (CAL-018):** en la solicitud de una empresa, el colega recibe 403 y quien la creó califica.
 
 **Evidencia:** `evidencias/scrum-32-calificacion-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026 con ServiceRequest 0.11.2: 101 peticiones y 127 aserciones, sin fallos. La primera corrida del mismo día encontró que ServiceRequest aceptaba `{"score":"5"}` con 201, porque leía números escritos como texto; se corrigió en quickpatch-service-request#39 (`release/0.11.2`).
+
+## Recuperación de contraseña (SCRUM-627)
+
+`scrum-627-recuperacion.postman_collection.json` prueba contra QA la HU SCRUM-623 con los cuatro endpoints de recuperación de `identity.v1.yaml` 1.10.0. Cubre `REC-001` a `REC-014`, `REC-016` a `REC-021` y `REC-026` del TD 7.2. Se genera con `python tests/e2e/generar-scrum627-recuperacion.py` y necesita al administrador del tenant; `REC-007` necesita además al administrador de la plataforma y se omite sin él.
+
+1. **Pedido:** responde 202 con el mismo cuerpo y el mismo `Content-Type` exista o no el correo. Pedirla dos veces deja una sola solicitud con la fecha nueva. El cuarto pedido en la hora da 429 `demasiadas-solicitudes` con `Retry-After`, también con un correo que no existe. Un correo inválido o un campo de más dan 400. El `admin_tenant` recibe 202 pero no deja solicitud.
+2. **Lista y permisos:** el administrador ve las solicitudes de su tenant, de la más antigua a la más reciente y sin tokens; la de un cliente de Beta no aparece. Cliente y técnico reciben 403; sin sesión, 401; una solicitud que no es del tenant, 404.
+3. **Enlace:** vence a la hora y genera otro anula el anterior. Un token inventado o el enlace válido usado desde Beta dan 400 `enlace-invalido`, igual que un enlace ya usado. Una clave de 7 caracteres da 400 sin gastar el enlace. Con la clave nueva el login da 200 y con la anterior 401; el token de antes del cambio sigue sirviendo (SCRUM-625). Después, otro enlace da 409 `transicion-invalida` y la solicitud sale de la lista.
+4. **Bloqueo e invitación:** una cuenta bloqueada por intentos fallidos (423) queda desbloqueada al definir la clave nueva. Un técnico del equipo de un proveedor que nunca usó su invitación define la clave con el enlace, y la invitación ya no sirve (400 `enlace-invalido`).
+5. **Tenant desactivado (`REC-007`):** desactiva Beta, el pedido por su canal da 403 y lo vuelve a activar, como la colección de SCRUM-511.
+
+**Enlace vencido (`REC-015`):** la colección no puede esperar una hora, así que lo cubre `scrum-627-enlace-vencido.mjs` (Node 22, sin dependencias; `QA_ADMIN_EMAIL`, `QA_ADMIN_PASSWORD` y `NODE_EXTRA_CA_CERTS` con la CA de QA). Genera un enlace, espera a que pase `expiresAt` y comprueba que da 400 `enlace-invalido`, que la clave anterior sigue entrando y que un enlace nuevo para la misma solicitud sí sirve. Tarda unos 62 minutos.
+
+**Fuera de la colección:** `REC-022` (búsqueda del token en Loki), `REC-027` (HMAC del correo en la base de Identity) y `REC-023` a `REC-025` (pantallas). `REC-009` y `REC-012` se prueban desde el tenant principal, porque Beta no tiene administrador de tenant en QA.
+
+**Límite de la corrida:** el correo del `admin_tenant` cuenta en el límite de 3 pedidos por hora, así que la colección no se debe correr más de 3 veces en una hora.
+
+**Evidencia:** `evidencias/scrum-627-recuperacion-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 73 peticiones y 118 aserciones, sin fallos. `evidencias/scrum-627-enlace-vencido-qa-2026-11-04.txt`: 11 de 11 pasos, el enlace vencido a las 16:16 UTC.
 
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
