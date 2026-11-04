@@ -1,0 +1,386 @@
+scrum-627-recuperacion contra QA, 2026-11-04
+Colección: tests/e2e/scrum-627-recuperacion.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-11-04T15:12:10.586Z. Duración: 41 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-627 Recuperación de contraseña
+
+□ 0. Preparación: clientes, técnico, proveedor con equipo y cliente de Beta
+└ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1063ms]
+  √  200 con rol admin_tenant
+
+└ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 439B, 55ms]
+  √  201
+
+└ Registro de un técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 445B, 948ms]
+  √  201
+
+└ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 919ms]
+  √  200 con rol tecnico
+
+└ Registro del proveedor
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 450B, 931ms]
+  √  201
+
+└ El administrador aprueba al proveedor
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a71e-3d94-7cf0-a223-889f394b8ee0/approve [200 OK, 321B, 44ms]
+  √  200
+
+└ Login del proveedor
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 920ms]
+  √  200 con rol proveedor
+
+└ El proveedor da de alta un técnico de su equipo (no usa la invitación)
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [201 Created, 652B, 965ms]
+  √  201
+
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 423B, 943ms]
+  √  201
+
+└ Registro del cliente bloqueado
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 433B, 919ms]
+  √  201
+
+└ Registro del cliente del límite
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 435B, 984ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 934ms]
+  √  200 con rol cliente
+
+└ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 443B, 1009ms]
+  √  201
+
+□ 1. Pedido: misma respuesta siempre, límite y validaciones
+└ REC-001: el cliente pide recuperar la contraseña
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 48ms]
+  √  202
+
+└ REC-002: un correo que no existe → la misma respuesta
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 46ms]
+  √  202
+  √  mismo cuerpo y mismo Content-Type que REC-001
+
+└ REC-001 / REC-008: el administrador ve la solicitud
+  GET https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests?page=1&size=100 [200 OK, 506B, 41ms]
+  √  200
+  √  REC-008: de la más antigua a la más reciente y sin tokens
+  √  la solicitud está pendiente con rol cliente
+  √  sin el correo de REC-002
+
+└ REC-003: el cliente la pide otra vez
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 41ms]
+  √  202
+
+└ REC-003: sigue una sola solicitud, con la fecha nueva
+  GET https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests?page=1&size=100 [200 OK, 506B, 44ms]
+  √  200
+  √  REC-008: de la más antigua a la más reciente y sin tokens
+  √  misma solicitud, una sola vez y con fecha posterior
+
+└ REC-004: pedido 1 del cliente del límite
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 45ms]
+  √  202
+
+└ REC-004: pedido 2 del cliente del límite
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 49ms]
+  √  202
+
+└ REC-004: pedido 3 del cliente del límite
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 51ms]
+  √  202
+
+└ REC-004: el cuarto pedido en la hora → 429
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [429 Too Many Requests, 582B, 41ms]
+  √  429
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo demasiadas-solicitudes
+  √  Retry-After en segundos
+
+└ REC-004: pedido 2 del correo que no existe
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 48ms]
+  √  202
+
+└ REC-004: pedido 3 del correo que no existe
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 50ms]
+  √  202
+
+└ REC-004: el cuarto del correo que no existe → 429 igual
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [429 Too Many Requests, 582B, 44ms]
+  √  429
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo demasiadas-solicitudes
+  √  Retry-After
+
+└ REC-005: correo inválido → 400
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [400 Bad Request, 530B, 33ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  error en email
+
+└ REC-005: un campo de más → 400
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [400 Bad Request, 444B, 41ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+
+└ REC-006: el admin_tenant pide recuperar su clave → 202
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 46ms]
+  √  202
+
+└ REC-006: no queda solicitud del administrador
+  GET https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests?page=1&size=100 [200 OK, 752B, 39ms]
+  √  200
+  √  REC-008: de la más antigua a la más reciente y sin tokens
+  √  REC-006: los administradores no usan este flujo
+
+└ REC-009: el cliente de Beta pide recuperar la suya
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 44ms]
+  √  202
+
+└ REC-009: el administrador del tenant principal no la ve
+  GET https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests?page=1&size=100 [200 OK, 752B, 41ms]
+  √  200
+  √  REC-008: de la más antigua a la más reciente y sin tokens
+  √  REC-009: sin solicitudes de otro tenant
+
+□ 2. Lista y enlace: permisos y otro tenant
+└ REC-010: el cliente lista solicitudes → 403
+  GET https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests [403 Forbidden, 443B, 33ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ REC-010: el técnico lista solicitudes → 403
+  GET https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests [403 Forbidden, 443B, 32ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ REC-010: sin sesión → 401
+  GET https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests [401 Unauthorized, 476B, 39ms]
+  √  401
+
+└ REC-010: el cliente genera un enlace → 403
+  POST https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests/01a1a71e-5e70-7743-9140-ea12fa121f5e/link [403 Forbidden, 443B, 36ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ REC-012: solicitud que no es del tenant → 404
+  POST https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests/daa7e2d0-8ff1-4add-b29d-9c908480032a/link [404 Not Found, 457B, 37ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+□ 3. Enlace de un solo uso y contraseña nueva
+└ REC-011: el administrador genera el enlace
+  POST https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests/01a1a71e-5e70-7743-9140-ea12fa121f5e/link [201 Created, 433B, 46ms]
+  √  201
+  √  enlace con token y vencimiento a 1 hora
+
+└ REC-016: genera otro enlace para la misma solicitud
+  POST https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests/01a1a71e-5e70-7743-9140-ea12fa121f5e/link [201 Created, 432B, 43ms]
+  √  201
+  √  enlace con token y vencimiento a 1 hora
+
+└ REC-016: el enlace anterior ya no sirve
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery/confirm [400 Bad Request, 474B, 972ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo enlace-invalido
+
+└ REC-017: token inventado → 400
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery/confirm [400 Bad Request, 474B, 1027ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo enlace-invalido
+
+└ REC-017: el enlace válido usado desde Beta → 400 igual
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery/confirm [400 Bad Request, 474B, 889ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo enlace-invalido
+
+└ REC-018: clave de 7 caracteres → 400
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery/confirm [400 Bad Request, 546B, 31ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  error en password
+
+└ REC-013: el cliente define la clave nueva
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery/confirm [204 No Content, 159B, 932ms]
+  √  204
+
+└ REC-013: entra con la clave nueva
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 922ms]
+  √  200
+
+└ REC-013: la clave anterior ya no sirve
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 478B, 1005ms]
+  √  401
+
+└ REC-014: el mismo enlace por segunda vez → 400
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery/confirm [400 Bad Request, 474B, 988ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo enlace-invalido
+
+└ REC-019: otro enlace después del cambio → 409
+  POST https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests/01a1a71e-5e70-7743-9140-ea12fa121f5e/link [409 Conflict, 520B, 47ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ REC-019: la solicitud ya no está en la lista
+  GET https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests?page=1&size=100 [200 OK, 518B, 38ms]
+  √  200
+  √  REC-008: de la más antigua a la más reciente y sin tokens
+  √  REC-019: solicitud cerrada
+
+└ REC-020: el token de antes del cambio sigue sirviendo
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 418B, 38ms]
+  √  200
+
+□ 4. Cuenta bloqueada y técnico con la invitación sin usar
+└ REC-021: intentos fallidos hasta bloquear la cuenta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 478B, 985ms]
+
+Attempting to set next request to 07adc945-8a9c-4753-a74f-4e1e4354b7ee
+
+└ REC-021: intentos fallidos hasta bloquear la cuenta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 478B, 989ms]
+
+Attempting to set next request to 07adc945-8a9c-4753-a74f-4e1e4354b7ee
+
+└ REC-021: intentos fallidos hasta bloquear la cuenta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 478B, 919ms]
+
+Attempting to set next request to 07adc945-8a9c-4753-a74f-4e1e4354b7ee
+
+└ REC-021: intentos fallidos hasta bloquear la cuenta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 478B, 912ms]
+
+Attempting to set next request to 07adc945-8a9c-4753-a74f-4e1e4354b7ee
+
+└ REC-021: intentos fallidos hasta bloquear la cuenta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [423 Locked, 561B, 991ms]
+  √  423 cuenta bloqueada
+
+└ REC-021: con la clave correcta también 423
+  POST https://qa.quickpatch.internal/api/v1/auth/login [423 Locked, 561B, 34ms]
+  √  423
+
+└ cliente bloqueado pide recuperar la contraseña
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 46ms]
+  √  202
+
+└ El administrador ve la solicitud del cliente bloqueado
+  GET https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests?page=1&size=100 [200 OK, 762B, 42ms]
+  √  200
+  √  REC-008: de la más antigua a la más reciente y sin tokens
+  √  la solicitud está pendiente con rol cliente
+
+└ El administrador genera el enlace del cliente bloqueado
+  POST https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests/01a1a71e-9e27-741e-b45c-34dab5dca896/link [201 Created, 434B, 46ms]
+  √  201
+  √  enlace con token y vencimiento a 1 hora
+
+└ REC-021: define la clave nueva
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery/confirm [204 No Content, 159B, 1008ms]
+  √  204
+
+└ REC-021: la cuenta queda desbloqueada
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 943ms]
+  √  200
+
+└ técnico del equipo pide recuperar la contraseña
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [202 Accepted, 176B, 48ms]
+  √  202
+
+└ El administrador ve la solicitud del técnico del equipo
+  GET https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests?page=1&size=100 [200 OK, 769B, 38ms]
+  √  200
+  √  REC-008: de la más antigua a la más reciente y sin tokens
+  √  la solicitud está pendiente con rol tecnico
+
+└ El administrador genera el enlace del técnico del equipo
+  POST https://qa.quickpatch.internal/api/v1/admin/password-recovery-requests/01a1a71e-a7d3-7533-b338-690b577a81c5/link [201 Created, 434B, 43ms]
+  √  201
+  √  enlace con token y vencimiento a 1 hora
+
+└ REC-026: el técnico del equipo define su clave con el enlace
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery/confirm [204 No Content, 159B, 1031ms]
+  √  204
+
+└ REC-026: la invitación pendiente quedó usada
+  POST https://qa.quickpatch.internal/api/v1/auth/password/setup [400 Bad Request, 474B, 1039ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo enlace-invalido
+
+└ REC-026: entra con la clave nueva
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.24kB, 920ms]
+  √  200
+
+□ 5. Tenant desactivado (REC-007, con el administrador de la plataforma)
+└ Login del administrador de la plataforma
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 906ms]
+  √  200 con rol admin_plataforma
+
+└ Ubicar el tenant Beta por su NIT
+  GET https://qa.quickpatch.internal/api/v1/platform/tenants [200 OK, 550B, 39ms]
+  √  200
+  ┌
+  │ `Using "CryptoJS" is deprecated. Use "require('crypto-
+  │ js')" instead.`
+  └
+  √  Beta existe y no es el tenant de la plataforma
+
+└ Desactivar Beta
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/01a13e06-b2a8-7e27-aa1c-cb3e70641dd1 [200 OK, 382B, 42ms]
+  √  200 y Beta queda inactivo
+
+└ REC-007: pedido desde el canal de Beta desactivado → 403
+  POST https://qa.quickpatch.internal/api/v1/auth/password-recovery [403 Forbidden, 491B, 37ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ Reactivar Beta (corre aunque falle lo anterior)
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/01a13e06-b2a8-7e27-aa1c-cb3e70641dd1 [200 OK, 380B, 43ms]
+  √  200 y Beta queda activo
+
+□ Limpieza
+└ Suspender al proveedor de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a71e-3d94-7cf0-a223-889f394b8ee0/suspend [200 OK, 348B, 47ms]
+  √  200
+
+└ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a1a71e-3510-72ec-a722-51bae92b28af [200 OK, 435B, 40ms]
+  √  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  73 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  73 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  73 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                 118 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 35.8s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 21.15kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 407ms [min: 31ms, max: 1063ms, s.d.: 451ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:36900) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
