@@ -701,6 +701,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             title "Contenedores de QUICKPATCH (C4 nivel 2)"
             include *
             exclude equipo github observabilidad
+            # Actors está planeado y no tiene despliegue: no se dibuja lo que todavía no existe.
+            exclude actors dbActors
             autoLayout tb 200 100
         }
 
