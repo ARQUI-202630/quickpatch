@@ -133,7 +133,8 @@ coleccion = {
                     "POST",
                     "/v1/auth/login",
                     [JSON_HDR, CORR_HDR, CHANNEL_HDR],
-                    {"email": "admin@quickpatch.internal", "password": "PasswordInvalidoTotal999*"},
+                    {"email": "admin@quickpatch.internal", "password": "{{claveInvalida}}"},
+                    previo=["pm.collectionVariables.set('claveInvalida', 'Invalida_' + Date.now() + '_Z9!');"],
                     pruebas=[
                         "pm.test('[W-02] Rechazo por credenciales inválidas (401)', () => {",
                         "  pm.response.to.have.status(401);",
@@ -149,7 +150,8 @@ coleccion = {
                     "POST",
                     "/v1/auth/login",
                     [JSON_HDR, CORR_HDR, CHANNEL_HDR],
-                    {"email": "bloqueado@quickpatch.internal", "password": "CualquierPassword123*"},
+                    {"email": "bloqueado@quickpatch.internal", "password": "{{claveInvalida}}"},
+                    previo=["pm.collectionVariables.set('claveInvalida', 'Invalida_' + Date.now() + '_Z9!');"],
                     pruebas=[
                         "pm.test('[W-02 / RN-U4] Cuenta bloqueada responde 423 Locked', () => {",
                         "  pm.response.to.have.status(423);",
@@ -277,7 +279,8 @@ coleccion = {
                     "POST",
                     "/v1/auth/login",
                     [JSON_HDR, CORR_HDR, CHANNEL_HDR],
-                    {"email": "usuario@tenant-desactivado.test", "password": "PasswordValido123*"},
+                    {"email": "usuario@tenant-desactivado.test", "password": "{{claveInvalida}}"},
+                    previo=["pm.collectionVariables.set('claveInvalida', 'Invalida_' + Date.now() + '_Z9!');"],
                     pruebas=[
                         "pm.test('[RN-T1] Login rechazado para tenant desactivado (403 Forbidden)', () => {",
                         "  pm.response.to.have.status(403);",

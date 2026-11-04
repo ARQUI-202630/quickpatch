@@ -102,7 +102,7 @@ test.describe('Web Admin — Autenticación y Login (W-01 & W-02)', () => {
     });
 
     await page.fill('#email', 'admin@quickpatch.internal');
-    await page.fill('#password', 'PasswordInvalidoTotal999*');
+    await page.fill('#password', 'Invalida_' + Date.now() + '_Z9!');
     await page.click('button[type="submit"]');
 
     const alertError = page.locator('p.error[role="alert"], .alert-danger, [role="alert"]');
@@ -126,7 +126,7 @@ test.describe('Web Admin — Autenticación y Login (W-01 & W-02)', () => {
     });
 
     await page.fill('#email', 'bloqueado@quickpatch.internal');
-    await page.fill('#password', 'CualquierPassword123*');
+    await page.fill('#password', 'Invalida_' + Date.now() + '_Z9!');
     await page.click('button[type="submit"]');
 
     const alertLocked = page.locator('p.error[role="alert"], [role="alert"]');
