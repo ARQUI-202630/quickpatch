@@ -203,9 +203,9 @@ Al final suspende a los dos técnicos y desactiva la categoría.
    - un técnico y un proveedor de Beta no ven nada, ni filtrando por el técnico del equipo;
    - cliente, `empresa_contacto` y `admin_tenant` reciben 403, y sin sesión, 401.
 
-**Límite:** el registro de un técnico exige una especialidad del catálogo de su tenant, y Beta no tiene categorías. Mientras su administrador no cree una, `PAY-026` y `PAY-036` se omiten (la consola de Newman lo avisa). La fuga dentro del tenant sí se prueba: `PAY-029` y `PAY-035`.
+**Otro tenant:** el registro de un técnico exige una especialidad del catálogo de su tenant. La colección toma la primera categoría activa de Beta; si Beta no tiene ninguna, `PAY-026` y `PAY-036` se omiten (la consola de Newman lo avisa). Desde el 4 de noviembre de 2026 Beta tiene administrador y la categoría «Reparaciones generales». La fuga dentro del tenant también se prueba, con `PAY-029` y `PAY-035`.
 
-**Evidencia:** `evidencias/scrum-45-pagos-tecnico-qa-2026-11-04.txt`, contra QA el 3 de noviembre de 2026 (hora de Bogotá): 85 peticiones y 103 aserciones, sin fallos; `PAY-026` y `PAY-036` se omitieron porque Beta no tiene categorías.
+**Evidencia:** `evidencias/scrum-45-pagos-tecnico-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 92 peticiones y 111 aserciones, sin fallos y sin pasos omitidos. El técnico y el proveedor de Beta reciben 200 sin pagos (`PAY-026` y `PAY-036`). La corrida anterior (85 peticiones y 103 aserciones) los había omitido porque Beta no tenía categorías.
 
 ## Edición del perfil propio (SCRUM-614)
 
@@ -227,9 +227,9 @@ Al final suspende a los dos técnicos y desactiva la categoría.
 2. **Filtros y páginas:** `completado`, `cancelado` y `pagado` traen solo las suyas; `terminado` da 400. Con `size=2` las páginas 1, 2 y 3 traen 2, 2 y 1 sin repetidos; la 4 viene vacía con `totalItems` 5; `page=0`, `size=0` y `size=101` dan 400.
 3. **Fugas y permisos:** otro técnico del tenant no ve nada; cliente y `admin_tenant` reciben 403 y sin sesión 401.
 
-**Límite:** `HIS-013` (técnico de Beta) se omite mientras Beta no tenga categorías, igual que `PAY-026` en SCRUM-503.
+**Otro tenant:** `HIS-013` registra un técnico en Beta con la primera categoría activa de ese tenant; si no hay ninguna, se omite, igual que `PAY-026` en SCRUM-503.
 
-**Evidencia:** `evidencias/scrum-37-historial-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 91 peticiones y 101 aserciones, sin fallos; `HIS-013` se omitió.
+**Evidencia:** `evidencias/scrum-37-historial-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 93 peticiones y 105 aserciones, sin fallos y sin pasos omitidos. El técnico de Beta recibe 200 sin solicitudes (`HIS-013`).
 
 ## Calificación del servicio (SCRUM-87)
 
