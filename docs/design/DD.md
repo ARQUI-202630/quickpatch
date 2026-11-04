@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.19|
+|**Versión**|5.20|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-625 — Hash del correo con HMAC y la invitación pendiente en la recuperación de la contraseña (5.19); SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-637 — Calificación en el detalle de la solicitud (5.20); SCRUM-625 — Hash del correo con HMAC y la invitación pendiente en la recuperación de la contraseña (5.19); SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -958,7 +958,7 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |comment|TEXT|Sí|—|Comentario opcional (máximo 500 caracteres).|
 |created_at|TIMESTAMPTZ|No|—|Fecha y hora en que se registró la calificación (`ratedAt` en REST).|
 
-**Reglas de negocio:** RN-R1 a RN-R3 (sección 7.6). **Desde v5.15** (SCRUM-499): TechnicianServiceRequest (`GET /v1/technicians/me/service-requests`) incluye `score` y `ratedAt` si la solicitud completada fue calificada.
+**Reglas de negocio:** RN-R1 a RN-R3 (sección 7.6). **Desde v5.20** (SCRUM-637): el detalle `GET /v1/service-requests/{id}` incluye `rating` (`score`, `comment` y `ratedAt`), `null` si la solicitud no se calificó (sección 8.3.4). **Desde v5.15** (SCRUM-499): TechnicianServiceRequest (`GET /v1/technicians/me/service-requests`) incluye `score` y `ratedAt` si la solicitud completada fue calificada.
 
 ### 5.10 Tabla `service_evidence`
 
@@ -1857,7 +1857,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |GET|`/v1/service-requests/localities`|Público y todos|RF-13|Contrato v1.8.0 (ADR-025)|Localidades de Bogotá desde la copia P-09, sin polígono.|
 |POST|`/v1/service-requests/location-preview`|`cliente`, `empresa_contacto`|RF-07|Contrato v1.3.0|Vista previa de la geocodificación: punto, localidad y dirección reconocida, sin crear nada (sección 8.3.3).|
 |GET|`/v1/service-requests?status=&page=&size=`|`cliente`, `empresa_contacto`, `admin_tenant`|RF-11, RF-18|Contrato v1.4.0 (`admin_tenant`); `cliente` y `empresa_contacto` desde v1.9.0|Listar: el cliente ve las suyas, el `empresa_contacto` las de su empresa (RN-SR14) y el `admin_tenant` todas las del tenant. Sin dirección, ubicación ni contacto; con `clientType`, `companyId`, `siteName` y `description` (sección 8.3.15).|
-|GET|`/v1/service-requests/{id}`|Cliente dueño, `empresa_contacto` de la misma empresa (v1.9.0, RN-SR14), técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato.|
+|GET|`/v1/service-requests/{id}`|Cliente dueño, `empresa_contacto` de la misma empresa (v1.9.0, RN-SR14), técnico asignado, `admin_tenant`|RF-11, RF-14|Contrato v1.1.0 (cliente y técnico)|Detalle. El contenido depende del rol (RN-SR13). La vista del `admin_tenant` todavía no tiene contrato. **v1.12.0** (5.20, SCRUM-637): incluye `rating`, `null` mientras no se califique.|
 |POST|`/v1/service-requests/{id}/cancel`|Cliente dueño, `admin_tenant`|RF-36|Contrato v1.5.0|Cancelar con motivo (sección 8.3.9).|
 |GET|`/v1/service-requests/{id}/quotes`|Cliente dueño, técnico asignado|RF-34, RF-35|Contrato v1.6.0|Cotizaciones de la solicitud, de la más antigua a la más reciente.|
 |POST|`/v1/service-requests/{id}/quotes`|Técnico asignado|RF-34|Contrato v1.6.0|Emitir cotización (sección 8.3.7).|
@@ -2049,8 +2049,11 @@ La respuesta tiene la misma estructura para todos los roles, pero algunos bloque
 |`client`|No|Sí, entre `asignado` y `completado` (RN-SR13)|Sí|
 |`location` y `addressText`|Sí|Sí, entre `asignado` y `completado` (RN-SR13)|Sí|
 |`cancellation`|Sí|Sí|Sí, con `cancelledBy`|
+|`rating` (v1.12.0)|Sí, cuando la calificó (solo en `pagado`, RN-R3)|No: en `pagado` ya no consulta el detalle (RN-SR13)|Sin contrato todavía|
 
 **Contrato v1.1.0 (v4).** El contrato publicado conserva los campos de la versión 1.0.0 (`categoryId` en lugar del bloque `category`) y agrega `assignedAt`, `technician` (`id`, `fullName`) y `client` (`id`, `fullName`, `phone`) como campos opcionales y nulables. El técnico asignado consulta el detalle solo entre `asignado` y `completado`: fuera de ese rango responde `403 no-autorizado` (SCRUM-34, criterio 2), y un técnico que no es el asignado recibe `404` (sección 8.1). La vista del `admin_tenant`, el bloque `category`, `timeline` y `cancellation` quedan para cuando tengan historia.
+
+**Contrato v1.12.0 (v5.20, SCRUM-637).** El detalle agrega `rating` (`score` de 1 a 5, `comment` opcional de hasta 500 caracteres y `ratedAt`), opcional y `null` mientras la solicitud no se califique. Sale de la tabla `ratings` (sección 5.9) de la misma base, sin consultar a Ranking (ADR-027). Así la app sabe al volver a abrir el detalle si ya calificó (SCRUM-86) y muestra la calificación (SCRUM-32). Es un cambio compatible: no hay campos obligatorios nuevos y no cambia quién ve el detalle; el comentario solo lo ve quien ya puede ver el detalle, y RN-SR13 sigue igual.
 
 ServiceRequest Service no guarda el nombre del técnico ni del cliente: los obtiene de Identity Service con una consulta interna por lote, que es una de las excepciones de lectura permitidas por el principio del SAD (sección 4.3) porque el usuario necesita la respuesta de inmediato. Si Identity no responde, los bloques `technician` y `client` llegan con `fullName` y `phone` en `null`. **Contrato v5 (SCRUM-91):** `identity-internal.v1.yaml` 1.0.0, `GET /internal/v1/users?ids=` con hasta 20 ids. No pasa por el Gateway: ServiceRequest llama al Service de Kubernetes de Identity (el Ingress no publica `/internal`) y reenvía el JWT del usuario que pidió el detalle, así que el tenant sale del token y no hace falta una credencial nueva entre servicios. Los ids de otro tenant o inexistentes se omiten sin error. ServiceRequest espera como máximo 2 segundos.
 
@@ -2888,7 +2891,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.17|SCRUM-508|**RN-T1 con la réplica del estado del tenant (RF-21).** Nueva tabla `tenant_status_replica` en ServiceRequest (sección 5.26), alimentada por el evento `tenant.status-changed` de Identity (sección 8.4), y `422 tenant-inactivo` al crear una solicitud (contrato service-request 1.11.0, SCRUM-510). Se actualizan RN-T1 (7.1 y su tabla de reglas), el Cuadro 8, el Cuadro 10, los errores de la creación (8.3.3) y el endpoint de plataforma.|
 |5.18|SCRUM-597|**Recuperación de la contraseña olvidada (RF-03, ADR-024).** Contrato `identity.v1.yaml` 1.10.0 con `POST /v1/auth/password-recovery`, `GET /v1/admin/password-recovery-requests`, `POST /v1/admin/password-recovery-requests/{id}/link` y `POST /v1/auth/password-recovery/confirm` (secciones 8.2.1 y 8.3.19). Nuevas tablas `password_recovery_requests` y `password_recovery_attempts` (secciones 5.27 y 5.28) y columna `purpose` en `password_setup_tokens` (5.21): el enlace de recuperación lo genera el `admin_tenant`, vence a 1 hora y no hay correo. Nueva regla RN-U7, error `429` y Cuadro 8.|
 |5.19|SCRUM-625|**Decisiones de la recuperación de la contraseña (`quickpatch-identity#29`).** `password_recovery_attempts.email_hash` pasa de SHA-256 a HMAC-SHA256 con una clave del servicio (sección 5.28). Al confirmar la recuperación se marcan como usadas las invitaciones pendientes del usuario (RN-U7). Se aprueba el modelo de las tablas 5.27 y 5.28 y de la columna `purpose` (5.21) tal como lo implementa el PR.|
-|5.20|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.20|SCRUM-637|**Calificación en el detalle de la solicitud (RF-12).** `service-request.v1.yaml` 1.12.0: `GET /v1/service-requests/{id}` agrega `rating` (`score`, `comment` y `ratedAt`), opcional y `null` mientras no se califique, para SCRUM-86 y SCRUM-32. Cambio compatible; RN-SR13 no cambia. Secciones 5.9, 8.2.4 y 8.3.4.|
+|5.21|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
