@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Documento de Diseño y Definición de Pruebas (Test Document - TD) |
-| **Versión** | 3.1 (Incremento Técnico y Funcional Sprint 5 / Entrega Final) |
+| **Versión** | 3.2 (Incremento Técnico y Funcional Sprint 5 / Entrega Final) |
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
 | **Rol Responsable** | Katherine Bravo (QA Lead) |
@@ -22,7 +22,7 @@
 4. [Justificación Técnica de Herramientas frente a Alternativas](#4-justificación-técnica-de-herramientas-frente-a-alternativas)
 5. [Operación en las 7 Máquinas Virtuales (Red 10.43.x.x - ADR-022)](#5-operación-en-las-7-máquinas-virtuales-red-1043xx---adr-022)
 6. [Mecanismo de Bloqueo Local Pre-Push](#6-mecanismo-de-bloqueo-local-pre-push)
-7. [Matriz de Trazabilidad RTM y Catálogo de Pruebas (Test Scenarios, RTM & Test Cases)](#7-matriz-de-trazabilidad-rtm-y-catálogo-de-pruebas-187-casos)
+7. [Matriz de Trazabilidad RTM y Catálogo de Pruebas (Test Scenarios, RTM & Test Cases)](#7-matriz-de-trazabilidad-rtm-y-catálogo-de-pruebas-339-casos)
 8. [Gestión de Datos de Prueba (Test Data)](#8-gestión-de-datos-de-prueba-test-data)
 9. [Gestión y Reporte de Defectos (Bug Report)](#9-gestión-y-reporte-de-defectos-bug-report)
 10. [Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3 & Sprint 4)](#10-informe-de-ejecución-de-pruebas-test-execution-report---sprint-3--sprint-4)
@@ -33,7 +33,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V3.0) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente v5.6, con la sección 2.3.1 de alcance geográfico y 33 RFs canónicos) y los escenarios de calidad del SAD (versión vigente V5 / v2.35) de cara a los entregables del Sprint 5 y la Entrega Final.
+El presente Documento de Pruebas (TD V3.0) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 5.11, borrador de la V6, con 33 RFs canónicos y RF-38 y RF-39 propuestos en su sección 7.6) y los escenarios de calidad del SAD (versión vigente V2.47, 52 escenarios) de cara a los entregables del Sprint 5 y la Entrega Final.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -260,52 +260,36 @@ En caso de que cualquiera de las 5 sub-compuertas de la Compuerta 2 resulte en e
 
 ---
 
-### 3.3 Especificación Formal de la Compuerta 3 y Estrategia de Prueba de Humo en Producción (SCRUM-532 / SCRUM-47 / RNF-08)
+### 3.3 Especificación Formal de la Compuerta 3 y Estrategia de Prueba de Humo (SCRUM-532 / SCRUM-47 / RNF-08)
 
-En concordancia con el requisito no funcional **RNF-08 (Compuerta Automatizada a Producción)** y el acuerdo arquitectónico **ADR-022** (Distribución formal sobre 7 Máquinas Virtuales en red `10.43.x.x`), la **Compuerta 3** rige la promoción final de artefactos validados desde el ambiente de QA hacia el clúster de Producción (`VM3`, `VM4`, `VM6`), garantizando el despliegue sin caída de servicio (*Zero Downtime Rolling Update*) y la verificación inmediata del MVP.
+La prueba de humo recorre una vez el flujo crítico contra **QA** y bloquea la promoción a producción si falla (RNF-08, RF-27). No corre contra producción: crearía cuentas, solicitudes y pagos en la plataforma real, y el SAD y la Infraestructura usan QA como el ambiente de pruebas (ADR-015, Infraestructura 6.2). Así quedó al 4 de noviembre de 2026; la fuente es `.github/workflows/pruebas-sistema.yml`, `infrastructure/ansible/files/compuerta-qa.sh` y la sección 6.2 de la Infraestructura.
 
-```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ SECUENCIA OPERATIVA DE LA COMPUERTA 3 (PROMOCIÓN A PRODUCCIÓN - RNF-08)                │
-├────────────────────────┬───────────────────────────────────────────────────────────────┤
-│ Fase del Pipeline      │ Acciones Ejecutadas y Criterios Inquebrantables de Control    │
-├────────────────────────┼───────────────────────────────────────────────────────────────┤
-│ 1. Validación Previa   │ • Verificación de 100% PASS en Compuerta 2 (QA Desplegado).   │
-│    en QA (VM2)         │ • Aprobación formal de PR por Arquitectura (Juandi48).        │
-│                        │ • Inmutabilidad: Se promueven las MISMAS imágenes Docker.     │
-├────────────────────────┼───────────────────────────────────────────────────────────────┤
-│ 2. Despliegue Rolling  │ • Ejecución de Ansible Playbook desde Runner en VM1 hacia VM3.│
-│    Update (VM3 k3s)    │ • MaxUnavailable: 0, MaxSurge: 1 (cero indisponibilidad).    │
-│                        │ • Espera activa con kubectl rollout status (timeout: 180 s).  │
-├────────────────────────┼───────────────────────────────────────────────────────────────┤
-│ 3. Smoke Test E2E      │ • Ejecución del Smoke Test automatizado (SCRUM-47):           │
-│    Automatizado (VM1)  │   Flujo crítico completo Cliente → Técnico → Pago → Calificar.│
-│                        │ • Creación y limpieza de datos efímeros con prefijo smoke-.   │
-│                        │ • Cero exposición de credenciales o tokens en logs del run.   │
-├────────────────────────┼───────────────────────────────────────────────────────────────┤
-│ 4. Veredicto Final     │ • Si Smoke Test es 100% PASS y pods están Ready: PROMOVIDO.   │
-│    y Rollback          │ • Si falla cualquier aserción: kubectl rollout undo inmediato,│
-│                        │   bloqueo del merge a main y alerta P0 urgente al equipo.     │
-└────────────────────────┴───────────────────────────────────────────────────────────────┘
-```
+| Paso | Dónde | Qué pasa | Qué bloquea |
+|---|---|---|---|
+| 1. Versión en QA | Repositorio del servicio, push a `release/*` | El pipeline construye la imagen (etiqueta por contenido `t-<hash>`) y la despliega en QA (VM2). | Si fallan lint, pruebas o cobertura, no hay imagen ni despliegue. |
+| 2. Prueba de humo | `quickpatch`, push a `release/*` o a mano: job `humo` de `pruebas-sistema.yml` en el runner de VM1 | Newman corre `tests/e2e/humo-flujo-critico.postman_collection.json` contra `https://qa.quickpatch.internal`. En el mismo workflow corren las demás colecciones, ZAP y la carga de k6. La prueba del panel es `humo-frontends.yml` (Playwright). | Una aserción fallida, más de 5 minutos o la falta de los secretos `QA_ADMIN_EMAIL` y `QA_ADMIN_PASSWORD` dejan el workflow en fallo. |
+| 3. Compuerta automática | Job `desplegar` de cada repositorio al hacer push a `main`, antes de tocar producción: `compuerta-qa` en VM1 | Exige que la misma imagen (o el mismo build del panel) corra en QA, y que la última ejecución de `pruebas-sistema.yml` y la de `humo-frontends.yml` hayan pasado **después** de que esa versión llegó a QA. | Si no se cumple, el job termina con código 1 y producción no cambia. La única excepción es la variable `COMPUERTA_RNF08_EXCEPCION`, con motivo y fecha; desde el 27 de octubre no hay ninguna. |
+| 4. Aprobación manual | Ambiente de GitHub `produccion` | Un revisor (DevOps) aprueba el despliegue; solo admite `main` y los administradores no la saltan. | Sin la aprobación, el job no corre. |
+| 5. Despliegue en producción | VM3 | `kubectl` cambia la imagen y espera el `rollout`. | Si el `rollout` no termina, el job falla. **No hay rollback automático:** se revierte a mano con `kubectl rollout undo` (Infraestructura 5.8). |
 
-#### 3.3.1 Arquitectura del Smoke Test Automatizado del Flujo Crítico (SCRUM-47)
-El Smoke Test (`tests/e2e/smoke-test-flujo-critico.postman_collection.json`) es una suite autónoma, determinista y de ejecución rápida (< 45 segundos) diseñada para ejecutarse tras cada despliegue de release en QA y previo a la apertura de tráfico en Producción:
-1. **Paso 1 (Registro y Auth Dinámica):** Registro al vuelo de un cliente y un técnico con credenciales dinámicas en Identity; obtención de tokens JWT RS256 con claims `tenant_id` y roles validados.
-2. **Paso 2 (Creación de Solicitud):** Cliente crea solicitud con coordenadas geográficas de Bogotá y categoría activa del catálogo (`buscando_tecnico`).
-3. **Paso 3 (Matching y Oferta):** Motor de matching asigna automáticamente al técnico elegible en $< 5\text{ s}$ (`asignado`).
-4. **Paso 4 (Cotización):** Técnico emite cotización detallada de repuestos/mano de obra y el cliente la acepta (`cotizacion_aceptada`).
-5. **Paso 5 (Ejecución y Evidencia):** Técnico inicia labores (`en_progreso`), carga obligatoriamente foto de evidencia a Garage S3 (`POST /evidence`) y finaliza el servicio (`completado`).
-6. **Paso 6 (Pago):** Cliente realiza el pago exitoso utilizando token de pasarela simulada Wompi (`pagado`).
-7. **Paso 7 (Comprobante Fiscal):** Payments genera automáticamente la factura con NIT institucional y desglose de IVA en JSON y PDF.
-8. **Paso 8 (Calificación):** Cliente emite calificación de 5 estrellas con comentario, publicando el evento outbox `service-request.rated` hacia Ranking (`calificado`), y Ranking publica `ranking.technician-reputation-changed` (ADR-027).
-9. **Paso 9 (Limpieza Automática / Teardown):** El runner limpia los datos efímeros generados para evitar contaminación transaccional en la base de datos operativa.
+#### 3.3.1 La prueba de humo del flujo crítico (SCRUM-47, SCRUM-504)
+`humo-flujo-critico.postman_collection.json` la genera `tests/e2e/generar-humo-flujo-critico.py`. Recorre una sola vez, sin casos negativos:
+1. **Preparación:** login del Admin del tenant, una categoría propia de la corrida, un técnico registrado y aprobado con cobertura en toda Bogotá y disponible, y un cliente. La clave de las cuentas se genera en la corrida y no se guarda.
+2. **Solicitud y asignación:** el cliente crea la solicitud y el técnico recibe la oferta y la acepta (`asignado`).
+3. **Cotización:** el técnico cotiza 185.000 y el cliente acepta (`cotizacion_aceptada`).
+4. **Ejecución:** el técnico inicia, sube la foto a Garage y completa (`completado`).
+5. **Pago y comprobante:** el pago queda pendiente, el cliente paga con la tarjeta simulada aprobada (`pagado`) y consulta el comprobante (número `QP-`, monto 185.000,00).
+6. **Calificación:** el cliente califica con 5 estrellas (201) y calificar otra vez responde 409 `ya-calificada`.
+7. **Limpieza:** suspende al técnico y desactiva la categoría.
 
-#### 3.3.2 Criterios de Aceptación Inquebrantables de la Compuerta 3
-* **Tasa de Éxito del Flujo Crítico:** Exactamente **100.0% PASS** en las aserciones del Smoke Test (cero aserciones fallidas).
-* **Estabilidad del Clúster en Producción:** **0 caídas de pods**, **0 eventos de terminación por memoria (`OOMKilled` = 0)** y cumplimiento estricto del límite de RAM de VM3 $\le 6.5\text{ GiB}$ (SAD AC2-E5, SCRUM-347).
-* **Integridad de Despliegue:** 100% de los microservicios en estado `Ready` tras el *Rolling Update* (tiempo de convergencia $< 120\text{ s}$).
-* **Acción ante Fallo (Protocolo de Rollback Automático):** Si cualquier petición del Smoke Test responde con error (HTTP 4xx/5xx) o supera el timeout de 5 segundos, el pipeline aborta la promoción con código de salida 1, invoca `kubectl rollout undo deployment -n default` en VM3 revirtiendo todos los pods a la revisión previa estable, cancela el merge hacia la rama `main` y despacha una alerta P0 inmediata al canal de incidentes.
+El reloj arranca en el primer paso y la colección falla si el recorrido pasa de 5 minutos. Corre con `--reporters cli`, que no imprime cuerpos ni encabezados. **Evidencia:** `tests/e2e/evidencias/humo-flujo-critico-qa-2026-11-04.txt`.
+
+#### 3.3.2 Criterios de la Compuerta 3
+* **Prueba de humo:** 100 % de las aserciones en verde, en menos de 5 minutos, contra la versión que va a producción.
+* **Misma versión:** producción recibe la imagen que pasó QA; si `main` trae algo que no pasó por `release/*`, `compuerta-qa` lo bloquea.
+* **Orden:** la ejecución de las pruebas debe ser posterior a la llegada de la versión a QA.
+* **Sin credenciales en los registros:** los secretos llegan como variables de entorno y el reporter `cli` no los imprime.
+* **Ante un fallo:** no se promueve. Se corrige en `develop`, sale otra `release/*` y se repite la prueba. Si el fallo aparece después de desplegar en producción, se revierte a mano con `kubectl rollout undo`.
 
 ---
 
@@ -386,17 +370,17 @@ echo "[QA] Pruebas aprobadas."
 
 ---
 
-## 7. Matriz de Trazabilidad RTM y Catálogo de Pruebas (187 Casos)
+## 7. Matriz de Trazabilidad RTM y Catálogo de Pruebas (339 Casos)
 
 ### 7.1 Matriz de Trazabilidad de Requisitos (RTM)
 
-La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requerimientos funcionales del **SRS v5.6** (versión oficial canónica), los 52 escenarios de calidad del SAD (V5 / v2.35), las Historias de Usuario de Jira de los Sprints 4 y 5, y el catálogo formal de casos de prueba automatizados.
+La Matriz de Trazabilidad de Requisitos (RTM) establece la correspondencia bidireccional y verificable entre los requerimientos funcionales del **SRS 5.11** (borrador de la V6), los 52 escenarios de calidad del SAD (V2.47), las Historias de Usuario de Jira de los Sprints 4 y 5, y el catálogo formal de casos de prueba automatizados.
 
-#### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS v5.6 (33 RFs Canónicos)
-El SRS v5.6 formaliza un total de **33 Requisitos Funcionales canónicos** organizados en los módulos de Clientes, Empresas, Técnicos, Proveedores, Solicitudes, Matching, Pagos, Infraestructura y Seguridad.
+#### 7.1.1 Trazabilidad hacia Requisitos Funcionales del SRS 5.11 (33 RFs Canónicos y 2 Propuestos)
+El SRS 5.11 (borrador de la V6) formaliza un total de **33 Requisitos Funcionales canónicos** organizados en los módulos de Clientes, Empresas, Técnicos, Proveedores, Solicitudes, Matching, Pagos, Infraestructura y Seguridad.
 
 > [!NOTE]
-> **Alineación con SRS v5.6:** En estricta concordancia con el SRS v5.6 canónico (§5), la matriz de trazabilidad mapea exclusivamente los **33 Requisitos Funcionales oficiales** (RF-01 a RF-29 y RF-34 a RF-37). Las extensiones operativas de interacción (notificaciones push, buzón offline, geocodificación local y landing institucional) se gestionan a nivel de componentes sin alterar la numeración contractual del SRS.
+> **Alineación con SRS 5.11 (SCRUM-531, 4 de noviembre de 2026):** la matriz mapea los **33 Requisitos Funcionales oficiales** del SRS (RF-01 a RF-29 y RF-34 a RF-37) y los dos que la revisión del Product Owner propone en la sección 7.6 del SRS 5.11: RF-38 (recuperación de contraseña, SCRUM-623) y RF-39 (edición del perfil, SCRUM-609). Los dos esperan el visto bueno de Juan Diego Rojas; si se aprueban, la fila queda igual y solo se quita la marca *Propuesto*. Todo RF tiene al menos un caso del catálogo de la sección 7. Las familias `REG`, `RLS`, `GEO`, `OFF`, `TRK`, `AVA`, `COV`, `DTL`, `PRV`, `PNL`, `VER` y `SUS` son casos de las colecciones de `tests/e2e`, registrados en las tablas de ejecución de la sección 10. Las extensiones operativas de interacción (notificaciones push, buzón offline, geocodificación local y landing institucional) se gestionan a nivel de componentes sin alterar la numeración contractual del SRS.
 
 | ID RF | Feature | Descripción Funcional (SRS v5.6) | Módulo / Servicio Propietario | Casos de Prueba Automatizados Asociados (TD V3) |
 |---|---|---|---|---|
@@ -411,12 +395,12 @@ El SRS v5.6 formaliza un total de **33 Requisitos Funcionales canónicos** organ
 | **RF-09** | F2.2 | Asignación automática por cercanía, especialidad, disponibilidad y cobertura zonal; reintento de solicitudes en espera (RN-M9, RN-M10). | Matching | `MAT-001` a `MAT-022`, `MAT-001`..`014` (E2E), `PRF-001` |
 | **RF-10** | F2.2 | Ofertas secuenciales a un técnico a la vez con ventana de vigencia (3 min) y aceptación/rechazo atómico sin penalización (RN-M1..M8). | Matching | `MAT-010`, `MAT-011`, `MAT-012`, `OFF-001`..`007`, `E2E-007` |
 | **RF-11** | F2.3 | Visualización en tiempo real del ciclo de vida de la solicitud (mínimo 4 estados: buscando_tecnico, asignado, en_progreso, completado). | ServiceRequest / Communication | `SRQ-006`, `TRK-001`..`010`, `COM-001`, `COM-002`, `COM-005` |
-| **RF-12** | F2.4 | Calificación obligatoria de 1 a 5 estrellas con comentario opcional habilitada exclusivamente tras confirmación del pago (`pagado`). | ServiceRequest / Ranking | `SRQ-021`..`023`, `RNK-001`..`002`, `CAL-001`..`006` |
+| **RF-12** | F2.4 | Calificación obligatoria de 1 a 5 estrellas con comentario opcional habilitada exclusivamente tras confirmación del pago (`pagado`). | ServiceRequest / Ranking | `SRQ-021`..`023`, `RNK-001`..`002`, `CAL-001`..`023` |
 | **RF-13** | F3.1 | Configuración de disponibilidad (`disponible`/`no_disponible`) y zona de cobertura como lista de localidades de Bogotá (DD §5.7). | Matching / Actors | `MAT-003`, `MAT-005`, `AVA-001`..`005`, `COV-001`..`004` |
 | **RF-14** | F3.2 | Consulta de detalle completo de solicitud asignada por el técnico (dirección, contacto de cliente y ubicación) protegida por confidencialidad. | ServiceRequest | `SRQ-005`, `DTL-001`..`005`, `RN-SR13` |
 | **RF-15** | F3.2 | Cierre de servicio por el técnico con adjuntos fotográficos obligatorios en Garage (ADR-016), habilitando facturación y pago. | ServiceRequest | `SRQ-016`, `SRQ-017`, `SRQ-018`, `E2E-001` |
 | **RF-16** | F3.3 | Administración de equipo de técnicos por Proveedor: alta de técnicos con herencia de tenant, estado pendiente y filtrado activo/inactivo. | Actors / Identity | `ACT-007`, `ACT-008`, `ACT-009`, `PRV-001`..`008` |
-| **RF-17** | F3.4 | Historial de servicios atendidos por el técnico con detalle paginado y filtrado por tenant. | ServiceRequest | `SRQ-026`, `HIS-001`..`005` |
+| **RF-17** | F3.4 | Historial de servicios atendidos por el técnico con detalle paginado y filtrado por tenant. | ServiceRequest | `SRQ-026`, `HIS-001`..`016`, `CAL-021` |
 | **RF-18** | F4.1 | Monitoreo operativo en panel web: Admin del tenant ve solicitudes de su tenant; Admin de plataforma ve todos filtrables. | Web / ServiceRequest | `E2E-002`, `PNL-001`..`004` |
 | **RF-19** | F4.2 | Aprobación y rechazo motivado de técnicos y proveedores por Admin; trazabilidad en `audit_logs` y evento `technician.verification-changed`. | Identity / Actors / Web | `ACT-003`, `ACT-004`, `VER-001`..`009`, `E2E-003` |
 | **RF-20** | F4.2 | Suspensión de cuenta de técnico por Admin del tenant con motivo registrado $\ge 5$ caracteres; bloqueo inmediato de nuevas ofertas de matching. | Identity / Matching / Web | `ACT-005`, `ACT-006`, `SUS-001`..`011`, `RN-TP2` |
@@ -432,12 +416,14 @@ El SRS v5.6 formaliza un total de **33 Requisitos Funcionales canónicos** organ
 | **RF-34** | F3.2 | Emisión de cotización de mano de obra y repuestos por técnico titular; bloqueo de inicio de servicio sin cotización aprobada (RN-Q1). | ServiceRequest | `SRQ-008`, `SRQ-009`, `SRQ-010` |
 | **RF-35** | F2.1 | Aceptación, rechazo y límite estricto de máximo 3 cotizaciones por solicitud antes de cancelación automática (RN-Q2, RN-Q3, RN-Q7). | ServiceRequest | `SRQ-011`, `SRQ-012`, `SRQ-013`, `E2E-008` |
 | **RF-36** | F2.1 | Cancelación unilateral justificada de solicitud por Cliente antes del inicio de labores (`en_progreso`) con registro de motivo (RN-SR7). | ServiceRequest | `SRQ-019`, `SRQ-020`, `E2E-010` |
-| **RF-37** | F7.5 | Chat bidireccional en tiempo real entre cliente y técnico asignado con historial auditado y WebSocket seguro (ADR-026 / SCRUM-479). | Communication / Gateway | `CHT-001`..`005` |
+| **RF-37** | F7.5 | Chat bidireccional en tiempo real entre cliente y técnico asignado con historial auditado y WebSocket seguro (ADR-026 / SCRUM-479). | Communication / Gateway | `CHT-001`..`006` |
+| **RF-38** *(Propuesto, SRS 5.11 §7.6)* | F1.1 | Recuperación de la contraseña olvidada: el usuario la pide con su correo, el Admin del tenant genera un enlace de un solo uso que vence en 1 hora y el usuario define la contraseña nueva; los tokens ya emitidos siguen hasta vencer (SCRUM-623). | Identity / Web / Móvil | `REC-001`..`027` |
+| **RF-39** *(Propuesto, SRS 5.11 §7.6)* | F1.1 | Edición del perfil propio: nombre y teléfono del usuario del token; correo, rol, tenant y verificación no se cambian (SCRUM-609). | Identity / Web / Móvil | `PER-001`..`022`, `ACT-011` |
 
 ---
 
-#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (V4 / v2.28)
-El SAD formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **37 escenarios arquitectónicos y de software**. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
+#### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (V2.47)
+El SAD formaliza **52 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **38 escenarios arquitectónicos y de software**. El estado medido de cada uno está en `docs/testing/matriz-escenarios-calidad-52.md`. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
 
 | Atributo de Calidad (ISO 25010) | Escenarios Automatizados | Total SAD | Casos de Prueba Automatizados |
 |---|:---:|:---:|---|
@@ -447,10 +433,10 @@ El SAD formaliza **51 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40
 | **AC4: Capacidad de Interacción** | 2 / 9 | 9 | `AC4-E1` (E2E-005), `AC4-E2` (E2E-006). *(AC4-E3 a AC4-E9 son pruebas presenciales con 5 usuarios)* |
 | **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (INF-015), `AC5-E3` (RNK-006), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024, AC5-E5 Idempotencia), `AC5-E6` (E2E-012) |
 | **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-001, PAY-002), `AC6-E2` (IDN-009, RLS-001..005), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (PAY-015), `AC6-E7` (IDN-020), `AC6-E8` (IDN-007, IDN-008) |
-| **AC7: Mantenibilidad** | 3 / 5 | 5 | `AC7-E3` (CTR-001), `AC7-E4` (INF-012), `AC7-E5` (ACT-013). *(AC7-E1/E2 verificados por linters estáticos)* |
+| **AC7: Mantenibilidad** | 4 / 6 | 6 | `AC7-E3` (CTR-001), `AC7-E4` (INF-012), `AC7-E5` (ACT-013), `AC7-E6` (SMK-003). *(AC7-E1/E2 verificados por linters estáticos)* |
 | **AC8: Flexibilidad** | 3 / 5 | 5 | `AC8-E1` (E2E-004), `AC8-E2` (MAT-020), `AC8-E5` (INF-002). *(AC8-E3/E4 portabilidad externa documentada)* |
 | **AC9: Seguridad Operativa (Safety)**| 5 / 8 | 8 | `AC9-E1` (SRQ-015, SRQ-017), `AC9-E3` (SRQ-025), `AC9-E4` (MAT-013), `AC9-E5` (PAY-009), `AC9-E6` (PRF-010). *(AC9-E2/E7/E8 pendientes de diseño)* |
-| **Total Escenarios** | **37 automatizados** | **51** | **100% de los escenarios de software y arquitectura cubiertos** |
+| **Total Escenarios** | **38 automatizados** | **52** | **100% de los escenarios de software y arquitectura cubiertos** |
 
 ---
 
@@ -476,21 +462,21 @@ En cumplimiento de la subtarea **SCRUM-401** de QA, la siguiente matriz formaliz
 ---
 
 #### 7.1.3b Matriz de Trazabilidad hacia Historias de Usuario de Jira (Sprint 5 — Subtarea SCRUM-531)
-En cumplimiento de la subtarea **SCRUM-531** de QA, la siguiente matriz formaliza la trazabilidad bidireccional de todas las **Historias de Usuario del Incremento del Sprint 5** en Jira con sus respectivos Requisitos Funcionales del **SRS v5.6**, reglas de negocio, subtareas de QA y suites de pruebas automatizadas:
+En cumplimiento de la subtarea **SCRUM-531** de QA, la siguiente matriz formaliza la trazabilidad bidireccional de todas las **Historias de Usuario del Incremento del Sprint 5** en Jira con sus respectivos Requisitos Funcionales del **SRS 5.11**, reglas de negocio, subtareas de QA y suites de pruebas automatizadas:
 
-| Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS v5.6 / SAD V5 | Subtarea QA en Jira | Suites y Casos de Prueba Asociados (TD V3) | Criterios de Aceptación y Validación QA |
+| Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS 5.11 / SAD V2.47 | Subtarea QA en Jira | Suites y Casos de Prueba Asociados (TD V3) | Criterios de Aceptación y Validación QA |
 |---|---|---|---|---|---|
 | **SCRUM-32** | Calificación del servicio al finalizar | RF-12, SAD AC4-E6 | `SCRUM-87` | `CAL-001` al `CAL-023`, `RNK-001`..`002`, `SRQ-021`..`023` | Calificación 1 a 5 habilitada solo tras pago (409 si no completado), prohibición de doble calificación (409), bloqueo RBAC (403), outbox `service-request.rated`, Ranking publica `ranking.technician-reputation-changed` (ADR-027) e idempotencia en Ranking. |
-| **SCRUM-37** | Historial de servicios atendidos por el Técnico | RF-17, DD RN-SR15 | `SCRUM-102` | `HIS-001` al `HIS-016`, `SRQ-026` | Consulta paginada con fecha, estado y calificación recibida; filtrado por completado/cancelado; aislamiento estricto por técnico y tenant (RLS 404). |
+| **SCRUM-37** | Historial de servicios atendidos por el Técnico | RF-17, DD RN-SR15 | `SCRUM-102` | `HIS-001` al `HIS-016`, `SRQ-026`, `CAL-021` | Consulta paginada con fecha, estado y calificación recibida; filtrado por completado/cancelado; aislamiento estricto por técnico y tenant (RLS 404). |
 | **SCRUM-43** | Pago corporativo centralizado (Empresa) | RF-23, ADR-009 | `SCRUM-117` | `PAY-008` al `PAY-012`, `PAY-019` al `PAY-023` | Pago asociado a empresa cliente (`company_id`), auditoría de usuario pagador (`payer`), cobro exacto de cotización aprobada, comprobante con NIT y tokenización PCI-DSS. |
 | **SCRUM-45** | Registro de pagos recibidos (Técnico/Proveedor) | RF-25, PCI-DSS | `SCRUM-503` | `PAY-007`, `PAY-024` al `PAY-040` | Consulta paginada de ingresos para técnico y vista agregada para proveedor sobre su equipo; aislamiento intra-tenant y respuesta libre de PAN/CVV. |
-| **SCRUM-47** | Smoke Test E2E Automatizado del flujo crítico | RF-27, RNF-08 | `SCRUM-504` | `SMK-001` al `SMK-004`, `E2E-001` | Flujo crítico continuo en 9 pasos (registro a calificación) con datos autocontenidos y limpieza; fallo bloquea promoción a producción en compuerta-qa. |
+| **SCRUM-47** | Smoke Test E2E Automatizado del flujo crítico | RF-27, RNF-08 | `SCRUM-504` | `SMK-001` al `SMK-004`, `E2E-001` | Flujo crítico en un solo recorrido contra QA (solicitud a calificación) con datos propios y limpieza; si falla, `compuerta-qa` bloquea la promoción a producción. |
 | **SCRUM-49** | Cifrado de datos sensibles en tránsito y reposo | RF-29, RNF-01 | `SCRUM-507` | `SEC-001` al `SEC-005`, `IDN-015`, `IDN-021` | Forzado TLS 1.3 con HSTS en Ingress VM1, hash seguro de contraseñas (Argon2id), cero PAN/CVV en Loki, Garage S3 prefirmado y ZAP DAST 0 alertas altas. |
 | **SCRUM-348** | ServiceRequest rechaza tenants inactivos sin esperar expiración de token | RF-21, RN-T1, ADR-017 | `SCRUM-511` | `TNT-001` al `TNT-005`, `IDN-019` | Evento outbox `tenant.status-changed`, réplica local en ServiceRequest consumida de forma idempotente; rechazo en segundos de tokens vigentes con HTTP 422 `tenant-inactivo` RFC 9457. |
-| **SCRUM-609** | Edición del perfil propio en la app y el panel web | RF-01, RF-04 | `SCRUM-614` | `PER-001` al `PER-022`, `ACT-011` | Edición de nombre y teléfono solo del usuario del token; correo, rol, tenant y verificación inmodificables (400); errores problem+json por campo; sin volver a iniciar sesión. |
+| **SCRUM-609** | Edición del perfil propio en la app y el panel web | RF-39 (propuesto), RF-04 | `SCRUM-614` | `PER-001` al `PER-022`, `ACT-011` | Edición de nombre y teléfono solo del usuario del token; correo, rol, tenant y verificación inmodificables (400); errores problem+json por campo; sin volver a iniciar sesión. |
 | **SCRUM-615** | Navegación hacia atrás en todas las pantallas de la app | SAD AC4-E5, AC4-E9 | `SCRUM-618` | `NAV-001` al `NAV-022` | Flecha en toda pantalla secundaria, sin flecha en las raíces, confirmación con cambios sin guardar y regreso seguro tras acciones terminales. |
-| **SCRUM-623** | Recuperación de contraseña olvidada | RF-01, AC6-E2 | `SCRUM-627` | `REC-001` al `REC-027` | Misma respuesta exista o no la cuenta, límite de 3 por hora, enlace de un solo uso con vencimiento de 1 hora generado por el `admin_tenant`, aislamiento por tenant y token fuera de los logs. |
-| **SCRUM-529** | Documento de Pruebas TD V3 | Calidad y Diseño | `SCRUM-530`, `SCRUM-531`, `SCRUM-532` | Catálogo consolidado de 270+ casos | Formalización de la estrategia V3, casos de prueba del Sprint 5 (530), actualización RTM a SRS v5.6 (531) y compuerta de producción RNF-08 (532). |
+| **SCRUM-623** | Recuperación de contraseña olvidada | RF-38 (propuesto), AC6-E2 | `SCRUM-627` | `REC-001` al `REC-027` | Misma respuesta exista o no la cuenta, límite de 3 por hora, enlace de un solo uso con vencimiento de 1 hora generado por el `admin_tenant`, aislamiento por tenant y token fuera de los logs. |
+| **SCRUM-529** | Documento de Pruebas TD V3 | Calidad y Diseño | `SCRUM-530`, `SCRUM-531`, `SCRUM-532` | Catálogo consolidado de 339 casos | Formalización de la estrategia V3, casos de prueba del Sprint 5 (530), actualización RTM a SRS 5.11 (531) y compuerta de producción RNF-08 (532). |
 
 ---
 
@@ -862,7 +848,7 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 
 
 > [!NOTE]
-> **Nota de Estado de Pruebas (SCRUM-32 / SCRUM-87):** Los casos `CAL-001` a `CAL-023` se rediseñaron el 3 de noviembre de 2026 contra el endpoint publicado `POST /v1/service-requests/{id}/rating` (`service-request.v1.yaml` 1.10.0; backend SCRUM-85 finalizado, frontend SCRUM-86 en revisión). El 4 de noviembre de 2026 se ejecutaron en QA con la colección `scrum-32-calificacion` (`tests/e2e/evidencias/scrum-32-calificacion-qa-2026-11-04.txt`): pasan todos menos `CAL-006` con `"5"`, que ServiceRequest acepta con 201 porque lee números escritos como texto (corrección en quickpatch-service-request#39; se vuelve a correr al desplegarla). `PER-001`..`018` (`scrum-614-perfil`) y `HIS-001`..`015` (`scrum-37-historial`, salvo `HIS-013`, que espera una categoría en Beta) pasaron el mismo día sin fallos.
+> **Nota de Estado de Pruebas (SCRUM-32 / SCRUM-87):** Los casos `CAL-001` a `CAL-023` se rediseñaron el 3 de noviembre de 2026 contra el endpoint publicado `POST /v1/service-requests/{id}/rating` (`service-request.v1.yaml` 1.10.0; backend SCRUM-85 finalizado, frontend SCRUM-86 en revisión). El 4 de noviembre de 2026 se ejecutaron en QA con la colección `scrum-32-calificacion` (`tests/e2e/evidencias/scrum-32-calificacion-qa-2026-11-04.txt`): la primera corrida encontró que ServiceRequest aceptaba `"5"` en `CAL-006` porque leía números escritos como texto; con la corrección (quickpatch-service-request#39, ServiceRequest 0.11.2) pasan todos: 101 peticiones y 127 aserciones, sin fallos. `PER-001`..`018` (`scrum-614-perfil`) y `HIS-001`..`015` (`scrum-37-historial`, salvo `HIS-013`, que espera una categoría en Beta) pasaron el mismo día sin fallos.
 
 ### 7.9 Módulo: Comunicación y Notificaciones (`quickpatch-communication`)
 * **Requisitos:** RIE-03 | SAD: AC2-E3, AC5-E5
@@ -883,6 +869,14 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **COM-012** | RF-04 | Integración | Aislamiento multi-tenant en plantillas de notificación. | Logotipos y remitentes corresponden exclusivamente al tenant del servicio. |
 | **COM-013** | EDA | Contrato | Validación de sobre base en eventos consumidos. | Eventos cumplen campos obligatorios (`eventId`, `tenantId`, `correlationId`). |
 | **COM-014** | AC2-E3 | Rendimiento | Tiempo de encolamiento de notificación. | Mensaje puesto en cola de despacho en menos de 100 ms tras recepción del evento. |
+| **CHT-001** | RF-37 | API / Positiva | Chat abierto con la solicitud asignada. | `GET /v1/service-requests/{id}/messages` responde 200 vacío con `writable: true` para el cliente y el técnico asignado. |
+| **CHT-002** | RF-37 | API / Positiva | Conversación entre cliente y técnico. | El cliente escribe (sin espacios en los extremos) y el técnico responde; los dos ven el mismo historial, del más reciente al más antiguo, y la paginación trae el resto. |
+| **CHT-003** | RF-37 | API / Negativa | Validaciones del mensaje. | Texto vacío o de 1.001 caracteres, campos de más (`authorId`) y `size=500` responden 400. |
+| **CHT-004** | RF-37, RF-04, AC6-E3 | API / Fuga | Acceso al chat. | Sin token 401; `admin_tenant` 403; otro cliente, otro técnico y el cliente de otro tenant 404 (RLS). |
+| **CHT-005** | RF-37, RN-CH2 | API / Estado | Chat de solo lectura al cerrar. | Con la solicitud cancelada el historial se lee con `writable: false` y escribir responde 409 `chat-cerrado`. |
+| **CHT-006** | RF-37, ADR-026 | Tiempo real | Entrega por WebSocket. | El otro participante recibe la trama `chat.message` con el mismo mensaje en menos de 15 s (`scrum-483-chat-tiempo-real.mjs`). |
+
+> **Ejecución (SCRUM-531):** `CHT-001` a `CHT-005` corren con `scrum-483-chat` (4 de noviembre de 2026: 43 peticiones y 69 aserciones, sin fallos, `tests/e2e/evidencias/scrum-483-chat-qa-2026-11-04.txt`); `CHT-006`, con `scrum-483-chat-tiempo-real.mjs` (22 de octubre de 2026, 23 de 23 pasos).
 
 ---
 
@@ -950,10 +944,10 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **E2E-010** | RF-36 | E2E Cancel | Cancelación de solicitud por el cliente antes del inicio. | Solicitud pasa a `cancelado`; técnico asignado es liberado inmediatamente. |
 | **E2E-011** | AC6-E5 | E2E Trazabilidad| Reconstrucción completa de disputa mediante eventos. | Secuencia cronológica 100% íntegra con marca de tiempo UTC y fotos accesibles en Garage. |
 | **E2E-012** | AC5-E6 | E2E Calidad | Tasa de respuestas 5xx durante ejecución repetitiva de E2E. | Tasa de errores 5xx del servidor inferior al 1% en 20 iteraciones del flujo crítico. |
-| **SMK-001** | RF-27, RNF-08 | Smoke Test E2E | Recorrido automatizado integral de 9 pasos del flujo crítico. | Suite ejecuta registro dinámico, solicitud, matching, cotización, evidencia Garage, pago simulado, factura y calificación en menos de 45 segundos con 100% PASS. |
-| **SMK-002** | RF-27 | Autonomía / Datos | Autogeneración de datos efímeros y limpieza automática. | Datos creados con prefijo `smoke-` y limpiados en teardown; 0 dependencia de usuarios fijos y 0 residuos en BD de QA o Producción. |
-| **SMK-003** | RNF-08, INF-016 | Compuerta / CI/CD | Bloqueo de promoción a producción ante fallo del Smoke Test. | Falla de aserción en Smoke Test aborta el pipeline `compuerta-qa`, revierte el commit en `main` e invoca `kubectl rollout undo` en VM3. |
-| **SMK-004** | RF-29, K2 | Seguridad / Sanitización | Ejecución limpia sin exposición de credenciales o tokens en logs de CI. | Trazas de ejecución de Newman o Playwright en GitHub Actions sanitizadas; 0 JWTs, passwords o API Keys en el log de consola. |
+| **SMK-001** | RF-27, RNF-08 | Smoke Test E2E | Recorrido único del flujo crítico contra QA (`humo-flujo-critico`). | Solicitud, asignación, cotización, foto, pago, comprobante y calificación con 100 % de las aserciones en verde y en menos de 5 minutos. |
+| **SMK-002** | RF-27 | Autonomía / Datos | Datos propios de la corrida y limpieza. | Categoría, técnico y cliente creados en la corrida con clave aleatoria que no se guarda; al final, técnico suspendido y categoría desactivada. Sin usuarios fijos aparte del Admin del tenant. |
+| **SMK-003** | RNF-08, AC7-E6 | Compuerta / CI/CD | La compuerta bloquea la promoción si la prueba no pasó. | `compuerta-qa` termina con código 1 y producción no cambia si la imagen no corre en QA o si `pruebas-sistema.yml` o `humo-frontends.yml` no pasaron después de que la versión llegó a QA. |
+| **SMK-004** | RF-29, K2 | Seguridad / Sanitización | Ejecución sin credenciales ni tokens en los registros. | Secretos por variables de entorno y reporter `cli` de Newman; 0 JWTs y 0 contraseñas en el log de GitHub Actions y en las evidencias. |
 | **NAV-001** | SCRUM-615 | Interfaz / Manual | Detalle de solicitud. | Flecha visible en la barra; la flecha y el botón atrás de Android vuelven a la pantalla anterior. |
 | **NAV-002** | SCRUM-615 | Interfaz / Manual | Nueva solicitud. | Igual que NAV-001. |
 | **NAV-003** | SCRUM-615 | Interfaz / Manual | Pago. | Igual que NAV-001. |
@@ -1744,6 +1738,7 @@ Detalle del resumen estadístico de Newman en consola para la suite `scrum-108-a
 | **2.12** | 24 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación del Cuadro de Mando de Estadísticas y Métricas de Calidad de Software para Sprint 5 (SCRUM-601 / SCRUM-604 en `estadisticas-pruebas-sprint5.md`), formalización del Registro Consolidado de Defectos (SCRUM-603 en `registro-defectos-sprint4-sprint5.md`), y generación automatizada de las 4 gráficas ejecutivas de calidad (distribución por tipo, torta de éxito 100% PASS, defectos por severidad y cobertura de microservicios vs umbral 80%). |
 | **3.0** | 25 de octubre de 2026 | Katherine Bravo (QA Lead) | **Línea Base Final del Documento de Pruebas (TD V3.0 — SCRUM-529):**<br>1. **Casos de Prueba del Incremento Sprint 5 (SCRUM-530):** Incorporación formal de los casos de prueba automatizados para Calificación del servicio (`SCRUM-32` / `CAL-001..006`), Historial de servicios atendidos por el técnico (`SCRUM-37` / `HIS-001..005`), Pago corporativo centralizado de empresa (`SCRUM-43` / `PAY-019..023`), Registro de pagos recibidos por técnico/proveedor (`SCRUM-45` / `PAY-024..027`), Smoke Test E2E del flujo crítico (`SCRUM-47` / `SMK-001..004`), Cifrado en tránsito y reposo (`SCRUM-49` / `SEC-001..005`) y Rechazo inmediato de tenants inactivos por eventos réplica (`SCRUM-348` / `TNT-001..005`).<br>2. **Actualización de la RTM a SRS v5.6 (SCRUM-531):** Trazabilidad bidireccional completa de los 33 Requisitos Funcionales canónicos del SRS v5.6 (RF-01 a RF-29 y RF-34 a RF-37) y matriz de correspondencia hacia las Historias de Usuario de Sprint 5.<br>3. **Estrategia de Prueba de Humo y Compuerta a Producción (SCRUM-532):** Formalización de la Compuerta 3 (§3.3) bajo RNF-08 sobre la topología de 7 VMs (ADR-022: VM1, VM3, VM4, VM6), definiendo el Smoke Test de 9 pasos y el protocolo de Rollback automático (`kubectl rollout undo`). |
 | **3.1** | 3 de noviembre de 2026 | Katherine Bravo (QA Lead) | **Casos de prueba del Sprint 5 contra los contratos publicados (SCRUM-530):**<br>1. Se rediseñan contra los endpoints reales `CAL-001..023` (SCRUM-32, `POST /v1/service-requests/{id}/rating`), `HIS-001..016` (SCRUM-37) y `PAY-024..040` (SCRUM-45, `GET /v1/payments/received`).<br>2. Se agregan `PER-001..022` (edición del perfil, SCRUM-609), `REC-001..027` (recuperación de contraseña, SCRUM-623) y `NAV-001..022` (navegación hacia atrás, SCRUM-615).<br>3. Correcciones: `TNT-003` responde 422 `tenant-inactivo` (no 403), `ACT-011` edita nombre y teléfono, `SRQ-026` usa `/v1/technicians/me/service-requests`.<br>4. RTM del Sprint 5 (§7.1.3b) con las HU SCRUM-609, SCRUM-615 y SCRUM-623. Los casos nuevos quedan diseñados y pendientes de ejecución en QA.<br>5. Ajustes de la revisión por las decisiones de SCRUM-625 (DD 5.19): `REC-020` ya no queda a confirmar (las sesiones abiertas siguen hasta que vence su token); se agregan `REC-026` (técnico con la invitación sin usar) y `REC-027` (HMAC-SHA256 del correo en `password_recovery_attempts`). |
+| **3.2** | 4 de noviembre de 2026 | Juan Diego Rojas (apoyo a QA) | **RTM y compuerta de producción (SCRUM-531 y SCRUM-532):** la RTM traza el SRS 5.11 y el SAD V2.47, con RF-38 y RF-39 como propuestos de la sección 7.6 del SRS; RF-12 y RF-17 citan los casos completos (`CAL-001`..`023`, `HIS-001`..`016`); el RF-37 deja de citar casos inexistentes con `CHT-001`..`006` en la sección 7.9; el catálogo pasa a 339 casos y la 7.1.2 a 52 escenarios. La sección 3.3 y los casos `SMK-001`..`004` describen la prueba de humo y la compuerta que de verdad corren: `humo-flujo-critico` contra QA desde `pruebas-sistema.yml`, `compuerta-qa` antes de producción y sin rollback automático. Las colecciones `scrum-614-perfil`, `scrum-37-historial` y `scrum-32-calificacion` corrieron sin fallos en QA el 4 de noviembre. |
 
 
 
