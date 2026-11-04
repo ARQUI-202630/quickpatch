@@ -606,6 +606,15 @@ En el Sprint 4 Matching implementó el ciclo de la asignación (DD V4, RN-M1 a R
 - **Ofertas** (RF-10; SCRUM-79): la oferta vence a los 3 minutos (RN-M8); el técnico la consulta sin la dirección y la acepta o la rechaza (`/v1/matching/offers`). Un proceso programado (`OfferExpirer`) vence las ofertas sin respuesta y ofrece la solicitud al siguiente candidato (RN-M3); otro (`WaitingRequestsSweeper`) reanuda como respaldo las solicitudes en espera que ya tienen candidato. Los dos leen solo tenant y estado con el rol `matching_scheduler` (P-06) y trabajan cada tenant con RLS.
 - **Eventos:** `matching.offer-created`, `.technician-assigned`, `.no-technician-available` y `.search-resumed` salen por un Outbox propio (ADR-007).
 
+**Clases de la figura 15** (paquete `co.quickpatch.matching`, SCRUM-583):
+
+- **api:** `OffersController` (`/v1/matching/offers`, aceptar y rechazar) y `TechniciansController` (`/v1/localities` y `/v1/technicians/me/availability` y `/coverage`). `SecurityConfig` valida el JWT RS256 de Identity (ADR-018) y `CorrelationIdFilter` propaga `X-Correlation-Id`.
+- **Consumidores de Kafka** (`infrastructure/messaging`): `ServiceRequestCreatedListener`, `ServiceRequestCancelledListener`, `ServiceRequestCompletedListener` y `TechnicianEventsListener` (`technician.registered` y `technician.verification-changed`). Cada uno entrega el evento válido a su manejador y descarta el que no cumple el contrato.
+- **application/events:** `ServiceRequestCreatedHandler` inicia el matching; `ServiceRequestCancelledHandler` cancela la oferta pendiente y la búsqueda y libera al técnico (RN-M5, RN-M6); `ServiceRequestCompletedHandler` lo devuelve a `disponible` y le ofrece la solicitud en espera más antigua (RN-M6, RN-M10); `TechnicianEventsHandler` mantiene la proyección y descarta los eventos con un `updatedAt` anterior (ADR-017). Todos registran el `eventId` en la misma transacción del tenant (`JdbcTenantTransaction` y `JdbcProcessedEventStore`).
+- **application/matching y technicians:** `MatchingEngine` busca candidatos, crea la oferta y reanuda las solicitudes en espera; `OfferService` lista, acepta, rechaza y vence ofertas; `TechnicianAvailabilityService` cambia la disponibilidad y la cobertura.
+- **Persistencia:** `JdbcMatchingStores` y `JdbcTechnicianStores` (PostGIS y RLS) y `JdbcTechnicianProjection`, donde la fila del técnico nace en `no_disponible`. `JdbcOutbox` guarda los eventos en `outbox_events` y `OutboxPublisher` los publica.
+- **Tareas programadas:** `OfferExpirer` (cada `MATCHING_EXPIRY_INTERVAL`) y `WaitingRequestsSweeper` (cada `MATCHING_SWEEP_INTERVAL`, respaldo de RN-M10).
+
 Matching no usa la geocodificación: recibe la solicitud con coordenadas.
 
 ## 6.9 Ranking Service
@@ -683,7 +692,15 @@ Implementado en el MVP con la pasarela simulada (ADR-009 modificado; SCRUM-115 y
 
 **Figura 18. Componentes de Communication Service (C4 · Component). Vista `C4-04-Componentes-Communication`.**
 
-El canal en tiempo real está implementado (ADR-023): `/v1/realtime` valida el token de la primera trama y cierra con el código del contrato si no llega a tiempo (4002), si es inválido (4001) o cuando vence (4004; corregido con Kestrel en SCRUM-469). Un consumidor de `service-request.created`, `service-request.status-changed` y `matching.offer-created` decide a quién avisar con los datos del propio evento (`clientId`, `technicianId`) y avisa a cada usuario conectado dentro de su tenant. El aviso de estado sale de ServiceRequest, que solo publica `status-changed` cuando aplicó el cambio; antes salía de los eventos de Matching, y uno que ServiceRequest descartaba por viejo producía un aviso falso (SCRUM-466). El aviso no trae datos: la app vuelve a pedir el detalle por REST. Como Communication todavía no tiene base de datos, recuerda en memoria los últimos `eventId` para no repetir un aviso; un aviso repetido tras un reinicio no hace daño, porque la app solo vuelve a pedir el mismo detalle.
+El canal en tiempo real está implementado (ADR-023): `/v1/realtime` valida el token de la primera trama y cierra con el código del contrato si no llega a tiempo (4002), si es inválido (4001) o cuando vence (4004; corregido con Kestrel en SCRUM-469). Un consumidor de `service-request.created`, `service-request.status-changed` y `matching.offer-created` decide a quién avisar con los datos del propio evento (`clientId`, `technicianId`) y avisa a cada usuario conectado dentro de su tenant. El aviso de estado sale de ServiceRequest, que solo publica `status-changed` cuando aplicó el cambio; antes salía de los eventos de Matching, y uno que ServiceRequest descartaba por viejo producía un aviso falso (SCRUM-466). El aviso no trae datos: la app vuelve a pedir el detalle por REST. El canal recuerda en memoria los últimos `eventId` para no repetir un aviso; un aviso repetido tras un reinicio no hace daño, porque la app solo vuelve a pedir el mismo detalle.
+
+**Clases de la figura 18** (`QuickPatch.Communication`, SCRUM-583):
+
+- **Canal en tiempo real:** `RealtimeEndpoints`, `RealtimeSession` y `TokenValidator` atienden `/v1/realtime`; `ConnectionRegistry` y `WebSocketClient` guardan las conexiones abiertas de la réplica. `RealtimeEventsConsumer` consume `service-request.created`, `.status-changed` y `matching.offer-created` desde el último offset y se los entrega a `RealtimeNotifier` y `NoticeRouter`, que descartan repetidos (`RecentEventIds`) y deciden a quién avisar.
+- **Buzón:** `PersistentEventsConsumer`, con su propio grupo y desde el principio, consume 8 topics: `service-request.created`, `.status-changed`, `.quoted`, `.quote-accepted` y `.quote-rejected`, `matching.offer-created`, `technician.registered` y `technician.verification-changed`. `InboxRecorder` e `InboxRules` crean una notificación por destinatario e `InboxStore` la guarda en `notifications`. `InboxEndpoints` atiende `GET /v1/notifications` y `POST /v1/notifications/{id}/read` con `ListNotificationsHandler` y `MarkNotificationReadHandler`.
+- **Chat:** otro grupo de `PersistentEventsConsumer` lee `service-request.status-changed` para `ChatParticipantsRecorder`, que llena `chat_participants`. `ChatEndpoints` atiende `GET` y `POST /v1/service-requests/{id}/messages` con `ListChatMessagesHandler` y `SendChatMessageHandler`, que guardan en `chat_messages` (`ChatStore`) y entregan `chat.message` por `ConnectionRegistry`.
+
+Communication no consume eventos de pago.
 
 El buzón de notificaciones también está implementado (ADR-024; SCRUM-456 y SCRUM-488): la tabla `notifications` en `db_communication`, `GET /v1/notifications` y `POST /v1/notifications/{id}/read` (`communication.v1.yaml` 1.2.0), con `processed_events` para no repetir avisos. El chat de la solicitud (ADR-026) completa el servicio; su despliegue en QA es la versión 0.3.0.
 
@@ -2150,7 +2167,7 @@ Antes de consolidar una versión final del SDD se verifica la lista siguiente. R
 | Sección | Corresponde a | Estado |
 |---|---|---|
 | System Landscape, System Context y Container (3 a 5) | Arquitectura | **V4 - lista para revisión**; contratos al día con `quickpatch-api-gateway` `v0.21.0` (Identity 1.10.0, ServiceRequest 1.11.0, Payments 1.2.0) y `quickpatch-kafka` `v0.10.0` (20 eventos) |
-| Component y Code (6 y 7) | Backend + Frontend | **V4 - lista para revisión**; componentes con los nombres del código (sección 13.4), salvo Matching y Communication (SCRUM-583) |
+| Component y Code (6 y 7) | Backend + Frontend | **V4 - lista para revisión**; componentes con los nombres del código (sección 13.4), incluidos Matching y Communication (SCRUM-583) |
 | Dynamic (8) | Backend + QA | **V4 - lista para revisión**; asignación con escenario nombrado (SCRUM-590) y calificación implementada (figura 27) |
 | Deployment (9) | DevOps | **V4 - lista para revisión**; una vista por ambiente (figuras 30 y 31, SCRUM-576); Actors en los dos ambientes, y Ranking y el Geocodificador en producción, marcados como no desplegados |
 | Organización del código (10) | Backend + Frontend | **Desarrollada - lista para revisión** |
@@ -2234,14 +2251,13 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 | Componentes del Sprint 5, dinámica de la calificación y despliegue real | 6, 8 (figura 27) y 9 | SCRUM-549 y SCRUM-550 |
 | Escenarios dinámicos con título y pasos numerados para la cotización, el pago y la cancelación, desde los flujos de SCRUM-591 | 8.3, 8.4 y 8.5 (figuras 22c, 24 y 28b) | SCRUM-589 |
 | Revisión integral del Sprint 5: sistemas externos según ADR-024 (sección 4), Ranking en QA, matriz 8.6 y grupos 8.7 con los eventos y consumidores reales, perfil, `tenant.status-changed` y su réplica en Identity y ServiceRequest, y calificación e historial en la app | 4, 5, 6.2, 6.4, 6.7, 6.9, 8.6, 8.7, 9 y 12 (figuras 3, 9, 10, 13, 16, 27 y 31) | SCRUM-548 |
+| Componentes de Matching y Communication con los nombres reales de las clases: consumidores de `service-request.created`, `.cancelled` y `.completed` y de `technician.*`, `OfferExpirer` y `WaitingRequestsSweeper` en Matching; canal, buzón con sus 8 topics y chat en Communication | 6.8 y 6.11 (figuras 15 y 18) | SCRUM-583 |
 | Componentes reales de la calificación: ServiceRequest, Ranking e Identity | 6.4, 6.7 y 6.9 (figuras 10, 13 y 16) | SCRUM-584 |
 | Pagos recibidos de Payments con sus clases reales (`ReceivedPaymentEndpoints`, `ReceivedPaymentsHandler`, `TechnicianRegisteredConsumer` y `TechnicianRegisteredHandler`) y los consumidores reales de Communication, sin `payment.*` | 6.10 (figura 17), figura 18 y figura 3 | SCRUM-584 |
 | Observaciones 1 a 3 de la revisión funcional del PO: sección 12 con la revisión de la V4, contratos de `v0.21.0`, los 20 eventos de `quickpatch-kafka` `v0.10.0` y RF-17, RF-25 y el buzón en la sección 8.13.5 | 5.6.1, 5.6.2, 8.13.5, 12 y 13.5 | SCRUM-548 |
 | Auditoría previa a la revisión del PO: estado del documento, calificación implementada en la matriz de escenarios, secuencia de extremo a extremo con el técnico y la calificación por Kafka (ADR-027), cuenta corporativa implementada, Ranking en la convención de paquetes y referencias corregidas | 1, 6.2, 6.7, 8.13.3, 8.13.4, 10.2, 11.4 y 13 | SCRUM-548 |
 
-**Pendiente para cerrar la V4:**
-
-- Componentes de Matching y Communication con los nombres reales de las clases (figuras 15 y 18, SCRUM-583). El lugar en las secciones 6.8 y 6.11 ya existe.
+**Pendiente para cerrar la V4:** nada. Las figuras 15 y 18 se completaron en SCRUM-583 (fila siguiente).
 
 ---
 
@@ -2266,7 +2282,7 @@ Revisión del 28 de octubre de 2026 sobre `develop`, con los criterios de las V2
 3. La sección 8.13.5 dice que el buzón no tiene escenario y se agrega "cuando se implemente", pero ya está implementado. Además, RF-25 no aparece en la lista, y en RF-17 falta el historial con la calificación (SCRUM-100, SCRUM-499).
 4. Las figuras 15 y 18 (SCRUM-583) siguen pendientes.
 
-**Resultado:** la V4 queda aprobada con observaciones. Las observaciones 1 a 3 se corrigieron el 3 de noviembre de 2026 en SCRUM-548 (sección 13.4); la 4 sigue pendiente en SCRUM-583. La diferencia del ciclo de vida con el SAD quedó resuelta en el SAD 2.46 (SRS, P2).
+**Resultado:** la V4 queda aprobada con observaciones. Las observaciones 1 a 3 se corrigieron el 3 de noviembre de 2026 en SCRUM-548 (sección 13.4); la 4 se corrigió el 3 de noviembre de 2026 en SCRUM-583 (figuras 15 y 18). La diferencia del ciclo de vida con el SAD quedó resuelta en el SAD 2.46 (SRS, P2).
 
 ---
 

@@ -2,9 +2,9 @@
 
 **Versión:** 2.0
 **Fecha:** 2026-11-02
-**Alineado con:** DD 5.17 (secciones 5.6, 5.8, 7.5, 8.2.3, 8.2.6, 8.3.5 y 8.5), `matching.v1.yaml` 1.1.0 y `communication.v1.yaml` (`quickpatch-api-gateway`), `asyncapi/realtime.v1.yaml`, eventos de `quickpatch-kafka` v0.10.0 y `docs/architecture/diagrams/c4/quickpatch.dsl`.
+**Alineado con:** DD 5.19 (secciones 5.6, 5.8, 7.5, 8.2.3, 8.2.6, 8.3.5 y 8.5), `matching.v1.yaml` 1.1.0 y `communication.v1.yaml` (`quickpatch-api-gateway`), `asyncapi/realtime.v1.yaml`, eventos de `quickpatch-kafka` v0.10.0 y `docs/architecture/diagrams/c4/quickpatch.dsl`.
 
-Las vistas formales de componentes se generan desde el DSL: `C4-04-Componentes-Matching.png` y `C4-04-Componentes-Communication.png` en `docs/architecture/diagrams/c4/`. Este documento las resume y agrega los flujos principales.
+**El SDD (figuras 15 y 18, secciones 6.8 y 6.11) y `quickpatch.dsl` mandan**: las vistas formales con los nombres reales de las clases son `C4-04-Componentes-Matching.png` y `C4-04-Componentes-Communication.png` en `docs/architecture/diagrams/c4/`. Este documento es un apoyo con los flujos principales.
 
 ---
 
@@ -66,7 +66,7 @@ graph TB
         CH["Chat de la solicitud<br/>(RF-37, ADR-026)"]
     end
 
-    K -->|"service-request.*, matching.*,<br/>payment.*, technician.*"| C
+    K -->|"service-request.created, .status-changed,<br/>.quoted, .quote-accepted, .quote-rejected,<br/>matching.offer-created,<br/>technician.registered, .verification-changed"| C
     C --> T
     T -->|"aviso a conexiones del usuario"| RT
     T -->|"guarda la notificación"| BZ
@@ -129,7 +129,7 @@ sequenceDiagram
 
 ## 4. Flujo: solicitudes en espera (RN-M10)
 
-No hay un temporizador que reintente cada cierto tiempo. Una solicitud `en_espera` vuelve a buscarse cuando aparece un técnico que podría atenderla.
+El reintento lo disparan los eventos: una solicitud `en_espera` vuelve a buscarse cuando aparece un técnico que podría atenderla. `WaitingRequestsSweeper` hace además un barrido de respaldo cada `MATCHING_SWEEP_INTERVAL` para los casos que ningún disparador alcanzó.
 
 ```mermaid
 graph TD
@@ -160,7 +160,7 @@ graph TD
 
 ```mermaid
 stateDiagram-v2
-    [*] --> disponible
+    [*] --> no_disponible : technician.registered (la fila nace en no_disponible)
     disponible --> no_disponible : el técnico la cambia (PUT /v1/technicians/me/availability)
     no_disponible --> disponible : el técnico la cambia
     disponible --> ocupado : acepta una oferta (RN-M6)
