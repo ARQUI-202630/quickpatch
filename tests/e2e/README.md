@@ -179,6 +179,32 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scru
 
 **Evidencia:** la corrida manual del 2 de noviembre de 2026 está en `evidencias/tenant-desactivado-qa-2026-11-02.txt` (0 verificaciones fallidas). La colección se revisó contra un servidor de prueba local que imita las respuestas de los contratos: 20 peticiones y 24 aserciones sin fallos; sin Beta se detiene en la preparación, y sin secretos omite todo. La primera corrida en QA queda en el job de Newman de `pruebas-sistema.yml`.
 
+## Pagos recibidos del técnico y del proveedor (SCRUM-503)
+
+`scrum-45-pagos-tecnico.postman_collection.json` prueba contra QA la HU SCRUM-45 (RF-25) con `GET /v1/payments/received` de `payments.v1.yaml` 1.2.0. Cubre los casos `PAY-024` a `PAY-038` del TD 3.1; `PAY-039` y `PAY-040` son de pantalla y se verifican a mano con el APK. Se genera con `python tests/e2e/generar-scrum45-pagos-tecnico.py`. Necesita al administrador del tenant (`adminEmail` y `adminPassword`).
+
+**Datos propios:** una categoría solo para la corrida y estas cuentas:
+- un técnico independiente con dos servicios: uno pagado después de un rechazo por fondos y otro completado sin pagar;
+- un proveedor aprobado con un técnico de su equipo, que define su contraseña con la invitación y tiene un servicio sin pagar;
+- otro técnico sin aprobar, un cliente y una empresa.
+
+Al final suspende a los dos técnicos y desactiva la categoría.
+
+1. **Técnico independiente:**
+   - ve solo sus pagos, del más reciente al más antiguo, sin el rechazado y sin datos de tarjeta, con monto `XXXXXX.CC` en COP y `approvedAt` solo en `aprobado`;
+   - los filtros por estado devuelven solo ese estado, y `rechazado` da 400;
+   - la paginación con `size=1` trae pagos distintos con el mismo total;
+   - `page=0`, `size=0` y `size=101` dan 400, y enviar `technicianId` da 400;
+   - otro técnico del mismo tenant no ve nada.
+2. **Proveedor:** el técnico independiente queda `no_disponible` para que la oferta llegue al técnico del equipo. El proveedor ve el pago de su equipo y no los del independiente; filtra por su técnico, y un técnico ajeno le da una página vacía.
+3. **Otro tenant y permisos:**
+   - un técnico y un proveedor de Beta no ven nada, ni filtrando por el técnico del equipo;
+   - cliente, `empresa_contacto` y `admin_tenant` reciben 403, y sin sesión, 401.
+
+**Límite:** el registro de un técnico exige una especialidad del catálogo de su tenant, y Beta no tiene categorías. Mientras su administrador no cree una, `PAY-026` y `PAY-036` se omiten (la consola de Newman lo avisa). La fuga dentro del tenant sí se prueba: `PAY-029` y `PAY-035`.
+
+**Evidencia:** `evidencias/scrum-45-pagos-tecnico-qa-2026-11-04.txt`, contra QA el 3 de noviembre de 2026 (hora de Bogotá): 85 peticiones y 103 aserciones, sin fallos; `PAY-026` y `PAY-036` se omitieron porque Beta no tiene categorías.
+
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
 `scrum-68-cuenta-corporativa.postman_collection.json` (RF-06, SCRUM-26) la genera `generar-scrum68-cuenta-corporativa.py`. Contrato: `identity.v1.yaml` 1.8.0. **No necesita al administrador**: todas las cuentas se registran por el canal con correo, NIT y clave generados en la corrida.
