@@ -2,7 +2,7 @@
 
 **Versión:** 2.0
 **Fecha:** 2026-11-02
-**Alineado con:** DD 5.18 (`develop`), `identity.v1.yaml` 1.10.0 (`quickpatch-api-gateway` v0.20.0), ADR-017, ADR-024 y ADR-027, código de Ranking y de `quickpatch-identity#29`.
+**Alineado con:** DD 5.19 (`develop`), `identity.v1.yaml` 1.10.0 (`quickpatch-api-gateway` v0.20.0), ADR-017, ADR-024 y ADR-027, código de Ranking y de `quickpatch-identity#29`.
 
 Este documento resume cómo cambia el modelo de dominio con las historias del Sprint 5. El detalle de cada tabla, regla y contrato está en el DD; aquí solo se referencia.
 
@@ -70,7 +70,7 @@ PasswordRecoveryRequest {     // password_recovery_requests
 PasswordRecoveryAttempt {     // password_recovery_attempts
   id: UUID
   tenantId: UUID
-  emailHash: String           // SHA-256 del correo, no el correo
+  emailHash: String           // HMAC-SHA256 del correo con una clave del servicio (DD 5.19), no el correo
   attemptedAt: DateTime
 }
 
@@ -86,7 +86,7 @@ Flujo (contrato 1.10.0):
 1. `POST /v1/auth/password-recovery`: el usuario lo pide con su correo. Responde `202` exista o no la cuenta; `429` si pasa de 3 pedidos por correo por hora.
 2. `GET /v1/admin/password-recovery-requests`: el `admin_tenant` ve las pendientes de su tenant.
 3. `POST /v1/admin/password-recovery-requests/{id}/link`: el `admin_tenant` genera el enlace de un solo uso, que vence a 1 hora.
-4. `POST /v1/auth/password-recovery/confirm`: el usuario define la contraseña nueva; el token va en el cuerpo.
+4. `POST /v1/auth/password-recovery/confirm`: el usuario define la contraseña nueva; el token va en el cuerpo. También marca como usadas las invitaciones pendientes del usuario (DD 5.19).
 
 Solo se guarda el hash del token. Los administradores no usan este flujo. Regla RN-U7 (DD 7.2).
 
@@ -174,7 +174,7 @@ Línea continua: relación dentro del servicio. Línea punteada: referencia lóg
 
 ## Referencias al DD
 
-|Tema|Secciones del DD 5.18|
+|Tema|Secciones del DD 5.19|
 |---|---|
 |Calificación|5.9, 7.6, 8.3.11|
 |Reputación|5.3 (`average_rating`). El evento `ranking.technician-reputation-changed` está en ADR-027 y en `docs/kafka/EVENTS_CATALOG.md`; falta agregarlo al Cuadro 11 del DD.|
