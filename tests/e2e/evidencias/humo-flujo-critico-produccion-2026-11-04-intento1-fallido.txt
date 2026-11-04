@@ -1,0 +1,330 @@
+NOTA (se conserva el intento que falló, sin retocarlo): este primer intento del humo del flujo crítico contra producción NO es válido como prueba.
+Falló por dos causas distintas, las dos halladas al analizarlo:
+ 1. Error del corredor: bajó solo el JSON de la colección y no el archivo fixtures/evidencia-1x1.png que la colección sube por ruta relativa;
+    la subida de la foto mandó un archivo vacío y la API respondió 400 (contrato RF-15), de ahí el 422 al completar, los 404 al esperar el pago
+    y el 409 al pagar. Corregido en el corredor.
+ 2. Hallazgo real en service-request (no causado por el humo): a las 07:21:43 UTC el servicio se apagó solo («BackgroundService failed»,
+    HostOptions.BackgroundServiceExceptionBehavior = StopHost) por un TaskCanceledException sin capturar en QuoteExpirer, que filtra con
+    `when (ex is not OperationCanceledException)`; por eso las últimas peticiones a ServiceRequest dieron 502. El mismo servicio ya se había
+    reiniciado a las 07:12:38, antes de empezar el humo. Pendiente de corregir en el código.
+El intento válido es humo-flujo-critico-produccion-2026-11-04.txt (31 peticiones, 29 aserciones, 0 fallos).
+
+humo-flujo-critico contra PRODUCCIÓN, 2026-11-04
+Colección: tests/e2e/humo-flujo-critico.postman_collection.json (develop, newman 6, reporter cli). Ambiente: https://quickpatch.internal.
+Inicio: 2026-11-04T07:20:47Z. Duración: 57 s. Código de salida: 1.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-504 Prueba de humo del flujo crítico
+
+❏ 0. Preparación: categoría propia, técnico aprobado y cliente
+↳ Login del administrador del tenant
+  POST https://quickpatch.internal/api/v1/auth/login (node:1) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[200 OK, 1.3kB, 846ms]
+  ✓  200 con rol admin_tenant
+
+↳ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 517B, 33ms]
+  ✓  201
+
+↳ Registro del técnico con esa especialidad
+  POST https://quickpatch.internal/api/v1/auth/register/technician [201 Created, 520B, 1039ms]
+  ✓  201
+
+↳ El administrador aprueba al técnico
+  POST https://quickpatch.internal/api/v1/admin/technicians/01a1a56e-96c7-7d6f-b6ff-3280843d486c/approve [200 OK, 399B, 164ms]
+  ✓  200
+
+↳ Login del técnico
+  POST https://quickpatch.internal/api/v1/auth/login [200 OK, 1.3kB, 878ms]
+  ✓  200 con rol tecnico
+
+↳ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.15kB, 533ms]
+  ✓  200
+
+↳ El técnico queda disponible
+  PUT https://quickpatch.internal/api/v1/technicians/me/availability [200 OK, 516B, 41ms]
+  ✓  200
+
+↳ Registro del cliente
+  POST https://quickpatch.internal/api/v1/auth/register/client [201 Created, 504B, 794ms]
+  ✓  201
+
+↳ Login del cliente
+  POST https://quickpatch.internal/api/v1/auth/login [200 OK, 1.29kB, 781ms]
+  ✓  200 con rol cliente
+
+❏ 1. Solicitud y asignación
+↳ Crear la solicitud 1 (espera la réplica de la categoría)
+  POST https://quickpatch.internal/api/v1/service-requests [201 Created, 912B, 548ms]
+  ✓  201
+
+↳ El técnico ve la oferta de la solicitud 1
+  GET https://quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 497B, 54ms]
+
+Attempting to set next request to 47e041d5-f866-449f-a52d-3683236d467c
+
+↳ El técnico ve la oferta de la solicitud 1
+  GET https://quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 896B, 36ms]
+  ✓  la oferta está pendiente para el técnico
+
+↳ El técnico acepta la oferta de la solicitud 1
+  POST https://quickpatch.internal/api/v1/matching/offers/5f902ecf-6d77-46b3-8645-ea0a9b48a64e/accept [200 OK, 525B, 45ms]
+  ✓  200
+
+↳ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82 [200 OK, 837B, 63ms]
+
+Attempting to set next request to 86f92c6f-e37c-4d4a-a5c0-a84a4d471319
+
+↳ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82 [200 OK, 966B, 1118ms]
+  ✓  asignado al técnico de la prueba
+
+❏ 2. Cotización
+↳ El técnico cotiza 185.000
+  POST https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/quotes [201 Created, 726B, 292ms]
+  ✓  201 con el contrato Quote
+
+↳ El cliente acepta la cotización
+  POST https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/quotes/01a1a56e-bee3-74b8-b807-7642b61266e1/accept [200 OK, 444B, 54ms]
+  ✓  200 con el contrato QuoteDecision
+
+❏ 3. Ejecución con foto
+↳ El técnico inicia
+  POST https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/start [200 OK, 419B, 72ms]
+  ✓  200
+
+↳ El técnico sube la foto
+  ┌
+  │ 'Form param `file`, file load error: "fixtures/evidenc
+  │ ia-1x1.png", no such file'
+  └
+  POST https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/evidence [400 Bad Request, 625B, 183ms]
+  1. 201
+
+↳ El técnico completa
+  POST https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/complete [422 Unprocessable Entity, 563B, 69ms]
+  2. 200
+
+❏ 4. Pago y comprobante
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 239ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 33ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 24ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 24ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 24ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 32ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 26ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 19ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 30ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 37ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 22ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 23ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 19ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 28ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 18ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 34ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 25ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 22ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 22ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 29ms]
+
+Attempting to set next request to 846480c8-f9ac-4aba-ba02-3b3bf79424fa
+
+↳ El cliente ve el pago pendiente (espera service-request.completed en Payments)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [404 Not Found, 647B, 18ms]
+  3. 200 con el contrato Payment en pendiente
+
+↳ El cliente paga con la tarjeta aprobada
+  POST https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/payment [409 Conflict, 551B, 122ms]
+  4. 200 con el contrato Payment en aprobado
+
+↳ ServiceRequest pasa la solicitud a pagado (payment.approved)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82 [200 OK, 999B, 44ms]
+
+Attempting to set next request to 8c517184-482b-486f-b95a-3609f5583aa0
+
+↳ ServiceRequest pasa la solicitud a pagado (payment.approved)
+  GET https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82 [502 Bad Gateway, 254B, 15ms]
+  5⠄ JSONError in test-script
+
+↳ El cliente ve el comprobante
+  GET https://quickpatch.internal/api/v1/payments/{{pagoId}}/invoice [404 Not Found, 521B, 18ms]
+  6. 200 con el comprobante del pago
+
+❏ 5. Calificación
+↳ El cliente califica el servicio pagado
+  POST https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/rating [502 Bad Gateway, 254B, 20ms]
+  7. 201 con el contrato Rating
+
+↳ Calificar otra vez → 409 ya-calificada (RN-R2)
+  POST https://quickpatch.internal/api/v1/service-requests/01a1a56e-a821-74f0-8051-2fa9aa512b82/rating [502 Bad Gateway, 254B, 14ms]
+  8. 409
+  9. Problem Details (RFC 9457) con correlationId
+ 10. tipo ya-calificada
+
+❏ Limpieza
+↳ Suspender al técnico de la prueba
+  POST https://quickpatch.internal/api/v1/admin/technicians/01a1a56e-96c7-7d6f-b6ff-3280843d486c/suspend [200 OK, 426B, 29ms]
+  ✓  200
+
+↳ Desactivar la categoría de la prueba
+  PATCH https://quickpatch.internal/api/v1/catalog/admin/categories/01a1a56e-9680-7f6e-9e59-788520b6fa1a [200 OK, 513B, 69ms]
+  ✓  200
+  ✓  el recorrido completo tardó menos de 5 minutos
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  49 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  49 │                  1 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  49 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  28 │                  9 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 55.4s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 16.63kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 178ms [min: 14ms, max: 1118ms, s.d.: 298ms] │
+└────────────────────────────────────────────────────────────────────┘
+
+[31m   # [39m[31m failure        [39m[31m detail                                                                                                          [39m
+[90m     [39m[90m                [39m[90m                                                                                                                 [39m
+ 01.  AssertionError  201                                                                                                             
+                      expected response to have status code 201 but got 400                                                           
+                      at assertion:0 in test-script                                                                                   
+                      inside "3. Ejecución con foto / El técnico sube la foto"                                                        
+[90m     [39m[90m                [39m[90m                                                                                                                 [39m
+ 02.  AssertionError  200                                                                                                             
+                      expected response to have status code 200 but got 422                                                           
+                      at assertion:0 in test-script                                                                                   
+                      inside "3. Ejecución con foto / El técnico completa"                                                            
+[90m     [39m[90m                [39m[90m                                                                                                                 [39m
+ 03.  AssertionError  200 con el contrato Payment en pendiente                                                                        
+                      expected response to have status code 200 but got 404                                                           
+                      at assertion:0 in test-script                                                                                   
+                      inside "4. Pago y comprobante / El cliente ve el pago pendiente (espera service-request.completed en Payments)" 
+[90m     [39m[90m                [39m[90m                                                                                                                 [39m
+ 04.  AssertionError  200 con el contrato Payment en aprobado                                                                         
+                      expected response to have status code 200 but got 409                                                           
+                      at assertion:0 in test-script                                                                                   
+                      inside "4. Pago y comprobante / El cliente paga con la tarjeta aprobada"                                        
+[90m     [39m[90m                [39m[90m                                                                                                                 [39m
+ 05.  JSONError                                                                                                                       
+                      Unexpected token 'B' at 1:1                                                                                     
+                      Bad Gateway                                                                                                     
+                      ^                                                                                                               
+                      at test-script                                                                                                  
+                      inside "4. Pago y comprobante / ServiceRequest pasa la solicitud a pagado (payment.approved)"                   
+[90m     [39m[90m                [39m[90m                                                                                                                 [39m
+ 06.  AssertionError  200 con el comprobante del pago                                                                                 
+                      expected response to have status code 200 but got 404                                                           
+                      at assertion:0 in test-script                                                                                   
+                      inside "4. Pago y comprobante / El cliente ve el comprobante"                                                   
+[90m     [39m[90m                [39m[90m                                                                                                                 [39m
+ 07.  AssertionError  201 con el contrato Rating                                                                                      
+                      expected response to have status code 201 but got 502                                                           
+                      at assertion:0 in test-script                                                                                   
+                      inside "5. Calificación / El cliente califica el servicio pagado"                                               
+[90m     [39m[90m                [39m[90m                                                                                                                 [39m
+ 08.  AssertionError  409                                                                                                             
+                      expected response to have status code 409 but got 502                                                           
+                      at assertion:0 in test-script                                                                                   
+                      inside "5. Calificación / Calificar otra vez → 409 ya-calificada (RN-R2)"                                       
+[90m     [39m[90m                [39m[90m                                                                                                                 [39m
+ 09.  AssertionError  Problem Details (RFC 9457) con correlationId                                                                    
+                      expected 'text/plain; charset=utf-8' to include 'application/problem+json'                                      
+                      at assertion:1 in test-script                                                                                   
+                      inside "5. Calificación / Calificar otra vez → 409 ya-calificada (RN-R2)"                                       
+[90m     [39m[90m                [39m[90m                                                                                                                 [39m
+ 10.  JSONError       tipo ya-calificada                                                                                              
+                      Unexpected token 'B' at 1:1                                                                                     
+                      Bad Gateway                                                                                                     
+                      ^                                                                                                               
+                      at assertion:2 in test-script                                                                                   
+                      inside "5. Calificación / Calificar otra vez → 409 ya-calificada (RN-R2)"                                       

@@ -167,14 +167,32 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     srScheduling = component "QuoteExpirer y RedisDistributedLock" "Vence las cotizaciones sin respuesta; una sola réplica a la vez (RN-Q6)." "BackgroundService · Infrastructure/Scheduling"
                 }
                 matching = container "Matching Service" "Asignación geoespacial de técnicos." "Java 25 + Spring Boot 4.1" "Microservicio" {
-                    maListener = component "Listener de service-request.created" "Valida el contrato, descarta mensajes inválidos y propaga correlationId en el MDC." "@KafkaListener · infrastructure/messaging"
-                    maHandler = component "Manejador del evento" "En una transacción por tenant registra el evento y, si es nuevo, inicia el matching (APPLIED o DUPLICATE)." "application/events"
-                    maProcesados = component "Registro de eventos procesados" "INSERT ... ON CONFLICT (event_id) DO NOTHING en processed_events." "JDBC · infrastructure/persistence"
-                    maTransaccion = component "Transacción por tenant" "set_config app.current_tenant antes de cada trabajo (RLS)." "JDBC · infrastructure/persistence"
-                    maBusqueda = component "Búsqueda de candidatos" "Técnicos aprobados, disponibles, de la especialidad, con cobertura en la ubicación y sin otra oferta pendiente; los ordena por distancia (RN-M9, PostGIS)." "PostGIS"
-                    maOfertas = component "Ofertas y asignación" "Registra la oferta con vencimiento a 3 min (RN-M1, RN-M8) y publica matching.offer-created; al aceptar, el técnico pasa a ocupado y publica matching.technician-assigned (RN-M2, RN-M4, RN-M6, RN-M7); si rechaza o vence, ofrece al siguiente (RN-M3); sin candidatos publica matching.no-technician-available." "Outbox"
-                    maApi = component "API de técnicos y ofertas" "Localidades; disponibilidad y cobertura del técnico; ofertas pendientes, aceptar y rechazar (matching.v1.yaml 1.0.0)." "Spring MVC"
-                    maProyeccion = component "Proyección del técnico" "Consume technician.registered y technician.verification-changed y guarda especialidad y verificación (P-01, ADR-017); reanuda solicitudes en espera (RN-M10)." "@KafkaListener"
+                    # api
+                    maOffersController = component "OffersController" "GET /v1/matching/offers y POST /v1/matching/offers/{attemptId}/accept y /reject (matching.v1.yaml); el técnico y el tenant salen del JWT (RN-U3)." "Spring MVC · api/controllers"
+                    maTechniciansController = component "TechniciansController" "GET /v1/localities y GET y PUT /v1/technicians/me/availability y /coverage (RF-13)." "Spring MVC · api/controllers"
+                    maSecurity = component "SecurityConfig y CorrelationIdFilter" "Valida el JWT RS256 de Identity (ADR-018) y propaga X-Correlation-Id." "Spring Security · api"
+                    # application
+                    maCreatedHandler = component "ServiceRequestCreatedHandler" "Registra el eventId e inicia el matching en la misma transacción del tenant (ADR-007)." "application/events"
+                    maCancelledHandler = component "ServiceRequestCancelledHandler" "Cancela la oferta pendiente y la búsqueda, y libera al técnico si había aceptado (RN-M5, RN-M6)." "application/events"
+                    maCompletedHandler = component "ServiceRequestCompletedHandler" "Devuelve al técnico a disponible y le ofrece la solicitud en espera más antigua (RN-M6, RN-M10)." "application/events"
+                    maTechnicianHandler = component "TechnicianEventsHandler" "Mantiene la proyección del técnico y descarta eventos con updatedAt anterior (P-01, ADR-017); un técnico aprobado reanuda solicitudes en espera (RN-M10)." "application/events"
+                    maEngine = component "MatchingEngine" "Guarda la solicitud, ofrece al candidato más cercano, publica el resultado y reanuda las solicitudes en espera (RN-M1, RN-M4, RN-M9, RN-M10)." "application/matching"
+                    maOfferService = component "OfferService" "Lista, acepta, rechaza y vence ofertas; al aceptar, el técnico pasa a ocupado (RN-M2, RN-M3, RN-M6 a RN-M8)." "application/matching"
+                    maAvailability = component "TechnicianAvailabilityService" "Disponibilidad y cobertura del técnico autenticado; un cambio puede reanudar solicitudes en espera (RF-13, RN-M10)." "application/technicians"
+                    # domain
+                    maDomain = component "Dominio de matching" "Matching, Technicians, VerificationStatus y los eventos (EventEnvelope, MatchingEvents y los de service-request y technician)." "domain"
+                    # infrastructure
+                    maCreatedListener = component "ServiceRequestCreatedListener" "Consume service-request.created." "@KafkaListener · infrastructure/messaging"
+                    maCancelledListener = component "ServiceRequestCancelledListener" "Consume service-request.cancelled." "@KafkaListener · infrastructure/messaging"
+                    maCompletedListener = component "ServiceRequestCompletedListener" "Consume service-request.completed." "@KafkaListener · infrastructure/messaging"
+                    maTechnicianListener = component "TechnicianEventsListener" "Consume technician.registered y technician.verification-changed." "@KafkaListener · infrastructure/messaging"
+                    maStores = component "JdbcMatchingStores y JdbcTechnicianStores" "Solicitudes, candidatos (PostGIS), ofertas, disponibilidad, cobertura y localidades bajo RLS." "JDBC · infrastructure/persistence"
+                    maProjection = component "JdbcTechnicianProjection" "INSERT ... ON CONFLICT en technician_availability: la fila nace en no_disponible." "JDBC · infrastructure/persistence"
+                    maTenantTx = component "JdbcTenantTransaction y JdbcProcessedEventStore" "Fija app.current_tenant en cada transacción y registra el eventId en processed_events." "JDBC · infrastructure/persistence"
+                    maOutbox = component "JdbcOutbox" "Guarda los eventos de Matching en outbox_events en la misma transacción." "JDBC · infrastructure/messaging"
+                    maPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol matching_outbox y marca published_at." "@Scheduled · infrastructure/messaging"
+                    maExpirer = component "OfferExpirer" "Cada MATCHING_EXPIRY_INTERVAL vence las ofertas sin respuesta y ofrece al siguiente candidato (RN-M3, RN-M8)." "@Scheduled · infrastructure/scheduling"
+                    maSweeper = component "WaitingRequestsSweeper" "Barrido de respaldo de RN-M10 cada MATCHING_SWEEP_INTERVAL: reanuda las solicitudes en espera que ya tienen candidato." "@Scheduled · infrastructure/scheduling"
                 }
                 ranking = container "Ranking Service" "Reputación de técnicos desde las calificaciones (ADR-027)." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Application
@@ -213,11 +231,24 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     paWebhook = component "Receptor de webhooks del PSP" "Confirmará el resultado de forma idempotente con la pasarela certificada." "Minimal API" "Planeado"
                 }
                 communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    coConsumidores = component "Consumidores de eventos" "service-request.created, .status-changed y los de la cotización, matching.offer-created y technician.*, una vez por eventId." "Kafka consumer"
-                    coPlantillas = component "Plantillas de notificación" "Arma el mensaje según el evento y el destinatario." "Application"
-                    coCanal = component "Canal en tiempo real" "WebSocket /v1/realtime: valida el token de la primera trama y avisa a cada usuario conectado, dentro de su tenant (ADR-023)." "ASP.NET Core WebSockets"
-                    coChat = component "Chat de la solicitud" "Réplica de participantes desde service-request.status-changed, mensajes en chat_messages y GET y POST /v1/service-requests/{id}/messages; entrega chat.message por el canal (RF-37, ADR-026)." "Minimal API + Kafka consumer"
-                    coBuzon = component "Buzón de notificaciones" "Guarda cada notificación por usuario y tenant y la expone a la app (ADR-024)." "Minimal API"
+                    # Api
+                    coRealtime = component "RealtimeEndpoints, RealtimeSession y TokenValidator" "WebSocket /v1/realtime: espera la trama auth, valida el JWT RS256 y cierra con los códigos del contrato (ADR-023)." "ASP.NET Core WebSockets · Api/Realtime"
+                    coConnections = component "ConnectionRegistry y WebSocketClient" "Conexiones abiertas de la réplica; entrega cada aviso solo al tenant y al destinatario del evento." "Api/Realtime"
+                    coInboxEndpoints = component "InboxEndpoints" "GET /v1/notifications y POST /v1/notifications/{id}/read (ADR-024)." "Minimal API · Api/Endpoints"
+                    coChatEndpoints = component "ChatEndpoints" "GET y POST /v1/service-requests/{id}/messages (RF-37, ADR-026)." "Minimal API · Api/Endpoints"
+                    # Application
+                    coNotifier = component "RealtimeNotifier y NoticeRouter" "Valida el sobre, descarta repetidos (RecentEventIds) y decide a quién avisar: status-changed, offer.created y counts-changed." "Application/Realtime"
+                    coInboxRecorder = component "InboxRecorder e InboxRules" "Convierte cada evento en una notificación por destinatario, sin dirección ni teléfono (RN-SR13)." "Application/Inbox"
+                    coInboxQueries = component "ListNotificationsHandler y MarkNotificationReadHandler" "Buzón del usuario del token y marca de leída." "Application/Inbox"
+                    coChatParticipants = component "ChatParticipantsRecorder" "Llena chat_participants con service-request.status-changed (RN-CH3)." "Application/Chat"
+                    coChatHandlers = component "ListChatMessagesHandler y SendChatMessageHandler" "Historial y envío de mensajes; el envío sale por el canal como chat.message (RN-CH1, RN-CH2)." "Application/Chat"
+                    # Domain
+                    coDomain = component "Dominio de Communication" "Notification y NotificationTypes, ChatParticipants y ChatMessage, y los avisos del canal (Notices)." "Domain"
+                    # Infrastructure
+                    coRealtimeConsumer = component "RealtimeEventsConsumer" "Consume service-request.created, .status-changed y matching.offer-created para el canal; empieza en el último offset." "Kafka consumer · Infrastructure/Messaging"
+                    coPersistentConsumer = component "PersistentEventsConsumer" "Dos grupos que leen desde el principio y confirman después de guardar: el buzón (8 topics) y la réplica del chat (status-changed)." "Kafka consumer · Infrastructure/Messaging"
+                    coInboxStore = component "InboxStore" "Tabla notifications bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                    coChatStore = component "ChatStore" "Tablas chat_participants y chat_messages bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
                 }
             }
 
@@ -329,9 +360,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         gateway -> paPaymentEndpoints "Enruta /api/v1/service-requests/{id}/payment" "HTTP"
         gateway -> paInvoiceEndpoints "Enruta /api/v1/payments" "HTTP"
         gateway -> paReceived "Enruta /api/v1/payments/received" "HTTP"
-        gateway -> maApi "Enruta /api/v1/matching, /api/v1/technicians y /api/v1/localities" "HTTP"
-        gateway -> coCanal "Enruta /api/v1/realtime" "WebSocket"
-        gateway -> coBuzon "Enruta /api/v1/notifications" "HTTP"
+        gateway -> maOffersController "Enruta /api/v1/matching/offers" "HTTP"
+        gateway -> maTechniciansController "Enruta /api/v1/technicians/me/availability y /coverage, y /api/v1/localities" "HTTP"
+        gateway -> coRealtime "Enruta /api/v1/realtime" "WebSocket"
+        gateway -> coInboxEndpoints "Enruta /api/v1/notifications" "HTTP"
 
         # Identity
         idEndpoints -> idSecurity "Autoriza por rol con"
@@ -430,23 +462,42 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         idEndpoints -> idUsers "Resuelve la consulta interna con"
 
         # Matching
-        maListener -> kafka "Consume service-request.created" "Kafka"
-        maListener -> maHandler "Entrega el evento válido a"
-        maHandler -> maTransaccion "Abre la transacción del tenant con"
-        maHandler -> maProcesados "Registra el eventId en"
-        maHandler -> maBusqueda "Inicia el matching con"
-        maBusqueda -> maOfertas "Entrega el candidato más cercano a"
-        maBusqueda -> redis "Cachea disponibilidad en" "RESP" "Planeado"
-        maOfertas -> kafka "Publica matching.offer-created, .technician-assigned, .no-technician-available y .search-resumed" "Kafka"
-        maOfertas -> dbMatching "Registra el intento y su respuesta en matching_attempts (RLS)" "SQL"
-        maApi -> maOfertas "Acepta o rechaza la oferta con"
-        maApi -> dbMatching "Lee y cambia disponibilidad y cobertura (RLS)" "SQL"
-        maProyeccion -> kafka "Consume technician.registered y technician.verification-changed" "Kafka"
-        maProyeccion -> dbMatching "Actualiza la proyección en technician_availability" "SQL"
-        maProyeccion -> maBusqueda "Reanuda las solicitudes en espera con (RN-M10)"
-        maProcesados -> dbMatching "INSERT en processed_events" "SQL"
-        maTransaccion -> dbMatching "set_config app.current_tenant" "SQL"
-        maBusqueda -> dbMatching "Consulta disponibilidad y cobertura (PostGIS)" "SQL"
+        maCreatedListener -> kafka "Consume service-request.created" "Kafka"
+        maCancelledListener -> kafka "Consume service-request.cancelled" "Kafka"
+        maCompletedListener -> kafka "Consume service-request.completed" "Kafka"
+        maTechnicianListener -> kafka "Consume technician.registered y technician.verification-changed" "Kafka"
+        maCreatedListener -> maCreatedHandler "Entrega el evento válido a"
+        maCancelledListener -> maCancelledHandler "Entrega el evento válido a"
+        maCompletedListener -> maCompletedHandler "Entrega el evento válido a"
+        maTechnicianListener -> maTechnicianHandler "Entrega el evento válido a"
+        maCreatedHandler -> maTenantTx "Fija el tenant y registra el eventId con"
+        maCancelledHandler -> maTenantTx "Fija el tenant y registra el eventId con"
+        maCompletedHandler -> maTenantTx "Fija el tenant y registra el eventId con"
+        maTechnicianHandler -> maTenantTx "Fija el tenant y registra el eventId con"
+        maCreatedHandler -> maEngine "Inicia el matching con"
+        maCancelledHandler -> maStores "Cancela la oferta y la búsqueda y libera al técnico en"
+        maCompletedHandler -> maEngine "Libera al técnico y reanuda solicitudes en espera con"
+        maTechnicianHandler -> maProjection "Actualiza la proyección con"
+        maTechnicianHandler -> maEngine "Reanuda solicitudes en espera al aprobar con"
+        maOffersController -> maSecurity "Toma el técnico y el tenant del JWT con"
+        maTechniciansController -> maSecurity "Toma el técnico y el tenant del JWT con"
+        maOffersController -> maOfferService "Lista, acepta o rechaza con"
+        maTechniciansController -> maAvailability "Lee y cambia disponibilidad y cobertura con"
+        maOfferService -> maEngine "Ofrece al siguiente candidato con"
+        maOfferService -> maStores "Lee y cambia la oferta y la disponibilidad en"
+        maOfferService -> maOutbox "Guarda matching.technician-assigned en"
+        maAvailability -> maStores "Lee y cambia disponibilidad y cobertura en"
+        maAvailability -> maEngine "Reanuda solicitudes en espera con"
+        maEngine -> maStores "Busca candidatos y guarda solicitudes y ofertas en"
+        maEngine -> maOutbox "Guarda matching.offer-created, .no-technician-available y .search-resumed en"
+        maExpirer -> maOfferService "Vence las ofertas sin respuesta con"
+        maSweeper -> maEngine "Reanuda las solicitudes en espera con"
+        maStores -> dbMatching "Lee y escribe matching_requests, matching_attempts, technician_availability y coverage_zones (RLS, PostGIS)" "SQL"
+        maProjection -> dbMatching "INSERT ... ON CONFLICT en technician_availability" "SQL"
+        maTenantTx -> dbMatching "set_config app.current_tenant e INSERT en processed_events" "SQL"
+        maOutbox -> dbMatching "INSERT en outbox_events" "SQL"
+        maPublisher -> dbMatching "Lee los pendientes y marca published_at" "SQL"
+        maPublisher -> kafka "Publica matching.offer-created, .technician-assigned, .no-technician-available y .search-resumed" "Kafka"
 
         # Ranking
         raConsumer -> kafka "Consume service-request.rated" "Kafka"
@@ -490,15 +541,23 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         paPublisher -> kafka "Publica payment.*" "Kafka"
 
         # Communication
-        coConsumidores -> kafka "Consume service-request.created, .status-changed, .quoted, .quote-accepted y .quote-rejected, matching.offer-created y technician.*" "Kafka"
-        coConsumidores -> coPlantillas "Arma el mensaje con"
-        coPlantillas -> coCanal "Avisa a los usuarios conectados con"
-        coPlantillas -> coBuzon "Guarda la notificación con"
-        coBuzon -> dbCommunication "Lee y escribe el buzón (RLS)" "SQL"
-        coChat -> kafka "Consume service-request.status-changed" "Kafka"
-        coChat -> coCanal "Entrega chat.message con"
-        coChat -> dbCommunication "Lee y escribe chat_participants y chat_messages (RLS)" "SQL"
-        gateway -> coChat "Enruta /api/v1/service-requests/{id}/messages (excepción de ADR-025)" "HTTP"
+        coRealtimeConsumer -> kafka "Consume service-request.created, .status-changed y matching.offer-created" "Kafka"
+        coPersistentConsumer -> kafka "Consume service-request.created, .status-changed, .quoted, .quote-accepted y .quote-rejected, matching.offer-created, technician.registered y technician.verification-changed" "Kafka"
+        coRealtimeConsumer -> coNotifier "Entrega cada mensaje a"
+        coNotifier -> coConnections "Avisa a las conexiones del destinatario con"
+        coPersistentConsumer -> coInboxRecorder "Entrega los eventos del buzón a"
+        coPersistentConsumer -> coChatParticipants "Entrega service-request.status-changed a"
+        coInboxRecorder -> coInboxStore "Guarda las notificaciones con"
+        coChatParticipants -> coChatStore "Actualiza los participantes con"
+        coRealtime -> coConnections "Registra la conexión autenticada en"
+        coInboxEndpoints -> coInboxQueries "Lista y marca leídas con"
+        coInboxQueries -> coInboxStore "Lee y actualiza con"
+        coChatEndpoints -> coChatHandlers "Lista y envía mensajes con"
+        coChatHandlers -> coChatStore "Lee y guarda mensajes con"
+        coChatHandlers -> coConnections "Entrega chat.message con"
+        coInboxStore -> dbCommunication "Lee y escribe notifications (RLS)" "SQL"
+        coChatStore -> dbCommunication "Lee y escribe chat_participants y chat_messages (RLS)" "SQL"
+        gateway -> coChatEndpoints "Enruta /api/v1/service-requests/{id}/messages (excepción de ADR-025)" "HTTP"
 
         # Soporte
         github -> quickpatch "Construye imágenes y despliega con el runner de VM1" "HTTPS"
@@ -678,7 +737,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             exclude "gateway -> identity"
             autoLayout tb 100 60
         }
-        component matching "C4-04-Componentes-Matching" "Componentes de Matching Service." {
+        component matching "C4-04-Componentes-Matching" "Componentes de Matching Service por capa, con sus clases: consumidores de service-request.created, .cancelled y .completed y de technician.*, motor de matching, ofertas de 3 minutos, barridos programados y Outbox (RN-M1 a RN-M10)." {
             include *
             autoLayout tb 150 80
         }
@@ -690,7 +749,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             include *
             autoLayout lr
         }
-        component communication "C4-04-Componentes-Communication" "Componentes de Communication Service: canal en tiempo real, buzón y chat de la solicitud (ADR-023, ADR-024 y ADR-026)." {
+        component communication "C4-04-Componentes-Communication" "Componentes de Communication Service por capa, con sus clases: canal en tiempo real, buzón y chat de la solicitud, con sus consumidores de Kafka (ADR-023, ADR-024 y ADR-026)." {
             include *
             autoLayout tb 150 80
         }

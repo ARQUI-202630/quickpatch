@@ -829,10 +829,19 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"cliente.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Incorrecta123\"\n}"
+              "raw": "{\n  \"email\": \"cliente.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{claveIncorrecta}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('claveIncorrecta', 'Invalida_' + Date.now() + '_Z9!');"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -929,10 +938,19 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"bloqueo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"Incorrecta123\"\n}"
+              "raw": "{\n  \"email\": \"bloqueo.{{sufijo}}@quickpatch.test\",\n  \"password\": \"{{claveIncorrecta}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('claveIncorrecta', 'Invalida_' + Date.now() + '_Z9!');"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
