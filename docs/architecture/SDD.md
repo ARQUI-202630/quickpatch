@@ -2232,6 +2232,7 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 
 | Cambio | Secciones | Tarea |
 |---|---|---|
+| Contexto y contenedores reorganizados en el DSL: título en cada vista, leyenda en la imagen y contenedores agrupados en clientes, microservicios, mensajería y almacenamiento, y PostgreSQL | 4 y 5.1 (figuras 2 y 3) | SCRUM-578 |
 | Convención de paquetes por capa de los microservicios y su estado por servicio | 10.2 | SCRUM-586 y SCRUM-587 |
 | Componentes de Identity, Catalog, ServiceRequest y Payments con los nombres del código | 6.4, 6.6, 6.7 y 6.10 (figuras 10, 12, 13 y 17) | SCRUM-581 y SCRUM-582 |
 | Escenario de asignación del técnico con pasos numerados y eventos por nombre | 8 (figura 22b) | SCRUM-590 |
@@ -2240,7 +2241,6 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 | Revisión integral del Sprint 5: sistemas externos según ADR-024 (sección 4), Ranking en QA, matriz 8.6 y grupos 8.7 con los eventos y consumidores reales, perfil, `tenant.status-changed` y su réplica en Identity y ServiceRequest, y calificación e historial en la app | 4, 5, 6.2, 6.4, 6.7, 6.9, 8.6, 8.7, 9 y 12 (figuras 3, 9, 10, 13, 16, 27 y 31) | SCRUM-548 |
 | Componentes reales de la calificación: ServiceRequest, Ranking e Identity | 6.4, 6.7 y 6.9 (figuras 10, 13 y 16) | SCRUM-584 |
 | Pagos recibidos de Payments con sus clases reales (`ReceivedPaymentEndpoints`, `ReceivedPaymentsHandler`, `TechnicianRegisteredConsumer` y `TechnicianRegisteredHandler`) y los consumidores reales de Communication, sin `payment.*` | 6.10 (figura 17), figura 18 y figura 3 | SCRUM-584 |
-| Contexto y contenedores reorganizados en el DSL: título en cada vista, leyenda en la imagen y contenedores agrupados en clientes, microservicios, mensajería y almacenamiento, y PostgreSQL | 4 y 5.1 (figuras 2 y 3) | SCRUM-578 |
 | Observaciones 1 a 3 de la revisión funcional del PO: sección 12 con la revisión de la V4, contratos de `v0.21.0`, los 20 eventos de `quickpatch-kafka` `v0.10.0` y RF-17, RF-25 y el buzón en la sección 8.13.5 | 5.6.1, 5.6.2, 8.13.5, 12 y 13.5 | SCRUM-548 |
 | Auditoría previa a la revisión del PO: estado del documento, calificación implementada en la matriz de escenarios, secuencia de extremo a extremo con el técnico y la calificación por Kafka (ADR-027), cuenta corporativa implementada, Ranking en la convención de paquetes y referencias corregidas | 1, 6.2, 6.7, 8.13.3, 8.13.4, 10.2, 11.4 y 13 | SCRUM-548 |
 
