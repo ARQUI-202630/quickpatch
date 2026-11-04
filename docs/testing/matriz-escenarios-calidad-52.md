@@ -74,7 +74,7 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 | **AC8-E4** | Flexibility | Cambio de proveedor de geolocalización | Reemplazo sin cambios en los demás servicios | Sin cambio de adaptador en Sprint 4 | *(Sin archivo de evidencia)* | **No medido** | Diseñado mediante interfaz de adaptador. |
 | **AC8-E5** | Flexibility | Reconstrucción del entorno desde cero | VM operativa en $\le 4\text{ h}$ solo con lo documentado | Playbooks de Ansible disponibles | `infrastructure/ansible/` | **No medido** | Procedimiento automatizado en Ansible. |
 | **AC9-E1** | Safety | Transiciones seguras del ciclo de servicio | 0 transiciones inválidas en `service_requests` | Saltos de estado inválidos responden HTTP 409 Conflict | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt` | **Cumple** | Máquina de estados estricta en ServiceRequest. |
-| **AC9-E2** | Safety | Técnico con calificaciones bajas | 100% de técnicos señalados en panel sin suspensión auto | La reputación llega a Identity pero no se muestra en el panel | *(Sin archivo de evidencia)* | **No cumple** | Falta exponer la reputación en la API y en el panel (SCRUM-497, SCRUM-86). |
+| **AC9-E2** | Safety | Técnico con calificaciones bajas | 100% de técnicos señalados en panel sin suspensión auto | La reputación llega a Identity pero no se muestra en el panel | *(Sin archivo de evidencia)* | **No cumple** | Falta exponer la reputación en la API de Identity y señalarla en el panel: SCRUM-642. |
 | **AC9-E3** | Safety | Servicio sin cierre | 100% de solicitudes vencidas marcadas en el panel | Sin job de barrido de solicitudes vencidas | *(Sin archivo de evidencia)* | **No medido** | Programado para Sprint 5. |
 | **AC9-E4** | Safety | Sin candidatos elegibles | 0 asignaciones a técnicos que no cumplen filtro | Transición atómica a `en_espera` sin candidatos elegibles | `tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt` | **Cumple** | Lógica de matching ante ausencia de técnicos. |
 | **AC9-E5** | Safety | Pasarela de pagos sin respuesta | 0 'pagado' sin `payment.approved` y 0 cobros duplicados | Conciliación y timeout en pasarela simulada | `tests/e2e/evidencias/scrum-117-pago-qa-2026-10-22.txt`; `tests/e2e/evidencias/scrum-495-comprobante-qa-2026-10-22.txt` | **Cumple** | Manejo de estados pendientes sin doble cobro. |
@@ -97,6 +97,33 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 **Cambios del 1 de noviembre de 2026 (SCRUM-565):** AC5-E5 y AC6-E7 pasan de No medido a Parcial con pruebas de integración de CI. AC4-E1, AC5-E6, AC7-E6 y AC9-E7 suman evidencia sin cambiar de estado. AC4-E6 y AC9-E2 siguen en No cumple con el motivo actualizado. AC4-E7 corrige su valor medido: no hay escaneo de accesibilidad.
 
 **Cambios del 4 de noviembre de 2026 (SCRUM-569):** con la evaluación de `docs/testing/capacidad-interaccion-scrum-569.md`, AC4-E5 pasa de Parcial a Cumple; AC4-E2 y AC4-E9 pasan de No medido a Parcial; AC4-E6 pasa de No cumple a No medido, porque la pantalla de calificación (SCRUM-86) ya existe y falta medir la tasa con servicios reales. El porcentaje sube de 49.04% a 51.92%.
+
+### 3.1 Cumplimiento por atributo (SCRUM-566)
+
+Misma fórmula que el porcentaje global: un escenario que cumple vale 1, uno parcial vale 0.5, y los que no cumplen o no se han medido valen 0. Corte del 4 de noviembre de 2026, después de SCRUM-569.
+
+| Atributo | Escenarios | Cumple | Parcial | No cumple | No medido | Cumplimiento |
+|---|---|---|---|---|---|---|
+| AC1 Functional Suitability | 3 | 2 | 1 | 0 | 0 | 83.33% |
+| AC2 Performance Efficiency | 5 | 3 | 1 | 0 | 1 | 70.00% |
+| AC3 Compatibility | 2 | 1 | 1 | 0 | 0 | 75.00% |
+| AC4 Interaction Capability | 9 | 2 | 2 | 0 | 5 | 33.33% |
+| AC5 Reliability | 6 | 0 | 4 | 0 | 2 | 33.33% |
+| AC6 Security | 8 | 6 | 1 | 0 | 1 | 81.25% |
+| AC7 Maintainability | 6 | 2 | 1 | 0 | 3 | 41.67% |
+| AC8 Flexibility | 5 | 1 | 1 | 0 | 3 | 30.00% |
+| AC9 Safety | 8 | 4 | 0 | 1 | 3 | 50.00% |
+| **Total** | **52** | **21** | **12** | **1** | **18** | **51.92%** |
+
+Los atributos con más trabajo pendiente son AC8 Flexibility (30.00%), AC4 Interaction Capability y AC5 Reliability (33.33% cada uno). En AC4 faltan cinco mediciones con usuarios o dispositivos reales: AC4-E3 y AC4-E4 se miden en la UAT (SCRUM-608), y AC4-E6, AC4-E7 y AC4-E8 necesitan servicios reales, el arnés de accesibilidad o un perfil de gama baja. En AC5 faltan los simulacros de recuperación (AC5-E1 y AC5-E2).
+
+### 3.2 Escenarios que no cumplen y su HU en Jira (SCRUM-566)
+
+| Escenario | Qué falta | HU |
+|---|---|---|
+| AC9-E2 Técnico con calificaciones bajas | Ranking calcula la reputación y la envía a Identity (ADR-027), pero el contrato de Identity no la expone y el panel no señala a los técnicos con promedio menor a 3.0 y al menos 5 calificaciones. | SCRUM-642, en el backlog (épica SCRUM-10) |
+
+AC4-E6 ya no está en esta tabla: pasó a No medido con SCRUM-569 porque la pantalla de calificación existe (SCRUM-86).
 
 ---
 
