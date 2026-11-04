@@ -2,14 +2,16 @@
 
 Revisión de la presentación «QuickPatch Sprint 3 v4» (Canva, 47 láminas) para convertirla en una plantilla general de presentaciones. Es una recomendación: no cambia ningún diseño. Los datos propios del Sprint 3 (cifras, estados, evidencias de ese sprint) no se evaluaron; solo la estructura.
 
-La numeración es la posición de la lámina en el diseño. No se vieron en imagen las láminas 1 a 3, 10 y 36 a 40 (portada, contenido, portadas de sección y capturas de evidencia). Todo lo demás se revisó con su texto y su miniatura.
+Esta revisión es la base de la plantilla de presentaciones del Sprint 5 (SCRUM-556): la plantilla parte de la presentación del Sprint 3 y de las reglas de la sección 4.
+
+La numeración es la posición de la lámina en el diseño. Las láminas 1 a 3, 10 y 40 (portada, contenido y portadas de sección) no se clasifican. Las láminas 36 a 39 son capturas de evidencia (Postman, Grafana con los registros de la API, Loki y Prometheus) y se comprobaron en imagen el 4 de noviembre de 2026. Todo lo demás se revisó con su texto y su miniatura.
 
 ## 1. Qué tipo de lámina es cada una
 
 | Tipo | Láminas |
 |---|---|
 | Diagrama con texto de apoyo | 7 (BPMN), 16 (HLD), 17 (C4 Landscape), 18 (C4 Contexto), 19 (C4 Contenedores), 20 a 23 (C4 Componentes), 24 (C4 Código), 27 (Secuencia E2E), 30 (Deployment producción) |
-| Tabla o matriz | 4, 6, 9, 11, 12, 13, 14, 15, 25, 26, 28, 29, 31, 32, 33, 41, 46 |
+| Tabla o matriz | 4, 5 (drivers y killers en dos columnas), 6, 8 (alcance y canales en tres columnas), 9, 11, 12, 13, 14, 15, 25, 26, 28, 29, 31, 32, 33, 41, 46 |
 | Cadena de pasos | 42 (evidencia a decisión) |
 | Cifras | 34 |
 | Evidencia (capturas) | 35 a 39, 43 a 45 |
@@ -28,11 +30,9 @@ La numeración es la posición de la lámina en el diseño. No se vieron en imag
 | Flujo de la solicitud | 7 (BPMN), 20, 21, 26 y 27 (nombres de eventos, «cotizaciones máx. 3», «técnico asignado») | El BPMN cuenta el negocio y la secuencia cuenta lo técnico; los nombres de eventos viven solo en 26 |
 | Drivers, requisitos y calidad | 5, 12, 14 y 15 (D2 con RNF-06; D5 con RNF-10 y AC6; D8 con RNF-08) | Una sola cadena de trazabilidad en lugar de tres tablas |
 | Killers y restricciones | 5, 13, 17, 41 y 47 (K9 sale en 13, 17 y 47) | Cada killer y restricción se define una vez; las otras láminas lo citan por código |
-| Ambientes, compuertas y VMs | 13 (riesgos de las VMs), 30, 31, 32 y 33 | 31, 32 y 33 son un solo tema (ver la fila 5 del punto 3) |
+| Ambientes, compuertas y VMs | 13 (riesgos de las VMs), 30, 31, 32 y 33 | 31, 32 y 33 son un solo tema (ver la fila 4 del punto 3) |
 | Aislamiento por tenant y outbox | RNF-10, AC6, AC6-E2, 25 y ADR-005; AC5-E4, AC5-E5, 24, ADR-007 | Mencionarlos con su código y mostrarlos una vez en un diagrama |
 | Cifras de pruebas | 9, 11, 34 y 47 | Las cifras viven solo en la lámina de resultados |
-
-Corrección a una revisión anterior: la lámina de estrategia de QA y compuertas es la 32, no la 33.
 
 ## 3. Láminas que se explicarían mejor con un diagrama
 
@@ -61,5 +61,5 @@ Láminas que no necesitan diagrama: 4 y 6 (son matrices), 34 (cifras), 35 a 39 y
 ## 5. Límites de esta revisión
 
 - Es una lectura del texto y de miniaturas de baja resolución; no se leyó la letra pequeña de los diagramas.
-- Se revisó el diseño tal como estaba el 20 de octubre de 2026; si la presentación cambió después, hay que repetir la revisión.
+- Se revisó el diseño tal como estaba el 20 de octubre de 2026 y la numeración de este documento es la de ese día. La presentación cambió después: el 4 de noviembre el BPMN está en la lámina 8 (era la 7) y «Alcance y canales» en la 9 (era la 8). Si se usa con la presentación actual, hay que repetir la revisión o volver a numerar.
 - Qué láminas conservar o fusionar lo decide el equipo; esto solo señala dónde hay repetición.
