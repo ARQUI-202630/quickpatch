@@ -177,7 +177,9 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scru
 
 **Límite:** no se ve un 201 después de reactivar porque Beta no tiene categorías; el contraste se hace con el tipo de error. El 201 lo cubren las pruebas de integración de quickpatch-service-request (`TenantStatusFlowTests`).
 
-**Evidencia:** la corrida manual del 2 de noviembre de 2026 está en `evidencias/tenant-desactivado-qa-2026-11-02.txt` (0 verificaciones fallidas). La colección se revisó contra un servidor de prueba local que imita las respuestas de los contratos: 20 peticiones y 24 aserciones sin fallos; sin Beta se detiene en la preparación, y sin secretos omite todo. La primera corrida en QA queda en el job de Newman de `pruebas-sistema.yml`.
+**Evidencia:** la corrida manual del 2 de noviembre de 2026 está en `evidencias/tenant-desactivado-qa-2026-11-02.txt` (0 verificaciones fallidas). La colección corrió contra QA el 4 de noviembre de 2026: con el runner, 16 peticiones y 24 aserciones sin fallos (`evidencias/scrum-511-tenant-desactivado-qa-2026-11-04.txt`), y en el job de Newman de `pruebas-sistema.yml` (corrida 41794907667 sobre `develop`), 17 peticiones y 24 aserciones sin fallos.
+
+**Datos que quedan:** cada corrida registra un cliente nuevo en Beta y no lo borra, así que los clientes de prueba se acumulan en ese tenant, como pasa con los datos de k6. No afectan al tenant principal ni a otras colecciones.
 
 ## Pagos recibidos del técnico y del proveedor (SCRUM-503)
 
