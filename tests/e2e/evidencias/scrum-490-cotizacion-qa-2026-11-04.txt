@@ -1,0 +1,301 @@
+scrum-490-cotizacion contra QA, 2026-11-04
+Colección: tests/e2e/scrum-490-cotizacion.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-11-04T01:28:43.261Z. Duración: 34 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-490 Cotización de punta a punta
+
+□ 0. Preparación: categoría propia, técnico aprobado y clientes
+└ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1020ms]
+  √  200 con rol admin_tenant
+
+└ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 439B, 49ms]
+  √  201
+
+└ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 442B, 954ms]
+  √  201
+
+└ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a42c-4832-7b11-94a1-09452f1f207d/approve [200 OK, 321B, 38ms]
+  √  200
+
+└ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1002ms]
+  √  200 con rol tecnico
+
+└ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 45ms]
+  √  200
+
+└ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 40ms]
+  √  200
+
+└ Registro de otro técnico, sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 930ms]
+  √  201
+
+└ Login del otro técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 978ms]
+  √  200 con rol tecnico
+
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 1825ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 934ms]
+  √  200 con rol cliente
+
+└ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 432B, 928ms]
+  √  201
+
+└ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 915ms]
+  √  200 con rol cliente
+
+└ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 439B, 1089ms]
+  √  201
+
+└ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1710ms]
+  √  200 con rol cliente
+
+□ 1. Tres cotizaciones rechazadas: la solicitud se cancela (RN-Q7)
+└ Crear la solicitud 1 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 834B, 43ms]
+  √  201
+
+└ El técnico ve la oferta de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 36ms]
+
+Attempting to set next request to cac860cc-4028-4d48-b7f2-8199e358b23a
+
+└ El técnico ve la oferta de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 818B, 41ms]
+  √  la oferta está pendiente para el técnico
+
+└ El técnico acepta la oferta de la solicitud 1
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/97944ddf-f60d-4ad2-8362-ad4b31ea707d/accept [200 OK, 447B, 41ms]
+  √  200
+
+└ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88 [200 OK, 759B, 31ms]
+
+Attempting to set next request to 918151cb-7002-4847-9754-54d755193beb
+
+└ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88 [200 OK, 888B, 863ms]
+  √  asignado al técnico de la prueba
+
+└ Sin cotizaciones, la lista está vacía
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes [200 OK, 228B, 36ms]
+  √  200
+  √  []
+
+└ Monto sin decimales → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes [400 Bad Request, 566B, 27ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo validacion
+  √  error en laborAmount
+
+└ El cliente no cotiza → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes [403 Forbidden, 443B, 28ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ Cotización 1
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes [201 Created, 648B, 52ms]
+  √  201 con el contrato Quote
+
+└ La solicitud pasa a cotizado
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88 [200 OK, 888B, 982ms]
+  √  cotizado
+
+└ Otra cotización con una pendiente → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes [409 Conflict, 558B, 37ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ El técnico no acepta → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes/01a1a42c-8fd1-737f-8284-1b6a9a26d812/accept [403 Forbidden, 443B, 29ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ Otro cliente del mismo tenant → 404
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes/01a1a42c-8fd1-737f-8284-1b6a9a26d812/accept [404 Not Found, 457B, 40ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ El cliente de otro tenant no ve las cotizaciones → 404 (RLS)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes [404 Not Found, 457B, 37ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ Motivo de 3 caracteres → 400
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes/01a1a42c-8fd1-737f-8284-1b6a9a26d812/reject [400 Bad Request, 539B, 35ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo validacion
+
+└ El cliente rechaza la cotización 1 con motivo
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes/01a1a42c-8fd1-737f-8284-1b6a9a26d812/reject [200 OK, 356B, 35ms]
+  √  200 con el contrato QuoteDecision
+
+└ Rechazarla otra vez → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes/01a1a42c-8fd1-737f-8284-1b6a9a26d812/reject [409 Conflict, 537B, 37ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ Cotización 2
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes [201 Created, 648B, 42ms]
+  √  201 con el contrato Quote
+
+└ El cliente rechaza la cotización 2 sin motivo
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes/01a1a42c-979e-7ea8-b5ca-197c8faa1eb2/reject [200 OK, 356B, 38ms]
+  √  200 con el contrato QuoteDecision
+
+└ Cotización 3
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes [201 Created, 648B, 43ms]
+  √  201 con el contrato Quote
+
+└ El cliente rechaza la tercera: la solicitud se cancela
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes/01a1a42c-9896-7596-8ced-6992c0eb1c6d/reject [200 OK, 357B, 37ms]
+  √  200 con el contrato QuoteDecision
+
+└ La solicitud queda cancelada por el sistema
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88 [200 OK, 941B, 92ms]
+  √  cancelado
+  √  motivo de RN-Q7
+
+└ El técnico ve las 3 cotizaciones rechazadas, la primera con su motivo
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-790f-71f8-9551-7415959c7b88/quotes [200 OK, 1.37kB, 35ms]
+  √  200
+  √  3 rechazadas en orden
+
+└ El técnico vuelve a disponible (Matching consumió service-request.cancelled)
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 35ms]
+  √  técnico disponible
+
+□ 2. Rechazar una y aceptar la siguiente
+└ Crear la solicitud 2 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 834B, 43ms]
+  √  201
+
+└ El técnico ve la oferta de la solicitud 2
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 37ms]
+
+Attempting to set next request to a099056d-8c01-4194-9dd5-fdeff7458a3f
+
+└ El técnico ve la oferta de la solicitud 2
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 818B, 39ms]
+  √  la oferta está pendiente para el técnico
+
+└ El técnico acepta la oferta de la solicitud 2
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/6796f2bb-945f-4ecb-ba84-5566ef62c05c/accept [200 OK, 447B, 45ms]
+  √  200
+
+└ La solicitud 2 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798 [200 OK, 759B, 34ms]
+
+Attempting to set next request to c10208a2-6531-4ae8-9197-418ecf93e92b
+
+└ La solicitud 2 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798 [200 OK, 888B, 125ms]
+  √  asignado al técnico de la prueba
+
+└ Cotización 1 de la solicitud 2
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798/quotes [201 Created, 648B, 46ms]
+  √  201 con el contrato Quote
+
+└ El cliente la rechaza
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798/quotes/01a1a42c-adda-79de-ad71-9ea63ec4805b/reject [200 OK, 356B, 45ms]
+  √  200 con el contrato QuoteDecision
+
+└ Cotización 2 de la solicitud 2
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798/quotes [201 Created, 648B, 36ms]
+  √  201 con el contrato Quote
+
+└ El cliente acepta la cotización 2
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798/quotes/01a1a42c-aeda-7277-9ce1-880729742eb3/accept [200 OK, 366B, 37ms]
+  √  200 con el contrato QuoteDecision
+
+└ Aceptarla otra vez → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798/quotes/01a1a42c-aeda-7277-9ce1-880729742eb3/accept [409 Conflict, 537B, 33ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ La solicitud queda en cotizacion_aceptada
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798 [200 OK, 899B, 51ms]
+  √  cotizacion_aceptada
+
+└ El técnico ve la aceptada con el total a cobrar
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798/quotes [200 OK, 994B, 32ms]
+  √  200
+  √  rechazada y aceptada
+
+└ Cotizar con la aceptada → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798/quotes [409 Conflict, 569B, 34ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ El técnico sigue ocupado con la solicitud 2
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 435B, 35ms]
+  √  técnico ocupado
+
+□ 3. Cerrar la solicitud 2
+└ El cliente cancela la solicitud 2 (cotizacion_aceptada aún se puede cancelar, RN-SR7)
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a42c-9b1f-77f1-8402-314c2df04798/cancel [200 OK, 370B, 38ms]
+  √  200
+
+└ El técnico queda libre
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 435B, 34ms]
+
+Attempting to set next request to 95d381ce-c88b-44cd-9ee0-371730e57258
+
+└ El técnico queda libre
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 34ms]
+  √  técnico disponible
+
+□ Limpieza
+└ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a42c-4832-7b11-94a1-09452f1f207d/suspend [200 OK, 348B, 36ms]
+  √  200
+
+└ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a1a42c-47a2-7558-9ac1-24c1d0f4df32 [200 OK, 435B, 41ms]
+  √  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  60 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  60 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  60 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  76 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 30.8s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 22.54kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 267ms [min: 27ms, max: 1825ms, s.d.: 452ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:19772) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)

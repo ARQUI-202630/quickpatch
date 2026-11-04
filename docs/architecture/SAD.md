@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.46 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.47 — QUICKPATCH
 
 ---
 
@@ -962,7 +962,7 @@ Cada servicio es responsable de un dominio de negocio, con su propio ciclo de de
 
 Producción iguala a QA antes de promover el MVP (SCRUM-518 a SCRUM-521): faltan Payments, Communication, Nominatim y los topics de Kafka del incremento (Documento de Infraestructura, sección 4.3).
 
-El interior de cada servicio (capas, componentes con los nombres reales de las clases y sus relaciones con la base, Kafka y el gateway) está en el SDD, sección 6 (diagramas C4 de componentes, figuras 10 a 18; SCRUM-580).
+El interior de cada servicio (capas, componentes con los nombres reales de las clases y sus relaciones con la base, Kafka y el gateway) está en el SDD, sección 6 (diagramas C4 de componentes, figuras 10 a 18; SCRUM-580). Cómo colaboran en cada escenario, con el título del escenario, los pasos numerados, el gateway, los eventos por nombre y el aviso a la app, está en el SDD, sección 8: asignación de técnico (figura 22b), cotización (22c), pago (24), calificación (27) y cancelación (28b) (SCRUM-589).
 
 #### 4.2.3 Persistencia
 
@@ -1296,5 +1296,6 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.44|27 oct 2026|AC4 se nombra **Capacidad de interacción**, como la característica de ISO/IEC 25010:2023 (SCRUM-568, corrección del profesor en la revisión del Sprint 4); los escenarios se miden con pruebas con usuarios. Sin cambios en los escenarios.|
 |2.45|27 oct 2026|Sección 5.1 con las vistas de despliegue por ambiente (figuras 5.1 y 5.2, SCRUM-573 y SCRUM-576): cada ambiente con sus nodos, su gateway y sus datos, y VM1 como infraestructura auxiliar. VM4 con Redis como coordinación temporal y Nominatim; Ranking implementado sin desplegar.|
 |2.46|29 oct 2026|Sección 7.4: el pago va antes de la calificación (`DELIVERED` → `PAID` → `EVALUATED`), como el SRS (RF-12), el SDD (escenario 7) y el DD (RN-R3). Cierra la contradicción P2 del SRS (sección 7.4.2), señalada en la línea base del SRS (SCRUM-535).|
+|2.47|3 nov 2026|Sección 4.2.2: remite a los escenarios dinámicos del SDD, sección 8, con título y pasos numerados: asignación, cotización, pago, calificación y cancelación (SCRUM-589).|
 |2.27|12 oct 2026|Dependencias externas frente a R5 (SCRUM-413 y SCRUM-405). Se acepta ADR-024: R5 no cambia; la geocodificación (RIE-02) corre con un Nominatim propio con el mapa de Bogotá en VM4 y VM5, usado por ServiceRequest cuando la solicitud llega sin coordenadas, y las notificaciones (RIE-03) del MVP se entregan dentro de la app (canal de ADR-023 y buzón en Communication). El diagrama de contexto (4.1) pasa el geocodificador adentro del sistema y retira el proveedor de correo y push, y la nota de sistemas externos lo explica. ADR-024 entra a la tabla 5.5 y a la matriz 6.1 como excepción a ADR-014.|
 |2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|

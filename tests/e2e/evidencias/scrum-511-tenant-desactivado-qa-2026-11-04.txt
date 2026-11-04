@@ -1,0 +1,134 @@
+scrum-511-tenant-desactivado contra QA, 2026-11-04
+Colección: tests/e2e/scrum-511-tenant-desactivado.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-11-04T01:37:08.819Z. Duración: 10 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-511 Tenant desactivado contra QA (RN-T1)
+
+□ 0. Preparación: Beta activo y un cliente nuevo con su token
+└ Login del administrador de la plataforma
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 1061ms]
+  √  200 con rol admin_plataforma
+
+└ Ubicar el tenant Beta por su NIT
+  GET https://qa.quickpatch.internal/api/v1/platform/tenants [200 OK, 550B, 36ms]
+  √  200
+  ┌
+  │ `Using "CryptoJS" is deprecated. Use "require('crypto-
+  │ js')" instead.`
+  └
+  √  Beta existe y no es el tenant de la plataforma
+
+└ Beta activo antes de empezar (idempotente)
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/01a13e06-b2a8-7e27-aa1c-cb3e70641dd1 [200 OK, 380B, 34ms]
+  √  200 y Beta queda activo
+
+└ Registro de un cliente nuevo en Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 440B, 968ms]
+  √  201
+
+└ Login del cliente de Beta: su token queda vigente 60 min
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 910ms]
+  √  200 con rol cliente
+  ┌
+  │ `Using "CryptoJS" is deprecated. Use "require('crypto-
+  │ js')" instead.`
+  └
+  √  el token es del tenant Beta
+
+□ 1. Tenant activo: la creación no se bloquea por el tenant
+└ Crear con el tenant activo → 422 de categoría
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 556B, 49ms]
+  √  422 por la categoría, no por el tenant
+  ┌
+  │ 'tipo con el tenant activo: https://quickpatch.interna
+  │ l/problems/categoria-no-disponible'
+  └
+
+□ 2. Tenant desactivado: el MISMO token ya no crea (TNT-003)
+└ El administrador de la plataforma desactiva Beta
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/01a13e06-b2a8-7e27-aa1c-cb3e70641dd1 [200 OK, 382B, 39ms]
+  √  200 y Beta queda inactivo
+
+└ MISMO token: crear → 422 tenant-inactivo en segundos
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 556B, 36ms]
+
+Attempting to set next request to bbdfe097-3a0a-4da9-bad2-47ed3d6fbe3c
+
+└ MISMO token: crear → 422 tenant-inactivo en segundos
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 501B, 48ms]
+  ┌
+  │ 'intentos: 1 (cada 500 ms)'
+  │ 'rechazo con tenant-inactivo en 0.7 s'
+  └
+  √  422 tenant-inactivo
+  √  tipo tenant-inactivo
+  √  detalle tenant is disabled
+  √  Problem Details (RFC 9457) con correlationId
+  √  llega en segundos, no al vencer el token (menos de 15 s)
+
+└ MISMO token: GET /v1/users/me sigue respondiendo 200
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 435B, 33ms]
+  √  200
+
+└ Login nuevo del cliente de Beta → 403 tenant-inactivo
+  POST https://qa.quickpatch.internal/api/v1/auth/login [403 Forbidden, 491B, 951ms]
+  √  403
+  √  tipo tenant-inactivo
+  √  Problem Details (RFC 9457) con correlationId
+
+└ Registro nuevo en Beta → 403 tenant-inactivo
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [403 Forbidden, 491B, 34ms]
+  √  403
+  √  tipo tenant-inactivo
+  √  Problem Details (RFC 9457) con correlationId
+
+□ 3. Tenant reactivado: la creación deja de responder tenant-inactivo
+└ El administrador de la plataforma reactiva Beta
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/01a13e06-b2a8-7e27-aa1c-cb3e70641dd1 [200 OK, 380B, 40ms]
+  √  200 y Beta queda activo
+
+└ MISMO token: crear → ya no es tenant-inactivo
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 501B, 34ms]
+
+Attempting to set next request to 9b6b790f-be53-41ac-92d2-b51a068a5f5e
+
+└ MISMO token: crear → ya no es tenant-inactivo
+  POST https://qa.quickpatch.internal/api/v1/service-requests [422 Unprocessable Entity, 556B, 38ms]
+  ┌
+  │ 'intentos: 1 (cada 500 ms)'
+  └
+  √  422 por la categoría, no por el tenant
+  ┌
+  │ 'tipo con el tenant reactivado: https://quickpatch.int
+  │ ernal/problems/categoria-no-disponible'
+  └
+
+□ 4. Cierre: Beta queda activo
+└ Beta activo al terminar (aunque algo haya fallado antes)
+  PATCH https://qa.quickpatch.internal/api/v1/platform/tenants/01a13e06-b2a8-7e27-aa1c-cb3e70641dd1 [200 OK, 380B, 34ms]
+  √  200 y Beta queda activo
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  16 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  16 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  16 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  24 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 6.7s                                           │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 5.37kB (approx)                               │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 271ms [min: 33ms, max: 1061ms, s.d.: 405ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:30388) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
