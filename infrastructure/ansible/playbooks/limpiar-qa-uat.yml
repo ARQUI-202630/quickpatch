@@ -99,7 +99,15 @@
           - t: tenant_status_replica
             w: t.tenant_id IN (SELECT id FROM tenants_borrar)
       - base: db_identity
-        totales: [tenants, users, technician_profiles, client_companies, password_setup_tokens, password_recovery_requests, password_recovery_attempts, audit_logs]
+        totales:
+          - tenants
+          - users
+          - technician_profiles
+          - client_companies
+          - password_setup_tokens
+          - password_recovery_requests
+          - password_recovery_attempts
+          - audit_logs
         pasos:
           - t: password_setup_tokens
             w: NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.user_id)
@@ -110,7 +118,7 @@
               NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.user_id)
               OR t.tenant_id IN (SELECT id FROM tenants_borrar)
           - t: password_recovery_attempts
-            w: TRUE
+            w: "true"
           - t: technician_profiles
             w: NOT EXISTS (SELECT 1 FROM keep_users k WHERE k.id = t.user_id)
           - t: audit_logs
