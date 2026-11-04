@@ -40,14 +40,14 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 | **AC3-E1** | Compatibility | Integración con la pasarela de pagos | 100% de transacciones sin error de formato/protocolo | 0 fallos contra sandbox simulado | `tests/e2e/evidencias/scrum-117-pago-qa-2026-10-22.txt` | **Parcial** | Validado contra mock/sandbox (ADR-009). |
 | **AC3-E2** | Compatibility | Convivencia de los 8 microservicios en VM2/VM3 | Matching $< 3\text{ s}$ p95 y 0 pods desalojados | 8 servicios coexistiendo en k3s; p95 = 73.55 ms y 0 pods desalojados | `tests/performance/evidencias/k6-stress-150vu-qa-2026-10-18.txt`; `tests/ci-results/` | **Cumple** | Convivencia sin interferencia de recursos. |
 | **AC4-E1** | Interaction Capability | Creación de solicitud en pocos pasos | 100% de solicitudes en máx. 3 pasos (RNF-11) | 2 pantallas con acción del usuario: inicio y un solo formulario (tipo de servicio, descripción, dirección y ubicación) | `tests/e2e/evidencias/movil/` (capturas 1 a 4) | **Cumple** | Capturas del recorrido en la app móvil: inicio, selector de categoría y formulario en la misma pantalla, y solicitud creada. |
-| **AC4-E2** | Interaction Capability | Uso en distintos dispositivos | 100% de pantallas sin scroll horizontal ni cortes | Sin pruebas multi-pantalla formales | *(Sin archivo de evidencia)* | **No medido** | Requiere matriz de dispositivos en Sprint 5. |
+| **AC4-E2** | Interaction Capability | Uso en distintos dispositivos | 100% de pantallas sin scroll horizontal ni cortes | Verificado en escritorio (panel Angular) y smartphone 392x800 dp (app Flutter); falta la matriz formal de tablets y pantallas compactas | `tests/e2e/evidencias/humo-qa-2026-10-19/` (capturas 1 a 4); `tests/e2e/evidencias/movil/` (capturas 1 a 4); `docs/testing/capacidad-interaccion-scrum-569.md` | **Parcial** | Diseño responsivo en web y móvil; pendiente la matriz de dispositivos. |
 | **AC4-E3** | Interaction Capability | Reconocer si la app sirve para lo que necesito | 4 de 5 usuarios identifican cómo solicitar en $< 30\text{ s}$ | Sesión presencial programada | `docs/testing/uat-product-owner.md` | **No medido** | Se evalúa en la sesión de UAT con PO. |
 | **AC4-E4** | Interaction Capability | Primer uso del técnico sin capacitación | 4 de 5 técnicos completan el ciclo en $< 10\text{ min}$ | Sesión presencial programada | `docs/testing/uat-product-owner.md` | **No medido** | Prueba con usuarios reales en UAT. |
-| **AC4-E5** | Interaction Capability | Protección ante errores del usuario | 0 solicitudes con campos vacíos o dirección no validada | Validación HTTP 422 ante dirección inválida | `tests/e2e/evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt` | **Parcial** | Validación de dirección geocodificada en Bogotá. |
-| **AC4-E6** | Interaction Capability | Motivación para calificar el servicio | $\ge 60\%$ de servicios completados reciben calificación | Calificación disponible solo por API; el cliente no puede calificar desde la app | `tests/e2e/evidencias/humo-flujo-critico-qa-2026-10-30.txt` | **No cumple** | El backend de calificación (RF-12, SCRUM-85) responde 201 en el humo del 30 de octubre, pero falta la pantalla (SCRUM-86); sin ella no hay servicios calificados que medir. |
-| **AC4-E7** | Interaction Capability | Uso con distintas capacidades | 100% de pantallas del flujo pasan pruebas de accesibilidad | Sin pruebas `meetsGuideline` ni recorrido con texto al 200% | *(Sin archivo de evidencia)* | **No medido** | `docs/testing/capacidad-interaccion-scrum-569.md` no trae escaneo de accesibilidad; sus 6 escenarios siguen pendientes. |
+| **AC4-E5** | Interaction Capability | Protección ante errores del usuario | 0 solicitudes con campos vacíos o dirección no validada | 0 solicitudes incompletas; validación en la app (campos obligatorios y GPS) y en el servidor (400 con el campo y 422 ante dirección inválida) | `tests/e2e/evidencias/scrum-458-geocodificacion-buzon-qa-2026-10-22.txt`; `docs/testing/capacidad-interaccion-scrum-569.md` | **Cumple** | En web, confirmación obligatoria antes de las acciones críticas. |
+| **AC4-E6** | Interaction Capability | Motivación para calificar el servicio | $\ge 60\%$ de servicios completados reciben calificación | Pantalla de calificación en la app (SCRUM-86, APK `v0.5.4-qa`) y backend con 201; la tasa todavía no se ha medido | `tests/e2e/evidencias/scrum-32-calificacion-qa-2026-11-04.txt` | **No medido** | La pantalla ya existe; la tasa del 60% se mide con servicios reales (primera observación en la UAT, SCRUM-608). |
+| **AC4-E7** | Interaction Capability | Uso con distintas capacidades | 100% de pantallas del flujo pasan pruebas de accesibilidad | Sin pruebas `meetsGuideline` ni recorrido con texto al 200% | *(Sin archivo de evidencia)* | **No medido** | `docs/testing/capacidad-interaccion-scrum-569.md` consolida los 9 escenarios; la suite automatizada de accesibilidad (meetsGuideline y texto al 200%) está registrada como DEF-INT-02. |
 | **AC4-E8** | Interaction Capability | Uso en dispositivos de gama baja | Flujo sin cierres y cada pantalla $< 3\text{ s}$ | Sin pruebas en emuladores de bajos recursos | *(Sin archivo de evidencia)* | **No medido** | Programado para Sprint 5. |
-| **AC4-E9** | Interaction Capability | Seguimiento que se explica solo | 100% de estados con texto explicativo | Textos implementados en 4 estados | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt` | **No medido** | Requiere validación cualitativa en UAT. |
+| **AC4-E9** | Interaction Capability | Seguimiento que se explica solo | 100% de estados con texto explicativo; 4 de 5 usuarios describen el estado sin ayuda | 100% de los estados con texto explicativo en la app; falta la validación con 5 usuarios | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt`; `tests/e2e/evidencias/movil/4-solicitud-creada.png`; `docs/testing/capacidad-interaccion-scrum-569.md` | **Parcial** | La parte con usuarios se mide en la UAT (SCRUM-608). |
 | **AC5-E1** | Reliability | Caída de un componente no crítico | Recuperación manual en 12–24 h | Sin simulación de desastre mayor | *(Sin archivo de evidencia)* | **No medido** | Evaluación de DRP programada. |
 | **AC5-E2** | Reliability | Mantenimiento planeado | Downtime planeado $< 2\text{ h}$ | Sin ventana de mantenimiento ejecutada | *(Sin archivo de evidencia)* | **No medido** | Procedimiento documentado en Ansible. |
 | **AC5-E3** | Reliability | Caída de un microservicio | 0% de eventos perdidos; procesa backlog al reiniciar | Eventos retenidos en `outbox_events` y procesados al reconectar | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` | **Parcial** | Garantía Outbox atómica en PostgreSQL. |
@@ -74,7 +74,7 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 | **AC8-E4** | Flexibility | Cambio de proveedor de geolocalización | Reemplazo sin cambios en los demás servicios | Sin cambio de adaptador en Sprint 4 | *(Sin archivo de evidencia)* | **No medido** | Diseñado mediante interfaz de adaptador. |
 | **AC8-E5** | Flexibility | Reconstrucción del entorno desde cero | VM operativa en $\le 4\text{ h}$ solo con lo documentado | Playbooks de Ansible disponibles | `infrastructure/ansible/` | **No medido** | Procedimiento automatizado en Ansible. |
 | **AC9-E1** | Safety | Transiciones seguras del ciclo de servicio | 0 transiciones inválidas en `service_requests` | Saltos de estado inválidos responden HTTP 409 Conflict | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt` | **Cumple** | Máquina de estados estricta en ServiceRequest. |
-| **AC9-E2** | Safety | Técnico con calificaciones bajas | 100% de técnicos señalados en panel sin suspensión auto | La reputación llega a Identity pero no se muestra en el panel | *(Sin archivo de evidencia)* | **No cumple** | Falta exponer la reputación en la API y en el panel (SCRUM-497, SCRUM-86). |
+| **AC9-E2** | Safety | Técnico con calificaciones bajas | 100% de técnicos señalados en panel sin suspensión auto | La reputación llega a Identity pero no se muestra en el panel | *(Sin archivo de evidencia)* | **No cumple** | Falta exponer la reputación en la API de Identity y señalarla en el panel: SCRUM-642. |
 | **AC9-E3** | Safety | Servicio sin cierre | 100% de solicitudes vencidas marcadas en el panel | Sin job de barrido de solicitudes vencidas | *(Sin archivo de evidencia)* | **No medido** | Programado para Sprint 5. |
 | **AC9-E4** | Safety | Sin candidatos elegibles | 0 asignaciones a técnicos que no cumplen filtro | Transición atómica a `en_espera` sin candidatos elegibles | `tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt` | **Cumple** | Lógica de matching ante ausencia de técnicos. |
 | **AC9-E5** | Safety | Pasarela de pagos sin respuesta | 0 'pagado' sin `payment.approved` y 0 cobros duplicados | Conciliación y timeout en pasarela simulada | `tests/e2e/evidencias/scrum-117-pago-qa-2026-10-22.txt`; `tests/e2e/evidencias/scrum-495-comprobante-qa-2026-10-22.txt` | **Cumple** | Manejo de estados pendientes sin doble cobro. |
@@ -87,14 +87,43 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 ## 3. Balance Cuantitativo de los Escenarios de Calidad
 
 * **Total de Escenarios Evaluados:** **52 Escenarios de Arquitectura (SAD §3)**.
-* **Escenarios en Estado CUMPLE (con medición cuantitativa y evidencia):** **20 escenarios (38.5%)**.
-* **Escenarios en Estado PARCIAL:** **11 escenarios (21.2%)** (AC1-E2 cobertura de RF, AC2-E5 recursos, AC3-E1 pasarela simulada, AC4-E5 validación de dirección, AC5-E3 Outbox, AC5-E4 Kafka, AC5-E5 deduplicación, AC5-E6 5xx en Loki, AC6-E7 auditoría, AC7-E4 diagnóstico en QA, AC8-E1 tenant).
-* **Escenarios en Estado NO CUMPLE:** **2 escenarios (3.8%)** (AC4-E6 y AC9-E2: la calificación existe en el backend, pero falta la pantalla del cliente y la reputación en el panel).
-* **Escenarios en Estado NO MEDIDO / PENDIENTE:** **19 escenarios (36.5%)**.
-* **Porcentaje de Escenarios de Calidad:** **49.04%** ($[20 \times 1.0 + 11 \times 0.5] / 52$).
-* **Avance Preliminar del Producto (Fórmula QA):** **74.93%** ($0.7 \times 86.03\% \text{ [QA]} + 0.3 \times 49.04\% \text{ [Calidad]}$).
+* **Escenarios en Estado CUMPLE (con medición cuantitativa y evidencia):** **21 escenarios (40.4%)**.
+* **Escenarios en Estado PARCIAL:** **12 escenarios (23.1%)** (AC1-E2 cobertura de RF, AC2-E5 recursos, AC3-E1 pasarela simulada, AC4-E2 dispositivos, AC4-E9 estados, AC5-E3 Outbox, AC5-E4 Kafka, AC5-E5 deduplicación, AC5-E6 5xx en Loki, AC6-E7 auditoría, AC7-E4 diagnóstico en QA, AC8-E1 tenant).
+* **Escenarios en Estado NO CUMPLE:** **1 escenario (1.9%)** (AC9-E2: la reputación llega a Identity pero no se muestra en el panel).
+* **Escenarios en Estado NO MEDIDO / PENDIENTE:** **18 escenarios (34.6%)**.
+* **Porcentaje de Escenarios de Calidad:** **51.92%** ($[21 \times 1.0 + 12 \times 0.5] / 52$).
+* **Avance Preliminar del Producto (Fórmula QA):** **75.80%** ($0.7 \times 86.03\% \text{ [QA]} + 0.3 \times 51.92\% \text{ [Calidad]}$).
 
 **Cambios del 1 de noviembre de 2026 (SCRUM-565):** AC5-E5 y AC6-E7 pasan de No medido a Parcial con pruebas de integración de CI. AC4-E1, AC5-E6, AC7-E6 y AC9-E7 suman evidencia sin cambiar de estado. AC4-E6 y AC9-E2 siguen en No cumple con el motivo actualizado. AC4-E7 corrige su valor medido: no hay escaneo de accesibilidad.
+
+**Cambios del 4 de noviembre de 2026 (SCRUM-569):** con la evaluación de `docs/testing/capacidad-interaccion-scrum-569.md`, AC4-E5 pasa de Parcial a Cumple; AC4-E2 y AC4-E9 pasan de No medido a Parcial; AC4-E6 pasa de No cumple a No medido, porque la pantalla de calificación (SCRUM-86) ya existe y falta medir la tasa con servicios reales. El porcentaje sube de 49.04% a 51.92%.
+
+### 3.1 Cumplimiento por atributo (SCRUM-566)
+
+Misma fórmula que el porcentaje global: un escenario que cumple vale 1, uno parcial vale 0.5, y los que no cumplen o no se han medido valen 0. Corte del 4 de noviembre de 2026, después de SCRUM-569.
+
+| Atributo | Escenarios | Cumple | Parcial | No cumple | No medido | Cumplimiento |
+|---|---|---|---|---|---|---|
+| AC1 Functional Suitability | 3 | 2 | 1 | 0 | 0 | 83.33% |
+| AC2 Performance Efficiency | 5 | 3 | 1 | 0 | 1 | 70.00% |
+| AC3 Compatibility | 2 | 1 | 1 | 0 | 0 | 75.00% |
+| AC4 Interaction Capability | 9 | 2 | 2 | 0 | 5 | 33.33% |
+| AC5 Reliability | 6 | 0 | 4 | 0 | 2 | 33.33% |
+| AC6 Security | 8 | 6 | 1 | 0 | 1 | 81.25% |
+| AC7 Maintainability | 6 | 2 | 1 | 0 | 3 | 41.67% |
+| AC8 Flexibility | 5 | 1 | 1 | 0 | 3 | 30.00% |
+| AC9 Safety | 8 | 4 | 0 | 1 | 3 | 50.00% |
+| **Total** | **52** | **21** | **12** | **1** | **18** | **51.92%** |
+
+Los atributos con más trabajo pendiente son AC8 Flexibility (30.00%), AC4 Interaction Capability y AC5 Reliability (33.33% cada uno). En AC4 faltan cinco mediciones con usuarios o dispositivos reales: AC4-E3 y AC4-E4 se miden en la UAT (SCRUM-608), y AC4-E6, AC4-E7 y AC4-E8 necesitan servicios reales, el arnés de accesibilidad o un perfil de gama baja. En AC5 faltan los simulacros de recuperación (AC5-E1 y AC5-E2).
+
+### 3.2 Escenarios que no cumplen y su HU en Jira (SCRUM-566)
+
+| Escenario | Qué falta | HU |
+|---|---|---|
+| AC9-E2 Técnico con calificaciones bajas | Ranking calcula la reputación y la envía a Identity (ADR-027), pero el contrato de Identity no la expone y el panel no señala a los técnicos con promedio menor a 3.0 y al menos 5 calificaciones. | SCRUM-642, en el backlog (épica SCRUM-10) |
+
+AC4-E6 ya no está en esta tabla: pasó a No medido con SCRUM-569 porque la pantalla de calificación existe (SCRUM-86).
 
 ---
 

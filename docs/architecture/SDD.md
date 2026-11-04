@@ -117,6 +117,8 @@ El diagrama de contexto deja solo lo que interactúa con el sistema en operació
 
 **Figura 2. Contexto de QUICKPATCH (C4 · System Context). Vista `C4-02-Contexto`.**
 
+La figura lleva su título y, debajo, la leyenda de formas y líneas; la línea punteada es lo planeado (SCRUM-578).
+
 El único sistema externo es la pasarela de pagos certificada PCI-DSS (SAD, K2, R5); en el MVP la reemplaza un adaptador simulado dentro de Payments (ADR-009 modificado). La geocodificación (SRS, RIE-02) corre dentro de las 7 VMs con un Nominatim propio que solo tiene el mapa de Bogotá, y las notificaciones (RIE-03) se entregan dentro de la app, por el canal en tiempo real y el buzón de Communication; el correo y las notificaciones push quedan fuera del MVP (ADR-024). Por eso el geocodificador aparece como contenedor en la Figura 3 y no como sistema externo. La cercanía entre la solicitud y los técnicos la calcula PostGIS. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
 
 > **Contradicción resuelta:** la versión anterior de esta sección contaba la geocodificación y un proveedor de correo y push como sistemas externos, frente a R5 del SAD. ADR-024 la resolvió manteniendo R5: la geocodificación es propia y las notificaciones quedan dentro de la app.
@@ -133,11 +135,13 @@ La arquitectura se organiza por dominios y servicios. Los clientes acceden a tra
 
 **Figura 3. Contenedores de QUICKPATCH (C4 · Container). Vista `C4-03-Contenedores`.**
 
+Los contenedores se agrupan en clientes, microservicios, mensajería y almacenamiento, y PostgreSQL con una base por servicio (ADR-014). La figura lleva su título y, a la derecha, la leyenda de formas y líneas (SCRUM-578). Actors Service no aparece: está planeado y no tiene despliegue (sección 6.5), y la vista no dibuja lo que todavía no existe.
+
 Las notificaciones no salen del sistema: Communication las entrega por el canal en tiempo real (`/v1/realtime`, ADR-023) y las guarda en su buzón (ADR-024), así que el diagrama no tiene un proveedor de correo o push.
 
 El diagrama muestra qué se ejecuta dentro del sistema y cómo se comunica, sin detalles de infraestructura física (ese nivel está en la sección 9.1). Cada cliente atiende a roles distintos (SRS, secciones 2.1 y 2.2; DD, `users.role` y RN-U6): la App móvil (Flutter) es el canal de clientes, empresas cliente, técnicos y proveedores, y el Panel web (una SPA en Angular) es el de los dos administradores, el del tenant (`admin_tenant`, administra solo su tenant) y el de plataforma (`admin_plataforma`, administra los tenants). El proveedor del diagrama es el rol de usuario que administra un equipo de técnicos (RF-16); el proveedor de materiales o repuestos (`Supplier` en Actors Service) no es uno de los cinco roles del SRS y sigue siendo un concepto evolutivo (sección 6.5), por eso no aparece como persona. Ambos clientes entran por el API Gateway, que tiene REST principal solo hacia Identity, ServiceRequest y Payments (ADR-025); Matching, Catalog y Communication reciben por el gateway solo las excepciones del ADR (acciones del técnico, administración del catálogo, buzón y canal en tiempo real), y Actors y Ranking solo se integran por Kafka.
 
-Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6; Actors se integra solo por Kafka), usan Redis como caché y Garage (S3) para las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación, y el proveedor de notificaciones. Con ADR-024 solo la pasarela es externa en el MVP: la geocodificación la hace ServiceRequest con un Nominatim propio (mapa de Bogotá, en la VM de datos de cada ambiente) y las notificaciones se entregan dentro de la app (canal de ADR-023 y buzón en Communication); correo y push quedan fuera del MVP. La cercanía entre la solicitud y los técnicos se calcula con PostGIS. El seguimiento en tiempo real de la solicitud (RF-11) usa un WebSocket desde las apps hasta Communication Service a través del API Gateway (`/v1/realtime`, ADR-023), con consulta del estado por REST cada 30 segundos como respaldo. El proveedor concreto de la pasarela de pagos no está definido.
+Cada microservicio tiene su propia base de datos dentro de una única instancia de PostgreSQL + PostGIS (ADR-014): el motor impide llaves foráneas y JOINs entre bases, y el costo es que la instancia es un punto único de falla (R10). Los servicios se integran entre sí por eventos en Kafka (Catalog publica `catalog.category-changed`; ServiceRequest, Matching, Ranking, Payments y Communication producen o consumen eventos, según la sección 8.6). Redis no es caché en el MVP: solo lo usa ServiceRequest como candado para que una sola réplica venza las cotizaciones (sección 9.1). Garage (S3) guarda las evidencias. Tres sistemas externos, tomados del SRS (RIE-01 a RIE-03): la pasarela de pagos PCI-DSS (Payments, con tokenización), el servicio de geocodificación, que convierte en coordenadas la dirección escrita por el cliente cuando no comparte su ubicación, y el proveedor de notificaciones. Con ADR-024 solo la pasarela es externa en el MVP: la geocodificación la hace ServiceRequest con un Nominatim propio (mapa de Bogotá, en la VM de datos de cada ambiente) y las notificaciones se entregan dentro de la app (canal de ADR-023 y buzón en Communication); correo y push quedan fuera del MVP. La cercanía entre la solicitud y los técnicos se calcula con PostGIS. El seguimiento en tiempo real de la solicitud (RF-11) usa un WebSocket desde las apps hasta Communication Service a través del API Gateway (`/v1/realtime`, ADR-023), con consulta del estado por REST cada 30 segundos como respaldo. El proveedor concreto de la pasarela de pagos no está definido.
 
 ## 5.2 Vista por capas (complementaria)
 
@@ -415,7 +419,7 @@ El Gateway no contiene reglas propias de matching, solicitudes, pagos, ranking n
 | `Role` | Concepto de autorización | Conjunto de permisos para cada tipo de usuario. |
 | `AuthenticatedContext` | Objeto lógico | Propaga `userId`, `tenantId` y rol. |
 
-**Datos documentados:** `tenants`, `users`, `client_companies`, `technician_profiles`, `password_setup_tokens`, `audit_logs` y `outbox_events` (DD 5.12).
+**Datos documentados:** `tenants`, `users`, `client_companies`, `technician_profiles`, `password_setup_tokens`, `password_recovery_requests`, `password_recovery_attempts`, `audit_logs` y `outbox_events` (DD 5.12 y 5.19).
 
 **Componentes (C4).**
 
@@ -431,7 +435,7 @@ En el incremento del Sprint 4, Identity suma:
 - **Equipo del proveedor** (RF-16; SCRUM-97, SCRUM-461): el proveedor da de alta técnicos sin contraseña (`/v1/providers/me/technicians`) y recibe un enlace de invitación de un solo uso; el técnico define su contraseña con `POST /v1/auth/password/setup`. En `password_setup_tokens` solo se guarda el hash del token, y el enlace apunta al panel de cada ambiente (`Invitations__LinkBase`).
 - **Creación de tenants** (RF-21; SCRUM-462): `POST /v1/platform/tenants` crea la empresa oferente activa en `PlatformUnitOfWork` y registra `crear_tenant` en `audit_logs`; un NIT repetido responde `409 nit-registrado`.
 - **Cuenta corporativa** (RF-06; SCRUM-66): `POST /v1/auth/register/company` crea en una transacción la empresa cliente (`client_companies`) y su primer `empresa_contacto` en el tenant del canal; la empresa es una cuenta dentro del tenant, no un tenant (DEP-13). Los demás usuarios entran con la misma invitación de un solo uso del equipo del proveedor, y el token del `empresa_contacto` lleva `company_id`.
-- **En el Sprint 5:** la edición del perfil propio (`PATCH /v1/users/me`, solo nombre y teléfono, `UpdateCurrentUserHandler`, SCRUM-611), la proyección de la reputación que publica Ranking (`ReputationChangedConsumer`, SCRUM-498) y `tenant.status-changed`, que `UpdateTenantStatusHandler` deja en el Outbox al activar o desactivar un tenant (RN-T1, SCRUM-509). La recuperación de la contraseña tiene contrato (identity 1.10.0) y modelo (DD 5.19); su implementación está en revisión (SCRUM-625).
+- **En el Sprint 5:** la edición del perfil propio (`PATCH /v1/users/me`, solo nombre y teléfono, `UpdateCurrentUserHandler`, SCRUM-611), la proyección de la reputación que publica Ranking (`ReputationChangedConsumer`, SCRUM-498) y `tenant.status-changed`, que `UpdateTenantStatusHandler` deja en el Outbox al activar o desactivar un tenant (RN-T1, SCRUM-509). La recuperación de la contraseña (contrato identity 1.10.0, DD 5.19, SCRUM-624): el usuario la pide con su correo (`RequestPasswordRecoveryHandler`, límite de 3 por hora con el HMAC del correo de `HmacEmailHasher`), el `admin_tenant` la ve en `/v1/admin/password-recovery-requests` y genera un enlace de un solo uso que vence en 1 hora (`IssueRecoveryLinkHandler`), y el usuario define la contraseña nueva (`ConfirmPasswordRecoveryHandler`); la solicitud vive en `password_recovery_requests` (`PasswordRecoveryRepository`). En QA y en producción desde el 4 de noviembre de 2026 (Identity 0.7.0).
 - **Consulta interna de nombres** (SCRUM-91): `GET /internal/v1/users` (`identity-internal.v1.yaml`) devuelve por lote el nombre y el contacto de usuarios del tenant a otros servicios dentro del clúster; el servicio que llama reenvía el JWT del usuario, así que el tenant sigue saliendo del token. No pasa por el API Gateway ni tiene ruta en el Ingress. ServiceRequest la usa en el detalle de la solicitud para mostrar el cliente al técnico asignado y el técnico al cliente.
 
 ## 6.5 Actors Service
@@ -637,9 +641,9 @@ No tiene endpoints de negocio: el gateway no le enruta nada (ADR-025). Si Rankin
 
 ![Componentes de Ranking Service](diagrams/c4/C4-04-Componentes-Ranking.png)
 
-**Figura 16. Componentes de Ranking Service según ADR-027 (C4 · Component; implementado en SCRUM-498 y desplegado en QA con SCRUM-512): consume `service-request.rated` y publica `ranking.technician-reputation-changed` con Outbox; sin API REST desde el gateway (ADR-025). Vista `C4-04-Componentes-Ranking`.**
+**Figura 16. Componentes de Ranking Service según ADR-027 (C4 · Component; implementado en SCRUM-498, desplegado en QA con SCRUM-512 y en producción con SCRUM-522): consume `service-request.rated` y publica `ranking.technician-reputation-changed` con Outbox; sin API REST desde el gateway (ADR-025). Vista `C4-04-Componentes-Ranking`.**
 
-Implementado en `quickpatch-ranking` (SCRUM-498), con su base `db_ranking` bajo RLS. Corre en QA desde el 28 de octubre de 2026 (`release/0.1.0`, SCRUM-512); a producción llega con la promoción del MVP (SCRUM-518).
+Implementado en `quickpatch-ranking` (SCRUM-498), con su base `db_ranking` bajo RLS. Corre en QA desde el 28 de octubre de 2026 (`release/0.1.0`, SCRUM-512) y en producción desde el 4 de noviembre de 2026, con la promoción del MVP (SCRUM-518, SCRUM-522).
 
 ## 6.10 Payments Service
 
@@ -2247,7 +2251,9 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 
 | Cambio | Secciones | Tarea |
 |---|---|---|
+| Contexto y contenedores reorganizados en el DSL: título en cada vista, leyenda en la imagen y contenedores agrupados en clientes, microservicios, mensajería y almacenamiento, y PostgreSQL | 4 y 5.1 (figuras 2 y 3) | SCRUM-578 |
 | Convención de paquetes por capa de los microservicios y su estado por servicio | 10.2 | SCRUM-586 y SCRUM-587 |
+| Identity con la recuperación de la contraseña (endpoints, cuatro handlers, `PasswordRecoveryRequest`, `PasswordRecoveryRepository` y `HmacEmailHasher`) y Ranking desplegado en QA y en producción; figuras 10 y 16 regeneradas | 6.4 y 6.9 (figuras 10 y 16) | SCRUM-584 |
 | Componentes de Identity, Catalog, ServiceRequest y Payments con los nombres del código | 6.4, 6.6, 6.7 y 6.10 (figuras 10, 12, 13 y 17) | SCRUM-581 y SCRUM-582 |
 | Escenario de asignación del técnico con pasos numerados y eventos por nombre | 8 (figura 22b) | SCRUM-590 |
 | Componentes del Sprint 5, dinámica de la calificación y despliegue real | 6, 8 (figura 27) y 9 | SCRUM-549 y SCRUM-550 |

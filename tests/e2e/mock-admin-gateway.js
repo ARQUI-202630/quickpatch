@@ -112,7 +112,7 @@ const server = http.createServer((req, res) => {
       }
 
       // W-02: Credenciales incorrectas
-      if (body.password === 'PasswordInvalidoTotal999*' || (body.password && body.password.includes('Invalido'))) {
+      if (body.password && (body.password.startsWith('Invalida_') || body.password.includes('Invalido'))) {
         return sendProblemDetails(
           res, 401, 'no-autenticado', 'Credenciales Inválidas',
           'El correo electrónico o la contraseña ingresada son incorrectos.',

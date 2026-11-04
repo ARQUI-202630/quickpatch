@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.12 |
+| **Versión** | 4.13 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -46,7 +46,7 @@ Este documento describe cómo se construye, despliega y opera la infraestructura
 
 Qué corre en cada VM, cómo se conectan y por dónde entra el tráfico. El inventario está en la sección 3 y las reglas exactas de firewall en la sección 10.
 
-> **Reparto del ADR-022, aplicado el 7 de octubre de 2026, y servicios desplegados desde el 8 de octubre.** Producción son VM3, VM4 y VM6; QA son VM2, VM5 y VM7; VM1 es de herramientas. En los dos k3s corren Identity, Catalog, ServiceRequest y Matching; Actors, Ranking, Payments y Communication esperan su manifiesto (sección 5.3). Desde el 25 de octubre de 2026 (ADR-028) cada ambiente tiene su propio gateway Nginx con su panel, en VM3 y en VM2; VM1 es solo la entrada TLS (sección 3.2).
+> **Reparto del ADR-022, aplicado el 7 de octubre de 2026, y servicios desplegados desde el 8 de octubre.** Producción son VM3, VM4 y VM6; QA son VM2, VM5 y VM7; VM1 es de herramientas. En los dos k3s corren los 7 servicios con código (Identity, Catalog, ServiceRequest, Matching, Payments, Communication y Ranking; en producción desde el 4 de noviembre de 2026, SCRUM-518); Actors no tiene código ni manifiesto (sección 5.3). Desde el 25 de octubre de 2026 (ADR-028) cada ambiente tiene su propio gateway Nginx con su panel, en VM3 y en VM2; VM1 es solo la entrada TLS (sección 3.2).
 
 ```mermaid
 flowchart TB
@@ -218,7 +218,7 @@ flowchart LR
 | VM3 | Producción | Aplicación | `10.43.98.205` | k3s de un nodo con Identity, Catalog, ServiceRequest y Matching desplegados desde el 8 de octubre; los otros cuatro microservicios pasarán aquí al tener manifiesto o imagen. Fuera de k3s, el Nginx del gateway de producción (contenedor en la red del host, puerto 8080, solo desde VM1) con el panel Angular en `/opt/quickpatch/gateway/panel` (ADR-028) |
 | VM4 | Producción | Datos | `10.43.98.209` | PostgreSQL + PostGIS (una base por servicio), respaldo diario y Redis |
 | VM6 | Producción | Mensajería y almacenamiento | `10.43.99.12` | Kafka y Kafka UI (`quickpatch-kafka`); Garage (evidencias y respaldos) |
-| VM2 | QA | Aplicación | `10.43.98.15` | k3s de un nodo, igual que VM3, con los mismos cuatro servicios y, fuera de k3s, el Nginx del gateway de QA (puerto 8080, solo desde VM1) con el panel de QA (ADR-028) |
+| VM2 | QA | Aplicación | `10.43.98.15` | k3s de un nodo, igual que VM3, con los mismos siete servicios y, fuera de k3s, el Nginx del gateway de QA (puerto 8080, solo desde VM1) con el panel de QA (ADR-028) |
 | VM5 | QA | Datos | `10.43.98.29` | PostgreSQL + PostGIS y Redis, igual que VM4, sin respaldo |
 | VM7 | QA | Mensajería y almacenamiento | `10.43.99.8` | Kafka y Garage, igual que VM6, sin Kafka UI |
 
@@ -342,31 +342,35 @@ El toolchain está fijado por `docs/governance/TOOLCHAIN.md`: .NET SDK 10.0.401,
 
 ---
 
-### 4.3 Estado real de QA y de producción (medido el 26 de octubre de 2026)
+### 4.3 Estado real de QA y de producción (medido el 4 de noviembre de 2026)
 
-Foto de lo que corre hoy, tomada con comandos de solo lectura desde VM1 (SCRUM-553). Producción se volvió a medir el 28 de octubre, después de crear los topics de Kafka y los Deployment de Payments y Communication. Sirve para saber qué falta en producción antes de promover el MVP (SCRUM-518).
+Foto de lo que corre hoy, tomada con comandos de solo lectura (SCRUM-553 y SCRUM-518). La promoción del MVP a producción se hizo el 4 de noviembre: la sección anterior de este documento (medida el 26 de octubre) listaba lo que faltaba y casi todo se cumplió ese día.
 
 | | Producción (VM3, VM4, VM6) | QA (VM2, VM5, VM7) |
 |---|---|---|
-| Microservicios en k3s | 6 Deployment: Catalog, Identity, Matching y ServiceRequest en servicio, y Communication y Payments esperando su imagen (`:pendiente`) | 6: los mismos, todos en servicio |
-| Pods | 4 en `1/1 Running`, 0 reinicios; Communication y Payments en `Init:ImagePullBackOff` hasta que el pipeline publique su imagen | 6 de 6 en `1/1 Running`; Communication con 1 reinicio |
-| `Secret` y `ConfigMap` | Los de los 6 servicios | Los de los 6 servicios |
-| Ingress | Catalog, Communication, Identity y ServiceRequest, más las `IngressRoute` de `payments` y `communication-chat` | Catalog, Communication, Identity, Matching y ServiceRequest |
-| Bases de PostgreSQL | Las 8 bases de servicio, incluidas `db_payments` y `db_communication`, con sus roles `*_migrator` y `*_app` | Las mismas 8 |
-| Nominatim | VM4: `nominatim` y `proxy`, en servicio desde el 27 de octubre (el mismo mapa que QA) | VM5: `nominatim` y `proxy`, en servicio |
-| Kafka | 17 topics (los mismos que tenía QA el 26 de octubre; 15 se crearon el 28 de octubre) y 2 grupos de consumidores | 19 topics (se agregaron `service-request.rated` y `ranking.technician-reputation-changed` el 28 de octubre) y 6 grupos de consumidores |
-| Garage | En servicio (VM6) | En servicio (VM7) |
-| Panel Angular | Página provisional | Build real de `release/0.5.3` |
+| Microservicios en k3s | 7 Deployment, todos en servicio: identity 0.8.1, catalog 0.4.1, service-request 0.11.1, matching 0.6.1, payments 0.3.0, communication 0.3.3 y ranking 0.1.0 | 7, todos en servicio: los mismos, salvo service-request 0.11.2 (sin promover) |
+| Pods | 7 de 7 en `1/1 Running`, 0 reinicios (service-request lleva más de 13 horas seguidas sin reiniciarse desde la 0.11.1) | 7 de 7 en `1/1 Running`, 0 reinicios |
+| `Secret` y `ConfigMap` | Los de los 7 servicios; los 14 `Secret` del almacén de k3s están cifrados en reposo desde el 4 de noviembre (sección 10.5) | Los de los 7 servicios; cifrados desde el 30 de octubre |
+| Ingress | Catalog, Communication, Identity, Matching y ServiceRequest, más las `IngressRoute` de `payments` y `communication-chat`; Ranking no expone REST | Los mismos |
+| Bases de PostgreSQL | Las 8 bases de servicio con sus roles `*_migrator`, `*_app` y, donde el servicio publica eventos o programa tareas, `*_outbox` y `*_scheduler`; `db_actors` no tiene servicio | Las mismas 8 |
+| Nominatim | VM4: `nominatim` y `proxy`, en servicio | VM5: `nominatim` y `proxy`, en servicio |
+| Kafka | 20 topics (los mismos que QA; el 4 de noviembre se crearon `service-request.rated`, `ranking.technician-reputation-changed` y `tenant.status-changed`) y 6 grupos de consumidores, todos estables y con lag 0 | 20 topics y 28 pares grupo-topic con lag 0 |
+| Garage | En servicio (VM6), con el bucket `service-request-evidencias` | En servicio (VM7) |
+| Catálogo | 6 categorías base sembradas el 4 de noviembre (Plomería, Eléctrico, Cerrajería, Electrodomésticos, Aire acondicionado y Pintura); la réplica de ServiceRequest las muestra | 6 categorías base |
+| Panel Angular | Página provisional: el panel real no se ha promovido | Build real de `release/0.5.5` |
+| App móvil | Sin promover | APK `v0.5.4-qa` |
 | Gateway | Nginx propio en VM3 (ADR-028) | Nginx propio en VM2 (ADR-028) |
 
-Lo que falta para que producción iguale a QA:
+**Cómo se promovió (4 de noviembre de 2026).** Orden: identity, catalog, service-request, matching, payments, communication y ranking, de uno en uno. Para cada servicio: PR de `release/*` a `main` con el CI en verde y el mismo commit que corre en QA; **manifiestos de `main` aplicados con `primer-despliegue-servicios.yml` antes de aprobar el despliegue** (el pipeline solo cambia la imagen: un manifiesto con variables nuevas que el clúster no tiene deja el pod sin arrancar y el pipeline hace `rollout undo`); aprobación del ambiente `produccion`; `aplicar-roles-db.yml` después de la migración, porque los `GRANT` necesitan las tablas que crea el init container; y comprobación de pods, rutas del contrato y grupos de Kafka. La compuerta automática de QA (RNF-08) bloqueó el primer despliegue de identity porque el humo de los frontends era anterior a la llegada de la versión a QA, y se repitió. En un primer despliegue, el Deployment que esperó mucho con la imagen `:pendiente` arrastra `ProgressDeadlineExceeded` y el job puede fallar aunque el pod llegue a `Ready` (pasó con ranking): se reintenta de inmediato.
 
-- **Payments y Communication.** Tienen en producción las bases, los roles, los `Secret`, el `ConfigMap`, el `Service`, la ruta de Traefik y el `Deployment` con la imagen `:pendiente` (SCRUM-519 y SCRUM-518, 27 y 28 de octubre). Falta que el pipeline publique su imagen con la promoción de `release/*` a `main` (SCRUM-522), y después de la primera migración, `aplicar-roles-db.yml` y un reinicio. Los manifiestos se aplicaron con `ref=release/0.2.0` (Payments) y `ref=release/0.3.2` (Communication), porque `main` de esos repositorios todavía no tiene `deploy/k8s`; son idénticos a los de `develop`.
-- **Actors y Ranking** no están desplegados en ningún ambiente: sus bases y roles existen, pero no tienen manifiesto (sección 5.3). Ranking tiene `db/roles.sql`, pero no `deploy/k8s`, ni ramas `release/*` (el CI no ha publicado su imagen): para desplegarlo en QA hace falta su manifiesto y un release. Los playbooks no necesitan cambios: `primer-despliegue-servicios.yml -e 'servicios=["ranking"]'` y `aplicar-roles-db.yml -e servicio=ranking` lo aceptan por parámetro, y conviene **no** agregarlo a sus listas por defecto, porque la corrida de todos los servicios fallaría (no hay manifiesto, y `roles.sql` hace `GRANT` sobre tablas que las migraciones aún no han creado). Su `Secret` usa la plantilla genérica; si el manifiesto pide otras claves, hay que ampliarla.
-- **Topics de Kafka.** Producción tiene los 17 de QA del 26 de octubre. El `apps/kafka` que fija `develop` trae 19; los dos últimos (`service-request.rated` y `ranking.technician-reputation-changed`, de la calificación, ADR-027) se crearon solo en QA y se crearán en producción cuando se promueva esa función.
-- **Panel real** de producción: el job de `quickpatch-web` ya publica en VM3 al hacer push a `main` (`quickpatch-web#25`), pero `main` de `web` sigue en el 23 de septiembre. Falta promover el release y, antes, repetir `humo-frontends.yml` y `pruebas-sistema.yml`, porque el panel llegó a QA después de su última corrida.
-- **Categorías de servicio.** `db_catalog` de producción tiene 0; hay que decidir cómo se siembran antes de abrir el servicio.
-- **Respaldo previo a la migración.** El respaldo diario está verificado y el tope de pool aplicado (SCRUM-521); queda correr el respaldo a mano justo antes de migrar.
+**Humo en producción (SCRUM-523).** El flujo crítico (solicitud, asignación, cotización, ejecución con foto, pago simulado, comprobante y calificación) pasó con 31 peticiones y 29 aserciones sin fallos, y el humo de solo lectura dio 14 de 14. Los datos de prueba se borraron con `limpiar-humo-produccion.yml` (respaldo previo, conteo, ensayo y aplicación): quedan 2 administradores, 0 técnicos y 0 solicitudes. El primer intento falló por un error del corredor y destapó que service-request se apagaba solo ante un tiempo de espera de Redis; se corrigió en la 0.11.1.
+
+Lo que falta:
+
+- **Panel real y app móvil.** El job de `quickpatch-web` publica en VM3 al hacer push a `main`, pero el panel y la app no se han promovido (decisión del 4 de noviembre). Antes hay que repetir `humo-frontends.yml` y `pruebas-sistema.yml`.
+- **Actors.** No tiene código ni manifiesto: sus bases y roles existen, pero no hay servicio que desplegar (sección 5.3).
+- **service-request 0.11.2.** Corre en QA con el puntaje de la calificación estricto (SCRUM-87) y no tiene PR de promoción.
+- **Carga k6 del Sprint 5 (SCRUM-526).** La última medición bajo carga con 7 servicios fue el 28 de octubre (SCRUM-635); no se ha repetido con las versiones de hoy.
 
 Las imágenes de los servicios se etiquetan por el hash de su contenido (`t-<árbol>`, sección 6.1), así que la versión de cada servicio se ve en el release de su repositorio y no en el nombre de la imagen.
 
@@ -583,7 +587,7 @@ Nominatim convierte en coordenadas la dirección que escribe el Cliente cuando n
 
 Kafka corre en un solo nodo por ambiente (VM6 en producción, VM7 en QA; R10), con `replicationFactor = 1`. El playbook `operar-kafka-grupos.yml` reúne las tres operaciones del día a día.
 
-**Retención.** Cada topic se crea con `retention.ms` propio, tomado de `topics.yaml` del repositorio `quickpatch-kafka`: hoy 168 horas (7 días) en los 19 topics de QA y en los 17 de producción, medido el 28 de octubre de 2026. La variable `kafka_retencion_horas` de `group_vars` (168 en producción, 24 en QA) es solo el valor por defecto del broker y aplica a un topic creado sin `retention.ms`. Cambiar la retención de un topic existente se hace a mano con `kafka-configs.sh --alter` y se refleja en `topics.yaml`; `deploy-kafka.yml` no modifica los topics que ya existen.
+**Retención.** Cada topic se crea con `retention.ms` propio, tomado de `topics.yaml` del repositorio `quickpatch-kafka`: hoy 168 horas (7 días) en los 20 topics de QA y de producción, medido el 4 de noviembre de 2026. La variable `kafka_retencion_horas` de `group_vars` (168 en producción, 24 en QA) es solo el valor por defecto del broker y aplica a un topic creado sin `retention.ms`. Cambiar la retención de un topic existente se hace a mano con `kafka-configs.sh --alter` y se refleja en `topics.yaml`; `deploy-kafka.yml` no modifica los topics que ya existen.
 
 **Grupos de consumidores y lag.** Un grupo por servicio y función. El lag de un grupo es la diferencia entre el último offset del topic y el que el grupo ya confirmó.
 
@@ -594,7 +598,7 @@ Kafka corre en un solo nodo por ambiente (VM6 en producción, VM7 en QA; R10), c
 
 - **Cómo verlos:** `./ap playbooks/operar-kafka-grupos.yml` (solo lectura), o con `--limit vm7` para QA. Muestra el estado de cada grupo, el lag sumado por grupo y topic, y la retención de cada topic.
 - **Lectura del 26 de octubre en QA:** lag 0 en todos los grupos salvo `communication-service`, con 22 mensajes en `matching.no-technician-available`, 6 en `matching.search-resumed` y 5 en `matching.technician-assigned`. Se repitió igual en dos lecturas separadas por varios minutos, así que no es tráfico en tránsito: el consumidor no confirma esos offsets. Falta saber si Communication descarta esos eventos sin confirmarlos o si falla al procesarlos; es una revisión para el equipo de Communication. **Lectura del 27 de octubre:** el lag creció a 32, 10 y 8 mensajes (50 en total) en esos mismos tres topics, tras las nuevas solicitudes que hubo en QA ese día (pruebas de sistema y datos de demostración). No es un lag fijo: `communication-service` no está consumiendo los eventos `matching.*` y lo que llega se acumula. Reiniciar el grupo a `latest` lo oculta pero no lo arregla; primero hay que ver por qué no los procesa.
-- **Producción:** sin lag, porque casi no hay tráfico (17 topics y 2 grupos de consumidores).
+- **Producción:** lag 0 en los 6 grupos de consumidores (identity, service-request, matching, communication, payments y ranking) sobre 20 topics, medido el 4 de noviembre de 2026; casi no hay tráfico.
 
 **Reiniciar los offsets de un grupo.** Sirve cuando un grupo nuevo va a leer tráfico viejo (como el de las pruebas de carga que causó el `OOMKilled` de Communication, sección 5.6) o cuando hay que descartar o repetir eventos.
 
@@ -954,7 +958,7 @@ Lo que sí está configurado:
 
 ### 10.5 Cifrado en tránsito y en reposo (SCRUM-506)
 
-Estado medido el 26 de octubre de 2026 en las 7 VMs, con comandos de solo lectura; los `Secret` de k3s y Redis se verificaron el 28 de octubre en VM2, VM3, VM4 y VM5. El cifrado de los `Secret` de k3s se activó en QA (VM2) el 30 de octubre (SCRUM-49).
+Estado medido el 26 de octubre de 2026 en las 7 VMs, con comandos de solo lectura; los `Secret` de k3s y Redis se verificaron el 28 de octubre en VM2, VM3, VM4 y VM5. El cifrado de los `Secret` de k3s se activó en QA (VM2) el 30 de octubre y en producción (VM3) el 4 de noviembre (SCRUM-49).
 
 | Tramo o dato | Estado | Evidencia |
 |---|---|---|
@@ -967,14 +971,14 @@ Estado medido el 26 de octubre de 2026 en las 7 VMs, con comandos de solo lectur
 | Servicios a Garage (VM6 y VM7) | Sin cifrar: API S3 por HTTP en el puerto 9000 de la IP de la VM | `garage.toml` (`api_bind_addr`) |
 | Servicios a Redis (VM4 y VM5) | **Sin TLS**: el contenedor arranca con `--bind <IP de la VM> --port 6379 --aclfile --appendonly`, sin ningún flag de TLS ni certificados en disco. La autenticación es por ACL (un usuario por servicio), escucha solo en la IP de la VM y el firewall admite solo a VM3 (producción) o VM2 (QA) | `docker inspect` del contenedor, `ss -ltn` y la carpeta de Redis, el 28 de octubre |
 | `Secret` de Kubernetes en reposo, QA (VM2) | **Cifrados desde el 30 de octubre** (AES-CBC, SCRUM-49): `k3s secrets-encrypt status` responde `Encryption Status: Enabled` con etapa `reencrypt_finished`, y los 14 `Secret` del almacén de datos empiezan por `k8s:enc:aescbc` (antes, 0 de 14). El API sigue sirviendo los 14 y los 7 pods de `quickpatch` quedaron en `Running` | `playbooks/cifrar-secretos-k3s.yml`, el 30 de octubre |
-| `Secret` de Kubernetes en reposo, producción (VM3) | **Sin cifrar**: `k3s secrets-encrypt status` responde `Encryption Status: Disabled, no configuration file found` (k3s v1.31.4+k3s1), el servicio no se instaló con `secrets-encryption` y no existe el archivo de cifrado. `k3s_secrets_encryption` está en `false` en `produccion.yml` | `k3s secrets-encrypt status` y `grep` del servicio, el 28 de octubre |
+| `Secret` de Kubernetes en reposo, producción (VM3) | **Cifrados desde el 4 de noviembre** (AES-CBC, SCRUM-49): `k3s secrets-encrypt status` responde `Encryption Status: Enabled` con etapa `reencrypt_finished` y «All hashes match»; los 14 `Secret` del almacén de datos quedaron cifrados (antes, 0 de 14), el API sigue viendo los 14 y los 7 pods de `quickpatch` siguieron en `1/1 Running` con 0 reinicios. El respaldo previo (`state.db` de 1,2 GB y el token, sin cifrar) se sobrescribió con `shred` y se borró el mismo día | `playbooks/cifrar-secretos-k3s.yml -e ambiente=produccion -e confirmar_produccion=si -e aplicar=si`, el 4 de noviembre |
 | Discos de las 7 VMs | **Sin cifrado visible**: no hay volúmenes LUKS ni dispositivos `crypt` en `lsblk`. El cifrado que aplique el hipervisor de la universidad no se ve desde las VMs | `lsblk` en las 7 VMs |
 | Datos de PostgreSQL | Sin cifrado en reposo (PostgreSQL no lo trae de serie); los volúmenes de Docker están en el disco sin cifrar | Misma evidencia de discos |
 | Contraseñas de los roles | Guardadas con `scram-sha-256` | `password_encryption` |
 | Respaldos de PostgreSQL | **Sin cifrar**: `pg_dump -Fc` queda en disco en VM4 y se sube a Garage por HTTP | `pg-backup.sh.j2` (sin `gpg` ni `age`) |
 | Secretos de la infraestructura | **Cifrados**: Ansible Vault, AES-256 (sección 8) | `vault.yml` |
 
-**Verificado el 28 de octubre.** Los `Secret` de Kubernetes **no estaban cifrados en reposo** ni en producción ni en QA (en QA se cifraron el 30 de octubre; producción sigue así): contienen las cadenas de conexión de las bases (con las contraseñas de `_app` y `_migrator`), la llave privada de JWT de Identity y las claves de Garage y de Redis de ServiceRequest, y quedan en el almacén de datos del k3s sin cifrar (solo en base64) en el disco de VM2 y VM3. Redis **no usa TLS** en ninguno de los dos ambientes y se protege por ACL, por la IP de escucha y por el firewall.
+**Verificado el 28 de octubre.** Los `Secret` de Kubernetes **no estaban cifrados en reposo** ni en producción ni en QA (en QA se cifraron el 30 de octubre y en producción el 4 de noviembre): contienen las cadenas de conexión de las bases (con las contraseñas de `_app` y `_migrator`), la llave privada de JWT de Identity y las claves de Garage y de Redis de ServiceRequest, y quedan en el almacén de datos del k3s sin cifrar (solo en base64) en el disco de VM2 y VM3. Redis **no usa TLS** en ninguno de los dos ambientes y se protege por ACL, por la IP de escucha y por el firewall.
 
 **Riesgos y decisión.** El tráfico sin cifrar viaja entre VMs de la red privada del laboratorio (`10.43.x.x`), con firewall por IP de origen (sección 10.2), y no sale a Internet; por eso se aceptó (sección 10.1). Lo que queda expuesto es el contenido de los discos y de los respaldos ante quien tenga acceso al almacenamiento o a una VM. Opciones, de menor a mayor esfuerzo:
 
@@ -1084,7 +1088,7 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | VM1 es la única entrada desde la VPN a producción, QA y Grafana | R9 | SAD, ADR-015; sección 2.3 |
 | Las 7 VMs tienen la misma especificación sin importar el rol, y el software del laboratorio ya usa unos 2,3 GiB de RAM en cada una | Laboratorio de la Javeriana | Sección 3.1 |
 | La prueba de carga en QA es una aproximación: sus VMs tienen la misma especificación que las de producción, pero con datos de prueba y sin tráfico real | R10 | SAD, ADR-015; sección 6.2 |
-| AC2-E5 no se ha medido con los 8 servicios en QA (hoy hay 6; faltan Actors y Ranking), y el caso PRF-005 y la tarea SCRUM-554 siguen comparando con 6,5 GiB en VM3, lo que el SAD 2.15 ya no hace | Medición del 26 de octubre | Sección 5.6 |
+| AC2-E5 se midió con 7 servicios en QA (28 de octubre, bajo carga con k6: 0 `OOMKilled` y cada pod dentro de su límite; foto en reposo del 4 de noviembre en QA y en producción, igual), no con los 8: Actors no tiene código ni manifiesto. La carga con las versiones de hoy queda para SCRUM-526 | Mediciones del 28 de octubre y del 4 de noviembre | Sección 5.6 |
 | `kubectl rollout undo` solo revierte la imagen del contenedor, no las migraciones de esquema: exige expand-contract | Diseño de Kubernetes | Secciones 5.8 y 6.2 |
 | Evidencias en Garage sin copia en otra VM | R10 | Sección 9.5 |
 | El vault y su contraseña existen en un solo computador | R11 | Sección 9.4 |
@@ -1093,9 +1097,9 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | Probes con valores iniciales, sin `startupProbe` ni ajuste con arranques medidos | Falta de datos medidos | Sección 5.8 |
 | La excepción escrita al RNF-08 del despliegue del 8 de octubre (la prueba de 150 usuarios no pasaba por las conexiones de PostgreSQL) **está levantada desde el 27 de octubre**: el tope de pool está en producción y el estrés pasa en QA. La carga no se midió en producción | Hallazgo del 8 de octubre; levantada el 27 de octubre | Secciones 5.7 y 6.2 |
 | La rama `main` no tiene protección; la aprobación del ambiente `produccion` es la única compuerta | Decisión pendiente del equipo | Sección 6.2 |
-| Actors, Ranking, Payments y Communication no tienen manifiesto ni `roles.sql`: no están desplegados | Dependen del código de los equipos | Sección 5.3 |
+| Actors no tiene código, manifiesto ni `roles.sql`: no está desplegado (Ranking, Payments y Communication ya corren en QA y en producción) | Depende del código del equipo | Sección 5.3 |
 | Certificados TLS autofirmados, sin CA reconocida | R9 | Secciones 10.1 y 11 |
-| Sin cifrado en reposo (discos, PostgreSQL, Garage, respaldos y los `Secret` de k3s de producción; los de QA están cifrados desde el 30 de octubre) y tráfico interno sin TLS (PostgreSQL, Kafka, Garage y Redis) | Decisión pendiente del equipo | Sección 10.5 |
+| Sin cifrado en reposo (discos, PostgreSQL, Garage y respaldos; los `Secret` de k3s están cifrados en QA desde el 30 de octubre y en producción desde el 4 de noviembre) y tráfico interno sin TLS (PostgreSQL, Kafka, Garage y Redis) | Decisión pendiente del equipo | Sección 10.5 |
 | SSH con contraseña, la misma en las 7 VMs | Decisión del equipo | Sección 10.4 |
 | Kafka UI sin login: solo se usa por túnel SSH desde el equipo de DevOps | Decisión de DevOps | Sección 10.3 |
 
@@ -1247,3 +1251,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.10 | 28 oct 2026 | Medición de AC2-E5 bajo carga en QA con 7 servicios (SCRUM-635): uso y límites por pod con k6 de 50 y 150 VU, 0 `OOMKilled`; Ranking con su manifiesto en la tabla de la sección 5.6; Actors sin código; reinicios de Communication por sondas, sin investigar. |
 | 4.11 | 30 oct 2026 | Cifrado de los `Secret` de k3s en QA (SCRUM-49): playbook `cifrar-secretos-k3s.yml` en la tabla de playbooks (5.2), resultado, procedimiento, lección del primer intento y vuelta atrás en 10.5, y la limitación de la sección 13 limitada a producción. |
 | 4.12 | 2 nov 2026 | Carga única del equipo de cada proveedor en Payments (SCRUM-501, P-02): playbook `cargar-equipos-pagos.yml` en la tabla de playbooks (5.2). |
+| 4.13 | 4 nov 2026 | Promoción del MVP a producción (SCRUM-518): la sección 4.3 se reescribe con el estado medido el 4 de noviembre (7 servicios, 20 topics de Kafka, catálogo sembrado), el procedimiento de promoción y sus trampas, y el humo en producción con su limpieza (SCRUM-523); Kafka de producción con 20 topics y lag 0 en 5.10; cifrado de los `Secret` de k3s en producción en la sección 10.5 y en las limitaciones; AC2-E5 y Actors en las limitaciones. Quedan como mediciones con fecha, sin actualizar, la proyección de RAM de 5.6 y las líneas de VM3 del 8 de octubre. |

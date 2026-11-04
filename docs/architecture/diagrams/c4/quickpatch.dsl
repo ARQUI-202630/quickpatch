@@ -93,25 +93,25 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             group "Microservicios" {
                 identity = container "Identity Service" "Autenticación, usuarios, tenants y auditoría." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
-                    idEndpoints = component "IdentityEndpoints" "POST /v1/auth/register/client, /register/technician, /login y /password/setup; GET y PATCH /v1/users/me (perfil propio, SCRUM-611); /v1/platform/tenants; /v1/admin/technicians (aprobar, rechazar, suspender); /v1/providers/me/technicians; GET /internal/v1/users (solo dentro del clúster)." "Minimal API · Api/Endpoints"
+                    idEndpoints = component "IdentityEndpoints" "Registro, login, /password/setup y /password-recovery (SCRUM-624); /users/me (SCRUM-611); /platform/tenants; /admin/technicians y /admin/password-recovery-requests; /providers/me/technicians; /internal/v1/users (solo en el clúster)." "Minimal API · Api/Endpoints"
                     idCompanyEndpoints = component "CompanyEndpoints" "POST /v1/auth/register/company; GET /v1/companies/me y POST /v1/companies/me/users (RF-06)." "Minimal API · Api/Endpoints"
                     idSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Lee usuario, tenant, rol y company_id del JWT y registra cada 403 (RNF-04)." "ASP.NET Core · Api/Security"
                     idHttp = component "CorrelationId y Problems" "Propaga X-Correlation-Id y responde application/problem+json." "ASP.NET Core · Api/Http"
                     idBootstrap = component "TenantAdminBootstrap" "Al arrancar crea el admin del tenant y el de plataforma desde el Secret (SCRUM-450)." "Hosted service · Api/Bootstrap"
                     # Application
-                    idAuth = component "Auth" "LoginHandler (bloqueo tras 5 intentos), RegisterClientHandler, RegisterTechnicianHandler y EnsureTenantAdminHandler." "Casos de uso · Application/Auth"
+                    idAuth = component "Auth" "LoginHandler (bloqueo tras 5 intentos), RegisterClientHandler, RegisterTechnicianHandler y EnsureTenantAdminHandler; Request, ListPasswordRecoveries, IssueRecoveryLink y ConfirmPasswordRecoveryHandler (SCRUM-624)." "Casos de uso · Application/Auth"
                     idCompanies = component "Companies" "RegisterCompanyHandler, GetMyCompanyHandler y CreateCompanyUserHandler (RF-06)." "Casos de uso · Application/Companies"
                     idTechnicians = component "Technicians" "ChangeVerificationHandler y ListTechniciansHandler (RF-19, RF-20); CreateTeamTechnicianHandler y ListTeamHandler (RF-16); SetupPasswordHandler y RenewInvitationHandler." "Casos de uso · Application/Technicians"
                     idPlatform = component "Platform" "ListTenantsHandler, CreateTenantHandler y UpdateTenantStatusHandler con auditoría (RF-21); al cambiar el estado deja tenant.status-changed en el Outbox (RN-T1, SCRUM-509)." "Casos de uso · Application/Platform"
                     idUsers = component "Users" "GetCurrentUserHandler, UpdateCurrentUserHandler (nombre y teléfono del perfil propio, SCRUM-611) y LookupUsersHandler (nombres por lote para otros servicios)." "Casos de uso · Application/Users"
                     # Domain
-                    idDomain = component "Dominio de identidad" "User (LockoutPolicy), Tenant, TechnicianProfile (VerificationStatus), ClientCompany, PasswordSetupToken, AuditEntry y Roles." "Domain"
+                    idDomain = component "Dominio de identidad" "User (LockoutPolicy), Tenant, TechnicianProfile (VerificationStatus), ClientCompany, PasswordSetupToken, PasswordRecoveryRequest, AuditEntry y Roles." "Domain"
                     # Infrastructure
-                    idPersistence = component "TenantUnitOfWork, PlatformUnitOfWork y repositorios" "UserRepository, TenantRepository, TechnicianProfileRepository, ClientCompanyRepository, PasswordSetupTokenRepository y AuditLog; RLS con app.current_tenant o SET LOCAL ROLE identity_platform." "EF Core + Npgsql · Infrastructure/Persistence"
-                    idSecurityAdapters = component "RsaTokenIssuer y BCryptPasswordHasher" "Firma el JWT RS256 (ADR-018) y hace el hash de las contraseñas (RNF-03)." "Infrastructure/Security"
+                    idPersistence = component "TenantUnitOfWork, PlatformUnitOfWork y repositorios" "UserRepository, TenantRepository, TechnicianProfileRepository, ClientCompanyRepository, PasswordSetupTokenRepository, PasswordRecoveryRepository y AuditLog; RLS con app.current_tenant o SET LOCAL ROLE identity_platform." "EF Core + Npgsql · Infrastructure/Persistence"
+                    idSecurityAdapters = component "RsaTokenIssuer, BCryptPasswordHasher y HmacEmailHasher" "Firma el JWT RS256 (ADR-018), hace el hash de las contraseñas (RNF-03) y el HMAC-SHA256 del correo de la recuperación (SCRUM-624)." "Infrastructure/Security"
                     idOutbox = component "EfOutbox" "Guarda technician.registered, technician.verification-changed y tenant.status-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Messaging"
                     idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
-                    idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta average_rating, rating_count y low_reputation en technician_profiles; descarta lo atrasado por changedAt (ADR-027, ADR-017)." "Kafka consumer · Infrastructure/Messaging"
+                    idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta la reputación en technician_profiles; descarta lo atrasado por changedAt (ADR-027)." "Kafka consumer · Infrastructure/Messaging"
                 }
                 actors = container "Actors Service" "Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     acApi = component "API de actores" "Consulta y mantenimiento de actores del tenant." "Minimal API" "Planeado"
@@ -261,7 +261,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             geocodificador = container "Geocodificador" "Convierte direcciones de Bogotá en coordenadas; solo el mapa de Bogotá y su propio PostgreSQL (RIE-02, ADR-024, excepción a ADR-014)." "Nominatim (OpenStreetMap)"
 
             group "PostgreSQL + PostGIS (una instancia, una base por servicio, ADR-014)" {
-                dbIdentity = container "db_identity" "tenants, users, client_companies, technician_profiles, password_setup_tokens y audit_logs." "PostgreSQL" "Database"
+                dbIdentity = container "db_identity" "tenants, users, client_companies, technician_profiles, password_setup_tokens, password_recovery_requests y audit_logs." "PostgreSQL" "Database"
                 dbActors = container "db_actors" "Actores de negocio." "PostgreSQL" "Database"
                 dbCatalog = container "db_catalog" "service_categories y outbox_events." "PostgreSQL" "Database"
                 dbServiceRequest = container "db_service_request" "service_requests, service_request_categories, outbox_events y processed_events." "PostgreSQL + PostGIS" "Database"
@@ -691,18 +691,19 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
 
         systemContext quickpatch "C4-02-Contexto" "QUICKPATCH frente a las personas que lo usan y su único sistema externo, la pasarela de pagos (RIE-01, R5, ADR-024)." {
+            title "Contexto del sistema QUICKPATCH (C4 nivel 1)"
             include *
             exclude equipo github observabilidad
             autoLayout lr
         }
 
-        container quickpatch "C4-03-Contenedores" "Contenedores de QUICKPATCH: apps cliente, API Gateway, 8 microservicios, Kafka y almacenes de datos." {
+        container quickpatch "C4-03-Contenedores" "Contenedores de QUICKPATCH agrupados: clientes, API Gateway, microservicios, mensajería y almacenamiento, y una base PostgreSQL por servicio (ADR-014)." {
+            title "Contenedores de QUICKPATCH (C4 nivel 2)"
             include *
             exclude equipo github observabilidad
-            autoLayout tb 200 80
-            properties {
-                "structurizr.groups" false
-            }
+            # Actors está planeado y no tiene despliegue: no se dibuja lo que todavía no existe.
+            exclude actors dbActors
+            autoLayout tb 200 100
         }
 
         component mobile "C4-04-Componentes-Mobile" "Componentes de la App móvil." {
@@ -741,7 +742,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             include *
             autoLayout tb 150 80
         }
-        component ranking "C4-04-Componentes-Ranking" "Componentes de Ranking Service por capa (ADR-027): consume service-request.rated y publica ranking.technician-reputation-changed con Outbox; sin API REST desde el gateway (ADR-025). Implementado; todavía sin desplegar (SCRUM-512)." {
+        component ranking "C4-04-Componentes-Ranking" "Componentes de Ranking Service por capa (ADR-027): consume service-request.rated y publica ranking.technician-reputation-changed con Outbox; sin API REST desde el gateway (ADR-025). Desplegado en QA (SCRUM-512) y en producción (SCRUM-522)." {
             include *
             autoLayout tb 150 80
         }
