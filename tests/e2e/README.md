@@ -45,6 +45,22 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run quic
 
 En la base: la solicitud quedó en `buscando_tecnico` con su punto, el Outbox publicó `service-request.created` y Matching lo registró en `processed_events`.
 
+## Prueba de humo del flujo crítico (SCRUM-504, historia SCRUM-47)
+
+`humo-flujo-critico.postman_collection.json` se genera con `python tests/e2e/generar-humo-flujo-critico.py` y reutiliza los pasos de las colecciones de SCRUM-490, SCRUM-96 y SCRUM-117. Es un recorrido único, sin casos negativos (RF-27, RNF-08):
+
+1. **Preparación:** categoría propia, técnico aprobado con cobertura en toda Bogotá y disponible, y un cliente, con una clave aleatoria que no se guarda.
+2. **Solicitud y asignación:** el cliente crea la solicitud, el técnico ve la oferta y la acepta.
+3. **Cotización:** el técnico cotiza 185.000 y el cliente acepta.
+4. **Ejecución con foto:** el técnico inicia, sube la foto y completa.
+5. **Pago y comprobante:** Payments crea el pago pendiente, el cliente paga con la tarjeta simulada aprobada, la solicitud pasa a `pagado` y el comprobante coincide con el pago.
+6. **Calificación:** el cliente califica con 5 (201) y una segunda calificación responde 409 `ya-calificada`.
+7. **Limpieza:** suspende al técnico y desactiva la categoría. La API no borra usuarios ni solicitudes; los datos que crea llevan el sufijo de la corrida en el correo y se pueden filtrar en la base.
+
+Falla si el recorrido pasa de 5 minutos (la última petición lo comprueba). Con el reporter `cli` no imprime credenciales ni tokens.
+
+**En el pipeline:** el job «Humo del flujo crítico» de `pruebas-sistema.yml` la corre en cada `release/*` y a mano, y falla sin correr nada si faltan `QA_ADMIN_EMAIL` y `QA_ADMIN_PASSWORD` (sin ellos la colección omitiría todos sus pasos y saldría en verde). El job de carga espera a que pase. La compuerta de producción (`compuerta-qa`, SCRUM-415) exige que la última corrida de `pruebas-sistema.yml` haya terminado en éxito después de que la versión llegó a QA, así que un fallo del humo bloquea la promoción. El bucle de Newman del job E2E la omite para no correrla dos veces.
+
 ## Cancelación de la solicitud de punta a punta (SCRUM-478)
 
 `scrum-478-cancelacion.postman_collection.json` prueba RF-36 (SCRUM-472) contra QA. Se genera con `python tests/e2e/generar-scrum478-cancelacion.py`.
@@ -140,6 +156,28 @@ docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scru
 La primera corrida encontró otros dos casos. Crear solo con la dirección no repetía el rechazo de la vista previa: Cali y Villavicencio daban 201 con un punto en Soacha o al norte de Bogotá. Además, un GPS en Soacha (4,5794; -74,2168) creaba la solicitud porque cae dentro del rectángulo de RN-SR9. SCRUM-636 los corrigió: al crear, el punto también debe estar en una de las 20 localidades. Esos casos pasaron a las carpetas 2 y 3 con 422.
 
 **Evidencia:** `evidencias/scrum-600-fuera-de-bogota-qa-2026-10-28.txt`, contra QA el 28 de octubre de 2026: 24 peticiones y 59 aserciones, sin fallos, con el resumen de los hallazgos al inicio. Es anterior a SCRUM-636. La repetición con la corrección en QA es `evidencias/scrum-636-cobertura-localidades-qa-2026-10-28.txt`: 21 peticiones y 62 aserciones, sin fallos.
+
+## Tenant desactivado contra QA (SCRUM-511)
+
+`scrum-511-tenant-desactivado.postman_collection.json` prueba contra QA la HU SCRUM-348 (RF-21, RN-T1, ADR-017) y el caso `TNT-003` del TD. Se genera con `python tests/e2e/generar-scrum511-tenant-desactivado.py`. Necesita al administrador de la plataforma (`platformAdminEmail` y `platformAdminPassword`, secretos de QA que el CI ya pasa a Newman); sin ellos se omiten todos los pasos.
+
+**Datos propios:** usa el tenant Beta de QA (`beta.qa.quickpatch.internal`, NIT 900999001-1) y un cliente nuevo de ese tenant, con correo y clave generados en la corrida. Nunca toca el tenant principal: si no encuentra Beta, o si Beta resultara ser el tenant de la plataforma, no sigue.
+
+0. **Preparación:** deja Beta activo (por si una corrida anterior se cortó), registra un cliente nuevo en Beta e inicia sesión. Ese token se usa en todo lo demás.
+1. **Tenant activo:** crear una solicitud llega a la validación de la categoría (422, no `tenant-inactivo`). Beta no tiene categorías, así que no se crea nada.
+2. **Tenant desactivado:** el administrador de la plataforma desactiva Beta. Con el MISMO token, crear responde 422 `tenant-inactivo` (`tenant is disabled`, RFC 9457) en menos de 15 s; la colección reintenta cada 0,5 s y escribe en cuántos segundos llegó. El token sigue sirviendo para otras operaciones (`GET /v1/users/me`, 200). Un login nuevo y un registro nuevo en Beta dan 403 `tenant-inactivo`.
+3. **Tenant reactivado:** con el MISMO token, crear deja de responder `tenant-inactivo` y vuelve a la validación de la categoría.
+4. **Cierre:** Beta queda activo. Newman no se detiene cuando falla una aserción, así que este paso corre aunque algo haya fallado antes.
+
+```bash
+docker run --rm -v "$PWD/tests/e2e:/etc/newman" postman/newman:6-alpine run scrum-511-tenant-desactivado.postman_collection.json \
+  --insecure --env-var baseUrl=https://qa.quickpatch.internal \
+  --env-var platformAdminEmail=... --env-var platformAdminPassword=... --reporters cli --color off
+```
+
+**Límite:** no se ve un 201 después de reactivar porque Beta no tiene categorías; el contraste se hace con el tipo de error. El 201 lo cubren las pruebas de integración de quickpatch-service-request (`TenantStatusFlowTests`).
+
+**Evidencia:** la corrida manual del 2 de noviembre de 2026 está en `evidencias/tenant-desactivado-qa-2026-11-02.txt` (0 verificaciones fallidas). La colección se revisó contra un servidor de prueba local que imita las respuestas de los contratos: 20 peticiones y 24 aserciones sin fallos; sin Beta se detiene en la preparación, y sin secretos omite todo. La primera corrida en QA queda en el job de Newman de `pruebas-sistema.yml`.
 
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
