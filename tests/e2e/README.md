@@ -254,7 +254,7 @@ Al final suspende a los dos técnicos y desactiva la categoría.
 
 **Enlace vencido (`REC-015`):** la colección no puede esperar una hora, así que lo cubre `scrum-627-enlace-vencido.mjs` (Node 22, sin dependencias; `QA_ADMIN_EMAIL`, `QA_ADMIN_PASSWORD` y `NODE_EXTRA_CA_CERTS` con la CA de QA). Genera un enlace, espera a que pase `expiresAt` y comprueba que da 400 `enlace-invalido`, que la clave anterior sigue entrando y que un enlace nuevo para la misma solicitud sí sirve. Tarda unos 62 minutos.
 
-**Fuera de la colección:** `REC-022` (búsqueda del token en Loki), `REC-027` (HMAC del correo en la base de Identity) y `REC-023` a `REC-025` (pantallas). `REC-009` y `REC-012` se prueban desde el tenant principal, porque Beta no tiene administrador de tenant en QA.
+**Fuera de la colección:** `REC-022` (búsqueda del token en Loki), `REC-027` (HMAC del correo en la base de Identity). Las pantallas (`REC-023` a `REC-025`) están en `evidencias/scrum-623-recuperacion-capturas-qa-2026-11-04/`, con el APK `v0.5.4-qa` y el panel 0.5.5. `REC-009` y `REC-012` se prueban desde el tenant principal, porque Beta no tiene administrador de tenant en QA.
 
 **Límite de la corrida:** el correo del `admin_tenant` cuenta en el límite de 3 pedidos por hora, así que la colección no se debe correr más de 3 veces en una hora.
 
