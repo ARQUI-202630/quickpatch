@@ -419,7 +419,7 @@ El Gateway no contiene reglas propias de matching, solicitudes, pagos, ranking n
 | `Role` | Concepto de autorización | Conjunto de permisos para cada tipo de usuario. |
 | `AuthenticatedContext` | Objeto lógico | Propaga `userId`, `tenantId` y rol. |
 
-**Datos documentados:** `tenants`, `users`, `client_companies`, `technician_profiles`, `password_setup_tokens`, `audit_logs` y `outbox_events` (DD 5.12).
+**Datos documentados:** `tenants`, `users`, `client_companies`, `technician_profiles`, `password_setup_tokens`, `password_recovery_requests`, `password_recovery_attempts`, `audit_logs` y `outbox_events` (DD 5.12 y 5.19).
 
 **Componentes (C4).**
 
@@ -435,7 +435,7 @@ En el incremento del Sprint 4, Identity suma:
 - **Equipo del proveedor** (RF-16; SCRUM-97, SCRUM-461): el proveedor da de alta técnicos sin contraseña (`/v1/providers/me/technicians`) y recibe un enlace de invitación de un solo uso; el técnico define su contraseña con `POST /v1/auth/password/setup`. En `password_setup_tokens` solo se guarda el hash del token, y el enlace apunta al panel de cada ambiente (`Invitations__LinkBase`).
 - **Creación de tenants** (RF-21; SCRUM-462): `POST /v1/platform/tenants` crea la empresa oferente activa en `PlatformUnitOfWork` y registra `crear_tenant` en `audit_logs`; un NIT repetido responde `409 nit-registrado`.
 - **Cuenta corporativa** (RF-06; SCRUM-66): `POST /v1/auth/register/company` crea en una transacción la empresa cliente (`client_companies`) y su primer `empresa_contacto` en el tenant del canal; la empresa es una cuenta dentro del tenant, no un tenant (DEP-13). Los demás usuarios entran con la misma invitación de un solo uso del equipo del proveedor, y el token del `empresa_contacto` lleva `company_id`.
-- **En el Sprint 5:** la edición del perfil propio (`PATCH /v1/users/me`, solo nombre y teléfono, `UpdateCurrentUserHandler`, SCRUM-611), la proyección de la reputación que publica Ranking (`ReputationChangedConsumer`, SCRUM-498) y `tenant.status-changed`, que `UpdateTenantStatusHandler` deja en el Outbox al activar o desactivar un tenant (RN-T1, SCRUM-509). La recuperación de la contraseña tiene contrato (identity 1.10.0) y modelo (DD 5.19); su implementación está en revisión (SCRUM-625).
+- **En el Sprint 5:** la edición del perfil propio (`PATCH /v1/users/me`, solo nombre y teléfono, `UpdateCurrentUserHandler`, SCRUM-611), la proyección de la reputación que publica Ranking (`ReputationChangedConsumer`, SCRUM-498) y `tenant.status-changed`, que `UpdateTenantStatusHandler` deja en el Outbox al activar o desactivar un tenant (RN-T1, SCRUM-509). La recuperación de la contraseña (contrato identity 1.10.0, DD 5.19, SCRUM-624): el usuario la pide con su correo (`RequestPasswordRecoveryHandler`, límite de 3 por hora con el HMAC del correo de `HmacEmailHasher`), el `admin_tenant` la ve en `/v1/admin/password-recovery-requests` y genera un enlace de un solo uso que vence en 1 hora (`IssueRecoveryLinkHandler`), y el usuario define la contraseña nueva (`ConfirmPasswordRecoveryHandler`); la solicitud vive en `password_recovery_requests` (`PasswordRecoveryRepository`). En QA y en producción desde el 4 de noviembre de 2026 (Identity 0.7.0).
 - **Consulta interna de nombres** (SCRUM-91): `GET /internal/v1/users` (`identity-internal.v1.yaml`) devuelve por lote el nombre y el contacto de usuarios del tenant a otros servicios dentro del clúster; el servicio que llama reenvía el JWT del usuario, así que el tenant sigue saliendo del token. No pasa por el API Gateway ni tiene ruta en el Ingress. ServiceRequest la usa en el detalle de la solicitud para mostrar el cliente al técnico asignado y el técnico al cliente.
 
 ## 6.5 Actors Service
@@ -641,9 +641,9 @@ No tiene endpoints de negocio: el gateway no le enruta nada (ADR-025). Si Rankin
 
 ![Componentes de Ranking Service](diagrams/c4/C4-04-Componentes-Ranking.png)
 
-**Figura 16. Componentes de Ranking Service según ADR-027 (C4 · Component; implementado en SCRUM-498 y desplegado en QA con SCRUM-512): consume `service-request.rated` y publica `ranking.technician-reputation-changed` con Outbox; sin API REST desde el gateway (ADR-025). Vista `C4-04-Componentes-Ranking`.**
+**Figura 16. Componentes de Ranking Service según ADR-027 (C4 · Component; implementado en SCRUM-498, desplegado en QA con SCRUM-512 y en producción con SCRUM-522): consume `service-request.rated` y publica `ranking.technician-reputation-changed` con Outbox; sin API REST desde el gateway (ADR-025). Vista `C4-04-Componentes-Ranking`.**
 
-Implementado en `quickpatch-ranking` (SCRUM-498), con su base `db_ranking` bajo RLS. Corre en QA desde el 28 de octubre de 2026 (`release/0.1.0`, SCRUM-512); a producción llega con la promoción del MVP (SCRUM-518).
+Implementado en `quickpatch-ranking` (SCRUM-498), con su base `db_ranking` bajo RLS. Corre en QA desde el 28 de octubre de 2026 (`release/0.1.0`, SCRUM-512) y en producción desde el 4 de noviembre de 2026, con la promoción del MVP (SCRUM-518, SCRUM-522).
 
 ## 6.10 Payments Service
 
@@ -2253,6 +2253,7 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 |---|---|---|
 | Contexto y contenedores reorganizados en el DSL: título en cada vista, leyenda en la imagen y contenedores agrupados en clientes, microservicios, mensajería y almacenamiento, y PostgreSQL | 4 y 5.1 (figuras 2 y 3) | SCRUM-578 |
 | Convención de paquetes por capa de los microservicios y su estado por servicio | 10.2 | SCRUM-586 y SCRUM-587 |
+| Identity con la recuperación de la contraseña (endpoints, cuatro handlers, `PasswordRecoveryRequest`, `PasswordRecoveryRepository` y `HmacEmailHasher`) y Ranking desplegado en QA y en producción; figuras 10 y 16 regeneradas | 6.4 y 6.9 (figuras 10 y 16) | SCRUM-584 |
 | Componentes de Identity, Catalog, ServiceRequest y Payments con los nombres del código | 6.4, 6.6, 6.7 y 6.10 (figuras 10, 12, 13 y 17) | SCRUM-581 y SCRUM-582 |
 | Escenario de asignación del técnico con pasos numerados y eventos por nombre | 8 (figura 22b) | SCRUM-590 |
 | Componentes del Sprint 5, dinámica de la calificación y despliegue real | 6, 8 (figura 27) y 9 | SCRUM-549 y SCRUM-550 |
