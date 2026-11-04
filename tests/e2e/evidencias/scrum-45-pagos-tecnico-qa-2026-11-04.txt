@@ -1,6 +1,6 @@
 scrum-45-pagos-tecnico contra QA, 2026-11-04
 Colección: tests/e2e/scrum-45-pagos-tecnico.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
-Inicio: 2026-11-04T03:13:44.600Z. Duración: 44 s. Código de salida: 0.
+Inicio: 2026-11-04T22:59:01.411Z. Duración: 61 s. Código de salida: 0.
 Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
 
 newman
@@ -9,157 +9,167 @@ QUICKPATCH — SCRUM-503 Pagos recibidos del técnico y del proveedor
 
 □ 0. Preparación: técnico independiente, proveedor con su técnico, clientes y cuentas de Beta
 └ Login del administrador del tenant
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 999ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1027ms]
   √  200 con rol admin_tenant
 
 └ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
-  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 437B, 47ms]
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 439B, 51ms]
   √  201
 
 └ Registro del técnico con esa especialidad
-  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 442B, 918ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 442B, 1855ms]
   √  201
 
 └ El administrador aprueba al técnico
-  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a48c-6ee2-70a5-ba7f-4d03e2edde3f/approve [200 OK, 321B, 47ms]
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a8c9-b7b2-7659-872d-92cb1cfad4db/approve [200 OK, 321B, 48ms]
   √  200
 
 └ Login del técnico
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 975ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 979ms]
   √  200 con rol tecnico
 
 └ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
-  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 69ms]
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 58ms]
   √  200
 
 └ El técnico queda disponible
-  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 48ms]
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 43ms]
   √  200
 
 └ Registro de otro técnico, sin aprobar
-  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 925ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 947ms]
   √  201
 
 └ Login del otro técnico
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 925ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 986ms]
   √  200 con rol tecnico
 
 └ Registro del cliente
-  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 912ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 1017ms]
   √  201
 
 └ Login del cliente
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 931ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 957ms]
   √  200 con rol cliente
 
 └ Registro del proveedor
-  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 447B, 927ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 447B, 894ms]
   √  201
 
 └ El administrador aprueba al proveedor
-  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a48c-8837-73e7-94c6-938f79de394a/approve [200 OK, 321B, 46ms]
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a8c9-d1cc-7f5a-9639-26fd0f3a9b74/approve [200 OK, 321B, 43ms]
   √  200
 
 └ Login del proveedor
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 994ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 900ms]
   √  200 con rol proveedor
 
 └ El proveedor da de alta un técnico de su equipo
-  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [201 Created, 650B, 1021ms]
+  POST https://qa.quickpatch.internal/api/v1/providers/me/technicians [201 Created, 650B, 952ms]
   √  201
 
 └ El técnico del equipo define su contraseña
-  POST https://qa.quickpatch.internal/api/v1/auth/password/setup [204 No Content, 159B, 905ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/password/setup [204 No Content, 159B, 911ms]
   √  204
 
 └ El administrador aprueba al técnico del equipo
-  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a48c-94a2-7061-9b56-a1e9e79ec76c/approve [200 OK, 321B, 37ms]
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a8c9-dd73-7e94-b990-a63f2501f32d/approve [200 OK, 321B, 40ms]
   √  200
 
 └ Login del técnico del equipo
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 909ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.23kB, 983ms]
   √  200 con rol tecnico
 
 └ Registro de Empresa
-  POST https://qa.quickpatch.internal/api/v1/auth/register/company [201 Created, 720B, 879ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [201 Created, 720B, 1840ms]
   √  201
 
 └ Login de la empresa
-  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.33kB, 866ms]
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.33kB, 890ms]
   √  200 como empresa_contacto de su empresa
 
 └ Categorías del tenant Beta
-  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 228B, 108ms]
+  GET https://qa.quickpatch.internal/api/v1/catalog/categories [200 OK, 405B, 130ms]
   √  200
-  ┌
-  │ 'Beta sin categorías: se omiten PAY-026 y PAY-036'
-  └
 
 └ Registro del técnico de Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 455B, 894ms]
+  √  201
 
 └ Login del técnico de Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.24kB, 1638ms]
+  √  200 con rol tecnico
 
 └ Registro del proveedor de Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 460B, 819ms]
+  √  201
 
 └ Login del proveedor de Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.25kB, 912ms]
+  √  200 con rol proveedor
 
 □ 1. Técnico independiente: un servicio pagado tras un rechazo y otro sin pagar
 └ Crear la solicitud 1 (espera la réplica de la categoría)
-  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 836B, 75ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 836B, 82ms]
   √  201
 
 └ El técnico ve la oferta de la solicitud 1
   GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 41ms]
 
-Attempting to set next request to 797d19cc-6d0f-4ad5-8649-558dac7ebf7c
+Attempting to set next request to 775ddd6f-3d2d-4fbe-9237-066eed9bf992
 
 └ El técnico ve la oferta de la solicitud 1
   GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 820B, 42ms]
   √  la oferta está pendiente para el técnico
 
 └ El técnico acepta la oferta de la solicitud 1
-  POST https://qa.quickpatch.internal/api/v1/matching/offers/57c5b483-cb20-4307-b386-70c661929621/accept [200 OK, 447B, 43ms]
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/ad4c36fb-22f1-4e3f-bed8-43c0af91280f/accept [200 OK, 447B, 47ms]
   √  200
 
 └ La solicitud 1 queda asignada a ese técnico
-  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-a607-760e-b1e7-7ad3d37f33ec [200 OK, 890B, 58ms]
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864 [200 OK, 761B, 40ms]
+
+Attempting to set next request to c9dbbf73-83f5-44c5-8b3c-8b44e0f4c420
+
+└ La solicitud 1 queda asignada a ese técnico
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864 [200 OK, 890B, 65ms]
   √  asignado al técnico esperado
 
 └ El técnico cotiza la solicitud 1
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-a607-760e-b1e7-7ad3d37f33ec/quotes [201 Created, 648B, 44ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864/quotes [201 Created, 648B, 47ms]
   √  201
 
 └ El cliente acepta la cotización de la solicitud 1
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-a607-760e-b1e7-7ad3d37f33ec/quotes/01a1a48c-b052-781c-b6ce-268adf239e68/accept [200 OK, 366B, 42ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864/quotes/01a1a8ca-1766-7b93-90a8-5f48df6754f0/accept [200 OK, 366B, 43ms]
   √  200
 
 └ El técnico inicia la solicitud 1
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-a607-760e-b1e7-7ad3d37f33ec/start [200 OK, 342B, 45ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864/start [200 OK, 342B, 47ms]
   √  200
 
 └ El técnico sube la foto de la solicitud 1
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-a607-760e-b1e7-7ad3d37f33ec/evidence [201 Created, 445B, 57ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864/evidence [201 Created, 445B, 85ms]
   √  201
 
 └ El técnico completa la solicitud 1
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-a607-760e-b1e7-7ad3d37f33ec/complete [200 OK, 343B, 41ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864/complete [200 OK, 343B, 49ms]
   √  200
 
 └ El pago de la solicitud 1 queda pendiente (espera service-request.completed en Payments)
-  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-a607-760e-b1e7-7ad3d37f33ec/payment [404 Not Found, 569B, 787ms]
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864/payment [404 Not Found, 569B, 34ms]
 
-Attempting to set next request to 53e43084-e8b9-43c9-aca0-58fd855a9f5b
+Attempting to set next request to fa96b1dd-e22d-4072-9b71-89dbe7062536
 
 └ El pago de la solicitud 1 queda pendiente (espera service-request.completed en Payments)
-  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-a607-760e-b1e7-7ad3d37f33ec/payment [200 OK, 478B, 40ms]
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864/payment [200 OK, 479B, 44ms]
   √  200 con el contrato Payment en pendiente
 
 └ Tarjeta rechazada por fondos → 200 rechazado
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-a607-760e-b1e7-7ad3d37f33ec/payment [200 OK, 527B, 52ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864/payment [200 OK, 528B, 53ms]
   √  200 con el contrato Payment en rechazado
 
 └ Tarjeta aprobada → 200 aprobado
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-a607-760e-b1e7-7ad3d37f33ec/payment [200 OK, 543B, 50ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-0494-7607-9088-9687e7b5f864/payment [200 OK, 543B, 54ms]
   √  200 con el contrato Payment en aprobado
 
 └ Crear la solicitud 2 (espera la réplica de la categoría)
@@ -167,54 +177,54 @@ Attempting to set next request to 53e43084-e8b9-43c9-aca0-58fd855a9f5b
   √  201
 
 └ El técnico ve la oferta de la solicitud 2
-  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 46ms]
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 38ms]
 
-Attempting to set next request to 6aece39b-1c25-4d43-95b3-71834e8cab21
+Attempting to set next request to 73297050-4804-4275-a9f2-d1f157d60223
 
 └ El técnico ve la oferta de la solicitud 2
-  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 820B, 43ms]
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 820B, 42ms]
   √  la oferta está pendiente para el técnico
 
 └ El técnico acepta la oferta de la solicitud 2
-  POST https://qa.quickpatch.internal/api/v1/matching/offers/266d0301-8406-4874-88e0-baf3c041d894/accept [200 OK, 447B, 48ms]
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/889bd924-0b3d-4245-a50c-0939668bbc41/accept [200 OK, 447B, 42ms]
   √  200
 
 └ La solicitud 2 queda asignada a ese técnico
-  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-bf55-79bc-9a6e-3f5e0bc1214c [200 OK, 761B, 39ms]
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-23d8-790d-acf8-ace466dc3708 [200 OK, 760B, 40ms]
 
-Attempting to set next request to d8bbe79e-2728-498d-9f9d-4c40f39963f4
+Attempting to set next request to 49877fd4-a5b7-4065-9b94-454cfef7176f
 
 └ La solicitud 2 queda asignada a ese técnico
-  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-bf55-79bc-9a6e-3f5e0bc1214c [200 OK, 890B, 58ms]
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-23d8-790d-acf8-ace466dc3708 [200 OK, 889B, 979ms]
   √  asignado al técnico esperado
 
 └ El técnico cotiza la solicitud 2
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-bf55-79bc-9a6e-3f5e0bc1214c/quotes [201 Created, 647B, 45ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-23d8-790d-acf8-ace466dc3708/quotes [201 Created, 647B, 44ms]
   √  201
 
 └ El cliente acepta la cotización de la solicitud 2
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-bf55-79bc-9a6e-3f5e0bc1214c/quotes/01a1a48c-d1ea-7e3f-8cb8-1cb2f49627d8/accept [200 OK, 366B, 43ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-23d8-790d-acf8-ace466dc3708/quotes/01a1a8ca-3a17-77dd-8fde-7bd2a9ffa1aa/accept [200 OK, 366B, 56ms]
   √  200
 
 └ El técnico inicia la solicitud 2
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-bf55-79bc-9a6e-3f5e0bc1214c/start [200 OK, 342B, 73ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-23d8-790d-acf8-ace466dc3708/start [200 OK, 342B, 43ms]
   √  200
 
 └ El técnico sube la foto de la solicitud 2
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-bf55-79bc-9a6e-3f5e0bc1214c/evidence [201 Created, 445B, 56ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-23d8-790d-acf8-ace466dc3708/evidence [201 Created, 444B, 110ms]
   √  201
 
 └ El técnico completa la solicitud 2
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-bf55-79bc-9a6e-3f5e0bc1214c/complete [200 OK, 343B, 47ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-23d8-790d-acf8-ace466dc3708/complete [200 OK, 343B, 42ms]
   √  200
 
 └ PAY-024 / PAY-031: el técnico ve sus dos pagos (espera los eventos de Payments)
-  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 581B, 42ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 582B, 38ms]
 
-Attempting to set next request to 308e1ef5-ed54-43d1-8567-2953fccfa80d
+Attempting to set next request to 350cbe7e-e02b-41e5-9e20-8fb609898cf2
 
 └ PAY-024 / PAY-031: el técnico ve sus dos pagos (espera los eventos de Payments)
-  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 863B, 41ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 864B, 114ms]
   √  200
   √  PAY-024: solo pagos suyos, del más reciente al más antiguo
   √  PAY-031: el rechazado no aparece; el aprobado, una sola vez
@@ -223,71 +233,71 @@ Attempting to set next request to 308e1ef5-ed54-43d1-8567-2953fccfa80d
   √  PAY-033: monto XXXXXX.CC en COP y approvedAt solo en aprobado
 
 └ PAY-032: filtro pendiente
-  GET https://qa.quickpatch.internal/api/v1/payments/received?status=pendiente [200 OK, 553B, 41ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?status=pendiente [200 OK, 553B, 932ms]
   √  200
   √  solo la solicitud sin pagar, en pendiente
 
 └ PAY-032: filtro aprobado
-  GET https://qa.quickpatch.internal/api/v1/payments/received?status=aprobado [200 OK, 581B, 41ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?status=aprobado [200 OK, 582B, 42ms]
   √  200
   √  solo el pago aprobado
 
 └ PAY-032: filtro procesando
-  GET https://qa.quickpatch.internal/api/v1/payments/received?status=procesando [200 OK, 272B, 43ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?status=procesando [200 OK, 272B, 41ms]
   √  200
   √  ninguno fuera de procesando
 
 └ PAY-032: filtro rechazado → 400
-  GET https://qa.quickpatch.internal/api/v1/payments/received?status=rechazado [400 Bad Request, 535B, 37ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?status=rechazado [400 Bad Request, 535B, 33ms]
   √  400
   √  Problem Details (RFC 9457) con correlationId
 
 └ PAY-034: página 1 de tamaño 1
-  GET https://qa.quickpatch.internal/api/v1/payments/received?page=1&size=1 [200 OK, 552B, 40ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?page=1&size=1 [200 OK, 552B, 39ms]
   √  200
   √  un pago y el total de dos
 
 └ PAY-034: página 2 de tamaño 1
-  GET https://qa.quickpatch.internal/api/v1/payments/received?page=2&size=1 [200 OK, 580B, 39ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?page=2&size=1 [200 OK, 581B, 48ms]
   √  200
   √  otro pago con el mismo total
 
 └ PAY-034: page=0 → 400
-  GET https://qa.quickpatch.internal/api/v1/payments/received?page=0 [400 Bad Request, 518B, 36ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?page=0 [400 Bad Request, 518B, 33ms]
   √  400
   √  Problem Details (RFC 9457) con correlationId
 
 └ PAY-034: size=0 → 400
-  GET https://qa.quickpatch.internal/api/v1/payments/received?size=0 [400 Bad Request, 524B, 39ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?size=0 [400 Bad Request, 524B, 36ms]
   √  400
   √  Problem Details (RFC 9457) con correlationId
 
 └ PAY-034: size=101 → 400
-  GET https://qa.quickpatch.internal/api/v1/payments/received?size=101 [400 Bad Request, 524B, 33ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?size=101 [400 Bad Request, 524B, 38ms]
   √  400
   √  Problem Details (RFC 9457) con correlationId
 
 └ PAY-030: el técnico envía technicianId → 400
-  GET https://qa.quickpatch.internal/api/v1/payments/received?technicianId=01a1a48c-6ee2-70a5-ba7f-4d03e2edde3f [400 Bad Request, 549B, 34ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?technicianId=01a1a8c9-b7b2-7659-872d-92cb1cfad4db [400 Bad Request, 549B, 35ms]
   √  400
   √  Problem Details (RFC 9457) con correlationId
 
 └ PAY-035: otro técnico del mismo tenant no ve esos pagos
-  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 272B, 40ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 272B, 38ms]
   √  200
   √  otro técnico: 200 sin pagos
 
 □ 2. Proveedor: los pagos de su equipo
 └ El técnico independiente queda no disponible, para que la oferta sea del técnico del equipo
-  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 441B, 44ms]
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 441B, 42ms]
   √  200
 
 └ El técnico del equipo cubre toda Bogotá (espera a que Matching lo conozca)
-  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 44ms]
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 45ms]
   √  200
 
 └ El técnico del equipo queda disponible
-  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 46ms]
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 38ms]
   √  200
 
 └ Crear la solicitud 3 (espera la réplica de la categoría)
@@ -295,54 +305,54 @@ Attempting to set next request to 308e1ef5-ed54-43d1-8567-2953fccfa80d
   √  201
 
 └ El técnico ve la oferta de la solicitud 3
-  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 38ms]
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 37ms]
 
-Attempting to set next request to 5d7bebad-3e6f-4ac9-a8c2-04fe9b09e96f
+Attempting to set next request to 9a6cc53d-be80-46b8-bf69-0ebdd8e2b3f6
 
 └ El técnico ve la oferta de la solicitud 3
-  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 820B, 42ms]
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 820B, 37ms]
   √  la oferta está pendiente para el técnico
 
 └ El técnico acepta la oferta de la solicitud 3
-  POST https://qa.quickpatch.internal/api/v1/matching/offers/acaacef0-15aa-411f-b4cc-7cfa57e5a4fb/accept [200 OK, 447B, 43ms]
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/d4eb5473-34c6-48e0-8d83-99971ef62f7f/accept [200 OK, 447B, 44ms]
   √  200
 
 └ La solicitud 3 queda asignada a ese técnico
-  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-e36a-7e89-9824-e3773fcae0cc [200 OK, 761B, 39ms]
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-4f9d-7bd4-a6b1-eb5133b607a7 [200 OK, 761B, 35ms]
 
-Attempting to set next request to 4a3421d9-34dc-451f-a6fb-6982afb573bd
+Attempting to set next request to 20a8339d-c8cc-43a3-a6c1-1fc2f4945e3e
 
 └ La solicitud 3 queda asignada a ese técnico
-  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-e36a-7e89-9824-e3773fcae0cc [200 OK, 900B, 439ms]
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-4f9d-7bd4-a6b1-eb5133b607a7 [200 OK, 901B, 42ms]
   √  asignado al técnico esperado
 
 └ El técnico cotiza la solicitud 3
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-e36a-7e89-9824-e3773fcae0cc/quotes [201 Created, 648B, 44ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-4f9d-7bd4-a6b1-eb5133b607a7/quotes [201 Created, 648B, 38ms]
   √  201
 
 └ El cliente acepta la cotización de la solicitud 3
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-e36a-7e89-9824-e3773fcae0cc/quotes/01a1a48c-f794-71b6-be4e-5fce3d3f635a/accept [200 OK, 366B, 41ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-4f9d-7bd4-a6b1-eb5133b607a7/quotes/01a1a8ca-622d-771c-abeb-e2e94548c14b/accept [200 OK, 366B, 46ms]
   √  200
 
 └ El técnico inicia la solicitud 3
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-e36a-7e89-9824-e3773fcae0cc/start [200 OK, 342B, 46ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-4f9d-7bd4-a6b1-eb5133b607a7/start [200 OK, 342B, 41ms]
   √  200
 
 └ El técnico sube la foto de la solicitud 3
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-e36a-7e89-9824-e3773fcae0cc/evidence [201 Created, 445B, 67ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-4f9d-7bd4-a6b1-eb5133b607a7/evidence [201 Created, 445B, 51ms]
   √  201
 
 └ El técnico completa la solicitud 3
-  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a48c-e36a-7e89-9824-e3773fcae0cc/complete [200 OK, 343B, 65ms]
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a1a8ca-4f9d-7bd4-a6b1-eb5133b607a7/complete [200 OK, 342B, 44ms]
   √  200
 
 └ PAY-025: el proveedor ve el pago de su equipo (espera technician.registered y el pago)
-  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 272B, 50ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 272B, 91ms]
 
-Attempting to set next request to 7a2785ed-e8f4-4fb6-9ad7-1e89480ca944
+Attempting to set next request to b6a74f90-651a-4bef-a217-48cef6386f54
 
 └ PAY-025: el proveedor ve el pago de su equipo (espera technician.registered y el pago)
-  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 553B, 49ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 553B, 37ms]
   √  200
   √  PAY-025: solo pagos de técnicos de su equipo
   √  el servicio del equipo está pendiente por 150.000
@@ -350,55 +360,61 @@ Attempting to set next request to 7a2785ed-e8f4-4fb6-9ad7-1e89480ca944
   √  PAY-033: monto XXXXXX.CC en COP y approvedAt solo en aprobado
 
 └ PAY-028: el proveedor filtra por el técnico de su equipo
-  GET https://qa.quickpatch.internal/api/v1/payments/received?technicianId=01a1a48c-94a2-7061-9b56-a1e9e79ec76c [200 OK, 553B, 43ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?technicianId=01a1a8c9-dd73-7e94-b990-a63f2501f32d [200 OK, 553B, 38ms]
   √  200
   √  solo los pagos de ese técnico
 
 └ PAY-029: el proveedor filtra por un técnico ajeno a su equipo
-  GET https://qa.quickpatch.internal/api/v1/payments/received?technicianId=01a1a48c-6ee2-70a5-ba7f-4d03e2edde3f [200 OK, 272B, 47ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received?technicianId=01a1a8c9-b7b2-7659-872d-92cb1cfad4db [200 OK, 272B, 37ms]
   √  200
   √  técnico ajeno: 200 sin pagos
 
 └ El técnico del equipo ve su propio pago
-  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 553B, 39ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 553B, 43ms]
   √  200
   √  el pago de la solicitud 3
 
 □ 3. Otro tenant, roles sin acceso y sin sesión
 └ PAY-026: técnico del tenant Beta
+  GET https://qa.quickpatch.internal/api/v1/payments/received [200 OK, 272B, 37ms]
+  √  200
+  √  técnico de Beta: 200 sin pagos
 
 └ PAY-036: proveedor de Beta filtra por el técnico del equipo
+  GET https://qa.quickpatch.internal/api/v1/payments/received?technicianId=01a1a8c9-dd73-7e94-b990-a63f2501f32d [200 OK, 272B, 40ms]
+  √  200
+  √  proveedor de Beta: 200 sin pagos
 
 └ PAY-037: cliente → 403
-  GET https://qa.quickpatch.internal/api/v1/payments/received [403 Forbidden, 443B, 32ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received [403 Forbidden, 443B, 41ms]
   √  403
   √  Problem Details (RFC 9457) con correlationId
 
 └ PAY-037: empresa_contacto → 403
-  GET https://qa.quickpatch.internal/api/v1/payments/received [403 Forbidden, 443B, 37ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received [403 Forbidden, 443B, 32ms]
   √  403
   √  Problem Details (RFC 9457) con correlationId
 
 └ PAY-037: admin_tenant → 403
-  GET https://qa.quickpatch.internal/api/v1/payments/received [403 Forbidden, 443B, 37ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received [403 Forbidden, 443B, 34ms]
   √  403
   √  Problem Details (RFC 9457) con correlationId
 
 └ PAY-038: sin sesión → 401
-  GET https://qa.quickpatch.internal/api/v1/payments/received [401 Unauthorized, 476B, 41ms]
+  GET https://qa.quickpatch.internal/api/v1/payments/received [401 Unauthorized, 476B, 32ms]
   √  401
 
 □ Limpieza
 └ Suspender al técnico independiente
-  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a48c-6ee2-70a5-ba7f-4d03e2edde3f/suspend [200 OK, 348B, 41ms]
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a8c9-b7b2-7659-872d-92cb1cfad4db/suspend [200 OK, 348B, 40ms]
   √  200
 
 └ Suspender al técnico del equipo
-  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a48c-94a2-7061-9b56-a1e9e79ec76c/suspend [200 OK, 348B, 44ms]
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a1a8c9-dd73-7e94-b990-a63f2501f32d/suspend [200 OK, 348B, 42ms]
   √  200
 
 └ Desactivar la categoría de la prueba
-  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a1a48c-6e54-7d59-851f-8498b43e6809 [200 OK, 435B, 43ms]
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a1a8c9-b374-7eaf-a075-13e5f9bcabd2 [200 OK, 435B, 40ms]
   √  200
 
 ┌─────────────────────────┬─────────────────────┬────────────────────┐
@@ -406,20 +422,20 @@ Attempting to set next request to 7a2785ed-e8f4-4fb6-9ad7-1e89480ca944
 ├─────────────────────────┼─────────────────────┼────────────────────┤
 │              iterations │                   1 │                  0 │
 ├─────────────────────────┼─────────────────────┼────────────────────┤
-│                requests │                  85 │                  0 │
+│                requests │                  92 │                  0 │
 ├─────────────────────────┼─────────────────────┼────────────────────┤
-│            test-scripts │                  85 │                  0 │
+│            test-scripts │                  92 │                  0 │
 ├─────────────────────────┼─────────────────────┼────────────────────┤
-│      prerequest-scripts │                  91 │                  0 │
+│      prerequest-scripts │                  92 │                  0 │
 ├─────────────────────────┼─────────────────────┼────────────────────┤
-│              assertions │                 103 │                  0 │
+│              assertions │                 111 │                  0 │
 ├─────────────────────────┴─────────────────────┴────────────────────┤
-│ total run duration: 40.4s                                          │
+│ total run duration: 50.1s                                          │
 ├────────────────────────────────────────────────────────────────────┤
-│ total data received: 27.29kB (approx)                              │
+│ total data received: 30.58kB (approx)                              │
 ├────────────────────────────────────────────────────────────────────┤
-│ average response time: 205ms [min: 32ms, max: 1021ms, s.d.: 336ms] │
+│ average response time: 268ms [min: 32ms, max: 1855ms, s.d.: 443ms] │
 └────────────────────────────────────────────────────────────────────┘
-(node:37328) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(node:17140) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
 (Use `node --trace-deprecation ...` to show where the warning was created)
-(node:37328) [DEP0044] DeprecationWarning: The `util.isArray` API is deprecated. Please use `Array.isArray()` instead.
+(node:17140) [DEP0044] DeprecationWarning: The `util.isArray` API is deprecated. Please use `Array.isArray()` instead.
