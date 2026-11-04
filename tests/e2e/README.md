@@ -238,7 +238,7 @@ Al final suspende a los dos técnicos y desactiva la categoría.
 3. **Sin comentario y cancelada:** la solicitud 2 recibe 1 estrella sin comentario (`comment: null`); la 3, cancelada, da 409.
 4. **Empresa (CAL-018):** en la solicitud de una empresa, el colega recibe 403 y quien la creó califica.
 
-**Evidencia:** `evidencias/scrum-32-calificacion-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 101 peticiones y 127 aserciones, con 4 fallos que vienen de un defecto. ServiceRequest acepta `{"score":"5"}` con 201 porque lee números escritos como texto, aunque el contrato pide `integer`. Los otros tres fallos son consecuencia: esa calificación queda guardada. La corrección es quickpatch-service-request#39; cuando esté en QA se vuelve a correr la colección.
+**Evidencia:** `evidencias/scrum-32-calificacion-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026 con ServiceRequest 0.11.2: 101 peticiones y 127 aserciones, sin fallos. La primera corrida del mismo día encontró que ServiceRequest aceptaba `{"score":"5"}` con 201, porque leía números escritos como texto; se corrigió en quickpatch-service-request#39 (`release/0.11.2`).
 
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
