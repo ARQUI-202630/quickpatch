@@ -117,6 +117,8 @@ El diagrama de contexto deja solo lo que interactúa con el sistema en operació
 
 **Figura 2. Contexto de QUICKPATCH (C4 · System Context). Vista `C4-02-Contexto`.**
 
+La figura lleva su título y, debajo, la leyenda de formas y líneas; la línea punteada es lo planeado (SCRUM-578).
+
 El único sistema externo es la pasarela de pagos certificada PCI-DSS (SAD, K2, R5); en el MVP la reemplaza un adaptador simulado dentro de Payments (ADR-009 modificado). La geocodificación (SRS, RIE-02) corre dentro de las 7 VMs con un Nominatim propio que solo tiene el mapa de Bogotá, y las notificaciones (RIE-03) se entregan dentro de la app, por el canal en tiempo real y el buzón de Communication; el correo y las notificaciones push quedan fuera del MVP (ADR-024). Por eso el geocodificador aparece como contenedor en la Figura 3 y no como sistema externo. La cercanía entre la solicitud y los técnicos la calcula PostGIS. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
 
 > **Contradicción resuelta:** la versión anterior de esta sección contaba la geocodificación y un proveedor de correo y push como sistemas externos, frente a R5 del SAD. ADR-024 la resolvió manteniendo R5: la geocodificación es propia y las notificaciones quedan dentro de la app.
@@ -132,6 +134,8 @@ La arquitectura se organiza por dominios y servicios. Los clientes acceden a tra
 ![Contenedores de QUICKPATCH](diagrams/c4/C4-03-Contenedores.png)
 
 **Figura 3. Contenedores de QUICKPATCH (C4 · Container). Vista `C4-03-Contenedores`.**
+
+Los contenedores se agrupan en clientes, microservicios, mensajería y almacenamiento, y PostgreSQL con una base por servicio (ADR-014). La figura lleva su título y, a la derecha, la leyenda de formas y líneas (SCRUM-578).
 
 Las notificaciones no salen del sistema: Communication las entrega por el canal en tiempo real (`/v1/realtime`, ADR-023) y las guarda en su buzón (ADR-024), así que el diagrama no tiene un proveedor de correo o push.
 
@@ -2236,6 +2240,7 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 | Revisión integral del Sprint 5: sistemas externos según ADR-024 (sección 4), Ranking en QA, matriz 8.6 y grupos 8.7 con los eventos y consumidores reales, perfil, `tenant.status-changed` y su réplica en Identity y ServiceRequest, y calificación e historial en la app | 4, 5, 6.2, 6.4, 6.7, 6.9, 8.6, 8.7, 9 y 12 (figuras 3, 9, 10, 13, 16, 27 y 31) | SCRUM-548 |
 | Componentes reales de la calificación: ServiceRequest, Ranking e Identity | 6.4, 6.7 y 6.9 (figuras 10, 13 y 16) | SCRUM-584 |
 | Pagos recibidos de Payments con sus clases reales (`ReceivedPaymentEndpoints`, `ReceivedPaymentsHandler`, `TechnicianRegisteredConsumer` y `TechnicianRegisteredHandler`) y los consumidores reales de Communication, sin `payment.*` | 6.10 (figura 17), figura 18 y figura 3 | SCRUM-584 |
+| Contexto y contenedores reorganizados en el DSL: título en cada vista, leyenda en la imagen y contenedores agrupados en clientes, microservicios, mensajería y almacenamiento, y PostgreSQL | 4 y 5.1 (figuras 2 y 3) | SCRUM-578 |
 | Observaciones 1 a 3 de la revisión funcional del PO: sección 12 con la revisión de la V4, contratos de `v0.21.0`, los 20 eventos de `quickpatch-kafka` `v0.10.0` y RF-17, RF-25 y el buzón en la sección 8.13.5 | 5.6.1, 5.6.2, 8.13.5, 12 y 13.5 | SCRUM-548 |
 | Auditoría previa a la revisión del PO: estado del documento, calificación implementada en la matriz de escenarios, secuencia de extremo a extremo con el técnico y la calificación por Kafka (ADR-027), cuenta corporativa implementada, Ranking en la convención de paquetes y referencias corregidas | 1, 6.2, 6.7, 8.13.3, 8.13.4, 10.2, 11.4 y 13 | SCRUM-548 |
 

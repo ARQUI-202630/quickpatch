@@ -4,7 +4,7 @@
 **Fecha:** 2026-11-02
 **Alineado con:** `docs/architecture/diagrams/c4/quickpatch.dsl`, Documento de Infraestructura (secciones 2.1, 3.3, 3.4 y 4.3), ADR-016, ADR-022, ADR-023, ADR-024 y ADR-028.
 
-Este documento resume las vistas C4 de nivel 1 y 2 y el reparto de las VMs. La fuente de los diagramas formales es el DSL; las imágenes generadas están en `docs/architecture/diagrams/c4/`.
+**El SDD (secciones 4, 5 y 9; figuras 2, 3, 30 y 31) y `quickpatch.dsl` mandan.** Este documento es solo un resumen de las vistas C4 de nivel 1 y 2 y del reparto de las VMs; si algo difiere, vale el SDD.
 
 ---
 
@@ -47,7 +47,6 @@ graph TB
 
     subgraph Servicios["Microservicios"]
         IS["Identity<br/>.NET 10"]
-        AC["Actors<br/>.NET 10"]
         CT["Catalog<br/>.NET 10"]
         SR["ServiceRequest<br/>.NET 10"]
         MT["Matching<br/>Java 25 + Spring Boot"]
@@ -86,12 +85,12 @@ graph TB
     MT -->|"matching.*"| KF
     RK -->|"ranking.technician-reputation-changed"| KF
     PY -->|"payment.*"| KF
-    KF -->|"service-request.created, technician.*"| MT
-    KF -->|"matching.*, payment.*,<br/>catalog.category-changed,<br/>tenant.status-changed"| SR
+    KF -->|"service-request.created, .cancelled y .completed,<br/>technician.registered y .verification-changed"| MT
+    KF -->|"matching.technician-assigned, .no-technician-available<br/>y .search-resumed, payment.approved y .rejected,<br/>catalog.category-changed, tenant.status-changed"| SR
     KF -->|"service-request.rated"| RK
     KF -->|"ranking.technician-reputation-changed"| IS
-    KF -->|"service-request.completed"| PY
-    KF -->|"service-request.*, matching.*, payment.*"| CM
+    KF -->|"service-request.completed, technician.registered"| PY
+    KF -->|"service-request.created, .status-changed, .quoted,<br/>.quote-accepted y .quote-rejected, matching.offer-created,<br/>technician.registered y .verification-changed"| CM
 
     SR -->|"candado"| RD
     SR -->|"fotos del servicio"| GA
@@ -100,7 +99,7 @@ graph TB
 
 Notas:
 
-- El gateway es un **Nginx** por ambiente (ADR-028). Según ADR-025, el REST principal va a Identity, ServiceRequest y Payments, con excepciones explícitas: las acciones del técnico en Matching (disponibilidad, cobertura y ofertas: `/v1/matching`, `/v1/technicians/me/availability` y `/coverage`), la administración del catálogo en Catalog (`/v1/catalog/admin/categories`) y, en Communication, el buzón (`/v1/notifications`), el canal en tiempo real (`/v1/realtime`) y el chat (`/v1/service-requests/{id}/messages`). Ranking y Actors no reciben REST.
+- El gateway es un **Nginx** por ambiente (ADR-028). Según ADR-025, el REST principal va a Identity, ServiceRequest y Payments, con excepciones explícitas: las acciones del técnico en Matching (disponibilidad, cobertura y ofertas: `/v1/matching`, `/v1/technicians/me/availability` y `/coverage`), la administración del catálogo en Catalog (`/v1/catalog/admin/categories`) y, en Communication, el buzón (`/v1/notifications`), el canal en tiempo real (`/v1/realtime`) y el chat (`/v1/service-requests/{id}/messages`). Ranking no recibe REST.
 - El cobro con la pasarela lo hace Payments con un adaptador simulado dentro del servicio (ADR-009), así que no hay flecha hacia un sistema externo en esta vista.
 - **El buzón no es un servicio aparte:** vive dentro de Communication, junto con el canal en tiempo real y el chat (ADR-023, ADR-024, ADR-026).
 - **El outbox es la tabla `outbox_events` de la base de cada servicio**, escrita en la misma transacción que el cambio (ADR-007). Redis no guarda outbox ni sesiones: hoy solo lo usa ServiceRequest como candado de sus tareas programadas.

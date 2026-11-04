@@ -70,6 +70,7 @@ En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el 
 
 - Cada vista fija su `autoLayout` (dirección y separación) para que el PNG quede apaisado y sin solapamientos; si un cambio del modelo desordena una vista, se ajusta ahí y no en la imagen.
 - Las vistas donde los grupos estorban la distribución los ocultan con la propiedad `structurizr.groups false`.
+- `C4-02-Contexto` y `C4-03-Contenedores` llevan `title` en el DSL y se exportan con la leyenda (key) pegada a la imagen: a la derecha si la vista es apaisada y debajo si es vertical (SCRUM-578). El botón de exportar de Structurizr guarda el diagrama y la leyenda por separado; hay que unirlos en una sola imagen.
 
 - Los elementos y relaciones con la etiqueta `Planeado` están diseñados pero no existen en `develop`; se dibujan punteados.
 - Un cambio de arquitectura se hace en el DSL o en el `.puml` y se vuelve a exportar; las imágenes no se editan a mano.
