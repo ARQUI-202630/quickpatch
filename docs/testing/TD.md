@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Documento de Diseño y Definición de Pruebas (Test Document - TD) |
-| **Versión** | 3.0 (Incremento Técnico y Funcional Sprint 5 / Entrega Final) |
+| **Versión** | 3.1 (Incremento Técnico y Funcional Sprint 5 / Entrega Final) |
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
 | **Rol Responsable** | Katherine Bravo (QA Lead) |
@@ -424,7 +424,7 @@ El SRS v5.6 formaliza un total de **33 Requisitos Funcionales canónicos** organ
 | **RF-22** | F5.1 | Pago delegado con tarjeta de crédito/débito a través de pasarela certificada PCI-DSS con tokenización y cero PAN/CVV en BD (K2). | Payments | `PAY-001`, `PAY-002`, `PAY-003`, `PAY-010`, `PAY-011`, `E2E-009` |
 | **RF-23** | F5.1 | Pago corporativo centralizado a nombre de cuenta empresarial con NIT y razón social (SCRUM-43). | Payments | `PAY-006`, `PAY-019`..`023` |
 | **RF-24** | F5.2 | Emisión automática de comprobante fiscal / factura tras confirmación de pago aprobado. | Payments | `PAY-004`, `PAY-005` |
-| **RF-25** | F5.3 | Registro y conciliación de ingresos percibidos por técnicos y proveedores (SCRUM-45). | Payments | `PAY-007`, `PAY-024`..`027` |
+| **RF-25** | F5.3 | Registro y conciliación de ingresos percibidos por técnicos y proveedores (SCRUM-45). | Payments | `PAY-007`, `PAY-024`..`040` |
 | **RF-26** | F6.1 | Pipeline de integración y despliegue continuo (CI/CD) con calidad estática, linter y pruebas obligatorias antes de merge a `develop`. | Infrastructure | `INF-016` |
 | **RF-27** | F6.2 | Prueba automatizada End-to-End del flujo crítico de negocio (Smoke Test SCRUM-47) que bloquea la promoción a Producción (RNF-08). | E2E Tests | `E2E-001`, `E2E-012`, `SMK-001`..`004` |
 | **RF-28** | F6.3 | Logging centralizado JSON estructurado con `correlationId`, monitoreo en Prometheus/Loki y compuertas de observabilidad. | Observability | `INF-011`, `INF-012`, `PRF-010` |
@@ -480,13 +480,16 @@ En cumplimiento de la subtarea **SCRUM-531** de QA, la siguiente matriz formaliz
 
 | Clave Jira (HU) | Título de la Historia de Usuario | Requisito SRS v5.6 / SAD V5 | Subtarea QA en Jira | Suites y Casos de Prueba Asociados (TD V3) | Criterios de Aceptación y Validación QA |
 |---|---|---|---|---|---|
-| **SCRUM-32** | Calificación del servicio al finalizar | RF-12, SAD AC4-E6 | `SCRUM-87` | `CAL-001` al `CAL-006`, `RNK-001`..`002`, `SRQ-021`..`023` | Calificación 1 a 5 habilitada solo tras pago (409 si no completado), prohibición de doble calificación (409), bloqueo RBAC (403), outbox `service-request.rated`, Ranking publica `ranking.technician-reputation-changed` (ADR-027) e idempotencia en Ranking. |
-| **SCRUM-37** | Historial de servicios atendidos por el Técnico | RF-17, DD RN-SR15 | `SCRUM-102` | `HIS-001` al `HIS-005`, `SRQ-026` | Consulta paginada con fecha, estado y calificación recibida; filtrado por completado/cancelado; aislamiento estricto por técnico y tenant (RLS 404). |
+| **SCRUM-32** | Calificación del servicio al finalizar | RF-12, SAD AC4-E6 | `SCRUM-87` | `CAL-001` al `CAL-023`, `RNK-001`..`002`, `SRQ-021`..`023` | Calificación 1 a 5 habilitada solo tras pago (409 si no completado), prohibición de doble calificación (409), bloqueo RBAC (403), outbox `service-request.rated`, Ranking publica `ranking.technician-reputation-changed` (ADR-027) e idempotencia en Ranking. |
+| **SCRUM-37** | Historial de servicios atendidos por el Técnico | RF-17, DD RN-SR15 | `SCRUM-102` | `HIS-001` al `HIS-016`, `SRQ-026` | Consulta paginada con fecha, estado y calificación recibida; filtrado por completado/cancelado; aislamiento estricto por técnico y tenant (RLS 404). |
 | **SCRUM-43** | Pago corporativo centralizado (Empresa) | RF-23, ADR-009 | `SCRUM-117` | `PAY-008` al `PAY-012`, `PAY-019` al `PAY-023` | Pago asociado a empresa cliente (`company_id`), auditoría de usuario pagador (`payer`), cobro exacto de cotización aprobada, comprobante con NIT y tokenización PCI-DSS. |
-| **SCRUM-45** | Registro de pagos recibidos (Técnico/Proveedor) | RF-25, PCI-DSS | `SCRUM-503` | `PAY-013` al `PAY-016`, `PAY-024` al `PAY-027` | Consulta paginada de ingresos para técnico y vista agregada para proveedor sobre su equipo; aislamiento intra-tenant y respuesta libre de PAN/CVV. |
+| **SCRUM-45** | Registro de pagos recibidos (Técnico/Proveedor) | RF-25, PCI-DSS | `SCRUM-503` | `PAY-007`, `PAY-024` al `PAY-040` | Consulta paginada de ingresos para técnico y vista agregada para proveedor sobre su equipo; aislamiento intra-tenant y respuesta libre de PAN/CVV. |
 | **SCRUM-47** | Smoke Test E2E Automatizado del flujo crítico | RF-27, RNF-08 | `SCRUM-504` | `SMK-001` al `SMK-004`, `E2E-001` | Flujo crítico continuo en 9 pasos (registro a calificación) con datos autocontenidos y limpieza; fallo bloquea promoción a producción en compuerta-qa. |
 | **SCRUM-49** | Cifrado de datos sensibles en tránsito y reposo | RF-29, RNF-01 | `SCRUM-507` | `SEC-001` al `SEC-005`, `IDN-015`, `IDN-021` | Forzado TLS 1.3 con HSTS en Ingress VM1, hash seguro de contraseñas (Argon2id), cero PAN/CVV en Loki, Garage S3 prefirmado y ZAP DAST 0 alertas altas. |
-| **SCRUM-348** | ServiceRequest rechaza tenants inactivos sin esperar expiración de token | RF-21, RN-T1, ADR-017 | `SCRUM-511` | `TNT-001` al `TNT-005`, `IDN-019` | Evento outbox `tenant.status-changed`, réplica local en ServiceRequest consumida de forma idempotente; rechazo en segundos de tokens vigentes con HTTP 403 RFC 9457. |
+| **SCRUM-348** | ServiceRequest rechaza tenants inactivos sin esperar expiración de token | RF-21, RN-T1, ADR-017 | `SCRUM-511` | `TNT-001` al `TNT-005`, `IDN-019` | Evento outbox `tenant.status-changed`, réplica local en ServiceRequest consumida de forma idempotente; rechazo en segundos de tokens vigentes con HTTP 422 `tenant-inactivo` RFC 9457. |
+| **SCRUM-609** | Edición del perfil propio en la app y el panel web | RF-01, RF-04 | `SCRUM-614` | `PER-001` al `PER-022`, `ACT-011` | Edición de nombre y teléfono solo del usuario del token; correo, rol, tenant y verificación inmodificables (400); errores problem+json por campo; sin volver a iniciar sesión. |
+| **SCRUM-615** | Navegación hacia atrás en todas las pantallas de la app | SAD AC4-E5, AC4-E9 | `SCRUM-618` | `NAV-001` al `NAV-022` | Flecha en toda pantalla secundaria, sin flecha en las raíces, confirmación con cambios sin guardar y regreso seguro tras acciones terminales. |
+| **SCRUM-623** | Recuperación de contraseña olvidada | RF-01, AC6-E2 | `SCRUM-627` | `REC-001` al `REC-027` | Misma respuesta exista o no la cuenta, límite de 3 por hora, enlace de un solo uso con vencimiento de 1 hora generado por el `admin_tenant`, aislamiento por tenant y token fuera de los logs. |
 | **SCRUM-529** | Documento de Pruebas TD V3 | Calidad y Diseño | `SCRUM-530`, `SCRUM-531`, `SCRUM-532` | Catálogo consolidado de 270+ casos | Formalización de la estrategia V3, casos de prueba del Sprint 5 (530), actualización RTM a SRS v5.6 (531) y compuerta de producción RNF-08 (532). |
 
 ---
@@ -585,9 +588,58 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **IDN-021** | RF-29, RNF-02 | Integración | Cifrado obligatorio en tránsito (HTTPS/TLS) y en reposo. | Peticiones HTTP redirigidas a HTTPS (TLS 1.3) en Gateway Nginx; datos y contraseñas cifradas. |
 | **TNT-001** | RF-21, ADR-007 | Evento / Outbox | Emisión de evento outbox al desactivar tenant. | Transición a inactivo en Identity genera evento `tenant.status-changed` en `outbox_events` con estado completo. |
 | **TNT-002** | RF-21, ADR-017 | Integración / Réplica | Replicación asíncrona de estado de tenant en ServiceRequest. | ServiceRequest consume evento Kafka y actualiza tabla local `tenant_statuses` en menos de 2 segundos. |
-| **TNT-003** | RF-21, RN-T1 | Negativa / Creación | Rechazo inmediato de creación de solicitud con token vigente tras desactivación. | `POST /v1/service-requests` con JWT vigente de tenant desactivado responde HTTP 403 Forbidden (RFC 9457 `type: .../tenant-inactivo`) sin esperar a expiración de 60 min. |
+| **TNT-003** | RF-21, RN-T1 | Negativa / Creación | Rechazo inmediato de creación de solicitud con token vigente tras desactivación. | `POST /v1/service-requests` con JWT vigente de tenant desactivado responde HTTP 422 (RFC 9457 `type: .../tenant-inactivo`, contrato service-request 1.11.0) sin esperar a expiración de 60 min. Ejecutado en QA el 2-nov-2026 (`tests/e2e/evidencias/tenant-desactivado-qa-2026-11-02.txt`). |
 | **TNT-004** | RF-21, AC5-E5 | Evento / Idempotencia | Procesamiento idempotente de eventos de estado de tenant. | Múltiples entregas de `tenant.status-changed` con mismo `eventId` se deduplican en `processed_events`. |
 | **TNT-005** | RF-21, RN-T1 | Positiva / Reactivación | Desbloqueo inmediato tras reactivación del tenant. | Reactivación en Identity emite evento activo; ServiceRequest restablece inmediatamente creación de órdenes (201 Created). |
+| **PER-001** | RF-01, SCRUM-609 | API / Positiva | Cambio del nombre propio. | `PATCH /v1/users/me` con `fullName` responde 200 con el nombre nuevo; `GET /v1/users/me` lo devuelve. |
+| **PER-002** | SCRUM-609 | API / Positiva | Cambio del teléfono propio. | `phone` nuevo responde 200 con el teléfono actualizado. |
+| **PER-003** | SCRUM-609 | API / Positiva | Borrado del teléfono. | `phone: null` responde 200 con `phone: null`. |
+| **PER-004** | SCRUM-609 | API / Positiva | Cambio de nombre y teléfono a la vez. | 200 con ambos campos actualizados. |
+| **PER-005** | SCRUM-609, AC6-E3 | API / Positiva | Cada rol edita su propio perfil. | `cliente`, `tecnico`, `empresa_contacto` y `admin_tenant` reciben 200. |
+| **PER-006** | SCRUM-609 | API / Negativa | Cuerpo vacío. | `{}` responde 400 (`minProperties: 1`). |
+| **PER-007** | SCRUM-609 | API / Límite | Límites de `fullName`. | 1 y 151 caracteres responden 400; 2 y 150 responden 200. |
+| **PER-008** | SCRUM-609 | API / Límite | Límites de `phone`. | 6 y 31 caracteres responden 400; 7 y 30 responden 200. |
+| **PER-009** | SCRUM-609 | API / Negativa | Nombre vacío o solo espacios. | `""` y `"   "` responden 400. |
+| **PER-010** | SCRUM-609, AC6-E3 | API / Seguridad | Intento de cambiar el correo. | Campo `email` responde 400; el correo no cambia. |
+| **PER-011** | SCRUM-609, AC6-E3 | API / Seguridad | Intento de cambiar el rol. | Campo `role` responde 400; el rol no cambia. |
+| **PER-012** | SCRUM-609, RF-04 | API / Fuga | Intento de cambiar el tenant. | Campo `tenant_id` responde 400; el usuario sigue en su tenant. |
+| **PER-013** | SCRUM-609 | API / Seguridad | Intento de cambiar el estado de verificación. | Campo `verificationStatus` responde 400; el técnico sigue pendiente. |
+| **PER-014** | SCRUM-609, RF-04 | API / Fuga | Intento de editar a otro usuario. | Token de A con `id` de B responde 400; B no cambia. |
+| **PER-015** | SCRUM-609, RF-04 | API / Fuga | Cabecera de tenant falsificada. | `X-Tenant-Id` de otro tenant se ignora; solo cambia el usuario del token en su tenant. |
+| **PER-016** | AC6-E3 | API / Seguridad | Edición sin sesión. | Sin `Authorization` responde 401. |
+| **PER-017** | SCRUM-609 | API / Contrato | Formato de los errores. | Cada 400 es `application/problem+json` con el campo en `errors`. |
+| **PER-018** | SCRUM-609 | API / Positiva | La sesión sigue válida tras editar. | El mismo token sigue funcionando sin volver a iniciar sesión. |
+| **PER-019** | SCRUM-609 | Interfaz / Manual | App: editar desde Cuenta. | Los datos nuevos se ven al guardar sin cerrar sesión. Captura. |
+| **PER-020** | SCRUM-609 | Interfaz / Manual | App: error en el campo. | Nombre de 1 carácter muestra el error debajo del campo. Captura. |
+| **PER-021** | SCRUM-609 | Interfaz / Manual | App: campos no editables. | Correo, rol y estado se muestran bloqueados. Captura. |
+| **PER-022** | SCRUM-609 | Interfaz / Manual | Panel web: editar el perfil. | Mismo comportamiento que PER-019 y PER-020. Captura. |
+| **REC-001** | SCRUM-623 | API / Positiva | Solicitud de recuperación con el correo de una cuenta activa. | `POST /v1/auth/password-recovery` responde 202; la solicitud aparece en la lista del `admin_tenant`. |
+| **REC-002** | SCRUM-623, AC6-E2 | API / Seguridad | Solicitud con un correo que no existe. | 202 con el mismo cuerpo y cabeceras que REC-001; no se crea solicitud (no revela cuentas). |
+| **REC-003** | SCRUM-623 | API / Positiva | Dos solicitudes seguidas con el mismo correo. | 202 ambas; sigue existiendo una sola solicitud, con la fecha actualizada. |
+| **REC-004** | SCRUM-623 | API / Límite | Cuarta solicitud del mismo correo en una hora. | 429 con `Retry-After`; igual con un correo que no existe. |
+| **REC-005** | SCRUM-623 | API / Negativa | Correo inválido o campos de más. | 400 problem+json con `email` en `errors`; un campo extra también responde 400. |
+| **REC-006** | SCRUM-623 | API / Seguridad | Un `admin_tenant` pide recuperar su clave. | 202, pero no se crea solicitud (los administradores no usan este flujo). |
+| **REC-007** | RN-T1 | API / Negativa | Solicitud desde el canal de un tenant desactivado. | 403 tenant desactivado. |
+| **REC-008** | SCRUM-623 | API / Positiva | El administrador lista las solicitudes pendientes. | `GET /v1/admin/password-recovery-requests` responde 200, de la más antigua a la más reciente, sin tokens. |
+| **REC-009** | SCRUM-623, AC6-E2 | API / Fuga | Administrador de otro tenant lista solicitudes. | No ve solicitudes del tenant ajeno. |
+| **REC-010** | AC6-E3 | API / Permisos | Otros roles o sin sesión listan solicitudes. | `cliente` y `tecnico` reciben 403; sin token, 401. |
+| **REC-011** | SCRUM-623 | API / Positiva | El administrador genera el enlace. | `POST .../{id}/link` responde 201 con `link`, `token` y `expiresAt` a 1 hora; registro en `audit_logs`. |
+| **REC-012** | SCRUM-623, AC6-E2 | API / Fuga | Administrador de otro tenant genera el enlace. | Solicitud ajena responde 404. |
+| **REC-013** | SCRUM-623 | API / Positiva | Definición de la clave nueva con el enlace. | `POST /v1/auth/password-recovery/confirm` responde 204; login con la clave nueva 200 y con la vieja 401. |
+| **REC-014** | SCRUM-623 | API / Seguridad | Enlace usado por segunda vez. | 400 `enlace-invalido`. |
+| **REC-015** | SCRUM-623 | API / Seguridad | Enlace vencido (más de 1 hora). | 400 `enlace-invalido`, igual que REC-014. |
+| **REC-016** | SCRUM-623 | API / Seguridad | Enlace anterior tras generar uno nuevo. | El anterior responde 400 `enlace-invalido`; el nuevo funciona. |
+| **REC-017** | SCRUM-623 | API / Seguridad | Token inventado o de otro tenant. | 400 `enlace-invalido`, sin distinguir el caso. |
+| **REC-018** | RF-01 | API / Negativa | Clave nueva de menos de 8 caracteres. | 400 con `errors.password`. |
+| **REC-019** | SCRUM-623 | API / Estado | Nuevo enlace después de cambiar la clave. | 409 `transicion-invalida`; la solicitud ya no está en la lista. |
+| **REC-020** | SCRUM-623, SCRUM-625 | API / Seguridad | Sesión abierta antes del cambio. | El token anterior sigue respondiendo 200 hasta su vencimiento (`expiresIn`). Decisión de SCRUM-625 (DD 5.19): las sesiones abiertas no se cierran al cambiar la contraseña, con el mismo criterio que al desactivar un tenant (RN-T1). |
+| **REC-021** | RN-U4 | API / Positiva | Cuenta bloqueada por intentos fallidos. | Tras REC-013 la cuenta queda desbloqueada y el login responde 200. |
+| **REC-022** | AC6-E1 | Seguridad / Logs | El token no aparece en los logs. | Búsqueda del token en Loki (Gateway e Identity): 0 coincidencias. |
+| **REC-023** | SCRUM-623 | Interfaz / Manual | App: "¿Olvidaste tu contraseña?". | Mismo mensaje con un correo existente y uno inexistente. Captura. |
+| **REC-024** | SCRUM-623 | Interfaz / Manual | Panel: el administrador atiende la solicitud. | Ve la solicitud, genera y copia el enlace. Captura. |
+| **REC-025** | SCRUM-623 | Interfaz / Manual | Página del enlace de recuperación. | Pide la clave nueva, valida la longitud y lleva al inicio de sesión. Captura. |
+| **REC-026** | SCRUM-623, RN-U7 | API / Estado | Técnico del equipo de un proveedor que nunca activó su invitación recupera la contraseña. | `POST /v1/auth/password-recovery/confirm` responde 204 y la invitación pendiente queda usada (`used_at`, DD 5.19): `POST /v1/auth/password/setup` con esa invitación responde 400 `enlace-invalido`; el login con la clave nueva responde 200. |
+| **REC-027** | RN-U7, RNF-03 | Integración / Seguridad | Hash del correo en `password_recovery_attempts`. | Tras un pedido de recuperación, `email_hash` es el HMAC-SHA256 en hexadecimal del correo normalizado con la clave de Identity Service: no coincide con el SHA-256 sin clave del mismo correo y el correo no aparece en claro (DD 5.28, v5.19). |
 
 ---
 
@@ -626,7 +678,7 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **ACT-008** | RF-16 | Integración | Consulta de técnicos a cargo de un proveedor. | `GET /v1/provider/technicians` retorna únicamente el equipo asignado al proveedor. |
 | **ACT-009** | RF-04 | Integración | Aislamiento multi-tenant en gestión de técnicos. | Proveedor de Tenant A no visualiza técnicos registrados bajo Tenant B. |
 | **ACT-010** | SRS 3.0 | Unitaria | Consulta de perfil propio de técnico (`/v1/users/me`). | HTTP 200 OK retornando datos personales, especialidad y estado de verificación. |
-| **ACT-011** | SRS 3.0 | Unitaria | Actualización de datos de contacto de técnico. | `PATCH /v1/users/me` actualiza teléfono y dirección; HTTP 200 OK. |
+| **ACT-011** | SRS 3.0 | Unitaria | Actualización de datos de contacto de técnico. | `PATCH /v1/users/me` actualiza nombre (`fullName`) y teléfono; HTTP 200 OK (SCRUM-609, ver `PER-001`..`022`). |
 | **ACT-012** | ADR-006 | Evento | Emisión de evento al verificar técnico. | Aprobación genera evento `technician.verified` en tabla `outbox_events`. |
 | **ACT-013** | OpenAPI | Contrato | Validación de contrato REST de Actores con Spectral CLI. | Contrato verificado contra especificación OpenAPI 3.0 en `quickpatch-contracts`; tipos y status codes íntegros. |
 | **ACT-014** | RN-TP2 | Integración | Técnico no verificado excluido de disponibilidad. | Técnico en estado `pendiente` no puede cambiar disponibilidad a `disponible`. |
@@ -663,12 +715,23 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **SRQ-023** | RF-12, RN-R2 | Integración | Rechazo de calificación duplicada para un mismo servicio. | Segunda calificación sobre la misma solicitud rechazada con HTTP 409 Conflict. |
 | **SRQ-024** | ADR-007, AC5-E5| Evento | Consumo idempotente de evento `payment.approved`. | Segundo evento con mismo `eventId` es ignorado; solicitud permanece en `pagado` sin doble efecto. |
 | **SRQ-025** | AC9-E3 | Evento | Detección de servicios en curso sin cierre por más de 4 horas. | Solicitud marcada con flag de revisión para el Administrador tras superar umbral. |
-| **SRQ-026** | RF-17 | Integración | Consulta de historial de solicitudes atendidas por el técnico. | `GET /v1/technicians/me/services?status=completado` retorna historial paginado filtrado por tenant. |
-| **HIS-001** | RF-17, DD RN-SR15 | Funcional / Paginado | Consulta de historial de servicios con calificación recibida. | `GET /v1/technicians/me/service-requests?status=completado` retorna array paginado con id, fecha, categoría, estado y puntuación de calificación recibida. |
-| **HIS-002** | RF-17 | Filtro / Estado | Filtrado exclusivo por estado completado o cancelado. | Parámetro `status=cancelado` retorna únicamente servicios finalizados por cancelación; 0 servicios activos en respuesta. |
-| **HIS-003** | RF-17 | Consistencia / Paginación | Control de límites y desplazamiento en paginación. | Consulta con `limit=10&offset=0` respeta totalItems y devuelve estructura `data`, `pagination: { page, totalPages, totalItems }`. |
-| **HIS-004** | RF-17, RN-SR15 | Seguridad / Fuga Intra-Tenant | Aislamiento entre técnicos del mismo tenant. | Técnico autenticado solo visualiza solicitudes donde `technician_id == token.sub`. Cero visibilidad de órdenes ajenas. |
-| **HIS-005** | RF-17, RF-04 | Seguridad / Multi-Tenant RLS | Aislamiento multi-tenant en historial de técnico. | Solicitud de historial con JWT de tenant ajeno responde conjunto vacío o HTTP 404 Not Found (RLS). |
+| **SRQ-026** | RF-17 | Integración | Consulta de historial de solicitudes atendidas por el técnico. | `GET /v1/technicians/me/service-requests?status=completado` retorna historial paginado filtrado por tenant. |
+| **HIS-001** | RF-17, DD RN-SR15 | API / Positiva | Historial completo del técnico. | `GET /v1/technicians/me/service-requests` responde 200 con sus solicitudes, de la asignación más reciente a la más antigua; `page: 1`, `size: 20`. |
+| **HIS-002** | RF-17 | API / Filtro | Filtro por estado completado. | `status=completado` trae solo solicitudes completadas. |
+| **HIS-003** | RF-17 | API / Filtro | Filtro por estado cancelado. | `status=cancelado` trae solo canceladas (el contrato filtra un estado a la vez). |
+| **HIS-004** | RF-17 | API / Filtro | Filtro por estado pagado. | `status=pagado` trae solo pagadas. |
+| **HIS-005** | RF-17 | API / Negativa | Estado inexistente. | `status=terminado` responde 400. |
+| **HIS-006** | RF-17 | API / Paginación | Recorrido de páginas. | `size=2` en las páginas 1, 2 y 3 trae 2, 2 y 1 elementos con el mismo `totalItems` y sin repetidos. |
+| **HIS-007** | RF-17 | API / Límite | Página fuera de rango. | 200 con `items: []` y el `totalItems` real. |
+| **HIS-008** | RF-17 | API / Límite | Parámetros fuera de límite. | `page=0`, `size=0` y `size=101` responden 400. |
+| **HIS-009** | RN-SR13 | API / Seguridad | Sin datos del cliente en la lista. | Ningún elemento trae dirección, ubicación ni datos del cliente. |
+| **HIS-010** | RF-17, RF-12 | API / Integración | Calificación recibida en el historial. | Solicitud calificada trae `score` y `ratedAt`; sin calificar, nulos o ausentes. |
+| **HIS-011** | RF-17 | API / Límite | Técnico sin historial. | 200 con `items: []` y `totalItems: 0`. |
+| **HIS-012** | RF-17, RN-SR15 | API / Fuga | Aislamiento entre técnicos del mismo tenant. | Un técnico no ve solicitudes asignadas a otro. |
+| **HIS-013** | RF-17, RF-04 | API / Fuga | Aislamiento entre tenants. | Técnico de otro tenant no ve nada del tenant ajeno. |
+| **HIS-014** | AC6-E3 | API / Permisos | Rol no permitido. | `cliente` y `admin_tenant` reciben 403. |
+| **HIS-015** | AC6-E3 | API / Seguridad | Consulta sin sesión. | Sin token responde 401. |
+| **HIS-016** | RF-17 | Interfaz / Manual | App del técnico: pantalla de historial. | Muestra estado, fecha, categoría y calificación, con filtro y carga al bajar. Captura. |
 
 ---
 
@@ -730,16 +793,29 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **PAY-021** | RF-23, RN-P3 | Negativa / Integridad | Validación estricta de monto frente a cotización aprobada. | Intento de enviar monto distinto a `quotes.total_amount` es rechazado con HTTP 400 Bad Request; monto inmutable. |
 | **PAY-022** | RF-23, RF-04 | Seguridad / Aislamiento | Bloqueo de pago cruzado entre empresas y tenants. | Contacto de Empresa A intentando pagar orden de Empresa B recibe HTTP 403 Forbidden o 404 Not Found (RLS). |
 | **PAY-023** | RF-23, RF-24 | Integración / Factura | Factura corporativa con NIT y Razón Social de la empresa. | `GET /v1/payments/{id}/invoice` retorna comprobante oficial con NIT, razón social y desglose tributario de IVA. |
-| **PAY-024** | RF-25 | Planeado (SCRUM-45) | Consulta de ingresos percibidos por el técnico titular. | `GET /v1/technicians/me/payments` retornará listado paginado (planeado; backend Payments pendiente). |
-| **PAY-025** | RF-25 | Planeado (SCRUM-45) | Consulta agregada de pagos de técnicos pertenecientes al proveedor. | `GET /v1/providers/me/payments` retornará detalle financiero (planeado; backend Payments pendiente). |
-| **PAY-026** | RF-25, RF-04 | Planeado (SCRUM-45) | Aislamiento multi-tenant en consulta de ingresos. | Consulta cruzada responderá HTTP 404/vacío con RLS (planeado; backend Payments pendiente). |
-| **PAY-027** | RF-25, K2 | Planeado (SCRUM-45) | Protección de datos financieros en consultas de cobros. | Endpoints responderán sin PAN/CVV en payload (planeado; backend Payments pendiente). |
+| **PAY-024** | RF-25 | API / Positiva | El técnico consulta sus pagos recibidos. | `GET /v1/payments/received` responde 200 solo con pagos donde `technicianId` es el usuario del token, del más reciente al más antiguo. |
+| **PAY-025** | RF-25, P-02 | API / Positiva | El proveedor consulta los pagos de su equipo. | Responde 200 con los pagos de los técnicos de su equipo y no con los de otros técnicos. |
+| **PAY-026** | RF-25, RF-04 | API / Fuga | Técnico de otro tenant. | 200 con `items: []`; ningún pago del tenant ajeno. |
+| **PAY-027** | RF-25, K2 | API / Seguridad | Respuesta sin datos de tarjeta. | Cada elemento trae solo `id`, `serviceRequestId`, `technicianId`, `amount`, `currency`, `status`, `createdAt` y `approvedAt`; sin PAN, CVV ni token. |
+| **PAY-028** | RF-25, P-02 | API / Positiva | El proveedor filtra por un técnico de su equipo. | `technicianId` de su equipo trae solo los pagos de ese técnico. |
+| **PAY-029** | RF-25, P-02 | API / Fuga | El proveedor filtra por un técnico ajeno a su equipo. | 200 con `items: []`. |
+| **PAY-030** | RF-25 | API / Negativa | El técnico envía `technicianId`. | 400. |
+| **PAY-031** | RN-P4 | API / Positiva | Los pagos rechazados no aparecen. | El rechazado no está; el reintento aprobado aparece una sola vez para esa solicitud. |
+| **PAY-032** | RF-25 | API / Filtro | Filtro por estado. | `pendiente`, `procesando` y `aprobado` traen solo ese estado; `rechazado` responde 400. |
+| **PAY-033** | RF-25 | API / Formato | Formato de monto, moneda y fecha de aprobación. | `amount` cumple `^[0-9]+\.[0-9]{2}$`, `currency` = `COP`, `approvedAt` nulo salvo en `aprobado`. |
+| **PAY-034** | RF-25 | API / Paginación | Paginación y límites. | `size=1` en páginas sucesivas trae pagos distintos con el mismo `totalItems`; `page=0`, `size=0` y `size=101` responden 400. |
+| **PAY-035** | RF-25 | API / Fuga | Otro técnico del mismo tenant. | No ve pagos de otros técnicos. |
+| **PAY-036** | RF-25, RF-04 | API / Fuga | Proveedor de otro tenant. | Con `technicianId` de un técnico ajeno responde 200 con `items: []`. |
+| **PAY-037** | AC6-E3 | API / Permisos | Roles no permitidos. | `cliente`, `empresa_contacto` y `admin_tenant` reciben 403. |
+| **PAY-038** | AC6-E3 | API / Seguridad | Consulta sin sesión. | Sin token responde 401. |
+| **PAY-039** | RF-25 | Interfaz / Manual | App del técnico: pantalla de pagos. | Muestra fecha, monto y estado, con carga al bajar. Captura. |
+| **PAY-040** | RF-25, P-02 | Interfaz / Manual | Vista del proveedor: pagos del equipo. | Muestra el técnico de cada pago y permite filtrar. Captura. |
 
 ---
 
 
 > [!NOTE]
-> **Nota de Estado de Pruebas (SCRUM-45):** Los casos `PAY-024` a `PAY-027` corresponden a la consulta de ingresos percibidos por técnicos y proveedores. Se encuentran completamente diseñados y especificados con estado **Planeado**, a la espera de la entrega del endpoint en el microservicio Payments por el equipo de desarrollo backend. No se computan como ejecutados en los pipelines de CI actuales.
+> **Nota de Estado de Pruebas (SCRUM-45 / SCRUM-503):** Los casos `PAY-024` a `PAY-040` se rediseñaron el 3 de noviembre de 2026 contra el endpoint publicado `GET /v1/payments/received` (`payments.v1.yaml`, quickpatch-api-gateway v0.21.0), que reemplaza las rutas planeadas `/v1/technicians/me/payments` y `/v1/providers/me/payments`. Están **diseñados y pendientes de ejecución en QA** con la colección `scrum-45-pagos-tecnico`; no se computan como ejecutados.
 
 ### 7.8 Módulo: Reputación y Calificaciones (`quickpatch-ranking`)
 * **Requisitos:** RF-12, RF-18, RF-20 | SAD: AC4-E6, AC9-E2
@@ -758,18 +834,35 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **RNK-010** | AC2-E2 | Rendimiento | Latencia de actualización de reputación tras calificación. | Promedio persistido en base de datos en menos de 500 ms tras consumo del evento. |
 | **RNK-011** | AC9-E2 | Unitaria | Cero suspensión automática desatendida. | Técnico señalado permanece activo hasta decisión manual del Administrador. |
 | **RNK-012** | RNF-04 | Observabilidad| Emisión de log estructurado ante detección de bajo promedio. | Log de advertencia con nivel `WARNING` emitido con ID de técnico y promedio para Loki. |
-| **CAL-001** | RF-12, SAD AC4-E6 | Planeado (SCRUM-32) | Registro de calificación válida de 1 a 5 estrellas con comentario. | `POST /v1/service-requests/{id}/ratings` tras pago exitoso (`pagado`) emitirá `service-request.rated` (ADR-027) y Ranking publicará `ranking.technician-reputation-changed` (planeado; backend Ranking pendiente). |
-| **CAL-002** | RF-12 | Planeado (SCRUM-32) | Rechazo de calificación sobre orden no pagada o incompleta. | Intento de calificar orden no pagada responderá HTTP 409 Conflict (planeado; backend Ranking pendiente). |
-| **CAL-003** | RF-12 | Planeado (SCRUM-32) | Prohibición estricta de doble calificación para una misma solicitud. | Segundo envío responderá HTTP 409 Conflict RN-R2 (planeado; backend Ranking pendiente). |
-| **CAL-004** | RF-12, AC6-E3 | Planeado (SCRUM-32) | Bloqueo de usuario ajeno intentando calificar orden. | Petición de usuario no titular responderá HTTP 403 Forbidden (planeado; backend Ranking pendiente). |
-| **CAL-005** | RF-12, RF-04 | Planeado (SCRUM-32) | Aislamiento multi-tenant en calificación de servicios. | Calificación cross-tenant responderá HTTP 404 Not Found RLS (planeado; backend Ranking pendiente). |
-| **CAL-006** | RF-12, AC5-E5 | Planeado (SCRUM-32) | Consumo idempotente y actualización de reputación del técnico en Ranking. | Ranking procesará evento una sola vez vía `processed_events` (planeado; backend Ranking pendiente). |
+| **CAL-001** | RF-12, AC4-E6 | API / Positiva | Calificación válida con comentario. | `POST /v1/service-requests/{id}/rating` sobre solicitud `pagado` responde 201 con `serviceRequestId`, `score`, `comment` y `ratedAt`; la solicitud sigue en `pagado`. |
+| **CAL-002** | RF-12 | API / Positiva | Calificación sin comentario. | 201 con `comment: null`. |
+| **CAL-003** | RF-12 | API / Límite | Puntajes límite. | `score` 1 y 5 responden 201. |
+| **CAL-004** | RF-12, RN-R1 | API / Negativa | Puntaje 0. | 400 con `score` en `errors`. |
+| **CAL-005** | RF-12, RN-R1 | API / Negativa | Puntaje 6. | 400 con `score` en `errors`. |
+| **CAL-006** | RF-12 | API / Negativa | Puntaje no entero. | `4.5` y `"5"` responden 400. |
+| **CAL-007** | RF-12 | API / Negativa | Sin puntaje. | 400, `score` obligatorio. |
+| **CAL-008** | RF-12 | API / Límite | Comentario de 500 y 501 caracteres. | 500 responde 201; 501 responde 400. |
+| **CAL-009** | RF-12 | API / Negativa | Campos de más. | `technicianId` en el cuerpo responde 400 (`additionalProperties: false`); no se guarda nada. |
+| **CAL-010** | RF-12, RN-R3 | API / Estado | Solicitud completada pero no pagada. | 409 `transicion-invalida` (el contrato solo permite `pagado`; diferencia con la HU a confirmar). |
+| **CAL-011** | RF-12, RN-R3 | API / Estado | Solicitud en `asignado`, `en_progreso` o `cancelado`. | 409 `transicion-invalida` en cada caso. |
+| **CAL-012** | RF-12, RN-R2 | API / Negativa | Doble calificación. | 409 `ya-calificada`; la calificación original no cambia. |
+| **CAL-013** | RF-12, AC6-E3 | API / Fuga | Otro cliente del mismo tenant. | 403. |
+| **CAL-014** | RF-12, RF-04 | API / Fuga | Cliente de otro tenant. | 404 (RLS), sin revelar que la solicitud existe. |
+| **CAL-015** | AC6-E3 | API / Permisos | Rol no permitido. | `tecnico` y `admin_tenant` reciben 403. |
+| **CAL-016** | AC6-E3 | API / Seguridad | Sin sesión. | Sin token responde 401. |
+| **CAL-017** | RF-12 | API / Negativa | Solicitud inexistente. | 404. |
+| **CAL-018** | RF-12, RN-SR14 | API / Fuga | Empresa: quien creó la solicitud frente a un compañero. | El otro `empresa_contacto` recibe 403; quien la creó recibe 201. |
+| **CAL-019** | RF-12, ADR-027 | Evento | Publicación de `service-request.rated`. | Un evento con solicitud, técnico y puntaje, sin el comentario. |
+| **CAL-020** | AC5-E5 | Evento / Idempotencia | Reputación sin doble conteo. | Reentrega del mismo evento no altera el promedio del técnico. |
+| **CAL-021** | RF-12, RF-17 | Integración | Calificación visible en el historial del técnico. | La fila de la solicitud en `HIS-010` trae `score` y `ratedAt`. |
+| **CAL-022** | RF-12, AC4-E6 | Interfaz / Manual | App: pantalla de calificación. | Con la solicitud en `pagado`, la calificación de 1 a 5 aparece sin pasos extra. Captura. |
+| **CAL-023** | RF-12 | Interfaz / Manual | App: mensaje de error claro. | Calificar dos veces muestra un mensaje entendible. Captura. |
 
 ---
 
 
 > [!NOTE]
-> **Nota de Estado de Pruebas (SCRUM-32):** Los casos `CAL-001` a `CAL-006` corresponden a la calificación obligatoria del servicio al finalizar. Se encuentran completamente diseñados y especificados con estado **Planeado**, a la espera de la entrega del endpoint en el microservicio Ranking por el equipo de desarrollo backend. No se computan como ejecutados en los pipelines de CI actuales.
+> **Nota de Estado de Pruebas (SCRUM-32 / SCRUM-87):** Los casos `CAL-001` a `CAL-023` se rediseñaron el 3 de noviembre de 2026 contra el endpoint publicado `POST /v1/service-requests/{id}/rating` (`service-request.v1.yaml` 1.10.0; backend SCRUM-85 finalizado, frontend SCRUM-86 en revisión). Están **diseñados y pendientes de ejecución en QA** con la colección `scrum-32-calificacion`; no se computan como ejecutados.
 
 ### 7.9 Módulo: Comunicación y Notificaciones (`quickpatch-communication`)
 * **Requisitos:** RIE-03 | SAD: AC2-E3, AC5-E5
@@ -861,6 +954,28 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **SMK-002** | RF-27 | Autonomía / Datos | Autogeneración de datos efímeros y limpieza automática. | Datos creados con prefijo `smoke-` y limpiados en teardown; 0 dependencia de usuarios fijos y 0 residuos en BD de QA o Producción. |
 | **SMK-003** | RNF-08, INF-016 | Compuerta / CI/CD | Bloqueo de promoción a producción ante fallo del Smoke Test. | Falla de aserción en Smoke Test aborta el pipeline `compuerta-qa`, revierte el commit en `main` e invoca `kubectl rollout undo` en VM3. |
 | **SMK-004** | RF-29, K2 | Seguridad / Sanitización | Ejecución limpia sin exposición de credenciales o tokens en logs de CI. | Trazas de ejecución de Newman o Playwright en GitHub Actions sanitizadas; 0 JWTs, passwords o API Keys en el log de consola. |
+| **NAV-001** | SCRUM-615 | Interfaz / Manual | Detalle de solicitud. | Flecha visible en la barra; la flecha y el botón atrás de Android vuelven a la pantalla anterior. |
+| **NAV-002** | SCRUM-615 | Interfaz / Manual | Nueva solicitud. | Igual que NAV-001. |
+| **NAV-003** | SCRUM-615 | Interfaz / Manual | Pago. | Igual que NAV-001. |
+| **NAV-004** | SCRUM-615 | Interfaz / Manual | Comprobante. | Igual que NAV-001. |
+| **NAV-005** | SCRUM-615 | Interfaz / Manual | Chat. | Igual que NAV-001. |
+| **NAV-006** | SCRUM-615 | Interfaz / Manual | Notificaciones. | Igual que NAV-001. |
+| **NAV-007** | SCRUM-615 | Interfaz / Manual | Cuenta. | Igual que NAV-001. |
+| **NAV-008** | SCRUM-615 | Interfaz / Manual | Equipo (proveedor). | Igual que NAV-001. |
+| **NAV-009** | SCRUM-615 | Interfaz / Manual | Disponibilidad (técnico). | Igual que NAV-001. |
+| **NAV-010** | SCRUM-615 | Interfaz / Manual | Registro. | Igual que NAV-001. |
+| **NAV-011** | SCRUM-615, SCRUM-609 | Interfaz / Manual | Editar perfil. | Igual que NAV-001. |
+| **NAV-012** | SCRUM-615, SCRUM-37 | Interfaz / Manual | Historial del técnico. | Igual que NAV-001. |
+| **NAV-013** | SCRUM-615 | Interfaz / Manual | Raíz de cada pestaña. | Sin flecha de regreso. |
+| **NAV-014** | SCRUM-615 | Interfaz / Manual | Atrás de Android en la pestaña de inicio. | Comportamiento definido por el equipo y siempre igual. |
+| **NAV-015** | SCRUM-615 | Interfaz / Manual | Atrás de Android en otra pestaña raíz. | Vuelve a inicio o sale, igual en todas las pestañas. |
+| **NAV-016** | SCRUM-615, AC4-E5 | Interfaz / Manual | Formulario con cambios sin guardar (flecha). | Pide confirmación; "Cancelar" conserva lo escrito. |
+| **NAV-017** | SCRUM-615, AC4-E5 | Interfaz / Manual | Formulario con cambios sin guardar (atrás de Android). | Pide confirmación. |
+| **NAV-018** | SCRUM-615 | Interfaz / Manual | Formulario sin cambios. | Vuelve sin preguntar. |
+| **NAV-019** | SCRUM-615 | Interfaz / Manual | Editar perfil y disponibilidad con cambios. | Pide confirmación al volver. |
+| **NAV-020** | SCRUM-615, AC4-E5 | Interfaz / Manual | Regreso después de crear una solicitud. | No vuelve al formulario lleno ni crea otra solicitud. |
+| **NAV-021** | SCRUM-615, AC4-E5 | Interfaz / Manual | Regreso después de un pago aprobado. | No vuelve a la pantalla de pago ni cobra de nuevo. |
+| **NAV-022** | SCRUM-615 | Widget / CI | Prueba de widget por pantalla. | Existe una prueba por pantalla que verifica la flecha de regreso y está en verde en el CI de la app. |
 
 ---
 
@@ -1628,6 +1743,7 @@ Detalle del resumen estadístico de Newman en consola para la suite `scrum-108-a
 | **2.11** | 22 de octubre de 2026 | Katherine Bravo (QA Lead) | Certificación 100% PASS de todas las suites E2E contra ambiente QA desplegado (`https://qa.quickpatch.internal` en VM2 k3s) ejecutadas mediante `correr-colecciones-qa.js`. Incorporación de evidencias de ejecución oficiales del 22/10 (`scrum-56-registro-tecnico-qa-2026-10-22.txt`, `scrum-84-seguimiento-estado-qa-2026-10-22.txt`, `scrum-99-equipo-proveedor-qa-2026-10-22.txt`, `scrum-108-aprobacion-rechazo-qa-2026-10-22.txt`, `scrum-111-suspension-tecnico-qa-2026-10-22.txt`, `scrum-incremento-tecnico-qa-2026-10-22.txt`), actualización de matrices de prueba con tipo RFC 9457 `problems/validacion`, actualización de métricas estadísticas Newman y agregación de evidencias fotográficas certificadas en §10.12 (§10.12.8 a §10.12.12). |
 | **2.12** | 24 de octubre de 2026 | Katherine Bravo (QA Lead) | Incorporación del Cuadro de Mando de Estadísticas y Métricas de Calidad de Software para Sprint 5 (SCRUM-601 / SCRUM-604 en `estadisticas-pruebas-sprint5.md`), formalización del Registro Consolidado de Defectos (SCRUM-603 en `registro-defectos-sprint4-sprint5.md`), y generación automatizada de las 4 gráficas ejecutivas de calidad (distribución por tipo, torta de éxito 100% PASS, defectos por severidad y cobertura de microservicios vs umbral 80%). |
 | **3.0** | 25 de octubre de 2026 | Katherine Bravo (QA Lead) | **Línea Base Final del Documento de Pruebas (TD V3.0 — SCRUM-529):**<br>1. **Casos de Prueba del Incremento Sprint 5 (SCRUM-530):** Incorporación formal de los casos de prueba automatizados para Calificación del servicio (`SCRUM-32` / `CAL-001..006`), Historial de servicios atendidos por el técnico (`SCRUM-37` / `HIS-001..005`), Pago corporativo centralizado de empresa (`SCRUM-43` / `PAY-019..023`), Registro de pagos recibidos por técnico/proveedor (`SCRUM-45` / `PAY-024..027`), Smoke Test E2E del flujo crítico (`SCRUM-47` / `SMK-001..004`), Cifrado en tránsito y reposo (`SCRUM-49` / `SEC-001..005`) y Rechazo inmediato de tenants inactivos por eventos réplica (`SCRUM-348` / `TNT-001..005`).<br>2. **Actualización de la RTM a SRS v5.6 (SCRUM-531):** Trazabilidad bidireccional completa de los 33 Requisitos Funcionales canónicos del SRS v5.6 (RF-01 a RF-29 y RF-34 a RF-37) y matriz de correspondencia hacia las Historias de Usuario de Sprint 5.<br>3. **Estrategia de Prueba de Humo y Compuerta a Producción (SCRUM-532):** Formalización de la Compuerta 3 (§3.3) bajo RNF-08 sobre la topología de 7 VMs (ADR-022: VM1, VM3, VM4, VM6), definiendo el Smoke Test de 9 pasos y el protocolo de Rollback automático (`kubectl rollout undo`). |
+| **3.1** | 3 de noviembre de 2026 | Katherine Bravo (QA Lead) | **Casos de prueba del Sprint 5 contra los contratos publicados (SCRUM-530):**<br>1. Se rediseñan contra los endpoints reales `CAL-001..023` (SCRUM-32, `POST /v1/service-requests/{id}/rating`), `HIS-001..016` (SCRUM-37) y `PAY-024..040` (SCRUM-45, `GET /v1/payments/received`).<br>2. Se agregan `PER-001..022` (edición del perfil, SCRUM-609), `REC-001..027` (recuperación de contraseña, SCRUM-623) y `NAV-001..022` (navegación hacia atrás, SCRUM-615).<br>3. Correcciones: `TNT-003` responde 422 `tenant-inactivo` (no 403), `ACT-011` edita nombre y teléfono, `SRQ-026` usa `/v1/technicians/me/service-requests`.<br>4. RTM del Sprint 5 (§7.1.3b) con las HU SCRUM-609, SCRUM-615 y SCRUM-623. Los casos nuevos quedan diseñados y pendientes de ejecución en QA.<br>5. Ajustes de la revisión por las decisiones de SCRUM-625 (DD 5.19): `REC-020` ya no queda a confirmar (las sesiones abiertas siguen hasta que vence su token); se agregan `REC-026` (técnico con la invitación sin usar) y `REC-027` (HMAC-SHA256 del correo en `password_recovery_attempts`). |
 
 
 
