@@ -1,0 +1,14 @@
+2026-11-04T15:14:55.503Z OK    Login del administrador del tenant  (HTTP 200)
+2026-11-04T15:14:56.573Z OK    Registro del cliente  (HTTP 201)
+2026-11-04T15:14:56.616Z OK    El cliente pide recuperar la contraseña  (HTTP 202)
+2026-11-04T15:14:56.661Z OK    El administrador ve la solicitud
+2026-11-04T15:14:56.704Z OK    El administrador genera el enlace  (HTTP 201, vence 2026-11-04T16:14:56.7384429+00:00)
+Esperando 62 minutos a que el enlace venza...
+2026-11-04T16:16:27.808Z OK    REC-015: el enlace vencido responde 400 enlace-invalido  (HTTP 400, https://quickpatch.internal/problems/enlace-invalido)
+2026-11-04T16:16:28.900Z OK    REC-015: la clave anterior sigue entrando  (HTTP 200)
+2026-11-04T16:16:29.828Z OK    Login otra vez del administrador  (HTTP 200)
+2026-11-04T16:16:29.874Z OK    REC-015: la solicitud sigue pendiente y admite un enlace nuevo  (HTTP 201)
+2026-11-04T16:16:30.905Z OK    REC-015: el enlace nuevo sí sirve  (HTTP 204)
+2026-11-04T16:16:31.895Z OK    REC-015: entra con la clave nueva  (HTTP 200)
+
+11/11 OK.

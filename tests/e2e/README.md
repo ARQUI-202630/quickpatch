@@ -250,11 +250,13 @@ Al final suspende a los dos técnicos y desactiva la categoría.
 4. **Bloqueo e invitación:** una cuenta bloqueada por intentos fallidos (423) queda desbloqueada al definir la clave nueva. Un técnico del equipo de un proveedor que nunca usó su invitación define la clave con el enlace, y la invitación ya no sirve (400 `enlace-invalido`).
 5. **Tenant desactivado (`REC-007`):** desactiva Beta, el pedido por su canal da 403 y lo vuelve a activar, como la colección de SCRUM-511.
 
-**Fuera de la colección:** `REC-015` (habría que esperar una hora a que venza el enlace), `REC-022` (búsqueda del token en Loki), `REC-027` (HMAC del correo en la base de Identity) y `REC-023` a `REC-025` (pantallas). `REC-009` y `REC-012` se prueban desde el tenant principal, porque Beta no tiene administrador de tenant en QA.
+**Enlace vencido (`REC-015`):** la colección no puede esperar una hora, así que lo cubre `scrum-627-enlace-vencido.mjs` (Node 22, sin dependencias; `QA_ADMIN_EMAIL`, `QA_ADMIN_PASSWORD` y `NODE_EXTRA_CA_CERTS` con la CA de QA). Genera un enlace, espera a que pase `expiresAt` y comprueba que da 400 `enlace-invalido`, que la clave anterior sigue entrando y que un enlace nuevo para la misma solicitud sí sirve. Tarda unos 62 minutos.
+
+**Fuera de la colección:** `REC-022` (búsqueda del token en Loki), `REC-027` (HMAC del correo en la base de Identity) y `REC-023` a `REC-025` (pantallas). `REC-009` y `REC-012` se prueban desde el tenant principal, porque Beta no tiene administrador de tenant en QA.
 
 **Límite de la corrida:** el correo del `admin_tenant` cuenta en el límite de 3 pedidos por hora, así que la colección no se debe correr más de 3 veces en una hora.
 
-**Evidencia:** `evidencias/scrum-627-recuperacion-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 73 peticiones y 118 aserciones, sin fallos.
+**Evidencia:** `evidencias/scrum-627-recuperacion-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 73 peticiones y 118 aserciones, sin fallos. `evidencias/scrum-627-enlace-vencido-qa-2026-11-04.txt`: 11 de 11 pasos, el enlace vencido a las 16:16 UTC.
 
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
