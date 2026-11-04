@@ -340,6 +340,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Aprobación de técnicos | `features/tecnicos/tecnicos.ts` | Lista técnicos y proveedores del tenant por estado de verificación, con paginación. Aprueba y rechaza (RF-19), suspende y reactiva (RF-20) según las transiciones de DD 8.3.13, con confirmación y un motivo de 5 a 500 caracteres para rechazar y suspender; un 409 `transicion-invalida` recarga la lista. | SCRUM-39 / SCRUM-107; SCRUM-40 / SCRUM-110 |
 | Cliente API de técnicos | `features/tecnicos/tecnicos-api.ts` | `GET /v1/admin/technicians` y `POST .../{userId}/approve`, `/reject` y `/suspend`; los nombres de especialidad salen de `GET /v1/catalog/categories`. | SCRUM-39 / SCRUM-107; SCRUM-40 / SCRUM-110 |
 | Activación de cuenta | `features/activacion` | Página pública `/activar` donde el técnico del equipo de un proveedor define su contraseña con el enlace de invitación (`POST /v1/auth/password/setup`). El token viaja en el fragmento del enlace, que el navegador no envía al servidor, y solo sale en el cuerpo del `POST`. | SCRUM-36 / SCRUM-463 |
+| Mi perfil | `features/perfil` | Nombre y teléfono propios con `GET` y `PATCH /v1/users/me` (identity 1.9.0), desde el nombre del usuario en el encabezado; el correo y el rol son de solo lectura y salir con cambios sin guardar pide confirmación. | SCRUM-613 |
 
 ![Componentes de la App móvil](diagrams/c4/C4-04-Componentes-Mobile.png)
 
@@ -368,6 +369,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componen
 | Cuenta corporativa | `features/autenticacion`, `features/empresa` | Registro de la empresa cliente con su primer usuario y alta de otros usuarios con invitación (RF-06, identity 1.8.0). | SCRUM-67 |
 | Solicitudes del cliente y de la empresa | `features/solicitudes` | Lista de las propias o de la empresa con filtro y paginación, sede en la solicitud de empresa y solo lectura para la de otro usuario de la empresa (RF-08, RF-11, RN-SR14). | SCRUM-74 |
 | Pago y comprobante | `features/pagos` | Pago con la pasarela simulada (la tarjeta se tokeniza en el teléfono) y comprobante en PDF para compartir (RF-22 a RF-24). | SCRUM-116 / SCRUM-494 |
+| Mis pagos | `features/pagos` | Pagos recibidos desde Cuenta: el técnico ve los suyos y el proveedor los de su equipo, con el nombre de cada técnico y filtro por técnico; filtros por estado, sin datos de tarjeta (RF-25, `GET /v1/payments/received`, payments 1.2.0). | SCRUM-502 |
 | Calificación | `features/calificacion` | Estrellas y comentario en el detalle de una solicitud `pagado`, solo para quien la creó; reconoce `ya-calificada` y `transicion-invalida` (RF-12, service-request 1.10.0). | SCRUM-86 |
 | Historial del técnico | `features/solicitudes` | Servicios atendidos desde Cuenta, con filtros Completados, Pagados y Cancelados y la calificación recibida (RF-17, `GET /v1/technicians/me/service-requests`). | SCRUM-101 |
 
@@ -1407,7 +1409,7 @@ Como parte de la validación de completitud se revisa qué RF y RNF del SRS no q
 - **RF-17** (servicios del técnico): sección 6.2 y lista de la sección 6.7 (SCRUM-464, SCRUM-467). Desde el Sprint 5, el historial del técnico muestra la calificación de cada servicio (SCRUM-100, SCRUM-499 y SCRUM-101).
 - **RF-19 y RF-20** (aprobación, rechazo y suspensión de técnicos): Figura 8, sección 6.4 y BPMN de la Figura 40 (SCRUM-106, SCRUM-107, SCRUM-110).
 - **RF-21** (gestión de tenants): Figura 28 y BPMN de la Figura 42 (SCRUM-112, SCRUM-462).
-- **RF-25** (pagos recibidos del técnico y del proveedor): sección 6.10 y `GET /v1/payments/received` de payments 1.2.0 (SCRUM-500, SCRUM-501). El equipo del proveedor se toma de `technician.registered`.
+- **RF-25** (pagos recibidos del técnico y del proveedor): sección 6.10 y `GET /v1/payments/received` de payments 1.2.0 (SCRUM-500, SCRUM-501). En la app, Mis pagos (sección 6.2, SCRUM-502). El equipo del proveedor se toma de `technician.registered`.
 - **Notificaciones en la app** (RIE-03, ADR-024): buzón en `db_communication` (sección 6.11, SCRUM-456, SCRUM-459), con el aviso por el canal en tiempo real de los escenarios 2 y 4.
 
 Siguen sin escenario propio:
@@ -2236,6 +2238,7 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 | Revisión integral del Sprint 5: sistemas externos según ADR-024 (sección 4), Ranking en QA, matriz 8.6 y grupos 8.7 con los eventos y consumidores reales, perfil, `tenant.status-changed` y su réplica en Identity y ServiceRequest, y calificación e historial en la app | 4, 5, 6.2, 6.4, 6.7, 6.9, 8.6, 8.7, 9 y 12 (figuras 3, 9, 10, 13, 16, 27 y 31) | SCRUM-548 |
 | Componentes reales de la calificación: ServiceRequest, Ranking e Identity | 6.4, 6.7 y 6.9 (figuras 10, 13 y 16) | SCRUM-584 |
 | Pagos recibidos de Payments con sus clases reales (`ReceivedPaymentEndpoints`, `ReceivedPaymentsHandler`, `TechnicianRegisteredConsumer` y `TechnicianRegisteredHandler`) y los consumidores reales de Communication, sin `payment.*` | 6.10 (figura 17), figura 18 y figura 3 | SCRUM-584 |
+| Mis pagos de la app (SCRUM-502) y Mi perfil del panel (SCRUM-613) en las tablas y en las vistas, regeneradas | 6.2 (figuras 8 y 9) y 8.13.5 (RF-25) | SCRUM-548 |
 | Observaciones 1 a 3 de la revisión funcional del PO: sección 12 con la revisión de la V4, contratos de `v0.21.0`, los 20 eventos de `quickpatch-kafka` `v0.10.0` y RF-17, RF-25 y el buzón en la sección 8.13.5 | 5.6.1, 5.6.2, 8.13.5, 12 y 13.5 | SCRUM-548 |
 | Auditoría previa a la revisión del PO: estado del documento, calificación implementada en la matriz de escenarios, secuencia de extremo a extremo con el técnico y la calificación por Kafka (ADR-027), cuenta corporativa implementada, Ranking en la convención de paquetes y referencias corregidas | 1, 6.2, 6.7, 8.13.3, 8.13.4, 10.2, 11.4 y 13 | SCRUM-548 |
 
