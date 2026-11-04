@@ -1,7 +1,7 @@
 # Guion de la demostración del incremento — Sprint 5
 
 **Historia:** SCRUM-556 (presentación de la entrega del Sprint 5). **Tarea:** SCRUM-557. Las diapositivas son de SCRUM-558 (Jorge); este guion y sus evidencias son el insumo.
-**Estado del guion:** versión del 3 de noviembre de 2026, revisada contra los despliegues de QA del 2 de noviembre y los PR fusionados hasta el 3. La primera versión es del 27 de octubre, con el ensayo técnico de esa noche. El ensayo técnico final se corrió el 3 de noviembre: 11 colecciones, 581 aserciones y 0 fallos (sección "Ensayo"). Los pasos marcados **[requiere APK 0.5.4]** dependen de publicar ese APK (sección "Preparación"). Lo demás ya corre en QA.
+**Estado del guion:** versión del 3 de noviembre de 2026, revisada contra los despliegues de QA del 2 de noviembre y los PR fusionados hasta el 3 (incluido Mis pagos, mobile #50). La primera versión es del 27 de octubre, con el ensayo técnico de esa noche. El ensayo técnico final se corrió el 3 de noviembre: 11 colecciones, 581 aserciones y 0 fallos (sección "Ensayo"). Los pasos marcados **[requiere APK 0.5.4]** dependen de publicar ese APK (sección "Preparación"). Lo demás ya corre en QA.
 
 ## Reglas de la demostración
 
@@ -17,7 +17,7 @@ Versiones desplegadas en QA por las ramas `release/*` del 2 de noviembre (SCRUM-
 | Qué | Dónde | Versión en QA |
 |---|---|---|
 | Panel web y página de presentación | `https://qa.quickpatch.internal` (VPN de la universidad; el certificado es autofirmado, se acepta una vez en el navegador) | `release/0.5.4` del panel, publicado por el gateway de QA (ADR-028) |
-| App móvil | APK del release `v0.5.3-qa` de `quickpatch-mobile`, también desde el botón "Descargar" de la página de presentación. **Para la demo hace falta el `v0.5.4-qa`** (sección "Preparación") | 0.5.3, con la edición del perfil (SCRUM-612). Sin la calificación (SCRUM-86) ni el historial (SCRUM-101), que entraron a `develop` el 3 de noviembre |
+| App móvil | APK del release `v0.5.3-qa` de `quickpatch-mobile`, también desde el botón "Descargar" de la página de presentación. **Para la demo hace falta el `v0.5.4-qa`** (sección "Preparación") | 0.5.3, con la edición del perfil (SCRUM-612). Sin la calificación (SCRUM-86), el historial (SCRUM-101) ni Mis pagos (SCRUM-502), que entraron a `develop` el 3 de noviembre |
 | Identity | API | `release/0.7.0`: perfil propio (SCRUM-611), reputación del técnico (SCRUM-498) y `tenant.status-changed` (SCRUM-509) |
 | ServiceRequest | API | `release/0.11.0`: calificación (SCRUM-85), historial con la calificación (SCRUM-100) y `422 tenant-inactivo` (SCRUM-510) |
 | Payments | API | `release/0.3.0`: pagos recibidos del técnico y del equipo del proveedor (SCRUM-501) |
@@ -40,7 +40,8 @@ Las claves de las cuentas de demostración las fija quien carga los datos (`QP_D
 
 | Paso | Responsable | Cómo se verifica |
 |---|---|---|
-| **Publicar el APK `v0.5.4-qa`:** rama `release/0.5.4` de `quickpatch-mobile` desde `develop`, que ya tiene la calificación (SCRUM-86) y el historial (SCRUM-101) | DevOps | El release `v0.5.4-qa` aparece como el último y el botón "Descargar" de la página baja ese APK |
+| **Publicar el APK `v0.5.4-qa`:** rama `release/0.5.4` de `quickpatch-mobile` desde `develop`, que ya tiene la calificación (SCRUM-86), el historial (SCRUM-101), Mis pagos (SCRUM-502) y la guía de estados (SCRUM-621) | DevOps | El release `v0.5.4-qa` aparece como el último y el botón "Descargar" de la página baja ese APK |
+| **Publicar el panel `0.5.5`:** rama `release/0.5.5` de `quickpatch-web` desde `develop`, con Mi perfil (SCRUM-613) y Reintentar en las tablas (SCRUM-622) | DevOps | El panel de QA muestra «Mi perfil» al pulsar el nombre del usuario |
 | Volver a correr la carga de datos de demostración en QA | DevOps | Al repetir el script, todo sale como "ya existía" |
 | Preparar un servicio ya pagado del técnico `demo.tecnico1`, sin calificar, para el historial si el flujo en vivo se corta antes del pago | QA | Con la colección `humo-flujo-critico` sin la carpeta de la calificación, o a mano |
 | Instalar el APK en dos teléfonos o emuladores (cliente y técnico) | Frontend | La pantalla de inicio de sesión abre contra QA |
@@ -72,8 +73,9 @@ Dos teléfonos en pantalla: `demo.cliente1` y `demo.tecnico1`.
 8. **Calificación [requiere APK 0.5.4]:** en el detalle de la solicitud pagada, el cliente da las estrellas y un comentario (RF-12, SCRUM-86) y ve «Tu calificación». ServiceRequest publica `service-request.rated` y Ranking actualiza la reputación del técnico (ADR-027). El backend ya está probado en QA: la prueba de humo del 30 de octubre calificó con 201 y rechazó la segunda calificación con 409 `ya-calificada`.
 9. **Historial [requiere APK 0.5.4]:** el técnico abre Cuenta → Historial y ve el servicio recién calificado con sus estrellas, con los filtros Completados, Pagados y Cancelados (RF-17, SCRUM-101).
 10. **Perfil:** el cliente abre Cuenta → Editar perfil, cambia el teléfono y lo ve guardado sin volver a iniciar sesión; el correo y el rol se ven con candado (SCRUM-612). Ya está en el APK 0.5.3.
+11. **Mis pagos [requiere APK 0.5.4]:** el técnico abre Cuenta → Mis pagos y ve el pago del servicio recién hecho como recibido, con el monto en COP y la fecha, sin datos de la tarjeta (RF-25, SCRUM-502). Con el filtro Pendientes se ven los servicios completados que el cliente aún no paga.
 
-Sin el APK 0.5.4, los pasos 8 y 9 se reemplazan por la evidencia de la prueba de humo (`humo-flujo-critico-qa-2026-10-30.txt`) y el diagrama dinámico de la calificación (SDD, figura 27). Se dice que la pantalla ya está en `develop` de la app.
+Sin el APK 0.5.4, los pasos 8 y 9 se reemplazan por la evidencia de la prueba de humo (`humo-flujo-critico-qa-2026-11-04.txt`) y el diagrama dinámico de la calificación (SDD, figura 27), y el paso 11 por `GET /v1/payments/received` en una terminal. Se dice que la pantalla ya está en `develop` de la app.
 
 ### Bloque 4. Empresa y proveedor (2 min)
 1. Con `demo.empresa1`: los usuarios autorizados de la empresa (RF-06) y una solicitud de la empresa (RF-08).
@@ -97,9 +99,8 @@ Estas funcionalidades no se demuestran en vivo aunque haya código, porque no es
 
 | Funcionalidad | Por qué no | Qué existe |
 |---|---|---|
-| Pagos recibidos del técnico y del proveedor (SCRUM-45) | La pantalla de la app (SCRUM-502) no está hecha | `GET /v1/payments/received` en QA (Payments `release/0.3.0`), con el equipo del proveedor |
-| Recuperar la contraseña (SCRUM-623) | El backend está en revisión (`quickpatch-identity#29`, SCRUM-625) y las pantallas (SCRUM-626) esperan ese PR | Contrato identity 1.10.0 y modelo en el DD 5.19 |
-| Editar el perfil desde el panel (SCRUM-613) | El PR del panel no está fusionado | La edición desde la app (bloque 3, paso 10) |
+| Recuperar la contraseña (SCRUM-623) | El backend está en `develop` de Identity (SCRUM-625) pero no en QA: su release espera el Secret `recovery-email-hash-key`. Las pantallas (SCRUM-626) ya están en `develop` de la app (mobile #51) y del panel (web #30) | Contrato identity 1.10.0 y modelo en el DD 5.19 |
+| Editar el perfil desde el panel (SCRUM-613), si no se publica el panel 0.5.5 | Está en `develop` del panel, no en QA | La edición desde la app (bloque 3, paso 10) |
 | La calificación al volver a abrir el detalle | `GET /v1/service-requests/{id}` no devuelve la calificación hasta service-request 1.12.0 (SCRUM-637). La app muestra «Ya calificaste este servicio» sin las estrellas | La calificación en el historial del técnico (bloque 3, paso 9) |
 | La reputación en el panel (A-09) | Falta exponerla en la API y en el panel | Identity ya la guarda (SCRUM-498) |
 | Producción | La promoción del MVP sigue en curso (SCRUM-518: falta promover `release/*` a `main`, SCRUM-522, y la prueba de humo, SCRUM-523) | Bases, Secrets, Nominatim y respaldo de producción listos (SCRUM-519, 520 y 521) |
@@ -114,7 +115,7 @@ Estas funcionalidades no se demuestran en vivo aunque haya código, porque no es
 | La oferta no le llega al técnico | Revisar que `demo.tecnico1` esté `disponible` y sin otra oferta pendiente (RN-M1). Si no se resuelve en un minuto, se usa `demo.tecnico2` |
 | El estado no cambia solo en la app del cliente | La app consulta el detalle cada 30 s (ADR-023); se espera o se refresca y se explica |
 | La tarjeta aprobada sale rechazada | Se verifica el número de prueba; el rechazo con la tarjeta de fondos insuficientes también es parte de la demo (AC9-E5) |
-| No se publicó el APK 0.5.4 | Los pasos 8 y 9 del bloque 3 se muestran con la evidencia de la prueba de humo y la figura 27 del SDD |
+| No se publicó el APK 0.5.4 | Los pasos 8 y 9 del bloque 3 se muestran con la evidencia de la prueba de humo y la figura 27 del SDD; el paso 11, con `GET /v1/payments/received` |
 | Una funcionalidad sigue pendiente el día de la demo | No se muestra: se nombra con su fila de "Qué no se muestra" y su tarea en Jira |
 | El navegador rechaza el certificado | Se acepta la excepción del certificado autofirmado; su huella está en `tests/security/evidencias/tls-entrada-qa-2026-10-27.txt` |
 
