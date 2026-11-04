@@ -843,7 +843,7 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 | **CAL-007** | RF-12 | API / Negativa | Sin puntaje. | 400, `score` obligatorio. |
 | **CAL-008** | RF-12 | API / Límite | Comentario de 500 y 501 caracteres. | 500 responde 201; 501 responde 400. |
 | **CAL-009** | RF-12 | API / Negativa | Campos de más. | `technicianId` en el cuerpo responde 400 (`additionalProperties: false`); no se guarda nada. |
-| **CAL-010** | RF-12, RN-R3 | API / Estado | Solicitud completada pero no pagada. | 409 `transicion-invalida` (el contrato solo permite `pagado`; diferencia con la HU a confirmar). |
+| **CAL-010** | RF-12, RN-R3 | API / Estado | Solicitud completada pero no pagada. | 409 `transicion-invalida` (el contrato solo permite `pagado`, igual que el criterio de SCRUM-86 corregido el 3 de noviembre). |
 | **CAL-011** | RF-12, RN-R3 | API / Estado | Solicitud en `asignado`, `en_progreso` o `cancelado`. | 409 `transicion-invalida` en cada caso. |
 | **CAL-012** | RF-12, RN-R2 | API / Negativa | Doble calificación. | 409 `ya-calificada`; la calificación original no cambia. |
 | **CAL-013** | RF-12, AC6-E3 | API / Fuga | Otro cliente del mismo tenant. | 403. |
