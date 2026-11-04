@@ -862,7 +862,7 @@ En cumplimiento de la trazabilidad histórica de la subtarea **SCRUM-317**, la s
 
 
 > [!NOTE]
-> **Nota de Estado de Pruebas (SCRUM-32 / SCRUM-87):** Los casos `CAL-001` a `CAL-023` se rediseñaron el 3 de noviembre de 2026 contra el endpoint publicado `POST /v1/service-requests/{id}/rating` (`service-request.v1.yaml` 1.10.0; backend SCRUM-85 finalizado, frontend SCRUM-86 en revisión). Están **diseñados y pendientes de ejecución en QA** con la colección `scrum-32-calificacion`; no se computan como ejecutados.
+> **Nota de Estado de Pruebas (SCRUM-32 / SCRUM-87):** Los casos `CAL-001` a `CAL-023` se rediseñaron el 3 de noviembre de 2026 contra el endpoint publicado `POST /v1/service-requests/{id}/rating` (`service-request.v1.yaml` 1.10.0; backend SCRUM-85 finalizado, frontend SCRUM-86 en revisión). El 4 de noviembre de 2026 se ejecutaron en QA con la colección `scrum-32-calificacion` (`tests/e2e/evidencias/scrum-32-calificacion-qa-2026-11-04.txt`): pasan todos menos `CAL-006` con `"5"`, que ServiceRequest acepta con 201 porque lee números escritos como texto (corrección en quickpatch-service-request#39; se vuelve a correr al desplegarla). `PER-001`..`018` (`scrum-614-perfil`) y `HIS-001`..`015` (`scrum-37-historial`, salvo `HIS-013`, que espera una categoría en Beta) pasaron el mismo día sin fallos.
 
 ### 7.9 Módulo: Comunicación y Notificaciones (`quickpatch-communication`)
 * **Requisitos:** RIE-03 | SAD: AC2-E3, AC5-E5
