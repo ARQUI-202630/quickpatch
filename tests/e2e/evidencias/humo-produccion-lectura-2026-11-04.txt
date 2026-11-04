@@ -1,0 +1,20 @@
+Humo de solo lectura contra producción (https://quickpatch.internal), 2026-11-04
+Inicio: 2026-11-04T07:30:54Z. Duración: 6 s. No crea, edita ni borra datos; el administrador sale del vault dentro del proceso y
+no se guardan claves ni tokens en esta evidencia.
+
+OK    salud del gateway: 200
+OK    login con credenciales falsas: 401
+OK    login del admin_tenant de producción: 200 — rol=admin_tenant
+OK    Catalog: categorías (público): 200 — 6 categorías
+OK    ServiceRequest: categorías desde su réplica: 200 — 6 categorías
+OK    la réplica coincide con Catalog: ['Aire acondicionado', 'Cerrajería', 'Electrodomésticos', 'Eléctrico', 'Pintura', 'Plomería']
+OK    ServiceRequest: localidades de Bogotá: 200 — 20 localidades
+OK    Identity: técnicos del tenant (admin): 200 — 0 técnicos
+OK    Identity: bandeja de recuperación de contraseña (admin): 200 — 0 pendientes
+OK    ServiceRequest: solicitudes del tenant (admin): 200 — 0 solicitudes
+OK    Matching: ofertas del técnico publicado: True — HTTP 401
+OK    Payments: pagos recibidos publicado: True — HTTP 401
+OK    Communication: notificaciones publicado: True — HTTP 401
+OK    Communication: canal en tiempo real publicado: True — HTTP 400
+
+RESULTADO: todo en verde

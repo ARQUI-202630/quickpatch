@@ -1,0 +1,17 @@
+Limpieza de los datos de prueba del humo del flujo crítico en producción, 2026-11-04 (SCRUM-523)
+Playbook: infrastructure/ansible/playbooks/limpiar-humo-produccion.yml (-e desde=2026-11-04T07:19:47Z -e esperados=4).
+Antes de borrar: respaldo manual de las 8 bases (02:20 hora de Colombia) y respaldo propio de las 6 bases afectadas (02:30) en VM4.
+Orden seguido: conteo, ensayo con rollback (sin violaciones de claves foráneas) y aplicación.
+
+Se borraron (dos corridas del humo: 4 usuarios de prueba y 2 solicitudes; los 2 administradores quedaron intactos):
+  db_identity:        users 4, technician_profiles 2
+  db_service_request: service_requests 2, quotes 2, ratings 1, service_evidence 1
+  db_matching:        matching_requests 2, matching_attempts 2, technician_availability 2, coverage_zones 40
+  db_communication:   notifications 18, chat_participants 2
+  db_payments:        payments 1, invoices 1, payment_technicians 2
+  db_ranking:         applied_ratings 1, technician_reputations 1
+Cada cifra coincide con el total de su tabla antes de borrar: en producción no había ningún dato de negocio real.
+
+Estado después: 2 usuarios (los administradores), 0 técnicos, 0 solicitudes, 0 filas en las tablas de las demás bases; 6 categorías base activas.
+Queda a propósito: 4 filas de audit_logs de Identity (aprobar y suspender al técnico, acciones reales de un administrador), las dos categorías de
+prueba desactivadas por la propia colección, los eventos de Kafka y la foto de evidencia en Garage.
