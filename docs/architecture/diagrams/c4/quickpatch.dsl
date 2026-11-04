@@ -691,18 +691,19 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
 
         systemContext quickpatch "C4-02-Contexto" "QUICKPATCH frente a las personas que lo usan y su único sistema externo, la pasarela de pagos (RIE-01, R5, ADR-024)." {
+            title "Contexto del sistema QUICKPATCH (C4 nivel 1)"
             include *
             exclude equipo github observabilidad
             autoLayout lr
         }
 
-        container quickpatch "C4-03-Contenedores" "Contenedores de QUICKPATCH: apps cliente, API Gateway, 8 microservicios, Kafka y almacenes de datos." {
+        container quickpatch "C4-03-Contenedores" "Contenedores de QUICKPATCH agrupados: clientes, API Gateway, microservicios, mensajería y almacenamiento, y una base PostgreSQL por servicio (ADR-014)." {
+            title "Contenedores de QUICKPATCH (C4 nivel 2)"
             include *
             exclude equipo github observabilidad
-            autoLayout tb 200 80
-            properties {
-                "structurizr.groups" false
-            }
+            # Actors está planeado y no tiene despliegue: no se dibuja lo que todavía no existe.
+            exclude actors dbActors
+            autoLayout tb 200 100
         }
 
         component mobile "C4-04-Componentes-Mobile" "Componentes de la App móvil." {
