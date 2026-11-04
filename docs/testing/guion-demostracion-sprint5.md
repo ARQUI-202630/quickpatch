@@ -99,7 +99,7 @@ Estas funcionalidades no se demuestran en vivo aunque haya código, porque no es
 
 | Funcionalidad | Por qué no | Qué existe |
 |---|---|---|
-| Recuperar la contraseña (SCRUM-623) | El backend está en `develop` de Identity (SCRUM-625) pero no en QA: su release espera el Secret `recovery-email-hash-key`. Las pantallas (SCRUM-626) están en desarrollo | Contrato identity 1.10.0 y modelo en el DD 5.19 |
+| Recuperar la contraseña (SCRUM-623) | El backend está en `develop` de Identity (SCRUM-625) pero no en QA: su release espera el Secret `recovery-email-hash-key`. Las pantallas (SCRUM-626) ya están en `develop` de la app (mobile #51) y del panel (web #30) | Contrato identity 1.10.0 y modelo en el DD 5.19 |
 | Editar el perfil desde el panel (SCRUM-613), si no se publica el panel 0.5.5 | Está en `develop` del panel, no en QA | La edición desde la app (bloque 3, paso 10) |
 | La calificación al volver a abrir el detalle | `GET /v1/service-requests/{id}` no devuelve la calificación hasta service-request 1.12.0 (SCRUM-637). La app muestra «Ya calificaste este servicio» sin las estrellas | La calificación en el historial del técnico (bloque 3, paso 9) |
 | La reputación en el panel (A-09) | Falta exponerla en la API y en el panel | Identity ya la guarda (SCRUM-498) |
