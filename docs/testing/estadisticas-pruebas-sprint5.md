@@ -85,8 +85,8 @@ Conforme a la directriz técnica de QA, las peticiones masivas de carga no se co
 
 | Escenario de Carga | Concurrencia (VUs) | Duración | Iteraciones | Peticiones HTTP | Latencia p95 | Tasa de Error | Archivo de Evidencia |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|---|
-| **Prueba de Carga Concurrente (50 VU)** | 50 VUs | 2m 30s | 2,876 | 5,755 | **73.55 ms** | **0.00%** | `tests/performance/evidencias/k6-load-50vu-summary.json` |
-| **Prueba de Estrés Extremo (150 VU)** | 150 VUs | 4m 00s | 38,873 | 38,876 | **415.39 ms** | **0.00%** | `tests/performance/evidencias/k6-stress-150vu-summary.json` |
+| **Prueba de Carga Concurrente (50 VU)** | 50 VUs | 2m 30s | 2,817 | 8,454 | **79.66 ms** | **0.01%** | `tests/performance/evidencias/k6-load-50vu-qa-2026-11-04-run-41940280403.json` |
+| **Prueba de Estrés Extremo (150 VU)** | 150 VUs | 4m 00s | 16,378 | 32,750 | **1105.96 ms** | **0.03%** | `tests/performance/evidencias/k6-stress-150vu-qa-2026-11-04-run-41940280403.json` |
 
 ---
 
@@ -106,7 +106,7 @@ Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-def
 
 * **Total de Pruebas Reales Automatizadas:** **2,469 pruebas / aserciones** (1,525 unitarias/integración + 931 E2E + 13 seguridad).
 * **Tasa de Aprobación de Pruebas:** **100.0% PASS (0 fallos en runs oficiales)**.
-* **Capacidad de Carga k6:** **38,876 peticiones procesadas** con 0.00% de errores y p95 de 415.39 ms bajo 150 VU.
+* **Capacidad de Carga k6:** **32,750 peticiones procesadas** con 0.03% de errores y p95 de 1105.96 ms bajo 150 VU.
 * **Cobertura de Código en CI (SCRUM-602):** **91.7% – 100.0%** en 10 repositorios; todos sobre el umbral de 80%.
 * **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.
 * **Avance Preliminar del Producto (Matriz Excel UAT):** **75.80%** (Meta Sprint 4: 80% / Brecha: -4.20%).
