@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.20|
+|**Versión**|5.21|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-637 — Calificación en el detalle de la solicitud (5.20); SCRUM-625 — Hash del correo con HMAC y la invitación pendiente en la recuperación de la contraseña (5.19); SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-644 — Contraseña cifrada en el cliente con RSA-OAEP-256 (5.21); SCRUM-637 — Calificación en el detalle de la solicitud (5.20); SCRUM-625 — Hash del correo con HMAC y la invitación pendiente en la recuperación de la contraseña (5.19); SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -1818,6 +1818,7 @@ La columna **Roles** usa los valores de `users.role` (sección 5.2). "Público" 
 |GET|`/v1/providers/me/technicians?status=`|`proveedor`|RF-16|Contrato v1.7.0|Listar el equipo; `status` es `activo` (aprobado) o `inactivo` (pendiente, rechazado o suspendido).|
 |POST|`/v1/providers/me/technicians/{userId}/invitation`|`proveedor`|RF-16|Contrato v1.7.0|Generar un enlace nuevo y anular los anteriores sin usar.|
 |POST|`/v1/auth/password/setup`|Público, con el token de la invitación|RF-16, RF-06|Contrato v1.7.0|El técnico del equipo o, desde la 1.8.0, el usuario agregado a una empresa define su contraseña.|
+|GET|`/v1/auth/password-key`|Público|RF-03, RNF-03|Contrato v1.11.0|Llave pública RSA (SPKI en base64), `keyId` y `RSA-OAEP-256` para cifrar la contraseña en el cliente (sección 8.3.2). Es otra llave que la del JWT.|
 |POST|`/v1/auth/password-recovery`|Público|RF-03|Contrato v1.10.0|Pedir la recuperación de la contraseña olvidada con el correo. Responde `202` exista o no la cuenta; `429` si pasa de 3 por correo por hora (sección 8.3.19).|
 |GET|`/v1/admin/password-recovery-requests?page=&size=`|`admin_tenant`|RF-03|Contrato v1.10.0|Solicitudes de recuperación pendientes de su tenant.|
 |POST|`/v1/admin/password-recovery-requests/{id}/link`|`admin_tenant`|RF-03|Contrato v1.10.0|Generar el enlace de recuperación de un solo uso, que vence a 1 hora. Queda en `audit_logs` (`generar_enlace_recuperacion`).|
@@ -1953,8 +1954,16 @@ Esta sección detalla los endpoints del flujo crítico (RF-27) y los que tienen 
 #### 8.3.2 Inicio de sesión — `POST /v1/auth/login`
 
 ```json
-{ "email": "ana.gomez@correo.com", "password": "********" }
+{ "email": "ana.gomez@correo.com", "encryptedPassword": { "keyId": "Xq3vT0b9mK2pL7sW", "ciphertext": "kZ8f…" } }
 ```
+
+**Contraseña cifrada (v5.21, contrato `identity.v1.yaml` 1.11.0, SCRUM-644).** La app y el panel no mandan la contraseña en claro: piden la llave pública con `GET /v1/auth/password-key`, la cifran con RSA-OAEP y SHA-256 y la envían en `encryptedPassword` (`keyId` y `ciphertext` en base64url). Así no se lee en las herramientas del navegador ni en la red del laboratorio, donde VM1 ya terminó el TLS. Vale igual para el registro de cliente, técnico y empresa, `POST /v1/auth/password/setup` y `POST /v1/auth/password-recovery/confirm`.
+
+- Va `password` o `encryptedPassword`, nunca las dos (`400 validacion`).
+- Si `keyId` no es el de la llave vigente, responde `400 llave-desconocida`, y el cliente pide la llave de nuevo y reintenta una vez.
+- Identity descifra y sigue igual: mismas reglas de la contraseña, mismo BCrypt (RNF-03) y mismo bloqueo (RN-U4). La contraseña no se guarda ni se escribe en los logs.
+- La llave privada es propia de esta función y llega como secreto (`PasswordEncryption__PrivateKeyPem`). Sin el secreto, Identity genera una al arrancar, lo que sirve con una réplica.
+- `password` en claro se sigue aceptando por compatibilidad (colecciones de QA y la APK anterior). Un ambiente lo rechaza con `PasswordEncryption:RequireEncrypted`.
 
 **Respuesta `200 OK`:**
 
@@ -2892,7 +2901,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.18|SCRUM-597|**Recuperación de la contraseña olvidada (RF-03, ADR-024).** Contrato `identity.v1.yaml` 1.10.0 con `POST /v1/auth/password-recovery`, `GET /v1/admin/password-recovery-requests`, `POST /v1/admin/password-recovery-requests/{id}/link` y `POST /v1/auth/password-recovery/confirm` (secciones 8.2.1 y 8.3.19). Nuevas tablas `password_recovery_requests` y `password_recovery_attempts` (secciones 5.27 y 5.28) y columna `purpose` en `password_setup_tokens` (5.21): el enlace de recuperación lo genera el `admin_tenant`, vence a 1 hora y no hay correo. Nueva regla RN-U7, error `429` y Cuadro 8.|
 |5.19|SCRUM-625|**Decisiones de la recuperación de la contraseña (`quickpatch-identity#29`).** `password_recovery_attempts.email_hash` pasa de SHA-256 a HMAC-SHA256 con una clave del servicio (sección 5.28). Al confirmar la recuperación se marcan como usadas las invitaciones pendientes del usuario (RN-U7). Se aprueba el modelo de las tablas 5.27 y 5.28 y de la columna `purpose` (5.21) tal como lo implementa el PR.|
 |5.20|SCRUM-637|**Calificación en el detalle de la solicitud (RF-12).** `service-request.v1.yaml` 1.12.0: `GET /v1/service-requests/{id}` agrega `rating` (`score`, `comment` y `ratedAt`), opcional y `null` mientras no se califique, para SCRUM-86 y SCRUM-32. Cambio compatible; RN-SR13 no cambia. Secciones 5.9, 8.2.4 y 8.3.4.|
-|5.21|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.21|SCRUM-644|**Contraseña cifrada en el cliente (RF-03, RNF-03; observación del profesor).** `identity.v1.yaml` 1.11.0 (`quickpatch-api-gateway` v0.23.0): `GET /v1/auth/password-key` y `encryptedPassword` (RSA-OAEP-256) en el login, los registros, `password/setup` y `password-recovery/confirm`; `400 llave-desconocida` (secciones 8.2.1 y 8.3.2). Sin cambios en las tablas.|
+|5.22|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
