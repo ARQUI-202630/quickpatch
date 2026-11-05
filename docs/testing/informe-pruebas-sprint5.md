@@ -68,7 +68,7 @@ Corte del 5 de noviembre de 2026. Las cifras de avance salen del Informe UAT ofi
 | Tasa de aprobación global | **100.0% PASS** | 2,469 pruebas y aserciones: 1,368 unitarias, 157 de integración, 931 E2E y 13 de seguridad, con 0 fallos en las corridas oficiales |
 | Rendimiento k6 (run 41940280403) | **Cumple** | 50 VU: p95 de 88 ms (crear solicitud) y 32 ms (catálogo). 150 VU: p95 de 1,183 ms, 0 errores 5xx y 0 pods caídos |
 
-> La [matriz de 52 escenarios](matriz-escenarios-calidad-52.md) del repositorio sigue con el corte de QA del 4 de noviembre (51.92%). La diferencia con el 73.08% viene de las mediciones del 5 de noviembre (PR #266, #269 y #270) y de las decisiones de la Product Owner. La matriz se actualiza cuando QA valide esas mediciones.
+> La [matriz de 52 escenarios](matriz-escenarios-calidad-52.md) quedó igual al Informe UAT oficial (versión 3.2, 73.08%), con las mediciones del 5 de noviembre validadas por QA.
 
 #### Gráfica 1: Distribución de pruebas por tipo
 ![Gráfica 1: Distribución de pruebas por tipo](img/grafica-1-pruebas-por-tipo.png)
@@ -245,12 +245,12 @@ Estado según [`docs/testing/capacidad-interaccion-scrum-569.md`](capacidad-inte
 | Escenario | Estado | Nota |
 |---|---|---|
 | AC4-E1 Solicitud en máximo 3 pasos | Cumple | |
-| AC4-E2 Distintos dispositivos | Parcial | Falta la matriz formal de tablets |
+| AC4-E2 Distintos dispositivos | Cumple | Por decisión de la Product Owner; falta la matriz formal de tablets como evidencia |
 | AC4-E3 Reconocer la app en < 30 s | No medido | Se mide en la UAT (SCRUM-608) |
 | AC4-E4 Primer uso del técnico | No medido | Se mide en la UAT (SCRUM-608) |
 | AC4-E5 Protección ante errores | Cumple | |
 | AC4-E6 Motivación para calificar | No medido | La pantalla de calificación ya existe (SCRUM-86, APK `v0.5.4-qa`); falta medir la tasa del 60% con servicios reales. Primera observación en la UAT (SCRUM-608) |
-| AC4-E7 Accesibilidad | No medido | DEF-INT-02 |
+| AC4-E7 Accesibilidad | Cumple | Medido con el arnés de pruebas (quickpatch-mobile#58); no sustituye una prueba con TalkBack. DEF-INT-02 |
 | AC4-E8 Gama baja | No medido | DEF-INT-03 |
 | AC4-E9 Estados que se explican solos | Parcial | Falta validar con usuarios en la UAT |
 
