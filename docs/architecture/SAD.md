@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.47 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.48 — QUICKPATCH
 
 ---
 
@@ -1225,20 +1225,32 @@ flowchart TB
 
 ## 8. Arquitectura de Datos
 
-Esta sección describe las entidades principales del sistema agrupadas por dominio de negocio, y la estrategia de aislamiento multi-tenant. El modelo de datos completo (diagrama entidad-relación, atributos, tipos de dato y contratos de API) se desarrolla en el Documento de Datos (DD) V1, no en esta sección.
+Esta sección describe las entidades principales del sistema agrupadas por dominio de negocio, y la estrategia de aislamiento multi-tenant. El modelo de datos completo (diagrama entidad-relación, atributos, tipos de dato y contratos de API) se desarrolla en el Documento de Datos (DD), no en esta sección.
 
 ### 8.1 Dominios de entidades
 
-|Dominio|Entidades|
-|---|---|
-|Identidad y Tenancy|`Tenant`, `User`, `Role`|
-|Actores de negocio|`Supplier`, `Ally`, `Employee`, `Client`, `BusinessClient`|
-|Catálogo|`Specialty`, `ServiceCatalogItem`, `CoverageZone`|
-|Ciclo de vida del servicio|`ServiceRequest`, `Quote`, `MatchingAttempt`, `Evidence`, `Evaluation`|
-|Reputación|`Ranking` (servicio), `SupplierRanking` (materiales)|
-|Pagos y facturación|`Payment`, `Invoice`, `PayoutRecord`|
-|Comunicación y soporte|`Conversation`, `Message`, `Notification`, `Complaint`|
-|Auditoría|`AuditLog`|
+Las entidades se agrupan por el microservicio que es dueño de sus datos (database-per-service). La tabla refleja el DD 5.19 y las tablas de cada servicio en `develop` al 4 de noviembre de 2026 (SCRUM-595); el modelo con atributos, estados y cardinalidades es la figura 6 del SDD (sección 5.5). Las réplicas son copias locales alimentadas por eventos (ADR-017), no entidades propias.
+
+|Servicio|Entidades propias|Réplicas de otros servicios|
+|---|---|---|
+|Identity|`Tenant`, `User` (roles `cliente`, `tecnico`, `proveedor`, `empresa_contacto`, `admin_tenant` y `admin_plataforma`), `ClientCompany`, `TechnicianProfile`, `PasswordSetupToken`, `PasswordRecoveryRequest`, `PasswordRecoveryAttempt`|`averageRating` del técnico, desde Ranking|
+|Catalog|`ServiceCategory`|—|
+|ServiceRequest|`ServiceRequest`, `Quote`, `Rating`, `ServiceEvidence`|`CategoryReplica` (Catalog), `TenantStatusReplica` (Identity)|
+|Matching|`MatchingRequest`, `MatchingAttempt`, `CoverageZone`, `Locality`|`TechnicianAvailability` (Identity)|
+|Payments|`Payment`, `Invoice`|`PaymentTechnician` (Identity)|
+|Ranking|`TechnicianReputation`, `AppliedRating`|—|
+|Communication|`ChatParticipants`, `ChatMessage`, `Notification`|—|
+
+Actors Service no tiene tablas. Cada servicio tiene además sus tablas técnicas: `outbox_events` (ADR-007) y, si consume eventos, `processed_events` (idempotencia); Identity y ServiceRequest tienen también `audit_logs` (DD 5.14 a 5.16).
+
+Las versiones anteriores de esta tabla listaban entidades del diseño inicial que no se implementaron en el MVP: `Role`, `Supplier`, `Ally`, `Employee`, `Client`, `BusinessClient`, `Specialty`, `ServiceCatalogItem`, `Evaluation`, `SupplierRanking`, `PayoutRecord`, `Conversation` y `Complaint`. Se reemplazaron así:
+- los actores son roles de `User`, y la empresa cliente es `ClientCompany`;
+- la especialidad es una `ServiceCategory`;
+- la evaluación es `Rating`;
+- la reputación es `TechnicianReputation`;
+- la conversación es `ChatParticipants`.
+
+`SupplierRanking`, `PayoutRecord` y `Complaint` no tienen historia en el MVP.
 
 ### 8.2 Aislamiento multi-tenant a nivel de datos
 
@@ -1297,5 +1309,6 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.45|27 oct 2026|Sección 5.1 con las vistas de despliegue por ambiente (figuras 5.1 y 5.2, SCRUM-573 y SCRUM-576): cada ambiente con sus nodos, su gateway y sus datos, y VM1 como infraestructura auxiliar. VM4 con Redis como coordinación temporal y Nominatim; Ranking implementado sin desplegar.|
 |2.46|29 oct 2026|Sección 7.4: el pago va antes de la calificación (`DELIVERED` → `PAID` → `EVALUATED`), como el SRS (RF-12), el SDD (escenario 7) y el DD (RN-R3). Cierra la contradicción P2 del SRS (sección 7.4.2), señalada en la línea base del SRS (SCRUM-535).|
 |2.47|3 nov 2026|Sección 4.2.2: remite a los escenarios dinámicos del SDD, sección 8, con título y pasos numerados: asignación, cotización, pago, calificación y cancelación (SCRUM-589).|
+|2.48|4 nov 2026|Sección 8.1 con las entidades reales de cada servicio, sus réplicas y lo que reemplazó a las entidades del diseño inicial que no se implementaron (SCRUM-595, revisión del Sprint 4). Remite a la figura 6 del SDD, rehecha con el DD 5.19 y el código.|
 |2.27|12 oct 2026|Dependencias externas frente a R5 (SCRUM-413 y SCRUM-405). Se acepta ADR-024: R5 no cambia; la geocodificación (RIE-02) corre con un Nominatim propio con el mapa de Bogotá en VM4 y VM5, usado por ServiceRequest cuando la solicitud llega sin coordenadas, y las notificaciones (RIE-03) del MVP se entregan dentro de la app (canal de ADR-023 y buzón en Communication). El diagrama de contexto (4.1) pasa el geocodificador adentro del sistema y retira el proveedor de correo y push, y la nota de sistemas externos lo explica. ADR-024 entra a la tabla 5.5 y a la matriz 6.1 como excepción a ADR-014.|
 |2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|

@@ -1,0 +1,258 @@
+@startuml 03_modelo_logico_dominio
+' Figura 6 del SDD (sección 5.5): modelo lógico de dominio por microservicio (SCRUM-595).
+' Fuente: DD 5.19 (secciones 5 y 6) y las tablas de cada servicio en develop del 4 de noviembre de 2026.
+' Solo entidades de negocio: outbox_events, processed_events y audit_logs están en el DD (5.14 a 5.16).
+' Línea continua: relación dentro del servicio (FK). Línea punteada: referencia lógica o réplica por evento.
+' Generar: docker run --rm -v "$PWD:/data" plantuml/plantuml:1.2026.8 -tsvg -charset UTF-8 -o .. /data/03_modelo_logico_dominio.puml
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam ArrowColor #555555
+skinparam ArrowFontSize 10
+skinparam ClassFontSize 12
+skinparam ClassAttributeFontSize 10
+skinparam packageStyle rectangle
+skinparam package {
+  BorderColor #607D8B
+  FontSize 13
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #546E7A
+  BackgroundColor<<replica>> #F1F3F5
+  BorderColor<<replica>> #90A4AE
+}
+hide circle
+hide methods
+hide empty members
+
+package "Identity Service" #E3F2FD {
+  class Tenant {
+    id
+    name
+    nit {único}
+    status: activo | inactivo
+  }
+  class User {
+    id
+    tenantId
+    email {único}
+    role: cliente | tecnico | proveedor
+      | empresa_contacto | admin_tenant | admin_plataforma
+    companyId [0..1]
+    failedLoginAttempts, lockedUntil
+  }
+  class ClientCompany {
+    id
+    tenantId
+    legalName
+    nit {único}
+  }
+  class TechnicianProfile {
+    userId
+    providerId [0..1]
+    specialtyId
+    verificationStatus: pendiente | aprobado
+      | rechazado | suspendido
+    averageRating [0..1]
+  }
+  class PasswordSetupToken {
+    id
+    userId
+    purpose: invitacion | recuperacion
+    tokenHash
+    expiresAt, usedAt
+  }
+  class PasswordRecoveryRequest {
+    id
+    userId
+    status: pendiente | cerrada
+    requestedAt, closedAt
+  }
+  class PasswordRecoveryAttempt {
+    emailHash: HMAC-SHA256
+    attemptedAt
+  }
+}
+
+package "Catalog Service" #FFF8E1 {
+  class ServiceCategory {
+    id
+    tenantId
+    name
+    active
+  }
+}
+
+package "ServiceRequest Service" #E8F5E9 {
+  class ServiceRequest {
+    id
+    tenantId
+    clientId
+    companyId [0..1]
+    technicianId [0..1]
+    categoryId
+    clientType: hogar | empresa
+    status: buscando_tecnico | en_espera | asignado
+      | cotizado | cotizacion_aceptada | en_progreso
+      | completado | pagado | cancelado
+    location, addressText
+  }
+  class Quote {
+    id
+    serviceRequestId
+    technicianId
+    laborAmount, materialsAmount
+    totalAmount
+    status
+    expiresAt
+  }
+  class Rating {
+    id
+    serviceRequestId {único}
+    technicianId
+    score: 1..5
+    comment [0..1]
+  }
+  class ServiceEvidence {
+    id
+    serviceRequestId
+    technicianId
+    fileUrl
+  }
+  class "CategoryReplica" as SRCategory <<replica>> {
+    categoryId
+    name, active
+  }
+  class TenantStatusReplica <<replica>> {
+    tenantId
+    status
+    updatedAt
+  }
+}
+
+package "Matching Service" #F3E5F5 {
+  class MatchingRequest {
+    serviceRequestId
+    categoryId
+    location
+    status: buscando | en_espera
+      | asignado | cancelado
+  }
+  class MatchingAttempt {
+    id
+    technicianId
+    response: pendiente | aceptado | rechazado
+      | expirado | cancelado
+    offeredAt, expiresAt
+    distanceM
+  }
+  class TechnicianAvailability <<replica>> {
+    technicianId
+    specialtyId
+    verificationStatus
+    status: disponible | ocupado | no_disponible
+  }
+  class CoverageZone {
+    id
+    technicianId
+    localityCode
+  }
+  class Locality {
+    code
+    name
+    area
+  }
+}
+
+package "Payments Service" #FCE4EC {
+  class Payment {
+    id
+    serviceRequestId
+    technicianId
+    clientId, companyId [0..1]
+    payerType: cliente | empresa
+    amount
+    status: pendiente | procesando
+      | aprobado | rechazado
+    processedAt
+  }
+  class Invoice {
+    id
+    paymentId
+    invoiceNumber
+    amount, issuedAt
+  }
+  class PaymentTechnician <<replica>> {
+    technicianId
+    providerId [0..1]
+  }
+}
+
+package "Ranking Service" #EDE7F6 {
+  class TechnicianReputation {
+    technicianId
+    ratingCount, ratingSum
+    averageRating
+    lowReputation
+  }
+  class AppliedRating {
+    serviceRequestId
+  }
+}
+
+package "Communication Service" #E0F2F1 {
+  class ChatParticipants {
+    serviceRequestId
+    clientId, technicianId
+    status
+  }
+  class ChatMessage {
+    id
+    serviceRequestId
+    authorId, authorRole
+    body, sentAt
+  }
+  class Notification {
+    id
+    userId
+    type, title, message
+    readAt [0..1]
+  }
+}
+
+' Relaciones dentro de cada servicio
+Tenant "1" -- "1..*" User
+Tenant "1" -- "0..*" ClientCompany
+ClientCompany "0..1" -- "0..*" User : empresa_contacto
+User "1" -- "0..1" TechnicianProfile : extiende
+User "0..1" -- "0..*" TechnicianProfile : proveedor (equipo)
+User "1" -- "0..*" PasswordSetupToken
+User "1" -- "0..1" PasswordRecoveryRequest : pendiente
+
+ServiceRequest "1" *-- "0..*" Quote
+ServiceRequest "1" *-- "0..1" Rating
+ServiceRequest "1" *-- "0..*" ServiceEvidence
+
+MatchingRequest "1" *-- "0..*" MatchingAttempt : ofertas
+Locality "1" -- "0..*" CoverageZone
+
+Payment "1" -- "0..1" Invoice
+
+ChatParticipants "1" -- "0..*" ChatMessage
+
+' Referencias lógicas y réplicas por evento entre servicios
+User ..> ServiceRequest : clientId
+TechnicianProfile ..> ServiceRequest : technicianId
+ClientCompany ..> ServiceRequest : companyId
+ServiceCategory ..> SRCategory : category.*
+Tenant ..> TenantStatusReplica : tenant.status-changed
+ServiceRequest ..> MatchingRequest : service-request.created
+TechnicianProfile ..> TechnicianAvailability : technician.*
+ServiceRequest ..> Payment : service-request.completed
+TechnicianProfile ..> PaymentTechnician : technician.registered
+Rating ..> AppliedRating : service-request.rated
+TechnicianReputation ..> TechnicianProfile : technician-reputation-changed\n(averageRating)
+ServiceRequest ..> ChatParticipants : estado de la solicitud
+User ..> Notification : userId
+@enduml
