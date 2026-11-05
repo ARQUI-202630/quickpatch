@@ -1,0 +1,53 @@
+================================================================================
+EVIDENCIA DE PRUEBA DE CARGA K6: 50 VU SOSTENIDOS (SCRUM-526, Sprint 5)
+================================================================================
+Corrida:      GitHub Actions «Pruebas de sistema», run 41940280403, intento 1
+              https://github.com/ARQUI-202630/quickpatch/actions/runs/41940280403
+Disparo:      workflow_dispatch sobre develop (commit c4072b9), con la casilla «carga»
+Trabajo:      «Carga (k6)», de 00:31:13 a 00:37:59 UTC del 2026-11-05
+              (noche del 4 de noviembre en Colombia), runner self-hosted de VM1
+Ambiente:     QA, https://qa.quickpatch.internal (VM1 entrada, k3s en VM2, PostgreSQL en VM5)
+Versiones:    las mismas que producción: identity 0.8.1, catalog 0.4.1, service-request 0.11.2,
+              matching 0.6.1, payments 0.3.0, communication 0.3.3, ranking 0.1.0, panel 0.5.5
+              (Documento de Infraestructura, sección 6.2)
+Script:       tests/performance/load-test-50vu.js
+Resumen:      k6-load-50vu-qa-2026-11-04-run-41940280403.json (artefacto «resultados-k6» de la corrida;
+              se reemplazó el token de la sesión de setup por «<omitido>»)
+Requisitos:   PRF-001, PRF-002, PRF-007 (RNF-06), AC2-E1, AC2-E2
+
+1. ESCENARIO
+   - Hasta 50 usuarios virtuales durante 2 min 30 s, en 3 etapas.
+   - Un cliente de QA inicia sesión en setup() con los secretos del repositorio.
+   - Cada iteración consulta el catálogo (GET /api/v1/catalog/categories)
+     y crea una solicitud (POST /api/v1/service-requests).
+   - Iteraciones completas: 2.817. Peticiones HTTP: 8.454 (55,6 por segundo).
+
+2. UMBRALES
+   | Métrica                                | Resultado                 | Umbral        | Estado |
+   |----------------------------------------|---------------------------|---------------|--------|
+   | Catálogo, p95                          | 31,96 ms                  | < 200 ms      | Cumple |
+   | Crear solicitud, p95                   | 88,16 ms                  | < 2 s         | Cumple |
+   | Peticiones fallidas (http_req_failed)  | 0,01 % (1 de 8.454)       | < 1 %         | Cumple |
+   | Tasa de errores del script             | 0,00 % (0 de 5.634)       | < 1 %         | Cumple |
+
+3. OTRAS CIFRAS
+   - Duración de todas las peticiones: p50 21,57 ms; p90 62,65 ms; p95 79,66 ms; máximo 913,84 ms.
+   - Catálogo: p50 14,03 ms; p90 26,24 ms; máximo 74,14 ms.
+   - Crear solicitud: p50 29,55 ms; p90 71,61 ms; máximo 758,11 ms.
+   - Checks: 11.268 de 11.268 (100 %): catálogo 200, catálogo dentro del umbral,
+     solicitud 201 o 200, y solicitud dentro del umbral, 2.817 veces cada uno.
+   - La única petición fallida no rompió ningún check. El resumen de k6 no dice de qué petición fue.
+
+4. COMPARACIÓN CON EL SPRINT 4 (k6-load-50vu-qa-2026-10-18.txt)
+   - Sprint 4: 5.755 peticiones, p95 global 73,55 ms, 0 % de errores.
+   - Sprint 5: 8.454 peticiones, p95 global 79,66 ms, 0,01 % de errores.
+
+5. ESTADO DE QA DESPUÉS DE LA CARGA (medición de DevOps)
+   - Los 7 pods en 1/1, con 0 reinicios y 0 OOMKilled.
+   - Las solicitudes creadas por k6 (19.186 entre esta prueba y la de 150 VU) se borraron
+     con infrastructure/ansible/playbooks/limpiar-carga-qa.yml, después de respaldar las
+     tres bases (Documento de Infraestructura, sección 6.2).
+
+6. RESULTADO
+   CUMPLE. Todos los umbrales de la prueba de carga de 50 VU pasan en QA.
+================================================================================

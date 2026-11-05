@@ -1,8 +1,8 @@
 # Informe Consolidado de Pruebas — Sprint 5 (SCRUM-524 / SCRUM-528)
 
 **Código del Documento:** `INF-QA-SP5-2026-11-04`  
-**Versión:** `1.0 (Cierre Sprint 5, para revisión)`  
-**Fecha de Emisión:** 4 de noviembre de 2026  
+**Versión:** `1.2 (cifras oficiales del Informe UAT de la Product Owner)`  
+**Fecha de Emisión:** 4 de noviembre de 2026 (versiones 1.1 y 1.2: 5 de noviembre de 2026)  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
 **Trazabilidad Jira:** Historia Padre `SCRUM-524` | Subtareas `SCRUM-525`, `SCRUM-526`, `SCRUM-527`, `SCRUM-528`  
 **Referencias:** SRS V5.11 / SAD V4 / DD V5.19 / TD V3.2 / ADR-015 / ADR-022 / ADR-023 / RNF-08  
@@ -14,14 +14,20 @@
 
 ### 1.1 Dictamen
 
-> ### **ESTADO: GO CONDICIONADO — BACKEND, API, CI Y HUMO EN PRODUCCIÓN VERIFICADOS**
+> ### **ESTADO: CONDITIONAL GO / GO TÉCNICO EN QA Y PRODUCCIÓN**
 >
 > El incremento del Sprint 5 pasa las pruebas automáticas contra QA y la prueba de humo contra producción, sin fallos.
 >
-> Quedan tres condiciones abiertas, y ninguna es un defecto bloqueante:
-> 1. La carga con k6 de este sprint (SCRUM-526). La última medición es del Sprint 4.
-> 2. La verificación de pantallas en la app móvil `v0.5.4-qa` y el panel web `0.5.5` (SCRUM-618).
-> 3. La sesión de UAT con la Product Owner (SCRUM-608).
+> La carga con k6 del Sprint 5 pasó todos sus umbrales en QA (SCRUM-526, run 41940280403), con QA en las mismas versiones que producción.
+>
+> Con esta corrida, la excepción al RNF-08 queda levantada (Documento de Infraestructura, versión 4.15).
+>
+> El recorrido de pantallas de la app (SCRUM-618) ya se hizo en QA con el APK `v0.5.5-qa` (PR #267, 23 capturas).
+>
+> La Product Owner aceptó las 37 funcionalidades en el Informe UAT oficial del 5 de noviembre, con observaciones en RF-10. Decidió con las evidencias de QA, sin la sesión de los 8 casos.
+>
+> El GO queda condicionado solo a una verificación final, que no es un defecto bloqueante:
+> 1. La firma del acta de UAT (SCRUM-608).
 
 **Cifras clave (todas con evidencia en el repositorio o en GitHub Actions):**
 - **QA, 4 de noviembre:** las 27 colecciones Newman vigentes tienen corrida sin fallos ([`tests/e2e/evidencias/regresion-sprint5-qa-2026-11-04.md`](../../tests/e2e/evidencias/regresion-sprint5-qa-2026-11-04.md)).
@@ -30,6 +36,7 @@
 - **Producción, 4 de noviembre:** el humo del flujo crítico dio 31 peticiones, 29 aserciones y 0 fallos. La lectura dio 14/14. Los datos de prueba se limpiaron (SCRUM-523, PR #247).
 - **CI:** 1,525 pruebas unitarias y de integración con 0 fallos. La cobertura va de 91.7% a 100.0% en todos los repositorios, por encima del umbral de 80% (SCRUM-602).
 - **PCI-DSS:** 4 corridas en el sprint, cada una con 5000 líneas de Loki revisadas y 0 hallazgos (SCRUM-527).
+- **k6, 5 de noviembre (noche del 4 en Colombia):** con 50 usuarios, crear solicitud p95 de 88 ms y catálogo p95 de 32 ms, con 0,01 % de peticiones fallidas. Con 150 usuarios, 0 errores 5xx y p95 de 1.183 ms, con 0,03 % de peticiones fallidas. Con esta corrida no queda ninguna excepción al RNF-08 vigente (SCRUM-526).
 - **ZAP:** el escaneo base terminó con 0 FAIL en todas las corridas del sprint. Las 4 advertencias son de cabeceras en QA y están conocidas (DEF-S4-03).
 - **Defectos:** 19 registrados entre los Sprints 3 y 5 (14 corregidos, 1 no aplica a producción, 4 en mitigación); 0 bloqueantes abiertos. En este sprint se encontró y se corrigió además el defecto del puntaje como texto en ServiceRequest (SCRUM-87).
 
@@ -41,10 +48,41 @@
 | **3.2 Humo en producción** | Flujo crítico y lectura | 0 fallos y limpieza registrada | 31 peticiones, 29 aserciones, 0 fallos; lectura 14/14; limpieza registrada | ✅ Aprobada |
 | **3.3 CI y cobertura** | Pruebas unitarias y de integración por repositorio | 0 fallos y cobertura ≥ 80% | 1,525 pruebas, 0 fallos; 91.7% a 100.0% | ✅ Aprobada |
 | **3.4 PCI-DSS** | PAN y CVV en Loki | 0 hallazgos | 0 hallazgos en 4 corridas (5000 líneas cada una) | ✅ Aprobada |
-| **3.5 k6 carga y estrés** | p95 y tasa de errores | 50 VU: p95 < 200 ms, errores < 1%; 150 VU: p95 < 5 s, 0% 5xx | Sin corrida en el Sprint 5. La última (Sprint 4, 18 y 19 de octubre) cumple: 73.55 ms y 415.39 ms | ⚠️ Pendiente (SCRUM-526) |
+| **3.5 k6 carga y estrés** | p95 y tasa de errores | 50 VU: p95 < 200 ms, errores < 1%; 150 VU: p95 < 5 s, 0% 5xx | Run 41940280403: 50 VU con p95 de 32 ms (catálogo) y 88 ms (crear solicitud), 0,01 % de fallos; 150 VU con p95 de 1.183 ms y 0 errores 5xx | ✅ Aprobada |
 | **3.6 DAST ZAP** | Escaneo base contra QA | 0 alertas FAIL | 0 FAIL, 4 WARN conocidas | ✅ Aprobada |
 | **3.7 Defectos** | Defectos bloqueantes abiertos | 0 | 0 | ✅ Aprobada |
-| **3.8 Pantallas (Playwright y manual)** | Casos E2E-001 a E2E-012 y recorrido de pantallas | Evidencia de ejecución | El paso de CI no ejecuta pruebas; el recorrido manual está pendiente | ⚠️ Pendiente (SCRUM-618) |
+| **3.8 Pantallas (Playwright y manual)** | Casos E2E-001 a E2E-012 y recorrido de pantallas | Evidencia de ejecución | Recorrido manual en QA con el APK `v0.5.5-qa`: 23 capturas, con el botón atrás de Android (PR #267). El paso de Playwright sigue sin ejecutar pruebas | ✅ Aprobada con observación (SCRUM-618) |
+
+### 1.3 Cuadro de Mando de Avance del Producto
+
+Corte del 5 de noviembre de 2026. Las cifras de avance salen del Informe UAT oficial que entregó la Product Owner ([`informe-uat-oficial-po-2026-11-05.xlsx`](informe-uat-oficial-po-2026-11-05.xlsx)). Las cifras de pruebas salen de `scripts/generar_estadisticas_qa.py` y de [`estadisticas-pruebas-sprint5.md`](estadisticas-pruebas-sprint5.md).
+
+| Indicador | Valor | Detalle |
+|---|---|---|
+| Avance oficial del producto (Informe UAT de la PO) | **91.92%** | Meta del Sprint 5: mínimo 90%; se supera por 1.92 puntos. Fórmula: 0.7 × 100% (aceptado en UAT) + 0.3 × 73.08% (escenarios de calidad) |
+| Funcionalidades implementadas en develop | **100%** | 37 de 37 |
+| Funcionalidades probadas por QA con evidencia | **100%** | 37 de 37 |
+| Funcionalidades aceptadas por la PO en UAT | **100%** | 37 de 37; RF-10 con observaciones |
+| Cumplimiento de escenarios de calidad (SAD §3) | **73.08%** | 52 escenarios: 34 Cumple, 8 Parcial, 4 No cumple y 6 No medido. AC4-E2 y AC9-E2 cuentan como Cumple por decisión de la PO, todavía sin evidencia |
+| Cobertura de código en CI (SCRUM-602) | **91.7% a 100.0%** | 10 repositorios, todos sobre el umbral de 80% |
+| Tasa de aprobación global | **100.0% PASS** | 2,469 pruebas y aserciones: 1,368 unitarias, 157 de integración, 931 E2E y 13 de seguridad, con 0 fallos en las corridas oficiales |
+| Rendimiento k6 (run 41940280403) | **Cumple** | 50 VU: p95 de 88 ms (crear solicitud) y 32 ms (catálogo). 150 VU: p95 de 1,183 ms, 0 errores 5xx y 0 pods caídos |
+
+> La [matriz de 52 escenarios](matriz-escenarios-calidad-52.md) quedó igual al Informe UAT oficial (versión 3.2, 73.08%), con las mediciones del 5 de noviembre validadas por QA.
+
+#### Gráfica 1: Distribución de pruebas por tipo
+![Gráfica 1: Distribución de pruebas por tipo](img/grafica-1-pruebas-por-tipo.png)
+
+#### Gráfica 2: Tasa de éxito de las pruebas
+![Gráfica 2: Tasa de éxito de las pruebas](img/grafica-2-torta-exito-pruebas.png)
+
+#### Gráfica 3: Estado y severidad de los defectos
+19 defectos registrados entre los Sprints 3 y 5: 15 corregidos o no aplicables, 4 en mitigación y 0 bloqueantes abiertos.
+
+![Gráfica 3: Estado y severidad de los defectos](img/grafica-3-barras-defectos.png)
+
+#### Gráfica 4: Cobertura de código por servicio en CI
+![Gráfica 4: Cobertura de código por servicio](img/grafica-4-cobertura-por-servicio.png)
 
 ---
 
@@ -57,7 +95,7 @@
                  ├─ Humo del flujo crítico (Newman)
                  ├─ E2E: Newman, todas las colecciones de tests/e2e/
                  ├─ Seguridad: OWASP ZAP baseline + escáner PCI-DSS en Loki
-                 └─ Carga k6 (apagada por defecto)
+                 └─ Carga k6 (apagada por defecto; corrida a mano en el run 41940280403)
                                    │
      Runner local                   ▼
      correr-colecciones-qa.js ──► https://qa.quickpatch.internal (VM1 Ingress, TLS)
@@ -169,16 +207,21 @@ Detalle en [`tests/security/evidencias/pci-dss-loki-qa-sprint5-2026-11-04.md`](.
 
 ### 3.5 Rendimiento k6 (RNF-06, AC2-E4)
 
-**En el Sprint 5 no se corrió k6.** El job «Carga (k6)» está apagado por defecto, porque crea unas 40.000 solicitudes en QA. Correrlo requiere una ventana acordada con DevOps y una limpieza posterior (SCRUM-526).
+El job «Carga (k6)» está apagado por defecto, porque crea miles de solicitudes en QA. DevOps lo corrió a mano con la casilla «carga» en el run [41940280403](https://github.com/ARQUI-202630/quickpatch/actions/runs/41940280403) de `pruebas-sistema.yml`, entre las 00:31 y las 00:38 UTC del 5 de noviembre (noche del 4 en Colombia). Los cuatro trabajos del run pasaron: humo, E2E, seguridad y k6.
 
-La última medición es del Sprint 4, sobre la misma URL de QA:
+QA corría las mismas versiones que producción: identity 0.8.1, catalog 0.4.1, service-request 0.11.2, matching 0.6.1, payments 0.3.0, communication 0.3.3, ranking 0.1.0 y panel 0.5.5.
 
-| Prueba | Fecha | VU / duración | Peticiones | p50 | p90 | p95 | Errores | Evidencia |
+| Prueba | VU / duración | Peticiones | p50 | p90 | p95 | Fallos | Resultado | Evidencia |
 |---|---|---|---|---|---|---|---|---|
-| Carga | 19 de octubre (fecha de ejecución del archivo) | 50 VU / 2 min 30 s | 5,755 | 20.94 ms | 57.51 ms | 73.55 ms (umbral < 200 ms) | 0.00% | `tests/performance/evidencias/k6-load-50vu-summary.json` |
-| Estrés | 18 de octubre (fecha del archivo) | 150 VU / 4 min | 38,876 | 181.79 ms | 348.62 ms | 415.39 ms (umbral < 5 s) | 0.00%, 0 pods caídos | `tests/performance/evidencias/k6-stress-150vu-summary.json` |
+| Carga | 50 VU / 2 min 30 s | 8,454 | 21.57 ms | 62.65 ms | Catálogo 31.96 ms (umbral < 200 ms); crear solicitud 88.16 ms (umbral < 2 s) | 0.01% (1 de 8,454; umbral < 1%) | ✅ Cumple | [`k6-load-50vu-qa-2026-11-04-run-41940280403.txt`](../../tests/performance/evidencias/k6-load-50vu-qa-2026-11-04-run-41940280403.txt) |
+| Estrés | 150 VU / 4 min | 32,750 | 586.32 ms | 1,014.16 ms | 1,183.24 ms (umbral < 5 s) | 0 errores 5xx (umbral 0); 0.03% fallidas (umbral < 5%) | ✅ Cumple | [`k6-stress-150vu-qa-2026-11-04-run-41940280403.txt`](../../tests/performance/evidencias/k6-stress-150vu-qa-2026-11-04-run-41940280403.txt) |
 
-Desde esa medición cambiaron versiones de servicios. Por eso estas cifras se presentan como línea base y no como resultado del Sprint 5.
+- Checks: 11,268 de 11,268 con 50 VU, y 32,747 de 32,756 con 150 VU. Los 9 que fallaron son del check «Respuesta exitosa o degradada controladamente» y ninguno es un error 5xx.
+- Después de la carga, los 7 pods de QA siguieron en 1/1, con 0 reinicios y 0 `OOMKilled`.
+- DevOps borró de QA las 19,186 solicitudes de la prueba con `limpiar-carga-qa.yml`, después de respaldar las tres bases.
+- Comparado con el Sprint 4 (18 y 19 de octubre), el p95 del estrés subió de 415.39 ms a 1,183.24 ms. Sigue muy por debajo del umbral de 5 s.
+
+**Excepción al RNF-08.** La excepción que se renovó el 4 de noviembre para el MVP de 7 servicios se levantó con esta corrida. Desde la noche del 4 de noviembre no hay ninguna excepción al RNF-08 vigente (Documento de Infraestructura, sección 6.2, versión 4.15). La carga no se mide en producción (ADR-015).
 
 ### 3.6 Seguridad Dinámica DAST (OWASP ZAP)
 
@@ -202,12 +245,12 @@ Estado según [`docs/testing/capacidad-interaccion-scrum-569.md`](capacidad-inte
 | Escenario | Estado | Nota |
 |---|---|---|
 | AC4-E1 Solicitud en máximo 3 pasos | Cumple | |
-| AC4-E2 Distintos dispositivos | Parcial | Falta la matriz formal de tablets |
+| AC4-E2 Distintos dispositivos | Cumple | Por decisión de la Product Owner; falta la matriz formal de tablets como evidencia |
 | AC4-E3 Reconocer la app en < 30 s | No medido | Se mide en la UAT (SCRUM-608) |
 | AC4-E4 Primer uso del técnico | No medido | Se mide en la UAT (SCRUM-608) |
 | AC4-E5 Protección ante errores | Cumple | |
 | AC4-E6 Motivación para calificar | No medido | La pantalla de calificación ya existe (SCRUM-86, APK `v0.5.4-qa`); falta medir la tasa del 60% con servicios reales. Primera observación en la UAT (SCRUM-608) |
-| AC4-E7 Accesibilidad | No medido | DEF-INT-02 |
+| AC4-E7 Accesibilidad | Cumple | Medido con el arnés de pruebas (quickpatch-mobile#58); no sustituye una prueba con TalkBack. DEF-INT-02 |
 | AC4-E8 Gama baja | No medido | DEF-INT-03 |
 | AC4-E9 Estados que se explican solos | Parcial | Falta validar con usuarios en la UAT |
 
@@ -250,9 +293,9 @@ Estos hallazgos se suman al registro de defectos cuando se fusione el PR #254.
 
 ## 5. Recomendaciones y Pendientes
 
-1. **SCRUM-526:** acordar con DevOps una ventana para correr k6 con `pruebas-sistema.yml`, registrar la limpieza posterior y actualizar la compuerta 3.5.
-2. **SCRUM-618:** recorrer las pantallas con el APK `v0.5.4-qa` y el panel `0.5.5`. Mientras no existan las pruebas de Playwright, ese recorrido es la evidencia de las pantallas.
-3. **SCRUM-608:** hacer la sesión de UAT con la Product Owner y medir ahí AC4-E3, AC4-E4 y AC4-E9.
+1. **SCRUM-526:** hecho. La carga k6 pasó en el run 41940280403, la limpieza quedó registrada y la compuerta 3.5 está aprobada.
+2. **SCRUM-618:** hecho en QA con el APK `v0.5.5-qa` (PR #267). Falta probar el enlace de invitación. Mientras no existan las pruebas de Playwright, ese recorrido es la evidencia de las pantallas.
+3. **SCRUM-608:** la Product Owner aceptó el incremento en el Informe UAT oficial del 5 de noviembre. Falta firmar el acta. AC4-E3, AC4-E4 y AC4-E9 siguen sin medir con personas.
 4. **SCRUM-569:** con el PR #254, la matriz de 52 escenarios queda alineada con esta evaluación (AC4-E2, AC4-E5, AC4-E6 y AC4-E9), y el porcentaje de escenarios pasa de 49.04% a 51.92%.
 5. **SCRUM-566:** cuando se cierren la 563 y la 569, Juan Diego calcula el porcentaje final de la matriz.
 6. **Registro de defectos:** sumar al registro y a la hoja `Defectos` el hallazgo del puntaje como texto (quickpatch-service-request#39), el apagado de QuoteExpirer y los DEF-INT del PR #254.

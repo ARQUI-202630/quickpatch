@@ -85,8 +85,8 @@ Conforme a la directriz técnica de QA, las peticiones masivas de carga no se co
 
 | Escenario de Carga | Concurrencia (VUs) | Duración | Iteraciones | Peticiones HTTP | Latencia p95 | Tasa de Error | Archivo de Evidencia |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|---|
-| **Prueba de Carga Concurrente (50 VU)** | 50 VUs | 2m 30s | 2,876 | 5,755 | **73.55 ms** | **0.00%** | `tests/performance/evidencias/k6-load-50vu-summary.json` |
-| **Prueba de Estrés Extremo (150 VU)** | 150 VUs | 4m 00s | 38,873 | 38,876 | **415.39 ms** | **0.00%** | `tests/performance/evidencias/k6-stress-150vu-summary.json` |
+| **Prueba de Carga Concurrente (50 VU)** | 50 VUs | 2m 30s | 2,817 | 8,454 | **79.66 ms** | **0.01%** | `tests/performance/evidencias/k6-load-50vu-qa-2026-11-04-run-41940280403.json` |
+| **Prueba de Estrés Extremo (150 VU)** | 150 VUs | 4m 00s | 16,378 | 32,750 | **1105.96 ms** | **0.03%** | `tests/performance/evidencias/k6-stress-150vu-qa-2026-11-04-run-41940280403.json` |
 
 ---
 
@@ -106,13 +106,12 @@ Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-def
 
 * **Total de Pruebas Reales Automatizadas:** **2,469 pruebas / aserciones** (1,525 unitarias/integración + 931 E2E + 13 seguridad).
 * **Tasa de Aprobación de Pruebas:** **100.0% PASS (0 fallos en runs oficiales)**.
-* **Capacidad de Carga k6:** **38,876 peticiones procesadas** con 0.00% de errores y p95 de 415.39 ms bajo 150 VU.
+* **Capacidad de Carga k6:** **32,750 peticiones procesadas** con 0.03% de errores y p95 de 1105.96 ms bajo 150 VU.
 * **Cobertura de Código en CI (SCRUM-602):** **91.7% – 100.0%** en 10 repositorios; todos sobre el umbral de 80%.
 * **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.
-* **Avance Preliminar del Producto (Matriz Excel UAT):** **75.80%** (Meta Sprint 4: 80% / Brecha: -4.20%).
-* **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts). Antes 92.65% (31.5 / 34): RF-12 (calificación) pasó de *No implementado* a *Parcial* (+0.5 pts) porque el backend de calificación (SCRUM-85) ya responde en QA (`tests/e2e/evidencias/humo-flujo-critico-qa-2026-10-30.txt`); falta la pantalla del cliente (SCRUM-86).
-* **% Funcionalidades Probadas por QA:** **86.03%** (29.25 / 34 pts con evidencia).
-* **% Escenarios de Calidad (SAD §3):** **51.92%** (52 escenarios evaluados: 21 Cumple, 12 Parcial, 1 No cumple, 18 No medido).
+* **Avance Oficial del Producto (Informe UAT de la PO, 5-nov):** **91.92%** (Meta Sprint 5: mínimo 90%; 0.7 × 100% aceptado en UAT + 0.3 × 73.08% escenarios).
+* **% Funcionalidades Implementadas, Probadas por QA y Aceptadas en UAT:** **100%** (37 de 37; RF-10 aceptada con observaciones).
+* **% Escenarios de Calidad (SAD §3):** **73.08%** (52 escenarios: 34 Cumple, 8 Parcial, 4 No cumple, 6 No medido; fuente: `docs/testing/informe-uat-oficial-po-2026-11-05.xlsx`).
 
 ### Gráfica 1: Distribución de Pruebas por Tipo
 ![Gráfica 1: Distribución por Tipo](img/grafica-1-pruebas-por-tipo.png)

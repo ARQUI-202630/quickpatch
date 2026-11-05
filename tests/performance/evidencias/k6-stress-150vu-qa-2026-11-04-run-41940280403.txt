@@ -1,0 +1,55 @@
+================================================================================
+EVIDENCIA DE PRUEBA DE ESTRÉS K6: PICO DE 150 VU (SCRUM-526, Sprint 5)
+================================================================================
+Corrida:      GitHub Actions «Pruebas de sistema», run 41940280403, intento 1
+              https://github.com/ARQUI-202630/quickpatch/actions/runs/41940280403
+Disparo:      workflow_dispatch sobre develop (commit c4072b9), con la casilla «carga»
+Trabajo:      «Carga (k6)», de 00:31:13 a 00:37:59 UTC del 2026-11-05
+              (noche del 4 de noviembre en Colombia), runner self-hosted de VM1
+Ambiente:     QA, https://qa.quickpatch.internal (VM1 entrada, k3s en VM2, PostgreSQL en VM5)
+Versiones:    las mismas que producción: identity 0.8.1, catalog 0.4.1, service-request 0.11.2,
+              matching 0.6.1, payments 0.3.0, communication 0.3.3, ranking 0.1.0, panel 0.5.5
+              (Documento de Infraestructura, sección 6.2)
+Script:       tests/performance/stress-test-150vu.js
+Resumen:      k6-stress-150vu-qa-2026-11-04-run-41940280403.json (artefacto «resultados-k6» de la corrida;
+              se reemplazó el token de la sesión de setup por «<omitido>»)
+Requisitos:   PRF-004, PRF-005, PRF-009, AC2-E4, AC2-E5, R10
+
+1. ESCENARIO
+   - Hasta 150 usuarios virtuales durante 4 min, en 4 etapas.
+   - Iteraciones completas: 16.378. Peticiones HTTP: 32.750 (135,7 por segundo).
+   - Solicitudes exitosas: 16.369.
+
+2. UMBRALES
+   | Métrica                                    | Resultado                  | Umbral   | Estado |
+   |--------------------------------------------|----------------------------|----------|--------|
+   | Errores 5xx (errores_5xx)                  | 0 % (0 de 16.378)          | = 0      | Cumple |
+   | Latencia p95 de la prueba (test_type)      | 1.183,24 ms                | < 5 s    | Cumple |
+   | Peticiones fallidas (http_req_failed)      | 0,03 % (10 de 32.750)      | < 5 %    | Cumple |
+
+3. OTRAS CIFRAS
+   - Duración de todas las peticiones: p50 586,32 ms; p90 1.014,16 ms; p95 1.105,96 ms; máximo 1,90 s.
+   - Checks: 32.747 de 32.756 (99,97 %).
+     - «Sin errores 5xx del servidor»: 16.378 de 16.378.
+     - «Respuesta exitosa o degradada controladamente (no caída)»: 16.369 de 16.378 (9 fallos).
+   - Los 9 checks fallidos y las 10 peticiones fallidas no son errores 5xx. El resumen de k6
+     no guarda el código de cada una; quedan dentro de la degradación que admite el escenario.
+   - k6 avisó que la prueba generó 100.039 series de métricas (el límite sugerido es 100.000).
+     Es un aviso de memoria del generador, no un fallo de la prueba.
+
+4. COMPARACIÓN CON EL SPRINT 4 (k6-stress-150vu-qa-2026-10-18.txt)
+   - Sprint 4: 38.876 peticiones, p95 415,39 ms, 0 % de errores.
+   - Sprint 5: 32.750 peticiones, p95 1.183,24 ms, 0 errores 5xx, con los 7 servicios del MVP.
+   - La latencia subió, pero sigue a menos de un cuarto del umbral de 5 s.
+
+5. ESTADO DE QA DESPUÉS DEL ESTRÉS (medición de DevOps)
+   - Los 7 pods en 1/1, con 0 reinicios y 0 OOMKilled: ningún pod se cayó.
+   - Esta vez no se capturó el pico de memoria bajo carga; la referencia sigue siendo la del
+     28 de octubre (Documento de Infraestructura, sección 5.6).
+   - Las solicitudes creadas por k6 se borraron con limpiar-carga-qa.yml, después del respaldo.
+
+6. RESULTADO
+   CUMPLE. Todos los umbrales de la prueba de estrés de 150 VU pasan en QA.
+   Con esta corrida se levantó la excepción al RNF-08 renovada el 4 de noviembre para el MVP
+   de 7 servicios (Documento de Infraestructura, sección 6.2, versión 4.15).
+================================================================================
