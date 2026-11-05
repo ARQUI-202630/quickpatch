@@ -264,6 +264,14 @@ Al final suspende a los dos técnicos y desactiva la categoría.
 
 **Evidencia:** `evidencias/scrum-627-recuperacion-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026: 73 peticiones y 118 aserciones, sin fallos. `evidencias/scrum-627-enlace-vencido-qa-2026-11-04.txt`: 11 de 11 pasos, el enlace vencido a las 16:16 UTC.
 
+## Navegación hacia atrás en la app (SCRUM-618)
+
+La HU SCRUM-615 no tiene colección: su regla es solo de la app, y la cubren las 66 pruebas de widget de `quickpatch-mobile`. El recorrido en el celular está en `evidencias/scrum-618-navegacion-capturas-qa-2026-11-04/`: 23 capturas con el APK `v0.5.5-qa` contra QA, de un cliente y de un técnico creados para el recorrido. Muestran:
+- las pantallas raíz sin flecha y las secundarias con flecha;
+- que atrás desde las pestañas vuelve a Inicio;
+- la confirmación antes de descartar lo escrito en cuatro formularios;
+- que atrás desde una solicitud recién creada lleva a Solicitudes y no la crea dos veces.
+
 ## Cuenta corporativa de punta a punta (SCRUM-68)
 
 `scrum-68-cuenta-corporativa.postman_collection.json` (RF-06, SCRUM-26) la genera `generar-scrum68-cuenta-corporativa.py`. Contrato: `identity.v1.yaml` 1.8.0. **No necesita al administrador**: todas las cuentas se registran por el canal con correo, NIT y clave generados en la corrida.
