@@ -1,0 +1,528 @@
+scrum-32-calificacion con SCRUM-639 (calificación en el detalle) contra QA, 2026-11-05
+Colección: tests/e2e/scrum-32-calificacion.postman_collection.json + 7 pasos DET-001 a DET-007 (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal, service-request release/0.12.0 (imagen t-0206bfb2e2cb).
+Inicio: 2026-11-05T01:43:19Z. Duración: 49 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-87 Calificación del servicio
+
+❏ 0. Preparación: categoría propia, técnico aprobado y clientes
+↳ Login del administrador del tenant
+  POST https://10.43.100.168/api/v1/auth/login (node:1) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[200 OK, 1.22kB, 1052ms]
+  ✓  200 con rol admin_tenant
+
+↳ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://10.43.100.168/api/v1/catalog/admin/categories [201 Created, 437B, 23ms]
+  ✓  201
+
+↳ Registro del técnico con esa especialidad
+  POST https://10.43.100.168/api/v1/auth/register/technician [201 Created, 441B, 1025ms]
+  ✓  201
+
+↳ El administrador aprueba al técnico
+  POST https://10.43.100.168/api/v1/admin/technicians/01a1a95f-f65b-7e9e-9369-9d49685721c1/approve [200 OK, 321B, 27ms]
+  ✓  200
+
+↳ Login del técnico
+  POST https://10.43.100.168/api/v1/auth/login [200 OK, 1.22kB, 971ms]
+  ✓  200 con rol tecnico
+
+↳ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://10.43.100.168/api/v1/technicians/me/coverage [200 OK, 1.08kB, 31ms]
+  ✓  200
+
+↳ El técnico queda disponible
+  PUT https://10.43.100.168/api/v1/technicians/me/availability [200 OK, 438B, 21ms]
+  ✓  200
+
+↳ Registro de otro técnico, sin aprobar
+  POST https://10.43.100.168/api/v1/auth/register/technician [201 Created, 441B, 891ms]
+  ✓  201
+
+↳ Login del otro técnico
+  POST https://10.43.100.168/api/v1/auth/login [200 OK, 1.22kB, 990ms]
+  ✓  200 con rol tecnico
+
+↳ Registro del cliente
+  POST https://10.43.100.168/api/v1/auth/register/client [201 Created, 426B, 963ms]
+  ✓  201
+
+↳ Login del cliente
+  POST https://10.43.100.168/api/v1/auth/login [200 OK, 1.21kB, 907ms]
+  ✓  200 con rol cliente
+
+↳ Registro del otro cliente
+  POST https://10.43.100.168/api/v1/auth/register/client [201 Created, 432B, 985ms]
+  ✓  201
+
+↳ Login del otro cliente
+  POST https://10.43.100.168/api/v1/auth/login [200 OK, 1.21kB, 983ms]
+  ✓  200 con rol cliente
+
+↳ Registro del cliente del tenant Beta
+  POST https://10.43.100.168/api/v1/auth/register/client [201 Created, 439B, 990ms]
+  ✓  201
+
+↳ Login del cliente del tenant Beta
+  POST https://10.43.100.168/api/v1/auth/login [200 OK, 1.22kB, 982ms]
+  ✓  200 con rol cliente
+
+❏ 1. Solicitud 1: no se califica antes de pagar (RN-R3)
+↳ Crear la solicitud 1 (espera la réplica de la categoría)
+  POST https://10.43.100.168/api/v1/service-requests [201 Created, 847B, 28ms]
+  ✓  201
+
+↳ El técnico ve la oferta de la solicitud 1
+  GET https://10.43.100.168/api/v1/matching/offers?status=pendiente [200 OK, 419B, 22ms]
+
+Attempting to set next request to c9935c1e-8432-4a32-a0d1-47b417e741dd
+
+↳ El técnico ve la oferta de la solicitud 1
+  GET https://10.43.100.168/api/v1/matching/offers?status=pendiente [200 OK, 817B, 25ms]
+  ✓  la oferta está pendiente para el técnico
+
+↳ El técnico acepta la oferta de la solicitud 1
+  POST https://10.43.100.168/api/v1/matching/offers/eb47b3be-eb35-4eb9-a69b-5dd3f0de099f/accept [200 OK, 447B, 29ms]
+  ✓  200
+
+↳ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0 [200 OK, 772B, 25ms]
+
+Attempting to set next request to 600427ec-a617-46fc-8be0-ed25ce772fdd
+
+↳ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0 [200 OK, 900B, 48ms]
+  ✓  asignado al técnico de la prueba
+
+↳ CAL-011: en asignado → 409
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [409 Conflict, 541B, 21ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo transicion-invalida
+
+↳ El técnico cotiza la solicitud 1
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/quotes [201 Created, 648B, 32ms]
+  ✓  201 con el contrato Quote
+
+↳ Se acepta la cotización de la solicitud 1
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/quotes/01a1a960-2e14-7ac1-a881-e14f69316c49/accept [200 OK, 366B, 28ms]
+  ✓  200 con el contrato QuoteDecision
+
+↳ El técnico inicia la solicitud 1
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/start [200 OK, 342B, 35ms]
+  ✓  200
+
+↳ El técnico sube la foto de la solicitud 1
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/evidence [201 Created, 445B, 50ms]
+  ✓  201
+
+↳ CAL-011: en en_progreso → 409
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [409 Conflict, 541B, 22ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo transicion-invalida
+
+↳ El técnico completa la solicitud 1
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/complete [200 OK, 343B, 29ms]
+  ✓  200
+
+↳ CAL-010: completado sin pagar → 409
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [409 Conflict, 541B, 21ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo transicion-invalida
+
+↳ El pago de la solicitud 1 queda pendiente (espera service-request.completed en Payments)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/payment [404 Not Found, 569B, 21ms]
+
+Attempting to set next request to 5e9c38e0-2449-4d7c-83da-6adef24eef72
+
+↳ El pago de la solicitud 1 queda pendiente (espera service-request.completed en Payments)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/payment [200 OK, 479B, 23ms]
+  ✓  200
+  ✓  pendiente
+
+↳ Se paga la solicitud 1 con la tarjeta aprobada
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/payment [200 OK, 543B, 31ms]
+  ✓  200
+  ✓  aprobado
+
+↳ La solicitud 1 queda pagada (payment.approved)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0 [200 OK, 961B, 30ms]
+
+Attempting to set next request to c0f7fcc6-d7aa-46d9-96cb-26b31e30a03e
+
+↳ La solicitud 1 queda pagada (payment.approved)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0 [200 OK, 957B, 28ms]
+  ✓  pagado
+
+❏ 2. Solicitud 1 pagada: validaciones y quién califica
+↳ CAL-004: score 0 → 400
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [400 Bad Request, 548B, 17ms]
+  ✓  400
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  error en score
+
+↳ CAL-005: score 6 → 400
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [400 Bad Request, 548B, 16ms]
+  ✓  400
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  error en score
+
+↳ CAL-006: score 4.5 → 400
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [400 Bad Request, 444B, 16ms]
+  ✓  400
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ CAL-006: score "5" → 400
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [400 Bad Request, 444B, 16ms]
+  ✓  400
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ CAL-007: sin score → 400
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [400 Bad Request, 548B, 18ms]
+  ✓  400
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  error en score
+
+↳ CAL-008: comentario de 501 caracteres → 400
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [400 Bad Request, 546B, 17ms]
+  ✓  400
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  error en comment
+
+↳ CAL-009: technicianId en el cuerpo → 400
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [400 Bad Request, 444B, 16ms]
+  ✓  400
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ CAL-013: otro cliente del mismo tenant → 403
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [403 Forbidden, 482B, 18ms]
+  ✓  403
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ CAL-014: cliente del tenant Beta → 404 (RLS)
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [404 Not Found, 457B, 20ms]
+  ✓  404
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ CAL-015: el técnico → 403
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [403 Forbidden, 443B, 16ms]
+  ✓  403
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ CAL-015: admin_tenant → 403
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [403 Forbidden, 443B, 21ms]
+  ✓  403
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ CAL-016: sin sesión → 401
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [401 Unauthorized, 476B, 14ms]
+  ✓  401
+
+↳ CAL-017: solicitud inexistente → 404
+  POST https://10.43.100.168/api/v1/service-requests/00000000-0000-4000-8000-000000000000/rating [404 Not Found, 457B, 20ms]
+  ✓  404
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ La solicitud 1 en el historial del técnico
+  GET https://10.43.100.168/api/v1/technicians/me/service-requests?size=100 [200 OK, 573B, 26ms]
+  ✓  200
+  ✓  la solicitud está en el historial
+  ✓  ningún intento rechazado dejó calificación
+
+↳ SCRUM-639 DET-001: antes de calificar el detalle trae rating null
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0 [200 OK, 957B, 28ms]
+  ✓  200
+  ✓  el detalle trae la clave rating y es null mientras no se califique
+
+↳ CAL-001 / CAL-003 / CAL-008: 5 estrellas con comentario de 500 caracteres → 201
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [201 Created, 859B, 22ms]
+  ✓  201 con el contrato RatingResponse
+
+↳ SCRUM-639 DET-002: el cliente ve su calificación en el detalle
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0 [200 OK, 1.52kB, 23ms]
+  ✓  200
+  ✓  el cliente ve rating con score 5
+  ✓  comment de 500 caracteres
+  ✓  ratedAt es una fecha ISO
+
+↳ SCRUM-639 DET-003: el técnico asignado no ve la solicitud pagada ni su calificación
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0 [403 Forbidden, 565B, 19ms]
+  ✓  el técnico asignado no puede ver una solicitud pagada (403, RN-SR13): nunca recibe la calificación
+  ✓  la respuesta no trae rating
+
+↳ CAL-001: la solicitud sigue en pagado
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0 [200 OK, 1.52kB, 25ms]
+  ✓  pagado
+
+↳ CAL-012: calificar otra vez → 409 ya-calificada
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-1d48-704b-8c3a-10c8078117a0/rating [409 Conflict, 515B, 20ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo ya-calificada
+
+↳ La solicitud 1 en el historial del técnico
+  GET https://10.43.100.168/api/v1/technicians/me/service-requests?size=100 [200 OK, 599B, 24ms]
+  ✓  200
+  ✓  la solicitud está en el historial
+  ✓  CAL-012 / CAL-021: el historial del técnico conserva las 5 estrellas
+
+❏ 3. Solicitud 2: 1 estrella sin comentario; solicitud 3 cancelada
+↳ Crear la solicitud 2 (espera la réplica de la categoría)
+  POST https://10.43.100.168/api/v1/service-requests [201 Created, 847B, 23ms]
+  ✓  201
+
+↳ El técnico ve la oferta de la solicitud 2
+  GET https://10.43.100.168/api/v1/matching/offers?status=pendiente [200 OK, 419B, 22ms]
+
+Attempting to set next request to df00f035-3abf-4f15-a950-2726dc78eb8c
+
+↳ El técnico ve la oferta de la solicitud 2
+  GET https://10.43.100.168/api/v1/matching/offers?status=pendiente [200 OK, 817B, 23ms]
+  ✓  la oferta está pendiente para el técnico
+
+↳ El técnico acepta la oferta de la solicitud 2
+  POST https://10.43.100.168/api/v1/matching/offers/271f0c10-dd1f-4e7c-8bb4-fe52559af18d/accept [200 OK, 447B, 22ms]
+  ✓  200
+
+↳ La solicitud 2 queda asignada (matching.technician-assigned)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591 [200 OK, 772B, 21ms]
+
+Attempting to set next request to 2a1759d8-9080-4a04-a51d-31e8431551a6
+
+↳ La solicitud 2 queda asignada (matching.technician-assigned)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591 [200 OK, 900B, 26ms]
+  ✓  asignado al técnico de la prueba
+
+↳ El técnico cotiza la solicitud 2
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591/quotes [201 Created, 648B, 25ms]
+  ✓  201 con el contrato Quote
+
+↳ Se acepta la cotización de la solicitud 2
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591/quotes/01a1a960-52d1-7e34-b177-35fd00aeeb63/accept [200 OK, 366B, 29ms]
+  ✓  200 con el contrato QuoteDecision
+
+↳ El técnico inicia la solicitud 2
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591/start [200 OK, 342B, 21ms]
+  ✓  200
+
+↳ El técnico sube la foto de la solicitud 2
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591/evidence [201 Created, 445B, 41ms]
+  ✓  201
+
+↳ El técnico completa la solicitud 2
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591/complete [200 OK, 343B, 25ms]
+  ✓  200
+
+↳ El pago de la solicitud 2 queda pendiente (espera service-request.completed en Payments)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591/payment [404 Not Found, 569B, 19ms]
+
+Attempting to set next request to 1d7d518e-d51e-4115-ad67-87b9f90f8307
+
+↳ El pago de la solicitud 2 queda pendiente (espera service-request.completed en Payments)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591/payment [200 OK, 479B, 19ms]
+  ✓  200
+  ✓  pendiente
+
+↳ Se paga la solicitud 2 con la tarjeta aprobada
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591/payment [200 OK, 543B, 32ms]
+  ✓  200
+  ✓  aprobado
+
+↳ La solicitud 2 queda pagada (payment.approved)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591 [200 OK, 958B, 1812ms]
+  ✓  pagado
+
+↳ CAL-002 / CAL-003: 1 estrella sin comentario → 201
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591/rating [201 Created, 361B, 26ms]
+  ✓  201 con el contrato RatingResponse
+
+↳ SCRUM-639 DET-004: 1 estrella sin comentario
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-4259-7852-b039-edb863b12591 [200 OK, 1.02kB, 36ms]
+  ✓  200
+  ✓  1 estrella sin comentario: comment null
+
+↳ Crear la solicitud 3 (espera la réplica de la categoría)
+  POST https://10.43.100.168/api/v1/service-requests [201 Created, 847B, 28ms]
+  ✓  201
+
+↳ El técnico ve la oferta de la solicitud 3
+  GET https://10.43.100.168/api/v1/matching/offers?status=pendiente [200 OK, 419B, 18ms]
+
+Attempting to set next request to f105ca81-64fd-4cc2-9e3d-6e2a132cf858
+
+↳ El técnico ve la oferta de la solicitud 3
+  GET https://10.43.100.168/api/v1/matching/offers?status=pendiente [200 OK, 817B, 17ms]
+  ✓  la oferta está pendiente para el técnico
+
+↳ El técnico acepta la oferta de la solicitud 3
+  POST https://10.43.100.168/api/v1/matching/offers/b09b3770-7f29-42c6-80df-6067a44c6ab2/accept [200 OK, 447B, 23ms]
+  ✓  200
+
+↳ La solicitud 3 queda asignada (matching.technician-assigned)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-634c-71ad-a865-57d29a14d285 [200 OK, 772B, 23ms]
+
+Attempting to set next request to 6799b7c0-a326-4580-a979-1b1ff0985c10
+
+↳ La solicitud 3 queda asignada (matching.technician-assigned)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-634c-71ad-a865-57d29a14d285 [200 OK, 900B, 25ms]
+  ✓  asignado al técnico de la prueba
+
+↳ El cliente cancela la solicitud 3
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-634c-71ad-a865-57d29a14d285/cancel [200 OK, 369B, 32ms]
+  ✓  200
+  ✓  cancelado
+
+↳ CAL-011: cancelada → 409
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-634c-71ad-a865-57d29a14d285/rating [409 Conflict, 541B, 67ms]
+  ✓  409
+  ✓  Problem Details (RFC 9457) con correlationId
+  ✓  tipo transicion-invalida
+
+❏ 4. Solicitud 4 de empresa: solo califica quien la creó (CAL-018)
+↳ Registro de Empresa
+  POST https://10.43.100.168/api/v1/auth/register/company [201 Created, 718B, 990ms]
+  ✓  201
+
+↳ Login de quien crea la solicitud
+  POST https://10.43.100.168/api/v1/auth/login [200 OK, 1.33kB, 996ms]
+  ✓  200 como empresa_contacto de su empresa
+
+↳ La empresa agrega a un colega
+  POST https://10.43.100.168/api/v1/companies/me/users [201 Created, 688B, 921ms]
+  ✓  201
+
+↳ El colega define su contraseña
+  POST https://10.43.100.168/api/v1/auth/password/setup [204 No Content, 159B, 961ms]
+  ✓  204
+
+↳ Login de el colega
+  POST https://10.43.100.168/api/v1/auth/login [200 OK, 1.34kB, 977ms]
+  ✓  200 como empresa_contacto de su empresa
+
+↳ La empresa crea la solicitud 4 (espera la réplica de la categoría)
+  POST https://10.43.100.168/api/v1/service-requests [201 Created, 895B, 28ms]
+  ✓  201
+  ✓  de empresa
+
+↳ El técnico ve la oferta de la solicitud 4
+  GET https://10.43.100.168/api/v1/matching/offers?status=pendiente [200 OK, 419B, 17ms]
+
+Attempting to set next request to f1adb9c7-4978-4d96-a045-db98580266c2
+
+↳ El técnico ve la oferta de la solicitud 4
+  GET https://10.43.100.168/api/v1/matching/offers?status=pendiente [200 OK, 817B, 23ms]
+  ✓  la oferta está pendiente para el técnico
+
+↳ El técnico acepta la oferta de la solicitud 4
+  POST https://10.43.100.168/api/v1/matching/offers/9169aa05-06cf-4df1-ab56-f555d4d0fd2d/accept [200 OK, 447B, 23ms]
+  ✓  200
+
+↳ La solicitud 4 queda asignada
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b [200 OK, 820B, 24ms]
+
+Attempting to set next request to f19a359c-d7c2-4fc4-8cad-be43262619a7
+
+↳ La solicitud 4 queda asignada
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b [200 OK, 948B, 29ms]
+  ✓  asignado
+
+↳ El técnico cotiza la solicitud 4
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b/quotes [201 Created, 646B, 28ms]
+  ✓  201 con el contrato Quote
+
+↳ Se acepta la cotización de la solicitud 4
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b/quotes/01a1a960-97e8-7ecc-a725-1f08f8121697/accept [200 OK, 366B, 29ms]
+  ✓  200 con el contrato QuoteDecision
+
+↳ El técnico inicia la solicitud 4
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b/start [200 OK, 342B, 27ms]
+  ✓  200
+
+↳ El técnico sube la foto de la solicitud 4
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b/evidence [201 Created, 445B, 46ms]
+  ✓  201
+
+↳ El técnico completa la solicitud 4
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b/complete [200 OK, 343B, 28ms]
+  ✓  200
+
+↳ El pago de la solicitud 4 queda pendiente (espera service-request.completed en Payments)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b/payment [404 Not Found, 569B, 23ms]
+
+Attempting to set next request to 2fb8922f-9b5a-405a-99c3-6187df838478
+
+↳ El pago de la solicitud 4 queda pendiente (espera service-request.completed en Payments)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b/payment [200 OK, 479B, 20ms]
+  ✓  200
+  ✓  pendiente
+
+↳ Se paga la solicitud 4 con la tarjeta aprobada
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b/payment [200 OK, 543B, 34ms]
+  ✓  200
+  ✓  aprobado
+
+↳ La solicitud 4 queda pagada (payment.approved)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b [200 OK, 1.01kB, 35ms]
+
+Attempting to set next request to 68d4e522-ae0c-4c1e-b767-ab294577757b
+
+↳ La solicitud 4 queda pagada (payment.approved)
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b [200 OK, 1.01kB, 30ms]
+  ✓  pagado
+
+↳ CAL-018: el colega de la empresa → 403
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b/rating [403 Forbidden, 482B, 24ms]
+  ✓  403
+  ✓  Problem Details (RFC 9457) con correlationId
+
+↳ CAL-018: quien creó la solicitud → 201
+  POST https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b/rating [201 Created, 387B, 26ms]
+  ✓  201 con el contrato RatingResponse
+
+↳ SCRUM-639 DET-005: la empresa ve su calificación
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b [200 OK, 1.1kB, 912ms]
+  ✓  200
+  ✓  la empresa ve su calificación de 4 estrellas
+
+↳ SCRUM-639 DET-006: un colega de la empresa la ve
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b [200 OK, 1.1kB, 23ms]
+  ✓  otro colega de la empresa (empresa_contacto del mismo tenant) ve la calificación
+  ✓  rating con score 4
+
+↳ SCRUM-639 DET-007: otro cliente no ve la solicitud
+  GET https://10.43.100.168/api/v1/service-requests/01a1a960-8765-7f4f-9ca1-5d24c5a5301b [404 Not Found, 457B, 18ms]
+  ✓  otro cliente no ve la solicitud (404)
+
+❏ Limpieza
+↳ Suspender al técnico de la prueba
+  POST https://10.43.100.168/api/v1/admin/technicians/01a1a95f-f65b-7e9e-9369-9d49685721c1/suspend [200 OK, 348B, 22ms]
+  ✓  200
+
+↳ Desactivar la categoría de la prueba
+  PATCH https://10.43.100.168/api/v1/catalog/admin/categories/01a1a95f-f62d-727d-b75c-aabc33600d39 [200 OK, 433B, 23ms]
+  ✓  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                 108 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                 108 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                 101 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                 142 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 48s                                            │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 43.24kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 190ms [min: 14ms, max: 1812ms, s.d.: 378ms] │
+└────────────────────────────────────────────────────────────────────┘

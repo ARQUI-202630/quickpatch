@@ -242,6 +242,10 @@ Al final suspende a los dos técnicos y desactiva la categoría.
 
 **Evidencia:** `evidencias/scrum-32-calificacion-qa-2026-11-04.txt`, contra QA el 4 de noviembre de 2026 con ServiceRequest 0.11.2: 101 peticiones y 127 aserciones, sin fallos. La primera corrida del mismo día encontró que ServiceRequest aceptaba `{"score":"5"}` con 201, porque leía números escritos como texto; se corrigió en quickpatch-service-request#39 (`release/0.11.2`).
 
+**La calificación en el detalle (SCRUM-639, service-request 1.12.0):** siete pasos `DET-001` a `DET-007` dentro de la misma colección comprueban `GET /v1/service-requests/{id}`: antes de calificar trae `rating: null`; después, el cliente ve `rating` con `score`, `comment` y `ratedAt` (5 estrellas con comentario de 500 caracteres, y 1 estrella sin comentario con `comment: null`); el técnico asignado recibe 403 sobre una solicitud pagada (RN-SR13), así que nunca ve la calificación; la empresa y otro `empresa_contacto` de su tenant sí la ven; otro cliente recibe 404. **Evidencia:** `evidencias/scrum-639-calificacion-detalle-qa-2026-11-05.txt`, contra QA el 5 de noviembre de 2026 con ServiceRequest `release/0.12.0`: 108 peticiones y 142 aserciones, sin fallos. La primera corrida esperaba `rating: null` para el técnico; era un error de la prueba, no del servicio (la API responde 403, que es más estricto).
+
+**Ventana de mantenimiento medida (AC5-E2):** `evidencias/ventana-qa-release-0.12.0-2026-11-05.md`.
+
 ## Recuperación de contraseña (SCRUM-627)
 
 `scrum-627-recuperacion.postman_collection.json` prueba contra QA la HU SCRUM-623 con los cuatro endpoints de recuperación de `identity.v1.yaml` 1.10.0. Cubre `REC-001` a `REC-014`, `REC-016` a `REC-021` y `REC-026` del TD 7.2. Se genera con `python tests/e2e/generar-scrum627-recuperacion.py` y necesita al administrador del tenant; `REC-007` necesita además al administrador de la plataforma y se omite sin él.
