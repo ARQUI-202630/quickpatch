@@ -109,10 +109,9 @@ Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-def
 * **Capacidad de Carga k6:** **32,750 peticiones procesadas** con 0.03% de errores y p95 de 1105.96 ms bajo 150 VU.
 * **Cobertura de Código en CI (SCRUM-602):** **91.7% – 100.0%** en 10 repositorios; todos sobre el umbral de 80%.
 * **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.
-* **Avance Preliminar del Producto (Matriz Excel UAT):** **75.80%** (Meta Sprint 4: 80% / Brecha: -4.20%).
-* **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts). Antes 92.65% (31.5 / 34): RF-12 (calificación) pasó de *No implementado* a *Parcial* (+0.5 pts) porque el backend de calificación (SCRUM-85) ya responde en QA (`tests/e2e/evidencias/humo-flujo-critico-qa-2026-10-30.txt`); falta la pantalla del cliente (SCRUM-86).
-* **% Funcionalidades Probadas por QA:** **86.03%** (29.25 / 34 pts con evidencia).
-* **% Escenarios de Calidad (SAD §3):** **51.92%** (52 escenarios evaluados: 21 Cumple, 12 Parcial, 1 No cumple, 18 No medido).
+* **Avance Oficial del Producto (Informe UAT de la PO, 5-nov):** **91.92%** (Meta Sprint 5: mínimo 90%; 0.7 × 100% aceptado en UAT + 0.3 × 73.08% escenarios).
+* **% Funcionalidades Implementadas, Probadas por QA y Aceptadas en UAT:** **100%** (37 de 37; RF-10 aceptada con observaciones).
+* **% Escenarios de Calidad (SAD §3):** **73.08%** (52 escenarios: 34 Cumple, 8 Parcial, 4 No cumple, 6 No medido; fuente: `docs/testing/informe-uat-oficial-po-2026-11-05.xlsx`).
 
 ### Gráfica 1: Distribución de Pruebas por Tipo
 ![Gráfica 1: Distribución por Tipo](img/grafica-1-pruebas-por-tipo.png)
