@@ -94,6 +94,7 @@ Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estruc
 | `C4-05-Dinamico-Calificacion` | Dynamic | 27 |
 | `C4-05-Dinamico-GestionTenants` | Dynamic | 28 |
 | `C4-05-Dinamico-Cancelacion` | Dynamic | 28b |
+| `C4-05-Dinamico-RecuperacionContrasena` | Dynamic | 28c |
 | `C4-06-Despliegue-Produccion` | Deployment | 30 |
 | `C4-06-Despliegue-QA` | Deployment | 31 |
 
@@ -1036,17 +1037,23 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 **Figura 27. Escenario: calificación del servicio y reputación del técnico (C4 · Dynamic; ADR-027, implementado en SCRUM-85 y SCRUM-498). ServiceRequest guarda la calificación y publica `service-request.rated`; Ranking recalcula y publica `ranking.technician-reputation-changed`, que Identity proyecta en `technician_profiles`. Vista `C4-05-Dinamico-Calificacion`.**
 
-**Gestión de tenants.** La única operación que omite RLS, acotada a una transacción con el rol `identity_platform` y auditada (RF-21, SCRUM-112).
+**Desactivación de un tenant.** La única operación que omite RLS, acotada a una transacción con el rol `identity_platform` y auditada (RF-21, SCRUM-112). Al cambiar el estado, Identity publica `tenant.status-changed` por Outbox y ServiceRequest lo replica en `tenant_status_replica`: desde ese momento rechaza las solicitudes del tenant con `422 tenant-inactivo` aunque el token siga vigente, sin llamar a Identity (RN-T1, SCRUM-508 a SCRUM-511).
 
 ![Gestión de tenants (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-GestionTenants.png)
 
-**Figura 28. Gestión de tenants por el admin de plataforma (C4 · Dynamic). Vista `C4-05-Dinamico-GestionTenants`.**
+**Figura 28. Escenario: desactivación de un tenant y su réplica en ServiceRequest (C4 · Dynamic; RN-T1, ADR-017). Vista `C4-05-Dinamico-GestionTenants`.**
 
 **Cancelación.** El cliente dueño (o el `admin_tenant` desde el panel) cancela una solicitud antes de `en_progreso` (RF-36). Matching retira la oferta pendiente y libera al técnico; Communication avisa con `service-request.status-changed`, porque no consume `service-request.cancelled` (matriz 8.6).
 
 ![Cancelación de una solicitud (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Cancelacion.png)
 
 **Figura 28b. Escenario: cancelación de una solicitud (C4 · Dynamic; SCRUM-589). Vista `C4-05-Dinamico-Cancelacion`.**
+
+**Recuperación de la contraseña.** Sin correo en el MVP (ADR-024): el usuario la pide en la app, el `admin_tenant` genera en el panel un enlace de un solo uso que vence en 1 hora y se lo entrega, y el usuario define la contraseña nueva en la página pública `/recuperar`. Identity guarda solo el hash del token y cuenta los pedidos por el HMAC del correo (RN-U7; identity.v1.yaml 1.10.0; SCRUM-623).
+
+![Recuperación de la contraseña (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-RecuperacionContrasena.png)
+
+**Figura 28c. Escenario: recuperación de la contraseña olvidada (C4 · Dynamic; SCRUM-623). Vista `C4-05-Dinamico-RecuperacionContrasena`.**
 
 Los diagramas de secuencia de detalle de la cotización, el pago y la cancelación, con sus alternativas (rechazo, vencimiento, pasarela sin respuesta) y los errores de cada contrato, están en `docs/architecture/DIAGRAMS_SCRUM591_DYNAMIC_FLOWS.md` (SCRUM-591).
 
@@ -1475,11 +1482,11 @@ El diagrama muestra la distribución aprobada en ADR-022: VM1 de herramientas y 
 
 ![Despliegue de producción (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-Produccion.png)
 
-**Figura 30. Despliegue de producción al 27 de octubre de 2026: VM1, VM3, VM4 y VM6 (C4 · Deployment, ADR-022). VM1 solo termina el TLS; el gateway y el panel corren en el Nginx de VM3, fuera del k3s (ADR-028). Payments y Communication, punteados, llegan con la promoción del MVP (SCRUM-518; Documento de Infraestructura V4, 4.3). Vista `C4-06-Despliegue-Produccion`.**
+**Figura 30. Despliegue de producción al 4 de noviembre de 2026, tras la promoción del MVP (SCRUM-518): los 7 servicios con código en el k3s de VM3, con VM4 y VM6 y la entrada de VM1 (C4 · Deployment, ADR-022). El gateway y el panel corren en el Nginx de VM3, fuera del k3s (ADR-028); el panel real todavía no se ha promovido. Actors, punteado, no tiene código. Vista `C4-06-Despliegue-Produccion`.**
 
 ![Despliegue de QA (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-QA.png)
 
-**Figura 31. Despliegue de QA al 3 de noviembre de 2026, con Ranking desplegado (SCRUM-512): VM2, VM5 y VM7, con la VM1 compartida (C4 · Deployment, ADR-022); el gateway y el panel en el Nginx de VM2 (ADR-028). Vista `C4-06-Despliegue-QA`.**
+**Figura 31. Despliegue de QA al 4 de noviembre de 2026: los 7 servicios con código en el k3s de VM2, con VM5 y VM7 y la VM1 compartida (C4 · Deployment, ADR-022); el gateway y el panel de `release/0.5.5` en el Nginx de VM2 (ADR-028). Vista `C4-06-Despliegue-QA`.**
 
 IPs del laboratorio: VM1 10.43.100.168, VM3 10.43.98.205, VM4 10.43.98.209, VM6 10.43.99.12; QA: VM2 10.43.98.15, VM5 10.43.98.29, VM7 10.43.99.8. VM1 reenvía `quickpatch.internal` y `qa.quickpatch.internal` al NodePort 30080 de Traefik en VM3 y VM2.
 
@@ -2291,6 +2298,7 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 | Mis pagos de la app (SCRUM-502) y Mi perfil del panel (SCRUM-613) en las tablas y en las vistas, regeneradas | 6.2 (figuras 8 y 9) y 8.13.5 (RF-25) | SCRUM-548 |
 | Observaciones 1 a 3 de la revisión funcional del PO: sección 12 con la revisión de la V4, contratos de `v0.21.0`, los 20 eventos de `quickpatch-kafka` `v0.10.0` y RF-17, RF-25 y el buzón en la sección 8.13.5 | 5.6.1, 5.6.2, 8.13.5, 12 y 13.5 | SCRUM-548 |
 | Auditoría previa a la revisión del PO: estado del documento, calificación implementada en la matriz de escenarios, secuencia de extremo a extremo con el técnico y la calificación por Kafka (ADR-027), cuenta corporativa implementada, Ranking en la convención de paquetes y referencias corregidas | 1, 6.2, 6.7, 8.13.3, 8.13.4, 10.2, 11.4 y 13 | SCRUM-548 |
+| C4 actualizado con `develop` del 5 de noviembre: componentes de la app (ofertas, equipo y regla del regreso) y del panel (presentación, activación, solicitudes y recuperación de la contraseña), tablas reales de cada base, producción con los 7 servicios tras SCRUM-518, desactivación de un tenant con su réplica y escenario nuevo de recuperación de la contraseña; las 25 vistas reexportadas | 5.1, 6.2, 8 (figuras 28 y 28c) y 9.1 (figuras 30 y 31) | SCRUM-595 |
 | Modelo lógico de dominio rehecho desde el DD 5.19 y el código: las entidades de los 7 servicios con tablas, sus estados, cardinalidades y réplicas, y relaciones internas y referencias entre servicios completas. La figura anterior era de septiembre y no tenía Tenant, ClientCompany, Quote, ServiceEvidence, MatchingRequest, Communication ni Ranking | 5.5 (figura 6) | SCRUM-595 |
 
 **Pendiente para cerrar la V4:** nada. Las figuras 15 y 18 se completaron en SCRUM-583 (fila siguiente).
