@@ -1,0 +1,15 @@
+2026-11-05T03:02:33Z RF-10 contra QA, sufijo 105593f5
+2026-11-05T03:02:35Z categoría creada 01a1a9a8
+2026-11-05T03:02:37Z técnico A listo (aprobado, cubre Bogotá, disponible)
+2026-11-05T03:02:39Z técnico B listo (aprobado, cubre Bogotá, disponible)
+2026-11-05T03:02:41Z espera a que Matching conozca a los técnicos y ServiceRequest la categoría (20 s)
+2026-11-05T03:03:02Z solicitud creada 01a1a9a8 (estado buscando_tecnico)
+2026-11-05T03:03:05Z claves de la oferta: ['attemptId', 'categoryId', 'categoryName', 'description', 'distanceMeters', 'expiresAt', 'locality', 'offeredAt', 'serviceRequestId']
+2026-11-05T03:03:05Z el técnico A recibe la oferta 559c3294 a los 3 s de crear la solicitud; vence según la oferta: 2026-11-05T03:06:02.141979Z
+2026-11-05T03:03:05Z NO se responde. Se vigila hasta 5 minutos: cuándo vence la del A y cuándo le llega al B
+2026-11-05T03:06:04Z la oferta del técnico A YA NO está pendiente (a los 179 s de recibirla)
+2026-11-05T03:06:09Z el técnico B RECIBE la oferta 8ab7ad78 (a los 184 s de que la recibió el A)
+2026-11-05T03:06:14Z el técnico A intenta aceptar la oferta vencida: HTTP 409 (oferta-no-disponible)
+2026-11-05T03:06:14Z ofertas pendientes del técnico A para esta solicitud: 0 (esperado 0)
+2026-11-05T03:06:14Z limpieza: técnicos suspendidos y categoría desactivada
+2026-11-05T03:06:14Z RESULTADO: CUMPLE: oferta del A vencida a los 179 s (esperado ~180) y pasa al B: sí; aceptar la vencida: HTTP 409 (esperado 409)
