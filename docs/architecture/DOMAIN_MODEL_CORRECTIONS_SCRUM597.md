@@ -181,3 +181,23 @@ Línea continua: relación dentro del servicio. Línea punteada: referencia lóg
 |Recuperación de la contraseña|5.21, 5.27, 5.28, 7.2 (RN-U7), 8.2.1, 8.3.19|
 |Estado del tenant|5.1, 5.26, 7.1 (RN-T1), 8.4|
 |Pagos recibidos|5.12, 5.25, 8.2.5|
+
+---
+
+## Revisión del modelo publicado contra el código (SCRUM-595)
+
+El 4 de noviembre se compararon el modelo publicado en el SAD (sección 8.1) y en el SDD (figura 6) con el DD 5.19 y con las tablas de cada servicio en `develop`. Estas son las diferencias que había y cómo quedaron:
+
+| # | Diferencia | Corrección |
+|---|---|---|
+| 1 | La figura 6 del SDD era de septiembre: no tenía `Tenant`, `ClientCompany`, `Quote`, `ServiceEvidence`, `MatchingRequest`, ni nada de Ranking, Communication o Catalog | Figura rehecha con las 7 bases de datos, desde `src/03_modelo_logico_dominio.puml` |
+| 2 | La figura no tenía cardinalidades; solo «FK» o «ref. lógica» | Cada relación con su cardinalidad, como el diagrama ER del DD |
+| 3 | La figura no mostraba los estados de las entidades | Estados de `Tenant`, `User.role`, `TechnicianProfile`, `ServiceRequest`, `MatchingRequest`, `MatchingAttempt`, `TechnicianAvailability`, `Payment` y la recuperación |
+| 4 | `MatchingAttempt` colgaba de `ServiceRequest`, aunque su FK es a `matching_requests` (DD 5.8) | `MatchingRequest` 1 → 0..* `MatchingAttempt`, y `ServiceRequest` → `MatchingRequest` por `service-request.created` |
+| 5 | `TechnicianAvailability` y `CoverageZone` aparecían con FK lógica a `TechnicianProfile`, sin decir que la disponibilidad es una réplica por eventos | `TechnicianAvailability` marcada `«replica»`; `CoverageZone` con su FK a `Locality` |
+| 6 | Las réplicas por eventos no se distinguían de las entidades propias | Marca `«replica»` en `CategoryReplica`, `TenantStatusReplica`, `TechnicianAvailability` y `PaymentTechnician`, con el evento que las alimenta |
+| 7 | El SAD 8.1 listaba 13 entidades que no existen: `Role`, `Supplier`, `Ally`, `Employee`, `Client`, `BusinessClient`, `Specialty`, `ServiceCatalogItem`, `Evaluation`, `SupplierRanking`, `PayoutRecord`, `Conversation`, `Complaint` | Tabla por servicio dueño con las entidades reales, y qué reemplazó a cada una de las del diseño inicial |
+| 8 | El SAD 8.1 agrupaba por dominio de negocio y no por servicio dueño, así que no se veía qué base guarda cada entidad | Columna por servicio y columna de réplicas |
+| 9 | El SDD 5.5 listaba 3 relaciones internas y 4 referencias entre servicios | 14 relaciones internas y 13 referencias, con su cardinalidad o su evento |
+
+**Pendiente (SCRUM-596):** confirmar con el equipo cuáles de estas diferencias son las que señaló el profesor en la revisión del Sprint 4. La transcripción de esa revisión no conserva el detalle, y esta tabla sale de comparar los documentos con el código, no de la transcripción.

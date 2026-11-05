@@ -190,27 +190,53 @@ Los datos de negocio asociados a empresas conservan `tenant_id`. El contexto de 
 
 ## 5.5 Modelo lógico de dominio y relaciones (complementario)
 
-![Modelo lógico de dominio](diagrams/sdd/03_modelo_logico_dominio.png)
+![Modelo lógico de dominio](diagrams/sdd/03_modelo_logico_dominio.svg)
 
-**Figura 6. Modelo lógico de dominio y referencias entre servicios.**
+**Figura 6. Modelo lógico de dominio por microservicio y referencias entre servicios.** Fuente: `diagrams/sdd/src/03_modelo_logico_dominio.puml`.
 
-Las relaciones continuas representan relaciones internas al mismo dominio que pueden implementarse como claves foráneas. Las relaciones punteadas representan referencias lógicas entre servicios independientes.
+La figura se rehizo en la SCRUM-595 a partir de las tablas del DD 5.19 (sección 5) y de las que cada servicio tiene en `develop` al 4 de noviembre de 2026. Muestra las entidades de negocio de cada servicio, sus atributos principales, sus estados y sus cardinalidades. Las tablas técnicas (`outbox_events`, `processed_events` y `audit_logs`) y el detalle de columnas están en el DD.
+
+- **Línea continua:** relación dentro del mismo servicio. Es una clave foránea en su base de datos; el rombo lleno indica que la entidad no existe sin la otra.
+- **Línea punteada:** referencia lógica o réplica entre servicios. No hay clave foránea física; la etiqueta es el identificador o el evento que la alimenta.
+- **`«replica»`:** copia local de un dato de otro servicio, alimentada por eventos (ADR-017). La versión de cada réplica descarta los eventos viejos.
+
+Actors Service no aparece porque no tiene tablas propias.
 
 ### 5.5.1 Relaciones internas
 
 ```text
-service_requests.category_id -> service_categories.id
-ratings.service_request_id   -> service_requests.id
-invoices.payment_id          -> payments.id
+Identity       users.tenant_id                       -> tenants.id                (1 : 1..*)
+               client_companies.tenant_id            -> tenants.id                (1 : 0..*)
+               users.company_id                      -> client_companies.id       (0..1 : 0..*, solo empresa_contacto)
+               technician_profiles.user_id           -> users.id                  (1 : 0..1)
+               technician_profiles.provider_id       -> users.id                  (0..1 : 0..*, equipo del proveedor)
+               password_setup_tokens.user_id         -> users.id                  (1 : 0..*)
+               password_recovery_requests.user_id    -> users.id                  (1 : 0..1 pendiente)
+ServiceRequest quotes.service_request_id             -> service_requests.id       (1 : 0..*)
+               ratings.service_request_id            -> service_requests.id       (1 : 0..1, RN-R2)
+               service_evidence.service_request_id   -> service_requests.id       (1 : 0..*)
+Matching       matching_attempts.service_request_id  -> matching_requests.service_request_id (1 : 0..*)
+               coverage_zones.locality_code          -> localities.code           (1 : 0..*)
+Payments       invoices.payment_id                   -> payments.id               (1 : 0..1)
+Communication  chat_messages.service_request_id      -> chat_participants.service_request_id (1 : 0..*)
 ```
 
 ### 5.5.2 Referencias lógicas entre servicios
 
 ```text
-service_requests.client_id      -> Identity / User
-service_requests.technician_id  -> Identity / Technician
-matching_attempts.request_id    -> ServiceRequest / ServiceRequest
-payments.service_request_id     -> ServiceRequest / ServiceRequest
+service_requests.client_id           -> Identity / users
+service_requests.technician_id       -> Identity / technician_profiles
+service_requests.company_id          -> Identity / client_companies
+service_requests.category_id         -> Catalog / service_categories (réplica service_request_categories)
+tenant_status_replica.tenant_id      -> Identity / tenants (tenant.status-changed)
+matching_requests.service_request_id -> ServiceRequest / service_requests (service-request.created)
+technician_availability.technician_id -> Identity / technician_profiles (eventos technician.*)
+payments.service_request_id          -> ServiceRequest / service_requests (service-request.completed)
+payment_technicians.technician_id    -> Identity / technician_profiles (technician.registered)
+applied_ratings.service_request_id   -> ServiceRequest / ratings (service-request.rated)
+technician_profiles.average_rating   <- Ranking / technician_reputations (ranking.technician-reputation-changed)
+chat_participants.service_request_id -> ServiceRequest / service_requests (eventos de estado)
+notifications.user_id                -> Identity / users
 ```
 
 Un servicio no ejecuta escrituras directas sobre tablas propietarias de otro dominio ni define Foreign Keys físicas entre límites de servicio diferentes.
@@ -2265,6 +2291,7 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 | Mis pagos de la app (SCRUM-502) y Mi perfil del panel (SCRUM-613) en las tablas y en las vistas, regeneradas | 6.2 (figuras 8 y 9) y 8.13.5 (RF-25) | SCRUM-548 |
 | Observaciones 1 a 3 de la revisión funcional del PO: sección 12 con la revisión de la V4, contratos de `v0.21.0`, los 20 eventos de `quickpatch-kafka` `v0.10.0` y RF-17, RF-25 y el buzón en la sección 8.13.5 | 5.6.1, 5.6.2, 8.13.5, 12 y 13.5 | SCRUM-548 |
 | Auditoría previa a la revisión del PO: estado del documento, calificación implementada en la matriz de escenarios, secuencia de extremo a extremo con el técnico y la calificación por Kafka (ADR-027), cuenta corporativa implementada, Ranking en la convención de paquetes y referencias corregidas | 1, 6.2, 6.7, 8.13.3, 8.13.4, 10.2, 11.4 y 13 | SCRUM-548 |
+| Modelo lógico de dominio rehecho desde el DD 5.19 y el código: las entidades de los 7 servicios con tablas, sus estados, cardinalidades y réplicas, y relaciones internas y referencias entre servicios completas. La figura anterior era de septiembre y no tenía Tenant, ClientCompany, Quote, ServiceEvidence, MatchingRequest, Communication ni Ranking | 5.5 (figura 6) | SCRUM-595 |
 
 **Pendiente para cerrar la V4:** nada. Las figuras 15 y 18 se completaron en SCRUM-583 (fila siguiente).
 
