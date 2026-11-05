@@ -2653,6 +2653,51 @@
           ]
         },
         {
+          "name": "SCRUM-639 DET-001: antes de calificar el detalle trae rating null",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('el detalle trae la clave rating y es null mientras no se califique', () => { pm.expect(b).to.have.property('rating'); pm.expect(b.rating).to.equal(null); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}"
+              ]
+            }
+          }
+        },
+        {
           "name": "CAL-001 / CAL-003 / CAL-008: 5 estrellas con comentario de 500 caracteres → 201",
           "request": {
             "method": "POST",
@@ -2715,6 +2760,97 @@
               }
             }
           ]
+        },
+        {
+          "name": "SCRUM-639 DET-002: el cliente ve su calificación en el detalle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json().rating;",
+                  "pm.test('el cliente ve rating con score 5', () => { pm.expect(r).to.be.an('object'); pm.expect(r.score).to.equal(5); });",
+                  "pm.test('comment de 500 caracteres', () => pm.expect(r.comment).to.be.a('string').and.have.lengthOf(500));",
+                  "pm.test('ratedAt es una fecha ISO', () => pm.expect(Number.isNaN(Date.parse(r.ratedAt))).to.equal(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "SCRUM-639 DET-003: el técnico asignado no ve la solicitud pagada ni su calificación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('el técnico asignado no puede ver una solicitud pagada (403, RN-SR13): nunca recibe la calificación', () => pm.response.to.have.status(403));",
+                  "pm.test('la respuesta no trae rating', () => pm.expect(pm.response.json()).to.not.have.property('rating'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tecnicoToken}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud1Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud1Id}}"
+              ]
+            }
+          }
         },
         {
           "name": "CAL-001: la solicitud sigue en pagado",
@@ -3653,6 +3789,51 @@
               }
             }
           ]
+        },
+        {
+          "name": "SCRUM-639 DET-004: 1 estrella sin comentario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json().rating;",
+                  "pm.test('1 estrella sin comentario: comment null', () => { pm.expect(r.score).to.equal(1); pm.expect(r.comment).to.equal(null); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{clienteToken}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud2Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud2Id}}"
+              ]
+            }
+          }
         },
         {
           "name": "Crear la solicitud 3 (espera la réplica de la categoría)",
@@ -5130,6 +5311,138 @@
               }
             }
           ]
+        },
+        {
+          "name": "SCRUM-639 DET-005: la empresa ve su calificación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json().rating;",
+                  "pm.test('la empresa ve su calificación de 4 estrellas', () => { pm.expect(r.score).to.equal(4); pm.expect(r.comment).to.equal('Atendieron la sede a tiempo.'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{empresaToken}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud4Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud4Id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "SCRUM-639 DET-006: un colega de la empresa la ve",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('otro colega de la empresa (empresa_contacto del mismo tenant) ve la calificación', () => { pm.response.to.have.status(200); });",
+                  "pm.test('rating con score 4', () => pm.expect(pm.response.json().rating.score).to.equal(4));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{colegaToken}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud4Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud4Id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "SCRUM-639 DET-007: otro cliente no ve la solicitud",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('otro cliente no ve la solicitud (404)', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{otroClienteToken}}"
+              },
+              {
+                "key": "X-Channel-Id",
+                "value": "quickpatch-mobile"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/service-requests/{{solicitud4Id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "service-requests",
+                "{{solicitud4Id}}"
+              ]
+            }
+          }
         }
       ]
     },
