@@ -10,7 +10,7 @@ El 5 de noviembre de 2026 se subió la RAM de **VM7** (QA, Kafka y Garage; 11,9 
 
 | Hora | Hecho | Fuente |
 |---|---|---|
-| 01:46:03 | Inicio de la prueba, RAM al 30,5 % | registro de la VM (`alerta-ram-vm7-qa-2026-11-05.log`) |
+| 01:46:03 | Inicio de la prueba, RAM al 30,5 % | registro de la VM (`alerta-ram-vm7-qa-2026-11-05.txt`) |
 | **01:46:24** | **La RAM cruza el 85 %** (85,55 %) | registro de la VM |
 | 01:46:25 | Objetivo alcanzado: 89,40 % usada, 1.263 MiB disponibles | registro de la VM |
 | **01:52:20** | **La alerta pasa a «Firing»** (RAM al 89 % en vm7; valor 89,42) | correo de Grafana: «Observed 34s before this notification was delivered, at 01:52:20 UTC» |
