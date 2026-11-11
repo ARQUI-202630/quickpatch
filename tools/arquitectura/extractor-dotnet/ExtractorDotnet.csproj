@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Extractor de dependencias de los servicios .NET (SCRUM-681).
+       Solo usa System.Reflection.Metadata, que viene con el runtime: no descarga paquetes. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>extractor-dotnet</AssemblyName>
+    <RootNamespace>QuickPatch.Herramientas.Arquitectura</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,65 @@
+@startuml
+!pragma layout smetana
+title Catalog — clases más conectadas (despues, 44373e3)
+hide empty members
+skinparam shadowing false
+class "Api.Endpoints.CategoryEndpoints" as QuickPatch_Catalog_Api_Endpoints_CategoryEndpoints <<Api>> {
+  88 líneas · entra 1 · sale 15
+}
+class "Domain.Categories.Category" as QuickPatch_Catalog_Domain_Categories_Category <<Domain>> {
+  97 líneas · entra 11 · sale 1
+}
+class "Application.Categories.CreateCategoryHandler" as QuickPatch_Catalog_Application_Categories_CreateCategoryHandler <<Application>> {
+  34 líneas · entra 2 · sale 7
+}
+class "Application.Categories.UpdateCategoryHandler" as QuickPatch_Catalog_Application_Categories_UpdateCategoryHandler <<Application>> {
+  28 líneas · entra 2 · sale 6
+}
+class "Infrastructure.Persistence.CatalogDbContext" as QuickPatch_Catalog_Infrastructure_Persistence_CatalogDbContext <<Infrastructure>> {
+  37 líneas · entra 6 · sale 2
+}
+class "Application.Events.CategoryChangedEvent" as QuickPatch_Catalog_Application_Events_CategoryChangedEvent <<Application>> {
+  17 líneas · entra 2 · sale 4
+}
+interface "Application.Abstractions.ICategoryRepository" as QuickPatch_Catalog_Application_Abstractions_ICategoryRepository <<Application>> {
+  0 líneas · entra 5 · sale 1
+}
+class "Infrastructure.Persistence.EfOutbox" as QuickPatch_Catalog_Infrastructure_Persistence_EfOutbox <<Infrastructure>> {
+  16 líneas · entra 1 · sale 4
+}
+class "Application.Categories.ListCategoriesHandler" as QuickPatch_Catalog_Application_Categories_ListCategoriesHandler <<Application>> {
+  4 líneas · entra 2 · sale 3
+}
+interface "Application.Abstractions.ITenantUnitOfWork" as QuickPatch_Catalog_Application_Abstractions_ITenantUnitOfWork <<Application>> {
+  0 líneas · entra 5 · sale 0
+}
+interface "Application.Abstractions.IOutbox" as QuickPatch_Catalog_Application_Abstractions_IOutbox <<Application>> {
+  0 líneas · entra 4 · sale 1
+}
+class "Infrastructure.Messaging.OutboxPublisher" as QuickPatch_Catalog_Infrastructure_Messaging_OutboxPublisher <<Infrastructure>> {
+  84 líneas · entra 1 · sale 3
+}
+QuickPatch_Catalog_Api_Endpoints_CategoryEndpoints ..> QuickPatch_Catalog_Application_Categories_CreateCategoryHandler
+QuickPatch_Catalog_Api_Endpoints_CategoryEndpoints ..> QuickPatch_Catalog_Application_Categories_ListCategoriesHandler
+QuickPatch_Catalog_Api_Endpoints_CategoryEndpoints ..> QuickPatch_Catalog_Application_Categories_UpdateCategoryHandler
+QuickPatch_Catalog_Api_Endpoints_CategoryEndpoints ..> QuickPatch_Catalog_Domain_Categories_Category
+QuickPatch_Catalog_Application_Abstractions_ICategoryRepository ..> QuickPatch_Catalog_Domain_Categories_Category
+QuickPatch_Catalog_Application_Categories_CreateCategoryHandler ..> QuickPatch_Catalog_Application_Abstractions_ICategoryRepository
+QuickPatch_Catalog_Application_Categories_CreateCategoryHandler ..> QuickPatch_Catalog_Application_Abstractions_IOutbox
+QuickPatch_Catalog_Application_Categories_CreateCategoryHandler ..> QuickPatch_Catalog_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Catalog_Application_Categories_CreateCategoryHandler ..> QuickPatch_Catalog_Application_Events_CategoryChangedEvent
+QuickPatch_Catalog_Application_Categories_CreateCategoryHandler ..> QuickPatch_Catalog_Domain_Categories_Category
+QuickPatch_Catalog_Application_Categories_ListCategoriesHandler ..> QuickPatch_Catalog_Application_Abstractions_ICategoryRepository
+QuickPatch_Catalog_Application_Categories_ListCategoriesHandler ..> QuickPatch_Catalog_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Catalog_Application_Categories_ListCategoriesHandler ..> QuickPatch_Catalog_Domain_Categories_Category
+QuickPatch_Catalog_Application_Categories_UpdateCategoryHandler ..> QuickPatch_Catalog_Application_Abstractions_ICategoryRepository
+QuickPatch_Catalog_Application_Categories_UpdateCategoryHandler ..> QuickPatch_Catalog_Application_Abstractions_IOutbox
+QuickPatch_Catalog_Application_Categories_UpdateCategoryHandler ..> QuickPatch_Catalog_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Catalog_Application_Categories_UpdateCategoryHandler ..> QuickPatch_Catalog_Application_Events_CategoryChangedEvent
+QuickPatch_Catalog_Application_Categories_UpdateCategoryHandler ..> QuickPatch_Catalog_Domain_Categories_Category
+QuickPatch_Catalog_Application_Events_CategoryChangedEvent ..> QuickPatch_Catalog_Domain_Categories_Category
+QuickPatch_Catalog_Infrastructure_Messaging_OutboxPublisher ..> QuickPatch_Catalog_Infrastructure_Persistence_CatalogDbContext
+QuickPatch_Catalog_Infrastructure_Persistence_CatalogDbContext ..> QuickPatch_Catalog_Domain_Categories_Category
+QuickPatch_Catalog_Infrastructure_Persistence_EfOutbox ..> QuickPatch_Catalog_Application_Abstractions_IOutbox
+QuickPatch_Catalog_Infrastructure_Persistence_EfOutbox ..> QuickPatch_Catalog_Infrastructure_Persistence_CatalogDbContext
+@enduml

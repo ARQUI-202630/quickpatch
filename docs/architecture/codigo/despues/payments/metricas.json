@@ -1,0 +1,1500 @@
+{
+ "servicio": "Payments",
+ "lenguaje": "csharp",
+ "resumen": {
+  "tipos": 84,
+  "paquetes": 17,
+  "dependencias_entre_tipos": 214,
+  "dependencias_entre_paquetes": 39,
+  "ciclos_entre_paquetes": 0,
+  "paquetes_en_ciclos": 0,
+  "ciclos_entre_tipos": 0,
+  "mayor_ciclo_de_tipos": 0,
+  "violaciones_de_capas": 0,
+  "tipos_de_mas_de_250_lineas": 0,
+  "fan_out_maximo": 12,
+  "fan_out_promedio": 2.55,
+  "cohesion_relacional_promedio": 0.78
+ },
+ "dependencias_entre_capas": {
+  "Api->Application": 13,
+  "Api->Domain": 9,
+  "Api->Infrastructure": 1,
+  "Application->Domain": 24,
+  "Infrastructure->Application": 32,
+  "Infrastructure->Domain": 11
+ },
+ "violaciones": [],
+ "ciclos_entre_paquetes": [],
+ "ciclos_entre_tipos": [],
+ "mayor_fan_out": [
+  {
+   "tipo": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 69,
+   "fan_out": 12,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/PaymentEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 75,
+   "fan_out": 10,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Payments.Application/Payments/Pay.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 45,
+   "fan_out": 9,
+   "fan_in": 3,
+   "archivo": "src/QuickPatch.Payments.Application/Payments/PaymentSettlement.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 44,
+   "fan_out": 9,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Payments.Application/Payments/ReconcilePayments.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 69,
+   "fan_out": 7,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Events.PaymentEvents",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 20,
+   "fan_out": 7,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Application/Events/PaymentEvents.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 39,
+   "fan_out": 7,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Payments.Application/Payments/ServiceRequestCompletedHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 36,
+   "fan_out": 7,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Payments.Application/Payments/TechnicianRegisteredHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 76,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/ReceivedPaymentEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Invoices.GetInvoiceHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 20,
+   "fan_out": 6,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Payments.Application/Invoices/GetInvoiceHandler.cs"
+  }
+ ],
+ "mayor_fan_in": [
+  {
+   "tipo": "QuickPatch.Payments.Domain.Payments.Payment",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 143,
+   "fan_out": 0,
+   "fan_in": 21,
+   "archivo": "src/QuickPatch.Payments.Domain/Payments/Payment.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 0,
+   "fan_in": 10,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Payments.Domain.Payments.Invoice",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 45,
+   "fan_out": 2,
+   "fan_in": 10,
+   "archivo": "src/QuickPatch.Payments.Domain/Payments/Invoice.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 2,
+   "fan_in": 9,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Payments.Domain.Payments.Billing",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 52,
+   "fan_out": 1,
+   "fan_in": 9,
+   "archivo": "src/QuickPatch.Payments.Domain/Payments/Billing.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 99,
+   "fan_out": 5,
+   "fan_in": 9,
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Payments.PaymentView",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 1,
+   "fan_out": 1,
+   "fan_in": 7,
+   "archivo": "src/QuickPatch.Payments.Application/Payments/GetPayment.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Abstractions.InvoiceDocument",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 5,
+   "fan_out": 3,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Payments.Application/Abstractions/InvoiceDocument.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Abstractions.ProviderResult",
+   "capa": "Application",
+   "clase": "abstract",
+   "lineas": 8,
+   "fan_out": 0,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Payments.Application/Abstractions/IPaymentProvider.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Events.EventEnvelope",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 9,
+   "fan_out": 0,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Payments.Application/Events/EventEnvelope.cs"
+  }
+ ],
+ "mas_grandes": [
+  {
+   "tipo": "QuickPatch.Payments.Domain.Payments.Payment",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 143,
+   "fan_out": 0,
+   "fan_in": 21,
+   "archivo": "src/QuickPatch.Payments.Domain/Payments/Payment.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Infrastructure.Documents.InvoicePdfRenderer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 118,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Documents/InvoicePdfRenderer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 99,
+   "fan_out": 5,
+   "fan_in": 9,
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Infrastructure.Messaging.ServiceRequestCompletedConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 87,
+   "fan_out": 5,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Messaging/ServiceRequestCompletedConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Infrastructure.Messaging.TechnicianRegisteredConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 87,
+   "fan_out": 5,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Messaging/TechnicianRegisteredConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Infrastructure.Persistence.PaymentRepository",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 80,
+   "fan_out": 5,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Persistence/PaymentRepository.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 76,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/ReceivedPaymentEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 75,
+   "fan_out": 10,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Payments.Application/Payments/Pay.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 73,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Messaging/OutboxPublisher.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 69,
+   "fan_out": 7,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs"
+  }
+ ],
+ "paquetes": [
+  {
+   "paquete": "(global)",
+   "tipos": 1,
+   "fan_out": 5,
+   "fan_in": 0,
+   "inestabilidad": 1.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Payments.Api.Endpoints",
+   "tipos": 9,
+   "fan_out": 7,
+   "fan_in": 1,
+   "inestabilidad": 0.88,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Payments.Api.Http",
+   "tipos": 3,
+   "fan_out": 0,
+   "fan_in": 2,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.67
+  },
+  {
+   "paquete": "QuickPatch.Payments.Api.Security",
+   "tipos": 4,
+   "fan_out": 0,
+   "fan_in": 2,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.75
+  },
+  {
+   "paquete": "QuickPatch.Payments.Application",
+   "tipos": 1,
+   "fan_out": 2,
+   "fan_in": 1,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Payments.Application.Abstractions",
+   "tipos": 13,
+   "fan_out": 1,
+   "fan_in": 8,
+   "inestabilidad": 0.11,
+   "cohesion_relacional": 0.38
+  },
+  {
+   "paquete": "QuickPatch.Payments.Application.Events",
+   "tipos": 8,
+   "fan_out": 2,
+   "fan_in": 2,
+   "inestabilidad": 0.5,
+   "cohesion_relacional": 0.62
+  },
+  {
+   "paquete": "QuickPatch.Payments.Application.Invoices",
+   "tipos": 1,
+   "fan_out": 2,
+   "fan_in": 2,
+   "inestabilidad": 0.5,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Payments.Application.Payments",
+   "tipos": 14,
+   "fan_out": 3,
+   "fan_in": 3,
+   "inestabilidad": 0.5,
+   "cohesion_relacional": 1.07
+  },
+  {
+   "paquete": "QuickPatch.Payments.Domain.Common",
+   "tipos": 2,
+   "fan_out": 0,
+   "fan_in": 2,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.Payments.Domain.Payments",
+   "tipos": 6,
+   "fan_out": 1,
+   "fan_in": 7,
+   "inestabilidad": 0.12,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.Payments.Infrastructure",
+   "tipos": 1,
+   "fan_out": 6,
+   "fan_in": 1,
+   "inestabilidad": 0.86,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Payments.Infrastructure.Documents",
+   "tipos": 2,
+   "fan_out": 2,
+   "fan_in": 1,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Payments.Infrastructure.Messaging",
+   "tipos": 4,
+   "fan_out": 4,
+   "fan_in": 1,
+   "inestabilidad": 0.8,
+   "cohesion_relacional": 0.25
+  },
+  {
+   "paquete": "QuickPatch.Payments.Infrastructure.Options",
+   "tipos": 3,
+   "fan_out": 0,
+   "fan_in": 3,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.33
+  },
+  {
+   "paquete": "QuickPatch.Payments.Infrastructure.Persistence",
+   "tipos": 11,
+   "fan_out": 3,
+   "fan_in": 2,
+   "inestabilidad": 0.6,
+   "cohesion_relacional": 1.18
+  },
+  {
+   "paquete": "QuickPatch.Payments.Infrastructure.Providers",
+   "tipos": 1,
+   "fan_out": 1,
+   "fan_in": 1,
+   "inestabilidad": 0.5,
+   "cohesion_relacional": 1.0
+  }
+ ],
+ "aristas_paquetes": [
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Payments.Api.Endpoints",
+   "n": 3
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Payments.Api.Http",
+   "n": 3
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Payments.Api.Security",
+   "n": 1
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Payments.Application",
+   "n": 1
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Payments.Infrastructure",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints",
+   "a": "QuickPatch.Payments.Api.Http",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints",
+   "a": "QuickPatch.Payments.Api.Security",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints",
+   "a": "QuickPatch.Payments.Application.Abstractions",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints",
+   "a": "QuickPatch.Payments.Application.Invoices",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints",
+   "a": "QuickPatch.Payments.Application.Payments",
+   "n": 8
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints",
+   "a": "QuickPatch.Payments.Domain.Common",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints",
+   "a": "QuickPatch.Payments.Domain.Payments",
+   "n": 8
+  },
+  {
+   "de": "QuickPatch.Payments.Application",
+   "a": "QuickPatch.Payments.Application.Invoices",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Payments.Application",
+   "a": "QuickPatch.Payments.Application.Payments",
+   "n": 7
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions",
+   "a": "QuickPatch.Payments.Domain.Payments",
+   "n": 6
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Events",
+   "a": "QuickPatch.Payments.Application.Abstractions",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Events",
+   "a": "QuickPatch.Payments.Domain.Payments",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Invoices",
+   "a": "QuickPatch.Payments.Application.Abstractions",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Invoices",
+   "a": "QuickPatch.Payments.Domain.Payments",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments",
+   "a": "QuickPatch.Payments.Application.Abstractions",
+   "n": 24
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments",
+   "a": "QuickPatch.Payments.Application.Events",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments",
+   "a": "QuickPatch.Payments.Domain.Payments",
+   "n": 13
+  },
+  {
+   "de": "QuickPatch.Payments.Domain.Payments",
+   "a": "QuickPatch.Payments.Domain.Common",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure",
+   "a": "QuickPatch.Payments.Application.Abstractions",
+   "n": 8
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure",
+   "a": "QuickPatch.Payments.Infrastructure.Documents",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure",
+   "a": "QuickPatch.Payments.Infrastructure.Messaging",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure",
+   "a": "QuickPatch.Payments.Infrastructure.Options",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence",
+   "n": 7
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure",
+   "a": "QuickPatch.Payments.Infrastructure.Providers",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Documents",
+   "a": "QuickPatch.Payments.Application.Abstractions",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Documents",
+   "a": "QuickPatch.Payments.Domain.Payments",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging",
+   "a": "QuickPatch.Payments.Application.Events",
+   "n": 6
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging",
+   "a": "QuickPatch.Payments.Application.Payments",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging",
+   "a": "QuickPatch.Payments.Infrastructure.Options",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence",
+   "a": "QuickPatch.Payments.Application.Abstractions",
+   "n": 9
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence",
+   "a": "QuickPatch.Payments.Domain.Payments",
+   "n": 8
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence",
+   "a": "QuickPatch.Payments.Infrastructure.Options",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Providers",
+   "a": "QuickPatch.Payments.Application.Abstractions",
+   "n": 2
+  }
+ ],
+ "aristas_tipos": [
+  {
+   "de": "Program",
+   "a": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Payments.Api.Http.BadRequestExceptionHandler"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Payments.Api.Http.CorrelationId"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Payments.Api.Http.Problems"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Payments.Api.Security.AuthenticationSetup"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Payments.Application.DependencyInjection"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Payments.Infrastructure.DependencyInjection"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
+   "a": "QuickPatch.Payments.Api.Endpoints.InvoiceResponse"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
+   "a": "QuickPatch.Payments.Api.Http.CorrelationId"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
+   "a": "QuickPatch.Payments.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
+   "a": "QuickPatch.Payments.Application.Abstractions.IInvoicePdfRenderer"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
+   "a": "QuickPatch.Payments.Application.Abstractions.InvoiceDocument"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
+   "a": "QuickPatch.Payments.Application.Invoices.GetInvoiceHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
+   "a": "QuickPatch.Payments.Domain.Payments.Invoice"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceResponse",
+   "a": "QuickPatch.Payments.Application.Abstractions.InvoiceDocument"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceResponse",
+   "a": "QuickPatch.Payments.Domain.Payments.Billing"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceResponse",
+   "a": "QuickPatch.Payments.Domain.Payments.Invoice"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceResponse",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PayRequest",
+   "a": "QuickPatch.Payments.Api.Endpoints.BillingRequest"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Api.Endpoints.BillingRequest"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Api.Endpoints.PayRequest"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Api.Endpoints.PaymentResponse"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Api.Http.CorrelationId"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Application.Payments.GetPaymentHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Application.Payments.GetPaymentResult"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Application.Payments.PayCommand"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Application.Payments.PayHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Application.Payments.PayResult"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "a": "QuickPatch.Payments.Domain.Payments.Billing"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentResponse",
+   "a": "QuickPatch.Payments.Application.Payments.PaymentView"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.PaymentResponse",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
+   "a": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentPageResponse"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
+   "a": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentResponse"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
+   "a": "QuickPatch.Payments.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
+   "a": "QuickPatch.Payments.Application.Payments.ReceivedPaymentsHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
+   "a": "QuickPatch.Payments.Application.Payments.ReceivedPaymentsPage"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentPageResponse",
+   "a": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentResponse"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentResponse",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Http.Problems",
+   "a": "QuickPatch.Payments.Api.Http.CorrelationId"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Security.AuthenticationSetup",
+   "a": "QuickPatch.Payments.Api.Security.ForbiddenAuditHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Api.Security.AuthenticationSetup",
+   "a": "QuickPatch.Payments.Api.Security.JwtSettings"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions.IInvoicePdfRenderer",
+   "a": "QuickPatch.Payments.Application.Abstractions.InvoiceDocument"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions.IOutbox",
+   "a": "QuickPatch.Payments.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions.IPaymentProvider",
+   "a": "QuickPatch.Payments.Application.Abstractions.ProviderResult"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository",
+   "a": "QuickPatch.Payments.Domain.Payments.Invoice"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions.IPaymentTechnicianRepository",
+   "a": "QuickPatch.Payments.Domain.Payments.PaymentTechnician"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions.IReconciliationSource",
+   "a": "QuickPatch.Payments.Application.Abstractions.PendingReconciliation"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions.InvoiceDocument",
+   "a": "QuickPatch.Payments.Domain.Payments.Billing"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions.InvoiceDocument",
+   "a": "QuickPatch.Payments.Domain.Payments.Invoice"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Abstractions.InvoiceDocument",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Invoices.GetInvoiceHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Payments.GetPaymentHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Payments.PayHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Payments.PaymentSettlement"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Payments.ReceivedPaymentsHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Events.PaymentEvents",
+   "a": "QuickPatch.Payments.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Events.PaymentEvents",
+   "a": "QuickPatch.Payments.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Events.PaymentEvents",
+   "a": "QuickPatch.Payments.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Events.PaymentEvents",
+   "a": "QuickPatch.Payments.Application.Events.PaymentApprovedData"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Events.PaymentEvents",
+   "a": "QuickPatch.Payments.Application.Events.PaymentRejectedData"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Events.PaymentEvents",
+   "a": "QuickPatch.Payments.Domain.Payments.Invoice"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Events.PaymentEvents",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Invoices.GetInvoiceHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Invoices.GetInvoiceHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Invoices.GetInvoiceHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.InvoiceDocument"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Invoices.GetInvoiceHandler",
+   "a": "QuickPatch.Payments.Domain.Payments.Billing"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Invoices.GetInvoiceHandler",
+   "a": "QuickPatch.Payments.Domain.Payments.Invoice"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Invoices.GetInvoiceHandler",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.GetPaymentHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.GetPaymentHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.GetPaymentHandler",
+   "a": "QuickPatch.Payments.Application.Payments.GetPaymentResult"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.GetPaymentHandler",
+   "a": "QuickPatch.Payments.Application.Payments.PaymentView"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.GetPaymentHandler",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.GetPaymentResult",
+   "a": "QuickPatch.Payments.Application.Payments.PaymentView"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayCommand",
+   "a": "QuickPatch.Payments.Domain.Payments.Billing"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentProvider"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.ProviderResult"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "a": "QuickPatch.Payments.Application.Payments.PayCommand"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "a": "QuickPatch.Payments.Application.Payments.PayResult"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "a": "QuickPatch.Payments.Application.Payments.PaymentSettlement"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "a": "QuickPatch.Payments.Application.Payments.PaymentView"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "a": "QuickPatch.Payments.Domain.Payments.Billing"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayHandler",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PayResult",
+   "a": "QuickPatch.Payments.Application.Payments.PaymentView"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
+   "a": "QuickPatch.Payments.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
+   "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
+   "a": "QuickPatch.Payments.Application.Abstractions.ProviderResult"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
+   "a": "QuickPatch.Payments.Application.Events.PaymentEvents"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
+   "a": "QuickPatch.Payments.Application.Payments.PaymentView"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
+   "a": "QuickPatch.Payments.Domain.Payments.Billing"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
+   "a": "QuickPatch.Payments.Domain.Payments.Invoice"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.PaymentView",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReceivedPaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReceivedPaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReceivedPaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Payments.ReceivedPaymentsPage"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReceivedPaymentsHandler",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReceivedPaymentsPage",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentProvider"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IReconciliationSource"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.PendingReconciliation"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.ProviderResult"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Payments.PaymentSettlement"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
+   "a": "QuickPatch.Payments.Application.Payments.PaymentView"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler",
+   "a": "QuickPatch.Payments.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler",
+   "a": "QuickPatch.Payments.Application.Events.ServiceRequestCompletedData"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler",
+   "a": "QuickPatch.Payments.Application.Payments.CompletedHandlingOutcome"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentTechnicianRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler",
+   "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler",
+   "a": "QuickPatch.Payments.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler",
+   "a": "QuickPatch.Payments.Application.Events.TechnicianRegisteredData"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler",
+   "a": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredOutcome"
+  },
+  {
+   "de": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler",
+   "a": "QuickPatch.Payments.Domain.Payments.PaymentTechnician"
+  },
+  {
+   "de": "QuickPatch.Payments.Domain.Payments.Billing",
+   "a": "QuickPatch.Payments.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.Payments.Domain.Payments.Invoice",
+   "a": "QuickPatch.Payments.Domain.Payments.Billing"
+  },
+  {
+   "de": "QuickPatch.Payments.Domain.Payments.Invoice",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Abstractions.IInvoicePdfRenderer"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentProvider"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentTechnicianRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Abstractions.IReconciliationSource"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Documents.InvoicePdfRenderer"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Messaging.ReconciliationJob"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Messaging.ServiceRequestCompletedConsumer"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Messaging.TechnicianRegisteredConsumer"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Options.KafkaOptions"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Options.OutboxOptions"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Options.ReconciliationOptions"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.EfOutbox"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentTechnicianRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.ReconciliationSource"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.TenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Payments.Infrastructure.Providers.SimulatedPaymentProvider"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Documents.InvoicePdfRenderer",
+   "a": "QuickPatch.Payments.Application.Abstractions.IInvoicePdfRenderer"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Documents.InvoicePdfRenderer",
+   "a": "QuickPatch.Payments.Application.Abstractions.InvoiceDocument"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Documents.InvoicePdfRenderer",
+   "a": "QuickPatch.Payments.Domain.Payments.Billing"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Documents.InvoicePdfRenderer",
+   "a": "QuickPatch.Payments.Domain.Payments.Invoice"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Documents.InvoicePdfRenderer",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Documents.InvoicePdfRenderer",
+   "a": "QuickPatch.Payments.Infrastructure.Documents.PdfFile"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.Payments.Infrastructure.Options.OutboxOptions"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.OutboxEventRecord"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.SessionRole"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.ReconciliationJob",
+   "a": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.ReconciliationJob",
+   "a": "QuickPatch.Payments.Infrastructure.Options.ReconciliationOptions"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.ServiceRequestCompletedConsumer",
+   "a": "QuickPatch.Payments.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.ServiceRequestCompletedConsumer",
+   "a": "QuickPatch.Payments.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.ServiceRequestCompletedConsumer",
+   "a": "QuickPatch.Payments.Application.Events.ServiceRequestCompletedData"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.ServiceRequestCompletedConsumer",
+   "a": "QuickPatch.Payments.Application.Payments.CompletedHandlingOutcome"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.ServiceRequestCompletedConsumer",
+   "a": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.TechnicianRegisteredConsumer",
+   "a": "QuickPatch.Payments.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.TechnicianRegisteredConsumer",
+   "a": "QuickPatch.Payments.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.TechnicianRegisteredConsumer",
+   "a": "QuickPatch.Payments.Application.Events.TechnicianRegisteredData"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.TechnicianRegisteredConsumer",
+   "a": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Messaging.TechnicianRegisteredConsumer",
+   "a": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredOutcome"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.DesignTimeDbContextFactory",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.Payments.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.Payments.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.OutboxEventRecord"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentRepository",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentRepository",
+   "a": "QuickPatch.Payments.Domain.Payments.Invoice"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentRepository",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentRepository",
+   "a": "QuickPatch.Payments.Domain.Payments.PaymentTechnician"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentRepository",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentTechnicianRepository",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentTechnicianRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentTechnicianRepository",
+   "a": "QuickPatch.Payments.Domain.Payments.PaymentTechnician"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentTechnicianRepository",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
+   "a": "QuickPatch.Payments.Domain.Payments.Invoice"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
+   "a": "QuickPatch.Payments.Domain.Payments.PaymentTechnician"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.OutboxEventRecord"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRecord"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.Payments.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRecord"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.ReconciliationSource",
+   "a": "QuickPatch.Payments.Application.Abstractions.IReconciliationSource"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.ReconciliationSource",
+   "a": "QuickPatch.Payments.Application.Abstractions.PendingReconciliation"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.ReconciliationSource",
+   "a": "QuickPatch.Payments.Domain.Payments.Payment"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.ReconciliationSource",
+   "a": "QuickPatch.Payments.Infrastructure.Options.ReconciliationOptions"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.ReconciliationSource",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.ReconciliationSource",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.SessionRole"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.TenantUnitOfWork",
+   "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.TenantUnitOfWork",
+   "a": "QuickPatch.Payments.Application.Abstractions.OpenPaymentConflictException"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Persistence.TenantUnitOfWork",
+   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Providers.SimulatedPaymentProvider",
+   "a": "QuickPatch.Payments.Application.Abstractions.IPaymentProvider"
+  },
+  {
+   "de": "QuickPatch.Payments.Infrastructure.Providers.SimulatedPaymentProvider",
+   "a": "QuickPatch.Payments.Application.Abstractions.ProviderResult"
+  }
+ ],
+ "commit": "cf3af88"
+}

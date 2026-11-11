@@ -1,0 +1,52 @@
+@startuml
+!pragma layout smetana
+title Communication — clases más conectadas (despues, 120623a)
+hide empty members
+skinparam shadowing false
+class "Application.Chat.SendChatMessageHandler" as QuickPatch_Communication_Application_Chat_SendChatMessageHandler <<Application>> {
+  48 líneas · entra 2 · sale 10
+}
+class "Api.Endpoints.InboxEndpoints" as QuickPatch_Communication_Api_Endpoints_InboxEndpoints <<Api>> {
+  141 líneas · entra 1 · sale 9
+}
+class "Api.Realtime.ConnectionRegistry" as QuickPatch_Communication_Api_Realtime_ConnectionRegistry <<Api>> {
+  44 líneas · entra 2 · sale 8
+}
+class "Application.Inbox.InboxRecorder" as QuickPatch_Communication_Application_Inbox_InboxRecorder <<Application>> {
+  37 líneas · entra 2 · sale 8
+}
+class "Application.Realtime.NoticeRouter" as QuickPatch_Communication_Application_Realtime_NoticeRouter <<Application>> {
+  37 líneas · entra 2 · sale 8
+}
+class "Application.Realtime.RealtimeNotifier" as QuickPatch_Communication_Application_Realtime_RealtimeNotifier <<Application>> {
+  46 líneas · entra 2 · sale 8
+}
+class "Domain.Inbox.Notification" as QuickPatch_Communication_Domain_Inbox_Notification <<Domain>> {
+  55 líneas · entra 10 · sale 0
+}
+class "Api.Realtime.RealtimeSession" as QuickPatch_Communication_Api_Realtime_RealtimeSession <<Api>> {
+  216 líneas · entra 2 · sale 7
+}
+class "Application.Chat.ChatParticipantsRecorder" as QuickPatch_Communication_Application_Chat_ChatParticipantsRecorder <<Application>> {
+  39 líneas · entra 2 · sale 7
+}
+class "Domain.Chat.ChatMessage" as QuickPatch_Communication_Domain_Chat_ChatMessage <<Domain>> {
+  32 líneas · entra 9 · sale 0
+}
+interface "Application.Abstractions.IChatStore" as QuickPatch_Communication_Application_Abstractions_IChatStore <<Application>> {
+  0 líneas · entra 6 · sale 3
+}
+class "Api.Endpoints.ChatEndpoints" as QuickPatch_Communication_Api_Endpoints_ChatEndpoints <<Api>> {
+  144 líneas · entra 1 · sale 7
+}
+QuickPatch_Communication_Api_Endpoints_ChatEndpoints ..> QuickPatch_Communication_Application_Chat_SendChatMessageHandler
+QuickPatch_Communication_Api_Endpoints_ChatEndpoints ..> QuickPatch_Communication_Domain_Chat_ChatMessage
+QuickPatch_Communication_Api_Endpoints_InboxEndpoints ..> QuickPatch_Communication_Domain_Inbox_Notification
+QuickPatch_Communication_Api_Realtime_RealtimeSession ..> QuickPatch_Communication_Api_Realtime_ConnectionRegistry
+QuickPatch_Communication_Application_Abstractions_IChatStore ..> QuickPatch_Communication_Domain_Chat_ChatMessage
+QuickPatch_Communication_Application_Chat_ChatParticipantsRecorder ..> QuickPatch_Communication_Application_Abstractions_IChatStore
+QuickPatch_Communication_Application_Chat_SendChatMessageHandler ..> QuickPatch_Communication_Application_Abstractions_IChatStore
+QuickPatch_Communication_Application_Chat_SendChatMessageHandler ..> QuickPatch_Communication_Domain_Chat_ChatMessage
+QuickPatch_Communication_Application_Inbox_InboxRecorder ..> QuickPatch_Communication_Domain_Inbox_Notification
+QuickPatch_Communication_Application_Realtime_RealtimeNotifier ..> QuickPatch_Communication_Application_Realtime_NoticeRouter
+@enduml
