@@ -1082,7 +1082,7 @@ La matriz de eventos asíncronos del sistema (DD, sección 8.4) coincide con `to
 
 | Tópico / Evento | Microservicio Productor | Microservicios Consumidores | Propósito del Flujo |
 |---|---|---|---|
-| `catalog.category-changed` | `Catalog Service` | `ServiceRequest Service`, `Matching Service` | Publicar el estado completo de una categoría tras crearla o modificarla, para que cada consumidor mantenga su réplica local (ADR-017). Matching todavía no la aplica (DD 8.3.5). |
+| `catalog.category-changed` | `Catalog Service` | `ServiceRequest Service`; `Matching Service` previsto (aún no lo consume, SAD 4.2.2) | Publicar el estado completo de una categoría tras crearla o modificarla, para que cada consumidor mantenga su réplica local (ADR-017). Matching todavía no la aplica (DD 8.3.5). |
 | `service-request.created` | `ServiceRequest Service` | `Matching Service`, `Communication Service` | Iniciar la búsqueda de técnico y avisar al cliente que su solicitud fue recibida. |
 | `technician.registered` | `Identity Service` | `Matching Service`, `Communication Service`, `Payments Service` | Crear la proyección del técnico en Matching (especialidad y verificación, P-01), avisarle que su registro está en verificación y, en Payments, guardar el proveedor de cada técnico para los pagos recibidos del equipo (`payment_technicians`, P-02). |
 | `technician.verification-changed` | `Identity Service` | `Matching Service`, `Communication Service` | Actualizar la proyección cuando el administrador aprueba, rechaza o suspende (un técnico aprobado puede reanudar solicitudes en espera, RN-M10) y avisarle el resultado. |
@@ -1501,11 +1501,11 @@ El diagrama muestra la distribución aprobada en ADR-022: VM1 de herramientas y 
 
 ![Despliegue de producción (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-Produccion.png)
 
-**Figura 30. Despliegue de producción al 4 de noviembre de 2026, tras la promoción del MVP (SCRUM-518): los 7 servicios con código en el k3s de VM3, con VM4 y VM6 y la entrada de VM1 (C4 · Deployment, ADR-022). El gateway y el panel corren en el Nginx de VM3, fuera del k3s (ADR-028); el panel real todavía no se ha promovido. Actors, punteado, no tiene código. Vista `C4-06-Despliegue-Produccion`.**
+**Figura 30. Despliegue de producción al 4 de noviembre de 2026, tras la promoción del MVP (SCRUM-518): los 7 servicios con código en el k3s de VM3, con VM4 y VM6 y la entrada de VM1 (C4 · Deployment, ADR-022). El gateway corre en el Nginx de VM3, fuera del k3s (ADR-028); ese Nginx solo **entrega** los archivos del panel (`v0.5.5`, SCRUM-641), que se **ejecuta** en el navegador del administrador, y la app (APK `v0.5.4`) en el dispositivo móvil. Grafana se consulta desde el navegador del equipo, a través de VM1 (SCRUM-674). Actors, punteado, no tiene código. Vista `C4-06-Despliegue-Produccion`.**
 
 ![Despliegue de QA (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-QA.png)
 
-**Figura 31. Despliegue de QA al 4 de noviembre de 2026: los 7 servicios con código en el k3s de VM2, con VM5 y VM7 y la VM1 compartida (C4 · Deployment, ADR-022); el gateway y el panel de `release/0.5.5` en el Nginx de VM2 (ADR-028). Vista `C4-06-Despliegue-QA`.**
+**Figura 31. Despliegue de QA al 4 de noviembre de 2026: los 7 servicios con código en el k3s de VM2, con VM5 y VM7 y la VM1 compartida (C4 · Deployment, ADR-022); el gateway en el Nginx de VM2 (ADR-028), que entrega los archivos del panel de `release/0.6.0` al navegador del administrador, donde se ejecuta; la app de QA (APK `v0.6.0-qa`) corre en el dispositivo (SCRUM-674). QA va adelante de producción en Identity 0.9.0 y ServiceRequest 0.12.0 (Documento de Infraestructura 4.16). Vista `C4-06-Despliegue-QA`.**
 
 IPs del laboratorio: VM1 10.43.100.168, VM3 10.43.98.205, VM4 10.43.98.209, VM6 10.43.99.12; QA: VM2 10.43.98.15, VM5 10.43.98.29, VM7 10.43.99.8. VM1 reenvía `quickpatch.internal` y `qa.quickpatch.internal` al NodePort 30080 de Traefik en VM3 y VM2.
 
@@ -2425,6 +2425,7 @@ Estos cambios responden a la retroalimentación final del profesor: arquitectura
 | Cambio | Secciones | Tarea |
 |---|---|---|
 | Reglas de dependencia verificables: matriz entre capas, ubicación de cada tipo de clase, límites de tamaño, equivalente Java y pruebas de arquitectura en el CI de cada servicio | 10.3.2 | SCRUM-648 |
+| Estado real aplicado a los textos (SCRUM-698, desde la matriz de SCRUM-697): pies de las figuras 30 y 31 con la entrega y la ejecución separadas y las versiones por ambiente; Matching como consumidor previsto, no real, de `catalog.category-changed` en 8.6 | 8.6 y 9 | SCRUM-697 y SCRUM-698 |
 | El nivel de código sale del código: herramienta reproducible, línea base y medición después del refactor; 7.1 y 7.2 quedan como explicación de mecanismos | 7 y 7.3 | SCRUM-680 a SCRUM-683 |
 | Refactor interno de Catalog, ServiceRequest, Matching, Ranking y Payments con pruebas de arquitectura en su CI | 7.3 y 10.3.2 | SCRUM-651 a SCRUM-655 |
 
