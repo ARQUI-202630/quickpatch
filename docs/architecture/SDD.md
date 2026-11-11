@@ -2428,6 +2428,7 @@ Estos cambios responden a la retroalimentación final del profesor: arquitectura
 | Estado real aplicado a los textos (SCRUM-698, desde la matriz de SCRUM-697): pies de las figuras 30 y 31 con la entrega y la ejecución separadas y las versiones por ambiente; Matching como consumidor previsto, no real, de `catalog.category-changed` en 8.6 | 8.6 y 9 | SCRUM-697 y SCRUM-698 |
 | El nivel de código sale del código: herramienta reproducible, línea base y medición después del refactor; 7.1 y 7.2 quedan como explicación de mecanismos | 7 y 7.3 | SCRUM-680 a SCRUM-683 |
 | Refactor interno de Catalog, ServiceRequest, Matching, Ranking y Payments con pruebas de arquitectura en su CI | 7.3 y 10.3.2 | SCRUM-651 a SCRUM-655 |
+| Contexto con los 6 roles agrupados por canal (4 en la app móvil y 2 en el panel web) y lectura vertical sin cruces; figuras 1 a 3 reexportadas | 3, 4 y 5.1 | SCRUM-688 y SCRUM-689 |
 
 ---
 

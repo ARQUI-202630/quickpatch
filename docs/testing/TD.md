@@ -423,14 +423,14 @@ El SRS 5.11 (borrador de la V6) formaliza un total de **33 Requisitos Funcionale
 ---
 
 #### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (V2.47)
-El SAD formaliza **52 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **38 escenarios arquitectónicos y de software**. El estado medido de cada uno está en `docs/testing/matriz-escenarios-calidad-52.md`. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 usuarios (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
+El SAD formaliza **52 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **38 escenarios arquitectónicos y de software**. El estado medido de cada uno está en `docs/testing/matriz-escenarios-calidad-52.md`. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 participantes (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
 
 | Atributo de Calidad (ISO 25010) | Escenarios Automatizados | Total SAD | Casos de Prueba Automatizados |
 |---|:---:|:---:|---|
 | **AC1: Adecuación Funcional** | 3 / 3 | 3 | `AC1-E1` (MAT-001), `AC1-E2` (E2E-001), `AC1-E3` (SRQ-005) |
 | **AC2: Eficiencia de Desempeño** | 5 / 5 | 5 | `AC2-E1` (PRF-001), `AC2-E2` (PRF-002), `AC2-E3` (PRF-003), `AC2-E4` (PRF-004), `AC2-E5` (PRF-005) |
 | **AC3: Compatibilidad** | 2 / 2 | 2 | `AC3-E1` (PAY-014), `AC3-E2` (MAT-022) |
-| **AC4: Capacidad de Interacción** | 2 / 9 | 9 | `AC4-E1` (E2E-005), `AC4-E2` (E2E-006). *(AC4-E3 a AC4-E9 son pruebas presenciales con 5 usuarios)* |
+| **AC4: Capacidad de Interacción** | 2 / 9 | 9 | `AC4-E1` (E2E-005), `AC4-E2` (E2E-006). *(AC4-E3 a AC4-E9 son pruebas presenciales con 5 participantes)* |
 | **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (INF-015), `AC5-E3` (RNK-006), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024, AC5-E5 Idempotencia), `AC5-E6` (E2E-012) |
 | **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-001, PAY-002), `AC6-E2` (IDN-009, RLS-001..005), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (PAY-015), `AC6-E7` (IDN-020), `AC6-E8` (IDN-007, IDN-008) |
 | **AC7: Mantenibilidad** | 4 / 6 | 6 | `AC7-E3` (CTR-001), `AC7-E4` (INF-012), `AC7-E5` (ACT-013), `AC7-E6` (SMK-003). *(AC7-E1/E2 verificados por linters estáticos)* |
