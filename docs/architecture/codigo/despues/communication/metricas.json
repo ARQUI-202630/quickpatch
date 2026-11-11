@@ -1,0 +1,1398 @@
+{
+ "servicio": "Communication",
+ "lenguaje": "csharp",
+ "resumen": {
+  "tipos": 77,
+  "paquetes": 17,
+  "dependencias_entre_tipos": 181,
+  "dependencias_entre_paquetes": 44,
+  "ciclos_entre_paquetes": 0,
+  "paquetes_en_ciclos": 0,
+  "ciclos_entre_tipos": 1,
+  "mayor_ciclo_de_tipos": 2,
+  "violaciones_de_capas": 0,
+  "tipos_de_mas_de_250_lineas": 0,
+  "fan_out_maximo": 10,
+  "fan_out_promedio": 2.35,
+  "cohesion_relacional_promedio": 0.83
+ },
+ "dependencias_entre_capas": {
+  "Api->Application": 14,
+  "Api->Domain": 9,
+  "Api->Infrastructure": 1,
+  "Application->Domain": 25,
+  "Infrastructure->Application": 18,
+  "Infrastructure->Domain": 10
+ },
+ "violaciones": [],
+ "ciclos_entre_paquetes": [],
+ "ciclos_entre_tipos": [
+  [
+   "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "QuickPatch.Communication.Api.Realtime.WebSocketClient"
+  ]
+ ],
+ "mayor_fan_out": [
+  {
+   "tipo": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 48,
+   "fan_out": 10,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Communication.Application/Chat/Chat.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 141,
+   "fan_out": 9,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Api/Endpoints/InboxEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 44,
+   "fan_out": 8,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/ConnectionRegistry.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Application.Inbox.InboxRecorder",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 37,
+   "fan_out": 8,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Communication.Application/Inbox/Inbox.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 37,
+   "fan_out": 8,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Communication.Application/Realtime/NoticeRouter.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 46,
+   "fan_out": 8,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Communication.Application/Realtime/RealtimeNotifier.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 144,
+   "fan_out": 7,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 216,
+   "fan_out": 7,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 39,
+   "fan_out": 7,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Communication.Application/Chat/Chat.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Api.Endpoints.RealtimeEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 34,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Api/Endpoints/RealtimeEndpoints.cs"
+  }
+ ],
+ "mayor_fan_in": [
+  {
+   "tipo": "QuickPatch.Communication.Domain.Inbox.Notification",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 55,
+   "fan_out": 0,
+   "fan_in": 10,
+   "archivo": "src/QuickPatch.Communication.Domain/Inbox/Notification.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Domain.Chat.ChatMessage",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 32,
+   "fan_out": 0,
+   "fan_in": 9,
+   "archivo": "src/QuickPatch.Communication.Domain/Chat/Chat.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Domain.Chat.ChatParticipants",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 44,
+   "fan_out": 0,
+   "fan_in": 7,
+   "archivo": "src/QuickPatch.Communication.Domain/Chat/Chat.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Application.Abstractions.IChatStore",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 3,
+   "fan_in": 6,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Communication.Application.Abstractions.IInboxStore",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 2,
+   "fan_in": 6,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Communication.Application.Events.EventEnvelope",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 9,
+   "fan_out": 0,
+   "fan_in": 6,
+   "archivo": "src/QuickPatch.Communication.Application/Events/EventEnvelope.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Api.Realtime.RealtimeUser",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 1,
+   "fan_out": 0,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/TokenValidator.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Application.Events.InvalidEventException",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 1,
+   "fan_out": 0,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Communication.Application/Events/EventEnvelope.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Application.Events.RealtimeJson",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 4,
+   "fan_out": 0,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Communication.Application/Events/EventEnvelope.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Domain.Realtime.Delivery",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 1,
+   "fan_out": 2,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Communication.Domain/Realtime/Notices.cs"
+  }
+ ],
+ "mas_grandes": [
+  {
+   "tipo": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 216,
+   "fan_out": 7,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Application.Inbox.InboxRules",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 168,
+   "fan_out": 5,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Application/Inbox/InboxRules.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 144,
+   "fan_out": 7,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 141,
+   "fan_out": 9,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Api/Endpoints/InboxEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Infrastructure.Persistence.InboxStore",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 71,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Infrastructure/Persistence/InboxStore.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Infrastructure.Persistence.ChatStore",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 69,
+   "fan_out": 5,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Infrastructure/Persistence/ChatStore.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Infrastructure.Persistence.CommunicationDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 63,
+   "fan_out": 4,
+   "fan_in": 4,
+   "archivo": "src/QuickPatch.Communication.Infrastructure/Persistence/CommunicationDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Infrastructure.Messaging.PersistentEventsConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 60,
+   "fan_out": 0,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Infrastructure/Messaging/PersistentEventsConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Domain.Inbox.Notification",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 55,
+   "fan_out": 0,
+   "fan_in": 10,
+   "archivo": "src/QuickPatch.Communication.Domain/Inbox/Notification.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Api.Realtime.TokenValidator",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 53,
+   "fan_out": 2,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/TokenValidator.cs"
+  }
+ ],
+ "paquetes": [
+  {
+   "paquete": "(global)",
+   "tipos": 1,
+   "fan_out": 4,
+   "fan_in": 0,
+   "inestabilidad": 1.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Communication.Api.Endpoints",
+   "tipos": 7,
+   "fan_out": 6,
+   "fan_in": 1,
+   "inestabilidad": 0.86,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Communication.Api.Http",
+   "tipos": 2,
+   "fan_out": 0,
+   "fan_in": 1,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Communication.Api.Realtime",
+   "tipos": 9,
+   "fan_out": 3,
+   "fan_in": 1,
+   "inestabilidad": 0.75,
+   "cohesion_relacional": 1.56
+  },
+  {
+   "paquete": "QuickPatch.Communication.Application",
+   "tipos": 1,
+   "fan_out": 3,
+   "fan_in": 1,
+   "inestabilidad": 0.75,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Communication.Application.Abstractions",
+   "tipos": 5,
+   "fan_out": 3,
+   "fan_in": 7,
+   "inestabilidad": 0.3,
+   "cohesion_relacional": 0.6
+  },
+  {
+   "paquete": "QuickPatch.Communication.Application.Chat",
+   "tipos": 6,
+   "fan_out": 5,
+   "fan_in": 4,
+   "inestabilidad": 0.56,
+   "cohesion_relacional": 0.83
+  },
+  {
+   "paquete": "QuickPatch.Communication.Application.Events",
+   "tipos": 5,
+   "fan_out": 0,
+   "fan_in": 6,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.6
+  },
+  {
+   "paquete": "QuickPatch.Communication.Application.Inbox",
+   "tipos": 10,
+   "fan_out": 4,
+   "fan_in": 5,
+   "inestabilidad": 0.44,
+   "cohesion_relacional": 0.8
+  },
+  {
+   "paquete": "QuickPatch.Communication.Application.Realtime",
+   "tipos": 4,
+   "fan_out": 3,
+   "fan_in": 3,
+   "inestabilidad": 0.5,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Communication.Domain",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 0,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Communication.Domain.Chat",
+   "tipos": 3,
+   "fan_out": 0,
+   "fan_in": 4,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.33
+  },
+  {
+   "paquete": "QuickPatch.Communication.Domain.Inbox",
+   "tipos": 2,
+   "fan_out": 0,
+   "fan_in": 4,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.Communication.Domain.Realtime",
+   "tipos": 11,
+   "fan_out": 0,
+   "fan_in": 4,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.91
+  },
+  {
+   "paquete": "QuickPatch.Communication.Infrastructure",
+   "tipos": 1,
+   "fan_out": 6,
+   "fan_in": 1,
+   "inestabilidad": 0.86,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Communication.Infrastructure.Messaging",
+   "tipos": 3,
+   "fan_out": 2,
+   "fan_in": 1,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 0.33
+  },
+  {
+   "paquete": "QuickPatch.Communication.Infrastructure.Persistence",
+   "tipos": 6,
+   "fan_out": 5,
+   "fan_in": 1,
+   "inestabilidad": 0.83,
+   "cohesion_relacional": 0.67
+  }
+ ],
+ "aristas_paquetes": [
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Communication.Api.Endpoints",
+   "n": 3
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Communication.Api.Http",
+   "n": 2
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Communication.Application",
+   "n": 1
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Communication.Infrastructure",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints",
+   "a": "QuickPatch.Communication.Api.Realtime",
+   "n": 6
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints",
+   "a": "QuickPatch.Communication.Application.Abstractions",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints",
+   "a": "QuickPatch.Communication.Application.Chat",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints",
+   "a": "QuickPatch.Communication.Application.Inbox",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints",
+   "a": "QuickPatch.Communication.Domain.Chat",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints",
+   "a": "QuickPatch.Communication.Domain.Inbox",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime",
+   "a": "QuickPatch.Communication.Application.Abstractions",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime",
+   "a": "QuickPatch.Communication.Application.Events",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime",
+   "a": "QuickPatch.Communication.Domain.Realtime",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Communication.Application",
+   "a": "QuickPatch.Communication.Application.Chat",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Communication.Application",
+   "a": "QuickPatch.Communication.Application.Inbox",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Communication.Application",
+   "a": "QuickPatch.Communication.Application.Realtime",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions",
+   "a": "QuickPatch.Communication.Domain.Chat",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions",
+   "a": "QuickPatch.Communication.Domain.Inbox",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions",
+   "a": "QuickPatch.Communication.Domain.Realtime",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat",
+   "a": "QuickPatch.Communication.Application.Abstractions",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat",
+   "a": "QuickPatch.Communication.Application.Events",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat",
+   "a": "QuickPatch.Communication.Application.Inbox",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat",
+   "a": "QuickPatch.Communication.Domain.Chat",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat",
+   "a": "QuickPatch.Communication.Domain.Realtime",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox",
+   "a": "QuickPatch.Communication.Application.Abstractions",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox",
+   "a": "QuickPatch.Communication.Application.Events",
+   "n": 6
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox",
+   "a": "QuickPatch.Communication.Application.Realtime",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox",
+   "a": "QuickPatch.Communication.Domain.Inbox",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime",
+   "a": "QuickPatch.Communication.Application.Abstractions",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime",
+   "a": "QuickPatch.Communication.Application.Events",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime",
+   "a": "QuickPatch.Communication.Domain.Realtime",
+   "n": 7
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure",
+   "a": "QuickPatch.Communication.Application.Abstractions",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure",
+   "a": "QuickPatch.Communication.Application.Chat",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure",
+   "a": "QuickPatch.Communication.Application.Events",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure",
+   "a": "QuickPatch.Communication.Application.Inbox",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure",
+   "a": "QuickPatch.Communication.Infrastructure.Messaging",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure",
+   "a": "QuickPatch.Communication.Infrastructure.Persistence",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Messaging",
+   "a": "QuickPatch.Communication.Application.Events",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Messaging",
+   "a": "QuickPatch.Communication.Application.Realtime",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence",
+   "a": "QuickPatch.Communication.Application.Abstractions",
+   "n": 8
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence",
+   "a": "QuickPatch.Communication.Application.Chat",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence",
+   "a": "QuickPatch.Communication.Application.Inbox",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence",
+   "a": "QuickPatch.Communication.Domain.Chat",
+   "n": 6
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence",
+   "a": "QuickPatch.Communication.Domain.Inbox",
+   "n": 4
+  }
+ ],
+ "aristas_tipos": [
+  {
+   "de": "Program",
+   "a": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Communication.Api.Endpoints.RealtimeEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Communication.Api.Http.CorrelationId"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Communication.Api.Http.Problems"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Communication.Application.DependencyInjection"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Communication.Infrastructure.DependencyInjection"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
+   "a": "QuickPatch.Communication.Api.Endpoints.ChatMessagePageResponse"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
+   "a": "QuickPatch.Communication.Api.Endpoints.ChatMessageResponse"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
+   "a": "QuickPatch.Communication.Application.Chat.ChatResult"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
+   "a": "QuickPatch.Communication.Application.Chat.ChatValidationException"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
+   "a": "QuickPatch.Communication.Application.Chat.ListChatMessagesHandler"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
+   "a": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatMessage"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.ChatMessagePageResponse",
+   "a": "QuickPatch.Communication.Api.Endpoints.ChatMessageResponse"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.ChatMessageResponse",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatMessage"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "a": "QuickPatch.Communication.Api.Endpoints.NotificationPageResponse"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "a": "QuickPatch.Communication.Api.Endpoints.NotificationResponse"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "a": "QuickPatch.Communication.Api.Realtime.JwtSettings"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "a": "QuickPatch.Communication.Application.Inbox.InboxValidationException"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "a": "QuickPatch.Communication.Application.Inbox.ListNotificationsHandler"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "a": "QuickPatch.Communication.Application.Inbox.ListNotificationsQuery"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "a": "QuickPatch.Communication.Application.Inbox.MarkNotificationReadHandler"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "a": "QuickPatch.Communication.Application.Inbox.NotificationList"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
+   "a": "QuickPatch.Communication.Domain.Inbox.Notification"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.NotificationPageResponse",
+   "a": "QuickPatch.Communication.Api.Endpoints.NotificationResponse"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.NotificationResponse",
+   "a": "QuickPatch.Communication.Domain.Inbox.Notification"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.RealtimeEndpoints",
+   "a": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.RealtimeEndpoints",
+   "a": "QuickPatch.Communication.Api.Realtime.JwtSettings"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.RealtimeEndpoints",
+   "a": "QuickPatch.Communication.Api.Realtime.RealtimeOptions"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.RealtimeEndpoints",
+   "a": "QuickPatch.Communication.Api.Realtime.RealtimeSession"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.RealtimeEndpoints",
+   "a": "QuickPatch.Communication.Api.Realtime.TokenValidator"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Endpoints.RealtimeEndpoints",
+   "a": "QuickPatch.Communication.Application.Abstractions.IRealtimeConnections"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Http.Problems",
+   "a": "QuickPatch.Communication.Api.Http.CorrelationId"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry",
+   "a": "QuickPatch.Communication.Api.Realtime.IRealtimeClient"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry",
+   "a": "QuickPatch.Communication.Api.Realtime.RealtimeUser"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry",
+   "a": "QuickPatch.Communication.Application.Abstractions.IRealtimeConnections"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry",
+   "a": "QuickPatch.Communication.Application.Events.RealtimeJson"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry",
+   "a": "QuickPatch.Communication.Domain.Realtime.Delivery"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry",
+   "a": "QuickPatch.Communication.Domain.Realtime.Recipient"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry",
+   "a": "QuickPatch.Communication.Domain.Realtime.RoleRecipient"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry",
+   "a": "QuickPatch.Communication.Domain.Realtime.UserRecipient"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.IRealtimeClient",
+   "a": "QuickPatch.Communication.Api.Realtime.RealtimeUser"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "a": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "a": "QuickPatch.Communication.Api.Realtime.RealtimeOptions"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "a": "QuickPatch.Communication.Api.Realtime.RealtimeUser"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "a": "QuickPatch.Communication.Api.Realtime.TokenValidator"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "a": "QuickPatch.Communication.Api.Realtime.WebSocketClient"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "a": "QuickPatch.Communication.Application.Events.RealtimeJson"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "a": "QuickPatch.Communication.Domain.Realtime.Roles"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.TokenValidator",
+   "a": "QuickPatch.Communication.Api.Realtime.JwtSettings"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.TokenValidator",
+   "a": "QuickPatch.Communication.Api.Realtime.RealtimeUser"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.WebSocketClient",
+   "a": "QuickPatch.Communication.Api.Realtime.IRealtimeClient"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.WebSocketClient",
+   "a": "QuickPatch.Communication.Api.Realtime.RealtimeSession"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.WebSocketClient",
+   "a": "QuickPatch.Communication.Api.Realtime.RealtimeUser"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions.ChatMessagePage",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatMessage"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions.IChatStore",
+   "a": "QuickPatch.Communication.Application.Abstractions.ChatMessagePage"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions.IChatStore",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatMessage"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions.IChatStore",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatParticipants"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions.IInboxStore",
+   "a": "QuickPatch.Communication.Application.Abstractions.NotificationPage"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions.IInboxStore",
+   "a": "QuickPatch.Communication.Domain.Inbox.Notification"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions.IRealtimeConnections",
+   "a": "QuickPatch.Communication.Domain.Realtime.Delivery"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Abstractions.NotificationPage",
+   "a": "QuickPatch.Communication.Domain.Inbox.Notification"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder",
+   "a": "QuickPatch.Communication.Application.Abstractions.IChatStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder",
+   "a": "QuickPatch.Communication.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder",
+   "a": "QuickPatch.Communication.Application.Events.EventFields"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder",
+   "a": "QuickPatch.Communication.Application.Events.InvalidEventException"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder",
+   "a": "QuickPatch.Communication.Application.Events.RealtimeJson"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder",
+   "a": "QuickPatch.Communication.Application.Inbox.RecordResult"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatParticipants"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ChatResult",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatMessage"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ListChatMessagesHandler",
+   "a": "QuickPatch.Communication.Application.Abstractions.ChatMessagePage"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ListChatMessagesHandler",
+   "a": "QuickPatch.Communication.Application.Abstractions.IChatStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ListChatMessagesHandler",
+   "a": "QuickPatch.Communication.Application.Chat.ChatResult"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ListChatMessagesHandler",
+   "a": "QuickPatch.Communication.Application.Chat.ChatValidationException"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.ListChatMessagesHandler",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatParticipants"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "a": "QuickPatch.Communication.Application.Abstractions.IChatStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "a": "QuickPatch.Communication.Application.Abstractions.IRealtimeConnections"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "a": "QuickPatch.Communication.Application.Chat.ChatResult"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "a": "QuickPatch.Communication.Application.Chat.ChatValidationException"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatMessage"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatParticipants"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "a": "QuickPatch.Communication.Domain.Realtime.ChatMessageFrame"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "a": "QuickPatch.Communication.Domain.Realtime.ChatMessageNotice"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "a": "QuickPatch.Communication.Domain.Realtime.Delivery"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
+   "a": "QuickPatch.Communication.Domain.Realtime.UserRecipient"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Chat.ListChatMessagesHandler"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Inbox.InboxRecorder"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Inbox.ListNotificationsHandler"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Inbox.MarkNotificationReadHandler"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Realtime.RecentEventIds"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Events.EventFields",
+   "a": "QuickPatch.Communication.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Events.EventFields",
+   "a": "QuickPatch.Communication.Application.Events.InvalidEventException"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRecorder",
+   "a": "QuickPatch.Communication.Application.Abstractions.IInboxStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRecorder",
+   "a": "QuickPatch.Communication.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRecorder",
+   "a": "QuickPatch.Communication.Application.Events.InvalidEventException"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRecorder",
+   "a": "QuickPatch.Communication.Application.Events.RealtimeJson"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRecorder",
+   "a": "QuickPatch.Communication.Application.Inbox.InboxRules"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRecorder",
+   "a": "QuickPatch.Communication.Application.Inbox.NewNotification"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRecorder",
+   "a": "QuickPatch.Communication.Application.Inbox.RecordResult"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRecorder",
+   "a": "QuickPatch.Communication.Domain.Inbox.Notification"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRules",
+   "a": "QuickPatch.Communication.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRules",
+   "a": "QuickPatch.Communication.Application.Events.EventFields"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRules",
+   "a": "QuickPatch.Communication.Application.Events.InvalidEventException"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRules",
+   "a": "QuickPatch.Communication.Application.Inbox.NewNotification"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.InboxRules",
+   "a": "QuickPatch.Communication.Application.Realtime.NoticeRouter"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.ListNotificationsHandler",
+   "a": "QuickPatch.Communication.Application.Abstractions.IInboxStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.ListNotificationsHandler",
+   "a": "QuickPatch.Communication.Application.Abstractions.NotificationPage"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.ListNotificationsHandler",
+   "a": "QuickPatch.Communication.Application.Inbox.InboxValidationException"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.ListNotificationsHandler",
+   "a": "QuickPatch.Communication.Application.Inbox.ListNotificationsQuery"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.ListNotificationsHandler",
+   "a": "QuickPatch.Communication.Application.Inbox.NotificationList"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.MarkNotificationReadHandler",
+   "a": "QuickPatch.Communication.Application.Abstractions.IInboxStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.MarkNotificationReadHandler",
+   "a": "QuickPatch.Communication.Domain.Inbox.Notification"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Inbox.NotificationList",
+   "a": "QuickPatch.Communication.Domain.Inbox.Notification"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
+   "a": "QuickPatch.Communication.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
+   "a": "QuickPatch.Communication.Application.Events.EventFields"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
+   "a": "QuickPatch.Communication.Domain.Realtime.Delivery"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
+   "a": "QuickPatch.Communication.Domain.Realtime.OfferCreated"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
+   "a": "QuickPatch.Communication.Domain.Realtime.RoleRecipient"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
+   "a": "QuickPatch.Communication.Domain.Realtime.ServiceRequestCountsChanged"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
+   "a": "QuickPatch.Communication.Domain.Realtime.ServiceRequestStatusChanged"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
+   "a": "QuickPatch.Communication.Domain.Realtime.UserRecipient"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
+   "a": "QuickPatch.Communication.Application.Abstractions.IRealtimeConnections"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
+   "a": "QuickPatch.Communication.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
+   "a": "QuickPatch.Communication.Application.Events.InvalidEventException"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
+   "a": "QuickPatch.Communication.Application.Events.RealtimeJson"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
+   "a": "QuickPatch.Communication.Application.Realtime.NoticeRouter"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
+   "a": "QuickPatch.Communication.Application.Realtime.NotifyResult"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
+   "a": "QuickPatch.Communication.Application.Realtime.RecentEventIds"
+  },
+  {
+   "de": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
+   "a": "QuickPatch.Communication.Domain.Realtime.Delivery"
+  },
+  {
+   "de": "QuickPatch.Communication.Domain.Realtime.ChatMessageNotice",
+   "a": "QuickPatch.Communication.Domain.Realtime.ChatMessageFrame"
+  },
+  {
+   "de": "QuickPatch.Communication.Domain.Realtime.ChatMessageNotice",
+   "a": "QuickPatch.Communication.Domain.Realtime.RealtimeNotice"
+  },
+  {
+   "de": "QuickPatch.Communication.Domain.Realtime.Delivery",
+   "a": "QuickPatch.Communication.Domain.Realtime.RealtimeNotice"
+  },
+  {
+   "de": "QuickPatch.Communication.Domain.Realtime.Delivery",
+   "a": "QuickPatch.Communication.Domain.Realtime.Recipient"
+  },
+  {
+   "de": "QuickPatch.Communication.Domain.Realtime.OfferCreated",
+   "a": "QuickPatch.Communication.Domain.Realtime.RealtimeNotice"
+  },
+  {
+   "de": "QuickPatch.Communication.Domain.Realtime.RoleRecipient",
+   "a": "QuickPatch.Communication.Domain.Realtime.Recipient"
+  },
+  {
+   "de": "QuickPatch.Communication.Domain.Realtime.ServiceRequestCountsChanged",
+   "a": "QuickPatch.Communication.Domain.Realtime.RealtimeNotice"
+  },
+  {
+   "de": "QuickPatch.Communication.Domain.Realtime.ServiceRequestStatusChanged",
+   "a": "QuickPatch.Communication.Domain.Realtime.RealtimeNotice"
+  },
+  {
+   "de": "QuickPatch.Communication.Domain.Realtime.UserRecipient",
+   "a": "QuickPatch.Communication.Domain.Realtime.Recipient"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Abstractions.IChatStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Abstractions.IInboxStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Events.EventTypes"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Application.Inbox.InboxRecorder"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Infrastructure.Messaging.KafkaOptions"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Infrastructure.Messaging.PersistentEventsConsumer"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Infrastructure.Messaging.RealtimeEventsConsumer"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Infrastructure.Persistence.ChatStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Infrastructure.Persistence.CommunicationDbContext"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Infrastructure.Persistence.InboxStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableChatStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableInboxStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Messaging.RealtimeEventsConsumer",
+   "a": "QuickPatch.Communication.Application.Events.EventTypes"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Messaging.RealtimeEventsConsumer",
+   "a": "QuickPatch.Communication.Application.Realtime.NotifyResult"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Messaging.RealtimeEventsConsumer",
+   "a": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.ChatStore",
+   "a": "QuickPatch.Communication.Application.Abstractions.ChatMessagePage"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.ChatStore",
+   "a": "QuickPatch.Communication.Application.Abstractions.IChatStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.ChatStore",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatMessage"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.ChatStore",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatParticipants"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.ChatStore",
+   "a": "QuickPatch.Communication.Infrastructure.Persistence.CommunicationDbContext"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.CommunicationDbContext",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatMessage"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.CommunicationDbContext",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatParticipants"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.CommunicationDbContext",
+   "a": "QuickPatch.Communication.Domain.Inbox.Notification"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.CommunicationDbContext",
+   "a": "QuickPatch.Communication.Domain.Inbox.NotificationTypes"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.DesignTimeDbContextFactory",
+   "a": "QuickPatch.Communication.Infrastructure.Persistence.CommunicationDbContext"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.InboxStore",
+   "a": "QuickPatch.Communication.Application.Abstractions.IInboxStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.InboxStore",
+   "a": "QuickPatch.Communication.Application.Abstractions.NotificationPage"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.InboxStore",
+   "a": "QuickPatch.Communication.Domain.Inbox.Notification"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.InboxStore",
+   "a": "QuickPatch.Communication.Infrastructure.Persistence.CommunicationDbContext"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableChatStore",
+   "a": "QuickPatch.Communication.Application.Abstractions.ChatMessagePage"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableChatStore",
+   "a": "QuickPatch.Communication.Application.Abstractions.IChatStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableChatStore",
+   "a": "QuickPatch.Communication.Application.Chat.ChatUnavailableException"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableChatStore",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatMessage"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableChatStore",
+   "a": "QuickPatch.Communication.Domain.Chat.ChatParticipants"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableInboxStore",
+   "a": "QuickPatch.Communication.Application.Abstractions.IInboxStore"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableInboxStore",
+   "a": "QuickPatch.Communication.Application.Abstractions.NotificationPage"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableInboxStore",
+   "a": "QuickPatch.Communication.Application.Inbox.InboxUnavailableException"
+  },
+  {
+   "de": "QuickPatch.Communication.Infrastructure.Persistence.UnavailableInboxStore",
+   "a": "QuickPatch.Communication.Domain.Inbox.Notification"
+  }
+ ],
+ "commit": "120623a"
+}
