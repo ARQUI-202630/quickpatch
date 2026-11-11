@@ -123,12 +123,12 @@ Los atributos con más trabajo pendiente son AC8 Flexibility (40.00%), AC7 Maint
 
 | Escenario | Qué falta | HU |
 |---|---|---|
-| AC7-E2 Acoplamiento entre módulos | 64.7% de los cambios toca un solo servicio (meta: 80% o más). | Pendiente: Juan Diego fija qué cuenta como cambio |
-| AC7-E3 Incorporación de un nuevo microservicio | Ranking tocó 2 servicios existentes (identity y service-request); la meta es 0. | Pendiente: Juan Diego decide si esos cambios cuentan |
-| AC7-E5 Reutilización de la lógica transversal | Hay copias en .NET de Outbox, correlación, tenant e idempotencia. Cumplir exige un paquete compartido. | Pendiente de crear |
+| AC7-E2 Acoplamiento entre módulos | Con la definición fijada en SCRUM-669, el 78,6 % de los cambios toca un solo servicio (meta: 80 % o más). | **Decidido (SCRUM-669):** un «cambio» es una HU o corrección con código de producto (`feat` o `fix`); se excluyen las subidas mecánicas de los submódulos de contratos y los refactors estructurales planeados para varios servicios, que no nacen del acoplamiento. Sigue en **No cumple**. Se vuelve a medir al cierre con la misma definición |
+| AC7-E3 Incorporación de un nuevo microservicio | Ranking tocó 2 servicios existentes (identity y service-request); la meta es 0. | **Decidido (SCRUM-669):** sí cuentan. Ranking arrancó sin cambios en los demás, pero su valor de negocio necesitó que ServiceRequest publicara `service-request.rated` e Identity proyectara la reputación. La meta literal es 0, así que sigue en **No cumple**. Lectura arquitectónica: el acoplamiento es por eventos versionados, no por código compartido |
+| AC7-E5 Reutilización de la lógica transversal | Hay copias en .NET de Outbox, correlación, tenant e idempotencia. Cumplir exige un paquete compartido. | SCRUM-657: depende de aceptar ADR-020 (repositorio y paquete nuevos). Mientras no se acepte, sigue en **No cumple** |
 | AC9-E3 Servicio sin cierre | No existe la regla de 4 horas ni la marca de solicitudes vencidas en el panel. | Riesgo aceptado: fuera del cierre por el feature freeze (SCRUM-646) |
 
-AC9-E2 ya no está en esta tabla: la Product Owner lo marcó como Cumple el 4 de noviembre, como compromiso. SCRUM-642 sigue en el backlog y el panel todavía no señala a los técnicos con calificaciones bajas.
+AC9-E2 ya no está en esta tabla: la Product Owner lo marcó como Cumple el 4 de noviembre, como compromiso. El panel todavía no señala a los técnicos con calificaciones bajas; SCRUM-642 está en el Sprint 6 como corrección necesaria (SCRUM-646) para que ese Cumple tenga evidencia.
 
 ---
 
