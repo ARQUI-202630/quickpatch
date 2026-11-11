@@ -1,0 +1,59 @@
+flowchart LR
+  subgraph Api
+    co_quickpatch_matching["co.quickpatch.matching (1)"]
+    co_quickpatch_matching_api_controllers["api.controllers (2)"]
+    co_quickpatch_matching_api_http["api.http (3)"]
+    co_quickpatch_matching_api_security["api.security (1)"]
+  end
+  subgraph Application
+    co_quickpatch_matching_application_common["application.common (2)"]
+    co_quickpatch_matching_application_events["application.events (4)"]
+    co_quickpatch_matching_application_matching["application.matching (4)"]
+    co_quickpatch_matching_application_technicians["application.technicians (4)"]
+  end
+  subgraph Domain
+    co_quickpatch_matching_domain_events["domain.events (9)"]
+    co_quickpatch_matching_domain_matching["domain.matching (1)"]
+    co_quickpatch_matching_domain_technicians["domain.technicians (1)"]
+  end
+  subgraph Infrastructure
+    co_quickpatch_matching_infrastructure_messaging["infrastructure.messaging (8)"]
+    co_quickpatch_matching_infrastructure_persistence["infrastructure.persistence (6)"]
+    co_quickpatch_matching_infrastructure_scheduling["infrastructure.scheduling (3)"]
+  end
+  co_quickpatch_matching_api_controllers -->|1| co_quickpatch_matching_application_matching
+  co_quickpatch_matching_api_controllers -->|1| co_quickpatch_matching_application_technicians
+  co_quickpatch_matching_api_controllers -->|1| co_quickpatch_matching_domain_matching
+  co_quickpatch_matching_api_controllers -->|1| co_quickpatch_matching_domain_technicians
+  co_quickpatch_matching_api_http -->|1| co_quickpatch_matching_api_controllers
+  co_quickpatch_matching_api_http -->|1| co_quickpatch_matching_domain_matching
+  co_quickpatch_matching_api_http -->|1| co_quickpatch_matching_domain_technicians
+  co_quickpatch_matching_api_security -->|1| co_quickpatch_matching_api_http
+  co_quickpatch_matching_application_events -->|8| co_quickpatch_matching_application_common
+  co_quickpatch_matching_application_events -->|3| co_quickpatch_matching_application_matching
+  co_quickpatch_matching_application_events -->|5| co_quickpatch_matching_application_technicians
+  co_quickpatch_matching_application_events -->|10| co_quickpatch_matching_domain_events
+  co_quickpatch_matching_application_events -->|3| co_quickpatch_matching_domain_matching
+  co_quickpatch_matching_application_events -->|2| co_quickpatch_matching_domain_technicians
+  co_quickpatch_matching_application_matching -->|1| co_quickpatch_matching_application_common
+  co_quickpatch_matching_application_matching -->|2| co_quickpatch_matching_application_technicians
+  co_quickpatch_matching_application_matching -->|6| co_quickpatch_matching_domain_events
+  co_quickpatch_matching_application_matching -->|3| co_quickpatch_matching_domain_matching
+  co_quickpatch_matching_application_matching -->|1| co_quickpatch_matching_domain_technicians
+  co_quickpatch_matching_application_technicians -->|1| co_quickpatch_matching_application_common
+  co_quickpatch_matching_application_technicians -->|2| co_quickpatch_matching_domain_matching
+  co_quickpatch_matching_application_technicians -->|2| co_quickpatch_matching_domain_technicians
+  co_quickpatch_matching_infrastructure_messaging -->|2| co_quickpatch_matching_application_common
+  co_quickpatch_matching_infrastructure_messaging -->|8| co_quickpatch_matching_application_events
+  co_quickpatch_matching_infrastructure_messaging -->|6| co_quickpatch_matching_application_matching
+  co_quickpatch_matching_infrastructure_messaging -->|3| co_quickpatch_matching_application_technicians
+  co_quickpatch_matching_infrastructure_messaging -->|14| co_quickpatch_matching_domain_events
+  co_quickpatch_matching_infrastructure_messaging -->|1| co_quickpatch_matching_infrastructure_persistence
+  co_quickpatch_matching_infrastructure_persistence -->|2| co_quickpatch_matching_application_common
+  co_quickpatch_matching_infrastructure_persistence -->|1| co_quickpatch_matching_application_matching
+  co_quickpatch_matching_infrastructure_persistence -->|3| co_quickpatch_matching_application_technicians
+  co_quickpatch_matching_infrastructure_persistence -->|1| co_quickpatch_matching_domain_matching
+  co_quickpatch_matching_infrastructure_persistence -->|1| co_quickpatch_matching_domain_technicians
+  co_quickpatch_matching_infrastructure_scheduling -->|2| co_quickpatch_matching_application_common
+  co_quickpatch_matching_infrastructure_scheduling -->|2| co_quickpatch_matching_application_matching
+  co_quickpatch_matching_infrastructure_scheduling -->|2| co_quickpatch_matching_infrastructure_persistence

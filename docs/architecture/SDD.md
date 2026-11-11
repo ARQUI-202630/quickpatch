@@ -789,12 +789,9 @@ Permanecen sujetos a definición de Sprints posteriores:
 
 # 7. Code diagrams
 
-El diagrama de código de C4 se usa solo en dos áreas, donde el diagrama de componentes no basta para entender o revisar el código:
+**Desde el cierre (SCRUM-680), el nivel de código sale del código.** Los diagramas de paquetes y de clases, y las métricas de acoplamiento y cohesión de los 7 servicios con código, se generan desde los binarios de `develop` con `python tools/arquitectura/generar.py` (sección 7.3). No se dibujan a mano, así que no se desactualizan: se regeneran con un comando. Las secciones 7.1 y 7.2 se conservan como explicación de dos mecanismos, publicación confiable de eventos y aislamiento entre tenants, donde importa el orden de las llamadas dentro de una transacción y no solo quién depende de quién.
 
-1. **Publicación y consumo confiable de eventos**: se reparte entre dos servicios y dos tecnologías, y depende de que varias clases compartan una misma transacción.
-2. **Aislamiento entre tenants en la base de datos**: un error aquí filtra datos de un tenant a otro, y la única operación que lo omite debe quedar acotada.
-
-El resto del sistema sigue el patrón de cuatro capas de la sección 6.1 sin variaciones que justifiquen un diagrama de clases. Los diagramas se trazaron sobre el código de `develop` del 7 de octubre de 2026 y nombran clases reales; los métodos y las dependencias que no intervienen en el mecanismo se omiten. Están en PlantUML (`diagrams/c4/C4-07-*.puml`) porque Structurizr no dibuja el nivel de código.
+Los diagramas de 7.1 y 7.2 se trazaron sobre el código de `develop` del 7 de octubre de 2026 y nombran clases reales; los métodos y las dependencias que no intervienen en el mecanismo se omiten. Están en PlantUML (`diagrams/c4/C4-07-*.puml`) porque Structurizr no dibuja el nivel de código.
 
 ## 7.1 Outbox e idempotencia de `service-request.created`
 
@@ -825,6 +822,28 @@ Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija d
 - **Operación de plataforma.** Solo `ListTenantsHandler` y `UpdateTenantStatusHandler` usan `PlatformUnitOfWork`, que adopta el rol `identity_platform` (`BYPASSRLS`) con `SET LOCAL ROLE`: el rol vuelve al de la aplicación al cerrar la transacción. La aplicación puede adoptarlo pero no hereda sus permisos (`INHERIT FALSE`, `db/roles.sql`, ADR-019). Los endpoints exigen `admin_plataforma`, y cada cambio de estado deja un `AuditEntry` en la misma transacción.
 
 ---
+
+## 7.3 Paquetes, clases y métricas generados desde el código (SCRUM-680 a SCRUM-683)
+
+**Herramienta (SCRUM-681).** Para .NET, un extractor sobre `System.Reflection.Metadata`, que viene con el runtime; para Java, `jdeps`, del JDK. Los dos leen el código compilado: herencia, campos, firmas, variables locales y cada tipo que el cuerpo de un método usa. Un script común calcula las métricas y escribe PlantUML y Mermaid. La comparación con otras opciones (NDepend, `puml-gen`, DependenSee, NetArchTest/ArchUnit, los diagramas del IDE) y la definición de cada métrica están en `tools/arquitectura/README.md`.
+
+**Qué se publica**, en `docs/architecture/codigo/<fase>/<servicio>/`: el diagrama de paquetes agrupado por capa (`paquetes.puml` y `paquetes.mmd`, con los ciclos en naranja y las violaciones de 10.3.2 en rojo), las clases más conectadas (`clases-centrales.puml`) y las métricas (`README.md` y `metricas.json`): ciclos entre paquetes y entre tipos, fan-in y fan-out por clase, inestabilidad y cohesión relacional por paquete, clases de más de 250 líneas y violaciones de la matriz de 10.3.2.
+
+**Antes y después del refactor.** La línea base (`codigo/antes/`, SCRUM-682) se tomó sobre `develop` antes del primer PR de refactor. La medición «después» (`codigo/despues/`) usa la misma herramienta y la misma configuración, y la comparación está en `codigo/README.md` (SCRUM-683):
+
+| Servicio | Violaciones | Ciclos entre paquetes | Tipos > 250 líneas | Fan-out máximo | Cambio principal |
+|---|---|---|---|---|---|
+| Identity | 11 → pendiente | 1 → pendiente | 2 → pendiente | 80 → pendiente | SCRUM-650 (en curso) |
+| Catalog | 0 → 0 | 0 → 0 | 0 → 0 | 15 → 15 | Resolución del tenant fuera del endpoint; un archivo por caso de uso, puerto y adaptador; pruebas de arquitectura |
+| ServiceRequest | 0 → 0 | 0 → 0 | 2 → 1 | 31 → 22 | Endpoints por recurso y sin dependencias entre grupos; validación fuera del agregado |
+| Matching | 0 → 0 | **1 → 0** | 0 → 0 | 10 → 13 | Puertos repartidos por responsabilidad; ArchUnit prohíbe ciclos |
+| Ranking | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | Contrato del evento en Application; consumidor solo como transporte |
+| Payments | 0 → 0 | **1 → 0** | 0 → 0 | 12 → 12 | `InvoiceDocument` junto a su puerto |
+| Communication | 0 → pendiente | 0 → pendiente | 0 → pendiente | 10 → pendiente | SCRUM-656 (en curso) |
+
+En Matching, el fan-out máximo sube de 10 a 13 y la cohesión relacional promedio baja de 0,85 a 0,75. Las dos cosas son efecto de separar los puertos: `KafkaConfig` ahora importa cada interfaz por separado, y el paquete nuevo `application.common` tiene dos interfaces que no se usan entre sí. A cambio, desaparece el ciclo entre `events`, `matching` y `technicians`. Las cifras se reportan como salen.
+
+Las reglas de 10.3.2 ya no dependen de esta medición: cada servicio refactorizado tiene pruebas de arquitectura en su CI (NetArchTest o ArchUnit), y una violación nueva rompe el PR.
 
 # 8. Dynamic diagrams
 
@@ -2406,6 +2425,8 @@ Estos cambios responden a la retroalimentación final del profesor: arquitectura
 | Cambio | Secciones | Tarea |
 |---|---|---|
 | Reglas de dependencia verificables: matriz entre capas, ubicación de cada tipo de clase, límites de tamaño, equivalente Java y pruebas de arquitectura en el CI de cada servicio | 10.3.2 | SCRUM-648 |
+| El nivel de código sale del código: herramienta reproducible, línea base y medición después del refactor; 7.1 y 7.2 quedan como explicación de mecanismos | 7 y 7.3 | SCRUM-680 a SCRUM-683 |
+| Refactor interno de Catalog, ServiceRequest, Matching, Ranking y Payments con pruebas de arquitectura en su CI | 7.3 y 10.3.2 | SCRUM-651 a SCRUM-655 |
 | Contexto con los 6 roles agrupados por canal (4 en la app móvil y 2 en el panel web) y lectura vertical sin cruces; figuras 1 a 3 reexportadas | 3, 4 y 5.1 | SCRUM-688 y SCRUM-689 |
 
 ---

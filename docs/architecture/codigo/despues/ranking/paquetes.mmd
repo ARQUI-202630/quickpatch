@@ -1,0 +1,39 @@
+flowchart LR
+  subgraph Api
+    _global_["(global) (1)"]
+  end
+  subgraph Application
+    QuickPatch_Ranking_Application["Application (1)"]
+    QuickPatch_Ranking_Application_Abstractions["Application.Abstractions (5)"]
+    QuickPatch_Ranking_Application_Events["Application.Events (7)"]
+    QuickPatch_Ranking_Application_Reputation["Application.Reputation (2)"]
+  end
+  subgraph Domain
+    QuickPatch_Ranking_Domain["Domain (1)"]
+    QuickPatch_Ranking_Domain_Reputation["Domain.Reputation (2)"]
+  end
+  subgraph Infrastructure
+    QuickPatch_Ranking_Infrastructure["Infrastructure (1)"]
+    QuickPatch_Ranking_Infrastructure_Messaging["Infrastructure.Messaging (2)"]
+    QuickPatch_Ranking_Infrastructure_Options["Infrastructure.Options (2)"]
+    QuickPatch_Ranking_Infrastructure_Persistence["Infrastructure.Persistence (9)"]
+  end
+  _global_ -->|1| QuickPatch_Ranking_Application
+  _global_ -->|1| QuickPatch_Ranking_Infrastructure
+  QuickPatch_Ranking_Application -->|1| QuickPatch_Ranking_Application_Reputation
+  QuickPatch_Ranking_Application_Abstractions -->|2| QuickPatch_Ranking_Domain_Reputation
+  QuickPatch_Ranking_Application_Events -->|1| QuickPatch_Ranking_Application_Abstractions
+  QuickPatch_Ranking_Application_Events -->|1| QuickPatch_Ranking_Domain_Reputation
+  QuickPatch_Ranking_Application_Reputation -->|4| QuickPatch_Ranking_Application_Abstractions
+  QuickPatch_Ranking_Application_Reputation -->|3| QuickPatch_Ranking_Application_Events
+  QuickPatch_Ranking_Application_Reputation -->|2| QuickPatch_Ranking_Domain_Reputation
+  QuickPatch_Ranking_Infrastructure -->|4| QuickPatch_Ranking_Application_Abstractions
+  QuickPatch_Ranking_Infrastructure -->|2| QuickPatch_Ranking_Infrastructure_Messaging
+  QuickPatch_Ranking_Infrastructure -->|2| QuickPatch_Ranking_Infrastructure_Options
+  QuickPatch_Ranking_Infrastructure -->|5| QuickPatch_Ranking_Infrastructure_Persistence
+  QuickPatch_Ranking_Infrastructure_Messaging -->|4| QuickPatch_Ranking_Application_Events
+  QuickPatch_Ranking_Infrastructure_Messaging -->|2| QuickPatch_Ranking_Application_Reputation
+  QuickPatch_Ranking_Infrastructure_Messaging -->|1| QuickPatch_Ranking_Infrastructure_Options
+  QuickPatch_Ranking_Infrastructure_Messaging -->|3| QuickPatch_Ranking_Infrastructure_Persistence
+  QuickPatch_Ranking_Infrastructure_Persistence -->|5| QuickPatch_Ranking_Application_Abstractions
+  QuickPatch_Ranking_Infrastructure_Persistence -->|4| QuickPatch_Ranking_Domain_Reputation

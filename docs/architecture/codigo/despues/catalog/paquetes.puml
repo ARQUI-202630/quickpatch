@@ -1,0 +1,59 @@
+@startuml
+!pragma layout smetana
+title Catalog — paquetes (despues, 44373e3)
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+package "Api" {
+  component "(global)\n1 tipos" as _global_
+  component "Api.Endpoints\n5 tipos" as QuickPatch_Catalog_Api_Endpoints
+  component "Api.Http\n3 tipos" as QuickPatch_Catalog_Api_Http
+  component "Api.Security\n6 tipos" as QuickPatch_Catalog_Api_Security
+}
+package "Application" {
+  component "Application\n1 tipos" as QuickPatch_Catalog_Application
+  component "Application.Abstractions\n5 tipos" as QuickPatch_Catalog_Application_Abstractions
+  component "Application.Categories\n6 tipos" as QuickPatch_Catalog_Application_Categories
+  component "Application.Events\n3 tipos" as QuickPatch_Catalog_Application_Events
+}
+package "Domain" {
+  component "Domain.Categories\n1 tipos" as QuickPatch_Catalog_Domain_Categories
+  component "Domain.Common\n1 tipos" as QuickPatch_Catalog_Domain_Common
+}
+package "Infrastructure" {
+  component "Infrastructure\n1 tipos" as QuickPatch_Catalog_Infrastructure
+  component "Infrastructure.Messaging\n1 tipos" as QuickPatch_Catalog_Infrastructure_Messaging
+  component "Infrastructure.Options\n2 tipos" as QuickPatch_Catalog_Infrastructure_Options
+  component "Infrastructure.Persistence\n7 tipos" as QuickPatch_Catalog_Infrastructure_Persistence
+}
+_global_ --> QuickPatch_Catalog_Api_Endpoints #607D8B : 1
+_global_ --> QuickPatch_Catalog_Api_Http #607D8B : 3
+_global_ --> QuickPatch_Catalog_Api_Security #607D8B : 3
+_global_ --> QuickPatch_Catalog_Application #607D8B : 1
+_global_ --> QuickPatch_Catalog_Infrastructure #607D8B : 1
+QuickPatch_Catalog_Api_Endpoints --> QuickPatch_Catalog_Api_Http #607D8B : 1
+QuickPatch_Catalog_Api_Endpoints --> QuickPatch_Catalog_Api_Security #607D8B : 2
+QuickPatch_Catalog_Api_Endpoints --> QuickPatch_Catalog_Application_Categories #607D8B : 6
+QuickPatch_Catalog_Api_Endpoints --> QuickPatch_Catalog_Domain_Categories #607D8B : 3
+QuickPatch_Catalog_Api_Endpoints --> QuickPatch_Catalog_Domain_Common #607D8B : 1
+QuickPatch_Catalog_Application --> QuickPatch_Catalog_Application_Categories #607D8B : 3
+QuickPatch_Catalog_Application_Abstractions --> QuickPatch_Catalog_Domain_Categories #607D8B : 1
+QuickPatch_Catalog_Application_Categories --> QuickPatch_Catalog_Application_Abstractions #607D8B : 8
+QuickPatch_Catalog_Application_Categories --> QuickPatch_Catalog_Application_Events #607D8B : 2
+QuickPatch_Catalog_Application_Categories --> QuickPatch_Catalog_Domain_Categories #607D8B : 4
+QuickPatch_Catalog_Application_Events --> QuickPatch_Catalog_Application_Abstractions #607D8B : 1
+QuickPatch_Catalog_Application_Events --> QuickPatch_Catalog_Domain_Categories #607D8B : 1
+QuickPatch_Catalog_Domain_Categories --> QuickPatch_Catalog_Domain_Common #607D8B : 1
+QuickPatch_Catalog_Infrastructure --> QuickPatch_Catalog_Application_Abstractions #607D8B : 3
+QuickPatch_Catalog_Infrastructure --> QuickPatch_Catalog_Infrastructure_Messaging #607D8B : 1
+QuickPatch_Catalog_Infrastructure --> QuickPatch_Catalog_Infrastructure_Options #607D8B : 2
+QuickPatch_Catalog_Infrastructure --> QuickPatch_Catalog_Infrastructure_Persistence #607D8B : 4
+QuickPatch_Catalog_Infrastructure_Messaging --> QuickPatch_Catalog_Infrastructure_Options #607D8B : 1
+QuickPatch_Catalog_Infrastructure_Messaging --> QuickPatch_Catalog_Infrastructure_Persistence #607D8B : 2
+QuickPatch_Catalog_Infrastructure_Persistence --> QuickPatch_Catalog_Application_Abstractions #607D8B : 5
+QuickPatch_Catalog_Infrastructure_Persistence --> QuickPatch_Catalog_Domain_Categories #607D8B : 2
+legend right
+Rojo: viola SDD 10.3.2 · Naranja: ciclo entre paquetes
+Número: dependencias entre tipos
+endlegend
+@enduml
