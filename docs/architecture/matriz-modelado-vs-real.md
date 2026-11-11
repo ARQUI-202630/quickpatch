@@ -39,7 +39,7 @@ Las versiones de QA que no están en producción (Identity 0.9.0 y ServiceReques
 | Pasarela de pagos PCI-DSS | **Planeado** | El MVP cobra con `SimulatedPaymentProvider` detrás del puerto `IPaymentProvider` (ADR-009 modificado). Las relaciones con la pasarela ya están punteadas como «Planeado» en el DSL |
 | Receptor de webhooks del PSP (componente de Payments) | **Planeado** | Depende de la pasarela certificada |
 | Observabilidad (Prometheus, Loki, Grafana) | Desplegado en VM1 | La consulta el equipo desde su navegador (SCRUM-674, quickpatch#276) |
-| GitHub (repositorios, Actions, GHCR) | En uso | 13 repositorios (cifras canónicas) |
+| GitHub (repositorios, Actions, GHCR) | En uso | 14 repositorios (cifras canónicas; el 14 es `quickpatch-shared-dotnet`, ADR-020) |
 
 ## Componentes
 

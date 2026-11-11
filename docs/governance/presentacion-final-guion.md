@@ -53,7 +53,7 @@ Todo el equipo debe responderlas igual, con estas respuestas:
 | ¿Cuántos escenarios? | 52, con el estado final de SCRUM-664 |
 | ¿Cuántos servicios? | 8 definidos; 7 implementados; Actors planeado |
 | ¿Cuáles están en producción? | Los 7 con código, desde el 4 de noviembre; QA va adelante en Identity y ServiceRequest |
-| ¿Cuántos repositorios? | 13: 12 de componentes y el principal |
+| ¿Cuántos repositorios? | 14: 13 de componentes (el último, `quickpatch-shared-dotnet`, por ADR-020) y el principal |
 | ¿Cuántos topics? | 20 |
 | ¿Qué quedó pendiente? | Pasarela real, Actors, AC9-E3 y el paquete transversal (AC7-E5) |
 | ¿Cuál fue el resultado? | El de la conclusión del documento de cierre, aprobada por la PO |
