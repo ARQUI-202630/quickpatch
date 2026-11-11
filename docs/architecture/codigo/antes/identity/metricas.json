@@ -96,7 +96,7 @@
    "lineas": 735,
    "fan_out": 80,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Identity.Api/Endpoints/IdentityEndpoints.cs"
+   "archivo": "src/QuickPatch.Identity.Api/Endpoints/IdentityEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Api.Endpoints.CompanyEndpoints",
@@ -105,7 +105,7 @@
    "lineas": 189,
    "fan_out": 28,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Identity.Api/Endpoints/CompanyEndpoints.cs"
+   "archivo": "src/QuickPatch.Identity.Api/Endpoints/CompanyEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
@@ -114,7 +114,7 @@
    "lineas": 71,
    "fan_out": 15,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Identity.Application/Technicians/ProviderTeam.cs"
+   "archivo": "src/QuickPatch.Identity.Application/Technicians/ProviderTeam.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Api.Bootstrap.DevelopmentUsersSeed",
@@ -123,7 +123,7 @@
    "lineas": 56,
    "fan_out": 12,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Identity.Api/Bootstrap/DevelopmentUsersSeed.cs"
+   "archivo": "src/QuickPatch.Identity.Api/Bootstrap/DevelopmentUsersSeed.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Auth.ConfirmPasswordRecoveryHandler",
@@ -132,7 +132,7 @@
    "lineas": 57,
    "fan_out": 12,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Identity.Application/Auth/PasswordRecovery.cs"
+   "archivo": "src/QuickPatch.Identity.Application/Auth/PasswordRecovery.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Auth.IssueRecoveryLinkHandler",
@@ -141,7 +141,7 @@
    "lineas": 46,
    "fan_out": 12,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Identity.Application/Auth/PasswordRecovery.cs"
+   "archivo": "src/QuickPatch.Identity.Application/Auth/PasswordRecovery.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Auth.LoginHandler",
@@ -150,7 +150,7 @@
    "lineas": 62,
    "fan_out": 12,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Identity.Application/Auth/Login.cs"
+   "archivo": "src/QuickPatch.Identity.Application/Auth/Login.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
@@ -159,7 +159,7 @@
    "lineas": 60,
    "fan_out": 12,
    "fan_in": 3,
-   "archivo": "src/src/QuickPatch.Identity.Application/Auth/RegisterTechnician.cs"
+   "archivo": "src/QuickPatch.Identity.Application/Auth/RegisterTechnician.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Companies.CreateCompanyUserHandler",
@@ -168,7 +168,7 @@
    "lineas": 54,
    "fan_out": 12,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Identity.Application/Companies/Companies.cs"
+   "archivo": "src/QuickPatch.Identity.Application/Companies/Companies.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Companies.RegisterCompanyHandler",
@@ -177,7 +177,7 @@
    "lineas": 87,
    "fan_out": 11,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Identity.Application/Companies/Companies.cs"
+   "archivo": "src/QuickPatch.Identity.Application/Companies/Companies.cs"
   }
  ],
  "mayor_fan_in": [
@@ -188,7 +188,7 @@
    "lineas": 335,
    "fan_out": 3,
    "fan_in": 40,
-   "archivo": "src/src/QuickPatch.Identity.Domain/Users/User.cs"
+   "archivo": "src/QuickPatch.Identity.Domain/Users/User.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Abstractions.ITenantUnitOfWork",
@@ -206,7 +206,7 @@
    "lineas": 65,
    "fan_out": 1,
    "fan_in": 23,
-   "archivo": "src/src/QuickPatch.Identity.Domain/Tenants/Tenant.cs"
+   "archivo": "src/QuickPatch.Identity.Domain/Tenants/Tenant.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Abstractions.IUserRepository",
@@ -224,7 +224,7 @@
    "lineas": 132,
    "fan_out": 1,
    "fan_in": 21,
-   "archivo": "src/src/QuickPatch.Identity.Domain/Technicians/TechnicianProfile.cs"
+   "archivo": "src/QuickPatch.Identity.Domain/Technicians/TechnicianProfile.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Domain.Common.DomainValidationException",
@@ -233,7 +233,7 @@
    "lineas": 23,
    "fan_out": 0,
    "fan_in": 14,
-   "archivo": "src/src/QuickPatch.Identity.Domain/Common/DomainValidationException.cs"
+   "archivo": "src/QuickPatch.Identity.Domain/Common/DomainValidationException.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Infrastructure.Persistence.IdentityDbContext",
@@ -242,7 +242,7 @@
    "lineas": 190,
    "fan_out": 9,
    "fan_in": 14,
-   "archivo": "src/src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs"
+   "archivo": "src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Abstractions.ITechnicianProfileRepository",
@@ -280,7 +280,7 @@
    "lineas": 735,
    "fan_out": 80,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Identity.Api/Endpoints/IdentityEndpoints.cs"
+   "archivo": "src/QuickPatch.Identity.Api/Endpoints/IdentityEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Domain.Users.User",
@@ -289,7 +289,7 @@
    "lineas": 335,
    "fan_out": 3,
    "fan_in": 40,
-   "archivo": "src/src/QuickPatch.Identity.Domain/Users/User.cs"
+   "archivo": "src/QuickPatch.Identity.Domain/Users/User.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Infrastructure.Persistence.IdentityDbContext",
@@ -298,7 +298,7 @@
    "lineas": 190,
    "fan_out": 9,
    "fan_in": 14,
-   "archivo": "src/src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs"
+   "archivo": "src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Api.Endpoints.CompanyEndpoints",
@@ -307,7 +307,7 @@
    "lineas": 189,
    "fan_out": 28,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Identity.Api/Endpoints/CompanyEndpoints.cs"
+   "archivo": "src/QuickPatch.Identity.Api/Endpoints/CompanyEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Domain.Technicians.TechnicianProfile",
@@ -316,7 +316,7 @@
    "lineas": 132,
    "fan_out": 1,
    "fan_in": 21,
-   "archivo": "src/src/QuickPatch.Identity.Domain/Technicians/TechnicianProfile.cs"
+   "archivo": "src/QuickPatch.Identity.Domain/Technicians/TechnicianProfile.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Domain.Users.PasswordSetupToken",
@@ -325,7 +325,7 @@
    "lineas": 99,
    "fan_out": 1,
    "fan_in": 11,
-   "archivo": "src/src/QuickPatch.Identity.Domain/Users/PasswordSetupToken.cs"
+   "archivo": "src/QuickPatch.Identity.Domain/Users/PasswordSetupToken.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Application.Companies.RegisterCompanyHandler",
@@ -334,7 +334,7 @@
    "lineas": 87,
    "fan_out": 11,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Identity.Application/Companies/Companies.cs"
+   "archivo": "src/QuickPatch.Identity.Application/Companies/Companies.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Infrastructure.Messaging.ReputationChangedConsumer",
@@ -343,7 +343,7 @@
    "lineas": 87,
    "fan_out": 5,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Identity.Infrastructure/Messaging/ReputationChangedConsumer.cs"
+   "archivo": "src/QuickPatch.Identity.Infrastructure/Messaging/ReputationChangedConsumer.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Infrastructure.Messaging.OutboxPublisher",
@@ -352,7 +352,7 @@
    "lineas": 83,
    "fan_out": 3,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Identity.Infrastructure/Messaging/Outbox.cs"
+   "archivo": "src/QuickPatch.Identity.Infrastructure/Messaging/Outbox.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Domain.Companies.ClientCompany",
@@ -361,7 +361,7 @@
    "lineas": 73,
    "fan_out": 1,
    "fan_in": 8,
-   "archivo": "src/src/QuickPatch.Identity.Domain/Companies/ClientCompany.cs"
+   "archivo": "src/QuickPatch.Identity.Domain/Companies/ClientCompany.cs"
   }
  ],
  "paquetes": [

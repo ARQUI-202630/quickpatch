@@ -40,7 +40,7 @@
    "lineas": 48,
    "fan_out": 10,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Communication.Application/Chat/Chat.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Chat/Chat.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
@@ -49,7 +49,7 @@
    "lineas": 141,
    "fan_out": 9,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Communication.Api/Endpoints/InboxEndpoints.cs"
+   "archivo": "src/QuickPatch.Communication.Api/Endpoints/InboxEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry",
@@ -58,7 +58,7 @@
    "lineas": 44,
    "fan_out": 8,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Communication.Api/Realtime/ConnectionRegistry.cs"
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/ConnectionRegistry.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Application.Inbox.InboxRecorder",
@@ -67,7 +67,7 @@
    "lineas": 37,
    "fan_out": 8,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Communication.Application/Inbox/Inbox.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Inbox/Inbox.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
@@ -76,7 +76,7 @@
    "lineas": 37,
    "fan_out": 8,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Communication.Application/Realtime/NoticeRouter.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Realtime/NoticeRouter.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
@@ -85,7 +85,7 @@
    "lineas": 46,
    "fan_out": 8,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Communication.Application/Realtime/RealtimeNotifier.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Realtime/RealtimeNotifier.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
@@ -94,7 +94,7 @@
    "lineas": 144,
    "fan_out": 7,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs"
+   "archivo": "src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
@@ -103,7 +103,7 @@
    "lineas": 216,
    "fan_out": 7,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs"
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder",
@@ -112,7 +112,7 @@
    "lineas": 39,
    "fan_out": 7,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Communication.Application/Chat/Chat.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Chat/Chat.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Endpoints.RealtimeEndpoints",
@@ -121,7 +121,7 @@
    "lineas": 34,
    "fan_out": 6,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Communication.Api/Endpoints/RealtimeEndpoints.cs"
+   "archivo": "src/QuickPatch.Communication.Api/Endpoints/RealtimeEndpoints.cs"
   }
  ],
  "mayor_fan_in": [
@@ -132,7 +132,7 @@
    "lineas": 55,
    "fan_out": 0,
    "fan_in": 10,
-   "archivo": "src/src/QuickPatch.Communication.Domain/Inbox/Notification.cs"
+   "archivo": "src/QuickPatch.Communication.Domain/Inbox/Notification.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Domain.Chat.ChatMessage",
@@ -141,7 +141,7 @@
    "lineas": 32,
    "fan_out": 0,
    "fan_in": 9,
-   "archivo": "src/src/QuickPatch.Communication.Domain/Chat/Chat.cs"
+   "archivo": "src/QuickPatch.Communication.Domain/Chat/Chat.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Domain.Chat.ChatParticipants",
@@ -150,7 +150,7 @@
    "lineas": 44,
    "fan_out": 0,
    "fan_in": 7,
-   "archivo": "src/src/QuickPatch.Communication.Domain/Chat/Chat.cs"
+   "archivo": "src/QuickPatch.Communication.Domain/Chat/Chat.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Application.Abstractions.IChatStore",
@@ -177,7 +177,7 @@
    "lineas": 9,
    "fan_out": 0,
    "fan_in": 6,
-   "archivo": "src/src/QuickPatch.Communication.Application/Events/EventEnvelope.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Events/EventEnvelope.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Realtime.RealtimeUser",
@@ -186,7 +186,7 @@
    "lineas": 1,
    "fan_out": 0,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.Communication.Api/Realtime/TokenValidator.cs"
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/TokenValidator.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Application.Events.InvalidEventException",
@@ -195,7 +195,7 @@
    "lineas": 1,
    "fan_out": 0,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.Communication.Application/Events/EventEnvelope.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Events/EventEnvelope.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Application.Events.RealtimeJson",
@@ -204,7 +204,7 @@
    "lineas": 4,
    "fan_out": 0,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.Communication.Application/Events/EventEnvelope.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Events/EventEnvelope.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Domain.Realtime.Delivery",
@@ -213,7 +213,7 @@
    "lineas": 1,
    "fan_out": 2,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.Communication.Domain/Realtime/Notices.cs"
+   "archivo": "src/QuickPatch.Communication.Domain/Realtime/Notices.cs"
   }
  ],
  "mas_grandes": [
@@ -224,7 +224,7 @@
    "lineas": 216,
    "fan_out": 7,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs"
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Application.Inbox.InboxRules",
@@ -233,7 +233,7 @@
    "lineas": 168,
    "fan_out": 5,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Communication.Application/Inbox/InboxRules.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Inbox/InboxRules.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Endpoints.ChatEndpoints",
@@ -242,7 +242,7 @@
    "lineas": 144,
    "fan_out": 7,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs"
+   "archivo": "src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
@@ -251,7 +251,7 @@
    "lineas": 141,
    "fan_out": 9,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Communication.Api/Endpoints/InboxEndpoints.cs"
+   "archivo": "src/QuickPatch.Communication.Api/Endpoints/InboxEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Infrastructure.Persistence.InboxStore",
@@ -260,7 +260,7 @@
    "lineas": 71,
    "fan_out": 4,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Communication.Infrastructure/Persistence/InboxStore.cs"
+   "archivo": "src/QuickPatch.Communication.Infrastructure/Persistence/InboxStore.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Infrastructure.Persistence.ChatStore",
@@ -269,7 +269,7 @@
    "lineas": 69,
    "fan_out": 5,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Communication.Infrastructure/Persistence/ChatStore.cs"
+   "archivo": "src/QuickPatch.Communication.Infrastructure/Persistence/ChatStore.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Infrastructure.Persistence.CommunicationDbContext",
@@ -278,7 +278,7 @@
    "lineas": 63,
    "fan_out": 4,
    "fan_in": 4,
-   "archivo": "src/src/QuickPatch.Communication.Infrastructure/Persistence/CommunicationDbContext.cs"
+   "archivo": "src/QuickPatch.Communication.Infrastructure/Persistence/CommunicationDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Infrastructure.Messaging.PersistentEventsConsumer",
@@ -287,7 +287,7 @@
    "lineas": 60,
    "fan_out": 0,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Communication.Infrastructure/Messaging/PersistentEventsConsumer.cs"
+   "archivo": "src/QuickPatch.Communication.Infrastructure/Messaging/PersistentEventsConsumer.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Domain.Inbox.Notification",
@@ -296,7 +296,7 @@
    "lineas": 55,
    "fan_out": 0,
    "fan_in": 10,
-   "archivo": "src/src/QuickPatch.Communication.Domain/Inbox/Notification.cs"
+   "archivo": "src/QuickPatch.Communication.Domain/Inbox/Notification.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Realtime.TokenValidator",
@@ -305,7 +305,7 @@
    "lineas": 53,
    "fan_out": 2,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Communication.Api/Realtime/TokenValidator.cs"
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/TokenValidator.cs"
   }
  ],
  "paquetes": [

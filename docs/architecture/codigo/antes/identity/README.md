@@ -63,16 +63,16 @@ Código de `origin/develop` en `abffadb`, generado el 2026-11-10 con `tools/arqu
 
 | Tipo | Capa | Líneas | Archivo |
 |---|---|---|---|
-| `Api.Endpoints.IdentityEndpoints` | Api | 735 | `src/src/QuickPatch.Identity.Api/Endpoints/IdentityEndpoints.cs` |
-| `Domain.Users.User` | Domain | 335 | `src/src/QuickPatch.Identity.Domain/Users/User.cs` |
-| `Infrastructure.Persistence.IdentityDbContext` | Infrastructure | 190 | `src/src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs` |
-| `Api.Endpoints.CompanyEndpoints` | Api | 189 | `src/src/QuickPatch.Identity.Api/Endpoints/CompanyEndpoints.cs` |
-| `Domain.Technicians.TechnicianProfile` | Domain | 132 | `src/src/QuickPatch.Identity.Domain/Technicians/TechnicianProfile.cs` |
-| `Domain.Users.PasswordSetupToken` | Domain | 99 | `src/src/QuickPatch.Identity.Domain/Users/PasswordSetupToken.cs` |
-| `Application.Companies.RegisterCompanyHandler` | Application | 87 | `src/src/QuickPatch.Identity.Application/Companies/Companies.cs` |
-| `Infrastructure.Messaging.ReputationChangedConsumer` | Infrastructure | 87 | `src/src/QuickPatch.Identity.Infrastructure/Messaging/ReputationChangedConsumer.cs` |
-| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 83 | `src/src/QuickPatch.Identity.Infrastructure/Messaging/Outbox.cs` |
-| `Domain.Companies.ClientCompany` | Domain | 73 | `src/src/QuickPatch.Identity.Domain/Companies/ClientCompany.cs` |
+| `Api.Endpoints.IdentityEndpoints` | Api | 735 | `src/QuickPatch.Identity.Api/Endpoints/IdentityEndpoints.cs` |
+| `Domain.Users.User` | Domain | 335 | `src/QuickPatch.Identity.Domain/Users/User.cs` |
+| `Infrastructure.Persistence.IdentityDbContext` | Infrastructure | 190 | `src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs` |
+| `Api.Endpoints.CompanyEndpoints` | Api | 189 | `src/QuickPatch.Identity.Api/Endpoints/CompanyEndpoints.cs` |
+| `Domain.Technicians.TechnicianProfile` | Domain | 132 | `src/QuickPatch.Identity.Domain/Technicians/TechnicianProfile.cs` |
+| `Domain.Users.PasswordSetupToken` | Domain | 99 | `src/QuickPatch.Identity.Domain/Users/PasswordSetupToken.cs` |
+| `Application.Companies.RegisterCompanyHandler` | Application | 87 | `src/QuickPatch.Identity.Application/Companies/Companies.cs` |
+| `Infrastructure.Messaging.ReputationChangedConsumer` | Infrastructure | 87 | `src/QuickPatch.Identity.Infrastructure/Messaging/ReputationChangedConsumer.cs` |
+| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 83 | `src/QuickPatch.Identity.Infrastructure/Messaging/Outbox.cs` |
+| `Domain.Companies.ClientCompany` | Domain | 73 | `src/QuickPatch.Identity.Domain/Companies/ClientCompany.cs` |
 
 ## Ciclos entre paquetes
 
@@ -254,8 +254,8 @@ flowchart LR
   QuickPatch_Identity_Infrastructure_Security -->|4| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Infrastructure_Security -->|1| QuickPatch_Identity_Domain_Users
   QuickPatch_Identity_Infrastructure_Security -->|4| QuickPatch_Identity_Infrastructure_Options
-  style QuickPatch_Identity_Infrastructure_Messaging fill:#FFCDD2
   style QuickPatch_Identity_Infrastructure_Persistence fill:#FFCDD2
+  style QuickPatch_Identity_Infrastructure_Messaging fill:#FFCDD2
   linkStyle 8 stroke:#C62828,stroke-width:2px
   linkStyle 22 stroke:#C62828,stroke-width:2px
   linkStyle 23 stroke:#C62828,stroke-width:2px

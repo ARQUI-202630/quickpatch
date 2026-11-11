@@ -34,7 +34,7 @@
    "lineas": 49,
    "fan_out": 10,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Ranking.Application/Reputation/ServiceRequestRatedHandler.cs"
+   "archivo": "src/QuickPatch.Ranking.Application/Reputation/ServiceRequestRatedHandler.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Application.Events.RankingEvents",
@@ -43,7 +43,7 @@
    "lineas": 14,
    "fan_out": 5,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Application/Events/EventContracts.cs"
+   "archivo": "src/QuickPatch.Ranking.Application/Events/EventContracts.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
@@ -52,7 +52,7 @@
    "lineas": 88,
    "fan_out": 5,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
@@ -61,7 +61,7 @@
    "lineas": 73,
    "fan_out": 4,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
@@ -70,7 +70,7 @@
    "lineas": 16,
    "fan_out": 4,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
@@ -79,7 +79,7 @@
    "lineas": 71,
    "fan_out": 4,
    "fan_in": 7,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.ReputationRepository",
@@ -88,7 +88,7 @@
    "lineas": 13,
    "fan_out": 4,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository",
@@ -97,7 +97,7 @@
    "lineas": 7,
    "fan_out": 3,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Application.Abstractions.IReputationRepository",
@@ -115,7 +115,7 @@
    "lineas": 21,
    "fan_out": 2,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
   }
  ],
  "mayor_fan_in": [
@@ -126,7 +126,7 @@
    "lineas": 71,
    "fan_out": 4,
    "fan_in": 7,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation",
@@ -135,7 +135,7 @@
    "lineas": 55,
    "fan_out": 0,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
+   "archivo": "src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Domain.Reputation.AppliedRating",
@@ -144,7 +144,7 @@
    "lineas": 24,
    "fan_out": 0,
    "fan_in": 4,
-   "archivo": "src/src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
+   "archivo": "src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Application.Abstractions.IOutbox",
@@ -189,7 +189,7 @@
    "lineas": 1,
    "fan_out": 0,
    "fan_in": 3,
-   "archivo": "src/src/QuickPatch.Ranking.Application/Abstractions/Ports.cs"
+   "archivo": "src/QuickPatch.Ranking.Application/Abstractions/Ports.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Application.Events.EventEnvelope",
@@ -198,7 +198,7 @@
    "lineas": 9,
    "fan_out": 0,
    "fan_in": 3,
-   "archivo": "src/src/QuickPatch.Ranking.Application/Events/EventContracts.cs"
+   "archivo": "src/QuickPatch.Ranking.Application/Events/EventContracts.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord",
@@ -207,7 +207,7 @@
    "lineas": 15,
    "fan_out": 0,
    "fan_in": 3,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
   }
  ],
  "mas_grandes": [
@@ -218,7 +218,7 @@
    "lineas": 88,
    "fan_out": 5,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
@@ -227,7 +227,7 @@
    "lineas": 73,
    "fan_out": 4,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
@@ -236,7 +236,7 @@
    "lineas": 71,
    "fan_out": 4,
    "fan_in": 7,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation",
@@ -245,7 +245,7 @@
    "lineas": 55,
    "fan_out": 0,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
+   "archivo": "src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
@@ -254,7 +254,7 @@
    "lineas": 49,
    "fan_out": 10,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Ranking.Application/Reputation/ServiceRequestRatedHandler.cs"
+   "archivo": "src/QuickPatch.Ranking.Application/Reputation/ServiceRequestRatedHandler.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Domain.Reputation.AppliedRating",
@@ -263,7 +263,7 @@
    "lineas": 24,
    "fan_out": 0,
    "fan_in": 4,
-   "archivo": "src/src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
+   "archivo": "src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.TenantUnitOfWork",
@@ -272,7 +272,7 @@
    "lineas": 21,
    "fan_out": 2,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
@@ -281,7 +281,7 @@
    "lineas": 16,
    "fan_out": 4,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord",
@@ -290,7 +290,7 @@
    "lineas": 15,
    "fan_out": 0,
    "fan_in": 3,
-   "archivo": "src/src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Application.Events.RankingEvents",
@@ -299,7 +299,7 @@
    "lineas": 14,
    "fan_out": 5,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Ranking.Application/Events/EventContracts.cs"
+   "archivo": "src/QuickPatch.Ranking.Application/Events/EventContracts.cs"
   }
  ],
  "paquetes": [

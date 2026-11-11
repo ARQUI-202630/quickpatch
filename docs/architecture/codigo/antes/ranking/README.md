@@ -62,16 +62,16 @@ Código de `origin/develop` en `867716d`, generado el 2026-11-10 con `tools/arqu
 
 | Tipo | Capa | Líneas | Archivo |
 |---|---|---|---|
-| `Infrastructure.Messaging.ServiceRequestRatedConsumer` | Infrastructure | 88 | `src/src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs` |
-| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 73 | `src/src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs` |
-| `Infrastructure.Persistence.RankingDbContext` | Infrastructure | 71 | `src/src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs` |
-| `Domain.Reputation.TechnicianReputation` | Domain | 55 | `src/src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs` |
-| `Application.Reputation.ServiceRequestRatedHandler` | Application | 49 | `src/src/QuickPatch.Ranking.Application/Reputation/ServiceRequestRatedHandler.cs` |
-| `Domain.Reputation.AppliedRating` | Domain | 24 | `src/src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs` |
-| `Infrastructure.Persistence.TenantUnitOfWork` | Infrastructure | 21 | `src/src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs` |
-| `Infrastructure.Persistence.EfOutbox` | Infrastructure | 16 | `src/src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs` |
-| `Infrastructure.Persistence.OutboxEventRecord` | Infrastructure | 15 | `src/src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs` |
-| `Application.Events.RankingEvents` | Application | 14 | `src/src/QuickPatch.Ranking.Application/Events/EventContracts.cs` |
+| `Infrastructure.Messaging.ServiceRequestRatedConsumer` | Infrastructure | 88 | `src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs` |
+| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 73 | `src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs` |
+| `Infrastructure.Persistence.RankingDbContext` | Infrastructure | 71 | `src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs` |
+| `Domain.Reputation.TechnicianReputation` | Domain | 55 | `src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs` |
+| `Application.Reputation.ServiceRequestRatedHandler` | Application | 49 | `src/QuickPatch.Ranking.Application/Reputation/ServiceRequestRatedHandler.cs` |
+| `Domain.Reputation.AppliedRating` | Domain | 24 | `src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs` |
+| `Infrastructure.Persistence.TenantUnitOfWork` | Infrastructure | 21 | `src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs` |
+| `Infrastructure.Persistence.EfOutbox` | Infrastructure | 16 | `src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs` |
+| `Infrastructure.Persistence.OutboxEventRecord` | Infrastructure | 15 | `src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs` |
+| `Application.Events.RankingEvents` | Application | 14 | `src/QuickPatch.Ranking.Application/Events/EventContracts.cs` |
 
 ## Ciclos entre paquetes
 

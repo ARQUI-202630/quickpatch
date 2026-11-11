@@ -90,8 +90,9 @@ def extraer_dotnet(fuente: Path, nombre: str, trabajo: Path, extractor: Path) ->
 
 
 def relativo(ruta: str, fuente: Path) -> str:
+    # Ruta dentro del repositorio del servicio: la carpeta temporal también se llama "src".
     r = ruta.replace("\\", "/")
-    i = r.find("/src/")
+    i = r.find("/src/QuickPatch.")
     return r[i + 1:] if i >= 0 else Path(r).name
 
 

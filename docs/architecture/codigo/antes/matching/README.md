@@ -160,9 +160,9 @@ flowchart LR
   co_quickpatch_matching_infrastructure_scheduling -->|2| co_quickpatch_matching_application_events
   co_quickpatch_matching_infrastructure_scheduling -->|2| co_quickpatch_matching_application_matching
   co_quickpatch_matching_infrastructure_scheduling -->|2| co_quickpatch_matching_infrastructure_persistence
-  style co_quickpatch_matching_application_events fill:#FFCDD2
   style co_quickpatch_matching_application_matching fill:#FFCDD2
   style co_quickpatch_matching_application_technicians fill:#FFCDD2
+  style co_quickpatch_matching_application_events fill:#FFCDD2
   linkStyle 8 stroke:#EF6C00,stroke-width:2px
   linkStyle 9 stroke:#EF6C00,stroke-width:2px
   linkStyle 13 stroke:#EF6C00,stroke-width:2px

@@ -63,16 +63,16 @@ Código de `origin/develop` en `4435eac`, generado el 2026-11-10 con `tools/arqu
 
 | Tipo | Capa | Líneas | Archivo |
 |---|---|---|---|
-| `Domain.Payments.Payment` | Domain | 143 | `src/src/QuickPatch.Payments.Domain/Payments/Payment.cs` |
-| `Infrastructure.Documents.InvoicePdfRenderer` | Infrastructure | 118 | `src/src/QuickPatch.Payments.Infrastructure/Documents/InvoicePdfRenderer.cs` |
-| `Infrastructure.Persistence.PaymentsDbContext` | Infrastructure | 99 | `src/src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs` |
-| `Infrastructure.Messaging.ServiceRequestCompletedConsumer` | Infrastructure | 87 | `src/src/QuickPatch.Payments.Infrastructure/Messaging/ServiceRequestCompletedConsumer.cs` |
-| `Infrastructure.Messaging.TechnicianRegisteredConsumer` | Infrastructure | 87 | `src/src/QuickPatch.Payments.Infrastructure/Messaging/TechnicianRegisteredConsumer.cs` |
-| `Infrastructure.Persistence.PaymentRepository` | Infrastructure | 80 | `src/src/QuickPatch.Payments.Infrastructure/Persistence/Repositories.cs` |
-| `Api.Endpoints.ReceivedPaymentEndpoints` | Api | 76 | `src/src/QuickPatch.Payments.Api/Endpoints/ReceivedPaymentEndpoints.cs` |
-| `Application.Payments.PayHandler` | Application | 75 | `src/src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs` |
-| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 73 | `src/src/QuickPatch.Payments.Infrastructure/Messaging/OutboxPublisher.cs` |
-| `Api.Endpoints.InvoiceEndpoints` | Api | 69 | `src/src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs` |
+| `Domain.Payments.Payment` | Domain | 143 | `src/QuickPatch.Payments.Domain/Payments/Payment.cs` |
+| `Infrastructure.Documents.InvoicePdfRenderer` | Infrastructure | 118 | `src/QuickPatch.Payments.Infrastructure/Documents/InvoicePdfRenderer.cs` |
+| `Infrastructure.Persistence.PaymentsDbContext` | Infrastructure | 99 | `src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs` |
+| `Infrastructure.Messaging.ServiceRequestCompletedConsumer` | Infrastructure | 87 | `src/QuickPatch.Payments.Infrastructure/Messaging/ServiceRequestCompletedConsumer.cs` |
+| `Infrastructure.Messaging.TechnicianRegisteredConsumer` | Infrastructure | 87 | `src/QuickPatch.Payments.Infrastructure/Messaging/TechnicianRegisteredConsumer.cs` |
+| `Infrastructure.Persistence.PaymentRepository` | Infrastructure | 80 | `src/QuickPatch.Payments.Infrastructure/Persistence/Repositories.cs` |
+| `Api.Endpoints.ReceivedPaymentEndpoints` | Api | 76 | `src/QuickPatch.Payments.Api/Endpoints/ReceivedPaymentEndpoints.cs` |
+| `Application.Payments.PayHandler` | Application | 75 | `src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs` |
+| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 73 | `src/QuickPatch.Payments.Infrastructure/Messaging/OutboxPublisher.cs` |
+| `Api.Endpoints.InvoiceEndpoints` | Api | 69 | `src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs` |
 
 ## Ciclos entre paquetes
 

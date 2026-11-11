@@ -63,16 +63,16 @@ Código de `origin/develop` en `b7c38cb`, generado el 2026-11-10 con `tools/arqu
 
 | Tipo | Capa | Líneas | Archivo |
 |---|---|---|---|
-| `Api.Endpoints.CategoryEndpoints` | Api | 103 | `src/src/QuickPatch.Catalog.Api/Endpoints/CategoryEndpoints.cs` |
-| `Domain.Categories.Category` | Domain | 97 | `src/src/QuickPatch.Catalog.Domain/Categories/Category.cs` |
-| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 84 | `src/src/QuickPatch.Catalog.Infrastructure/Messaging/OutboxPublisher.cs` |
-| `Api.Security.AuthenticationSetup` | Api | 39 | `src/src/QuickPatch.Catalog.Api/Security/AuthenticatedUser.cs` |
-| `Infrastructure.Persistence.CatalogDbContext` | Infrastructure | 37 | `src/src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs` |
-| `Application.Categories.CreateCategoryHandler` | Application | 34 | `src/src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs` |
-| `Infrastructure.Persistence.TenantUnitOfWork` | Infrastructure | 30 | `src/src/QuickPatch.Catalog.Infrastructure/Persistence/Repositories.cs` |
-| `Application.Categories.UpdateCategoryHandler` | Application | 28 | `src/src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs` |
-| `Api.Http.BadRequestExceptionHandler` | Api | 24 | `src/src/QuickPatch.Catalog.Api/Http/BadRequestExceptionHandler.cs` |
-| `Domain.Common.DomainValidationException` | Domain | 23 | `src/src/QuickPatch.Catalog.Domain/Common/DomainValidationException.cs` |
+| `Api.Endpoints.CategoryEndpoints` | Api | 103 | `src/QuickPatch.Catalog.Api/Endpoints/CategoryEndpoints.cs` |
+| `Domain.Categories.Category` | Domain | 97 | `src/QuickPatch.Catalog.Domain/Categories/Category.cs` |
+| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 84 | `src/QuickPatch.Catalog.Infrastructure/Messaging/OutboxPublisher.cs` |
+| `Api.Security.AuthenticationSetup` | Api | 39 | `src/QuickPatch.Catalog.Api/Security/AuthenticatedUser.cs` |
+| `Infrastructure.Persistence.CatalogDbContext` | Infrastructure | 37 | `src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs` |
+| `Application.Categories.CreateCategoryHandler` | Application | 34 | `src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs` |
+| `Infrastructure.Persistence.TenantUnitOfWork` | Infrastructure | 30 | `src/QuickPatch.Catalog.Infrastructure/Persistence/Repositories.cs` |
+| `Application.Categories.UpdateCategoryHandler` | Application | 28 | `src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs` |
+| `Api.Http.BadRequestExceptionHandler` | Api | 24 | `src/QuickPatch.Catalog.Api/Http/BadRequestExceptionHandler.cs` |
+| `Domain.Common.DomainValidationException` | Domain | 23 | `src/QuickPatch.Catalog.Domain/Common/DomainValidationException.cs` |
 
 ## Ciclos entre paquetes
 

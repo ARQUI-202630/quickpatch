@@ -40,7 +40,7 @@
    "lineas": 69,
    "fan_out": 12,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Api/Endpoints/PaymentEndpoints.cs"
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/PaymentEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Payments.PayHandler",
@@ -49,7 +49,7 @@
    "lineas": 75,
    "fan_out": 10,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Payments.PaymentSettlement",
@@ -58,7 +58,7 @@
    "lineas": 45,
    "fan_out": 9,
    "fan_in": 3,
-   "archivo": "src/src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Payments.ReconcilePaymentsHandler",
@@ -67,7 +67,7 @@
    "lineas": 44,
    "fan_out": 9,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
@@ -76,7 +76,7 @@
    "lineas": 69,
    "fan_out": 7,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs"
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Events.PaymentEvents",
@@ -85,7 +85,7 @@
    "lineas": 20,
    "fan_out": 7,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Application/Events/EventContracts.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Events/EventContracts.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Payments.ServiceRequestCompletedHandler",
@@ -94,7 +94,7 @@
    "lineas": 39,
    "fan_out": 7,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Payments.Application/Payments/ServiceRequestCompletedHandler.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Payments/ServiceRequestCompletedHandler.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Payments.TechnicianRegisteredHandler",
@@ -103,7 +103,7 @@
    "lineas": 36,
    "fan_out": 7,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Payments.Application/Payments/TechnicianRegisteredHandler.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Payments/TechnicianRegisteredHandler.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
@@ -112,7 +112,7 @@
    "lineas": 76,
    "fan_out": 6,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Api/Endpoints/ReceivedPaymentEndpoints.cs"
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/ReceivedPaymentEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Invoices.GetInvoiceHandler",
@@ -121,7 +121,7 @@
    "lineas": 20,
    "fan_out": 6,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Payments.Application/Invoices/GetInvoiceHandler.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Invoices/GetInvoiceHandler.cs"
   }
  ],
  "mayor_fan_in": [
@@ -132,7 +132,7 @@
    "lineas": 143,
    "fan_out": 0,
    "fan_in": 21,
-   "archivo": "src/src/QuickPatch.Payments.Domain/Payments/Payment.cs"
+   "archivo": "src/QuickPatch.Payments.Domain/Payments/Payment.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork",
@@ -150,7 +150,7 @@
    "lineas": 45,
    "fan_out": 2,
    "fan_in": 10,
-   "archivo": "src/src/QuickPatch.Payments.Domain/Payments/Invoice.cs"
+   "archivo": "src/QuickPatch.Payments.Domain/Payments/Invoice.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Abstractions.IPaymentRepository",
@@ -168,7 +168,7 @@
    "lineas": 52,
    "fan_out": 1,
    "fan_in": 9,
-   "archivo": "src/src/QuickPatch.Payments.Domain/Payments/Billing.cs"
+   "archivo": "src/QuickPatch.Payments.Domain/Payments/Billing.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
@@ -177,7 +177,7 @@
    "lineas": 99,
    "fan_out": 5,
    "fan_in": 9,
-   "archivo": "src/src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs"
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Payments.PaymentView",
@@ -186,7 +186,7 @@
    "lineas": 1,
    "fan_out": 1,
    "fan_in": 7,
-   "archivo": "src/src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Abstractions.ProviderResult",
@@ -195,7 +195,7 @@
    "lineas": 8,
    "fan_out": 0,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.Payments.Application/Abstractions/Ports.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Abstractions/Ports.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Events.EventEnvelope",
@@ -204,7 +204,7 @@
    "lineas": 9,
    "fan_out": 0,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.Payments.Application/Events/EventContracts.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Events/EventContracts.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Invoices.InvoiceDocument",
@@ -213,7 +213,7 @@
    "lineas": 5,
    "fan_out": 3,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.Payments.Application/Invoices/GetInvoiceHandler.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Invoices/GetInvoiceHandler.cs"
   }
  ],
  "mas_grandes": [
@@ -224,7 +224,7 @@
    "lineas": 143,
    "fan_out": 0,
    "fan_in": 21,
-   "archivo": "src/src/QuickPatch.Payments.Domain/Payments/Payment.cs"
+   "archivo": "src/QuickPatch.Payments.Domain/Payments/Payment.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Infrastructure.Documents.InvoicePdfRenderer",
@@ -233,7 +233,7 @@
    "lineas": 118,
    "fan_out": 6,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Infrastructure/Documents/InvoicePdfRenderer.cs"
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Documents/InvoicePdfRenderer.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
@@ -242,7 +242,7 @@
    "lineas": 99,
    "fan_out": 5,
    "fan_in": 9,
-   "archivo": "src/src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs"
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Infrastructure.Messaging.ServiceRequestCompletedConsumer",
@@ -251,7 +251,7 @@
    "lineas": 87,
    "fan_out": 5,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Infrastructure/Messaging/ServiceRequestCompletedConsumer.cs"
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Messaging/ServiceRequestCompletedConsumer.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Infrastructure.Messaging.TechnicianRegisteredConsumer",
@@ -260,7 +260,7 @@
    "lineas": 87,
    "fan_out": 5,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Infrastructure/Messaging/TechnicianRegisteredConsumer.cs"
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Messaging/TechnicianRegisteredConsumer.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Infrastructure.Persistence.PaymentRepository",
@@ -269,7 +269,7 @@
    "lineas": 80,
    "fan_out": 5,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
@@ -278,7 +278,7 @@
    "lineas": 76,
    "fan_out": 6,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Api/Endpoints/ReceivedPaymentEndpoints.cs"
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/ReceivedPaymentEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Application.Payments.PayHandler",
@@ -287,7 +287,7 @@
    "lineas": 75,
    "fan_out": 10,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs"
+   "archivo": "src/QuickPatch.Payments.Application/Payments/PaymentHandlers.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
@@ -296,7 +296,7 @@
    "lineas": 73,
    "fan_out": 4,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Infrastructure/Messaging/OutboxPublisher.cs"
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Messaging/OutboxPublisher.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
@@ -305,7 +305,7 @@
    "lineas": 69,
    "fan_out": 7,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs"
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs"
   }
  ],
  "paquetes": [

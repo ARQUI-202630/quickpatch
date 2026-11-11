@@ -35,7 +35,7 @@
    "lineas": 262,
    "fan_out": 31,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Api/Endpoints/ServiceRequestEndpoints.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ServiceRequestEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
@@ -44,7 +44,7 @@
    "lineas": 188,
    "fan_out": 22,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
@@ -53,7 +53,7 @@
    "lineas": 97,
    "fan_out": 19,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Api/Endpoints/AdminServiceRequestEndpoints.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/AdminServiceRequestEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
@@ -62,7 +62,7 @@
    "lineas": 93,
    "fan_out": 19,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Application/ServiceRequests/CreateServiceRequest.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Application/ServiceRequests/CreateServiceRequest.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
@@ -71,7 +71,7 @@
    "lineas": 109,
    "fan_out": 18,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Api/Endpoints/QuoteEndpoints.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/QuoteEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
@@ -80,7 +80,7 @@
    "lineas": 43,
    "fan_out": 14,
    "fan_in": 8,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Application/Events/ServiceRequestEvents.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Events/ServiceRequestEvents.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
@@ -89,7 +89,7 @@
    "lineas": 95,
    "fan_out": 14,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Application/Matching/MatchingStatusHandler.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Matching/MatchingStatusHandler.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
@@ -98,7 +98,7 @@
    "lineas": 48,
    "fan_out": 11,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Application/Quotes/QuoteHandlers.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Quotes/QuoteHandlers.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
@@ -107,7 +107,7 @@
    "lineas": 58,
    "fan_out": 11,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Application/ServiceRequests/CancelServiceRequest.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Application/ServiceRequests/CancelServiceRequest.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
@@ -116,7 +116,7 @@
    "lineas": 73,
    "fan_out": 11,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Application/ServiceRequests/GetServiceRequest.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Application/ServiceRequests/GetServiceRequest.cs"
   }
  ],
  "mayor_fan_in": [
@@ -127,7 +127,7 @@
    "lineas": 397,
    "fan_out": 4,
    "fan_in": 33,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Domain/ServiceRequests/ServiceRequest.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/ServiceRequests/ServiceRequest.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork",
@@ -154,7 +154,7 @@
    "lineas": 197,
    "fan_out": 11,
    "fan_in": 16,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Domain.Ratings.Rating",
@@ -163,7 +163,7 @@
    "lineas": 62,
    "fan_out": 1,
    "fan_in": 15,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Domain/Ratings/Rating.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/Ratings/Rating.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Domain.Quotes.Quote",
@@ -172,7 +172,7 @@
    "lineas": 207,
    "fan_out": 1,
    "fan_in": 14,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Domain/Quotes/Quote.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/Quotes/Quote.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox",
@@ -190,7 +190,7 @@
    "lineas": 4,
    "fan_out": 0,
    "fan_in": 12,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Domain/ServiceRequests/GeoPoint.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/ServiceRequests/GeoPoint.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope",
@@ -199,7 +199,7 @@
    "lineas": 9,
    "fan_out": 0,
    "fan_in": 10,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Application/Events/EventContracts.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Events/EventContracts.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException",
@@ -208,7 +208,7 @@
    "lineas": 23,
    "fan_out": 0,
    "fan_in": 10,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Domain/Common/DomainValidationException.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/Common/DomainValidationException.cs"
   }
  ],
  "mas_grandes": [
@@ -219,7 +219,7 @@
    "lineas": 397,
    "fan_out": 4,
    "fan_in": 33,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Domain/ServiceRequests/ServiceRequest.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/ServiceRequests/ServiceRequest.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
@@ -228,7 +228,7 @@
    "lineas": 262,
    "fan_out": 31,
    "fan_in": 5,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Api/Endpoints/ServiceRequestEndpoints.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ServiceRequestEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Domain.Quotes.Quote",
@@ -237,7 +237,7 @@
    "lineas": 207,
    "fan_out": 1,
    "fan_in": 14,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Domain/Quotes/Quote.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/Quotes/Quote.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
@@ -246,7 +246,7 @@
    "lineas": 197,
    "fan_out": 11,
    "fan_in": 16,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
@@ -255,7 +255,7 @@
    "lineas": 188,
    "fan_out": 22,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
@@ -264,7 +264,7 @@
    "lineas": 143,
    "fan_out": 7,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Infrastructure/Messaging/MatchingEventsConsumer.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Messaging/MatchingEventsConsumer.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer",
@@ -273,7 +273,7 @@
    "lineas": 132,
    "fan_out": 6,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Infrastructure/Messaging/PaymentEventsConsumer.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Messaging/PaymentEventsConsumer.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
@@ -282,7 +282,7 @@
    "lineas": 109,
    "fan_out": 18,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Api/Endpoints/QuoteEndpoints.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/QuoteEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
@@ -291,7 +291,7 @@
    "lineas": 97,
    "fan_out": 19,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Api/Endpoints/AdminServiceRequestEndpoints.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/AdminServiceRequestEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
@@ -300,7 +300,7 @@
    "lineas": 95,
    "fan_out": 14,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.ServiceRequest.Application/Matching/MatchingStatusHandler.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Matching/MatchingStatusHandler.cs"
   }
  ],
  "paquetes": [

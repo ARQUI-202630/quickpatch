@@ -63,16 +63,16 @@ Código de `origin/develop` en `120623a`, generado el 2026-11-10 con `tools/arqu
 
 | Tipo | Capa | Líneas | Archivo |
 |---|---|---|---|
-| `Api.Realtime.RealtimeSession` | Api | 216 | `src/src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs` |
-| `Application.Inbox.InboxRules` | Application | 168 | `src/src/QuickPatch.Communication.Application/Inbox/InboxRules.cs` |
-| `Api.Endpoints.ChatEndpoints` | Api | 144 | `src/src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs` |
-| `Api.Endpoints.InboxEndpoints` | Api | 141 | `src/src/QuickPatch.Communication.Api/Endpoints/InboxEndpoints.cs` |
-| `Infrastructure.Persistence.InboxStore` | Infrastructure | 71 | `src/src/QuickPatch.Communication.Infrastructure/Persistence/InboxStore.cs` |
-| `Infrastructure.Persistence.ChatStore` | Infrastructure | 69 | `src/src/QuickPatch.Communication.Infrastructure/Persistence/ChatStore.cs` |
-| `Infrastructure.Persistence.CommunicationDbContext` | Infrastructure | 63 | `src/src/QuickPatch.Communication.Infrastructure/Persistence/CommunicationDbContext.cs` |
-| `Infrastructure.Messaging.PersistentEventsConsumer` | Infrastructure | 60 | `src/src/QuickPatch.Communication.Infrastructure/Messaging/PersistentEventsConsumer.cs` |
-| `Domain.Inbox.Notification` | Domain | 55 | `src/src/QuickPatch.Communication.Domain/Inbox/Notification.cs` |
-| `Api.Realtime.TokenValidator` | Api | 53 | `src/src/QuickPatch.Communication.Api/Realtime/TokenValidator.cs` |
+| `Api.Realtime.RealtimeSession` | Api | 216 | `src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs` |
+| `Application.Inbox.InboxRules` | Application | 168 | `src/QuickPatch.Communication.Application/Inbox/InboxRules.cs` |
+| `Api.Endpoints.ChatEndpoints` | Api | 144 | `src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs` |
+| `Api.Endpoints.InboxEndpoints` | Api | 141 | `src/QuickPatch.Communication.Api/Endpoints/InboxEndpoints.cs` |
+| `Infrastructure.Persistence.InboxStore` | Infrastructure | 71 | `src/QuickPatch.Communication.Infrastructure/Persistence/InboxStore.cs` |
+| `Infrastructure.Persistence.ChatStore` | Infrastructure | 69 | `src/QuickPatch.Communication.Infrastructure/Persistence/ChatStore.cs` |
+| `Infrastructure.Persistence.CommunicationDbContext` | Infrastructure | 63 | `src/QuickPatch.Communication.Infrastructure/Persistence/CommunicationDbContext.cs` |
+| `Infrastructure.Messaging.PersistentEventsConsumer` | Infrastructure | 60 | `src/QuickPatch.Communication.Infrastructure/Messaging/PersistentEventsConsumer.cs` |
+| `Domain.Inbox.Notification` | Domain | 55 | `src/QuickPatch.Communication.Domain/Inbox/Notification.cs` |
+| `Api.Realtime.TokenValidator` | Api | 53 | `src/QuickPatch.Communication.Api/Realtime/TokenValidator.cs` |
 
 ## Ciclos entre paquetes
 

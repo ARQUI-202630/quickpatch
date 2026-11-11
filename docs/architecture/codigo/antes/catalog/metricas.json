@@ -35,7 +35,7 @@
    "lineas": 103,
    "fan_out": 15,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Api/Endpoints/CategoryEndpoints.cs"
+   "archivo": "src/QuickPatch.Catalog.Api/Endpoints/CategoryEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Categories.CreateCategoryHandler",
@@ -44,7 +44,7 @@
    "lineas": 34,
    "fan_out": 7,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
+   "archivo": "src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Categories.UpdateCategoryHandler",
@@ -53,7 +53,7 @@
    "lineas": 28,
    "fan_out": 6,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
+   "archivo": "src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Events.CategoryChangedEvent",
@@ -62,7 +62,7 @@
    "lineas": 17,
    "fan_out": 4,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Catalog.Application/Events/EventContracts.cs"
+   "archivo": "src/QuickPatch.Catalog.Application/Events/EventContracts.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.EfOutbox",
@@ -71,7 +71,7 @@
    "lineas": 16,
    "fan_out": 4,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Categories.ListCategoriesHandler",
@@ -80,7 +80,7 @@
    "lineas": 4,
    "fan_out": 3,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
+   "archivo": "src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Infrastructure.Messaging.OutboxPublisher",
@@ -89,7 +89,7 @@
    "lineas": 84,
    "fan_out": 3,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Infrastructure/Messaging/OutboxPublisher.cs"
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Messaging/OutboxPublisher.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.CategoryRepository",
@@ -98,7 +98,7 @@
    "lineas": 14,
    "fan_out": 3,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.TenantUnitOfWork",
@@ -107,7 +107,7 @@
    "lineas": 30,
    "fan_out": 3,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Api.Security.AuthenticationSetup",
@@ -116,7 +116,7 @@
    "lineas": 39,
    "fan_out": 2,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Api/Security/AuthenticatedUser.cs"
+   "archivo": "src/QuickPatch.Catalog.Api/Security/AuthenticatedUser.cs"
   }
  ],
  "mayor_fan_in": [
@@ -127,7 +127,7 @@
    "lineas": 97,
    "fan_out": 1,
    "fan_in": 11,
-   "archivo": "src/src/QuickPatch.Catalog.Domain/Categories/Category.cs"
+   "archivo": "src/QuickPatch.Catalog.Domain/Categories/Category.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext",
@@ -136,7 +136,7 @@
    "lineas": 37,
    "fan_out": 2,
    "fan_in": 6,
-   "archivo": "src/src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Abstractions.ICategoryRepository",
@@ -172,7 +172,7 @@
    "lineas": 18,
    "fan_out": 0,
    "fan_in": 3,
-   "archivo": "src/src/QuickPatch.Catalog.Api/Http/CorrelationId.cs"
+   "archivo": "src/QuickPatch.Catalog.Api/Http/CorrelationId.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Abstractions.OutboxMessage",
@@ -181,7 +181,7 @@
    "lineas": 1,
    "fan_out": 0,
    "fan_in": 3,
-   "archivo": "src/src/QuickPatch.Catalog.Application/Abstractions/Ports.cs"
+   "archivo": "src/QuickPatch.Catalog.Application/Abstractions/Ports.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.OutboxEventRecord",
@@ -190,7 +190,7 @@
    "lineas": 15,
    "fan_out": 0,
    "fan_in": 3,
-   "archivo": "src/src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Api.Security.ChannelOptions",
@@ -199,7 +199,7 @@
    "lineas": 22,
    "fan_out": 0,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Catalog.Api/Security/ChannelOptions.cs"
+   "archivo": "src/QuickPatch.Catalog.Api/Security/ChannelOptions.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Categories.CreateCategoryCommand",
@@ -208,7 +208,7 @@
    "lineas": 1,
    "fan_out": 0,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
+   "archivo": "src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
   }
  ],
  "mas_grandes": [
@@ -219,7 +219,7 @@
    "lineas": 103,
    "fan_out": 15,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Api/Endpoints/CategoryEndpoints.cs"
+   "archivo": "src/QuickPatch.Catalog.Api/Endpoints/CategoryEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Domain.Categories.Category",
@@ -228,7 +228,7 @@
    "lineas": 97,
    "fan_out": 1,
    "fan_in": 11,
-   "archivo": "src/src/QuickPatch.Catalog.Domain/Categories/Category.cs"
+   "archivo": "src/QuickPatch.Catalog.Domain/Categories/Category.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Infrastructure.Messaging.OutboxPublisher",
@@ -237,7 +237,7 @@
    "lineas": 84,
    "fan_out": 3,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Infrastructure/Messaging/OutboxPublisher.cs"
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Messaging/OutboxPublisher.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Api.Security.AuthenticationSetup",
@@ -246,7 +246,7 @@
    "lineas": 39,
    "fan_out": 2,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Api/Security/AuthenticatedUser.cs"
+   "archivo": "src/QuickPatch.Catalog.Api/Security/AuthenticatedUser.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext",
@@ -255,7 +255,7 @@
    "lineas": 37,
    "fan_out": 2,
    "fan_in": 6,
-   "archivo": "src/src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Categories.CreateCategoryHandler",
@@ -264,7 +264,7 @@
    "lineas": 34,
    "fan_out": 7,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
+   "archivo": "src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.TenantUnitOfWork",
@@ -273,7 +273,7 @@
    "lineas": 30,
    "fan_out": 3,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Infrastructure/Persistence/Repositories.cs"
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Categories.UpdateCategoryHandler",
@@ -282,7 +282,7 @@
    "lineas": 28,
    "fan_out": 6,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
+   "archivo": "src/QuickPatch.Catalog.Application/Categories/CategoryHandlers.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Api.Http.BadRequestExceptionHandler",
@@ -291,7 +291,7 @@
    "lineas": 24,
    "fan_out": 0,
    "fan_in": 1,
-   "archivo": "src/src/QuickPatch.Catalog.Api/Http/BadRequestExceptionHandler.cs"
+   "archivo": "src/QuickPatch.Catalog.Api/Http/BadRequestExceptionHandler.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Domain.Common.DomainValidationException",
@@ -300,7 +300,7 @@
    "lineas": 23,
    "fan_out": 0,
    "fan_in": 2,
-   "archivo": "src/src/QuickPatch.Catalog.Domain/Common/DomainValidationException.cs"
+   "archivo": "src/QuickPatch.Catalog.Domain/Common/DomainValidationException.cs"
   }
  ],
  "paquetes": [

@@ -63,16 +63,16 @@ Código de `origin/develop` en `394a1e8`, generado el 2026-11-10 con `tools/arqu
 
 | Tipo | Capa | Líneas | Archivo |
 |---|---|---|---|
-| `Domain.ServiceRequests.ServiceRequest` | Domain | 397 | `src/src/QuickPatch.ServiceRequest.Domain/ServiceRequests/ServiceRequest.cs` |
-| `Api.Endpoints.ServiceRequestEndpoints` | Api | 262 | `src/src/QuickPatch.ServiceRequest.Api/Endpoints/ServiceRequestEndpoints.cs` |
-| `Domain.Quotes.Quote` | Domain | 207 | `src/src/QuickPatch.ServiceRequest.Domain/Quotes/Quote.cs` |
-| `Infrastructure.Persistence.ServiceRequestDbContext` | Infrastructure | 197 | `src/src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs` |
-| `Api.Endpoints.ExecutionEndpoints` | Api | 188 | `src/src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs` |
-| `Infrastructure.Messaging.MatchingEventsConsumer` | Infrastructure | 143 | `src/src/QuickPatch.ServiceRequest.Infrastructure/Messaging/MatchingEventsConsumer.cs` |
-| `Infrastructure.Messaging.PaymentEventsConsumer` | Infrastructure | 132 | `src/src/QuickPatch.ServiceRequest.Infrastructure/Messaging/PaymentEventsConsumer.cs` |
-| `Api.Endpoints.QuoteEndpoints` | Api | 109 | `src/src/QuickPatch.ServiceRequest.Api/Endpoints/QuoteEndpoints.cs` |
-| `Api.Endpoints.AdminServiceRequestEndpoints` | Api | 97 | `src/src/QuickPatch.ServiceRequest.Api/Endpoints/AdminServiceRequestEndpoints.cs` |
-| `Application.Matching.MatchingStatusHandler` | Application | 95 | `src/src/QuickPatch.ServiceRequest.Application/Matching/MatchingStatusHandler.cs` |
+| `Domain.ServiceRequests.ServiceRequest` | Domain | 397 | `src/QuickPatch.ServiceRequest.Domain/ServiceRequests/ServiceRequest.cs` |
+| `Api.Endpoints.ServiceRequestEndpoints` | Api | 262 | `src/QuickPatch.ServiceRequest.Api/Endpoints/ServiceRequestEndpoints.cs` |
+| `Domain.Quotes.Quote` | Domain | 207 | `src/QuickPatch.ServiceRequest.Domain/Quotes/Quote.cs` |
+| `Infrastructure.Persistence.ServiceRequestDbContext` | Infrastructure | 197 | `src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs` |
+| `Api.Endpoints.ExecutionEndpoints` | Api | 188 | `src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs` |
+| `Infrastructure.Messaging.MatchingEventsConsumer` | Infrastructure | 143 | `src/QuickPatch.ServiceRequest.Infrastructure/Messaging/MatchingEventsConsumer.cs` |
+| `Infrastructure.Messaging.PaymentEventsConsumer` | Infrastructure | 132 | `src/QuickPatch.ServiceRequest.Infrastructure/Messaging/PaymentEventsConsumer.cs` |
+| `Api.Endpoints.QuoteEndpoints` | Api | 109 | `src/QuickPatch.ServiceRequest.Api/Endpoints/QuoteEndpoints.cs` |
+| `Api.Endpoints.AdminServiceRequestEndpoints` | Api | 97 | `src/QuickPatch.ServiceRequest.Api/Endpoints/AdminServiceRequestEndpoints.cs` |
+| `Application.Matching.MatchingStatusHandler` | Application | 95 | `src/QuickPatch.ServiceRequest.Application/Matching/MatchingStatusHandler.cs` |
 
 ## Ciclos entre paquetes
 
