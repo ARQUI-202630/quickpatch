@@ -5,7 +5,7 @@
 |---|---|
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
-| **Versión del documento** | 5.11 (borrador de la V6, MVP, incremento del Sprint 5) |
+| **Versión del documento** | 5.12 (V6, MVP, cierre del proyecto) |
 | **Historia en Jira** | SCRUM-403 (subtareas SCRUM-404, SCRUM-405 y SCRUM-406); 5.1: historia de RF-36, SCRUM-472; 5.2: historia de RF-34 y RF-35, SCRUM-486; 5.3: página de presentación, SCRUM-491; 5.4: comprobante sin validez fiscal, SCRUM-44; 5.5: chat de la solicitud, SCRUM-473; 5.6: alcance geográfico, SCRUM-598; 5.7: capacidad de interacción, SCRUM-568; 5.8: alcance geográfico, SCRUM-636; 5.9: criterios de aceptación del Sprint 5, SCRUM-534; 5.10: línea base, SCRUM-535; 5.11: revisión del Product Owner, SCRUM-536 (SRS V6, SCRUM-533) |
 | **Responsable** | Angy Bautista (Product Owner) |
 | **Estado** | Borrador de la V6: línea base de la sección 1.3 al 2 de noviembre de 2026 (SCRUM-535 y SCRUM-536) y criterios de aceptación de los RF del Sprint 5 (SCRUM-534, versión 5.9). Revisión del Product Owner (SCRUM-536, versión 5.11, sección 7.6): aprobado con observaciones; las decisiones propuestas esperan el visto bueno de Juan Diego Rojas. La versión 5 fue aprobada por el Product Owner el 14 de octubre de 2026 (SCRUM-406) |
@@ -381,21 +381,21 @@ La Épica 6 tiene además estas historias de infraestructura y pruebas sin etiqu
 | SCRUM-420 | Documento de Infraestructura V3 | Sebastian Sánchez Olaya | ✅ Finalizado |
 | SCRUM-424 | Documento de Diseño SDD V3 | Juan Diego Rojas Vargas | ✅ Finalizado |
 | SCRUM-429 | Presentación de la entrega del Sprint 4 | Jorge Fortich | ✅ Finalizado |
-| SCRUM-529 | Documento de Pruebas TD V3 | kathe | En desarrollo |
-| SCRUM-533 | Documento de Requerimientos SRS V6 (este documento) | Angy Bautista | En desarrollo |
+| SCRUM-529 | Documento de Pruebas TD V3 | kathe | ✅ Finalizado |
+| SCRUM-533 | Documento de Requerimientos SRS V6 (este documento) | Angy Bautista | ✅ Finalizado |
 | SCRUM-537 | Backlog V6 y métricas del Sprint 5 | Jorge Fortich | En análisis |
 | SCRUM-541 | Documento de Arquitectura SAD V5 | Juan Diego Rojas Vargas | ✅ Finalizado |
-| SCRUM-545 | Diccionario de Datos y Contratos DD V6 | joseval2910 (Jose Eduardo) | En desarrollo |
-| SCRUM-548 | Documento de Diseño SDD V4 | Juan Diego Rojas Vargas | En desarrollo |
+| SCRUM-545 | Diccionario de Datos y Contratos DD V6 | joseval2910 (Jose Eduardo) | ✅ Finalizado |
+| SCRUM-548 | Documento de Diseño SDD V4 | Juan Diego Rojas Vargas | ✅ Finalizado |
 | SCRUM-552 | Documento de Infraestructura V4 | Sebastian Sánchez Olaya | ✅ Finalizado |
-| SCRUM-556 | Presentación de la entrega del Sprint 5 | Juan Diego Rojas Vargas | En desarrollo |
+| SCRUM-556 | Presentación de la entrega del Sprint 5 | Juan Diego Rojas Vargas | ✅ Finalizado |
 | SCRUM-559 | Matriz de funcionalidades por tipo de usuario y avance real del producto | Juan Diego Rojas Vargas | ✅ Finalizado |
-| SCRUM-563 | Matriz de cumplimiento de los 52 escenarios de calidad | kathe | En desarrollo |
-| SCRUM-567 | Validación de los escenarios de Capacidad de interacción en la app y el panel web | kathe | En desarrollo |
+| SCRUM-563 | Matriz de cumplimiento de los 52 escenarios de calidad | kathe | ✅ Finalizado |
+| SCRUM-567 | Validación de los escenarios de Capacidad de interacción en la app y el panel web | kathe | ✅ Finalizado |
 | SCRUM-570 | Mapa arquitectónico: arquitectura documentada frente a la implementada | Juan Diego Rojas Vargas | ✅ Finalizado |
-| SCRUM-577 | Reorganización visual de los diagramas de la arquitectura | joseval2910 (Jose Eduardo) | En desarrollo |
-| SCRUM-580 | Diagramas de componentes internos de cada microservicio | Juan Diego Rojas Vargas | En desarrollo |
-| SCRUM-589 | Diagramas dinámicos con escenario nombrado y flujo de eventos completo | Juan Diego Rojas Vargas | En desarrollo |
+| SCRUM-577 | Reorganización visual de los diagramas de la arquitectura | joseval2910 (Jose Eduardo) | ✅ Finalizado |
+| SCRUM-580 | Diagramas de componentes internos de cada microservicio | Juan Diego Rojas Vargas | ✅ Finalizado |
+| SCRUM-589 | Diagramas dinámicos con escenario nombrado y flujo de eventos completo | Juan Diego Rojas Vargas | ✅ Finalizado |
 | SCRUM-592 | Catálogo de eventos Kafka con productor, consumidores y propósito | joseval2910 (Jose Eduardo) | ✅ Finalizado |
 | SCRUM-595 | Revisión del modelo de dominio según las observaciones del profesor | joseval2910 (Jose Eduardo) | En análisis |
 | SCRUM-598 | Documentación de la restricción geográfica a Bogotá y sus zonas | Juan Diego Rojas Vargas | ✅ Finalizado |
@@ -775,6 +775,7 @@ Contradicciones conocidas entre este documento y los demás documentos que el eq
 | 5.9 | 29 oct 2026 | SRS V6 (SCRUM-533), subtarea SCRUM-534. **Criterios de aceptación del Sprint 5:** nuevas secciones 5.5.5 a 5.5.10 con los criterios verificables de RF-12, RF-17, RF-23, RF-25, RF-27 y RF-29, sacados de sus historias en Jira (SCRUM-32, 37, 43, 45, 47 y 49) al 27 de octubre de 2026, cada uno con la regla del DD o la decisión del SAD que lo sustenta y el caso del TD que lo verifica. RF-12 sigue el ADR-027 (calificación en ServiceRequest, evento `service-request.rated` y reputación en Ranking), y RF-23 cita la evidencia `scrum-496-pago-empresa` contra QA. Los contratos de la calificación (SCRUM-497), la calificación en el historial (SCRUM-499) y los pagos recibidos (SCRUM-500) se publicaron después (`service-request.v1.yaml` 1.10.0, `payments.v1.yaml` 1.2.0 y `quickpatch-kafka` v0.10.0), y los criterios los citan al 1 de noviembre de 2026. Se agrega una nota con las diferencias que debe corregir el TD V3 (SCRUM-529). **Otros cambios:** los seis RF remiten a su sección de criterios, la matriz 7.1.2 los marca con ★ y suma los casos citados, y la sección 7.3 actualiza SCRUM-32 (estado "Pagado" y nombre del evento), deja SCRUM-46 sola en la fila del ambiente de staging y retira SCRUM-47, que ya se reescribió. Pendientes de la V6: la línea base de la sección 1.3 (SCRUM-535) y la revisión del Product Owner (SCRUM-536). |
 | 5.10 | 29 oct 2026 | SRS V6 (SCRUM-533), subtarea SCRUM-535. **Línea base (sección 1.3)** al 29 de octubre de 2026: SAD 2.46 (SAD V5, SCRUM-541), DD 5.15, SDD V4, TD 3.0, Documento de Infraestructura 4.10 y Backlog del 29 de octubre. Se comprobó que las reglas, las dependencias y los ADR que cita el SRS existen en `develop`. **P2 resuelta** (sección 7.4.2): el SAD 2.46 pone el pago antes de la calificación. El DD V6 y la aprobación del SDD V4 quedan como versiones pendientes y se incorporan en la siguiente revisión de la línea base. La versión 5.9 son los criterios de aceptación del Sprint 5 (SCRUM-534). |
 | 5.11 | 2 nov 2026 | SRS V6 (SCRUM-533), subtarea SCRUM-536. **Revisión del Product Owner** (nueva sección 7.6): aprobado con observaciones; las propuestas de alcance (RF-38 recuperación de contraseña, con el límite de las sesiones abiertas, RF-39 edición del perfil, trazas de SCRUM-615 y SCRUM-619 a RNF-12, cierre de P8 y P10) esperan el visto bueno de Juan Diego Rojas. **Actualizaciones:** la sección 1.1 describe la V6; la línea base (1.3) pasa al DD 5.18, la Infraestructura 4.12 y el SDD V4 aprobado con observaciones; RNF-05, RNF-06 y RNF-07 quedan Cubiertos como en el SAD 2.46; las Épicas 6 y 7 se actualizan con Jira al 2 de noviembre (SCRUM-388 y las 7 historias del Sprint 4 finalizadas, 8 historias de infraestructura y 18 de documentación del Sprint 5); las secciones 5.5 y 7.1.2 citan los casos del TD 3.0 según su definición, con una nota de las diferencias para el TD V3; la sección 7.3 retira SCRUM-26, ya reescrita. |
+| 5.12 | 11 nov 2026 | Auditoría de consistencia del cierre (SCRUM-692) contra las cifras canónicas (`docs/architecture/cifras-canonicas.md`, SCRUM-691): coinciden los 6 tipos de usuario (verificados con los roles del JWT en Identity), los 33 RF, los 14 RNF, los 14 módulos (7 de dominio y 7 transversales) y las 7 VM. Se actualizan a **Finalizado** los estados de las 10 historias de documentación del Sprint 5 que la tabla de la sección 1.3 todavía mostraba en desarrollo (verificado en Jira). |
 
 ### 7.6 Revisión del Product Owner (SCRUM-536)
 

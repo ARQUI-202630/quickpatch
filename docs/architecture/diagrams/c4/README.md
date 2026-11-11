@@ -4,7 +4,7 @@ Fuente única de los diagramas C4 del SDD (sección 2.2). En el repositorio vive
 
 | Archivo | Contenido |
 |---|---|
-| `quickpatch.dsl` | Modelo y vistas en Structurizr DSL: System Landscape, System Context, Container, 10 Component, 9 Dynamic y 2 Deployment (24 vistas) |
+| `quickpatch.dsl` | Modelo y vistas en Structurizr DSL: System Landscape, System Context, Container, 10 Component, 10 Dynamic y 2 Deployment (25 vistas) |
 | `C4-07-Codigo-OutboxIdempotencia.puml` | Nivel de código (UML de clases, PlantUML): Outbox e idempotencia de `service-request.created` |
 | `C4-07-Codigo-AislamientoTenant.puml` | Nivel de código (UML de clases, PlantUML): aislamiento entre tenants en Identity |
 
@@ -17,6 +17,14 @@ docker run -it --rm -p 8080:8080 -v "$PWD:/usr/local/structurizr" structurizr/li
 ```
 
 Abrir `http://localhost:8080`, entrar a cada vista y exportarla en PNG (botón de exportar → PNG). Structurizr nombra el archivo `structurizr-<clave>.png`; también sirve pegar el DSL en https://structurizr.com/dsl.
+
+Structurizr Lite ya no arranca (la imagen está descontinuada); su reemplazo es `structurizr/structurizr local`, que sirve el workspace en `http://localhost:8080/workspace/1`:
+
+```bash
+docker run -it --rm -p 8080:8080 -v "$PWD:/usr/local/structurizr" structurizr/structurizr local
+```
+
+El archivo debe llamarse `workspace.dsl` dentro de la carpeta montada. Las 27 imágenes del 5 de noviembre de 2026 se exportaron así, con el botón de exportar automatizado: diagrama con metadatos y sin recortar, y la leyenda de C4-02 (debajo) y C4-03 (a la derecha) pegada a la imagen.
 
 Para validar el DSL sin abrir el navegador:
 
@@ -33,7 +41,7 @@ docker run --rm -i plantuml/plantuml -tpng -pipe < C4-07-Codigo-AislamientoTenan
 
 También se pueden pegar en https://www.plantuml.com/plantuml.
 
-## Imágenes (23)
+## Imágenes (27)
 
 En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el prefijo `structurizr-` que pone Structurizr al exportar. Se exportan con metadatos y sin recortar (opciones por defecto del botón de exportar).
 
@@ -63,6 +71,7 @@ En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el 
 | `C4-05-Dinamico-ReplicaCategorias` | Dynamic | 8.5 |
 | `C4-05-Dinamico-Calificacion` | Dynamic | 8.5 |
 | `C4-05-Dinamico-GestionTenants` | Dynamic | 8.5 |
+| `C4-05-Dinamico-RecuperacionContrasena` | Dynamic | 8.5 |
 | `C4-06-Despliegue-Produccion` | Deployment | 9.1 |
 | `C4-06-Despliegue-QA` | Deployment | 9.1 |
 

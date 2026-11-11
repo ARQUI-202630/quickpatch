@@ -1,0 +1,80 @@
+@startuml
+!pragma layout smetana
+title Communication — paquetes (antes, 120623a)
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+package "Api" {
+  component "(global)\n1 tipos" as _global_
+  component "Api.Endpoints\n7 tipos" as QuickPatch_Communication_Api_Endpoints
+  component "Api.Http\n2 tipos" as QuickPatch_Communication_Api_Http
+  component "Api.Realtime\n9 tipos" as QuickPatch_Communication_Api_Realtime
+}
+package "Application" {
+  component "Application\n1 tipos" as QuickPatch_Communication_Application
+  component "Application.Abstractions\n5 tipos" as QuickPatch_Communication_Application_Abstractions
+  component "Application.Chat\n6 tipos" as QuickPatch_Communication_Application_Chat
+  component "Application.Events\n5 tipos" as QuickPatch_Communication_Application_Events
+  component "Application.Inbox\n10 tipos" as QuickPatch_Communication_Application_Inbox
+  component "Application.Realtime\n4 tipos" as QuickPatch_Communication_Application_Realtime
+}
+package "Domain" {
+  component "Domain\n1 tipos" as QuickPatch_Communication_Domain
+  component "Domain.Chat\n3 tipos" as QuickPatch_Communication_Domain_Chat
+  component "Domain.Inbox\n2 tipos" as QuickPatch_Communication_Domain_Inbox
+  component "Domain.Realtime\n11 tipos" as QuickPatch_Communication_Domain_Realtime
+}
+package "Infrastructure" {
+  component "Infrastructure\n1 tipos" as QuickPatch_Communication_Infrastructure
+  component "Infrastructure.Messaging\n3 tipos" as QuickPatch_Communication_Infrastructure_Messaging
+  component "Infrastructure.Persistence\n6 tipos" as QuickPatch_Communication_Infrastructure_Persistence
+}
+_global_ --> QuickPatch_Communication_Api_Endpoints #607D8B : 3
+_global_ --> QuickPatch_Communication_Api_Http #607D8B : 2
+_global_ --> QuickPatch_Communication_Application #607D8B : 1
+_global_ --> QuickPatch_Communication_Infrastructure #607D8B : 1
+QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Api_Realtime #607D8B : 6
+QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Application_Abstractions #607D8B : 1
+QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Application_Chat #607D8B : 4
+QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Application_Inbox #607D8B : 5
+QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Domain_Chat #607D8B : 2
+QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Domain_Inbox #607D8B : 2
+QuickPatch_Communication_Api_Realtime --> QuickPatch_Communication_Application_Abstractions #607D8B : 1
+QuickPatch_Communication_Api_Realtime --> QuickPatch_Communication_Application_Events #607D8B : 2
+QuickPatch_Communication_Api_Realtime --> QuickPatch_Communication_Domain_Realtime #607D8B : 5
+QuickPatch_Communication_Application --> QuickPatch_Communication_Application_Chat #607D8B : 3
+QuickPatch_Communication_Application --> QuickPatch_Communication_Application_Inbox #607D8B : 3
+QuickPatch_Communication_Application --> QuickPatch_Communication_Application_Realtime #607D8B : 2
+QuickPatch_Communication_Application_Abstractions --> QuickPatch_Communication_Domain_Chat #607D8B : 3
+QuickPatch_Communication_Application_Abstractions --> QuickPatch_Communication_Domain_Inbox #607D8B : 2
+QuickPatch_Communication_Application_Abstractions --> QuickPatch_Communication_Domain_Realtime #607D8B : 1
+QuickPatch_Communication_Application_Chat --> QuickPatch_Communication_Application_Abstractions #607D8B : 5
+QuickPatch_Communication_Application_Chat --> QuickPatch_Communication_Application_Events #607D8B : 4
+QuickPatch_Communication_Application_Chat --> QuickPatch_Communication_Application_Inbox #607D8B : 1
+QuickPatch_Communication_Application_Chat --> QuickPatch_Communication_Domain_Chat #607D8B : 5
+QuickPatch_Communication_Application_Chat --> QuickPatch_Communication_Domain_Realtime #607D8B : 4
+QuickPatch_Communication_Application_Inbox --> QuickPatch_Communication_Application_Abstractions #607D8B : 4
+QuickPatch_Communication_Application_Inbox --> QuickPatch_Communication_Application_Events #607D8B : 6
+QuickPatch_Communication_Application_Inbox --> QuickPatch_Communication_Application_Realtime #607D8B : 1
+QuickPatch_Communication_Application_Inbox --> QuickPatch_Communication_Domain_Inbox #607D8B : 3
+QuickPatch_Communication_Application_Realtime --> QuickPatch_Communication_Application_Abstractions #607D8B : 1
+QuickPatch_Communication_Application_Realtime --> QuickPatch_Communication_Application_Events #607D8B : 5
+QuickPatch_Communication_Application_Realtime --> QuickPatch_Communication_Domain_Realtime #607D8B : 7
+QuickPatch_Communication_Infrastructure --> QuickPatch_Communication_Application_Abstractions #607D8B : 2
+QuickPatch_Communication_Infrastructure --> QuickPatch_Communication_Application_Chat #607D8B : 1
+QuickPatch_Communication_Infrastructure --> QuickPatch_Communication_Application_Events #607D8B : 1
+QuickPatch_Communication_Infrastructure --> QuickPatch_Communication_Application_Inbox #607D8B : 1
+QuickPatch_Communication_Infrastructure --> QuickPatch_Communication_Infrastructure_Messaging #607D8B : 3
+QuickPatch_Communication_Infrastructure --> QuickPatch_Communication_Infrastructure_Persistence #607D8B : 5
+QuickPatch_Communication_Infrastructure_Messaging --> QuickPatch_Communication_Application_Events #607D8B : 1
+QuickPatch_Communication_Infrastructure_Messaging --> QuickPatch_Communication_Application_Realtime #607D8B : 2
+QuickPatch_Communication_Infrastructure_Persistence --> QuickPatch_Communication_Application_Abstractions #607D8B : 8
+QuickPatch_Communication_Infrastructure_Persistence --> QuickPatch_Communication_Application_Chat #607D8B : 1
+QuickPatch_Communication_Infrastructure_Persistence --> QuickPatch_Communication_Application_Inbox #607D8B : 1
+QuickPatch_Communication_Infrastructure_Persistence --> QuickPatch_Communication_Domain_Chat #607D8B : 6
+QuickPatch_Communication_Infrastructure_Persistence --> QuickPatch_Communication_Domain_Inbox #607D8B : 4
+legend right
+Rojo: viola SDD 10.3.2 · Naranja: ciclo entre paquetes
+Número: dependencias entre tipos
+endlegend
+@enduml

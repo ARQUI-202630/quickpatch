@@ -1,0 +1,68 @@
+@startuml
+!pragma layout smetana
+title Payments — clases más conectadas (antes, 4435eac)
+hide empty members
+skinparam shadowing false
+class "Domain.Payments.Payment" as QuickPatch_Payments_Domain_Payments_Payment <<Domain>> {
+  143 líneas · entra 21 · sale 0
+}
+class "Infrastructure.Persistence.PaymentsDbContext" as QuickPatch_Payments_Infrastructure_Persistence_PaymentsDbContext <<Infrastructure>> {
+  99 líneas · entra 9 · sale 5
+}
+class "Api.Endpoints.PaymentEndpoints" as QuickPatch_Payments_Api_Endpoints_PaymentEndpoints <<Api>> {
+  69 líneas · entra 1 · sale 12
+}
+class "Application.Payments.PayHandler" as QuickPatch_Payments_Application_Payments_PayHandler <<Application>> {
+  75 líneas · entra 2 · sale 10
+}
+class "Application.Payments.PaymentSettlement" as QuickPatch_Payments_Application_Payments_PaymentSettlement <<Application>> {
+  45 líneas · entra 3 · sale 9
+}
+class "Domain.Payments.Invoice" as QuickPatch_Payments_Domain_Payments_Invoice <<Domain>> {
+  45 líneas · entra 10 · sale 2
+}
+class "Application.Payments.ReconcilePaymentsHandler" as QuickPatch_Payments_Application_Payments_ReconcilePaymentsHandler <<Application>> {
+  44 líneas · entra 2 · sale 9
+}
+interface "Application.Abstractions.IPaymentRepository" as QuickPatch_Payments_Application_Abstractions_IPaymentRepository <<Application>> {
+  0 líneas · entra 9 · sale 2
+}
+interface "Application.Abstractions.ITenantUnitOfWork" as QuickPatch_Payments_Application_Abstractions_ITenantUnitOfWork <<Application>> {
+  0 líneas · entra 10 · sale 0
+}
+class "Domain.Payments.Billing" as QuickPatch_Payments_Domain_Payments_Billing <<Domain>> {
+  52 líneas · entra 9 · sale 1
+}
+class "Application.Payments.ServiceRequestCompletedHandler" as QuickPatch_Payments_Application_Payments_ServiceRequestCompletedHandler <<Application>> {
+  39 líneas · entra 2 · sale 7
+}
+class "Application.Payments.TechnicianRegisteredHandler" as QuickPatch_Payments_Application_Payments_TechnicianRegisteredHandler <<Application>> {
+  36 líneas · entra 2 · sale 7
+}
+QuickPatch_Payments_Api_Endpoints_PaymentEndpoints ..> QuickPatch_Payments_Application_Payments_PayHandler
+QuickPatch_Payments_Api_Endpoints_PaymentEndpoints ..> QuickPatch_Payments_Domain_Payments_Billing
+QuickPatch_Payments_Application_Abstractions_IPaymentRepository ..> QuickPatch_Payments_Domain_Payments_Invoice
+QuickPatch_Payments_Application_Abstractions_IPaymentRepository ..> QuickPatch_Payments_Domain_Payments_Payment
+QuickPatch_Payments_Application_Payments_PayHandler ..> QuickPatch_Payments_Application_Abstractions_IPaymentRepository
+QuickPatch_Payments_Application_Payments_PayHandler ..> QuickPatch_Payments_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Payments_Application_Payments_PayHandler ..> QuickPatch_Payments_Application_Payments_PaymentSettlement
+QuickPatch_Payments_Application_Payments_PayHandler ..> QuickPatch_Payments_Domain_Payments_Billing
+QuickPatch_Payments_Application_Payments_PayHandler ..> QuickPatch_Payments_Domain_Payments_Payment
+QuickPatch_Payments_Application_Payments_PaymentSettlement ..> QuickPatch_Payments_Application_Abstractions_IPaymentRepository
+QuickPatch_Payments_Application_Payments_PaymentSettlement ..> QuickPatch_Payments_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Payments_Application_Payments_PaymentSettlement ..> QuickPatch_Payments_Domain_Payments_Billing
+QuickPatch_Payments_Application_Payments_PaymentSettlement ..> QuickPatch_Payments_Domain_Payments_Invoice
+QuickPatch_Payments_Application_Payments_PaymentSettlement ..> QuickPatch_Payments_Domain_Payments_Payment
+QuickPatch_Payments_Application_Payments_ReconcilePaymentsHandler ..> QuickPatch_Payments_Application_Abstractions_IPaymentRepository
+QuickPatch_Payments_Application_Payments_ReconcilePaymentsHandler ..> QuickPatch_Payments_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Payments_Application_Payments_ReconcilePaymentsHandler ..> QuickPatch_Payments_Application_Payments_PaymentSettlement
+QuickPatch_Payments_Application_Payments_ReconcilePaymentsHandler ..> QuickPatch_Payments_Domain_Payments_Payment
+QuickPatch_Payments_Application_Payments_ServiceRequestCompletedHandler ..> QuickPatch_Payments_Application_Abstractions_IPaymentRepository
+QuickPatch_Payments_Application_Payments_ServiceRequestCompletedHandler ..> QuickPatch_Payments_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Payments_Application_Payments_ServiceRequestCompletedHandler ..> QuickPatch_Payments_Domain_Payments_Payment
+QuickPatch_Payments_Application_Payments_TechnicianRegisteredHandler ..> QuickPatch_Payments_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Payments_Domain_Payments_Invoice ..> QuickPatch_Payments_Domain_Payments_Billing
+QuickPatch_Payments_Domain_Payments_Invoice ..> QuickPatch_Payments_Domain_Payments_Payment
+QuickPatch_Payments_Infrastructure_Persistence_PaymentsDbContext ..> QuickPatch_Payments_Domain_Payments_Invoice
+QuickPatch_Payments_Infrastructure_Persistence_PaymentsDbContext ..> QuickPatch_Payments_Domain_Payments_Payment
+@enduml

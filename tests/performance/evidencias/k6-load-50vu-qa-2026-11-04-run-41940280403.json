@@ -1,0 +1,201 @@
+{
+  "metrics": {
+    "http_req_duration{endpoint:crear_solicitud}": {
+      "p(95)": 88.16381379999997,
+      "avg": 45.404190875399316,
+      "min": 11.141154,
+      "med": 29.545996,
+      "max": 758.110689,
+      "p(90)": 71.6087774,
+      "thresholds": {
+        "p(95)<2000": false
+      }
+    },
+    "http_req_receiving": {
+      "p(95)": 0.6338579999999999,
+      "avg": 0.26756479950319395,
+      "min": 0.029113,
+      "med": 0.2058315,
+      "max": 6.23717,
+      "p(90)": 0.47955479999999995
+    },
+    "http_req_blocked": {
+      "max": 37.48795,
+      "p(90)": 0.022242899999999996,
+      "p(95)": 0.03800979999999998,
+      "avg": 0.1783183282469836,
+      "min": 0.003946,
+      "med": 0.015141
+    },
+    "http_req_waiting": {
+      "p(95)": 79.36363109999999,
+      "avg": 31.983869084575346,
+      "min": 5.150311,
+      "med": 21.2135325,
+      "max": 913.179393,
+      "p(90)": 62.3576907
+    },
+    "http_req_failed": {
+      "fails": 8453,
+      "passes": 1,
+      "thresholds": {
+        "rate<0.01": false
+      },
+      "value": 0.00011828720132481665
+    },
+    "data_sent": {
+      "count": 9086913,
+      "rate": 59772.56373450473
+    },
+    "iteration_duration": {
+      "med": 1584.284202,
+      "max": 2314.075972,
+      "p(90)": 1665.0175234,
+      "p(95)": 1693.3742666,
+      "avg": 1600.905414682288,
+      "min": 1536.519167
+    },
+    "checks": {
+      "fails": 0,
+      "passes": 11268,
+      "value": 1
+    },
+    "http_req_duration{endpoint:catalogo}": {
+      "p(90)": 26.235101200000003,
+      "p(95)": 31.959862599999983,
+      "avg": 16.36693357330495,
+      "min": 5.394299,
+      "med": 14.032787,
+      "max": 74.143993,
+      "thresholds": {
+        "p(95)<200": false
+      }
+    },
+    "vus_max": {
+      "value": 50,
+      "min": 50,
+      "max": 50
+    },
+    "solicitud_duration": {
+      "avg": 45.40419087539932,
+      "min": 11.141154,
+      "med": 29.545996,
+      "max": 758.110689,
+      "p(90)": 71.6087774,
+      "p(95)": 88.16381379999997
+    },
+    "http_req_duration{expected_response:true}": {
+      "p(95)": 79.660151,
+      "avg": 32.34175828593401,
+      "min": 5.394299,
+      "med": 21.575729,
+      "max": 913.836278,
+      "p(90)": 62.6553102
+    },
+    "vus": {
+      "value": 1,
+      "min": 0,
+      "max": 50
+    },
+    "http_req_duration": {
+      "avg": 32.339365463330985,
+      "min": 5.394299,
+      "med": 21.5732615,
+      "max": 913.836278,
+      "p(90)": 62.6544938,
+      "p(95)": 79.659699
+    },
+    "catalogo_duration": {
+      "avg": 16.36693357330495,
+      "min": 5.394299,
+      "med": 14.032787,
+      "max": 74.143993,
+      "p(90)": 26.235101200000003,
+      "p(95)": 31.959862599999983
+    },
+    "http_req_sending": {
+      "max": 2.858954,
+      "p(90)": 0.13026709999999997,
+      "p(95)": 0.19343799999999978,
+      "avg": 0.0879315792524247,
+      "min": 0.014581,
+      "med": 0.070719
+    },
+    "http_reqs": {
+      "count": 8454,
+      "rate": 55.60934211778004
+    },
+    "http_req_connecting": {
+      "avg": 0.004500349656967116,
+      "min": 0,
+      "med": 0,
+      "max": 3.294467,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "http_req_tls_handshaking": {
+      "avg": 0.15346293222143362,
+      "min": 0,
+      "med": 0,
+      "max": 36.796173,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "data_received": {
+      "count": 7992163,
+      "rate": 52571.43677881042
+    },
+    "iterations": {
+      "rate": 18.52986949914672,
+      "count": 2817
+    },
+    "tasa_errores": {
+      "passes": 0,
+      "fails": 5634,
+      "thresholds": {
+        "rate<0.01": false
+      },
+      "value": 0
+    }
+  },
+  "setup_data": {
+    "categoryId": "01a13205-62a5-7d3e-9070-afb234022ca3",
+    "token": "<omitido: JWT de la corrida>"
+  },
+  "root_group": {
+    "groups": {},
+    "checks": {
+      "Catalogo responde 200 OK": {
+        "path": "::Catalogo responde 200 OK",
+        "id": "4007a9a353f8cfceb98dd363725f6af7",
+        "passes": 2817,
+        "fails": 0,
+        "name": "Catalogo responde 200 OK"
+      },
+      "Catalogo p95 dentro de umbral": {
+        "name": "Catalogo p95 dentro de umbral",
+        "path": "::Catalogo p95 dentro de umbral",
+        "id": "9895c81ee998f0b3a973f8bfd7415af5",
+        "passes": 2817,
+        "fails": 0
+      },
+      "Solicitud responde 201 Created o 200": {
+        "name": "Solicitud responde 201 Created o 200",
+        "path": "::Solicitud responde 201 Created o 200",
+        "id": "27cb3bf0584db64609e0b276f863cc52",
+        "passes": 2817,
+        "fails": 0
+      },
+      "Solicitud p95 dentro de umbral": {
+        "name": "Solicitud p95 dentro de umbral",
+        "path": "::Solicitud p95 dentro de umbral",
+        "id": "c141eff3707cbcb56964a842eaaa54a3",
+        "passes": 2817,
+        "fails": 0
+      }
+    },
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e"
+  }
+}

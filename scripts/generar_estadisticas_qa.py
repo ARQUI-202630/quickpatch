@@ -274,13 +274,13 @@ def parse_k6_results():
     k6_data = []
 
     # Carga 50 VU
-    load_json = os.path.join(PERF_EVIDENCIAS_DIR, 'k6-load-50vu-summary.json')
+    load_json = os.path.join(PERF_EVIDENCIAS_DIR, 'k6-load-50vu-qa-2026-11-04-run-41940280403.json')
     if os.path.exists(load_json):
         with open(load_json, 'r', encoding='utf-8') as f:
             d = json.load(f)
         p95 = d['metrics']['http_req_duration{expected_response:true}']['p(95)']
         err_rate = d['metrics']['http_req_failed']['value'] * 100
-        reqs = d['metrics']['http_req_failed']['fails']
+        reqs = d['metrics']['http_reqs']['count']
         iters = d['metrics']['iterations']['count']
         k6_data.append({
             'test': 'Prueba de Carga Concurrente (50 VU)',
@@ -290,11 +290,11 @@ def parse_k6_results():
             'requests': reqs,
             'p95_ms': round(p95, 2),
             'error_rate': f"{err_rate:.2f}%",
-            'file': 'tests/performance/evidencias/k6-load-50vu-summary.json'
+            'file': 'tests/performance/evidencias/k6-load-50vu-qa-2026-11-04-run-41940280403.json'
         })
 
     # Estrés 150 VU
-    stress_json = os.path.join(PERF_EVIDENCIAS_DIR, 'k6-stress-150vu-summary.json')
+    stress_json = os.path.join(PERF_EVIDENCIAS_DIR, 'k6-stress-150vu-qa-2026-11-04-run-41940280403.json')
     if os.path.exists(stress_json):
         with open(stress_json, 'r', encoding='utf-8') as f:
             d = json.load(f)
@@ -310,7 +310,7 @@ def parse_k6_results():
             'requests': reqs,
             'p95_ms': round(p95, 2),
             'error_rate': f"{err_rate:.2f}%",
-            'file': 'tests/performance/evidencias/k6-stress-150vu-summary.json'
+            'file': 'tests/performance/evidencias/k6-stress-150vu-qa-2026-11-04-run-41940280403.json'
         })
 
     return k6_data
@@ -449,12 +449,13 @@ def generate_charts(ci_data, e2e_data, sec_data, defects, cov_map):
 
     # GRÁFICA 3: Defectos por Estado y Severidad
     corr = sum(1 for d in defects if any(k in d['estado'] for k in ['Corregido', 'Resuelto', 'Verificado']))
-    pend = sum(1 for d in defects if any(k in d['estado'] for k in ['Pendiente', 'En corrección']))
+    no_aplica = sum(1 for d in defects if 'No aplica' in d['estado'])
+    pend = sum(1 for d in defects if any(k in d['estado'] for k in ['Pendiente', 'En corrección', 'En mitigación']))
     desc = sum(1 for d in defects if any(k in d['estado'] for k in ['Descartado', 'Inválido']))
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 5))
-    states = ['Corregidos / Verif.', 'Pendientes (Sp5)', 'Descartados']
-    s_counts = [corr, pend, desc]
+    states = ['Corregidos o\nno aplicables', 'En mitigación\n(Sp5)', 'Descartados']
+    s_counts = [corr + no_aplica, pend, desc]
     s_colors = [success, warning, '#94A3B8']
 
     b1 = ax1.bar(states, s_counts, color=s_colors, width=0.5, edgecolor='#0F172A', linewidth=1)
@@ -483,7 +484,7 @@ def generate_charts(ci_data, e2e_data, sec_data, defects, cov_map):
                      xy=(b.get_x() + b.get_width() / 2, b.get_height()),
                      xytext=(0, 4), textcoords="offset points", ha='center', va='bottom', fontweight='bold')
 
-    plt.suptitle('Registro Consolidado de Defectos — Sprints 4 y 5 (SCRUM-603)', fontsize=13, fontweight='bold', y=0.98)
+    plt.suptitle('Registro Consolidado de Defectos — Sprints 3 a 5 (SCRUM-603)', fontsize=13, fontweight='bold', y=0.98)
     plt.tight_layout()
     plt.savefig(os.path.join(IMG_DIR, 'grafica-3-barras-defectos.png'), dpi=300)
     plt.close()
@@ -607,14 +608,15 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map):
 
     md.append("## 4. Registro Consolidado de Defectos (SCRUM-603)\n")
     corr = sum(1 for d in defects if any(k in d['estado'] for k in ['Corregido', 'Resuelto', 'Verificado']))
-    pend = sum(1 for d in defects if any(k in d['estado'] for k in ['Pendiente', 'En corrección']))
+    no_aplica = sum(1 for d in defects if 'No aplica' in d['estado'])
+    pend = sum(1 for d in defects if any(k in d['estado'] for k in ['Pendiente', 'En corrección', 'En mitigación']))
     desc = sum(1 for d in defects if any(k in d['estado'] for k in ['Descartado', 'Inválido']))
     tot_def = len(defects)
 
     md.append(f"* **Total de Defectos Registrados:** **{tot_def} anomalías**.")
-    md.append(f"* **Defectos Corregidos y Verificados:** **{corr} ({corr/tot_def*100:.1f}%)**.")
+    md.append(f"* **Defectos Corregidos o No aplicables:** **{corr + no_aplica} ({(corr + no_aplica)/tot_def*100:.1f}%)** ({corr} corregidos y verificados + {no_aplica} no aplica a producción: DEF-S4-03).")
     md.append(f"* **Defectos Descartados / Retractados:** **{desc} ({desc/tot_def*100:.1f}%)**.")
-    md.append(f"* **Defectos en Mitigación en Sprint 5:** **{pend} ({pend/tot_def*100:.1f}%)** (ninguno bloqueante).")
+    md.append(f"* **Defectos en Mitigación en Sprint 5:** **{pend} ({pend/tot_def*100:.1f}%)** (ninguno bloqueante: DEF-S5-01 a DEF-S5-04).")
     md.append(f"* **Defectos Críticos o Bloqueantes Abiertos:** **0 (0.0%)**.\n")
     md.append("Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-defectos-sprint4-sprint5.md) y en la hoja `Defectos` de la Matriz UAT Excel.\n")
     md.append("---\n")
@@ -627,10 +629,9 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map):
         md.append(f"* **Capacidad de Carga k6:** **{k6_max['requests']:,} peticiones procesadas** con {k6_max['error_rate']} de errores y p95 de {k6_max['p95_ms']} ms bajo {k6_max['vus']} VU.")
     md.append(f"* **Cobertura de Código en CI (SCRUM-602):** **{cov_rango}** en {len(cov_vals)} repositorios; todos sobre el umbral de {umbral:.0f}%." if cov_vals and min(cov_vals) >= umbral else f"* **Cobertura de Código en CI (SCRUM-602):** {cov_rango}.")
     md.append(f"* **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.")
-    md.append(f"* **Avance Preliminar del Producto (Matriz Excel UAT):** **75.80%** (Meta Sprint 4: 80% / Brecha: -4.20%).")
-    md.append(f"* **% Funcionalidades Implementadas (Develop):** **94.12%** (32 / 34 pts). Antes 92.65% (31.5 / 34): RF-12 (calificación) pasó de *No implementado* a *Parcial* (+0.5 pts) porque el backend de calificación (SCRUM-85) ya responde en QA (`tests/e2e/evidencias/humo-flujo-critico-qa-2026-10-30.txt`); falta la pantalla del cliente (SCRUM-86).")
-    md.append(f"* **% Funcionalidades Probadas por QA:** **86.03%** (29.25 / 34 pts con evidencia).")
-    md.append(f"* **% Escenarios de Calidad (SAD §3):** **51.92%** (52 escenarios evaluados: 21 Cumple, 12 Parcial, 1 No cumple, 18 No medido).\n")
+    md.append(f"* **Avance Oficial del Producto (Informe UAT de la PO, 5-nov):** **91.92%** (Meta Sprint 5: mínimo 90%; 0.7 × 100% aceptado en UAT + 0.3 × 73.08% escenarios).")
+    md.append(f"* **% Funcionalidades Implementadas, Probadas por QA y Aceptadas en UAT:** **100%** (37 de 37; RF-10 aceptada con observaciones).")
+    md.append(f"* **% Escenarios de Calidad (SAD §3):** **73.08%** (52 escenarios: 34 Cumple, 8 Parcial, 4 No cumple, 6 No medido; fuente: `docs/testing/informe-uat-oficial-po-2026-11-05.xlsx`).\n")
 
     md.append("### Gráfica 1: Distribución de Pruebas por Tipo")
     md.append("![Gráfica 1: Distribución por Tipo](img/grafica-1-pruebas-por-tipo.png)\n")

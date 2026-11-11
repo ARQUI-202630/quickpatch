@@ -1,0 +1,69 @@
+@startuml
+!pragma layout smetana
+title Identity — clases más conectadas (despues, abffadb)
+hide empty members
+skinparam shadowing false
+class "Api.Endpoints.IdentityEndpoints" as QuickPatch_Identity_Api_Endpoints_IdentityEndpoints <<Api>> {
+  735 líneas · entra 1 · sale 80
+}
+class "Domain.Users.User" as QuickPatch_Identity_Domain_Users_User <<Domain>> {
+  335 líneas · entra 40 · sale 3
+}
+class "Api.Endpoints.CompanyEndpoints" as QuickPatch_Identity_Api_Endpoints_CompanyEndpoints <<Api>> {
+  189 líneas · entra 1 · sale 28
+}
+interface "Application.Abstractions.ITenantUnitOfWork" as QuickPatch_Identity_Application_Abstractions_ITenantUnitOfWork <<Application>> {
+  0 líneas · entra 25 · sale 0
+}
+class "Domain.Tenants.Tenant" as QuickPatch_Identity_Domain_Tenants_Tenant <<Domain>> {
+  65 líneas · entra 23 · sale 1
+}
+class "Infrastructure.Persistence.IdentityDbContext" as QuickPatch_Identity_Infrastructure_Persistence_IdentityDbContext <<Infrastructure>> {
+  190 líneas · entra 14 · sale 9
+}
+interface "Application.Abstractions.IUserRepository" as QuickPatch_Identity_Application_Abstractions_IUserRepository <<Application>> {
+  0 líneas · entra 21 · sale 1
+}
+class "Domain.Technicians.TechnicianProfile" as QuickPatch_Identity_Domain_Technicians_TechnicianProfile <<Domain>> {
+  132 líneas · entra 21 · sale 1
+}
+class "Application.Technicians.CreateTeamTechnicianHandler" as QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler <<Application>> {
+  71 líneas · entra 2 · sale 15
+}
+class "Application.Auth.RegisterTechnicianHandler" as QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler <<Application>> {
+  60 líneas · entra 3 · sale 12
+}
+interface "Application.Abstractions.ITechnicianProfileRepository" as QuickPatch_Identity_Application_Abstractions_ITechnicianProfileRepository <<Application>> {
+  0 líneas · entra 12 · sale 3
+}
+class "Application.Auth.ConfirmPasswordRecoveryHandler" as QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler <<Application>> {
+  57 líneas · entra 2 · sale 12
+}
+QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler
+QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler
+QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler
+QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Domain_Technicians_TechnicianProfile
+QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Domain_Tenants_Tenant
+QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Domain_Users_User
+QuickPatch_Identity_Application_Abstractions_ITechnicianProfileRepository ..> QuickPatch_Identity_Domain_Technicians_TechnicianProfile
+QuickPatch_Identity_Application_Abstractions_IUserRepository ..> QuickPatch_Identity_Domain_Users_User
+QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler ..> QuickPatch_Identity_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler ..> QuickPatch_Identity_Application_Abstractions_IUserRepository
+QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler ..> QuickPatch_Identity_Domain_Tenants_Tenant
+QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler ..> QuickPatch_Identity_Domain_Users_User
+QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_ITechnicianProfileRepository
+QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_IUserRepository
+QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Domain_Technicians_TechnicianProfile
+QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Domain_Tenants_Tenant
+QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Domain_Users_User
+QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_ITechnicianProfileRepository
+QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_IUserRepository
+QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Domain_Technicians_TechnicianProfile
+QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Domain_Tenants_Tenant
+QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Domain_Users_User
+QuickPatch_Identity_Infrastructure_Persistence_IdentityDbContext ..> QuickPatch_Identity_Domain_Technicians_TechnicianProfile
+QuickPatch_Identity_Infrastructure_Persistence_IdentityDbContext ..> QuickPatch_Identity_Domain_Tenants_Tenant
+QuickPatch_Identity_Infrastructure_Persistence_IdentityDbContext ..> QuickPatch_Identity_Domain_Users_User
+@enduml

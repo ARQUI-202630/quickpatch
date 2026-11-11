@@ -94,6 +94,7 @@ Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estruc
 | `C4-05-Dinamico-Calificacion` | Dynamic | 27 |
 | `C4-05-Dinamico-GestionTenants` | Dynamic | 28 |
 | `C4-05-Dinamico-Cancelacion` | Dynamic | 28b |
+| `C4-05-Dinamico-RecuperacionContrasena` | Dynamic | 28c |
 | `C4-06-Despliegue-Produccion` | Deployment | 30 |
 | `C4-06-Despliegue-QA` | Deployment | 31 |
 
@@ -788,12 +789,9 @@ Permanecen sujetos a definición de Sprints posteriores:
 
 # 7. Code diagrams
 
-El diagrama de código de C4 se usa solo en dos áreas, donde el diagrama de componentes no basta para entender o revisar el código:
+**Desde el cierre (SCRUM-680), el nivel de código sale del código.** Los diagramas de paquetes y de clases, y las métricas de acoplamiento y cohesión de los 7 servicios con código, se generan desde los binarios de `develop` con `python tools/arquitectura/generar.py` (sección 7.3). No se dibujan a mano, así que no se desactualizan: se regeneran con un comando. Las secciones 7.1 y 7.2 se conservan como explicación de dos mecanismos, publicación confiable de eventos y aislamiento entre tenants, donde importa el orden de las llamadas dentro de una transacción y no solo quién depende de quién.
 
-1. **Publicación y consumo confiable de eventos**: se reparte entre dos servicios y dos tecnologías, y depende de que varias clases compartan una misma transacción.
-2. **Aislamiento entre tenants en la base de datos**: un error aquí filtra datos de un tenant a otro, y la única operación que lo omite debe quedar acotada.
-
-El resto del sistema sigue el patrón de cuatro capas de la sección 6.1 sin variaciones que justifiquen un diagrama de clases. Los diagramas se trazaron sobre el código de `develop` del 7 de octubre de 2026 y nombran clases reales; los métodos y las dependencias que no intervienen en el mecanismo se omiten. Están en PlantUML (`diagrams/c4/C4-07-*.puml`) porque Structurizr no dibuja el nivel de código.
+Los diagramas de 7.1 y 7.2 se trazaron sobre el código de `develop` del 7 de octubre de 2026 y nombran clases reales; los métodos y las dependencias que no intervienen en el mecanismo se omiten. Están en PlantUML (`diagrams/c4/C4-07-*.puml`) porque Structurizr no dibuja el nivel de código.
 
 ## 7.1 Outbox e idempotencia de `service-request.created`
 
@@ -824,6 +822,28 @@ Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija d
 - **Operación de plataforma.** Solo `ListTenantsHandler` y `UpdateTenantStatusHandler` usan `PlatformUnitOfWork`, que adopta el rol `identity_platform` (`BYPASSRLS`) con `SET LOCAL ROLE`: el rol vuelve al de la aplicación al cerrar la transacción. La aplicación puede adoptarlo pero no hereda sus permisos (`INHERIT FALSE`, `db/roles.sql`, ADR-019). Los endpoints exigen `admin_plataforma`, y cada cambio de estado deja un `AuditEntry` en la misma transacción.
 
 ---
+
+## 7.3 Paquetes, clases y métricas generados desde el código (SCRUM-680 a SCRUM-683)
+
+**Herramienta (SCRUM-681).** Para .NET, un extractor sobre `System.Reflection.Metadata`, que viene con el runtime; para Java, `jdeps`, del JDK. Los dos leen el código compilado: herencia, campos, firmas, variables locales y cada tipo que el cuerpo de un método usa. Un script común calcula las métricas y escribe PlantUML y Mermaid. La comparación con otras opciones (NDepend, `puml-gen`, DependenSee, NetArchTest/ArchUnit, los diagramas del IDE) y la definición de cada métrica están en `tools/arquitectura/README.md`.
+
+**Qué se publica**, en `docs/architecture/codigo/<fase>/<servicio>/`: el diagrama de paquetes agrupado por capa (`paquetes.puml` y `paquetes.mmd`, con los ciclos en naranja y las violaciones de 10.3.2 en rojo), las clases más conectadas (`clases-centrales.puml`) y las métricas (`README.md` y `metricas.json`): ciclos entre paquetes y entre tipos, fan-in y fan-out por clase, inestabilidad y cohesión relacional por paquete, clases de más de 250 líneas y violaciones de la matriz de 10.3.2.
+
+**Antes y después del refactor.** La línea base (`codigo/antes/`, SCRUM-682) se tomó sobre `develop` antes del primer PR de refactor. La medición «después» (`codigo/despues/`) usa la misma herramienta y la misma configuración, y la comparación está en `codigo/README.md` (SCRUM-683):
+
+| Servicio | Violaciones | Ciclos entre paquetes | Tipos > 250 líneas | Fan-out máximo | Cambio principal |
+|---|---|---|---|---|---|
+| Identity | 11 → pendiente | 1 → pendiente | 2 → pendiente | 80 → pendiente | SCRUM-650 (en curso) |
+| Catalog | 0 → 0 | 0 → 0 | 0 → 0 | 15 → 15 | Resolución del tenant fuera del endpoint; un archivo por caso de uso, puerto y adaptador; pruebas de arquitectura |
+| ServiceRequest | 0 → 0 | 0 → 0 | 2 → 1 | 31 → 22 | Endpoints por recurso y sin dependencias entre grupos; validación fuera del agregado |
+| Matching | 0 → 0 | **1 → 0** | 0 → 0 | 10 → 13 | Puertos repartidos por responsabilidad; ArchUnit prohíbe ciclos |
+| Ranking | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | Contrato del evento en Application; consumidor solo como transporte |
+| Payments | 0 → 0 | **1 → 0** | 0 → 0 | 12 → 12 | `InvoiceDocument` junto a su puerto |
+| Communication | 0 → pendiente | 0 → pendiente | 0 → pendiente | 10 → pendiente | SCRUM-656 (en curso) |
+
+En Matching, el fan-out máximo sube de 10 a 13 y la cohesión relacional promedio baja de 0,85 a 0,75. Las dos cosas son efecto de separar los puertos: `KafkaConfig` ahora importa cada interfaz por separado, y el paquete nuevo `application.common` tiene dos interfaces que no se usan entre sí. A cambio, desaparece el ciclo entre `events`, `matching` y `technicians`. Las cifras se reportan como salen.
+
+Las reglas de 10.3.2 ya no dependen de esta medición: cada servicio refactorizado tiene pruebas de arquitectura en su CI (NetArchTest o ArchUnit), y una violación nueva rompe el PR.
 
 # 8. Dynamic diagrams
 
@@ -1036,17 +1056,23 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 **Figura 27. Escenario: calificación del servicio y reputación del técnico (C4 · Dynamic; ADR-027, implementado en SCRUM-85 y SCRUM-498). ServiceRequest guarda la calificación y publica `service-request.rated`; Ranking recalcula y publica `ranking.technician-reputation-changed`, que Identity proyecta en `technician_profiles`. Vista `C4-05-Dinamico-Calificacion`.**
 
-**Gestión de tenants.** La única operación que omite RLS, acotada a una transacción con el rol `identity_platform` y auditada (RF-21, SCRUM-112).
+**Desactivación de un tenant.** La única operación que omite RLS, acotada a una transacción con el rol `identity_platform` y auditada (RF-21, SCRUM-112). Al cambiar el estado, Identity publica `tenant.status-changed` por Outbox y ServiceRequest lo replica en `tenant_status_replica`: desde ese momento rechaza las solicitudes del tenant con `422 tenant-inactivo` aunque el token siga vigente, sin llamar a Identity (RN-T1, SCRUM-508 a SCRUM-511).
 
 ![Gestión de tenants (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-GestionTenants.png)
 
-**Figura 28. Gestión de tenants por el admin de plataforma (C4 · Dynamic). Vista `C4-05-Dinamico-GestionTenants`.**
+**Figura 28. Escenario: desactivación de un tenant y su réplica en ServiceRequest (C4 · Dynamic; RN-T1, ADR-017). Vista `C4-05-Dinamico-GestionTenants`.**
 
 **Cancelación.** El cliente dueño (o el `admin_tenant` desde el panel) cancela una solicitud antes de `en_progreso` (RF-36). Matching retira la oferta pendiente y libera al técnico; Communication avisa con `service-request.status-changed`, porque no consume `service-request.cancelled` (matriz 8.6).
 
 ![Cancelación de una solicitud (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Cancelacion.png)
 
 **Figura 28b. Escenario: cancelación de una solicitud (C4 · Dynamic; SCRUM-589). Vista `C4-05-Dinamico-Cancelacion`.**
+
+**Recuperación de la contraseña.** Sin correo en el MVP (ADR-024): el usuario la pide en la app, el `admin_tenant` genera en el panel un enlace de un solo uso que vence en 1 hora y se lo entrega, y el usuario define la contraseña nueva en la página pública `/recuperar`. Identity guarda solo el hash del token y cuenta los pedidos por el HMAC del correo (RN-U7; identity.v1.yaml 1.10.0; SCRUM-623).
+
+![Recuperación de la contraseña (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-RecuperacionContrasena.png)
+
+**Figura 28c. Escenario: recuperación de la contraseña olvidada (C4 · Dynamic; SCRUM-623). Vista `C4-05-Dinamico-RecuperacionContrasena`.**
 
 Los diagramas de secuencia de detalle de la cotización, el pago y la cancelación, con sus alternativas (rechazo, vencimiento, pasarela sin respuesta) y los errores de cada contrato, están en `docs/architecture/DIAGRAMS_SCRUM591_DYNAMIC_FLOWS.md` (SCRUM-591).
 
@@ -1056,7 +1082,7 @@ La matriz de eventos asíncronos del sistema (DD, sección 8.4) coincide con `to
 
 | Tópico / Evento | Microservicio Productor | Microservicios Consumidores | Propósito del Flujo |
 |---|---|---|---|
-| `catalog.category-changed` | `Catalog Service` | `ServiceRequest Service`, `Matching Service` | Publicar el estado completo de una categoría tras crearla o modificarla, para que cada consumidor mantenga su réplica local (ADR-017). Matching todavía no la aplica (DD 8.3.5). |
+| `catalog.category-changed` | `Catalog Service` | `ServiceRequest Service`; `Matching Service` previsto (aún no lo consume, SAD 4.2.2) | Publicar el estado completo de una categoría tras crearla o modificarla, para que cada consumidor mantenga su réplica local (ADR-017). Matching todavía no la aplica (DD 8.3.5). |
 | `service-request.created` | `ServiceRequest Service` | `Matching Service`, `Communication Service` | Iniciar la búsqueda de técnico y avisar al cliente que su solicitud fue recibida. |
 | `technician.registered` | `Identity Service` | `Matching Service`, `Communication Service`, `Payments Service` | Crear la proyección del técnico en Matching (especialidad y verificación, P-01), avisarle que su registro está en verificación y, en Payments, guardar el proveedor de cada técnico para los pagos recibidos del equipo (`payment_technicians`, P-02). |
 | `technician.verification-changed` | `Identity Service` | `Matching Service`, `Communication Service` | Actualizar la proyección cuando el administrador aprueba, rechaza o suspende (un técnico aprobado puede reanudar solicitudes en espera, RN-M10) y avisarle el resultado. |
@@ -1475,11 +1501,11 @@ El diagrama muestra la distribución aprobada en ADR-022: VM1 de herramientas y 
 
 ![Despliegue de producción (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-Produccion.png)
 
-**Figura 30. Despliegue de producción al 27 de octubre de 2026: VM1, VM3, VM4 y VM6 (C4 · Deployment, ADR-022). VM1 solo termina el TLS; el gateway y el panel corren en el Nginx de VM3, fuera del k3s (ADR-028). Payments y Communication, punteados, llegan con la promoción del MVP (SCRUM-518; Documento de Infraestructura V4, 4.3). Vista `C4-06-Despliegue-Produccion`.**
+**Figura 30. Despliegue de producción al 4 de noviembre de 2026, tras la promoción del MVP (SCRUM-518): los 7 servicios con código en el k3s de VM3, con VM4 y VM6 y la entrada de VM1 (C4 · Deployment, ADR-022). El gateway corre en el Nginx de VM3, fuera del k3s (ADR-028); ese Nginx solo **entrega** los archivos del panel (`v0.5.5`, SCRUM-641), que se **ejecuta** en el navegador del administrador, y la app (APK `v0.5.4`) en el dispositivo móvil. Grafana se consulta desde el navegador del equipo, a través de VM1 (SCRUM-674). Actors, punteado, no tiene código. Vista `C4-06-Despliegue-Produccion`.**
 
 ![Despliegue de QA (C4 · Deployment)](diagrams/c4/C4-06-Despliegue-QA.png)
 
-**Figura 31. Despliegue de QA al 3 de noviembre de 2026, con Ranking desplegado (SCRUM-512): VM2, VM5 y VM7, con la VM1 compartida (C4 · Deployment, ADR-022); el gateway y el panel en el Nginx de VM2 (ADR-028). Vista `C4-06-Despliegue-QA`.**
+**Figura 31. Despliegue de QA al 4 de noviembre de 2026: los 7 servicios con código en el k3s de VM2, con VM5 y VM7 y la VM1 compartida (C4 · Deployment, ADR-022); el gateway en el Nginx de VM2 (ADR-028), que entrega los archivos del panel de `release/0.6.0` al navegador del administrador, donde se ejecuta; la app de QA (APK `v0.6.0-qa`) corre en el dispositivo (SCRUM-674). QA va adelante de producción en Identity 0.9.0 y ServiceRequest 0.12.0 (Documento de Infraestructura 4.16). Vista `C4-06-Despliegue-QA`.**
 
 IPs del laboratorio: VM1 10.43.100.168, VM3 10.43.98.205, VM4 10.43.98.209, VM6 10.43.99.12; QA: VM2 10.43.98.15, VM5 10.43.98.29, VM7 10.43.99.8. VM1 reenvía `quickpatch.internal` y `qa.quickpatch.internal` al NodePort 30080 de Traefik en VM3 y VM2.
 
@@ -1836,6 +1862,75 @@ infrastructure/   persistence/, messaging/, scheduling/, config/ (configuración
 | Matching | Sí | — (quickpatch-matching#19): `api/` en `controllers/`, `http/` y `security/` | SCRUM-588 |
 | Ranking | Sí | — (implementado en SCRUM-498 con la convención: `Domain/Reputation`, `Application`, `Infrastructure/Persistence` y `Infrastructure/Messaging`) | — |
 | Actors | — | Esqueleto: sigue la convención cuando se implemente. | — |
+
+### 10.3.2 Reglas de dependencia verificables (SCRUM-648)
+
+La convención de 10.3.1 ordena las carpetas, pero el profesor observó en el cierre que eso no basta: hay clases que conocen demasiadas clases y capas que se llaman de forma desordenada. Esta sección convierte la convención en **reglas que una prueba puede verificar**. Es el estándar que siguen los refactors del Sprint 6 (SCRUM-650 a SCRUM-656). No cambia la arquitectura: son las mismas cuatro capas de 6.1, con puertos en `Application` y adaptadores en `Infrastructure`, es decir, el estilo de puertos y adaptadores que ya usaban los servicios.
+
+```text
+            Api (entrada: HTTP, WebSocket)      Infrastructure (adaptadores de salida y consumidores)
+                     \                                  /
+                      v                                v
+                          Application (casos de uso + puertos)
+                                      |
+                                      v
+                                   Domain
+```
+
+**Matriz de dependencias.** «Sí» significa que una clase de la fila puede usar tipos de la columna.
+
+| Desde \ hacia | Domain | Application | Infrastructure | Api | EF Core / Npgsql | Confluent.Kafka | ASP.NET Core |
+|---|---|---|---|---|---|---|---|
+| **Domain** | — | No | No | No | No | No | No |
+| **Application** | Sí | — | No | No | No | No | No |
+| **Infrastructure** | Sí | Sí (implementa sus puertos) | — | No | Sí | Sí | No¹ |
+| **Api** | Solo tipos de lectura² | Sí | Solo `Program.cs`³ | — | No | No | Sí |
+
+1. Excepto el registro de servicios en `DependencyInjection.cs` (`IServiceCollection`) y los `BackgroundService` de los consumidores.
+2. `Api` puede leer enums y value objects para mapear la respuesta. No crea entidades ni llama a sus métodos de comportamiento: eso es un caso de uso.
+3. `Program.cs` es la raíz de composición: el único punto del `Api` que conoce `Infrastructure`, para llamar a `AddInfrastructure(...)`. Ningún endpoint usa el `DbContext`, un repositorio concreto ni un productor de Kafka.
+
+**Dónde va cada cosa.**
+
+| Elemento | Capa y carpeta | Regla |
+|---|---|---|
+| Endpoint / controller | `Api/Endpoints/<Recurso>Endpoints.cs` (Java: `api/controllers/`) | Valida el formato de entrada, arma el comando, llama al handler y traduce el resultado a HTTP. Sin `if` de negocio ni acceso a datos. |
+| DTO de petición y respuesta HTTP | `Api/Endpoints/` junto al endpoint, como `record` | Reproduce el contrato de `contracts/api-gateway`. No se reutiliza como entidad ni como comando. |
+| Comando, consulta y su resultado | `Application/<CasoDeUso>/` | Un caso de uso por clase de handler. Un archivo puede tener el comando, el handler y el resultado del **mismo** caso de uso, no los de varios. |
+| Handler / caso de uso | `Application/<CasoDeUso>/<Accion>Handler.cs` | Orquesta: carga el agregado por un puerto, invoca la regla del dominio y guarda. Recibe a lo sumo un puerto por recurso externo. |
+| Entidad, agregado, value object, enum | `Domain/<Agregado>/` | Reglas e invariantes. No conoce persistencia, mensajes ni HTTP. |
+| Política o regla que cruza agregados | `Domain/<Agregado>/` o `Domain/Services/` | Clase sin estado y sin E/S. |
+| Puerto (interfaz) | `Application/Abstractions/` | Un puerto por responsabilidad: `ICategoryRepository`, `IOutbox`, `IClock`, `IGeocoder`… Nunca expone `IQueryable`, `DbSet` ni tipos de Kafka. |
+| Repositorio (implementación) | `Infrastructure/Persistence/<Agregado>Repository.cs` | Un archivo por repositorio. Aplica el tenant con `ITenantUnitOfWork` (ADR-005). |
+| `DbContext`, configuraciones, migraciones | `Infrastructure/Persistence/` | Solo los usa `Infrastructure`. |
+| Contrato de evento (publicado o consumido) | `Application/Events/` | Copia del esquema de `contracts/kafka/` (regla 4 de 10.3.1). |
+| Handler de un evento consumido | `Application/Events/` | La regla de negocio del consumo. Es testeable sin Kafka. |
+| Consumidor de Kafka | `Infrastructure/Messaging/<Topic>Consumer.cs` | Transporte: deserializa, aplica la idempotencia con `processed_events` (ADR-007), abre la unidad de trabajo del tenant y delega en el handler de `Application/Events`. |
+| Outbox: escritura | Puerto `IOutbox` en `Application/Abstractions`; implementación en `Infrastructure/Persistence` | El handler agrega el evento al Outbox en la misma transacción del cambio. |
+| Outbox: publicador | `Infrastructure/Messaging/OutboxPublisher.cs` | `BackgroundService`; el único que usa el productor de Kafka. |
+| Integración externa (Garage, Nominatim, PSP, correo, PDF) | `Infrastructure/<Sistema>/`, detrás de un puerto | Un adaptador por sistema. |
+| Configuración tipada | `Infrastructure/Options/` (o `Api/Security` si solo la usa el API) | Se valida al arrancar. |
+| Seguridad del API (claims, políticas) | `Api/Security/` | `AuthenticatedUser` entrega el tenant y el rol del JWT. El tenant nunca sale del cuerpo de la petición. |
+
+**Tamaño y responsabilidad.** No hay un límite automático que rompa el build. Estas cifras se revisan en cada PR, y si una clase las supera debe justificarlo en la revisión:
+
+- una clase de más de 250 líneas, o con más de 5 dependencias inyectadas, se divide o se justifica;
+- un archivo `*Endpoints.cs` con más de un recurso se divide por recurso;
+- un archivo con handlers de varios casos de uso (`*Handlers.cs`) se divide en un handler por caso de uso.
+
+**Java (Matching).** Se aplica la misma matriz con los paquetes de 10.3.1 y los mecanismos de Spring: `domain` no importa `org.springframework.*`; `application` solo importa `org.springframework.stereotype` y `transaction`, no `jdbc`, `kafka` ni `web`; los controladores de `api` no importan `infrastructure`; y cada `@Repository` JDBC implementa una interfaz de `application`. No se trasladan nombres de .NET: se sigue el estilo de Spring, con `@Service` en `application` y `@Component` o `@Repository` en `infrastructure`.
+
+**Cómo se verifica.**
+
+1. **El compilador.** Las referencias entre proyectos (.NET) ya impiden `Domain → Application` y `Application → Infrastructure` (10.3.1).
+2. **Pruebas de arquitectura en cada servicio.** Viven en `tests/unit/QuickPatch.<Servicio>.UnitTests/Architecture/ArchitectureTests.cs`, con NetArchTest, y en Matching en `src/test/java/.../ArchitectureTest.java`, con ArchUnit. Revisan lo que el compilador no ve, porque `Api` sí referencia a `Infrastructure` para la composición:
+   - `Domain` no depende de EF Core, Npgsql, Confluent.Kafka ni ASP.NET Core;
+   - `Application` no depende de EF Core, Npgsql, Confluent.Kafka ni ASP.NET Core;
+   - `Api.Endpoints` no depende de `Infrastructure`;
+   - `Infrastructure` no depende de `Api`.
+
+   Corren en el CI del servicio: una violación rompe el PR. Cada refactor del Sprint 6 agrega estas pruebas a su servicio.
+3. **Análisis de dependencias desde el código** (SCRUM-680, sección 7). Mide los ciclos entre paquetes, el fan-in y el fan-out, y las violaciones de la matriz en los 7 servicios con código, antes y después del refactor (SCRUM-649).
 
 ---
 
@@ -2291,6 +2386,7 @@ La V4 lleva el documento al Sprint 5 y responde a las observaciones del profesor
 | Mis pagos de la app (SCRUM-502) y Mi perfil del panel (SCRUM-613) en las tablas y en las vistas, regeneradas | 6.2 (figuras 8 y 9) y 8.13.5 (RF-25) | SCRUM-548 |
 | Observaciones 1 a 3 de la revisión funcional del PO: sección 12 con la revisión de la V4, contratos de `v0.21.0`, los 20 eventos de `quickpatch-kafka` `v0.10.0` y RF-17, RF-25 y el buzón en la sección 8.13.5 | 5.6.1, 5.6.2, 8.13.5, 12 y 13.5 | SCRUM-548 |
 | Auditoría previa a la revisión del PO: estado del documento, calificación implementada en la matriz de escenarios, secuencia de extremo a extremo con el técnico y la calificación por Kafka (ADR-027), cuenta corporativa implementada, Ranking en la convención de paquetes y referencias corregidas | 1, 6.2, 6.7, 8.13.3, 8.13.4, 10.2, 11.4 y 13 | SCRUM-548 |
+| C4 actualizado con `develop` del 5 de noviembre: componentes de la app (ofertas, equipo y regla del regreso) y del panel (presentación, activación, solicitudes y recuperación de la contraseña), tablas reales de cada base, producción con los 7 servicios tras SCRUM-518, desactivación de un tenant con su réplica y escenario nuevo de recuperación de la contraseña; las 25 vistas reexportadas | 5.1, 6.2, 8 (figuras 28 y 28c) y 9.1 (figuras 30 y 31) | SCRUM-595 |
 | Modelo lógico de dominio rehecho desde el DD 5.19 y el código: las entidades de los 7 servicios con tablas, sus estados, cardinalidades y réplicas, y relaciones internas y referencias entre servicios completas. La figura anterior era de septiembre y no tenía Tenant, ClientCompany, Quote, ServiceEvidence, MatchingRequest, Communication ni Ranking | 5.5 (figura 6) | SCRUM-595 |
 
 **Pendiente para cerrar la V4:** nada. Las figuras 15 y 18 se completaron en SCRUM-583 (fila siguiente).
@@ -2319,6 +2415,20 @@ Revisión del 28 de octubre de 2026 sobre `develop`, con los criterios de las V2
 4. Las figuras 15 y 18 (SCRUM-583) siguen pendientes.
 
 **Resultado:** la V4 queda aprobada con observaciones. Las observaciones 1 a 3 se corrigieron el 3 de noviembre de 2026 en SCRUM-548 (sección 13.4); la 4 se corrigió el 3 de noviembre de 2026 en SCRUM-583 (figuras 15 y 18). La diferencia del ciclo de vida con el SAD quedó resuelta en el SAD 2.46 (SRS, P2).
+
+---
+
+## 13.6 Cambios del cierre (Sprint 6)
+
+Estos cambios responden a la retroalimentación final del profesor: arquitectura interna, acoplamiento, cohesión y diagramas generados desde el código. Rige el feature freeze de los Working Agreements (SCRUM-646).
+
+| Cambio | Secciones | Tarea |
+|---|---|---|
+| Reglas de dependencia verificables: matriz entre capas, ubicación de cada tipo de clase, límites de tamaño, equivalente Java y pruebas de arquitectura en el CI de cada servicio | 10.3.2 | SCRUM-648 |
+| Estado real aplicado a los textos (SCRUM-698, desde la matriz de SCRUM-697): pies de las figuras 30 y 31 con la entrega y la ejecución separadas y las versiones por ambiente; Matching como consumidor previsto, no real, de `catalog.category-changed` en 8.6 | 8.6 y 9 | SCRUM-697 y SCRUM-698 |
+| El nivel de código sale del código: herramienta reproducible, línea base y medición después del refactor; 7.1 y 7.2 quedan como explicación de mecanismos | 7 y 7.3 | SCRUM-680 a SCRUM-683 |
+| Refactor interno de Catalog, ServiceRequest, Matching, Ranking y Payments con pruebas de arquitectura en su CI | 7.3 y 10.3.2 | SCRUM-651 a SCRUM-655 |
+| Contexto con los 6 roles agrupados por canal (4 en la app móvil y 2 en el panel web) y lectura vertical sin cruces; figuras 1 a 3 reexportadas | 3, 4 y 5.1 | SCRUM-688 y SCRUM-689 |
 
 ---
 

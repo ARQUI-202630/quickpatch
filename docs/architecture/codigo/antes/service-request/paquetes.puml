@@ -1,0 +1,161 @@
+@startuml
+!pragma layout smetana
+title ServiceRequest — paquetes (antes, 394a1e8)
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+package "Api" {
+  component "(global)\n1 tipos" as _global_
+  component "Api.Endpoints\n33 tipos" as QuickPatch_ServiceRequest_Api_Endpoints
+  component "Api.Http\n3 tipos" as QuickPatch_ServiceRequest_Api_Http
+  component "Api.Security\n5 tipos" as QuickPatch_ServiceRequest_Api_Security
+}
+package "Application" {
+  component "Application\n1 tipos" as QuickPatch_ServiceRequest_Application
+  component "Application.Abstractions\n26 tipos" as QuickPatch_ServiceRequest_Application_Abstractions
+  component "Application.Categories\n2 tipos" as QuickPatch_ServiceRequest_Application_Categories
+  component "Application.Events\n21 tipos" as QuickPatch_ServiceRequest_Application_Events
+  component "Application.Execution\n11 tipos" as QuickPatch_ServiceRequest_Application_Execution
+  component "Application.Matching\n2 tipos" as QuickPatch_ServiceRequest_Application_Matching
+  component "Application.Payments\n2 tipos" as QuickPatch_ServiceRequest_Application_Payments
+  component "Application.Quotes\n12 tipos" as QuickPatch_ServiceRequest_Application_Quotes
+  component "Application.Ratings\n3 tipos" as QuickPatch_ServiceRequest_Application_Ratings
+  component "Application.References\n2 tipos" as QuickPatch_ServiceRequest_Application_References
+  component "Application.ServiceRequests\n27 tipos" as QuickPatch_ServiceRequest_Application_ServiceRequests
+  component "Application.Tenants\n2 tipos" as QuickPatch_ServiceRequest_Application_Tenants
+}
+package "Domain" {
+  component "Domain.Categories\n1 tipos" as QuickPatch_ServiceRequest_Domain_Categories
+  component "Domain.Common\n1 tipos" as QuickPatch_ServiceRequest_Domain_Common
+  component "Domain.Evidence\n2 tipos" as QuickPatch_ServiceRequest_Domain_Evidence
+  component "Domain.Quotes\n2 tipos" as QuickPatch_ServiceRequest_Domain_Quotes
+  component "Domain.Ratings\n1 tipos" as QuickPatch_ServiceRequest_Domain_Ratings
+  component "Domain.ServiceRequests\n8 tipos" as QuickPatch_ServiceRequest_Domain_ServiceRequests
+  component "Domain.Tenants\n1 tipos" as QuickPatch_ServiceRequest_Domain_Tenants
+}
+package "Infrastructure" {
+  component "Infrastructure\n1 tipos" as QuickPatch_ServiceRequest_Infrastructure
+  component "Infrastructure.Geocoding\n2 tipos" as QuickPatch_ServiceRequest_Infrastructure_Geocoding
+  component "Infrastructure.Identity\n2 tipos" as QuickPatch_ServiceRequest_Infrastructure_Identity
+  component "Infrastructure.Messaging\n5 tipos" as QuickPatch_ServiceRequest_Infrastructure_Messaging
+  component "Infrastructure.Options\n7 tipos" as QuickPatch_ServiceRequest_Infrastructure_Options
+  component "Infrastructure.Persistence\n20 tipos" as QuickPatch_ServiceRequest_Infrastructure_Persistence
+  component "Infrastructure.Scheduling\n3 tipos" as QuickPatch_ServiceRequest_Infrastructure_Scheduling
+  component "Infrastructure.Storage\n2 tipos" as QuickPatch_ServiceRequest_Infrastructure_Storage
+}
+_global_ --> QuickPatch_ServiceRequest_Api_Endpoints #607D8B : 6
+_global_ --> QuickPatch_ServiceRequest_Api_Http #607D8B : 3
+_global_ --> QuickPatch_ServiceRequest_Api_Security #607D8B : 2
+_global_ --> QuickPatch_ServiceRequest_Application #607D8B : 1
+_global_ --> QuickPatch_ServiceRequest_Infrastructure #607D8B : 1
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Api_Http #607D8B : 4
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Api_Security #607D8B : 7
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 2
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Application_Execution #607D8B : 11
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Application_Quotes #607D8B : 10
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Application_Ratings #607D8B : 3
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Application_References #607D8B : 2
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Application_ServiceRequests #607D8B : 25
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Domain_Categories #607D8B : 1
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Domain_Common #607D8B : 5
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Domain_Evidence #607D8B : 2
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Domain_Quotes #607D8B : 2
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Domain_Ratings #607D8B : 5
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 10
+QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_Categories #607D8B : 1
+QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_Execution #607D8B : 5
+QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_Matching #607D8B : 1
+QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_Payments #607D8B : 1
+QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_Quotes #607D8B : 5
+QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_Ratings #607D8B : 1
+QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_References #607D8B : 2
+QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_ServiceRequests #607D8B : 8
+QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_Tenants #607D8B : 1
+QuickPatch_ServiceRequest_Application_Abstractions --> QuickPatch_ServiceRequest_Domain_Categories #607D8B : 1
+QuickPatch_ServiceRequest_Application_Abstractions --> QuickPatch_ServiceRequest_Domain_Evidence #607D8B : 1
+QuickPatch_ServiceRequest_Application_Abstractions --> QuickPatch_ServiceRequest_Domain_Quotes #607D8B : 1
+QuickPatch_ServiceRequest_Application_Abstractions --> QuickPatch_ServiceRequest_Domain_Ratings #607D8B : 1
+QuickPatch_ServiceRequest_Application_Abstractions --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 4
+QuickPatch_ServiceRequest_Application_Abstractions --> QuickPatch_ServiceRequest_Domain_Tenants #607D8B : 1
+QuickPatch_ServiceRequest_Application_Categories --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 3
+QuickPatch_ServiceRequest_Application_Categories --> QuickPatch_ServiceRequest_Application_Events #607D8B : 2
+QuickPatch_ServiceRequest_Application_Categories --> QuickPatch_ServiceRequest_Domain_Categories #607D8B : 1
+QuickPatch_ServiceRequest_Application_Events --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 1
+QuickPatch_ServiceRequest_Application_Events --> QuickPatch_ServiceRequest_Domain_Quotes #607D8B : 1
+QuickPatch_ServiceRequest_Application_Events --> QuickPatch_ServiceRequest_Domain_Ratings #607D8B : 1
+QuickPatch_ServiceRequest_Application_Events --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 1
+QuickPatch_ServiceRequest_Application_Execution --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 17
+QuickPatch_ServiceRequest_Application_Execution --> QuickPatch_ServiceRequest_Application_Events #607D8B : 2
+QuickPatch_ServiceRequest_Application_Execution --> QuickPatch_ServiceRequest_Domain_Evidence #607D8B : 5
+QuickPatch_ServiceRequest_Application_Execution --> QuickPatch_ServiceRequest_Domain_Quotes #607D8B : 1
+QuickPatch_ServiceRequest_Application_Execution --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 5
+QuickPatch_ServiceRequest_Application_Matching --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 5
+QuickPatch_ServiceRequest_Application_Matching --> QuickPatch_ServiceRequest_Application_Events #607D8B : 6
+QuickPatch_ServiceRequest_Application_Matching --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 2
+QuickPatch_ServiceRequest_Application_Payments --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 4
+QuickPatch_ServiceRequest_Application_Payments --> QuickPatch_ServiceRequest_Application_Events #607D8B : 4
+QuickPatch_ServiceRequest_Application_Payments --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 1
+QuickPatch_ServiceRequest_Application_Quotes --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 18
+QuickPatch_ServiceRequest_Application_Quotes --> QuickPatch_ServiceRequest_Application_Events #607D8B : 3
+QuickPatch_ServiceRequest_Application_Quotes --> QuickPatch_ServiceRequest_Domain_Quotes #607D8B : 6
+QuickPatch_ServiceRequest_Application_Quotes --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 4
+QuickPatch_ServiceRequest_Application_Ratings --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 4
+QuickPatch_ServiceRequest_Application_Ratings --> QuickPatch_ServiceRequest_Application_Events #607D8B : 1
+QuickPatch_ServiceRequest_Application_Ratings --> QuickPatch_ServiceRequest_Domain_Ratings #607D8B : 2
+QuickPatch_ServiceRequest_Application_Ratings --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 1
+QuickPatch_ServiceRequest_Application_References --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 3
+QuickPatch_ServiceRequest_Application_References --> QuickPatch_ServiceRequest_Domain_Categories #607D8B : 1
+QuickPatch_ServiceRequest_Application_References --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 1
+QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 36
+QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Application_Events #607D8B : 5
+QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Domain_Common #607D8B : 1
+QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Domain_Quotes #607D8B : 1
+QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Domain_Ratings #607D8B : 4
+QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 20
+QuickPatch_ServiceRequest_Application_Tenants --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 3
+QuickPatch_ServiceRequest_Application_Tenants --> QuickPatch_ServiceRequest_Application_Events #607D8B : 2
+QuickPatch_ServiceRequest_Application_Tenants --> QuickPatch_ServiceRequest_Domain_Tenants #607D8B : 1
+QuickPatch_ServiceRequest_Domain_Evidence --> QuickPatch_ServiceRequest_Domain_Common #607D8B : 1
+QuickPatch_ServiceRequest_Domain_Quotes --> QuickPatch_ServiceRequest_Domain_Common #607D8B : 1
+QuickPatch_ServiceRequest_Domain_Ratings --> QuickPatch_ServiceRequest_Domain_Common #607D8B : 1
+QuickPatch_ServiceRequest_Domain_ServiceRequests --> QuickPatch_ServiceRequest_Domain_Common #607D8B : 1
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 17
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Application_Quotes #607D8B : 1
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 1
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Geocoding #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Identity #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Messaging #607D8B : 5
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Options #607D8B : 7
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Persistence #607D8B : 14
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Scheduling #607D8B : 3
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Storage #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Geocoding --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Geocoding --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Identity --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Identity --> QuickPatch_ServiceRequest_Application_Events #607D8B : 1
+QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Application_Categories #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Application_Events #607D8B : 15
+QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Application_Matching #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Application_Payments #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Application_Tenants #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Domain_Tenants #607D8B : 1
+QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Infrastructure_Options #607D8B : 1
+QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Infrastructure_Persistence #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 19
+QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Domain_Categories #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Domain_Evidence #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Domain_Quotes #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Domain_Ratings #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 5
+QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Domain_Tenants #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Infrastructure_Options #607D8B : 2
+QuickPatch_ServiceRequest_Infrastructure_Scheduling --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 3
+QuickPatch_ServiceRequest_Infrastructure_Scheduling --> QuickPatch_ServiceRequest_Application_Quotes #607D8B : 1
+QuickPatch_ServiceRequest_Infrastructure_Scheduling --> QuickPatch_ServiceRequest_Infrastructure_Options #607D8B : 1
+QuickPatch_ServiceRequest_Infrastructure_Storage --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 4
+QuickPatch_ServiceRequest_Infrastructure_Storage --> QuickPatch_ServiceRequest_Infrastructure_Options #607D8B : 1
+legend right
+Rojo: viola SDD 10.3.2 · Naranja: ciclo entre paquetes
+Número: dependencias entre tipos
+endlegend
+@enduml

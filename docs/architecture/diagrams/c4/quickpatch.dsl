@@ -10,12 +10,17 @@
  *                                       API Gateway, Kafka, PostgreSQL, Redis y Garage no
  *                                       tienen componentes propios que diseñar (son
  *                                       configuración de productos), por eso no tienen vista.
- *   C4-05  Dynamic                 (7)  un diagrama por flujo crítico, no por sistema
+ *   C4-05  Dynamic                 (10) un diagrama por flujo crítico, no por sistema
  *   C4-06  Deployment              (2)  uno por ambiente: producción y QA (ADR-022)
  *   C4-07  Code                         fuera de Structurizr: ver los .puml de esta carpeta
  *
  * Etiqueta "Planeado": elemento o relación diseñado en el SDD/DD que todavía no está en el
- * código de develop (22 de octubre de 2026). Se dibuja con borde punteado.
+ * código de develop o no está desplegado (5 de noviembre de 2026). Se dibuja con borde punteado.
+ *
+ * Revisión del 5 de noviembre de 2026: componentes de la app y del panel según los features de develop
+ * (ofertas, equipo, recuperación de la contraseña, panel operativo, presentación y activación), bases
+ * con sus tablas del DD 5.19, producción con los 7 servicios tras la promoción del MVP (SCRUM-518),
+ * desactivación de un tenant con su réplica (RN-T1) y recuperación de la contraseña (SCRUM-623).
  *
  * Fuentes: SRS (roles y RIE-01 a RIE-03), SAD (4.1, ADR-003 a ADR-024), SDD (secciones 3 a 9),
  * DD (5, 7.2, 10) y el código de los 12 repositorios. Integra el C4-L1 del
@@ -31,12 +36,17 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
     model {
 
         # ---------------------------------------------------------------- Personas (SRS 2.1 y 2.2, DD RN-U6)
-        cliente = person "Cliente" "Pide, sigue, paga y califica servicios técnicos para el hogar."
-        empresaCliente = person "Empresa cliente" "Pide y paga servicios para sus sedes (RF-06)."
-        tecnico = person "Técnico" "Recibe asignaciones, ejecuta el servicio y registra evidencias."
-        proveedor = person "Proveedor" "Administra su equipo de técnicos (RF-16)."
-        adminTenant = person "Admin del tenant" "Aprueba y suspende técnicos de su tenant (RF-19, RF-20)."
-        adminPlataforma = person "Admin de plataforma" "Administra los tenants (RF-21)."
+        # Seis roles (SRS 2.1): cuatro usan la app móvil y dos el panel web (SCRUM-688).
+        group "Usuarios de la app móvil" {
+            cliente = person "Cliente" "Pide, sigue, paga y califica servicios técnicos para el hogar."
+            empresaCliente = person "Empresa cliente" "Pide y paga servicios para sus sedes (RF-06)."
+            tecnico = person "Técnico" "Recibe asignaciones, ejecuta el servicio y registra evidencias."
+            proveedor = person "Proveedor" "Administra su equipo de técnicos (RF-16)."
+        }
+        group "Administradores del panel web" {
+            adminTenant = person "Admin del tenant" "Aprueba y suspende técnicos, sigue las solicitudes de su tenant y entrega los enlaces de recuperación de contraseña (RF-18 a RF-20, ADR-024)."
+            adminPlataforma = person "Admin de plataforma" "Administra los tenants (RF-21)."
+        }
         equipo = person "Equipo de desarrollo y operación" "Desarrolla, despliega y opera QUICKPATCH." "Interno"
 
         # ---------------------------------------------------------------- Sistemas externos (ADR-024: solo la pasarela, R5)
@@ -52,14 +62,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
             group "Clientes" {
                 mobile = container "App móvil" "App de clientes, empresas cliente, técnicos y proveedores." "App nativa (iOS y Android)" "Mobile App" {
-                    mobNavegacion = component "Navegación" "Rutas protegidas por sesión y por rol, y barra inferior según el rol: Inicio, Solicitudes u Ofertas o Equipo, y Cuenta (SCRUM-441)." "go_router · app/router y app/shell"
+                    mobNavegacion = component "Navegación" "Rutas protegidas por sesión y por rol, barra inferior según el rol (Inicio; Solicitudes, Servicios o Equipo; Cuenta; SCRUM-441) y la regla del regreso: flecha en las pantallas secundarias y botón atrás de Android a Inicio desde las pestañas (SCRUM-615)." "go_router · app/router y app/shell"
                     mobConfig = component "Configuración del ambiente" "URL base, Host del gateway y huella SHA-256 del certificado de QA (pinning)." "Dart · core/config"
                     mobHttp = component "Cliente HTTP" "Adjunta JWT y X-Correlation-Id, valida el certificado y traduce problem+json en errores de la app." "Dio · core/network"
                     mobSesion = component "Sesión" "Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol." "Almacenamiento seguro del dispositivo · core/session"
-                    mobAuth = component "Autenticación" "Login, registro de cliente hogar y registro de técnico o proveedor con su especialidad (SCRUM-55); registro de empresa con razón social, NIT y primer usuario (SCRUM-67)." "Riverpod · features/autenticacion"
+                    mobAuth = component "Autenticación" "Login, registro de cliente hogar y de técnico o proveedor con su especialidad (SCRUM-55), registro de empresa (SCRUM-67), activación con el enlace de invitación y pedido de recuperación de la contraseña (SCRUM-626)." "Riverpod · features/autenticacion"
                     mobInicio = component "Inicio por rol" "Acceso a la nueva solicitud y categorías de Catalog para el cliente; opciones (Disponibilidad y cobertura) y aviso de verificación para técnico y proveedor (SCRUM-441)." "Riverpod · features/inicio"
                     mobCuenta = component "Cuenta" "Datos de la sesión, licencias y cierre de sesión (SCRUM-441); edición del perfil propio con PATCH /v1/users/me (SCRUM-612)." "Pantalla móvil · features/cuenta"
-                    mobDiseno = component "Sistema de diseño" "Tema azul con tokens y tipografía, y componentes compartidos: tarjeta de solicitud, chip de estado, selector de categoría, botones y estados vacío, de error y de carga (SCRUM-439)." "Componentes móviles · app/theme y shared/widgets"
+                    mobDiseno = component "Sistema de diseño" "Tema azul y componentes compartidos: tarjetas, chips de estado, botones, estados vacío y de error (SCRUM-439), y ConfirmarSalida y AtrasConDestino (SCRUM-617)." "Componentes móviles · app/theme y shared/widgets"
                     mobSolicitudes = component "Solicitudes" "Nueva solicitud en tres pasos en un formulario (RNF-11) y detalle con su estado (SCRUM-442)." "Riverpod · features/solicitudes"
                     mobUbicacion = component "Ubicación del dispositivo" "Permiso y lectura del GPS con respaldo en LocationManager y límite de 15 s." "geolocator · features/solicitudes/data"
                     mobDisponibilidad = component "Disponibilidad y cobertura" "Interruptor de disponibilidad (bloqueado si está ocupado, RN-M6) y elección de las localidades en el mapa o con chips sincronizados (RF-13, RN-M9; SCRUM-89)." "Riverpod · features/disponibilidad"
@@ -70,6 +80,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     mobEmpresa = component "Usuarios de la empresa" "Empresa cliente del usuario y alta de otros usuarios con invitación (RF-06; SCRUM-67)." "Riverpod · features/empresa"
                     mobCalificacion = component "Calificación" "Estrellas y comentario en el detalle de una solicitud pagada, para quien la creó (RF-12; SCRUM-86)." "Riverpod · features/calificacion"
                     mobHistorial = component "Historial del técnico" "Servicios atendidos con filtros Completados, Pagados y Cancelados y la calificación recibida (RF-17; SCRUM-101)." "Riverpod · features/solicitudes"
+                    mobOfertas = component "Ofertas" "Oferta pendiente del técnico con localidad y distancia, aceptar o rechazar (RF-10), y aviso de oferta nueva con la trama offer.created en cualquier pestaña (SCRUM-80)." "Riverpod · features/ofertas"
+                    mobEquipo = component "Equipo del proveedor" "Lista los técnicos del equipo y da de alta uno nuevo con su invitación (RF-16; SCRUM-98)." "Riverpod · features/equipo"
                     mobPagos = component "Pago, comprobante y Mis pagos" "Pago con la pasarela simulada (la tarjeta se tokeniza en el teléfono) y comprobante en PDF (RF-22 a RF-24); Mis pagos del técnico y del equipo del proveedor, por estado y por técnico (RF-25; SCRUM-502)." "Riverpod · features/pagos"
                 }
                 web = container "Panel web" "Panel de administración del tenant y de la plataforma." "SPA web + TypeScript" "Web Browser" {
@@ -84,6 +96,13 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     webTecnicos = component "Aprobación de técnicos" "Lista técnicos y proveedores del tenant por estado de verificación, con paginación; aprueba, rechaza, suspende y reactiva con confirmación y motivo (RF-19, RF-20; SCRUM-107, SCRUM-110)." "Componente web · features/tecnicos"
                     webTecnicosApi = component "Cliente API de técnicos" "GET /v1/admin/technicians y POST approve, reject y suspend (identity.v1.yaml); nombres de especialidad con GET /v1/catalog/categories." "HttpClient · features/tecnicos"
                     webPerfil = component "Mi perfil" "Nombre y teléfono propios con GET y PATCH /v1/users/me; correo y rol de solo lectura y confirmación al salir sin guardar (SCRUM-613)." "Componente web · features/perfil"
+                    webPresentacion = component "Presentación" "Página pública en /: qué es QUICKPATCH, el ciclo del servicio, sus usuarios y la descarga de la APK del último release (SCRUM-491, SCRUM-628)." "Componente web · features/presentacion"
+                    webActivacion = component "Activar cuenta" "Página pública /activar: el técnico invitado define su contraseña con el token del enlace (SCRUM-463)." "Componente web · features/activacion"
+                    webSolicitudes = component "Solicitudes" "Panel operativo del admin del tenant y de plataforma: lista por estado con conteos, consulta cada minuto con la pestaña visible y cancelación con motivo (RF-18; SCRUM-38, SCRUM-105)." "Componente web · features/solicitudes"
+                    webSolicitudesApi = component "Cliente API de solicitudes" "GET /v1/admin/service-requests y /v1/platform/service-requests, resumen por estado y POST cancel (service-request.v1.yaml)." "HttpClient · features/solicitudes"
+                    webRecuperaciones = component "Recuperar contraseñas" "Bandeja del admin del tenant con las solicitudes pendientes, de la más antigua a la más reciente, y el enlace de un solo uso que vence en 1 hora (SCRUM-626, ADR-024)." "Componente web · features/recuperacion"
+                    webRecuperar = component "Define tu contraseña nueva" "Página pública /recuperar: el usuario define la contraseña nueva con el token del enlace, que va en el cuerpo y nunca en la URL (SCRUM-626)." "Componente web · features/recuperacion"
+                    webRecuperacionApi = component "Cliente API de recuperación" "GET /v1/admin/password-recovery-requests, POST .../{id}/link y POST /v1/auth/password-recovery/confirm (identity.v1.yaml 1.10.0)." "HttpClient · features/recuperacion"
                     webDiseno = component "Sistema de diseño" "Tokens azules, fuente autoalojada y componentes reutilizables del panel; contraste WCAG AA verificado en el CI (SCRUM-433)." "SCSS · styles y shared"
                 }
             }
@@ -123,10 +142,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 catalog = container "Catalog Service" "Categorías y especialidades de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
                     catEndpoints = component "CategoryEndpoints" "GET /v1/catalog/categories (obsoleta por ADR-025); POST y PATCH /v1/catalog/admin/categories." "Minimal API · Api/Endpoints"
-                    catSecurity = component "AuthenticatedUser, ChannelOptions y ForbiddenAuditHandler" "Usuario, tenant y rol del JWT; sin token, el tenant del canal. Registra los 403." "ASP.NET Core · Api/Security"
+                    catSecurity = component "AuthenticatedUser, RequestTenant y ForbiddenAuditHandler" "Usuario, tenant y rol del JWT. RequestTenant resuelve el tenant del token o, sin token, del canal (RN-U5), fuera del endpoint. Registra los 403." "ASP.NET Core · Api/Security"
                     catHttp = component "CorrelationId y Problems" "Propaga X-Correlation-Id y responde application/problem+json." "ASP.NET Core · Api/Http"
                     # Application
-                    catHandlers = component "Categories" "ListCategoriesHandler, CreateCategoryHandler y UpdateCategoryHandler; nombre único por tenant (409)." "Casos de uso · Application/Categories"
+                    catHandlers = component "Categories" "ListCategories, CreateCategory y UpdateCategory, un caso de uso por archivo; nombre único por tenant (409)." "Casos de uso · Application/Categories"
                     # Domain
                     catDomain = component "Category" "Nombre normalizado, descripción, estado activo y updatedAt." "Domain/Categories"
                     # Infrastructure
@@ -137,7 +156,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 }
                 serviceRequest = container "ServiceRequest Service" "Ciclo de vida de la solicitud de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
-                    srRequestEndpoints = component "ServiceRequestEndpoints" "POST, GET y lista de /v1/service-requests, POST /location-preview, POST /{id}/cancel y GET /v1/technicians/me/service-requests." "Minimal API · Api/Endpoints"
+                    srRequestEndpoints = component "Endpoints de la solicitud" "ServiceRequestEndpoints (POST y GET /v1/service-requests), LocationPreviewEndpoints (/location-preview), CancellationEndpoints (/{id}/cancel) y TechnicianServiceRequestEndpoints (GET /v1/technicians/me/service-requests). Comparten ApiResults y Routes de Api/Http, no entre sí." "Minimal API · Api/Endpoints"
                     srReferenceEndpoints = component "ReferenceEndpoints" "GET /v1/service-requests/categories y /localities desde las réplicas (ADR-025)." "Minimal API · Api/Endpoints"
                     srQuoteEndpoints = component "QuoteEndpoints" "GET y POST /v1/service-requests/{id}/quotes, accept y reject (RF-34, RF-35)." "Minimal API · Api/Endpoints"
                     srExecutionEndpoints = component "ExecutionEndpoints" "POST /start, /evidence y /complete; GET de las evidencias (RF-14, RF-15)." "Minimal API · Api/Endpoints"
@@ -152,7 +171,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     srEventHandlers = component "Manejadores de eventos" "ApplyCategoryChangedHandler, MatchingStatusHandler, PaymentEventsHandler y ApplyTenantStatusChangedHandler (réplica del estado del tenant, RN-T1): aplican cada evento una vez por eventId." "Casos de uso · Application/Categories, Matching y Payments"
                     srRating = component "Ratings" "RateServiceRequestHandler: valida dueño, estado pagado y que no esté calificada (RN-R1 a RN-R3) y deja service-request.rated en el Outbox (ADR-027)." "Casos de uso · Application/Ratings"
                     # Domain
-                    srDomain = component "Dominio de la solicitud" "ServiceRequest (transiciones RN-SR2 a RN-SR7), Quote, ServiceEvidence, Rating, CategoryReplica, GeoPoint, CoverageArea y Locality." "Domain"
+                    srDomain = component "Dominio de la solicitud" "ServiceRequest (transiciones RN-SR2 a RN-SR7), ServiceRequestRules (validación RN-SR1, RN-SR11, RN-SR12 y RF-36), Quote, ServiceEvidence, Rating, CategoryReplica, GeoPoint, CoverageArea y Locality." "Domain"
                     # Infrastructure
                     srPersistence = component "TenantUnitOfWork y repositorios" "ServiceRequestRepository, QuoteRepository, EvidenceRepository, RatingRepository, CategoryReplicaRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
                     srOutbox = component "EfOutbox" "Guarda los eventos de la solicitud en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
@@ -188,7 +207,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     maTechnicianListener = component "TechnicianEventsListener" "Consume technician.registered y technician.verification-changed." "@KafkaListener · infrastructure/messaging"
                     maStores = component "JdbcMatchingStores y JdbcTechnicianStores" "Solicitudes, candidatos (PostGIS), ofertas, disponibilidad, cobertura y localidades bajo RLS." "JDBC · infrastructure/persistence"
                     maProjection = component "JdbcTechnicianProjection" "INSERT ... ON CONFLICT en technician_availability: la fila nace en no_disponible." "JDBC · infrastructure/persistence"
-                    maTenantTx = component "JdbcTenantTransaction y JdbcProcessedEventStore" "Fija app.current_tenant en cada transacción y registra el eventId en processed_events." "JDBC · infrastructure/persistence"
+                    maTenantTx = component "JdbcTenantTransaction y JdbcProcessedEventStore" "Fija app.current_tenant en cada transacción y registra el eventId en processed_events. Implementan los puertos TenantTransaction y ProcessedEventStore de application/common." "JDBC · infrastructure/persistence"
                     maOutbox = component "JdbcOutbox" "Guarda los eventos de Matching en outbox_events en la misma transacción." "JDBC · infrastructure/messaging"
                     maPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol matching_outbox y marca published_at." "@Scheduled · infrastructure/messaging"
                     maExpirer = component "OfferExpirer" "Cada MATCHING_EXPIRY_INTERVAL vence las ofertas sin respuesta y ofrece al siguiente candidato (RN-M3, RN-M8)." "@Scheduled · infrastructure/scheduling"
@@ -196,14 +215,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 }
                 ranking = container "Ranking Service" "Reputación de técnicos desde las calificaciones (ADR-027)." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Application
-                    raHandler = component "ServiceRequestRatedHandler" "Suma la calificación bajo el tenant del evento, una vez por eventId y por solicitud, y deja ranking.technician-reputation-changed en el Outbox." "Casos de uso · Application/Reputation"
+                    raHandler = component "ServiceRequestRatedHandler" "ServiceRequestRatedContract valida el mensaje; el caso de uso suma la calificación bajo el tenant del evento, una vez por eventId y por solicitud, y deja ranking.technician-reputation-changed en el Outbox." "Casos de uso · Application/Reputation"
                     # Domain
                     raDomain = component "Dominio de reputación" "TechnicianReputation (cantidad, suma, promedio NUMERIC(2,1) y reputación baja con 5 o más calificaciones y promedio menor a 3.0, AC9-E2) y AppliedRating." "Domain/Reputation"
                     # Infrastructure
                     raPersistence = component "TenantUnitOfWork y repositorios" "ReputationRepository (FOR UPDATE por técnico) y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
                     raOutbox = component "EfOutbox" "Guarda ranking.technician-reputation-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
                     raPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol ranking_outbox y marca published_at." "BackgroundService · Infrastructure/Messaging"
-                    raConsumer = component "ServiceRequestRatedConsumer" "Consume service-request.rated; confirma el offset después de aplicar y descarta lo que no cumple el contrato." "Kafka consumer · Infrastructure/Messaging"
+                    raConsumer = component "ServiceRequestRatedConsumer" "Consume service-request.rated y confirma el offset después de aplicar; solo transporte: el contrato lo valida Application." "Kafka consumer · Infrastructure/Messaging"
                 }
                 payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
@@ -211,13 +230,13 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     paInvoiceEndpoints = component "InvoiceEndpoints" "GET /v1/payments/{id}/invoice en JSON o PDF (RF-24)." "Minimal API · Api/Endpoints"
                     paSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Usuario, tenant, rol y company_id del JWT; registra los 403." "ASP.NET Core · Api/Security"
                     # Application
-                    paPayments = component "Payments" "GetPaymentHandler, PayHandler y ReconcilePaymentsHandler." "Casos de uso · Application/Payments"
+                    paPayments = component "Payments" "GetPayment, Pay, PaymentSettlement y ReconcilePayments, un caso de uso por archivo." "Casos de uso · Application/Payments"
                     paCompletedHandler = component "ServiceRequestCompletedHandler" "Crea el pago pendiente con el total de la cotización aceptada (RN-P4)." "Casos de uso · Application/Payments"
-                    paInvoices = component "Invoices" "GetInvoiceHandler: solo el pagador lee el comprobante." "Casos de uso · Application/Invoices"
+                    paInvoices = component "Invoices" "GetInvoiceHandler: solo el pagador lee el comprobante; entrega InvoiceDocument al puerto IInvoicePdfRenderer." "Casos de uso · Application/Invoices"
                     # Domain
                     paDomain = component "Dominio de pagos" "Payment (estados y RejectionReasons), Invoice y Billing." "Domain/Payments"
                     # Infrastructure
-                    paPersistence = component "TenantUnitOfWork y repositorios" "PaymentRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                    paPersistence = component "TenantUnitOfWork y repositorios" "PaymentRepository, PaymentTechnicianRepository, ReconciliationSource y ProcessedEventRepository bajo RLS, un adaptador por archivo." "EF Core + Npgsql · Infrastructure/Persistence"
                     paOutbox = component "EfOutbox" "Guarda payment.approved o payment.rejected en outbox_events en la misma transacción." "EF Core · Infrastructure/Persistence"
                     paPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
                     paCompletedConsumer = component "ServiceRequestCompletedConsumer" "Consume service-request.completed." "Kafka consumer · Infrastructure/Messaging"
@@ -261,14 +280,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             geocodificador = container "Geocodificador" "Convierte direcciones de Bogotá en coordenadas; solo el mapa de Bogotá y su propio PostgreSQL (RIE-02, ADR-024, excepción a ADR-014)." "Nominatim (OpenStreetMap)"
 
             group "PostgreSQL + PostGIS (una instancia, una base por servicio, ADR-014)" {
-                dbIdentity = container "db_identity" "tenants, users, client_companies, technician_profiles, password_setup_tokens, password_recovery_requests y audit_logs." "PostgreSQL" "Database"
-                dbActors = container "db_actors" "Actores de negocio." "PostgreSQL" "Database"
+                dbIdentity = container "db_identity" "tenants, users, client_companies, technician_profiles, password_setup_tokens, password_recovery_requests, password_recovery_attempts, audit_logs y outbox_events." "PostgreSQL" "Database"
+                dbActors = container "db_actors" "Base y roles creados; sin servicio que la use (Actors no tiene código)." "PostgreSQL" "Database"
                 dbCatalog = container "db_catalog" "service_categories y outbox_events." "PostgreSQL" "Database"
-                dbServiceRequest = container "db_service_request" "service_requests, service_request_categories, outbox_events y processed_events." "PostgreSQL + PostGIS" "Database"
-                dbMatching = container "db_matching" "Disponibilidad, cobertura, intentos y processed_events." "PostgreSQL + PostGIS" "Database"
+                dbServiceRequest = container "db_service_request" "service_requests, quotes, ratings, service_evidence, service_request_categories, tenant_status_replica, localities, audit_logs, outbox_events y processed_events." "PostgreSQL + PostGIS" "Database"
+                dbMatching = container "db_matching" "matching_requests, matching_attempts, technician_availability, coverage_zones, localities, outbox_events y processed_events." "PostgreSQL + PostGIS" "Database"
                 dbRanking = container "db_ranking" "technician_reputations, applied_ratings, processed_events y outbox_events." "PostgreSQL" "Database"
-                dbPayments = container "db_payments" "payments e invoices, sin PAN ni CVV; outbox_events y processed_events." "PostgreSQL" "Database"
-                dbCommunication = container "db_communication" "Buzón por usuario y chat de la solicitud." "PostgreSQL" "Database"
+                dbPayments = container "db_payments" "payments, invoices y payment_technicians, sin PAN ni CVV; outbox_events y processed_events." "PostgreSQL" "Database"
+                dbCommunication = container "db_communication" "notifications, chat_participants y chat_messages." "PostgreSQL" "Database"
             }
         }
 
@@ -278,8 +297,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         empresaCliente -> mobNavegacion "Pide y paga servicios"
         tecnico -> mobNavegacion "Atiende sus asignaciones"
         proveedor -> mobNavegacion "Administra su equipo"
-        adminTenant -> webShell "Aprueba y suspende técnicos"
+        adminTenant -> webShell "Aprueba técnicos, sigue las solicitudes y entrega enlaces de recuperación"
         adminPlataforma -> webShell "Administra los tenants"
+        cliente -> webRecuperar "Define su contraseña nueva con el enlace que le entregó el admin"
         equipo -> github "Desarrolla y despliega"
         equipo -> observabilidad "Opera y diagnostica"
 
@@ -292,6 +312,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         mobNavegacion -> mobDisponibilidad "Abre"
         mobNavegacion -> mobNotificaciones "Abre"
         mobNavegacion -> mobEmpresa "Abre"
+        mobNavegacion -> mobOfertas "Abre"
+        mobNavegacion -> mobEquipo "Abre"
+        mobOfertas -> mobHttp "GET la oferta pendiente y POST accept o reject con"
+        mobOfertas -> mobTiempoReal "Recibe offer.created de"
+        mobEquipo -> mobHttp "GET y POST /v1/providers/me/technicians con"
         mobSolicitudes -> mobChat "Abre el chat de la solicitud en"
         mobSolicitudes -> mobPagos "Abre el pago y el comprobante en"
         mobSolicitudes -> mobCalificacion "Muestra la calificación del servicio pagado con"
@@ -331,6 +356,18 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         webShell -> webTenants "Abre"
         webShell -> webTecnicos "Abre"
         webShell -> webPerfil "Abre desde el nombre del usuario"
+        webShell -> webPresentacion "Abre en / sin sesión"
+        webShell -> webActivacion "Abre en /activar"
+        webShell -> webRecuperar "Abre en /recuperar"
+        webShell -> webSolicitudes "Abre"
+        webShell -> webRecuperaciones "Abre"
+        webSolicitudes -> webSolicitudesApi "Lista, cuenta y cancela con"
+        webSolicitudesApi -> webInterceptor "Envía las peticiones por"
+        webRecuperaciones -> webRecuperacionApi "Lista las pendientes y genera el enlace con"
+        webRecuperar -> webRecuperacionApi "Confirma la contraseña nueva con"
+        webRecuperacionApi -> webInterceptor "Envía las peticiones por"
+        webActivacion -> webInterceptor "POST /v1/auth/password/setup por"
+        webPresentacion -> github "Descarga la APK del último release de quickpatch-mobile" "HTTPS"
         webShell -> webDiseno "Arma el layout con"
         webTenants -> webDiseno "Usa los componentes de"
         webTecnicos -> webDiseno "Usa los componentes de"
@@ -347,7 +384,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         webInterceptor -> gateway "Llama a la API" "HTTPS/JSON"
 
         # API Gateway → servicios
-        gateway -> idEndpoints "Enruta /api/v1/auth, /users, /platform, /admin/technicians y /providers" "HTTP"
+        gateway -> idEndpoints "Enruta /api/v1/auth, /users, /platform, /admin/technicians, /admin/password-recovery-requests y /providers" "HTTP"
         gateway -> idCompanyEndpoints "Enruta /api/v1/auth/register/company y /api/v1/companies" "HTTP"
         gateway -> catEndpoints "Enruta /api/v1/catalog" "HTTP"
         gateway -> srRequestEndpoints "Enruta /api/v1/service-requests y /api/v1/technicians/me/service-requests" "HTTP"
@@ -569,18 +606,21 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 mobProd = containerInstance mobile
             }
             deploymentNode "Navegador del administrador" "" "Chrome, Edge o Firefox" {
-                webBrowserProd = infrastructureNode "Navegador" "Ejecuta el panel web que sirve el gateway de VM3." "HTML + JS"
+                webProd = containerInstance web
+            }
+            deploymentNode "Navegador del equipo" "Quien opera consulta Grafana y Loki." "Chrome, Edge o Firefox" {
+                equipoNavProd = infrastructureNode "Navegador" "Ejecuta la interfaz de Grafana que sirve VM1." "HTML + JS"
             }
             deploymentNode "Red privada del laboratorio 10.43.x.x" "Solo el 443 de VM1 es alcanzable desde la VPN (R9); firewall default deny incoming." "" {
                 deploymentNode "VM1 · Herramientas · 10.43.100.168" "Entrada única y herramientas compartidas por los dos ambientes." "4 vCPU · 11 GiB RAM · 68 GB" {
                     proxyProd = infrastructureNode "Entrada Nginx :443" "Termina TLS 1.2/1.3 (autofirmado) y reenvía por nombre, sin cambiar Host: quickpatch.internal al gateway de VM3; grafana.quickpatch.internal a Grafana (ADR-028)." "Nginx"
-                    runnerProd = infrastructureNode "Runner de GitHub Actions" "kubectl y k6; despliega la imagen de main." "GitHub Actions runner"
+                    runnerProd = infrastructureNode "Runner de GitHub Actions" "kubectl y k6; despliega la imagen de main y corre el humo de producción." "GitHub Actions runner"
                     observabilidadProd = softwareSystemInstance observabilidad
                 }
                 deploymentNode "VM3 · Aplicación · 10.43.98.205" "Los servicios llegan a VM4 (PostgreSQL 5432, Redis 6379) y a VM6 (Kafka 9092, Garage 9000)." "4 vCPU · 11 GiB RAM · 68 GB" {
-                    deploymentNode "Docker, red del host" "Nginx del gateway de producción en el puerto 8080, abierto solo a VM1 (ADR-028): /api va a Traefik y / sirve el panel desde /opt/quickpatch/gateway/panel (hoy, página provisional)." "Docker" {
+                    deploymentNode "Docker, red del host" "Nginx del gateway de producción en el puerto 8080, abierto solo a VM1 (ADR-028): /api va a Traefik y / sirve el panel desde /opt/quickpatch/gateway/panel (página provisional: el panel real no se ha promovido)." "Docker" {
                         gatewayProd = containerInstance gateway
-                        webProd = containerInstance web
+                        panelProd = infrastructureNode "Archivos del panel" "Build de Angular (HTML, JS y CSS) en /opt/quickpatch/gateway/panel. El Nginx los entrega: no los ejecuta, se ejecutan en el navegador." "Archivos estáticos"
                     }
                     deploymentNode "k3s (un nodo)" "" "k3s + Traefik" {
                         traefikProd = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
@@ -591,15 +631,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                         catalogProd = containerInstance catalog
                         serviceRequestProd = containerInstance serviceRequest
                         matchingProd = containerInstance matching
-                        rankingProd = containerInstance ranking {
-                            tags "Planeado"
-                        }
-                        paymentsProd = containerInstance payments {
-                            tags "Planeado"
-                        }
-                        communicationProd = containerInstance communication {
-                            tags "Planeado"
-                        }
+                        rankingProd = containerInstance ranking
+                        paymentsProd = containerInstance payments
+                        communicationProd = containerInstance communication
                     }
                 }
                 deploymentNode "VM4 · Datos · 10.43.98.209" "Recibe 5432 y 6379 desde VM3; respaldo diario a Garage de VM6." "4 vCPU · 11 GiB RAM · 68 GB" {
@@ -621,7 +655,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     garageProd = containerInstance garage
                 }
             }
-            webBrowserProd -> proxyProd "Abre https://quickpatch.internal" "HTTPS"
+            webProd -> proxyProd "Pide el panel y llama a /api en https://quickpatch.internal" "HTTPS"
+            panelProd -> webProd "Entrega el panel al navegador (vía VM1)" "HTTPS"
+            equipoNavProd -> proxyProd "Abre https://grafana.quickpatch.internal" "HTTPS"
             mobProd -> proxyProd "Llama a https://quickpatch.internal/api (certificado fijado)" "HTTPS"
             proxyProd -> gatewayProd "Reenvía quickpatch.internal a VM3:8080" "HTTP"
             gatewayProd -> traefikProd "Envía /api a :30080" "HTTP"
@@ -632,6 +668,12 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             deploymentNode "Teléfono o emulador de prueba" "" "Android" {
                 mobQa = containerInstance mobile
             }
+            deploymentNode "Navegador del administrador" "" "Chrome, Edge o Firefox" {
+                webQa = containerInstance web
+            }
+            deploymentNode "Navegador del equipo" "Quien opera consulta Grafana y Loki." "Chrome, Edge o Firefox" {
+                equipoNavQa = infrastructureNode "Navegador" "Ejecuta la interfaz de Grafana que sirve VM1." "HTML + JS"
+            }
             deploymentNode "Red privada del laboratorio 10.43.x.x" "QA no se conecta con producción; solo VM1 llega a los dos (ADR-022)." "" {
                 deploymentNode "VM1 · Herramientas · 10.43.100.168" "Misma VM1 de producción." "4 vCPU · 11 GiB RAM · 68 GB" {
                     proxyQa = infrastructureNode "Entrada Nginx :443" "La misma entrada: qa.quickpatch.internal al gateway de VM2, solo desde las redes del equipo (ADR-028)." "Nginx"
@@ -641,7 +683,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 deploymentNode "VM2 · Aplicación · 10.43.98.15" "Los servicios llegan a VM5 (5432, 6379) y a VM7 (9092, 9000)." "4 vCPU · 11 GiB RAM · 68 GB" {
                     deploymentNode "Docker, red del host" "Nginx del gateway de QA en el puerto 8080, abierto solo a VM1 (ADR-028): /api va a Traefik y / sirve el panel de QA (build de release/*)." "Docker" {
                         gatewayQa = containerInstance gateway
-                        webQa = containerInstance web
+                        panelQa = infrastructureNode "Archivos del panel" "Build de Angular (HTML, JS y CSS) de release/* en el Nginx de QA. Los entrega: no los ejecuta, se ejecutan en el navegador." "Archivos estáticos"
                     }
                     deploymentNode "k3s (un nodo)" "" "k3s + Traefik" {
                         traefikQa = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
@@ -677,6 +719,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 }
             }
             mobQa -> proxyQa "Llama a https://qa.quickpatch.internal/api (certificado fijado)" "HTTPS"
+            webQa -> proxyQa "Pide el panel y llama a /api en https://qa.quickpatch.internal" "HTTPS"
+            panelQa -> webQa "Entrega el panel al navegador (vía VM1)" "HTTPS"
+            equipoNavQa -> proxyQa "Abre https://grafana.quickpatch.internal" "HTTPS"
             proxyQa -> gatewayQa "Reenvía qa.quickpatch.internal a VM2:8080" "HTTP"
             gatewayQa -> traefikQa "Envía /api a :30080" "HTTP"
             runnerQa -> traefikQa "Despliega release/* y ejecuta las pruebas del sistema" "HTTPS"
@@ -694,7 +739,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             title "Contexto del sistema QUICKPATCH (C4 nivel 1)"
             include *
             exclude equipo github observabilidad
-            autoLayout lr
+            autoLayout tb 150 120
         }
 
         container quickpatch "C4-03-Contenedores" "Contenedores de QUICKPATCH agrupados: clientes, API Gateway, microservicios, mensajería y almacenamiento, y una base PostgreSQL por servicio (ADR-014)." {
@@ -710,7 +755,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             include *
             # La relación existe en el modelo, pero dibujada cruza Ubicación del dispositivo.
             exclude "mobDisponibilidad -> mobDiseno"
-            autoLayout tb 150 80
+            autoLayout tb 220 140
         }
         component web "C4-04-Componentes-Web" "Componentes del Panel web." {
             include *
@@ -729,7 +774,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
         component catalog "C4-04-Componentes-Catalog" "Componentes de Catalog Service por capa: Api, Application, Domain e Infrastructure (SDD 10.3.1)." {
             include *
-            autoLayout lr
+            autoLayout tb 120 70
         }
         component serviceRequest "C4-04-Componentes-ServiceRequest" "Componentes de ServiceRequest Service por capa: Api, Application, Domain e Infrastructure (SDD 10.3.1)." {
             include *
@@ -748,7 +793,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
         component payments "C4-04-Componentes-Payments" "Componentes de Payments Service por capa (SDD 10.3.1): pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado); pagos recibidos del técnico y del equipo del proveedor (RF-25)." {
             include *
-            autoLayout lr
+            autoLayout tb 120 70
         }
         component communication "C4-04-Componentes-Communication" "Componentes de Communication Service por capa, con sus clases: canal en tiempo real, buzón y chat de la solicitud, con sus consumidores de Kafka (ADR-023, ADR-024 y ADR-026)." {
             include *
@@ -910,29 +955,62 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-GestionTenants" "Gestión de tenants por el admin de plataforma (RF-21, SCRUM-112)." {
-            web -> gateway "PATCH /api/v1/platform/tenants/{id}"
+        dynamic quickpatch "C4-05-Dinamico-GestionTenants" "El admin de plataforma desactiva un tenant y ServiceRequest deja de aceptar sus solicitudes aunque el token siga vigente (RF-21, RN-T1; ADR-007, ADR-017; SCRUM-508 a SCRUM-511)." {
+            title "Escenario: desactivación de un tenant"
+            web -> gateway "PATCH /api/v1/platform/tenants/{id} con status inactivo" "HTTPS/JSON"
             gateway -> identity "Enruta con el JWT de admin_plataforma"
-            identity -> dbIdentity "SET LOCAL ROLE identity_platform, cambia el estado y escribe audit_logs (una transacción)"
-            identity -> gateway "200 con el tenant actualizado"
+            identity -> dbIdentity "SET LOCAL ROLE identity_platform: cambia el estado, escribe audit_logs y guarda tenant.status-changed en el Outbox (una transacción)"
+            identity -> gateway "200 con el tenant actualizado; desde ahora el login de sus usuarios responde 403"
             gateway -> web "Muestra el nuevo estado"
-            autoLayout lr
+            identity -> kafka "El publicador envía tenant.status-changed con el estado completo y updatedAt"
+            serviceRequest -> kafka "Consume tenant.status-changed (una vez por eventId)"
+            serviceRequest -> dbServiceRequest "Actualiza tenant_status_replica y descarta los eventos con updatedAt anterior (ADR-017)"
+            mobile -> gateway "Un usuario del tenant con la sesión abierta: POST /api/v1/service-requests" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT, todavía vigente"
+            serviceRequest -> gateway "422 tenant-inactivo, sin llamar a Identity (RN-T1)"
+            gateway -> mobile "La app muestra que la empresa está desactivada" "HTTPS/JSON"
+            autoLayout lr 200 100
+            properties {
+                "structurizr.groups" false
+            }
         }
 
-        deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción al 27 de octubre de 2026 (Documento de Infraestructura V4, 4.3): VM1 (entrada y herramientas), VM3, VM4 y VM6 (ADR-022); gateway y panel en el Nginx de VM3 (ADR-028). Punteado: sin desplegar; Payments y Communication llegan con la promoción del MVP (SCRUM-518)." {
+        dynamic quickpatch "C4-05-Dinamico-RecuperacionContrasena" "Recuperación de la contraseña olvidada sin correo (RN-U7; ADR-024; identity.v1.yaml 1.10.0; SCRUM-623). Pedir responde 202 exista o no la cuenta, y el cuarto pedido en la hora da 429. Generar otro enlace anula el anterior; uno vencido o ya usado da 400 enlace-invalido." {
+            title "Escenario: recuperación de la contraseña olvidada"
+            mobile -> gateway "El usuario pide la recuperación: POST /api/v1/auth/password-recovery con su correo" "HTTPS/JSON"
+            gateway -> identity "Enruta con el X-Channel-Id del tenant"
+            identity -> dbIdentity "Cuenta el pedido por el HMAC del correo (máximo 3 por hora) y, si la cuenta existe, deja una solicitud pendiente; responde 202 siempre"
+            web -> gateway "El admin del tenant abre Recuperar contraseñas: GET /api/v1/admin/password-recovery-requests" "HTTPS/JSON"
+            gateway -> identity "Enruta con el JWT del admin_tenant"
+            identity -> dbIdentity "Lista las solicitudes pendientes de su tenant (RLS), sin tokens"
+            web -> gateway "Genera el enlace: POST /api/v1/admin/password-recovery-requests/{id}/link" "HTTPS/JSON"
+            gateway -> identity "Enruta con el JWT del admin_tenant"
+            identity -> dbIdentity "Guarda solo el hash del token, de un solo uso y con vencimiento a 1 hora, y anula el anterior"
+            identity -> gateway "201 con el enlace; el admin se lo entrega al usuario por el medio que usen"
+            web -> gateway "El usuario abre /recuperar y envía la contraseña nueva: POST /api/v1/auth/password-recovery/confirm con el token en el cuerpo" "HTTPS/JSON"
+            gateway -> identity "Enruta sin sesión"
+            identity -> dbIdentity "Valida el token, cambia la contraseña, desbloquea la cuenta, marca usados el token y las invitaciones pendientes y cierra la solicitud (una transacción)"
+            mobile -> gateway "El usuario entra a la app con la contraseña nueva: POST /api/v1/auth/login" "HTTPS/JSON"
+            autoLayout lr 200 100
+            properties {
+                "structurizr.groups" false
+            }
+        }
+
+        deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción al 4 de noviembre de 2026, tras la promoción del MVP (SCRUM-518): los 7 servicios con código en el k3s de VM3, con VM4 y VM6 (ADR-022) y la entrada de VM1; gateway en el Nginx de VM3 (ADR-028). El panel se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Punteado: Actors, sin código." {
             include *
             exclude "mobProd -> gatewayProd" "webProd -> gatewayProd"
             exclude "* -> kafkaProd" "* -> redisProd" "* -> garageProd"
             include "serviceRequestProd -> kafkaProd"
-            autoLayout lr 200 60
+            autoLayout lr 250 150
         }
 
-        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 3 de noviembre de 2026, con Ranking desplegado (SCRUM-512): VM2, VM5 y VM7, con la misma VM1 (ADR-022); gateway y panel en el Nginx de VM2 (ADR-028). Punteado: sin desplegar." {
+        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 4 de noviembre de 2026: los 7 servicios con código en el k3s de VM2, con VM5 y VM7 y la misma VM1 (ADR-022); gateway en el Nginx de VM2 (ADR-028). El panel (release/0.6.0) se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Punteado: Actors, sin código." {
             include *
             exclude "mobQa -> gatewayQa" "webQa -> gatewayQa"
             exclude "* -> kafkaQa" "* -> redisQa" "* -> garageQa"
             include "serviceRequestQa -> kafkaQa"
-            autoLayout lr 200 60
+            autoLayout lr 250 150
         }
 
         styles {

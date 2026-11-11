@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.15 |
+| **Versión** | 4.17 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -264,7 +264,7 @@ Después de los despliegues del 8 de octubre, VM2 quedó en 32% de la RAM tras l
 
 Los servicios .NET usan entre 105 y 158 MiB frente al límite de 256 MiB, y Matching 232-251 MiB frente a 1 GiB. Es consumo en reposo, sin carga.
 
-**Gateway y panel por ambiente (ADR-028, 25 de octubre de 2026).** El API Gateway y el panel no corren en el k3s porque aún no tienen imagen. Los sirve un Nginx por ambiente, en VM3 (producción) y en VM2 (QA), como contenedor de Docker en la red del host (puerto 8080, abierto solo a VM1), con la misma plantilla (`gateway-ambiente-nginx.conf.j2`) y la carpeta `/opt/quickpatch/gateway/panel`. VM1 queda como entrada TLS (`entrada-nginx.conf.j2`) y reenvía por nombre. Reemplaza lo que sigue, que se conserva como historia.
+**Gateway y panel por ambiente (ADR-028, 25 de octubre de 2026).** El API Gateway y los archivos del panel no están en el k3s porque aún no tienen imagen. Un Nginx por ambiente los atiende: el gateway reenvía la API y, del panel, solo **entrega** el build de Angular (HTML, JS y CSS), que se **ejecuta** en el navegador del administrador (SCRUM-674). Ese Nginx corre en VM3 (producción) y en VM2 (QA), como contenedor de Docker en la red del host (puerto 8080, abierto solo a VM1), con la misma plantilla (`gateway-ambiente-nginx.conf.j2`) y la carpeta `/opt/quickpatch/gateway/panel`. VM1 queda como entrada TLS (`entrada-nginx.conf.j2`) y reenvía por nombre. Reemplaza lo que sigue, que se conserva como historia.
 
 **Decisión del 12 de octubre de 2026 (SCRUM-446), reemplazada por ADR-028 el 25 de octubre: el panel de QA se sirve desde VM1, como el de producción.** El ADR-022 ubica el panel en el k3s de cada ambiente, pero ese destino no existe todavía en ninguno: el panel de producción se publica desde el runner en `/opt/quickpatch/gateway/panel` y lo sirve el Nginx de VM1. El primer despliegue del panel de QA (rama `release/0.3.0` de `quickpatch-web`) falló porque el workflow copiaba el build por SSH a una carpeta de VM2 que nadie sirve, y el bloque de QA del Nginx enviaba `/` al Traefik de VM2, que responde 404.
 
@@ -348,8 +348,8 @@ Foto de lo que corre hoy, tomada con comandos de solo lectura (SCRUM-553 y SCRUM
 
 | | Producción (VM3, VM4, VM6) | QA (VM2, VM5, VM7) |
 |---|---|---|
-| Microservicios en k3s | 7 Deployment, todos en servicio: identity 0.8.1, catalog 0.4.1, service-request 0.11.1, matching 0.6.1, payments 0.3.0, communication 0.3.3 y ranking 0.1.0 | 7, todos en servicio: los mismos, salvo service-request 0.11.2 (sin promover) |
-| Pods | 7 de 7 en `1/1 Running`, 0 reinicios (service-request lleva más de 13 horas seguidas sin reiniciarse desde la 0.11.1) | 7 de 7 en `1/1 Running`, 0 reinicios |
+| Microservicios en k3s | 7 Deployment, todos en servicio: identity 0.8.1, catalog 0.4.1, service-request 0.11.2, matching 0.6.1, payments 0.3.0, communication 0.3.3 y ranking 0.1.0 | 7, todos en servicio: los mismos, salvo identity 0.9.0 (contraseña cifrada, SCRUM-644) y service-request 0.12.0, sin promover |
+| Pods | 7 de 7 en `1/1 Running`, 0 reinicios (service-request, sin reiniciar desde la promoción de la 0.11.2 el 4 de noviembre) | 7 de 7 en `1/1 Running`, 0 reinicios |
 | `Secret` y `ConfigMap` | Los de los 7 servicios; los 14 `Secret` del almacén de k3s están cifrados en reposo desde el 4 de noviembre (sección 10.5) | Los de los 7 servicios; cifrados desde el 30 de octubre |
 | Ingress | Catalog, Communication, Identity, Matching y ServiceRequest, más las `IngressRoute` de `payments` y `communication-chat`; Ranking no expone REST | Los mismos |
 | Bases de PostgreSQL | Las 8 bases de servicio con sus roles `*_migrator`, `*_app` y, donde el servicio publica eventos o programa tareas, `*_outbox` y `*_scheduler`; `db_actors` no tiene servicio | Las mismas 8 |
@@ -357,8 +357,8 @@ Foto de lo que corre hoy, tomada con comandos de solo lectura (SCRUM-553 y SCRUM
 | Kafka | 20 topics (los mismos que QA; el 4 de noviembre se crearon `service-request.rated`, `ranking.technician-reputation-changed` y `tenant.status-changed`) y 6 grupos de consumidores, todos estables y con lag 0 | 20 topics y 28 pares grupo-topic con lag 0 |
 | Garage | En servicio (VM6), con el bucket `service-request-evidencias` | En servicio (VM7) |
 | Catálogo | 6 categorías base sembradas el 4 de noviembre (Plomería, Eléctrico, Cerrajería, Electrodomésticos, Aire acondicionado y Pintura); la réplica de ServiceRequest las muestra | 6 categorías base |
-| Panel Angular | Página provisional: el panel real no se ha promovido | Build real de `release/0.5.5` |
-| App móvil | Sin promover | APK `v0.5.4-qa` |
+| Panel Angular | Página provisional: el panel real no se ha promovido | Build real de `release/0.6.0` (10 de noviembre) |
+| App móvil | Sin promover | APK `v0.6.0-qa` (10 de noviembre) |
 | Gateway | Nginx propio en VM3 (ADR-028) | Nginx propio en VM2 (ADR-028) |
 
 **Cómo se promovió (4 de noviembre de 2026).** Orden: identity, catalog, service-request, matching, payments, communication y ranking, de uno en uno. Para cada servicio: PR de `release/*` a `main` con el CI en verde y el mismo commit que corre en QA; **manifiestos de `main` aplicados con `primer-despliegue-servicios.yml` antes de aprobar el despliegue** (el pipeline solo cambia la imagen: un manifiesto con variables nuevas que el clúster no tiene deja el pod sin arrancar y el pipeline hace `rollout undo`); aprobación del ambiente `produccion`; `aplicar-roles-db.yml` después de la migración, porque los `GRANT` necesitan las tablas que crea el init container; y comprobación de pods, rutas del contrato y grupos de Kafka. La compuerta automática de QA (RNF-08) bloqueó el primer despliegue de identity porque el humo de los frontends era anterior a la llegada de la versión a QA, y se repitió. En un primer despliegue, el Deployment que esperó mucho con la imagen `:pendiente` arrastra `ProgressDeadlineExceeded` y el job puede fallar aunque el pod llegue a `Ready` (pasó con ranking): se reintenta de inmediato.
@@ -369,7 +369,7 @@ Lo que falta:
 
 - **Panel real y app móvil.** El job de `quickpatch-web` publica en VM3 al hacer push a `main`, pero el panel y la app no se han promovido (decisión del 4 de noviembre). Antes hay que repetir `humo-frontends.yml` y `pruebas-sistema.yml`.
 - **Actors.** No tiene código ni manifiesto: sus bases y roles existen, pero no hay servicio que desplegar (sección 5.3).
-- **service-request 0.11.2.** Corre en QA con el puntaje de la calificación estricto (SCRUM-87) y no tiene PR de promoción.
+- **Identity 0.9.0 y service-request 0.12.0.** Corren en QA (identity con la contraseña cifrada en el cliente, SCRUM-644) y no se han promovido; producción tiene identity 0.8.1 y service-request 0.11.2, esta última promovida el 4 de noviembre por la noche. Las imágenes de catalog, communication, matching, payments y ranking son idénticas en QA y producción (mismo hash `t-<hash>`).
 - **Carga k6 del Sprint 5 (SCRUM-526).** La última medición bajo carga con 7 servicios fue el 28 de octubre (SCRUM-635); no se ha repetido con las versiones de hoy.
 
 Las imágenes de los servicios se etiquetan por el hash de su contenido (`t-<árbol>`, sección 6.1), así que la versión de cada servicio se ve en el release de su repositorio y no en el nombre de la imagen.
@@ -439,7 +439,8 @@ Estado al 8 de octubre de 2026:
 | Catalog | Sí | Desplegado | Desplegado |
 | ServiceRequest | Sí | Desplegado | Desplegado |
 | Matching | Sí (con Secret propio: `app-password` y `migrator-password`) | Desplegado | Desplegado |
-| Actors, Ranking, Payments y Communication | No | No desplegados | No desplegados |
+| Payments, Communication y Ranking | Sí | Desplegado | Desplegado |
+| Actors | No (solo el README y los contratos) | No desplegado | No desplegado |
 
 Orden para llevar un servicio nuevo a un ambiente:
 
@@ -1266,3 +1267,5 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.13 | 4 nov 2026 | Promoción del MVP a producción (SCRUM-518): la sección 4.3 se reescribe con el estado medido el 4 de noviembre (7 servicios, 20 topics de Kafka, catálogo sembrado), el procedimiento de promoción y sus trampas, y el humo en producción con su limpieza (SCRUM-523); Kafka de producción con 20 topics y lag 0 en 5.10; cifrado de los `Secret` de k3s en producción en la sección 10.5 y en las limitaciones; AC2-E5 y Actors en las limitaciones. Quedan como mediciones con fecha, sin actualizar, la proyección de RAM de 5.6 y las líneas de VM3 del 8 de octubre. |
 | 4.14 | 4 nov 2026 | Excepción al RNF-08 (SCRUM-518): la sección 6.2 cuenta la historia en orden (levantada el 27 de octubre para los 4 servicios; estrés con 7 servicios el 28 de octubre, SCRUM-635; renovada el 4 de noviembre para el MVP de 7 servicios, con su condición de levantamiento, el tope de pool medido y las mitigaciones); notas de 5.7 y de las limitaciones alineadas. |
 | 4.15 | 4 nov 2026 | Excepción al RNF-08 levantada (SCRUM-526): la carga k6 coordinada pasó en QA con las versiones que corren en producción (run 41940280403: 50 usuarios con p95 de 88 ms en crear solicitud y de 32 ms en catálogo; 150 usuarios con 0 errores 5xx y p95 de 1.183 ms); la sección 6.2 agrega el levantamiento después de la renovación, y se alinean la sección 5.7, la tabla de limitaciones e `infrastructure/CI-CD.md`. |
+| 4.16 | 10 nov 2026 | Auditoría contra lo desplegado (SCRUM-694): versiones de QA y producción verificadas con `kubectl` el 10 de noviembre (producción con service-request 0.11.2; QA con identity 0.9.0, service-request 0.12.0, panel 0.6.0 y APK `v0.6.0-qa`), la tabla de la sección 5.3 deja de decir que Payments, Communication y Ranking no están desplegados, y la lista de lo que falta de la sección 4.3 se pone al día. |
+| 4.17 | 11 nov 2026 | Gateway y panel por ambiente (sección 3): el Nginx entrega los archivos del panel y el navegador del administrador los ejecuta, como la vista de despliegue de SCRUM-674 (SCRUM-675). |
