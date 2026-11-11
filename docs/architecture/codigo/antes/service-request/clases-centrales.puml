@@ -1,0 +1,61 @@
+@startuml
+!pragma layout smetana
+title ServiceRequest — clases más conectadas (antes, 394a1e8)
+hide empty members
+skinparam shadowing false
+class "Domain.ServiceRequests.ServiceRequest" as QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest <<Domain>> {
+  397 líneas · entra 33 · sale 4
+}
+class "Api.Endpoints.ServiceRequestEndpoints" as QuickPatch_ServiceRequest_Api_Endpoints_ServiceRequestEndpoints <<Api>> {
+  262 líneas · entra 5 · sale 31
+}
+class "Infrastructure.Persistence.ServiceRequestDbContext" as QuickPatch_ServiceRequest_Infrastructure_Persistence_ServiceRequestDbContext <<Infrastructure>> {
+  197 líneas · entra 16 · sale 11
+}
+class "Api.Endpoints.ExecutionEndpoints" as QuickPatch_ServiceRequest_Api_Endpoints_ExecutionEndpoints <<Api>> {
+  188 líneas · entra 1 · sale 22
+}
+class "Application.Events.ServiceRequestEvents" as QuickPatch_ServiceRequest_Application_Events_ServiceRequestEvents <<Application>> {
+  43 líneas · entra 8 · sale 14
+}
+interface "Application.Abstractions.ITenantUnitOfWork" as QuickPatch_ServiceRequest_Application_Abstractions_ITenantUnitOfWork <<Application>> {
+  0 líneas · entra 22 · sale 0
+}
+interface "Application.Abstractions.IServiceRequestRepository" as QuickPatch_ServiceRequest_Application_Abstractions_IServiceRequestRepository <<Application>> {
+  0 líneas · entra 19 · sale 3
+}
+class "Application.ServiceRequests.CreateServiceRequestHandler" as QuickPatch_ServiceRequest_Application_ServiceRequests_CreateServiceRequestHandler <<Application>> {
+  93 líneas · entra 2 · sale 19
+}
+class "Api.Endpoints.AdminServiceRequestEndpoints" as QuickPatch_ServiceRequest_Api_Endpoints_AdminServiceRequestEndpoints <<Api>> {
+  97 líneas · entra 1 · sale 19
+}
+class "Api.Endpoints.QuoteEndpoints" as QuickPatch_ServiceRequest_Api_Endpoints_QuoteEndpoints <<Api>> {
+  109 líneas · entra 1 · sale 18
+}
+class "Application.Matching.MatchingStatusHandler" as QuickPatch_ServiceRequest_Application_Matching_MatchingStatusHandler <<Application>> {
+  95 líneas · entra 2 · sale 14
+}
+class "Domain.Ratings.Rating" as QuickPatch_ServiceRequest_Domain_Ratings_Rating <<Domain>> {
+  62 líneas · entra 15 · sale 1
+}
+QuickPatch_ServiceRequest_Api_Endpoints_AdminServiceRequestEndpoints ..> QuickPatch_ServiceRequest_Api_Endpoints_ServiceRequestEndpoints
+QuickPatch_ServiceRequest_Api_Endpoints_AdminServiceRequestEndpoints ..> QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest
+QuickPatch_ServiceRequest_Api_Endpoints_ExecutionEndpoints ..> QuickPatch_ServiceRequest_Api_Endpoints_ServiceRequestEndpoints
+QuickPatch_ServiceRequest_Api_Endpoints_ExecutionEndpoints ..> QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest
+QuickPatch_ServiceRequest_Api_Endpoints_QuoteEndpoints ..> QuickPatch_ServiceRequest_Api_Endpoints_ServiceRequestEndpoints
+QuickPatch_ServiceRequest_Api_Endpoints_ServiceRequestEndpoints ..> QuickPatch_ServiceRequest_Application_ServiceRequests_CreateServiceRequestHandler
+QuickPatch_ServiceRequest_Api_Endpoints_ServiceRequestEndpoints ..> QuickPatch_ServiceRequest_Domain_Ratings_Rating
+QuickPatch_ServiceRequest_Api_Endpoints_ServiceRequestEndpoints ..> QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest
+QuickPatch_ServiceRequest_Application_Abstractions_IServiceRequestRepository ..> QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest
+QuickPatch_ServiceRequest_Application_Events_ServiceRequestEvents ..> QuickPatch_ServiceRequest_Domain_Ratings_Rating
+QuickPatch_ServiceRequest_Application_Events_ServiceRequestEvents ..> QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest
+QuickPatch_ServiceRequest_Application_Matching_MatchingStatusHandler ..> QuickPatch_ServiceRequest_Application_Abstractions_IServiceRequestRepository
+QuickPatch_ServiceRequest_Application_Matching_MatchingStatusHandler ..> QuickPatch_ServiceRequest_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_ServiceRequest_Application_Matching_MatchingStatusHandler ..> QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest
+QuickPatch_ServiceRequest_Application_ServiceRequests_CreateServiceRequestHandler ..> QuickPatch_ServiceRequest_Application_Abstractions_IServiceRequestRepository
+QuickPatch_ServiceRequest_Application_ServiceRequests_CreateServiceRequestHandler ..> QuickPatch_ServiceRequest_Application_Abstractions_ITenantUnitOfWork
+QuickPatch_ServiceRequest_Application_ServiceRequests_CreateServiceRequestHandler ..> QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest
+QuickPatch_ServiceRequest_Infrastructure_Persistence_ServiceRequestDbContext ..> QuickPatch_ServiceRequest_Domain_Ratings_Rating
+QuickPatch_ServiceRequest_Infrastructure_Persistence_ServiceRequestDbContext ..> QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest
+@enduml

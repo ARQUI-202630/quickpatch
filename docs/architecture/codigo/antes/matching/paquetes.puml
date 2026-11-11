@@ -1,0 +1,66 @@
+@startuml
+!pragma layout smetana
+title Matching — paquetes (antes, 3fade78)
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+package "Api" {
+  component "co.quickpatch.matching\n1 tipos" as co_quickpatch_matching
+  component "api.controllers\n2 tipos" as co_quickpatch_matching_api_controllers
+  component "api.http\n3 tipos" as co_quickpatch_matching_api_http
+  component "api.security\n1 tipos" as co_quickpatch_matching_api_security
+}
+package "Application" {
+  component "application.events\n5 tipos" as co_quickpatch_matching_application_events #FFCDD2
+  component "application.matching\n3 tipos" as co_quickpatch_matching_application_matching #FFCDD2
+  component "application.technicians\n2 tipos" as co_quickpatch_matching_application_technicians #FFCDD2
+}
+package "Domain" {
+  component "domain.events\n9 tipos" as co_quickpatch_matching_domain_events
+  component "domain.matching\n1 tipos" as co_quickpatch_matching_domain_matching
+  component "domain.technicians\n1 tipos" as co_quickpatch_matching_domain_technicians
+}
+package "Infrastructure" {
+  component "infrastructure.messaging\n8 tipos" as co_quickpatch_matching_infrastructure_messaging
+  component "infrastructure.persistence\n6 tipos" as co_quickpatch_matching_infrastructure_persistence
+  component "infrastructure.scheduling\n3 tipos" as co_quickpatch_matching_infrastructure_scheduling
+}
+co_quickpatch_matching_api_controllers --> co_quickpatch_matching_application_matching #607D8B : 1
+co_quickpatch_matching_api_controllers --> co_quickpatch_matching_application_technicians #607D8B : 1
+co_quickpatch_matching_api_controllers --> co_quickpatch_matching_domain_matching #607D8B : 1
+co_quickpatch_matching_api_controllers --> co_quickpatch_matching_domain_technicians #607D8B : 1
+co_quickpatch_matching_api_http --> co_quickpatch_matching_api_controllers #607D8B : 1
+co_quickpatch_matching_api_http --> co_quickpatch_matching_domain_matching #607D8B : 1
+co_quickpatch_matching_api_http --> co_quickpatch_matching_domain_technicians #607D8B : 1
+co_quickpatch_matching_api_security --> co_quickpatch_matching_api_http #607D8B : 1
+co_quickpatch_matching_application_events --> co_quickpatch_matching_application_matching #EF6C00 : 2
+co_quickpatch_matching_application_events --> co_quickpatch_matching_application_technicians #EF6C00 : 3
+co_quickpatch_matching_application_events --> co_quickpatch_matching_domain_events #607D8B : 12
+co_quickpatch_matching_application_events --> co_quickpatch_matching_domain_matching #607D8B : 3
+co_quickpatch_matching_application_events --> co_quickpatch_matching_domain_technicians #607D8B : 2
+co_quickpatch_matching_application_matching --> co_quickpatch_matching_application_events #EF6C00 : 2
+co_quickpatch_matching_application_matching --> co_quickpatch_matching_application_technicians #EF6C00 : 2
+co_quickpatch_matching_application_matching --> co_quickpatch_matching_domain_events #607D8B : 4
+co_quickpatch_matching_application_matching --> co_quickpatch_matching_domain_matching #607D8B : 3
+co_quickpatch_matching_application_matching --> co_quickpatch_matching_domain_technicians #607D8B : 1
+co_quickpatch_matching_application_technicians --> co_quickpatch_matching_application_events #EF6C00 : 1
+co_quickpatch_matching_application_technicians --> co_quickpatch_matching_domain_matching #607D8B : 2
+co_quickpatch_matching_application_technicians --> co_quickpatch_matching_domain_technicians #607D8B : 2
+co_quickpatch_matching_infrastructure_messaging --> co_quickpatch_matching_application_events #607D8B : 9
+co_quickpatch_matching_infrastructure_messaging --> co_quickpatch_matching_application_matching #607D8B : 5
+co_quickpatch_matching_infrastructure_messaging --> co_quickpatch_matching_application_technicians #607D8B : 2
+co_quickpatch_matching_infrastructure_messaging --> co_quickpatch_matching_domain_events #607D8B : 14
+co_quickpatch_matching_infrastructure_messaging --> co_quickpatch_matching_infrastructure_persistence #607D8B : 1
+co_quickpatch_matching_infrastructure_persistence --> co_quickpatch_matching_application_events #607D8B : 3
+co_quickpatch_matching_infrastructure_persistence --> co_quickpatch_matching_application_matching #607D8B : 1
+co_quickpatch_matching_infrastructure_persistence --> co_quickpatch_matching_application_technicians #607D8B : 1
+co_quickpatch_matching_infrastructure_persistence --> co_quickpatch_matching_domain_matching #607D8B : 1
+co_quickpatch_matching_infrastructure_persistence --> co_quickpatch_matching_domain_technicians #607D8B : 1
+co_quickpatch_matching_infrastructure_scheduling --> co_quickpatch_matching_application_events #607D8B : 2
+co_quickpatch_matching_infrastructure_scheduling --> co_quickpatch_matching_application_matching #607D8B : 2
+co_quickpatch_matching_infrastructure_scheduling --> co_quickpatch_matching_infrastructure_persistence #607D8B : 2
+legend right
+Rojo: viola SDD 10.3.2 · Naranja: ciclo entre paquetes
+Número: dependencias entre tipos
+endlegend
+@enduml
