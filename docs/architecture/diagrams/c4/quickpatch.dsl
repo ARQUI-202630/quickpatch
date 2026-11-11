@@ -606,7 +606,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 mobProd = containerInstance mobile
             }
             deploymentNode "Navegador del administrador" "" "Chrome, Edge o Firefox" {
-                webBrowserProd = infrastructureNode "Navegador" "Ejecuta el panel web que sirve el gateway de VM3." "HTML + JS"
+                webProd = containerInstance web
+            }
+            deploymentNode "Navegador del equipo" "Quien opera consulta Grafana y Loki." "Chrome, Edge o Firefox" {
+                equipoNavProd = infrastructureNode "Navegador" "Ejecuta la interfaz de Grafana que sirve VM1." "HTML + JS"
             }
             deploymentNode "Red privada del laboratorio 10.43.x.x" "Solo el 443 de VM1 es alcanzable desde la VPN (R9); firewall default deny incoming." "" {
                 deploymentNode "VM1 · Herramientas · 10.43.100.168" "Entrada única y herramientas compartidas por los dos ambientes." "4 vCPU · 11 GiB RAM · 68 GB" {
@@ -617,7 +620,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 deploymentNode "VM3 · Aplicación · 10.43.98.205" "Los servicios llegan a VM4 (PostgreSQL 5432, Redis 6379) y a VM6 (Kafka 9092, Garage 9000)." "4 vCPU · 11 GiB RAM · 68 GB" {
                     deploymentNode "Docker, red del host" "Nginx del gateway de producción en el puerto 8080, abierto solo a VM1 (ADR-028): /api va a Traefik y / sirve el panel desde /opt/quickpatch/gateway/panel (página provisional: el panel real no se ha promovido)." "Docker" {
                         gatewayProd = containerInstance gateway
-                        webProd = containerInstance web
+                        panelProd = infrastructureNode "Archivos del panel" "Build de Angular (HTML, JS y CSS) en /opt/quickpatch/gateway/panel. El Nginx los entrega: no los ejecuta, se ejecutan en el navegador." "Archivos estáticos"
                     }
                     deploymentNode "k3s (un nodo)" "" "k3s + Traefik" {
                         traefikProd = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
@@ -652,7 +655,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     garageProd = containerInstance garage
                 }
             }
-            webBrowserProd -> proxyProd "Abre https://quickpatch.internal" "HTTPS"
+            webProd -> proxyProd "Pide el panel y llama a /api en https://quickpatch.internal" "HTTPS"
+            panelProd -> webProd "Entrega el panel al navegador (vía VM1)" "HTTPS"
+            equipoNavProd -> proxyProd "Abre https://grafana.quickpatch.internal" "HTTPS"
             mobProd -> proxyProd "Llama a https://quickpatch.internal/api (certificado fijado)" "HTTPS"
             proxyProd -> gatewayProd "Reenvía quickpatch.internal a VM3:8080" "HTTP"
             gatewayProd -> traefikProd "Envía /api a :30080" "HTTP"
@@ -663,6 +668,12 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             deploymentNode "Teléfono o emulador de prueba" "" "Android" {
                 mobQa = containerInstance mobile
             }
+            deploymentNode "Navegador del administrador" "" "Chrome, Edge o Firefox" {
+                webQa = containerInstance web
+            }
+            deploymentNode "Navegador del equipo" "Quien opera consulta Grafana y Loki." "Chrome, Edge o Firefox" {
+                equipoNavQa = infrastructureNode "Navegador" "Ejecuta la interfaz de Grafana que sirve VM1." "HTML + JS"
+            }
             deploymentNode "Red privada del laboratorio 10.43.x.x" "QA no se conecta con producción; solo VM1 llega a los dos (ADR-022)." "" {
                 deploymentNode "VM1 · Herramientas · 10.43.100.168" "Misma VM1 de producción." "4 vCPU · 11 GiB RAM · 68 GB" {
                     proxyQa = infrastructureNode "Entrada Nginx :443" "La misma entrada: qa.quickpatch.internal al gateway de VM2, solo desde las redes del equipo (ADR-028)." "Nginx"
@@ -672,7 +683,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 deploymentNode "VM2 · Aplicación · 10.43.98.15" "Los servicios llegan a VM5 (5432, 6379) y a VM7 (9092, 9000)." "4 vCPU · 11 GiB RAM · 68 GB" {
                     deploymentNode "Docker, red del host" "Nginx del gateway de QA en el puerto 8080, abierto solo a VM1 (ADR-028): /api va a Traefik y / sirve el panel de QA (build de release/*)." "Docker" {
                         gatewayQa = containerInstance gateway
-                        webQa = containerInstance web
+                        panelQa = infrastructureNode "Archivos del panel" "Build de Angular (HTML, JS y CSS) de release/* en el Nginx de QA. Los entrega: no los ejecuta, se ejecutan en el navegador." "Archivos estáticos"
                     }
                     deploymentNode "k3s (un nodo)" "" "k3s + Traefik" {
                         traefikQa = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
@@ -708,6 +719,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 }
             }
             mobQa -> proxyQa "Llama a https://qa.quickpatch.internal/api (certificado fijado)" "HTTPS"
+            webQa -> proxyQa "Pide el panel y llama a /api en https://qa.quickpatch.internal" "HTTPS"
+            panelQa -> webQa "Entrega el panel al navegador (vía VM1)" "HTTPS"
+            equipoNavQa -> proxyQa "Abre https://grafana.quickpatch.internal" "HTTPS"
             proxyQa -> gatewayQa "Reenvía qa.quickpatch.internal a VM2:8080" "HTTP"
             gatewayQa -> traefikQa "Envía /api a :30080" "HTTP"
             runnerQa -> traefikQa "Despliega release/* y ejecuta las pruebas del sistema" "HTTPS"
@@ -983,20 +997,20 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción al 4 de noviembre de 2026, tras la promoción del MVP (SCRUM-518): los 7 servicios con código en el k3s de VM3, con VM4 y VM6 (ADR-022) y la entrada de VM1; gateway y panel en el Nginx de VM3 (ADR-028). Punteado: Actors, sin código." {
+        deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción al 4 de noviembre de 2026, tras la promoción del MVP (SCRUM-518): los 7 servicios con código en el k3s de VM3, con VM4 y VM6 (ADR-022) y la entrada de VM1; gateway en el Nginx de VM3 (ADR-028). El panel se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Punteado: Actors, sin código." {
             include *
             exclude "mobProd -> gatewayProd" "webProd -> gatewayProd"
             exclude "* -> kafkaProd" "* -> redisProd" "* -> garageProd"
             include "serviceRequestProd -> kafkaProd"
-            autoLayout lr 200 60
+            autoLayout lr 250 150
         }
 
-        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 4 de noviembre de 2026: los 7 servicios con código en el k3s de VM2, con VM5 y VM7 y la misma VM1 (ADR-022); gateway y panel de release/0.5.5 en el Nginx de VM2 (ADR-028). Punteado: Actors, sin código." {
+        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 4 de noviembre de 2026: los 7 servicios con código en el k3s de VM2, con VM5 y VM7 y la misma VM1 (ADR-022); gateway en el Nginx de VM2 (ADR-028). El panel (release/0.6.0) se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Punteado: Actors, sin código." {
             include *
             exclude "mobQa -> gatewayQa" "webQa -> gatewayQa"
             exclude "* -> kafkaQa" "* -> redisQa" "* -> garageQa"
             include "serviceRequestQa -> kafkaQa"
-            autoLayout lr 200 60
+            autoLayout lr 250 150
         }
 
         styles {
