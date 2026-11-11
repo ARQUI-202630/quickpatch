@@ -1,0 +1,26 @@
+AC5-E3 y AC5-E4 en QA, 10 de noviembre de 2026 (SCRUM-665). Resultados tal como salieron.
+Scripts: scripts-2026-11-10/ac5-e3-qa.py y ac5-e4-qa.py (usan el administrador de QA del vault de Ansible dentro del proceso y playbooks temporales de escala y de Kafka, ya borrados).
+
+== AC5-E3 Caída de un microservicio (meta: 0 % de eventos perdidos; procesa el backlog al reiniciar)
+22:58:47 línea base Catalog: 6 categorías; réplica de ServiceRequest: 6 (iguales)
+22:58:47 escalando service-request a 0
+22:58:49 con el consumidor en 0, la ruta responde HTTP 502
+22:58:49 crear 3 categorías de prueba en Catalog: 201, 201, 201; y desactivar una: 200
+22:58:50 Catalog activas ahora: 8
+22:59:10 subiendo service-request a 1
+22:59:34 la réplica de ServiceRequest quedó igual a Catalog (8) tras 24 s
+22:59:49 limpieza: categorías de prueba desactivadas; Catalog 6, réplica 6
+Resultado: cumple en este flujo (Catalog a ServiceRequest). 4 eventos (3 altas y 1 baja) generados con el consumidor caído, ninguno perdido.
+Límite: un solo servicio consumidor y un solo flujo; no se midió el lag con la herramienta de Kafka.
+
+== AC5-E4 Kafka no disponible (meta: 0 eventos perdidos; reintento automático sin intervención manual)
+23:00:28 línea base: Catalog 6, réplica 6, outbox_events pendientes|total de db_catalog: 0|1163
+23:00:30 Kafka de VM7 detenido
+23:00:38 4 altas de categoría con Kafka caído: 201, 201, 201, 201
+23:00:53 outbox_events pendientes|total con Kafka caído: 4|1167
+23:00:56 Kafka iniciado
+23:01:30 pendientes tras reiniciar Kafka: 0|1167, en 34 s y sin intervención
+23:02:01 réplica de ServiceRequest igual a Catalog (10 con las de prueba)
+23:02:11 limpieza: categorías de prueba desactivadas; Catalog 6, réplica 6, outbox 0 pendientes
+Resultado: cumple en el flujo de Catalog: el servicio siguió respondiendo 201 con Kafka caído, el outbox retuvo los 4 eventos y los publicó solo al volver.
+Límite: solo el outbox de Catalog; no se repitió con los demás servicios.
