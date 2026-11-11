@@ -31,7 +31,7 @@ Construir un MVP de una plataforma **multi-tenant** de servicios técnicos para 
 | Asignación automática | Matching (Java + Spring Boot + PostGIS): oferta al técnico disponible más cercano de la especialidad, con vencimiento de 3 minutos y reintento con el siguiente | Matching; ADR-004 |
 | Ejecución con evidencia y seguimiento | Inicio, **evidencia fotográfica obligatoria** en Garage y cierre; seguimiento en tiempo real por WebSocket y buzón; chat de la solicitud | ServiceRequest, Communication; ADR-016, ADR-023, ADR-026 |
 | Pago y comprobante | Payments con la pasarela simulada, pago de la empresa y comprobante en JSON y PDF, sin validez fiscal (DR-03); pagos recibidos del técnico y del proveedor | Payments; ADR-009 |
-| Calificación y reputación | Calificación del servicio pagado; Ranking calcula la reputación por eventos y el panel señala a los técnicos con reputación baja (SCRUM-642) | ServiceRequest, Ranking, Identity; ADR-027 |
+| Calificación y reputación | Calificación del servicio pagado; Ranking calcula la reputación por eventos y el panel señala a los técnicos con reputación baja (SCRUM-642, AC9-E2 medido en QA: 100 %) | ServiceRequest, Ranking, Identity; ADR-027 |
 | Administración | Verificación y suspensión de técnicos, gestión de tenants y panel operativo | Panel web, Identity |
 | Infraestructura y calidad | 14 repositorios con CI propio; 2 ambientes (QA y producción) en 7 VM; promoción a producción solo desde `release/*` probado en QA; observabilidad con Prometheus, Loki y Grafana | ADR-021, ADR-022, ADR-028 |
 
@@ -62,7 +62,7 @@ Construir un MVP de una plataforma **multi-tenant** de servicios técnicos para 
 
 - **Restricciones que marcaron el diseño:** 7 VM fijas (R10), sin presupuesto (R5), red privada sin dominio público (R9), una sola persona en infraestructura (R11) y unos 3 meses de proyecto (R3).
 - **Riesgos aceptados** (SAD 6.2): un solo nodo por componente en producción; un sistema distribuido con un equipo pequeño; lógica transversal copiada en .NET (AC7-E5); y los demás de esa sección.
-- **Riesgos del cierre:** AC9-E3 sin cubrir. Los cambios de SCRUM-642 (Identity y web) están en `develop`, todavía sin desplegar en QA. El secreto `PasswordEncryption__PrivateKeyPem` debe existir antes de escalar Identity a más de una réplica.
+- **Riesgos del cierre:** AC9-E3 sin cubrir. Los cambios del Sprint 6 (SCRUM-642 y los refactors de cinco servicios) están en QA desde el 11 de noviembre y todavía no en producción. El secreto `PasswordEncryption__PrivateKeyPem` debe existir antes de escalar Identity a más de una réplica.
 
 ## 8. Conclusión
 

@@ -1,0 +1,22 @@
+Medición AC9-E2 (SCRUM-642) en QA — 2026-11-11T13:14:33.632Z
+Ambiente: https://qa.quickpatch.internal · rol: admin_tenant · contrato identity.v1.yaml 1.12.0
+Condición: promedio < 3,0 con al menos 5 servicios calificados (SAD 3.9).
+
+Técnicos del tenant en el listado: 76
+Con al menos una calificación: 6
+Cumplen la condición (A): 1
+Señalados por el panel, filtro lowReputation=true (B): 1
+En A y no señalados: 0
+Señalados sin cumplir la condición: 0
+Filas cuya marca lowReputation no coincide con la condición: 0
+De A, suspendidos: 0 (la suspensión solo la hace el admin; no hay suspensión automática)
+
+Detalle de los técnicos con calificaciones (id truncado · promedio · calificaciones · marca · estado):
+  01a1a9a3… · 3.3 · 3 · — · suspendido
+  01a1ac24… · 5 · 1 · — · aprobado
+  01a1c8c9… · 5 · 1 · — · suspendido
+  01a1c8cc… · 3.3 · 3 · — · suspendido
+  01a1c8cd… · 4 · 1 · — · suspendido
+  01a1cabd… · 2 · 5 · reputación baja · aprobado
+
+Resultado: A = B; señalados 100 %.
