@@ -1,0 +1,61 @@
+@startuml
+!pragma layout smetana
+title Ranking — clases más conectadas (antes, 867716d)
+hide empty members
+skinparam shadowing false
+class "Application.Reputation.ServiceRequestRatedHandler" as QuickPatch_Ranking_Application_Reputation_ServiceRequestRatedHandler <<Application>> {
+  49 líneas · entra 2 · sale 10
+}
+class "Infrastructure.Persistence.RankingDbContext" as QuickPatch_Ranking_Infrastructure_Persistence_RankingDbContext <<Infrastructure>> {
+  71 líneas · entra 7 · sale 4
+}
+class "Application.Events.RankingEvents" as QuickPatch_Ranking_Application_Events_RankingEvents <<Application>> {
+  14 líneas · entra 1 · sale 5
+}
+class "Infrastructure.Messaging.ServiceRequestRatedConsumer" as QuickPatch_Ranking_Infrastructure_Messaging_ServiceRequestRatedConsumer <<Infrastructure>> {
+  88 líneas · entra 1 · sale 5
+}
+class "Infrastructure.Messaging.OutboxPublisher" as QuickPatch_Ranking_Infrastructure_Messaging_OutboxPublisher <<Infrastructure>> {
+  73 líneas · entra 1 · sale 4
+}
+class "Infrastructure.Persistence.EfOutbox" as QuickPatch_Ranking_Infrastructure_Persistence_EfOutbox <<Infrastructure>> {
+  16 líneas · entra 1 · sale 4
+}
+class "Infrastructure.Persistence.ReputationRepository" as QuickPatch_Ranking_Infrastructure_Persistence_ReputationRepository <<Infrastructure>> {
+  13 líneas · entra 1 · sale 4
+}
+interface "Application.Abstractions.IReputationRepository" as QuickPatch_Ranking_Application_Abstractions_IReputationRepository <<Application>> {
+  0 líneas · entra 3 · sale 2
+}
+class "Domain.Reputation.TechnicianReputation" as QuickPatch_Ranking_Domain_Reputation_TechnicianReputation <<Domain>> {
+  55 líneas · entra 5 · sale 0
+}
+class "Infrastructure.Persistence.ProcessedEventRepository" as QuickPatch_Ranking_Infrastructure_Persistence_ProcessedEventRepository <<Infrastructure>> {
+  7 líneas · entra 1 · sale 3
+}
+class "Domain.Reputation.AppliedRating" as QuickPatch_Ranking_Domain_Reputation_AppliedRating <<Domain>> {
+  24 líneas · entra 4 · sale 0
+}
+interface "Application.Abstractions.IOutbox" as QuickPatch_Ranking_Application_Abstractions_IOutbox <<Application>> {
+  0 líneas · entra 3 · sale 1
+}
+QuickPatch_Ranking_Application_Abstractions_IReputationRepository ..> QuickPatch_Ranking_Domain_Reputation_AppliedRating
+QuickPatch_Ranking_Application_Abstractions_IReputationRepository ..> QuickPatch_Ranking_Domain_Reputation_TechnicianReputation
+QuickPatch_Ranking_Application_Events_RankingEvents ..> QuickPatch_Ranking_Domain_Reputation_TechnicianReputation
+QuickPatch_Ranking_Application_Reputation_ServiceRequestRatedHandler ..> QuickPatch_Ranking_Application_Abstractions_IOutbox
+QuickPatch_Ranking_Application_Reputation_ServiceRequestRatedHandler ..> QuickPatch_Ranking_Application_Abstractions_IReputationRepository
+QuickPatch_Ranking_Application_Reputation_ServiceRequestRatedHandler ..> QuickPatch_Ranking_Application_Events_RankingEvents
+QuickPatch_Ranking_Application_Reputation_ServiceRequestRatedHandler ..> QuickPatch_Ranking_Domain_Reputation_AppliedRating
+QuickPatch_Ranking_Application_Reputation_ServiceRequestRatedHandler ..> QuickPatch_Ranking_Domain_Reputation_TechnicianReputation
+QuickPatch_Ranking_Infrastructure_Messaging_OutboxPublisher ..> QuickPatch_Ranking_Infrastructure_Persistence_RankingDbContext
+QuickPatch_Ranking_Infrastructure_Messaging_ServiceRequestRatedConsumer ..> QuickPatch_Ranking_Application_Reputation_ServiceRequestRatedHandler
+QuickPatch_Ranking_Infrastructure_Persistence_EfOutbox ..> QuickPatch_Ranking_Application_Abstractions_IOutbox
+QuickPatch_Ranking_Infrastructure_Persistence_EfOutbox ..> QuickPatch_Ranking_Infrastructure_Persistence_RankingDbContext
+QuickPatch_Ranking_Infrastructure_Persistence_ProcessedEventRepository ..> QuickPatch_Ranking_Infrastructure_Persistence_RankingDbContext
+QuickPatch_Ranking_Infrastructure_Persistence_RankingDbContext ..> QuickPatch_Ranking_Domain_Reputation_AppliedRating
+QuickPatch_Ranking_Infrastructure_Persistence_RankingDbContext ..> QuickPatch_Ranking_Domain_Reputation_TechnicianReputation
+QuickPatch_Ranking_Infrastructure_Persistence_ReputationRepository ..> QuickPatch_Ranking_Application_Abstractions_IReputationRepository
+QuickPatch_Ranking_Infrastructure_Persistence_ReputationRepository ..> QuickPatch_Ranking_Domain_Reputation_AppliedRating
+QuickPatch_Ranking_Infrastructure_Persistence_ReputationRepository ..> QuickPatch_Ranking_Domain_Reputation_TechnicianReputation
+QuickPatch_Ranking_Infrastructure_Persistence_ReputationRepository ..> QuickPatch_Ranking_Infrastructure_Persistence_RankingDbContext
+@enduml
