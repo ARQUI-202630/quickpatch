@@ -1,0 +1,24 @@
+Evidencia SCRUM-644 — contraseña cifrada en el login del panel de QA
+Fecha: 2026-11-11 · Ambiente: QA (https://qa.quickpatch.internal, red del laboratorio por VPN)
+Versiones: panel web release/0.7.0 (desplegado hoy, «Panel en qa» OK) e Identity 0.9.0 en QA (0.10.0 en despliegue)
+Herramienta: Playwright con Edge; HAR de la sesión (equivalente a la pestaña Network del navegador)
+
+Método: se abrió /iniciar-sesion y se intentó entrar con una cuenta inexistente (captura-scrum-644@quickpatch.test)
+y una contraseña generada para la prueba. No hace falta un login válido: lo que se verifica es el cuerpo que sale del
+navegador. Identity responde 401, como con cualquier credencial incorrecta.
+
+Peticiones a /api/v1/auth/ registradas en el HAR:
+GET https://qa.quickpatch.internal/api/v1/auth/password-key -> 200
+
+POST https://qa.quickpatch.internal/api/v1/auth/login -> 401
+  Content-Type: application/json
+  cuerpo: {"email": "captura-scrum-644@quickpatch.test", "encryptedPassword": {"keyId": "DRYuKDd619yi61mb", "ciphertext": "JIlG8l5tzwrDoV4Ir9naSqob2_HcSQ5N8vhKh-kj60n5AdMS… (512 caracteres base64url)"}}
+  llaves del cuerpo: email, encryptedPassword
+
+Resultado:
+- El panel pide la llave pública (GET /v1/auth/password-key, 200) y manda encryptedPassword {keyId, ciphertext}.
+- El cuerpo del login NO tiene el campo password.
+- La contraseña escrita no aparece en ninguna parte del cuerpo (búsqueda literal en el texto de la petición).
+- Captura de la pantalla tras el intento: scrum-644-login-panel-qa-2026-11-11.png
+
+Criterio de SCRUM-644 cubierto: «El panel y la app mandan encryptedPassword: en la pestaña Network no aparece la contraseña.»
