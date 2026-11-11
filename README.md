@@ -22,7 +22,7 @@ La decisión está formalizada en `docs/architecture/adr/ADR-012-stack-tecnologi
 
 ## Repositorios
 
-QUICKPATCH tiene **12 repositorios**, uno por componente de la solución (retroalimentación del profesor, SCRUM-333): Flutter, Angular, API Gateway, los 8 microservicios y Apache Kafka. Este repositorio principal los une mediante submódulos de Git (ADR-013) y contiene la documentación, las pruebas del sistema completo y los punteros a los demás repos de la organización `ARQUI-202630`.
+QUICKPATCH tiene **14 repositorios** (ver `docs/architecture/cifras-canonicas.md`): 12 de componentes de la solución (retroalimentación del profesor, SCRUM-333) —Flutter, Angular, API Gateway, los 8 microservicios y Apache Kafka—, `quickpatch-shared-dotnet` con el código transversal de los servicios .NET (ADR-020) y este repositorio principal, que los une mediante submódulos de Git (ADR-013) y contiene la documentación, las pruebas del sistema completo y los punteros a los demás repos de la organización `ARQUI-202630`.
 
 ```text
 quickpatch/                          (este repo)
@@ -30,6 +30,7 @@ quickpatch/                          (este repo)
 │   ├── mobile/                      → quickpatch-mobile (Flutter)
 │   ├── web/                         → quickpatch-web (Angular)
 │   ├── api-gateway/                 → quickpatch-api-gateway (gateway y contratos REST/OpenAPI)
+│   ├── backend/shared/dotnet/       → quickpatch-shared-dotnet (código transversal .NET, ADR-020)
 │   ├── backend/services/
 │   │   ├── identity/                → quickpatch-identity
 │   │   ├── actors/                  → quickpatch-actors
@@ -45,7 +46,7 @@ quickpatch/                          (este repo)
 └── docs/                            SRS, SAD, SDD, DD, Infraestructura, Políticas
 ```
 
-Las rutas marcadas con `→` son submódulos. Cada servicio incluye además los contratos como submódulos fijados en una versión: `contracts/api-gateway/` (REST) y `contracts/kafka/` (eventos); web y mobile solo `contracts/api-gateway/`. `tools/validate-composition.sh` lo comprueba en el CI.
+Las rutas marcadas con `→` son submódulos. Cada servicio incluye además los contratos como submódulos fijados en una versión: `contracts/api-gateway/` (REST) y `contracts/kafka/` (eventos); web y mobile solo `contracts/api-gateway/`. Los servicios .NET incluyen también `shared/dotnet/` (ADR-020). `tools/validate-composition.sh` lo comprueba en el CI.
 
 ### Clonar
 

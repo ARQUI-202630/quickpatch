@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Valida la composición del multirepo (SCRUM-333): los 12 repositorios de la solución como
-# submódulos del repositorio principal, y los contratos de cada consumidor en una versión etiquetada.
+# Valida la composición del multirepo (SCRUM-333): los 12 repositorios de la solución y el código
+# transversal .NET (ADR-020) como submódulos del repositorio principal, y los contratos de cada
+# consumidor en una versión etiquetada.
 #   - Servicios: contracts/api-gateway (REST) y contracts/kafka (eventos).
 #   - Web y mobile: contracts/api-gateway (REST).
+#   - Servicios .NET que adoptaron ADR-020: shared/dotnet (quickpatch-shared-dotnet).
 set -euo pipefail
 
 required=(
@@ -18,6 +20,7 @@ required=(
   apps/backend/services/payments
   apps/backend/services/communication
   apps/kafka
+  apps/backend/shared/dotnet
 )
 
 for p in "${required[@]}"; do
@@ -50,6 +53,11 @@ done
 for p in apps/backend/services/*; do
   verificar "$p" contracts/api-gateway
   verificar "$p" contracts/kafka
+done
+
+# Código transversal compartido (ADR-020). Actors no tiene código y Matching es Java.
+for s in identity catalog service-request ranking payments communication; do
+  verificar "apps/backend/services/$s" shared/dotnet
 done
 
 git submodule status --recursive

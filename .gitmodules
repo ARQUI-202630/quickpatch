@@ -44,3 +44,7 @@
 [submodule "apps/kafka"]
 	path = apps/kafka
 	url = https://github.com/ARQUI-202630/quickpatch-kafka.git
+[submodule "apps/backend/shared/dotnet"]
+	path = apps/backend/shared/dotnet
+	url = https://github.com/ARQUI-202630/quickpatch-shared-dotnet.git
+	branch = develop

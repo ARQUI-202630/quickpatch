@@ -16,21 +16,21 @@ El profesor pidió que la arquitectura mostrada refleje el código real y pregun
 | App móvil (Flutter) | Sí | APK `v0.6.0-qa` | APK `v0.5.4` | Implementado y desplegado en los dos ambientes | INFRA 4.16; SCRUM-641 |
 | Panel web (Angular) | Sí | `release/0.7.0` | `v0.5.5` | Implementado y desplegado en los dos ambientes. **Discrepancia:** INFRA 4.3 todavía dice «página provisional» en producción, y SCRUM-694 no lo verificó | SCRUM-641 (panel verificado en producción el 4-nov); INFRA 4.16 |
 | API Gateway (Nginx) | Sí | Sí, VM2 | Sí, VM3 | Implementado y desplegado | ADR-028 |
-| Identity | Sí | 0.10.0 | 0.8.1 | Implementado y desplegado; en QA está la 0.10.0 (contraseña cifrada, SCRUM-644, y reputación en el panel, SCRUM-642), todavía no en producción | INFRA 4.16; CI de `release/0.10.0` del 11-nov |
+| Identity | Sí | 0.10.1 | 0.8.1 | Implementado y desplegado; en QA está la 0.10.x (contraseña cifrada, SCRUM-644; reputación en el panel, SCRUM-642; correlación de `quickpatch-shared-dotnet`, ADR-020), todavía no en producción | INFRA 4.16; CI de `release/0.10.1` del 11-nov |
 | Actors | **No**: solo `Program.cs`, sin lógica | No | No | **Planeado** (esqueleto). `db_actors` existe y nadie la usa | `codigo/antes/README.md`; SAD 4.2.2 |
-| Catalog | Sí | 0.4.2 | 0.4.1 | Implementado y desplegado; la 0.4.2 (refactor SCRUM-651) está solo en QA | INFRA 4.16; CI del 11-nov |
-| ServiceRequest | Sí | 0.12.1 | 0.11.2 | Implementado y desplegado; la 0.12.x (con el refactor SCRUM-652) está solo en QA | INFRA 4.16; CI del 11-nov |
+| Catalog | Sí | 0.4.3 | 0.4.1 | Implementado y desplegado; la 0.4.x (refactor SCRUM-651 y código compartido de ADR-020) está solo en QA | INFRA 4.16; CI del 11-nov |
+| ServiceRequest | Sí | 0.12.2 | 0.11.2 | Implementado y desplegado; la 0.12.x (con el refactor SCRUM-652 y el código compartido de ADR-020) está solo en QA | INFRA 4.16; CI del 11-nov |
 | Matching | Sí | 0.6.2 | 0.6.1 | Implementado y desplegado; la 0.6.2 (refactor SCRUM-653) está solo en QA | INFRA 4.16; CI del 11-nov |
-| Ranking | Sí | 0.1.1 | 0.1.0 | Implementado y desplegado; la 0.1.1 (refactor SCRUM-654) está solo en QA | INFRA 4.16; CI del 11-nov |
-| Payments | Sí | 0.3.1 | 0.3.0 | Implementado y desplegado, con la pasarela **simulada**; la 0.3.1 (refactor SCRUM-655) está solo en QA | INFRA 4.16; CI del 11-nov; ADR-009 modificado |
-| Communication | Sí | 0.3.3 | 0.3.3 | Implementado y desplegado | INFRA 4.16 |
+| Ranking | Sí | 0.1.2 | 0.1.0 | Implementado y desplegado; la 0.1.x (refactor SCRUM-654 y código compartido de ADR-020) está solo en QA | INFRA 4.16; CI del 11-nov |
+| Payments | Sí | 0.3.2 | 0.3.0 | Implementado y desplegado, con la pasarela **simulada**; la 0.3.x (refactor SCRUM-655 y código compartido de ADR-020) está solo en QA | INFRA 4.16; CI del 11-nov; ADR-009 modificado |
+| Communication | Sí | 0.3.4 | 0.3.3 | Implementado y desplegado; la 0.3.4 (correlación de `quickpatch-shared-dotnet`, ADR-020) está solo en QA | INFRA 4.16; CI del 11-nov |
 | Apache Kafka (KRaft) | — | VM7 | VM6 | Desplegado | ADR-006, ADR-022 |
 | Redis | — | VM5 | VM4 | Desplegado; solo el candado de las cotizaciones | ADR-022; DSL |
 | Garage (S3) | — | VM7 | VM6 | Desplegado; evidencias y respaldos | ADR-016 |
 | Geocodificador (Nominatim, Bogotá) | — | VM5 | VM4 | Desplegado | ADR-024; SCRUM-520; INFRA 2.1 |
 | PostgreSQL + PostGIS | — | VM5 | VM4 | Desplegado; 8 bases, 7 en uso | ADR-014 |
 
-Las versiones de QA que no están en producción (Identity 0.10.0, Catalog 0.4.2, ServiceRequest 0.12.1, Matching 0.6.2, Ranking 0.1.1, Payments 0.3.1 y el panel 0.7.0; desplegadas en QA el 11 de noviembre) se promueven solo por `release/*` → `main`, después de pasar QA (ADR-022, RNF-08). La traza la verifica SCRUM-672.
+Las versiones de QA que no están en producción (Identity 0.10.1, Catalog 0.4.3, ServiceRequest 0.12.2, Matching 0.6.2, Ranking 0.1.2, Payments 0.3.2, Communication 0.3.4 y el panel 0.7.0; desplegadas en QA el 11 de noviembre) se promueven solo por `release/*` → `main`, después de pasar QA (ADR-022, RNF-08). La traza la verifica SCRUM-672.
 
 ## Sistemas externos y de soporte
 
