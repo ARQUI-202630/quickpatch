@@ -36,12 +36,17 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
     model {
 
         # ---------------------------------------------------------------- Personas (SRS 2.1 y 2.2, DD RN-U6)
-        cliente = person "Cliente" "Pide, sigue, paga y califica servicios técnicos para el hogar."
-        empresaCliente = person "Empresa cliente" "Pide y paga servicios para sus sedes (RF-06)."
-        tecnico = person "Técnico" "Recibe asignaciones, ejecuta el servicio y registra evidencias."
-        proveedor = person "Proveedor" "Administra su equipo de técnicos (RF-16)."
-        adminTenant = person "Admin del tenant" "Aprueba y suspende técnicos, sigue las solicitudes de su tenant y entrega los enlaces de recuperación de contraseña (RF-18 a RF-20, ADR-024)."
-        adminPlataforma = person "Admin de plataforma" "Administra los tenants (RF-21)."
+        # Seis roles (SRS 2.1): cuatro usan la app móvil y dos el panel web (SCRUM-688).
+        group "Usuarios de la app móvil" {
+            cliente = person "Cliente" "Pide, sigue, paga y califica servicios técnicos para el hogar."
+            empresaCliente = person "Empresa cliente" "Pide y paga servicios para sus sedes (RF-06)."
+            tecnico = person "Técnico" "Recibe asignaciones, ejecuta el servicio y registra evidencias."
+            proveedor = person "Proveedor" "Administra su equipo de técnicos (RF-16)."
+        }
+        group "Administradores del panel web" {
+            adminTenant = person "Admin del tenant" "Aprueba y suspende técnicos, sigue las solicitudes de su tenant y entrega los enlaces de recuperación de contraseña (RF-18 a RF-20, ADR-024)."
+            adminPlataforma = person "Admin de plataforma" "Administra los tenants (RF-21)."
+        }
         equipo = person "Equipo de desarrollo y operación" "Desarrolla, despliega y opera QUICKPATCH." "Interno"
 
         # ---------------------------------------------------------------- Sistemas externos (ADR-024: solo la pasarela, R5)
@@ -734,7 +739,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             title "Contexto del sistema QUICKPATCH (C4 nivel 1)"
             include *
             exclude equipo github observabilidad
-            autoLayout lr
+            autoLayout tb 150 120
         }
 
         container quickpatch "C4-03-Contenedores" "Contenedores de QUICKPATCH agrupados: clientes, API Gateway, microservicios, mensajería y almacenamiento, y una base PostgreSQL por servicio (ADR-014)." {

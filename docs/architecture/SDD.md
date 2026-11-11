@@ -2427,6 +2427,7 @@ Estos cambios responden a la retroalimentación final del profesor: arquitectura
 | Reglas de dependencia verificables: matriz entre capas, ubicación de cada tipo de clase, límites de tamaño, equivalente Java y pruebas de arquitectura en el CI de cada servicio | 10.3.2 | SCRUM-648 |
 | El nivel de código sale del código: herramienta reproducible, línea base y medición después del refactor; 7.1 y 7.2 quedan como explicación de mecanismos | 7 y 7.3 | SCRUM-680 a SCRUM-683 |
 | Refactor interno de Catalog, ServiceRequest, Matching, Ranking y Payments con pruebas de arquitectura en su CI | 7.3 y 10.3.2 | SCRUM-651 a SCRUM-655 |
+| Contexto con los 6 roles agrupados por canal (4 en la app móvil y 2 en el panel web) y lectura vertical sin cruces; figuras 1 a 3 reexportadas | 3, 4 y 5.1 | SCRUM-688 y SCRUM-689 |
 
 ---
 

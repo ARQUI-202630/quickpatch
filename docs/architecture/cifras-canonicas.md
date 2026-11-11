@@ -53,6 +53,6 @@ Si un dato cambia, se cambia primero en su fuente y después aquí, en el mismo 
 |---|---|---|---|
 | Presentación del Sprint 5 | 37 funcionalidades, 94 % y 36 aceptadas | 33 RF; indicadores por definir | SCRUM-700 y SCRUM-701 |
 | Presentación del Sprint 5 | 39 escenarios aprobados | 34 Cumple de 52 | SCRUM-664 |
-| Presentación del Sprint 5 | 5 o 6 usuarios según la diapositiva | 6 roles | SCRUM-688 y SCRUM-706 |
+| Presentación del Sprint 5 | 5 o 6 usuarios según la diapositiva | 6 roles. El «5» venía de los escenarios AC4 («4 de 5 usuarios de prueba»), que cuentan participantes de una prueba de uso, no roles; desde SCRUM-688 dicen «participantes» | SCRUM-688 (hecho) y SCRUM-706 |
 | ADR-021 y textos que dicen «doce repositorios» | 12 | 12 de componentes más el principal, 13 en total | SCRUM-692 |
 | INFRASTRUCTURE.md (producción) | «hoy Identity, Catalog, ServiceRequest y Matching» en el k3s de VM3 | Lo dirá el inventario por ambiente | SCRUM-671 y SCRUM-694 |
