@@ -74,7 +74,7 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 | **AC8-E4** | Flexibility | Cambio de proveedor de geolocalización | Reemplazo sin cambios en los demás servicios | Solo ServiceRequest usa geocodificación, detrás de un adaptador; 0 referencias en los otros 6 servicios | release/0.11.2, Infrastructure/Geocoding/NominatimGeocoder.cs | **Parcial** | No se ha reemplazado el proveedor. Medición del 4-nov, validada por QA el 5-nov. |
 | **AC8-E5** | Flexibility | Reconstrucción del entorno desde cero | VM operativa en $\le 4\text{ h}$ solo con lo documentado | Playbooks de Ansible disponibles | `infrastructure/ansible/` | **No medido** | Procedimiento automatizado en Ansible. |
 | **AC9-E1** | Safety | Transiciones seguras del ciclo de servicio | 0 transiciones inválidas en `service_requests` | Saltos de estado inválidos responden HTTP 409 Conflict | `tests/e2e/evidencias/scrum-84-seguimiento-estado-qa-2026-10-22.txt` | **Cumple** | Máquina de estados estricta en ServiceRequest. |
-| **AC9-E2** | Safety | Técnico con calificaciones bajas | 100% de técnicos señalados en panel sin suspensión auto | La reputación llega a Identity pero no se muestra en el panel | *(Sin archivo de evidencia)* | **Cumple** | Marcado por la PO el 4-nov como compromiso: SCRUM-642 sigue en Backlog y el panel todavía no señala a los técnicos con calificaciones bajas. Falta construirlo y dejar la evidencia. |
+| **AC9-E2** | Safety | Técnico con calificaciones bajas | 100% de técnicos señalados en panel sin suspensión auto | 100 % (1 de 1): el técnico con promedio 2,0 y 5 calificaciones aparece con «Reputación baja» y sigue aprobado; 0 señalados de más entre 76 técnicos del tenant | [`ac9-e2-reputacion-baja-qa-2026-11-11.txt`](../../tests/e2e/evidencias/ac9-e2-reputacion-baja-qa-2026-11-11.txt), [`scrum-642-reputacion-baja-qa-2026-11-11.txt`](../../tests/e2e/evidencias/scrum-642-reputacion-baja-qa-2026-11-11.txt) y [captura del panel](../../tests/e2e/evidencias/scrum-642-panel-reputacion-baja-qa-2026-11-11.png) | **Cumple** | Medido en QA el 11-nov con identity 0.10.0 y el panel 0.7.0 (SCRUM-642). El Cumple que la PO marcó el 4-nov como compromiso ya tiene evidencia. |
 | **AC9-E3** | Safety | Servicio sin cierre | 100% de solicitudes vencidas marcadas en el panel | Sin regla de 4 horas ni marca de solicitudes vencidas | release/0.11.2 de service-request; release/0.5.5 de web | **No cumple** | La función no existe. Queda fuera del cierre como riesgo aceptado por el feature freeze del Sprint 6 (WORKING_AGREEMENTS, SCRUM-646). |
 | **AC9-E4** | Safety | Sin candidatos elegibles | 0 asignaciones a técnicos que no cumplen filtro | Transición atómica a `en_espera` sin candidatos elegibles | `tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt` | **Cumple** | Lógica de matching ante ausencia de técnicos. |
 | **AC9-E5** | Safety | Pasarela de pagos sin respuesta | 0 'pagado' sin `payment.approved` y 0 cobros duplicados | Conciliación y timeout en pasarela simulada | `tests/e2e/evidencias/scrum-117-pago-qa-2026-10-22.txt`; `tests/e2e/evidencias/scrum-495-comprobante-qa-2026-10-22.txt` | **Cumple** | Manejo de estados pendientes sin doble cobro. |
@@ -87,7 +87,7 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 ## 3. Balance Cuantitativo de los Escenarios de Calidad
 
 * **Total de Escenarios Evaluados:** **52 Escenarios de Arquitectura (SAD §3)**.
-* **Escenarios en Estado CUMPLE:** **34 escenarios (65.4%)**. Cinco de ellos cuentan por decisión de la Product Owner: AC1-E2, AC2-E5, AC3-E1, AC4-E2 y AC9-E2. AC4-E2 y AC9-E2 todavía no tienen evidencia.
+* **Escenarios en Estado CUMPLE:** **34 escenarios (65.4%)**. Cinco de ellos cuentan por decisión de la Product Owner: AC1-E2, AC2-E5, AC3-E1, AC4-E2 y AC9-E2. AC4-E2 todavía no tiene evidencia; AC9-E2 la tiene desde el 11 de noviembre (SCRUM-642).
 * **Escenarios en Estado PARCIAL:** **8 escenarios (15.4%)** (AC4-E9, AC5-E3, AC5-E4, AC5-E6, AC7-E4, AC8-E1, AC8-E4, AC9-E8).
 * **Escenarios en Estado NO CUMPLE:** **4 escenarios (7.7%)** (AC7-E2, AC7-E3, AC7-E5 y AC9-E3).
 * **Escenarios en Estado NO MEDIDO / PENDIENTE:** **6 escenarios (11.5%)** (AC4-E3, AC4-E4, AC4-E6, AC4-E8, AC8-E2 y AC8-E5).
@@ -128,7 +128,7 @@ Los atributos con más trabajo pendiente son AC8 Flexibility (40.00%), AC7 Maint
 | AC7-E5 Reutilización de la lógica transversal | Hay copias en .NET de Outbox, correlación, tenant e idempotencia. Cumplir exige un paquete compartido. | SCRUM-657: depende de aceptar ADR-020 (repositorio y paquete nuevos). Mientras no se acepte, sigue en **No cumple** |
 | AC9-E3 Servicio sin cierre | No existe la regla de 4 horas ni la marca de solicitudes vencidas en el panel. | Riesgo aceptado: fuera del cierre por el feature freeze (SCRUM-646) |
 
-AC9-E2 ya no está en esta tabla: la Product Owner lo marcó como Cumple el 4 de noviembre, como compromiso. El panel todavía no señala a los técnicos con calificaciones bajas; SCRUM-642 está en el Sprint 6 como corrección necesaria (SCRUM-646) para que ese Cumple tenga evidencia.
+AC9-E2 ya no está en esta tabla: la Product Owner lo marcó como Cumple el 4 de noviembre, como compromiso, y desde el 11 de noviembre tiene evidencia en QA (SCRUM-642): el panel señala al 100 % de los técnicos que cumplen la condición y ninguno se suspende solo.
 
 ---
 
