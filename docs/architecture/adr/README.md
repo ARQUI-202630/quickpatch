@@ -20,7 +20,7 @@ Cada decisión de arquitectura tiene su propio archivo en esta carpeta, con cont
 | [ADR-017](ADR-017-replicas-locales-por-eventos.md) | Réplicas locales alimentadas por eventos | AC5, AC2 | Aceptado |
 | [ADR-018](ADR-018-jwt-rs256-identity.md) | JWT RS256 firmado solo por Identity | AC6 | Aceptado |
 | [ADR-019](ADR-019-roles-base-de-datos.md) | Roles de base de datos por responsabilidad | AC6 | Propuesto |
-| [ADR-020](ADR-020-codigo-transversal-compartido.md) | Código transversal compartido (.NET) | AC7 | Propuesto |
+| [ADR-020](ADR-020-codigo-transversal-compartido.md) | Código transversal compartido (.NET) en `quickpatch-shared-dotnet`, consumido como submódulo | AC7 | Aceptado (11 nov 2026), modificado: submódulo en vez de NuGet |
 | [ADR-021](ADR-021-doce-repositorios.md) | Doce repositorios por componente de la solución | AC7 | Aceptado |
 | [ADR-022](ADR-022-redistribucion-vms.md) | 7 VMs: 3 de producción, 3 de QA y 1 de herramientas | AC7 | Aceptado; implementación en curso; gateway y panel precisados por ADR-028 |
 | [ADR-023](ADR-023-canal-tiempo-real-websocket.md) | Canal de estado en tiempo real por WebSocket hacia Communication Service, con respaldo por REST | AC4, AC2 | Aceptado |

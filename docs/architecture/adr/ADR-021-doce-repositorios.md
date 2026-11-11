@@ -61,6 +61,10 @@ Las reglas de trabajo de ADR-013 (orden de publicación, submódulos sin rama, v
 - `tools/validate-composition.sh` comprueba los 12 submódulos y los contratos de cada consumidor en un tag.
 - SCRUM-338: Ansible pasó a `infrastructure/`; la configuración de Nginx a `quickpatch-api-gateway/nginx/` y el despliegue de Kafka, con la creación de los topics, a `quickpatch-kafka/deploy/`, que Ansible usa desde los submódulos. La imagen y el despliegue a QA y producción están en el `ci-cd.yml` de cada componente, sin workflows de otros repositorios.
 
+## Actualización del 11 de noviembre de 2026
+
+ADR-020 suma un repositorio de componente, `quickpatch-shared-dotnet`, con el código transversal sin dominio de los servicios .NET. Los servicios lo consumen como submódulo (`shared/dotnet`), igual que los contratos. Desde esa fecha son 13 repositorios de componentes más el principal (cifras canónicas).
+
 ## Pendientes
 
 - SCRUM-339: configuración de base de datos, Redis y Garage por servicio.
