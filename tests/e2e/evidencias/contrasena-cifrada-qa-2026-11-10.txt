@@ -1,0 +1,8 @@
+SCRUM-644 en QA (Identity 0.9.0, imagen t-17249af316d7), 10 de noviembre de 2026. Script: scripts-2026-11-10/contrasena-cifrada-qa.py (no imprime claves).
+GET /api/v1/auth/password-key: 200, algoritmo RSA-OAEP-256, keyId DRYuKDd619yi61mb (la llave pública no se copia aquí)
+login con encryptedPassword (keyId vigente): 200 con token
+login con keyId desconocido: 400, problema .../llave-desconocida ("La llave de cifrado cambió")
+login con contraseña errónea cifrada: 401
+login con contraseña en claro (compatibilidad del contrato 1.11.0): 200
+Hallazgo: `identity-secretos` no tiene PasswordEncryption__PrivateKeyPem ni en QA ni en producción; Identity genera una llave por proceso (PasswordEncryptionKey, aviso en el log). Con una réplica funciona y el keyId cambia en cada reinicio; con más de una réplica fallaría hasta crear el secreto.
+Falta: la captura de la pestaña Network del navegador con encryptedPassword.
