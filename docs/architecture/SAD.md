@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.49 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.50 — QUICKPATCH
 
 ---
 
@@ -994,7 +994,7 @@ Esta sección describe cómo se distribuye el sistema sobre las 7 VMs propias (R
 |VM|IP|Rol|Qué corre|
 |---|---|---|---|
 |VM1|10.43.100.168|Herramientas y entrada|Única entrada desde la VPN (R9): Nginx :443 que termina el HTTPS y reenvía por nombre al gateway de cada ambiente (VM3 o VM2) o a Grafana (ADR-028). Runner de GitHub con kubectl y k6. Prometheus, Loki y Grafana para los dos ambientes|
-|VM3|10.43.98.205|Producción — aplicación|k3s de un nodo: los 7 microservicios con código (Identity, Catalog, Matching, ServiceRequest, Ranking, Payments y Communication); Actors, planeado, no se despliega. Fuera de k3s, el Nginx del gateway de producción (:8080, solo desde VM1), que reenvía al Traefik de k3s y sirve el panel Angular (ADR-028)|
+|VM3|10.43.98.205|Producción — aplicación|k3s de un nodo: los 7 microservicios con código (Identity, Catalog, Matching, ServiceRequest, Ranking, Payments y Communication); Actors, planeado, no se despliega. Fuera de k3s, el Nginx del gateway de producción (:8080, solo desde VM1), que reenvía al Traefik de k3s y entrega los archivos del panel Angular, que se ejecuta en el navegador del administrador (ADR-028, SCRUM-674)|
 |VM4|10.43.98.209|Producción — datos|PostgreSQL + PostGIS (una base por servicio, ADR-014), Redis (coordinación temporal de procesos programados, sección 4.2.3) y Nominatim con el mapa de Bogotá (ADR-024)|
 |VM6|10.43.99.12|Producción — mensajería y almacenamiento|Apache Kafka + Kafka UI y Garage, compatible con S3 (evidencias fotográficas, RF-15, y respaldos de PostgreSQL; ADR-016)|
 |VM2|10.43.98.15|QA — aplicación|Igual que VM3|
@@ -1007,11 +1007,11 @@ Esta sección describe cómo se distribuye el sistema sobre las 7 VMs propias (R
 
 ![Despliegue de producción](diagrams/c4/C4-06-Despliegue-Produccion.png)
 
-**Figura 5.1. Producción: VM3 (aplicación), VM4 (datos) y VM6 (mensajería y almacenamiento), con VM1 como entrada y herramientas. Vista `C4-06-Despliegue-Produccion`.**
+**Figura 5.1. Producción: VM3 (aplicación), VM4 (datos) y VM6 (mensajería y almacenamiento), con VM1 como entrada y herramientas. El panel se entrega desde VM3 y se ejecuta en el navegador del administrador; la app corre en el dispositivo móvil, y Grafana se consulta desde el navegador del equipo (SCRUM-674). Vista `C4-06-Despliegue-Produccion`.**
 
 ![Despliegue de QA](diagrams/c4/C4-06-Despliegue-QA.png)
 
-**Figura 5.2. QA: VM2, VM5 y VM7, con la misma forma que producción y sin conexión con ella. Vista `C4-06-Despliegue-QA`.**
+**Figura 5.2. QA: VM2, VM5 y VM7, con la misma forma que producción y sin conexión con ella; el panel de QA también se ejecuta en el navegador y solo se entrega desde VM2. Vista `C4-06-Despliegue-QA`.**
 
 > **Nota sobre storage de evidencias (self-hosted vs. Cloudflare R2):** confirmado con el equipo que la evidencia fotográfica sí está en el alcance del MVP. El storage se aprovisiona **self-hosted en VM6** (VM7 en QA, ADR-022), consistente con R5: primero MinIO y, desde la versión 2.13, Garage (ADR-016), porque MinIO dejó de distribuir su edición comunitaria. El diagrama de la presentación de Sprint 1 mostraba "MinIO / Cloudflare R2" como si fueran intercambiables; se descarta Cloudflare R2 para esta versión por R5: guardaría datos de usuarios en producción (las evidencias) fuera de las 7 VMs, aunque su capa gratuita no tenga costo. GitHub Container Registry sí se usa porque solo guarda imágenes de contenedor, no datos de usuarios. Si en el futuro se reconsidera, debe evaluarse explícitamente contra R5 antes de adoptarlo.
 
@@ -1311,5 +1311,6 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.47|3 nov 2026|Sección 4.2.2: remite a los escenarios dinámicos del SDD, sección 8, con título y pasos numerados: asignación, cotización, pago, calificación y cancelación (SCRUM-589).|
 |2.48|4 nov 2026|Sección 8.1 con las entidades reales de cada servicio, sus réplicas y lo que reemplazó a las entidades del diseño inicial que no se implementaron (SCRUM-595, revisión del Sprint 4). Remite a la figura 6 del SDD, rehecha con el DD 5.19 y el código.|
 |2.49|11 nov 2026|Auditoría de consistencia del cierre (SCRUM-692) contra las cifras canónicas (SCRUM-691) y el Documento de Infraestructura 4.16: los textos que decían «8 microservicios desplegados» pasan a los 7 con código (Actors es un esqueleto) en los escenarios, la tabla de VMs y la sección 5.1; la tabla 4.2.2 queda con el estado al 11 de noviembre (Ranking, Payments y Communication desplegados en los dos ambientes y RF-25 implementado); la nota de 5.1 deja de decir «QA 6 y producción 4»; en AC4-E3, E4 y E9 se habla de «participantes» de la prueba, no de usuarios (SCRUM-688).|
+|2.50|11 nov 2026|Despliegue con entrega y ejecución separadas (SCRUM-675, observación del profesor; vistas de SCRUM-674): el Nginx de VM3 y VM2 entrega el panel, que se ejecuta en el navegador del administrador; la app corre en el dispositivo y Grafana se consulta desde el navegador del equipo (tabla de VM y figuras 5.1 y 5.2).|
 |2.27|12 oct 2026|Dependencias externas frente a R5 (SCRUM-413 y SCRUM-405). Se acepta ADR-024: R5 no cambia; la geocodificación (RIE-02) corre con un Nominatim propio con el mapa de Bogotá en VM4 y VM5, usado por ServiceRequest cuando la solicitud llega sin coordenadas, y las notificaciones (RIE-03) del MVP se entregan dentro de la app (canal de ADR-023 y buzón en Communication). El diagrama de contexto (4.1) pasa el geocodificador adentro del sistema y retira el proveedor de correo y push, y la nota de sistemas externos lo explica. ADR-024 entra a la tabla 5.5 y a la matriz 6.1 como excepción a ADR-014.|
 |2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|
