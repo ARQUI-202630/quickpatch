@@ -1,4 +1,4 @@
-# Documento de Arquitectura de Software (SAD) V2.48 — QUICKPATCH
+# Documento de Arquitectura de Software (SAD) V2.49 — QUICKPATCH
 
 ---
 
@@ -277,7 +277,7 @@ Característica agregada en esta versión (ver sección 2). Cubre si el sistema 
 |---|---|
 |Fuente|Carga de usuarios|
 |Estímulo|Operación sostenida en hora pico, con ~50 solicitudes de matching concurrentes (la carga esperada del Escenario 4)|
-|Ambiente|Ambiente de QA (VM2, VM5 y VM7; ADR-015 y ADR-022), con los 8 microservicios desplegados con los mismos `requests` y `limits` de producción|
+|Ambiente|Ambiente de QA (VM2, VM5 y VM7; ADR-015 y ADR-022), con los 7 microservicios con código desplegados con los mismos `requests` y `limits` de producción (Actors es un esqueleto y no se despliega)|
 |Artefacto|Pods en k3s con los `requests` y `limits` del Documento de Infraestructura, sección 5.6|
 |Respuesta|Cada servicio opera dentro de sus límites declarados y el consumo queda registrado|
 |Medida|0 reinicios por OOMKilled y cada pod dentro de sus `limits` declarados, medidos con `kubectl` y Grafana durante la prueba de carga con k6 en QA; el consumo de CPU y RAM queda registrado como línea base. El total de RAM no se compara con el presupuesto de VM3, porque en QA todos los componentes comparten una sola VM|
@@ -303,7 +303,7 @@ Característica agregada en esta versión (ver sección 2). Cubre si el sistema 
 |---|---|
 |Fuente|Un microservicio de baja prioridad (ej. Ranking Service)|
 |Estímulo|Alcanza su límite de CPU o RAM|
-|Ambiente|Operación normal, los 8 servicios comparten VM3|
+|Ambiente|Operación normal, los 7 servicios con código comparten VM3; Actors se sumará cuando tenga código|
 |Artefacto|Matching Service (QoS Guaranteed) y los demás pods|
 |Respuesta|Kubernetes limita únicamente al pod que excede su límite, sin desalojar ni degradar a los demás|
 |Medida|El Matching mantiene menos de 3 segundos para el 95% de las solicitudes (AC2-E1) y 0 pods ajenos desalojados|
@@ -633,7 +633,7 @@ Característica agregada en esta versión (ver sección 2). Cubre si el sistema 
 |Fuente|Pipeline de CI/CD (runner en VM1)|
 |Estímulo|Un incremento que pasó la integración continua debe promoverse a producción|
 |Ambiente|Ambiente de QA permanente en VM2, VM5 y VM7 (ADR-015, ADR-022), aislado de producción y con la misma topología, con un tenant de prueba dedicado|
-|Artefacto|Los 8 microservicios desplegados en el k3s de VM2, con su gateway Nginx y su panel en la misma VM (ADR-028), PostgreSQL y Redis propios en VM5 y Kafka y Garage propios en VM7|
+|Artefacto|Los 7 microservicios con código desplegados en el k3s de VM2, con su gateway Nginx y su panel en la misma VM (ADR-028), PostgreSQL y Redis propios en VM5 y Kafka y Garage propios en VM7|
 |Respuesta|El incremento se despliega en QA y allí se ejecutan las pruebas funcionales, de aceptación y de seguridad (E2E, UAT, OWASP ZAP) y la prueba de carga (k6) (RNF-07); si alguna falla, la promoción a producción se bloquea (RNF-08)|
 |Medida|100% de los despliegues a producción pasan antes por QA con todas esas pruebas aprobadas; 0 pruebas de carga o de seguridad se ejecutan contra producción (VM3, VM4 y VM6)|
 
@@ -949,18 +949,18 @@ Ambos clientes se comunican con el sistema a través del **API Gateway** de su a
 
 Cada servicio es responsable de un dominio de negocio, con su propio ciclo de despliegue. La columna de estado separa lo implementado de lo planeado, para que lo que se muestra coincida con lo que hay en `develop` y en cada ambiente (mapa arquitectónico, `docs/architecture/mapa-arquitectonico.md`, SCRUM-544). Los diagramas dibujan lo planeado con borde punteado.
 
-|Servicio|Módulos que agrupa|Estado al 27 de octubre de 2026|QA|Producción|
+|Servicio|Módulos que agrupa|Estado al 11 de noviembre de 2026|QA|Producción|
 |---|---|---|---|---|
 |Identity Service|Auth, Tenants, Users; también el equipo del proveedor (RF-16) mientras Actors no tenga persistencia (DD, P-02)|Implementado|Desplegado|Desplegado|
 |Actors Service|Suppliers, Allies, Clients|**Planeado**: esqueleto sin persistencia; sus conceptos son evolutivos (SDD 6.14)|No desplegado|No desplegado|
 |Catalog Service|Catalog (especialidades, servicios publicados)|Implementado|Desplegado|Desplegado|
 |Matching Service|Matching, CoverageZone|Implementado; falta consumir `catalog.category-changed` para el nombre de la categoría en la oferta|Desplegado|Desplegado|
 |ServiceRequest Service|ServiceRequest (orquesta cotización → prestación → evaluación)|Implementado, incluida la calificación (RF-12, ADR-027, SCRUM-85)|Desplegado|Desplegado|
-|Ranking Service|Ranking (servicio prestado; el de materiales queda fuera del MVP, ver D3)|Implementado (ADR-027, SCRUM-498): reputación del técnico desde `service-request.rated`; sin endpoints de negocio|No desplegado (SCRUM-512)|No desplegado|
-|Payments Service|Payments, Billing, Payroll-lite|Pago con la pasarela simulada, pago de la empresa (RN-P6) y comprobante implementados; los pagos recibidos del técnico (RF-25) están **planeados**|Desplegado|Pendiente (SCRUM-518)|
-|Communication Service|Notifications y Chat de la solicitud (ADR-026); Complaints planificado para el roadmap 1.x, fuera del alcance del MVP|Implementado|Desplegado|Pendiente (SCRUM-518)|
+|Ranking Service|Ranking (servicio prestado; el de materiales queda fuera del MVP, ver D3)|Implementado (ADR-027, SCRUM-498): reputación del técnico desde `service-request.rated`; sin endpoints de negocio|Desplegado (0.1.0)|Desplegado (0.1.0)|
+|Payments Service|Payments, Billing, Payroll-lite|Pago con la pasarela **simulada**, pago de la empresa (RN-P6), comprobante y pagos recibidos del técnico y del equipo del proveedor (RF-25, SCRUM-501) implementados; la pasarela certificada sigue **planeada**|Desplegado (0.3.0)|Desplegado (0.3.0)|
+|Communication Service|Notifications y Chat de la solicitud (ADR-026); Complaints planificado para el roadmap 1.x, fuera del alcance del MVP|Implementado|Desplegado (0.3.3)|Desplegado (0.3.3)|
 
-Producción iguala a QA antes de promover el MVP (SCRUM-518 a SCRUM-521): faltan Payments, Communication, Nominatim y los topics de Kafka del incremento (Documento de Infraestructura, sección 4.3).
+Desde la promoción del MVP (SCRUM-518, 4 de noviembre de 2026) los 7 servicios con código corren en los dos ambientes. QA va adelante en dos servicios que todavía no pasan a producción: Identity 0.9.0 (contraseña cifrada, SCRUM-644) y ServiceRequest 0.12.0; producción tiene Identity 0.8.1 y ServiceRequest 0.11.2. La matriz completa de lo modelado frente a lo desplegado está en `docs/architecture/matriz-modelado-vs-real.md` (SCRUM-697) y las cifras, en `docs/architecture/cifras-canonicas.md` (SCRUM-691).
 
 El interior de cada servicio (capas, componentes con los nombres reales de las clases y sus relaciones con la base, Kafka y el gateway) está en el SDD, sección 6 (diagramas C4 de componentes, figuras 10 a 18; SCRUM-580). Cómo colaboran en cada escenario, con el título del escenario, los pasos numerados, el gateway, los eventos por nombre y el aviso a la app, está en el SDD, sección 8: asignación de técnico (figura 22b), cotización (22c), pago (24), calificación (27) y cancelación (28b) (SCRUM-589).
 
@@ -994,14 +994,14 @@ Esta sección describe cómo se distribuye el sistema sobre las 7 VMs propias (R
 |VM|IP|Rol|Qué corre|
 |---|---|---|---|
 |VM1|10.43.100.168|Herramientas y entrada|Única entrada desde la VPN (R9): Nginx :443 que termina el HTTPS y reenvía por nombre al gateway de cada ambiente (VM3 o VM2) o a Grafana (ADR-028). Runner de GitHub con kubectl y k6. Prometheus, Loki y Grafana para los dos ambientes|
-|VM3|10.43.98.205|Producción — aplicación|k3s de un nodo: los 8 microservicios (Identity, Actors, Catalog, Matching, ServiceRequest, Ranking, Payments, Communication). Fuera de k3s, el Nginx del gateway de producción (:8080, solo desde VM1), que reenvía al Traefik de k3s y sirve el panel Angular (ADR-028)|
+|VM3|10.43.98.205|Producción — aplicación|k3s de un nodo: los 7 microservicios con código (Identity, Catalog, Matching, ServiceRequest, Ranking, Payments y Communication); Actors, planeado, no se despliega. Fuera de k3s, el Nginx del gateway de producción (:8080, solo desde VM1), que reenvía al Traefik de k3s y sirve el panel Angular (ADR-028)|
 |VM4|10.43.98.209|Producción — datos|PostgreSQL + PostGIS (una base por servicio, ADR-014), Redis (coordinación temporal de procesos programados, sección 4.2.3) y Nominatim con el mapa de Bogotá (ADR-024)|
 |VM6|10.43.99.12|Producción — mensajería y almacenamiento|Apache Kafka + Kafka UI y Garage, compatible con S3 (evidencias fotográficas, RF-15, y respaldos de PostgreSQL; ADR-016)|
 |VM2|10.43.98.15|QA — aplicación|Igual que VM3|
 |VM5|10.43.98.29|QA — datos|Igual que VM4|
 |VM7|10.43.99.8|QA — mensajería y almacenamiento|Igual que VM6|
 
-> **Distribución aprobada en la versión 2.22 (ADR-022) y aplicada el 7 de octubre de 2026 (SCRUM-334).** Los servicios corren así desde el 8 de octubre. Lo que hoy corre en cada ambiente está en el Documento de Infraestructura, sección 4.3: QA tiene 6 microservicios y producción 4; Actors no está desplegado porque es un esqueleto, y Ranking está implementado pero todavía sin desplegar (sección 4.2.2).
+> **Distribución aprobada en la versión 2.22 (ADR-022) y aplicada el 7 de octubre de 2026 (SCRUM-334).** Los servicios corren así desde el 8 de octubre. Lo que hoy corre en cada ambiente está en el Documento de Infraestructura, sección 4.3 (versión 4.16, verificado con `kubectl` el 10 de noviembre de 2026): los 7 servicios con código corren en QA y en producción; Actors no está desplegado porque es un esqueleto (sección 4.2.2).
 
 **Vista de despliegue por ambiente (C4 · Deployment, SCRUM-573).** Cada ambiente tiene sus propios nodos, su gateway, sus datos, su Kafka y su almacenamiento. VM1 aparece aparte, como infraestructura auxiliar: la entrada TLS, el runner de CI/CD y la observabilidad. El panel y su página de presentación son parte del producto y los sirve el gateway de cada ambiente (ADR-028). Lo punteado no está desplegado todavía.
 
@@ -1015,7 +1015,7 @@ Esta sección describe cómo se distribuye el sistema sobre las 7 VMs propias (R
 
 > **Nota sobre storage de evidencias (self-hosted vs. Cloudflare R2):** confirmado con el equipo que la evidencia fotográfica sí está en el alcance del MVP. El storage se aprovisiona **self-hosted en VM6** (VM7 en QA, ADR-022), consistente con R5: primero MinIO y, desde la versión 2.13, Garage (ADR-016), porque MinIO dejó de distribuir su edición comunitaria. El diagrama de la presentación de Sprint 1 mostraba "MinIO / Cloudflare R2" como si fueran intercambiables; se descarta Cloudflare R2 para esta versión por R5: guardaría datos de usuarios en producción (las evidencias) fuera de las 7 VMs, aunque su capa gratuita no tenga costo. GitHub Container Registry sí se usa porque solo guarda imágenes de contenedor, no datos de usuarios. Si en el futuro se reconsidera, debe evaluarse explícitamente contra R5 antes de adoptarlo.
 
-Dado R10 (hardware fijo de 7 VMs), los 8 microservicios no reciben una VM cada uno. Los 8 corren dentro de VM3, orquestados con Kubernetes (k3s, clúster de un solo nodo), lo que permite escalado independiente por servicio, auto-healing y rolling updates sin downtime — ver ADR-011 (sección 5.5) y ADR-003 (sección 6).
+Dado R10 (hardware fijo de 7 VMs), los microservicios no reciben una VM cada uno. Los 7 con código corren dentro de VM3 (Actors se sumará cuando se implemente), orquestados con Kubernetes (k3s, clúster de un solo nodo), lo que permite escalado independiente por servicio, auto-healing y rolling updates sin downtime — ver ADR-011 (sección 5.5) y ADR-003 (sección 6).
 
 ### 5.2 Principio de distribución
 
@@ -1033,7 +1033,7 @@ Existen dependencias de arranque entre componentes: PostgreSQL y Kafka deben est
 1. VM1 (observabilidad y proxy de entrada) — no depende de ningún ambiente
 2. VM4 (PostgreSQL/PostGIS y Redis)
 3. VM6 (Kafka y Garage) — los microservicios dependen del bus de eventos para operar correctamente
-4. VM3 (los 8 microservicios vía Kubernetes/k3s, y el Nginx del gateway con el panel)
+4. VM3 (los 7 microservicios con código vía Kubernetes/k3s, y el Nginx del gateway que entrega el panel al navegador)
 
 QA sigue el mismo orden en VM5, VM7 y VM2, y es independiente de producción.
 
@@ -1310,5 +1310,6 @@ Consistente con D5 y ADR-005 (shared-schema con `tenant_id` + Row-Level Security
 |2.46|29 oct 2026|Sección 7.4: el pago va antes de la calificación (`DELIVERED` → `PAID` → `EVALUATED`), como el SRS (RF-12), el SDD (escenario 7) y el DD (RN-R3). Cierra la contradicción P2 del SRS (sección 7.4.2), señalada en la línea base del SRS (SCRUM-535).|
 |2.47|3 nov 2026|Sección 4.2.2: remite a los escenarios dinámicos del SDD, sección 8, con título y pasos numerados: asignación, cotización, pago, calificación y cancelación (SCRUM-589).|
 |2.48|4 nov 2026|Sección 8.1 con las entidades reales de cada servicio, sus réplicas y lo que reemplazó a las entidades del diseño inicial que no se implementaron (SCRUM-595, revisión del Sprint 4). Remite a la figura 6 del SDD, rehecha con el DD 5.19 y el código.|
+|2.49|11 nov 2026|Auditoría de consistencia del cierre (SCRUM-692) contra las cifras canónicas (SCRUM-691) y el Documento de Infraestructura 4.16: los textos que decían «8 microservicios desplegados» pasan a los 7 con código (Actors es un esqueleto) en los escenarios, la tabla de VMs y la sección 5.1; la tabla 4.2.2 queda con el estado al 11 de noviembre (Ranking, Payments y Communication desplegados en los dos ambientes y RF-25 implementado); la nota de 5.1 deja de decir «QA 6 y producción 4»; en AC4-E3, E4 y E9 se habla de «participantes» de la prueba, no de usuarios (SCRUM-688).|
 |2.27|12 oct 2026|Dependencias externas frente a R5 (SCRUM-413 y SCRUM-405). Se acepta ADR-024: R5 no cambia; la geocodificación (RIE-02) corre con un Nominatim propio con el mapa de Bogotá en VM4 y VM5, usado por ServiceRequest cuando la solicitud llega sin coordenadas, y las notificaciones (RIE-03) del MVP se entregan dentro de la app (canal de ADR-023 y buzón en Communication). El diagrama de contexto (4.1) pasa el geocodificador adentro del sistema y retira el proveedor de correo y push, y la nota de sistemas externos lo explica. ADR-024 entra a la tabla 5.5 y a la matriz 6.1 como excepción a ADR-014.|
 |2.26|12 oct 2026|Canal de estado en tiempo real (SCRUM-412, primera entrega del SAD V4). Se acepta ADR-023: WebSocket desde las apps hasta Communication Service a través de VM1, con el aviso sin detalle y consulta cada 30 segundos como respaldo; se descartan push más REST (contradice R5), solo consulta, SSE y long polling. La sección 4.1 deja de tener la decisión abierta y el diagrama de contexto muestra HTTPS y WebSocket; RNF-06 (2.2) y su acción correctiva citan el ADR, aunque sigue sin cobertura hasta que se implemente; D2 suma ADR-023 en su traza. ADR-023 entra a la tabla de la sección 6 y a la matriz 6.1, y es el primer ADR que prioriza AC4.|
