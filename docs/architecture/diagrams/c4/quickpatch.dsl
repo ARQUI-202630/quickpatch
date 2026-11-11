@@ -4,7 +4,7 @@
  * Un solo workspace con todas las vistas C4 del SDD:
  *   C4-01  System Landscape        (1)  el entorno de software de QUICKPATCH
  *   C4-02  System Context          (1)  QUICKPATCH es un único sistema de software
- *   C4-03  Container               (1)  los contenedores de QUICKPATCH
+ *   C4-03  Container               (2)  los contenedores de QUICKPATCH: REST y datos (a) y eventos (b)
  *   C4-04  Component               (10) uno por contenedor con estructura propia:
  *                                       las 2 apps cliente y los 8 microservicios.
  *                                       API Gateway, Kafka, PostgreSQL, Redis y Garage no
@@ -292,6 +292,17 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
 
         # ================================================================ Relaciones
+        # Resumen por servicio de lo que publica y consume en Kafka (vista C4-03b, SCRUM-676).
+        # Va antes de las relaciones de componentes para que Structurizr no cree la relación
+        # implícita con la primera etiqueta que encuentre. Fuente: matriz de lo modelado frente a lo real.
+        identity -> kafka "Publica technician.registered, technician.verification-changed y tenant.status-changed. Consume ranking.technician-reputation-changed" "Kafka"
+        catalog -> kafka "Publica catalog.category-changed" "Kafka"
+        serviceRequest -> kafka "Publica service-request.* (9 eventos; .started sin consumidor). Consume catalog.category-changed, tenant.status-changed, matching.technician-assigned, .no-technician-available, .search-resumed y payment.*" "Kafka"
+        matching -> kafka "Publica matching.* (4 eventos). Consume service-request.created, .cancelled y .completed, technician.registered y technician.verification-changed" "Kafka"
+        ranking -> kafka "Publica ranking.technician-reputation-changed. Consume service-request.rated" "Kafka"
+        payments -> kafka "Publica payment.approved y payment.rejected. Consume service-request.completed y technician.registered" "Kafka"
+        communication -> kafka "Consume service-request.created, .status-changed, .quoted, .quote-accepted y .quote-rejected, matching.offer-created, technician.registered y technician.verification-changed (no publica)" "Kafka"
+
         # Personas → apps
         cliente -> mobNavegacion "Pide, sigue, paga y califica servicios"
         empresaCliente -> mobNavegacion "Pide y paga servicios"
@@ -742,13 +753,25 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             autoLayout tb 150 120
         }
 
-        container quickpatch "C4-03-Contenedores" "Contenedores de QUICKPATCH agrupados: clientes, API Gateway, microservicios, mensajería y almacenamiento, y una base PostgreSQL por servicio (ADR-014)." {
-            title "Contenedores de QUICKPATCH (C4 nivel 2)"
+        # La vista de contenedores se parte en dos (SCRUM-676): con Kafka y las bases en la
+        # misma imagen, las líneas hacia el bus cruzaban todo el diagrama.
+        container quickpatch "C4-03a-Contenedores-Sincrono" "Contenedores de QUICKPATCH, comunicación síncrona y datos: clientes, API Gateway, microservicios, una base PostgreSQL por servicio (ADR-014), Redis, Garage y el geocodificador. Los eventos están en C4-03b." {
+            title "Contenedores de QUICKPATCH: REST y datos (C4 nivel 2)"
             include *
             exclude equipo github observabilidad
             # Actors está planeado y no tiene despliegue: no se dibuja lo que todavía no existe.
             exclude actors dbActors
+            # Los eventos van en C4-03b-Contenedores-Eventos.
+            exclude kafka
             autoLayout tb 200 100
+        }
+
+        container quickpatch "C4-03b-Contenedores-Eventos" "Contenedores de QUICKPATCH, comunicación por eventos: qué servicio publica y cuál consume en Kafka (ADR-006, ADR-007; SDD 8.6)." {
+            title "Contenedores de QUICKPATCH: eventos en Kafka (C4 nivel 2)"
+            include kafka identity catalog serviceRequest matching ranking payments communication
+            # La consulta interna de usuarios es REST y está en C4-03a.
+            exclude "serviceRequest -> identity"
+            autoLayout lr 500 60
         }
 
         component mobile "C4-04-Componentes-Mobile" "Componentes de la App móvil." {
