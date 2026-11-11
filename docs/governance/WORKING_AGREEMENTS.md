@@ -367,6 +367,38 @@ Además de las herramientas de infraestructura, el equipo utiliza herramientas d
 - **Figma** — diseño de interfaces (UI/UX) de la app móvil y del sitio web.
 - **Miro** — mapeo de flujos, diagramas de arquitectura colaborativos y sesiones de planeación en equipo.
 
+### Congelamiento del alcance en el cierre (feature freeze)
+
+**Vigente desde el Sprint 6 (11 de noviembre de 2026, SCRUM-645 y SCRUM-646).** Viene de la retroalimentación final del profesor: el producto funciona y el alcance está prácticamente completo, así que ya no se agregan funcionalidades. Lo que queda es cerrar, probar, corregir y alinear la arquitectura con la implementación final.
+
+Desde el Sprint 6 **no se agregan funcionalidades nuevas**. Solo se acepta trabajo de estos tipos:
+
+| Tipo | Ejemplos |
+|---|---|
+| Defectos (bugs) | Un fallo encontrado en QA, en la UAT o en producción |
+| Refactor | Capas, dependencias y cohesión dentro de un servicio, sin cambiar su comportamiento externo |
+| QA | Medir escenarios de calidad y ejecutar pruebas en QA |
+| UAT | Escenarios de aceptación con la Product Owner |
+| Arquitectura | Diagramas, ADR, alineación del modelo con el código |
+| Documentación | SRS, SAD, SDD, DD, Infraestructura, TD e informes |
+| Cierre | Documento de cierre, presentación y ensayo |
+
+**Reglas:**
+
+1. Una historia que agrega comportamiento visible para el usuario solo entra al sprint si es una **corrección necesaria**: cierra un criterio ya comprometido (un RF del SRS o un escenario de calidad que la Product Owner dio por cumplido) o corrige un defecto de QA/UAT. La decisión queda escrita en la historia, con quién la aprobó.
+2. Lo que no cumple esa condición queda **fuera del cierre** y se declara como **riesgo aceptado** en la matriz de escenarios y en el documento de cierre. No se oculta ni se reclasifica para que la cifra mejore.
+3. Un refactor no cambia contratos REST (`contracts/api-gateway`) ni eventos (`contracts/kafka`). Si un cambio de contrato resulta imprescindible, se justifica y sigue `.ai/workflows/api-change.md` o `.ai/workflows/event-change.md`.
+4. Las historias del cierre llevan la etiqueta `cierre-final` en Jira.
+5. No se implementan juegos, extras cosméticos ni funciones fuera del alcance del SRS.
+
+**Clasificación del backlog funcional abierto al iniciar el Sprint 6:**
+
+| Elemento | Decisión | Motivo | Responsable |
+|---|---|---|---|
+| SCRUM-642 — Señalar en el panel a los técnicos con calificaciones bajas (AC9-E2) | **Corrección necesaria** (excepción aprobada por Juan Diego el 10-nov-2026) | La Product Owner marcó AC9-E2 como Cumple el 4 de noviembre como compromiso, sin evidencia. Sin la historia, la matriz mostraría un Cumple que no se puede demostrar. | Juan Diego, sin cargar al resto del equipo |
+| AC9-E3 — Servicio sin cierre (regla de 4 horas) | **Fuera del cierre / riesgo aceptado** | Exige una función nueva que no se había comprometido: la regla de 4 horas en ServiceRequest y la marca en el panel. Sigue como **No cumple** en la matriz. | — |
+| SCRUM-640 — Medir AC2-E5 con Actors | **En el sprint, condicionada** | Es una medición, no una funcionalidad. Solo se ejecuta si Actors tiene código y manifiesto desplegados en QA; si no, AC2-E5 se reporta con 7 servicios. | Juan Diego |
+
 ### Estimación de complejidad de historias de usuario
 
 Las historias de usuario en Jira se estiman con la secuencia de **Fibonacci**: `1, 2, 3, 5, 8`. Se prefiere sobre una escala lineal (1 a 5) porque refleja mejor la incertidumbre real: entre más compleja es una historia, más difícil es estimarla con precisión, y Fibonacci obliga a decidir entre valores claramente distintos en vez de discutir diferencias de un punto que no aportan a la planeación. No se usa el valor `13`: si una historia pesa eso, se considera señal de que debe partirse en historias más pequeñas.

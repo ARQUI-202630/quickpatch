@@ -789,12 +789,9 @@ Permanecen sujetos a definición de Sprints posteriores:
 
 # 7. Code diagrams
 
-El diagrama de código de C4 se usa solo en dos áreas, donde el diagrama de componentes no basta para entender o revisar el código:
+**Desde el cierre (SCRUM-680), el nivel de código sale del código.** Los diagramas de paquetes y de clases, y las métricas de acoplamiento y cohesión de los 7 servicios con código, se generan desde los binarios de `develop` con `python tools/arquitectura/generar.py` (sección 7.3). No se dibujan a mano, así que no se desactualizan: se regeneran con un comando. Las secciones 7.1 y 7.2 se conservan como explicación de dos mecanismos, publicación confiable de eventos y aislamiento entre tenants, donde importa el orden de las llamadas dentro de una transacción y no solo quién depende de quién.
 
-1. **Publicación y consumo confiable de eventos**: se reparte entre dos servicios y dos tecnologías, y depende de que varias clases compartan una misma transacción.
-2. **Aislamiento entre tenants en la base de datos**: un error aquí filtra datos de un tenant a otro, y la única operación que lo omite debe quedar acotada.
-
-El resto del sistema sigue el patrón de cuatro capas de la sección 6.1 sin variaciones que justifiquen un diagrama de clases. Los diagramas se trazaron sobre el código de `develop` del 7 de octubre de 2026 y nombran clases reales; los métodos y las dependencias que no intervienen en el mecanismo se omiten. Están en PlantUML (`diagrams/c4/C4-07-*.puml`) porque Structurizr no dibuja el nivel de código.
+Los diagramas de 7.1 y 7.2 se trazaron sobre el código de `develop` del 7 de octubre de 2026 y nombran clases reales; los métodos y las dependencias que no intervienen en el mecanismo se omiten. Están en PlantUML (`diagrams/c4/C4-07-*.puml`) porque Structurizr no dibuja el nivel de código.
 
 ## 7.1 Outbox e idempotencia de `service-request.created`
 
@@ -825,6 +822,28 @@ Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija d
 - **Operación de plataforma.** Solo `ListTenantsHandler` y `UpdateTenantStatusHandler` usan `PlatformUnitOfWork`, que adopta el rol `identity_platform` (`BYPASSRLS`) con `SET LOCAL ROLE`: el rol vuelve al de la aplicación al cerrar la transacción. La aplicación puede adoptarlo pero no hereda sus permisos (`INHERIT FALSE`, `db/roles.sql`, ADR-019). Los endpoints exigen `admin_plataforma`, y cada cambio de estado deja un `AuditEntry` en la misma transacción.
 
 ---
+
+## 7.3 Paquetes, clases y métricas generados desde el código (SCRUM-680 a SCRUM-683)
+
+**Herramienta (SCRUM-681).** Para .NET, un extractor sobre `System.Reflection.Metadata`, que viene con el runtime; para Java, `jdeps`, del JDK. Los dos leen el código compilado: herencia, campos, firmas, variables locales y cada tipo que el cuerpo de un método usa. Un script común calcula las métricas y escribe PlantUML y Mermaid. La comparación con otras opciones (NDepend, `puml-gen`, DependenSee, NetArchTest/ArchUnit, los diagramas del IDE) y la definición de cada métrica están en `tools/arquitectura/README.md`.
+
+**Qué se publica**, en `docs/architecture/codigo/<fase>/<servicio>/`: el diagrama de paquetes agrupado por capa (`paquetes.puml` y `paquetes.mmd`, con los ciclos en naranja y las violaciones de 10.3.2 en rojo), las clases más conectadas (`clases-centrales.puml`) y las métricas (`README.md` y `metricas.json`): ciclos entre paquetes y entre tipos, fan-in y fan-out por clase, inestabilidad y cohesión relacional por paquete, clases de más de 250 líneas y violaciones de la matriz de 10.3.2.
+
+**Antes y después del refactor.** La línea base (`codigo/antes/`, SCRUM-682) se tomó sobre `develop` antes del primer PR de refactor. La medición «después» (`codigo/despues/`) usa la misma herramienta y la misma configuración, y la comparación está en `codigo/README.md` (SCRUM-683):
+
+| Servicio | Violaciones | Ciclos entre paquetes | Tipos > 250 líneas | Fan-out máximo | Cambio principal |
+|---|---|---|---|---|---|
+| Identity | 11 → pendiente | 1 → pendiente | 2 → pendiente | 80 → pendiente | SCRUM-650 (en curso) |
+| Catalog | 0 → 0 | 0 → 0 | 0 → 0 | 15 → 15 | Resolución del tenant fuera del endpoint; un archivo por caso de uso, puerto y adaptador; pruebas de arquitectura |
+| ServiceRequest | 0 → 0 | 0 → 0 | 2 → 1 | 31 → 22 | Endpoints por recurso y sin dependencias entre grupos; validación fuera del agregado |
+| Matching | 0 → 0 | **1 → 0** | 0 → 0 | 10 → 13 | Puertos repartidos por responsabilidad; ArchUnit prohíbe ciclos |
+| Ranking | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | Contrato del evento en Application; consumidor solo como transporte |
+| Payments | 0 → 0 | **1 → 0** | 0 → 0 | 12 → 12 | `InvoiceDocument` junto a su puerto |
+| Communication | 0 → pendiente | 0 → pendiente | 0 → pendiente | 10 → pendiente | SCRUM-656 (en curso) |
+
+En Matching, el fan-out máximo sube de 10 a 13 y la cohesión relacional promedio baja de 0,85 a 0,75. Las dos cosas son efecto de separar los puertos: `KafkaConfig` ahora importa cada interfaz por separado, y el paquete nuevo `application.common` tiene dos interfaces que no se usan entre sí. A cambio, desaparece el ciclo entre `events`, `matching` y `technicians`. Las cifras se reportan como salen.
+
+Las reglas de 10.3.2 ya no dependen de esta medición: cada servicio refactorizado tiene pruebas de arquitectura en su CI (NetArchTest o ArchUnit), y una violación nueva rompe el PR.
 
 # 8. Dynamic diagrams
 
@@ -1844,6 +1863,75 @@ infrastructure/   persistence/, messaging/, scheduling/, config/ (configuración
 | Ranking | Sí | — (implementado en SCRUM-498 con la convención: `Domain/Reputation`, `Application`, `Infrastructure/Persistence` y `Infrastructure/Messaging`) | — |
 | Actors | — | Esqueleto: sigue la convención cuando se implemente. | — |
 
+### 10.3.2 Reglas de dependencia verificables (SCRUM-648)
+
+La convención de 10.3.1 ordena las carpetas, pero el profesor observó en el cierre que eso no basta: hay clases que conocen demasiadas clases y capas que se llaman de forma desordenada. Esta sección convierte la convención en **reglas que una prueba puede verificar**. Es el estándar que siguen los refactors del Sprint 6 (SCRUM-650 a SCRUM-656). No cambia la arquitectura: son las mismas cuatro capas de 6.1, con puertos en `Application` y adaptadores en `Infrastructure`, es decir, el estilo de puertos y adaptadores que ya usaban los servicios.
+
+```text
+            Api (entrada: HTTP, WebSocket)      Infrastructure (adaptadores de salida y consumidores)
+                     \                                  /
+                      v                                v
+                          Application (casos de uso + puertos)
+                                      |
+                                      v
+                                   Domain
+```
+
+**Matriz de dependencias.** «Sí» significa que una clase de la fila puede usar tipos de la columna.
+
+| Desde \ hacia | Domain | Application | Infrastructure | Api | EF Core / Npgsql | Confluent.Kafka | ASP.NET Core |
+|---|---|---|---|---|---|---|---|
+| **Domain** | — | No | No | No | No | No | No |
+| **Application** | Sí | — | No | No | No | No | No |
+| **Infrastructure** | Sí | Sí (implementa sus puertos) | — | No | Sí | Sí | No¹ |
+| **Api** | Solo tipos de lectura² | Sí | Solo `Program.cs`³ | — | No | No | Sí |
+
+1. Excepto el registro de servicios en `DependencyInjection.cs` (`IServiceCollection`) y los `BackgroundService` de los consumidores.
+2. `Api` puede leer enums y value objects para mapear la respuesta. No crea entidades ni llama a sus métodos de comportamiento: eso es un caso de uso.
+3. `Program.cs` es la raíz de composición: el único punto del `Api` que conoce `Infrastructure`, para llamar a `AddInfrastructure(...)`. Ningún endpoint usa el `DbContext`, un repositorio concreto ni un productor de Kafka.
+
+**Dónde va cada cosa.**
+
+| Elemento | Capa y carpeta | Regla |
+|---|---|---|
+| Endpoint / controller | `Api/Endpoints/<Recurso>Endpoints.cs` (Java: `api/controllers/`) | Valida el formato de entrada, arma el comando, llama al handler y traduce el resultado a HTTP. Sin `if` de negocio ni acceso a datos. |
+| DTO de petición y respuesta HTTP | `Api/Endpoints/` junto al endpoint, como `record` | Reproduce el contrato de `contracts/api-gateway`. No se reutiliza como entidad ni como comando. |
+| Comando, consulta y su resultado | `Application/<CasoDeUso>/` | Un caso de uso por clase de handler. Un archivo puede tener el comando, el handler y el resultado del **mismo** caso de uso, no los de varios. |
+| Handler / caso de uso | `Application/<CasoDeUso>/<Accion>Handler.cs` | Orquesta: carga el agregado por un puerto, invoca la regla del dominio y guarda. Recibe a lo sumo un puerto por recurso externo. |
+| Entidad, agregado, value object, enum | `Domain/<Agregado>/` | Reglas e invariantes. No conoce persistencia, mensajes ni HTTP. |
+| Política o regla que cruza agregados | `Domain/<Agregado>/` o `Domain/Services/` | Clase sin estado y sin E/S. |
+| Puerto (interfaz) | `Application/Abstractions/` | Un puerto por responsabilidad: `ICategoryRepository`, `IOutbox`, `IClock`, `IGeocoder`… Nunca expone `IQueryable`, `DbSet` ni tipos de Kafka. |
+| Repositorio (implementación) | `Infrastructure/Persistence/<Agregado>Repository.cs` | Un archivo por repositorio. Aplica el tenant con `ITenantUnitOfWork` (ADR-005). |
+| `DbContext`, configuraciones, migraciones | `Infrastructure/Persistence/` | Solo los usa `Infrastructure`. |
+| Contrato de evento (publicado o consumido) | `Application/Events/` | Copia del esquema de `contracts/kafka/` (regla 4 de 10.3.1). |
+| Handler de un evento consumido | `Application/Events/` | La regla de negocio del consumo. Es testeable sin Kafka. |
+| Consumidor de Kafka | `Infrastructure/Messaging/<Topic>Consumer.cs` | Transporte: deserializa, aplica la idempotencia con `processed_events` (ADR-007), abre la unidad de trabajo del tenant y delega en el handler de `Application/Events`. |
+| Outbox: escritura | Puerto `IOutbox` en `Application/Abstractions`; implementación en `Infrastructure/Persistence` | El handler agrega el evento al Outbox en la misma transacción del cambio. |
+| Outbox: publicador | `Infrastructure/Messaging/OutboxPublisher.cs` | `BackgroundService`; el único que usa el productor de Kafka. |
+| Integración externa (Garage, Nominatim, PSP, correo, PDF) | `Infrastructure/<Sistema>/`, detrás de un puerto | Un adaptador por sistema. |
+| Configuración tipada | `Infrastructure/Options/` (o `Api/Security` si solo la usa el API) | Se valida al arrancar. |
+| Seguridad del API (claims, políticas) | `Api/Security/` | `AuthenticatedUser` entrega el tenant y el rol del JWT. El tenant nunca sale del cuerpo de la petición. |
+
+**Tamaño y responsabilidad.** No hay un límite automático que rompa el build. Estas cifras se revisan en cada PR, y si una clase las supera debe justificarlo en la revisión:
+
+- una clase de más de 250 líneas, o con más de 5 dependencias inyectadas, se divide o se justifica;
+- un archivo `*Endpoints.cs` con más de un recurso se divide por recurso;
+- un archivo con handlers de varios casos de uso (`*Handlers.cs`) se divide en un handler por caso de uso.
+
+**Java (Matching).** Se aplica la misma matriz con los paquetes de 10.3.1 y los mecanismos de Spring: `domain` no importa `org.springframework.*`; `application` solo importa `org.springframework.stereotype` y `transaction`, no `jdbc`, `kafka` ni `web`; los controladores de `api` no importan `infrastructure`; y cada `@Repository` JDBC implementa una interfaz de `application`. No se trasladan nombres de .NET: se sigue el estilo de Spring, con `@Service` en `application` y `@Component` o `@Repository` en `infrastructure`.
+
+**Cómo se verifica.**
+
+1. **El compilador.** Las referencias entre proyectos (.NET) ya impiden `Domain → Application` y `Application → Infrastructure` (10.3.1).
+2. **Pruebas de arquitectura en cada servicio.** Viven en `tests/unit/QuickPatch.<Servicio>.UnitTests/Architecture/ArchitectureTests.cs`, con NetArchTest, y en Matching en `src/test/java/.../ArchitectureTest.java`, con ArchUnit. Revisan lo que el compilador no ve, porque `Api` sí referencia a `Infrastructure` para la composición:
+   - `Domain` no depende de EF Core, Npgsql, Confluent.Kafka ni ASP.NET Core;
+   - `Application` no depende de EF Core, Npgsql, Confluent.Kafka ni ASP.NET Core;
+   - `Api.Endpoints` no depende de `Infrastructure`;
+   - `Infrastructure` no depende de `Api`.
+
+   Corren en el CI del servicio: una violación rompe el PR. Cada refactor del Sprint 6 agrega estas pruebas a su servicio.
+3. **Análisis de dependencias desde el código** (SCRUM-680, sección 7). Mide los ciclos entre paquetes, el fan-in y el fan-out, y las violaciones de la matriz en los 7 servicios con código, antes y después del refactor (SCRUM-649).
+
 ---
 
 ## 10.4 Contratos, DTOs y elementos compartidos
@@ -2327,6 +2415,18 @@ Revisión del 28 de octubre de 2026 sobre `develop`, con los criterios de las V2
 4. Las figuras 15 y 18 (SCRUM-583) siguen pendientes.
 
 **Resultado:** la V4 queda aprobada con observaciones. Las observaciones 1 a 3 se corrigieron el 3 de noviembre de 2026 en SCRUM-548 (sección 13.4); la 4 se corrigió el 3 de noviembre de 2026 en SCRUM-583 (figuras 15 y 18). La diferencia del ciclo de vida con el SAD quedó resuelta en el SAD 2.46 (SRS, P2).
+
+---
+
+## 13.6 Cambios del cierre (Sprint 6)
+
+Estos cambios responden a la retroalimentación final del profesor: arquitectura interna, acoplamiento, cohesión y diagramas generados desde el código. Rige el feature freeze de los Working Agreements (SCRUM-646).
+
+| Cambio | Secciones | Tarea |
+|---|---|---|
+| Reglas de dependencia verificables: matriz entre capas, ubicación de cada tipo de clase, límites de tamaño, equivalente Java y pruebas de arquitectura en el CI de cada servicio | 10.3.2 | SCRUM-648 |
+| El nivel de código sale del código: herramienta reproducible, línea base y medición después del refactor; 7.1 y 7.2 quedan como explicación de mecanismos | 7 y 7.3 | SCRUM-680 a SCRUM-683 |
+| Refactor interno de Catalog, ServiceRequest, Matching, Ranking y Payments con pruebas de arquitectura en su CI | 7.3 y 10.3.2 | SCRUM-651 a SCRUM-655 |
 
 ---
 

@@ -1,0 +1,739 @@
+{
+ "servicio": "Ranking",
+ "lenguaje": "csharp",
+ "resumen": {
+  "tipos": 32,
+  "paquetes": 11,
+  "dependencias_entre_tipos": 61,
+  "dependencias_entre_paquetes": 19,
+  "ciclos_entre_paquetes": 0,
+  "paquetes_en_ciclos": 0,
+  "ciclos_entre_tipos": 0,
+  "mayor_ciclo_de_tipos": 0,
+  "violaciones_de_capas": 0,
+  "tipos_de_mas_de_250_lineas": 0,
+  "fan_out_maximo": 10,
+  "fan_out_promedio": 1.91,
+  "cohesion_relacional_promedio": 0.79
+ },
+ "dependencias_entre_capas": {
+  "Api->Application": 1,
+  "Api->Infrastructure": 1,
+  "Application->Domain": 5,
+  "Infrastructure->Application": 14,
+  "Infrastructure->Domain": 4
+ },
+ "violaciones": [],
+ "ciclos_entre_paquetes": [],
+ "ciclos_entre_tipos": [],
+ "mayor_fan_out": [
+  {
+   "tipo": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 49,
+   "fan_out": 10,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Ranking.Application/Reputation/ServiceRequestRatedHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Events.RankingEvents",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 14,
+   "fan_out": 5,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Application/Events/EventContracts.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 88,
+   "fan_out": 5,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 73,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 16,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 71,
+   "fan_out": 4,
+   "fan_in": 7,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.ReputationRepository",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 13,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 7,
+   "fan_out": 3,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Abstractions.IReputationRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 2,
+   "fan_in": 3,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.TenantUnitOfWork",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 21,
+   "fan_out": 2,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+  }
+ ],
+ "mayor_fan_in": [
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 71,
+   "fan_out": 4,
+   "fan_in": 7,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 55,
+   "fan_out": 0,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Domain.Reputation.AppliedRating",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 24,
+   "fan_out": 0,
+   "fan_in": 4,
+   "archivo": "src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Abstractions.IOutbox",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 1,
+   "fan_in": 3,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Abstractions.IProcessedEventRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 0,
+   "fan_in": 3,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Abstractions.IReputationRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 2,
+   "fan_in": 3,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Abstractions.ITenantUnitOfWork",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 0,
+   "fan_in": 3,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Abstractions.OutboxMessage",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 1,
+   "fan_out": 0,
+   "fan_in": 3,
+   "archivo": "src/QuickPatch.Ranking.Application/Abstractions/Ports.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Events.EventEnvelope",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 9,
+   "fan_out": 0,
+   "fan_in": 3,
+   "archivo": "src/QuickPatch.Ranking.Application/Events/EventContracts.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 15,
+   "fan_out": 0,
+   "fan_in": 3,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+  }
+ ],
+ "mas_grandes": [
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 88,
+   "fan_out": 5,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 73,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 71,
+   "fan_out": 4,
+   "fan_in": 7,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 55,
+   "fan_out": 0,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 49,
+   "fan_out": 10,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Ranking.Application/Reputation/ServiceRequestRatedHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Domain.Reputation.AppliedRating",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 24,
+   "fan_out": 0,
+   "fan_in": 4,
+   "archivo": "src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.TenantUnitOfWork",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 21,
+   "fan_out": 2,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 16,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/Repositories.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 15,
+   "fan_out": 0,
+   "fan_in": 3,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Events.RankingEvents",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 14,
+   "fan_out": 5,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Application/Events/EventContracts.cs"
+  }
+ ],
+ "paquetes": [
+  {
+   "paquete": "(global)",
+   "tipos": 1,
+   "fan_out": 2,
+   "fan_in": 0,
+   "inestabilidad": 1.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Ranking.Application",
+   "tipos": 1,
+   "fan_out": 1,
+   "fan_in": 1,
+   "inestabilidad": 0.5,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Ranking.Application.Abstractions",
+   "tipos": 5,
+   "fan_out": 1,
+   "fan_in": 4,
+   "inestabilidad": 0.2,
+   "cohesion_relacional": 0.4
+  },
+  {
+   "paquete": "QuickPatch.Ranking.Application.Events",
+   "tipos": 6,
+   "fan_out": 2,
+   "fan_in": 2,
+   "inestabilidad": 0.5,
+   "cohesion_relacional": 0.67
+  },
+  {
+   "paquete": "QuickPatch.Ranking.Application.Reputation",
+   "tipos": 2,
+   "fan_out": 3,
+   "fan_in": 2,
+   "inestabilidad": 0.6,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Ranking.Domain",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 0,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Ranking.Domain.Reputation",
+   "tipos": 2,
+   "fan_out": 0,
+   "fan_in": 4,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.Ranking.Infrastructure",
+   "tipos": 1,
+   "fan_out": 4,
+   "fan_in": 1,
+   "inestabilidad": 0.8,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Ranking.Infrastructure.Messaging",
+   "tipos": 2,
+   "fan_out": 4,
+   "fan_in": 1,
+   "inestabilidad": 0.8,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.Ranking.Infrastructure.Options",
+   "tipos": 2,
+   "fan_out": 0,
+   "fan_in": 2,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.Ranking.Infrastructure.Persistence",
+   "tipos": 9,
+   "fan_out": 2,
+   "fan_in": 2,
+   "inestabilidad": 0.5,
+   "cohesion_relacional": 1.11
+  }
+ ],
+ "aristas_paquetes": [
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Ranking.Application",
+   "n": 1
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Ranking.Infrastructure",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Ranking.Application",
+   "a": "QuickPatch.Ranking.Application.Reputation",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Abstractions",
+   "a": "QuickPatch.Ranking.Domain.Reputation",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Events",
+   "a": "QuickPatch.Ranking.Application.Abstractions",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Events",
+   "a": "QuickPatch.Ranking.Domain.Reputation",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation",
+   "a": "QuickPatch.Ranking.Application.Abstractions",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation",
+   "a": "QuickPatch.Ranking.Application.Events",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation",
+   "a": "QuickPatch.Ranking.Domain.Reputation",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure",
+   "a": "QuickPatch.Ranking.Application.Abstractions",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure",
+   "a": "QuickPatch.Ranking.Infrastructure.Messaging",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure",
+   "a": "QuickPatch.Ranking.Infrastructure.Options",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging",
+   "a": "QuickPatch.Ranking.Application.Events",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging",
+   "a": "QuickPatch.Ranking.Application.Reputation",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging",
+   "a": "QuickPatch.Ranking.Infrastructure.Options",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence",
+   "a": "QuickPatch.Ranking.Application.Abstractions",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence",
+   "a": "QuickPatch.Ranking.Domain.Reputation",
+   "n": 4
+  }
+ ],
+ "aristas_tipos": [
+  {
+   "de": "Program",
+   "a": "QuickPatch.Ranking.Application.DependencyInjection"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Ranking.Infrastructure.DependencyInjection"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Abstractions.IOutbox",
+   "a": "QuickPatch.Ranking.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Abstractions.IReputationRepository",
+   "a": "QuickPatch.Ranking.Domain.Reputation.AppliedRating"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Abstractions.IReputationRepository",
+   "a": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.DependencyInjection",
+   "a": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Events.RankingEvents",
+   "a": "QuickPatch.Ranking.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Events.RankingEvents",
+   "a": "QuickPatch.Ranking.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Events.RankingEvents",
+   "a": "QuickPatch.Ranking.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Events.RankingEvents",
+   "a": "QuickPatch.Ranking.Application.Events.TechnicianReputationChangedData"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Events.RankingEvents",
+   "a": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "a": "QuickPatch.Ranking.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "a": "QuickPatch.Ranking.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "a": "QuickPatch.Ranking.Application.Abstractions.IReputationRepository"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "a": "QuickPatch.Ranking.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "a": "QuickPatch.Ranking.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "a": "QuickPatch.Ranking.Application.Events.RankingEvents"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "a": "QuickPatch.Ranking.Application.Events.ServiceRequestRatedData"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "a": "QuickPatch.Ranking.Application.Reputation.RatedHandlingOutcome"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "a": "QuickPatch.Ranking.Domain.Reputation.AppliedRating"
+  },
+  {
+   "de": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler",
+   "a": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Application.Abstractions.IReputationRepository"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Infrastructure.Options.KafkaOptions"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Infrastructure.Options.OutboxOptions"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.ReputationRepository"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.TenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.Ranking.Infrastructure.Options.OutboxOptions"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.SessionRole"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
+   "a": "QuickPatch.Ranking.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
+   "a": "QuickPatch.Ranking.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
+   "a": "QuickPatch.Ranking.Application.Events.ServiceRequestRatedData"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
+   "a": "QuickPatch.Ranking.Application.Reputation.RatedHandlingOutcome"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
+   "a": "QuickPatch.Ranking.Application.Reputation.ServiceRequestRatedHandler"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.DesignTimeDbContextFactory",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.Ranking.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.Ranking.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.Ranking.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRecord"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
+   "a": "QuickPatch.Ranking.Domain.Reputation.AppliedRating"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
+   "a": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRecord"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.ReputationRepository",
+   "a": "QuickPatch.Ranking.Application.Abstractions.IReputationRepository"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.ReputationRepository",
+   "a": "QuickPatch.Ranking.Domain.Reputation.AppliedRating"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.ReputationRepository",
+   "a": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.ReputationRepository",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.TenantUnitOfWork",
+   "a": "QuickPatch.Ranking.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Ranking.Infrastructure.Persistence.TenantUnitOfWork",
+   "a": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext"
+  }
+ ],
+ "commit": "867716d"
+}

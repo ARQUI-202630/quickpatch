@@ -1,0 +1,49 @@
+@startuml
+!pragma layout smetana
+title Ranking — paquetes (antes, 867716d)
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+package "Api" {
+  component "(global)\n1 tipos" as _global_
+}
+package "Application" {
+  component "Application\n1 tipos" as QuickPatch_Ranking_Application
+  component "Application.Abstractions\n5 tipos" as QuickPatch_Ranking_Application_Abstractions
+  component "Application.Events\n6 tipos" as QuickPatch_Ranking_Application_Events
+  component "Application.Reputation\n2 tipos" as QuickPatch_Ranking_Application_Reputation
+}
+package "Domain" {
+  component "Domain\n1 tipos" as QuickPatch_Ranking_Domain
+  component "Domain.Reputation\n2 tipos" as QuickPatch_Ranking_Domain_Reputation
+}
+package "Infrastructure" {
+  component "Infrastructure\n1 tipos" as QuickPatch_Ranking_Infrastructure
+  component "Infrastructure.Messaging\n2 tipos" as QuickPatch_Ranking_Infrastructure_Messaging
+  component "Infrastructure.Options\n2 tipos" as QuickPatch_Ranking_Infrastructure_Options
+  component "Infrastructure.Persistence\n9 tipos" as QuickPatch_Ranking_Infrastructure_Persistence
+}
+_global_ --> QuickPatch_Ranking_Application #607D8B : 1
+_global_ --> QuickPatch_Ranking_Infrastructure #607D8B : 1
+QuickPatch_Ranking_Application --> QuickPatch_Ranking_Application_Reputation #607D8B : 1
+QuickPatch_Ranking_Application_Abstractions --> QuickPatch_Ranking_Domain_Reputation #607D8B : 2
+QuickPatch_Ranking_Application_Events --> QuickPatch_Ranking_Application_Abstractions #607D8B : 1
+QuickPatch_Ranking_Application_Events --> QuickPatch_Ranking_Domain_Reputation #607D8B : 1
+QuickPatch_Ranking_Application_Reputation --> QuickPatch_Ranking_Application_Abstractions #607D8B : 4
+QuickPatch_Ranking_Application_Reputation --> QuickPatch_Ranking_Application_Events #607D8B : 3
+QuickPatch_Ranking_Application_Reputation --> QuickPatch_Ranking_Domain_Reputation #607D8B : 2
+QuickPatch_Ranking_Infrastructure --> QuickPatch_Ranking_Application_Abstractions #607D8B : 4
+QuickPatch_Ranking_Infrastructure --> QuickPatch_Ranking_Infrastructure_Messaging #607D8B : 2
+QuickPatch_Ranking_Infrastructure --> QuickPatch_Ranking_Infrastructure_Options #607D8B : 2
+QuickPatch_Ranking_Infrastructure --> QuickPatch_Ranking_Infrastructure_Persistence #607D8B : 5
+QuickPatch_Ranking_Infrastructure_Messaging --> QuickPatch_Ranking_Application_Events #607D8B : 3
+QuickPatch_Ranking_Infrastructure_Messaging --> QuickPatch_Ranking_Application_Reputation #607D8B : 2
+QuickPatch_Ranking_Infrastructure_Messaging --> QuickPatch_Ranking_Infrastructure_Options #607D8B : 1
+QuickPatch_Ranking_Infrastructure_Messaging --> QuickPatch_Ranking_Infrastructure_Persistence #607D8B : 3
+QuickPatch_Ranking_Infrastructure_Persistence --> QuickPatch_Ranking_Application_Abstractions #607D8B : 5
+QuickPatch_Ranking_Infrastructure_Persistence --> QuickPatch_Ranking_Domain_Reputation #607D8B : 4
+legend right
+Rojo: viola SDD 10.3.2 · Naranja: ciclo entre paquetes
+Número: dependencias entre tipos
+endlegend
+@enduml

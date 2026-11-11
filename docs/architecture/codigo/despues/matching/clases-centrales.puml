@@ -1,0 +1,76 @@
+@startuml
+!pragma layout smetana
+title Matching — clases más conectadas (despues, 8e6450c)
+hide empty members
+skinparam shadowing false
+class "infrastructure.messaging.KafkaConfig" as co_quickpatch_matching_infrastructure_messaging_KafkaConfig <<Infrastructure>> {
+  81 líneas · entra 0 · sale 13
+}
+class "application.events.TechnicianEventsHandler" as co_quickpatch_matching_application_events_TechnicianEventsHandler <<Application>> {
+  64 líneas · entra 2 · sale 10
+}
+class "domain.events.InvalidEventException" as co_quickpatch_matching_domain_events_InvalidEventException <<Domain>> {
+  7 líneas · entra 11 · sale 0
+}
+class "domain.matching.Matching" as co_quickpatch_matching_domain_matching_Matching <<Domain>> {
+  98 líneas · entra 11 · sale 0
+}
+class "domain.events.EventEnvelope" as co_quickpatch_matching_domain_events_EventEnvelope <<Domain>> {
+  30 líneas · entra 10 · sale 1
+}
+class "application.events.ServiceRequestCancelledHandler" as co_quickpatch_matching_application_events_ServiceRequestCancelledHandler <<Application>> {
+  76 líneas · entra 2 · sale 8
+}
+class "application.events.ServiceRequestCompletedHandler" as co_quickpatch_matching_application_events_ServiceRequestCompletedHandler <<Application>> {
+  58 líneas · entra 2 · sale 8
+}
+class "application.matching.MatchingEngine" as co_quickpatch_matching_application_matching_MatchingEngine <<Application>> {
+  117 líneas · entra 3 · sale 7
+}
+class "application.matching.OfferService" as co_quickpatch_matching_application_matching_OfferService <<Application>> {
+  128 líneas · entra 3 · sale 7
+}
+interface "application.common.TenantTransaction" as co_quickpatch_matching_application_common_TenantTransaction <<Application>> {
+  10 líneas · entra 10 · sale 0
+}
+class "application.technicians.TechnicianPorts" as co_quickpatch_matching_application_technicians_TechnicianPorts <<Application>> {
+  39 líneas · entra 8 · sale 2
+}
+class "application.matching.MatchingPorts" as co_quickpatch_matching_application_matching_MatchingPorts <<Application>> {
+  89 líneas · entra 8 · sale 1
+}
+co_quickpatch_matching_application_events_ServiceRequestCancelledHandler ..> co_quickpatch_matching_application_common_TenantTransaction
+co_quickpatch_matching_application_events_ServiceRequestCancelledHandler ..> co_quickpatch_matching_application_matching_MatchingPorts
+co_quickpatch_matching_application_events_ServiceRequestCancelledHandler ..> co_quickpatch_matching_application_technicians_TechnicianPorts
+co_quickpatch_matching_application_events_ServiceRequestCancelledHandler ..> co_quickpatch_matching_domain_events_EventEnvelope
+co_quickpatch_matching_application_events_ServiceRequestCancelledHandler ..> co_quickpatch_matching_domain_matching_Matching
+co_quickpatch_matching_application_events_ServiceRequestCompletedHandler ..> co_quickpatch_matching_application_common_TenantTransaction
+co_quickpatch_matching_application_events_ServiceRequestCompletedHandler ..> co_quickpatch_matching_application_matching_MatchingPorts
+co_quickpatch_matching_application_events_ServiceRequestCompletedHandler ..> co_quickpatch_matching_application_technicians_TechnicianPorts
+co_quickpatch_matching_application_events_ServiceRequestCompletedHandler ..> co_quickpatch_matching_domain_events_EventEnvelope
+co_quickpatch_matching_application_events_ServiceRequestCompletedHandler ..> co_quickpatch_matching_domain_matching_Matching
+co_quickpatch_matching_application_events_TechnicianEventsHandler ..> co_quickpatch_matching_application_common_TenantTransaction
+co_quickpatch_matching_application_events_TechnicianEventsHandler ..> co_quickpatch_matching_application_technicians_TechnicianPorts
+co_quickpatch_matching_application_events_TechnicianEventsHandler ..> co_quickpatch_matching_domain_events_EventEnvelope
+co_quickpatch_matching_application_events_TechnicianEventsHandler ..> co_quickpatch_matching_domain_matching_Matching
+co_quickpatch_matching_application_matching_MatchingEngine ..> co_quickpatch_matching_application_matching_MatchingPorts
+co_quickpatch_matching_application_matching_MatchingEngine ..> co_quickpatch_matching_application_technicians_TechnicianPorts
+co_quickpatch_matching_application_matching_MatchingEngine ..> co_quickpatch_matching_domain_events_EventEnvelope
+co_quickpatch_matching_application_matching_MatchingEngine ..> co_quickpatch_matching_domain_matching_Matching
+co_quickpatch_matching_application_matching_MatchingPorts ..> co_quickpatch_matching_domain_matching_Matching
+co_quickpatch_matching_application_matching_OfferService ..> co_quickpatch_matching_application_common_TenantTransaction
+co_quickpatch_matching_application_matching_OfferService ..> co_quickpatch_matching_application_matching_MatchingEngine
+co_quickpatch_matching_application_matching_OfferService ..> co_quickpatch_matching_application_matching_MatchingPorts
+co_quickpatch_matching_application_matching_OfferService ..> co_quickpatch_matching_application_technicians_TechnicianPorts
+co_quickpatch_matching_application_matching_OfferService ..> co_quickpatch_matching_domain_matching_Matching
+co_quickpatch_matching_application_technicians_TechnicianPorts ..> co_quickpatch_matching_domain_matching_Matching
+co_quickpatch_matching_domain_events_EventEnvelope ..> co_quickpatch_matching_domain_events_InvalidEventException
+co_quickpatch_matching_infrastructure_messaging_KafkaConfig ..> co_quickpatch_matching_application_common_TenantTransaction
+co_quickpatch_matching_infrastructure_messaging_KafkaConfig ..> co_quickpatch_matching_application_events_ServiceRequestCancelledHandler
+co_quickpatch_matching_infrastructure_messaging_KafkaConfig ..> co_quickpatch_matching_application_events_ServiceRequestCompletedHandler
+co_quickpatch_matching_infrastructure_messaging_KafkaConfig ..> co_quickpatch_matching_application_events_TechnicianEventsHandler
+co_quickpatch_matching_infrastructure_messaging_KafkaConfig ..> co_quickpatch_matching_application_matching_MatchingEngine
+co_quickpatch_matching_infrastructure_messaging_KafkaConfig ..> co_quickpatch_matching_application_matching_MatchingPorts
+co_quickpatch_matching_infrastructure_messaging_KafkaConfig ..> co_quickpatch_matching_application_matching_OfferService
+co_quickpatch_matching_infrastructure_messaging_KafkaConfig ..> co_quickpatch_matching_application_technicians_TechnicianPorts
+@enduml

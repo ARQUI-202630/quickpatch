@@ -1,0 +1,7 @@
+AC8-E2 (SCRUM-666) en QA, 10 de noviembre de 2026, de 23:21 a 23:28 (hora de Colombia). Run 42957062365 de pruebas-sistema.yml con la casilla «carga».
+Matching escalado de 1 a 2 réplicas al empezar el job de k6 y de vuelta a 1 al terminar el run (kubectl scale desde VM1).
+50 VU: 8.253 peticiones, 4 fallidas (0,05 %), p95 105 ms; todos los umbrales pasaron.
+150 VU: 35.562 peticiones, 0 errores 5xx, 12 fallidas (0,03 %), p95 970 ms; todos los umbrales pasaron.
+Los resúmenes de k6 están en los dos .json de esta carpeta con el mismo nombre.
+Límites: una sola corrida; no se verificó cuándo quedó lista la segunda réplica de Matching ni cómo se repartió el trabajo entre las dos.
+Después: limpiar-carga-qa.yml -e borrar=si borró 20.522 solicitudes de k6 (respaldo de las tres bases en VM5); QA quedó con 7 pods 1/1 y 0 reinicios.

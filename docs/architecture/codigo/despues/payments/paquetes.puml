@@ -1,0 +1,75 @@
+@startuml
+!pragma layout smetana
+title Payments — paquetes (despues, cf3af88)
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+package "Api" {
+  component "(global)\n1 tipos" as _global_
+  component "Api.Endpoints\n9 tipos" as QuickPatch_Payments_Api_Endpoints
+  component "Api.Http\n3 tipos" as QuickPatch_Payments_Api_Http
+  component "Api.Security\n4 tipos" as QuickPatch_Payments_Api_Security
+}
+package "Application" {
+  component "Application\n1 tipos" as QuickPatch_Payments_Application
+  component "Application.Abstractions\n13 tipos" as QuickPatch_Payments_Application_Abstractions
+  component "Application.Events\n8 tipos" as QuickPatch_Payments_Application_Events
+  component "Application.Invoices\n1 tipos" as QuickPatch_Payments_Application_Invoices
+  component "Application.Payments\n14 tipos" as QuickPatch_Payments_Application_Payments
+}
+package "Domain" {
+  component "Domain.Common\n2 tipos" as QuickPatch_Payments_Domain_Common
+  component "Domain.Payments\n6 tipos" as QuickPatch_Payments_Domain_Payments
+}
+package "Infrastructure" {
+  component "Infrastructure\n1 tipos" as QuickPatch_Payments_Infrastructure
+  component "Infrastructure.Documents\n2 tipos" as QuickPatch_Payments_Infrastructure_Documents
+  component "Infrastructure.Messaging\n4 tipos" as QuickPatch_Payments_Infrastructure_Messaging
+  component "Infrastructure.Options\n3 tipos" as QuickPatch_Payments_Infrastructure_Options
+  component "Infrastructure.Persistence\n11 tipos" as QuickPatch_Payments_Infrastructure_Persistence
+  component "Infrastructure.Providers\n1 tipos" as QuickPatch_Payments_Infrastructure_Providers
+}
+_global_ --> QuickPatch_Payments_Api_Endpoints #607D8B : 3
+_global_ --> QuickPatch_Payments_Api_Http #607D8B : 3
+_global_ --> QuickPatch_Payments_Api_Security #607D8B : 1
+_global_ --> QuickPatch_Payments_Application #607D8B : 1
+_global_ --> QuickPatch_Payments_Infrastructure #607D8B : 1
+QuickPatch_Payments_Api_Endpoints --> QuickPatch_Payments_Api_Http #607D8B : 2
+QuickPatch_Payments_Api_Endpoints --> QuickPatch_Payments_Api_Security #607D8B : 3
+QuickPatch_Payments_Api_Endpoints --> QuickPatch_Payments_Application_Abstractions #607D8B : 3
+QuickPatch_Payments_Api_Endpoints --> QuickPatch_Payments_Application_Invoices #607D8B : 1
+QuickPatch_Payments_Api_Endpoints --> QuickPatch_Payments_Application_Payments #607D8B : 8
+QuickPatch_Payments_Api_Endpoints --> QuickPatch_Payments_Domain_Common #607D8B : 1
+QuickPatch_Payments_Api_Endpoints --> QuickPatch_Payments_Domain_Payments #607D8B : 8
+QuickPatch_Payments_Application --> QuickPatch_Payments_Application_Invoices #607D8B : 1
+QuickPatch_Payments_Application --> QuickPatch_Payments_Application_Payments #607D8B : 7
+QuickPatch_Payments_Application_Abstractions --> QuickPatch_Payments_Domain_Payments #607D8B : 6
+QuickPatch_Payments_Application_Events --> QuickPatch_Payments_Application_Abstractions #607D8B : 1
+QuickPatch_Payments_Application_Events --> QuickPatch_Payments_Domain_Payments #607D8B : 2
+QuickPatch_Payments_Application_Invoices --> QuickPatch_Payments_Application_Abstractions #607D8B : 3
+QuickPatch_Payments_Application_Invoices --> QuickPatch_Payments_Domain_Payments #607D8B : 3
+QuickPatch_Payments_Application_Payments --> QuickPatch_Payments_Application_Abstractions #607D8B : 24
+QuickPatch_Payments_Application_Payments --> QuickPatch_Payments_Application_Events #607D8B : 5
+QuickPatch_Payments_Application_Payments --> QuickPatch_Payments_Domain_Payments #607D8B : 13
+QuickPatch_Payments_Domain_Payments --> QuickPatch_Payments_Domain_Common #607D8B : 1
+QuickPatch_Payments_Infrastructure --> QuickPatch_Payments_Application_Abstractions #607D8B : 8
+QuickPatch_Payments_Infrastructure --> QuickPatch_Payments_Infrastructure_Documents #607D8B : 1
+QuickPatch_Payments_Infrastructure --> QuickPatch_Payments_Infrastructure_Messaging #607D8B : 4
+QuickPatch_Payments_Infrastructure --> QuickPatch_Payments_Infrastructure_Options #607D8B : 3
+QuickPatch_Payments_Infrastructure --> QuickPatch_Payments_Infrastructure_Persistence #607D8B : 7
+QuickPatch_Payments_Infrastructure --> QuickPatch_Payments_Infrastructure_Providers #607D8B : 1
+QuickPatch_Payments_Infrastructure_Documents --> QuickPatch_Payments_Application_Abstractions #607D8B : 2
+QuickPatch_Payments_Infrastructure_Documents --> QuickPatch_Payments_Domain_Payments #607D8B : 3
+QuickPatch_Payments_Infrastructure_Messaging --> QuickPatch_Payments_Application_Events #607D8B : 6
+QuickPatch_Payments_Infrastructure_Messaging --> QuickPatch_Payments_Application_Payments #607D8B : 5
+QuickPatch_Payments_Infrastructure_Messaging --> QuickPatch_Payments_Infrastructure_Options #607D8B : 2
+QuickPatch_Payments_Infrastructure_Messaging --> QuickPatch_Payments_Infrastructure_Persistence #607D8B : 3
+QuickPatch_Payments_Infrastructure_Persistence --> QuickPatch_Payments_Application_Abstractions #607D8B : 9
+QuickPatch_Payments_Infrastructure_Persistence --> QuickPatch_Payments_Domain_Payments #607D8B : 8
+QuickPatch_Payments_Infrastructure_Persistence --> QuickPatch_Payments_Infrastructure_Options #607D8B : 1
+QuickPatch_Payments_Infrastructure_Providers --> QuickPatch_Payments_Application_Abstractions #607D8B : 2
+legend right
+Rojo: viola SDD 10.3.2 · Naranja: ciclo entre paquetes
+Número: dependencias entre tipos
+endlegend
+@enduml

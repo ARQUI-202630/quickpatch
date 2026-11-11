@@ -1,0 +1,6 @@
+Separación QA y producción (SCRUM-670), 10 de noviembre de 2026. Script: scripts-2026-11-10/separacion-qa-produccion.py (no imprime claves).
+token de administrador de QA contra QA, GET /api/v1/users/me: 200
+el mismo token contra producción (Host quickpatch.internal): 401
+sin token contra producción: 401
+llaves JWT públicas del vault de Ansible distintas por ambiente: True
+Límite: comparten la entrada VM1 y su runner (ADR-022, ADR-028); no se probó el camino de red QA a producción desde una VM de QA.
