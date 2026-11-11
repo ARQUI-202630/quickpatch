@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.16 |
+| **Versión** | 4.17 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -264,7 +264,7 @@ Después de los despliegues del 8 de octubre, VM2 quedó en 32% de la RAM tras l
 
 Los servicios .NET usan entre 105 y 158 MiB frente al límite de 256 MiB, y Matching 232-251 MiB frente a 1 GiB. Es consumo en reposo, sin carga.
 
-**Gateway y panel por ambiente (ADR-028, 25 de octubre de 2026).** El API Gateway y el panel no corren en el k3s porque aún no tienen imagen. Los sirve un Nginx por ambiente, en VM3 (producción) y en VM2 (QA), como contenedor de Docker en la red del host (puerto 8080, abierto solo a VM1), con la misma plantilla (`gateway-ambiente-nginx.conf.j2`) y la carpeta `/opt/quickpatch/gateway/panel`. VM1 queda como entrada TLS (`entrada-nginx.conf.j2`) y reenvía por nombre. Reemplaza lo que sigue, que se conserva como historia.
+**Gateway y panel por ambiente (ADR-028, 25 de octubre de 2026).** El API Gateway y los archivos del panel no están en el k3s porque aún no tienen imagen. Un Nginx por ambiente los atiende: el gateway reenvía la API y, del panel, solo **entrega** el build de Angular (HTML, JS y CSS), que se **ejecuta** en el navegador del administrador (SCRUM-674). Ese Nginx corre en VM3 (producción) y en VM2 (QA), como contenedor de Docker en la red del host (puerto 8080, abierto solo a VM1), con la misma plantilla (`gateway-ambiente-nginx.conf.j2`) y la carpeta `/opt/quickpatch/gateway/panel`. VM1 queda como entrada TLS (`entrada-nginx.conf.j2`) y reenvía por nombre. Reemplaza lo que sigue, que se conserva como historia.
 
 **Decisión del 12 de octubre de 2026 (SCRUM-446), reemplazada por ADR-028 el 25 de octubre: el panel de QA se sirve desde VM1, como el de producción.** El ADR-022 ubica el panel en el k3s de cada ambiente, pero ese destino no existe todavía en ninguno: el panel de producción se publica desde el runner en `/opt/quickpatch/gateway/panel` y lo sirve el Nginx de VM1. El primer despliegue del panel de QA (rama `release/0.3.0` de `quickpatch-web`) falló porque el workflow copiaba el build por SSH a una carpeta de VM2 que nadie sirve, y el bloque de QA del Nginx enviaba `/` al Traefik de VM2, que responde 404.
 
@@ -1268,3 +1268,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.14 | 4 nov 2026 | Excepción al RNF-08 (SCRUM-518): la sección 6.2 cuenta la historia en orden (levantada el 27 de octubre para los 4 servicios; estrés con 7 servicios el 28 de octubre, SCRUM-635; renovada el 4 de noviembre para el MVP de 7 servicios, con su condición de levantamiento, el tope de pool medido y las mitigaciones); notas de 5.7 y de las limitaciones alineadas. |
 | 4.15 | 4 nov 2026 | Excepción al RNF-08 levantada (SCRUM-526): la carga k6 coordinada pasó en QA con las versiones que corren en producción (run 41940280403: 50 usuarios con p95 de 88 ms en crear solicitud y de 32 ms en catálogo; 150 usuarios con 0 errores 5xx y p95 de 1.183 ms); la sección 6.2 agrega el levantamiento después de la renovación, y se alinean la sección 5.7, la tabla de limitaciones e `infrastructure/CI-CD.md`. |
 | 4.16 | 10 nov 2026 | Auditoría contra lo desplegado (SCRUM-694): versiones de QA y producción verificadas con `kubectl` el 10 de noviembre (producción con service-request 0.11.2; QA con identity 0.9.0, service-request 0.12.0, panel 0.6.0 y APK `v0.6.0-qa`), la tabla de la sección 5.3 deja de decir que Payments, Communication y Ranking no están desplegados, y la lista de lo que falta de la sección 4.3 se pone al día. |
+| 4.17 | 11 nov 2026 | Gateway y panel por ambiente (sección 3): el Nginx entrega los archivos del panel y el navegador del administrador los ejecuta, como la vista de despliegue de SCRUM-674 (SCRUM-675). |
