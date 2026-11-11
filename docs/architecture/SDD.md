@@ -72,7 +72,8 @@ Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estruc
 |---|---|---|
 | `C4-01-Landscape` | System Landscape | 1 |
 | `C4-02-Contexto` | System Context | 2 |
-| `C4-03-Contenedores` | Container | 3 |
+| `C4-03a-Contenedores-Sincrono` | Container | 3a |
+| `C4-03b-Contenedores-Eventos` | Container | 3b |
 | `C4-04-Componentes-Web` | Component | 8 |
 | `C4-04-Componentes-Mobile` | Component | 9 |
 | `C4-04-Componentes-Identity` | Component | 10 |
@@ -120,7 +121,7 @@ El diagrama de contexto deja solo lo que interactúa con el sistema en operació
 
 La figura lleva su título y, debajo, la leyenda de formas y líneas; la línea punteada es lo planeado (SCRUM-578).
 
-El único sistema externo es la pasarela de pagos certificada PCI-DSS (SAD, K2, R5); en el MVP la reemplaza un adaptador simulado dentro de Payments (ADR-009 modificado). La geocodificación (SRS, RIE-02) corre dentro de las 7 VMs con un Nominatim propio que solo tiene el mapa de Bogotá, y las notificaciones (RIE-03) se entregan dentro de la app, por el canal en tiempo real y el buzón de Communication; el correo y las notificaciones push quedan fuera del MVP (ADR-024). Por eso el geocodificador aparece como contenedor en la Figura 3 y no como sistema externo. La cercanía entre la solicitud y los técnicos la calcula PostGIS. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
+El único sistema externo es la pasarela de pagos certificada PCI-DSS (SAD, K2, R5); en el MVP la reemplaza un adaptador simulado dentro de Payments (ADR-009 modificado). La geocodificación (SRS, RIE-02) corre dentro de las 7 VMs con un Nominatim propio que solo tiene el mapa de Bogotá, y las notificaciones (RIE-03) se entregan dentro de la app, por el canal en tiempo real y el buzón de Communication; el correo y las notificaciones push quedan fuera del MVP (ADR-024). Por eso el geocodificador aparece como contenedor en la Figura 3a y no como sistema externo. La cercanía entre la solicitud y los técnicos la calcula PostGIS. El SAD (sección 4.1) presenta la misma frontera con las dos apps dentro del sistema; personas, canales y sistemas externos deben coincidir en los dos documentos.
 
 > **Contradicción resuelta:** la versión anterior de esta sección contaba la geocodificación y un proveedor de correo y push como sistemas externos, frente a R5 del SAD. ADR-024 la resolvió manteniendo R5: la geocodificación es propia y las notificaciones quedan dentro de la app.
 
@@ -132,11 +133,15 @@ La arquitectura se organiza por dominios y servicios. Los clientes acceden a tra
 
 ## 5.1 Contenedores del sistema
 
-![Contenedores de QUICKPATCH](diagrams/c4/C4-03-Contenedores.png)
+![Contenedores de QUICKPATCH: REST y datos](diagrams/c4/C4-03a-Contenedores-Sincrono.png)
 
-**Figura 3. Contenedores de QUICKPATCH (C4 · Container). Vista `C4-03-Contenedores`.**
+**Figura 3a. Contenedores de QUICKPATCH, comunicación síncrona y datos (C4 · Container). Vista `C4-03a-Contenedores-Sincrono`.**
 
-Los contenedores se agrupan en clientes, microservicios, mensajería y almacenamiento, y PostgreSQL con una base por servicio (ADR-014). La figura lleva su título y, a la derecha, la leyenda de formas y líneas (SCRUM-578). Actors Service no aparece: está planeado y no tiene despliegue (sección 6.5), y la vista no dibuja lo que todavía no existe.
+![Contenedores de QUICKPATCH: eventos en Kafka](diagrams/c4/C4-03b-Contenedores-Eventos.png)
+
+**Figura 3b. Contenedores de QUICKPATCH, eventos en Kafka (C4 · Container). Vista `C4-03b-Contenedores-Eventos`.**
+
+La vista de contenedores está partida en dos (SCRUM-676): con Kafka y las bases en la misma imagen, las líneas hacia el bus cruzaban todo el diagrama. La Figura 3a muestra los clientes, el API Gateway, las llamadas REST, la base de cada servicio (ADR-014), Redis, Garage y el geocodificador; la Figura 3b muestra, por servicio, qué eventos publica y cuáles consume en Kafka (detalle por topic en la sección 8.6). Los contenedores se agrupan en clientes, microservicios, mensajería y almacenamiento, y PostgreSQL con una base por servicio. Actors Service no aparece: está planeado y no tiene despliegue (sección 6.5), y la vista no dibuja lo que todavía no existe.
 
 Las notificaciones no salen del sistema: Communication las entrega por el canal en tiempo real (`/v1/realtime`, ADR-023) y las guarda en su buzón (ADR-024), así que el diagrama no tiene un proveedor de correo o push.
 
@@ -150,7 +155,7 @@ Cada microservicio tiene su propia base de datos dentro de una única instancia 
 
 **Figura 4. Vista lógica general por capas de QUICKPATCH.**
 
-La representación organiza los contenedores de la Figura 3 en cinco capas, sin nombrar el framework de los clientes. En la **capa de cliente** están la App móvil (clientes, empresas cliente, técnicos y proveedores) y el Panel web (administradores). En la **capa de entrada**, el API Gateway recibe REST en `/api/v1/*` y el canal en tiempo real por WebSocket en `/api/v1/realtime` (ADR-023), quita `/api` y enruta por el contrato; cada servicio valida el JWT (ADR-018). Las flechas sólidas son el REST principal hacia Identity, ServiceRequest y Payments, y las punteadas, las excepciones del ADR-025. La **capa de servicios de negocio** reúne los ocho microservicios. En la **capa de integración** están Apache Kafka, por donde los servicios publican y consumen eventos de dominio con el patrón Outbox; el Geocodificador (Nominatim con el mapa de Bogotá, ADR-024), que usa ServiceRequest para ubicar la dirección; y la pasarela de pagos PCI-DSS, el único sistema externo, que usa Payments. En la **capa de datos**, PostgreSQL + PostGIS es una sola instancia con una base por servicio (ADR-014), Redis guarda los candados con los que ServiceRequest coordina el vencimiento de las cotizaciones, y la caché de Matching queda planeada (línea gris punteada); Garage (S3) guarda las evidencias y los respaldos (ADR-016). La fuente de la figura es `diagrams/sdd/src/01_vista_logica_capas.puml`.
+La representación organiza los contenedores de las figuras 3a y 3b en cinco capas, sin nombrar el framework de los clientes. En la **capa de cliente** están la App móvil (clientes, empresas cliente, técnicos y proveedores) y el Panel web (administradores). En la **capa de entrada**, el API Gateway recibe REST en `/api/v1/*` y el canal en tiempo real por WebSocket en `/api/v1/realtime` (ADR-023), quita `/api` y enruta por el contrato; cada servicio valida el JWT (ADR-018). Las flechas sólidas son el REST principal hacia Identity, ServiceRequest y Payments, y las punteadas, las excepciones del ADR-025. La **capa de servicios de negocio** reúne los ocho microservicios. En la **capa de integración** están Apache Kafka, por donde los servicios publican y consumen eventos de dominio con el patrón Outbox; el Geocodificador (Nominatim con el mapa de Bogotá, ADR-024), que usa ServiceRequest para ubicar la dirección; y la pasarela de pagos PCI-DSS, el único sistema externo, que usa Payments. En la **capa de datos**, PostgreSQL + PostGIS es una sola instancia con una base por servicio (ADR-014), Redis guarda los candados con los que ServiceRequest coordina el vencimiento de las cotizaciones, y la caché de Matching queda planeada (línea gris punteada); Garage (S3) guarda las evidencias y los respaldos (ADR-016). La fuente de la figura es `diagrams/sdd/src/01_vista_logica_capas.puml`.
 
 ## 5.3 Componentes lógicos principales del backend (complementaria)
 
@@ -351,7 +356,7 @@ El detalle definitivo de proyectos, carpetas y paquetes debe quedar sincronizado
 
 ## 6.2 Aplicaciones cliente
 
-Estos diagramas abren los dos contenedores cliente de la Figura 3. Cada componente indica la carpeta del repositorio donde vive (sección 10.2) y corresponde al código de `develop`; los componentes con borde punteado están planeados.
+Estos diagramas abren los dos contenedores cliente de la Figura 3a. Cada componente indica la carpeta del repositorio donde vive (sección 10.2) y corresponde al código de `develop`; los componentes con borde punteado están planeados.
 
 ![Componentes del Panel web](diagrams/c4/C4-04-Componentes-Web.png)
 
@@ -1464,8 +1469,8 @@ sequenceDiagram
 | 5 | Pago | Payments, ServiceRequest | ✅ Figura 17 (pasarela simulada) | 🟡 Figuras 23 y 24 (diseño) | ✅ Sección 6.10 (evidencia en QA: `scrum-495-comprobante`) | 🟡 Sin la pasarela certificada (proveedor por definir) |
 | 6 | Aprobación/rechazo PSP | Payments, ServiceRequest | ✅ Figura 17 (aprobado y rechazado con la pasarela simulada) | 🟡 Figuras 23 y 24 (diseño) | ✅ Sección 6.10 | 🟡 Sin la pasarela certificada (proveedor por definir) |
 | 7 | Calificación | ServiceRequest, Ranking, Identity | ✅ Figuras 10, 13 y 16 | ✅ Figura 27 | ✅ Secciones 6.7, 6.9 y 10.2 (SCRUM-85 y SCRUM-498) | 🟡 Ranking en QA (figura 31, SCRUM-512); en producción llega con la promoción del MVP (figura 30, SCRUM-518) |
-| 8 | Aislamiento multi-tenant | API Gateway, todos los servicios | ✅ Figura 3 y sección 6.12 | ✅ Figuras 25 y 28; Figura 20 (C4 · Code) | ✅ Secciones 6.12 y 10.3 | ✅ Figuras 30, 31 y 33 |
-| 9 | Falla temporal de Kafka | Cualquier productor, Kafka | ✅ Figura 3 y sección 6.12 | ✅ Figura 29; Figura 19 (C4 · Code) | ✅ Secciones 8.10 y 10.3 | ✅ Figuras 30 y 31 |
+| 8 | Aislamiento multi-tenant | API Gateway, todos los servicios | ✅ Figura 3a y sección 6.12 | ✅ Figuras 25 y 28; Figura 20 (C4 · Code) | ✅ Secciones 6.12 y 10.3 | ✅ Figuras 30, 31 y 33 |
+| 9 | Falla temporal de Kafka | Cualquier productor, Kafka | ✅ Figura 3b y sección 6.12 | ✅ Figura 29; Figura 19 (C4 · Code) | ✅ Secciones 8.10 y 10.3 | ✅ Figuras 30 y 31 |
 
 ✅ el diagrama existe y corresponde al código de `develop`; 🟡 el diagrama existe pero es de diseño, porque la historia todavía no está implementada; ⏳ falta el diagrama o la implementación.
 
@@ -2429,6 +2434,7 @@ Estos cambios responden a la retroalimentación final del profesor: arquitectura
 | El nivel de código sale del código: herramienta reproducible, línea base y medición después del refactor; 7.1 y 7.2 quedan como explicación de mecanismos | 7 y 7.3 | SCRUM-680 a SCRUM-683 |
 | Refactor interno de Catalog, ServiceRequest, Matching, Ranking y Payments con pruebas de arquitectura en su CI | 7.3 y 10.3.2 | SCRUM-651 a SCRUM-655 |
 | Contexto con los 6 roles agrupados por canal (4 en la app móvil y 2 en el panel web) y lectura vertical sin cruces; figuras 1 a 3 reexportadas | 3, 4 y 5.1 | SCRUM-688 y SCRUM-689 |
+| Vista de contenedores partida en dos para quitar los cruces: Figura 3a (REST y datos) y Figura 3b (qué publica y consume cada servicio en Kafka) | 5.1 | SCRUM-676 |
 
 ---
 

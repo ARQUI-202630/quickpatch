@@ -28,7 +28,7 @@ Fuente: `docs/architecture/matriz-modelado-vs-real.md` (SCRUM-697).
 | 5 | Alcance | 6 roles (4 en la app y 2 en el panel), 33 RF y 14 RNF, Bogotá D.C., pago con pasarela simulada; lo que quedó fuera (FA1 a FA3, R1) | Cifras canónicas: «Producto y alcance» |
 | 6 | Solución, recorrido del cliente | Solicitar → técnico asignado → acepta → chat → cotización → acepta → ejecución con evidencia → pago → comprobante → calificación → reputación | Humo del flujo crítico en QA (30-oct) |
 | 7 | Contexto (C4 nivel 1) | Los 6 roles agrupados por canal y la pasarela como externo | Figura `C4-02-Contexto` (SCRUM-689) |
-| 8 | Contenedores (C4 nivel 2) | 8 microservicios definidos, **7 IMPLEMENTADOS** y Actors **PLANEADO**; 20 eventos de Kafka; 8 bases lógicas | `C4-03-Contenedores`; cifras canónicas |
+| 8 | Contenedores (C4 nivel 2) | 8 microservicios definidos, **7 IMPLEMENTADOS** y Actors **PLANEADO**; 20 eventos de Kafka; 8 bases lógicas | `C4-03a-Contenedores-Sincrono` y `C4-03b-Contenedores-Eventos` (una lámina cada una si hace falta); cifras canónicas |
 | 9 | Arquitectura interna | Cuatro capas con reglas verificadas en el CI de cada servicio (SDD 10.3.2) | — |
 | 10 | Refactor del cierre | Antes y después medidos con la misma herramienta: Matching y Payments de 1 a 0 ciclos; fan-out máximo de ServiceRequest de 31 a 22. Mostrar también lo que empeoró (fan-out de Matching de 10 a 13) | `docs/architecture/codigo/README.md` |
 | 11 | Diagrama de código | Generado desde el código, no dibujado a mano | `tools/arquitectura/`, SDD 7.3 |
