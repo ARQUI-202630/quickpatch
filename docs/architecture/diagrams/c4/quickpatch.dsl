@@ -137,10 +137,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 catalog = container "Catalog Service" "Categorías y especialidades de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
                     catEndpoints = component "CategoryEndpoints" "GET /v1/catalog/categories (obsoleta por ADR-025); POST y PATCH /v1/catalog/admin/categories." "Minimal API · Api/Endpoints"
-                    catSecurity = component "AuthenticatedUser, ChannelOptions y ForbiddenAuditHandler" "Usuario, tenant y rol del JWT; sin token, el tenant del canal. Registra los 403." "ASP.NET Core · Api/Security"
+                    catSecurity = component "AuthenticatedUser, RequestTenant y ForbiddenAuditHandler" "Usuario, tenant y rol del JWT. RequestTenant resuelve el tenant del token o, sin token, del canal (RN-U5), fuera del endpoint. Registra los 403." "ASP.NET Core · Api/Security"
                     catHttp = component "CorrelationId y Problems" "Propaga X-Correlation-Id y responde application/problem+json." "ASP.NET Core · Api/Http"
                     # Application
-                    catHandlers = component "Categories" "ListCategoriesHandler, CreateCategoryHandler y UpdateCategoryHandler; nombre único por tenant (409)." "Casos de uso · Application/Categories"
+                    catHandlers = component "Categories" "ListCategories, CreateCategory y UpdateCategory, un caso de uso por archivo; nombre único por tenant (409)." "Casos de uso · Application/Categories"
                     # Domain
                     catDomain = component "Category" "Nombre normalizado, descripción, estado activo y updatedAt." "Domain/Categories"
                     # Infrastructure
@@ -151,7 +151,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 }
                 serviceRequest = container "ServiceRequest Service" "Ciclo de vida de la solicitud de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
-                    srRequestEndpoints = component "ServiceRequestEndpoints" "POST, GET y lista de /v1/service-requests, POST /location-preview, POST /{id}/cancel y GET /v1/technicians/me/service-requests." "Minimal API · Api/Endpoints"
+                    srRequestEndpoints = component "Endpoints de la solicitud" "ServiceRequestEndpoints (POST y GET /v1/service-requests), LocationPreviewEndpoints (/location-preview), CancellationEndpoints (/{id}/cancel) y TechnicianServiceRequestEndpoints (GET /v1/technicians/me/service-requests). Comparten ApiResults y Routes de Api/Http, no entre sí." "Minimal API · Api/Endpoints"
                     srReferenceEndpoints = component "ReferenceEndpoints" "GET /v1/service-requests/categories y /localities desde las réplicas (ADR-025)." "Minimal API · Api/Endpoints"
                     srQuoteEndpoints = component "QuoteEndpoints" "GET y POST /v1/service-requests/{id}/quotes, accept y reject (RF-34, RF-35)." "Minimal API · Api/Endpoints"
                     srExecutionEndpoints = component "ExecutionEndpoints" "POST /start, /evidence y /complete; GET de las evidencias (RF-14, RF-15)." "Minimal API · Api/Endpoints"
@@ -166,7 +166,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     srEventHandlers = component "Manejadores de eventos" "ApplyCategoryChangedHandler, MatchingStatusHandler, PaymentEventsHandler y ApplyTenantStatusChangedHandler (réplica del estado del tenant, RN-T1): aplican cada evento una vez por eventId." "Casos de uso · Application/Categories, Matching y Payments"
                     srRating = component "Ratings" "RateServiceRequestHandler: valida dueño, estado pagado y que no esté calificada (RN-R1 a RN-R3) y deja service-request.rated en el Outbox (ADR-027)." "Casos de uso · Application/Ratings"
                     # Domain
-                    srDomain = component "Dominio de la solicitud" "ServiceRequest (transiciones RN-SR2 a RN-SR7), Quote, ServiceEvidence, Rating, CategoryReplica, GeoPoint, CoverageArea y Locality." "Domain"
+                    srDomain = component "Dominio de la solicitud" "ServiceRequest (transiciones RN-SR2 a RN-SR7), ServiceRequestRules (validación RN-SR1, RN-SR11, RN-SR12 y RF-36), Quote, ServiceEvidence, Rating, CategoryReplica, GeoPoint, CoverageArea y Locality." "Domain"
                     # Infrastructure
                     srPersistence = component "TenantUnitOfWork y repositorios" "ServiceRequestRepository, QuoteRepository, EvidenceRepository, RatingRepository, CategoryReplicaRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
                     srOutbox = component "EfOutbox" "Guarda los eventos de la solicitud en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
@@ -202,7 +202,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     maTechnicianListener = component "TechnicianEventsListener" "Consume technician.registered y technician.verification-changed." "@KafkaListener · infrastructure/messaging"
                     maStores = component "JdbcMatchingStores y JdbcTechnicianStores" "Solicitudes, candidatos (PostGIS), ofertas, disponibilidad, cobertura y localidades bajo RLS." "JDBC · infrastructure/persistence"
                     maProjection = component "JdbcTechnicianProjection" "INSERT ... ON CONFLICT en technician_availability: la fila nace en no_disponible." "JDBC · infrastructure/persistence"
-                    maTenantTx = component "JdbcTenantTransaction y JdbcProcessedEventStore" "Fija app.current_tenant en cada transacción y registra el eventId en processed_events." "JDBC · infrastructure/persistence"
+                    maTenantTx = component "JdbcTenantTransaction y JdbcProcessedEventStore" "Fija app.current_tenant en cada transacción y registra el eventId en processed_events. Implementan los puertos TenantTransaction y ProcessedEventStore de application/common." "JDBC · infrastructure/persistence"
                     maOutbox = component "JdbcOutbox" "Guarda los eventos de Matching en outbox_events en la misma transacción." "JDBC · infrastructure/messaging"
                     maPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol matching_outbox y marca published_at." "@Scheduled · infrastructure/messaging"
                     maExpirer = component "OfferExpirer" "Cada MATCHING_EXPIRY_INTERVAL vence las ofertas sin respuesta y ofrece al siguiente candidato (RN-M3, RN-M8)." "@Scheduled · infrastructure/scheduling"
@@ -210,14 +210,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 }
                 ranking = container "Ranking Service" "Reputación de técnicos desde las calificaciones (ADR-027)." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Application
-                    raHandler = component "ServiceRequestRatedHandler" "Suma la calificación bajo el tenant del evento, una vez por eventId y por solicitud, y deja ranking.technician-reputation-changed en el Outbox." "Casos de uso · Application/Reputation"
+                    raHandler = component "ServiceRequestRatedHandler" "ServiceRequestRatedContract valida el mensaje; el caso de uso suma la calificación bajo el tenant del evento, una vez por eventId y por solicitud, y deja ranking.technician-reputation-changed en el Outbox." "Casos de uso · Application/Reputation"
                     # Domain
                     raDomain = component "Dominio de reputación" "TechnicianReputation (cantidad, suma, promedio NUMERIC(2,1) y reputación baja con 5 o más calificaciones y promedio menor a 3.0, AC9-E2) y AppliedRating." "Domain/Reputation"
                     # Infrastructure
                     raPersistence = component "TenantUnitOfWork y repositorios" "ReputationRepository (FOR UPDATE por técnico) y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
                     raOutbox = component "EfOutbox" "Guarda ranking.technician-reputation-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
                     raPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol ranking_outbox y marca published_at." "BackgroundService · Infrastructure/Messaging"
-                    raConsumer = component "ServiceRequestRatedConsumer" "Consume service-request.rated; confirma el offset después de aplicar y descarta lo que no cumple el contrato." "Kafka consumer · Infrastructure/Messaging"
+                    raConsumer = component "ServiceRequestRatedConsumer" "Consume service-request.rated y confirma el offset después de aplicar; solo transporte: el contrato lo valida Application." "Kafka consumer · Infrastructure/Messaging"
                 }
                 payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
@@ -225,13 +225,13 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     paInvoiceEndpoints = component "InvoiceEndpoints" "GET /v1/payments/{id}/invoice en JSON o PDF (RF-24)." "Minimal API · Api/Endpoints"
                     paSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Usuario, tenant, rol y company_id del JWT; registra los 403." "ASP.NET Core · Api/Security"
                     # Application
-                    paPayments = component "Payments" "GetPaymentHandler, PayHandler y ReconcilePaymentsHandler." "Casos de uso · Application/Payments"
+                    paPayments = component "Payments" "GetPayment, Pay, PaymentSettlement y ReconcilePayments, un caso de uso por archivo." "Casos de uso · Application/Payments"
                     paCompletedHandler = component "ServiceRequestCompletedHandler" "Crea el pago pendiente con el total de la cotización aceptada (RN-P4)." "Casos de uso · Application/Payments"
-                    paInvoices = component "Invoices" "GetInvoiceHandler: solo el pagador lee el comprobante." "Casos de uso · Application/Invoices"
+                    paInvoices = component "Invoices" "GetInvoiceHandler: solo el pagador lee el comprobante; entrega InvoiceDocument al puerto IInvoicePdfRenderer." "Casos de uso · Application/Invoices"
                     # Domain
                     paDomain = component "Dominio de pagos" "Payment (estados y RejectionReasons), Invoice y Billing." "Domain/Payments"
                     # Infrastructure
-                    paPersistence = component "TenantUnitOfWork y repositorios" "PaymentRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                    paPersistence = component "TenantUnitOfWork y repositorios" "PaymentRepository, PaymentTechnicianRepository, ReconciliationSource y ProcessedEventRepository bajo RLS, un adaptador por archivo." "EF Core + Npgsql · Infrastructure/Persistence"
                     paOutbox = component "EfOutbox" "Guarda payment.approved o payment.rejected en outbox_events en la misma transacción." "EF Core · Infrastructure/Persistence"
                     paPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
                     paCompletedConsumer = component "ServiceRequestCompletedConsumer" "Consume service-request.completed." "Kafka consumer · Infrastructure/Messaging"
@@ -755,7 +755,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
         component catalog "C4-04-Componentes-Catalog" "Componentes de Catalog Service por capa: Api, Application, Domain e Infrastructure (SDD 10.3.1)." {
             include *
-            autoLayout lr
+            autoLayout tb 120 70
         }
         component serviceRequest "C4-04-Componentes-ServiceRequest" "Componentes de ServiceRequest Service por capa: Api, Application, Domain e Infrastructure (SDD 10.3.1)." {
             include *
@@ -774,7 +774,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         }
         component payments "C4-04-Componentes-Payments" "Componentes de Payments Service por capa (SDD 10.3.1): pago con la pasarela simulada del MVP y comprobante (ADR-009 modificado); pagos recibidos del técnico y del equipo del proveedor (RF-25)." {
             include *
-            autoLayout lr
+            autoLayout tb 120 70
         }
         component communication "C4-04-Componentes-Communication" "Componentes de Communication Service por capa, con sus clases: canal en tiempo real, buzón y chat de la solicitud, con sus consumidores de Kafka (ADR-023, ADR-024 y ADR-026)." {
             include *
