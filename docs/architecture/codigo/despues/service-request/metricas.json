@@ -1,0 +1,3588 @@
+{
+ "servicio": "ServiceRequest",
+ "lenguaje": "csharp",
+ "resumen": {
+  "tipos": 217,
+  "paquetes": 31,
+  "dependencias_entre_tipos": 618,
+  "dependencias_entre_paquetes": 111,
+  "ciclos_entre_paquetes": 0,
+  "paquetes_en_ciclos": 0,
+  "ciclos_entre_tipos": 0,
+  "mayor_ciclo_de_tipos": 0,
+  "violaciones_de_capas": 0,
+  "tipos_de_mas_de_250_lineas": 1,
+  "fan_out_maximo": 22,
+  "fan_out_promedio": 2.85,
+  "cohesion_relacional_promedio": 0.78
+ },
+ "dependencias_entre_capas": {
+  "Api->Application": 54,
+  "Api->Domain": 31,
+  "Api->Infrastructure": 1,
+  "Application->Domain": 71,
+  "Infrastructure->Application": 73,
+  "Infrastructure->Domain": 19
+ },
+ "violaciones": [],
+ "ciclos_entre_paquetes": [],
+ "ciclos_entre_tipos": [],
+ "mayor_fan_out": [
+  {
+   "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 188,
+   "fan_out": 22,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 93,
+   "fan_out": 20,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.ServiceRequest.Application/ServiceRequests/CreateServiceRequest.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 97,
+   "fan_out": 19,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/AdminServiceRequestEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 109,
+   "fan_out": 18,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/QuoteEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 114,
+   "fan_out": 15,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ServiceRequestEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 43,
+   "fan_out": 14,
+   "fan_in": 8,
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Events/ServiceRequestEvents.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 95,
+   "fan_out": 14,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Matching/MatchingStatusHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 58,
+   "fan_out": 12,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.ServiceRequest.Application/ServiceRequests/CancelServiceRequest.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 40,
+   "fan_out": 11,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/LocationPreviewEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 48,
+   "fan_out": 11,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Quotes/QuoteHandlers.cs"
+  }
+ ],
+ "mayor_fan_in": [
+  {
+   "tipo": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 299,
+   "fan_out": 5,
+   "fan_in": 34,
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/ServiceRequests/ServiceRequest.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 0,
+   "fan_in": 22,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 3,
+   "fan_in": 19,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 197,
+   "fan_out": 11,
+   "fan_in": 16,
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Domain.Ratings.Rating",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 62,
+   "fan_out": 1,
+   "fan_in": 15,
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/Ratings/Rating.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 23,
+   "fan_out": 0,
+   "fan_in": 14,
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/Common/DomainValidationException.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Domain.Quotes.Quote",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 207,
+   "fan_out": 1,
+   "fan_in": 14,
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/Quotes/Quote.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 4,
+   "fan_out": 0,
+   "fan_in": 13,
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/ServiceRequests/GeoPoint.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 1,
+   "fan_in": 12,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 9,
+   "fan_out": 0,
+   "fan_in": 10,
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Events/EventContracts.cs"
+  }
+ ],
+ "mas_grandes": [
+  {
+   "tipo": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 299,
+   "fan_out": 5,
+   "fan_in": 34,
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/ServiceRequests/ServiceRequest.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Domain.Quotes.Quote",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 207,
+   "fan_out": 1,
+   "fan_in": 14,
+   "archivo": "src/QuickPatch.ServiceRequest.Domain/Quotes/Quote.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 197,
+   "fan_out": 11,
+   "fan_in": 16,
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 188,
+   "fan_out": 22,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 143,
+   "fan_out": 7,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Messaging/MatchingEventsConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 132,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Messaging/PaymentEventsConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 114,
+   "fan_out": 15,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ServiceRequestEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 109,
+   "fan_out": 18,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/QuoteEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 97,
+   "fan_out": 19,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/AdminServiceRequestEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 95,
+   "fan_out": 14,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Matching/MatchingStatusHandler.cs"
+  }
+ ],
+ "paquetes": [
+  {
+   "paquete": "(global)",
+   "tipos": 1,
+   "fan_out": 5,
+   "fan_in": 0,
+   "inestabilidad": 1.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "tipos": 37,
+   "fan_out": 14,
+   "fan_in": 1,
+   "inestabilidad": 0.93,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Api.Http",
+   "tipos": 4,
+   "fan_out": 0,
+   "fan_in": 2,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Api.Security",
+   "tipos": 5,
+   "fan_out": 0,
+   "fan_in": 2,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.6
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application",
+   "tipos": 1,
+   "fan_out": 9,
+   "fan_in": 1,
+   "inestabilidad": 0.9,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "tipos": 26,
+   "fan_out": 6,
+   "fan_in": 17,
+   "inestabilidad": 0.26,
+   "cohesion_relacional": 0.38
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.Categories",
+   "tipos": 2,
+   "fan_out": 3,
+   "fan_in": 2,
+   "inestabilidad": 0.6,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.Events",
+   "tipos": 21,
+   "fan_out": 4,
+   "fan_in": 10,
+   "inestabilidad": 0.29,
+   "cohesion_relacional": 0.57
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.Execution",
+   "tipos": 11,
+   "fan_out": 5,
+   "fan_in": 2,
+   "inestabilidad": 0.71,
+   "cohesion_relacional": 1.09
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.Matching",
+   "tipos": 2,
+   "fan_out": 3,
+   "fan_in": 2,
+   "inestabilidad": 0.6,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.Payments",
+   "tipos": 2,
+   "fan_out": 3,
+   "fan_in": 2,
+   "inestabilidad": 0.6,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.Quotes",
+   "tipos": 12,
+   "fan_out": 4,
+   "fan_in": 4,
+   "inestabilidad": 0.5,
+   "cohesion_relacional": 0.92
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.Ratings",
+   "tipos": 3,
+   "fan_out": 4,
+   "fan_in": 2,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.References",
+   "tipos": 2,
+   "fan_out": 3,
+   "fan_in": 2,
+   "inestabilidad": 0.6,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.ServiceRequests",
+   "tipos": 27,
+   "fan_out": 6,
+   "fan_in": 2,
+   "inestabilidad": 0.75,
+   "cohesion_relacional": 1.04
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Application.Tenants",
+   "tipos": 2,
+   "fan_out": 3,
+   "fan_in": 2,
+   "inestabilidad": 0.6,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Domain.Categories",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 5,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Domain.Common",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 6,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Domain.Evidence",
+   "tipos": 2,
+   "fan_out": 1,
+   "fan_in": 4,
+   "inestabilidad": 0.2,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Domain.Quotes",
+   "tipos": 2,
+   "fan_out": 1,
+   "fan_in": 7,
+   "inestabilidad": 0.12,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Domain.Ratings",
+   "tipos": 1,
+   "fan_out": 1,
+   "fan_in": 6,
+   "inestabilidad": 0.14,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "tipos": 9,
+   "fan_out": 1,
+   "fan_in": 13,
+   "inestabilidad": 0.07,
+   "cohesion_relacional": 0.67
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Domain.Tenants",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 4,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Infrastructure",
+   "tipos": 1,
+   "fan_out": 10,
+   "fan_in": 1,
+   "inestabilidad": 0.91,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Infrastructure.Geocoding",
+   "tipos": 2,
+   "fan_out": 2,
+   "fan_in": 1,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Infrastructure.Identity",
+   "tipos": 2,
+   "fan_out": 2,
+   "fan_in": 1,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
+   "tipos": 5,
+   "fan_out": 8,
+   "fan_in": 1,
+   "inestabilidad": 0.89,
+   "cohesion_relacional": 0.2
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Infrastructure.Options",
+   "tipos": 7,
+   "fan_out": 0,
+   "fan_in": 5,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.14
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "tipos": 20,
+   "fan_out": 8,
+   "fan_in": 2,
+   "inestabilidad": 0.8,
+   "cohesion_relacional": 1.15
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Infrastructure.Scheduling",
+   "tipos": 3,
+   "fan_out": 3,
+   "fan_in": 1,
+   "inestabilidad": 0.75,
+   "cohesion_relacional": 0.33
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Infrastructure.Storage",
+   "tipos": 2,
+   "fan_out": 2,
+   "fan_in": 1,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 0.5
+  }
+ ],
+ "aristas_paquetes": [
+  {
+   "de": "(global)",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "n": 9
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.ServiceRequest.Api.Http",
+   "n": 3
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.ServiceRequest.Api.Security",
+   "n": 2
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.ServiceRequest.Application",
+   "n": 1
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.ServiceRequest.Infrastructure",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http",
+   "n": 13
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security",
+   "n": 10
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution",
+   "n": 11
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes",
+   "n": 10
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Ratings",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Application.References",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests",
+   "n": 25
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Common",
+   "n": 8
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 13
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application",
+   "a": "QuickPatch.ServiceRequest.Application.Categories",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application",
+   "a": "QuickPatch.ServiceRequest.Application.Execution",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application",
+   "a": "QuickPatch.ServiceRequest.Application.Matching",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application",
+   "a": "QuickPatch.ServiceRequest.Application.Payments",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application",
+   "a": "QuickPatch.ServiceRequest.Application.Ratings",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application",
+   "a": "QuickPatch.ServiceRequest.Application.References",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests",
+   "n": 8
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application",
+   "a": "QuickPatch.ServiceRequest.Application.Tenants",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "a": "QuickPatch.ServiceRequest.Domain.Tenants",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Categories",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Categories",
+   "a": "QuickPatch.ServiceRequest.Application.Events",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Categories",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 17
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution",
+   "a": "QuickPatch.ServiceRequest.Application.Events",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching",
+   "a": "QuickPatch.ServiceRequest.Application.Events",
+   "n": 6
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments",
+   "a": "QuickPatch.ServiceRequest.Application.Events",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 18
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes",
+   "a": "QuickPatch.ServiceRequest.Application.Events",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes",
+   "n": 6
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings",
+   "a": "QuickPatch.ServiceRequest.Application.Events",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.References",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.References",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.References",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 36
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests",
+   "a": "QuickPatch.ServiceRequest.Application.Events",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests",
+   "a": "QuickPatch.ServiceRequest.Domain.Common",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 22
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Tenants",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Tenants",
+   "a": "QuickPatch.ServiceRequest.Application.Events",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Tenants",
+   "a": "QuickPatch.ServiceRequest.Domain.Tenants",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.Evidence",
+   "a": "QuickPatch.ServiceRequest.Domain.Common",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.Quotes",
+   "a": "QuickPatch.ServiceRequest.Domain.Common",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.Ratings",
+   "a": "QuickPatch.ServiceRequest.Domain.Common",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "a": "QuickPatch.ServiceRequest.Domain.Common",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 17
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Geocoding",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Identity",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options",
+   "n": 7
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "n": 14
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Scheduling",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Storage",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Geocoding",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Geocoding",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Identity",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Identity",
+   "a": "QuickPatch.ServiceRequest.Application.Events",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
+   "a": "QuickPatch.ServiceRequest.Application.Categories",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
+   "a": "QuickPatch.ServiceRequest.Application.Events",
+   "n": 15
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
+   "a": "QuickPatch.ServiceRequest.Application.Matching",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
+   "a": "QuickPatch.ServiceRequest.Application.Payments",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
+   "a": "QuickPatch.ServiceRequest.Application.Tenants",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
+   "a": "QuickPatch.ServiceRequest.Domain.Tenants",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 19
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "a": "QuickPatch.ServiceRequest.Domain.Tenants",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Scheduling",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Scheduling",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Scheduling",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Storage",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Storage",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options",
+   "n": 1
+  }
+ ],
+ "aristas_tipos": [
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.ReferenceEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Http.BadRequestExceptionHandler"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Http.Problems"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticationSetup"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Api.Security.ChannelOptions"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Application.DependencyInjection"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestPageResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.PlatformServiceRequestSummaryResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestSummaryResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.TenantServiceRequestSummaryResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.ApiResults"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ListScope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetPlatformSummaryHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetTenantSummaryHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsQuery"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.PlatformServiceRequestSummary"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestCounts"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestSummary"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.TenantServiceRequestCounts"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.TenantServiceRequestPage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestPageResponse",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestResponse",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.CancelServiceRequestRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.CancelledServiceRequestResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.ApiResults"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CreateServiceRequestRequest",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.LocationDto"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.EvidenceListResponse",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.EvidenceResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.EvidenceResponse",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence.ServiceEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.CompletedServiceRequestResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.EvidenceListResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.EvidenceResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.StartedServiceRequestResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.ApiResults"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.StoredEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.DownloadEvidenceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.EvidenceQuery"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.EvidenceViewer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.ListEvidenceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.ServiceStepCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.ServiceStepResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.StartServiceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence.ServiceEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.LocalityDto"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.LocationDto"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.ApiResults"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.Locality"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewResponse",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.LocalityDto"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.LocationPreviewResponse",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.LocationDto"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.PlatformServiceRequestSummaryResponse",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.TenantServiceRequestSummaryResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.IssueQuoteRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteDecisionResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.RejectQuoteRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.ApiResults"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesQuery"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.NumberedQuote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteResponse",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.NumberedQuote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteResponse",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.RateServiceRequestRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.RatingResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.ApiResults"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingResponse",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ReferenceEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.CategoryReferenceResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ReferenceEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ReferenceEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security.ChannelOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ReferenceEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.References.ListCategoriesHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ReferenceEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.References.ListLocalitiesHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ReferenceEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories.CategoryReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ReferenceEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.Locality"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.CreateServiceRequestRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.LocationDto"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.ApiResults"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestViewer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestRatingResponse",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestResponse",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.LocationDto"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestResponse",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestRatingResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestResponse",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ClientView"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestResponse",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.TechnicianView"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestResponse",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestResponse",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestResponse",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestPageResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Http.ApiResults"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsQuery"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.TechnicianServiceRequestPage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestEndpoints",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestPageResponse",
+   "a": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestResponse"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestResponse",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Endpoints.TechnicianServiceRequestResponse",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Http.Problems",
+   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Security.AuthenticationSetup",
+   "a": "QuickPatch.ServiceRequest.Api.Security.ForbiddenAuditHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Api.Security.AuthenticationSetup",
+   "a": "QuickPatch.ServiceRequest.Api.Security.JwtSettings"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.GeocodedAddress",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IAuditLog",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.AuditEntry"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.ICategoryReplicaRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories.CategoryReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence.ServiceEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceStorage",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.StoredEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IExpiredQuoteFinder",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ExpiredQuoteRef"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IGeocoder",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.GeocodedAddress"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.ILocalityCatalog",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.ILocalityCatalog",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.Locality"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IPlatformServiceRequestCounter",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.TenantStatusCountRow"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IQuoteRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IRatingRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ListScope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.StatusCountRow"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantStatusReplicaRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.Tenants.TenantStatusReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Abstractions.IUserDirectory",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.UserContact"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Categories.ApplyCategoryChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ICategoryReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Categories.ApplyCategoryChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Categories.ApplyCategoryChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Categories.ApplyCategoryChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Categories.CategoryChangeOutcome"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Categories.ApplyCategoryChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.CategoryChangedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Categories.ApplyCategoryChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Categories.ApplyCategoryChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories.CategoryReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Categories.ApplyCategoryChangedHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.DownloadEvidenceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.ListEvidenceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.StartServiceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuoteHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuotesBatch"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.References.ListCategoriesHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.References.ListLocalitiesHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetPlatformSummaryHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetTenantSummaryHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Tenants.ApplyTenantStatusChangedHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestCreatedData",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventLocation"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Events.QuoteAcceptedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Events.QuoteRejectedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Events.QuotedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceCompletedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRatedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestCancelledData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestStatusChangedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceStartedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IQuoteRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.ServiceStepCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.ServiceStepResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.CompleteServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.DownloadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceStorage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.DownloadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.StoredEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.DownloadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.EvidenceQuery"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.DownloadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.ListEvidenceHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.DownloadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence.ServiceEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.EvidenceQuery",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.EvidenceViewer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.ListEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.ListEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.ListEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.ListEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.EvidenceQuery"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.ListEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.EvidenceViewer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.ListEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence.ServiceEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.ListEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.ServiceStepResult",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.StartServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.StartServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.StartServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.StartServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.StartServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.ServiceStepCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.StartServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.ServiceStepResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.StartServiceHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceStorage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence.EvidenceImage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence.ServiceEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Execution.UploadEvidenceResult",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence.ServiceEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.NoTechnicianAvailableData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.SearchResumedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestStatusChangedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.TechnicianAssignedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Matching.MatchingEventHandlingOutcome"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.MatchingEventOutcome"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.PaymentApprovedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.PaymentRejectedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventOutcome"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ExpiredQuoteRef"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IQuoteRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuotesBatch",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ExpiredQuoteRef"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuotesBatch",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IExpiredQuoteFinder"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuotesBatch",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuoteHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IQuoteRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.NumberedQuote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.QuoteSettings"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.IssueQuoteResult",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.NumberedQuote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IQuoteRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesQuery"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.NumberedQuote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.ListQuotesHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.NumberedQuote",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IQuoteRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Quotes.RespondQuoteResult",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IRatingRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Ratings.RateServiceRequestResult",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.References.ListCategoriesHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ICategoryReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.References.ListCategoriesHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.References.ListCategoriesHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories.CategoryReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.References.ListLocalitiesHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ILocalityCatalog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.References.ListLocalitiesHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.Locality"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.AuditEntry"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IAuditLog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IQuoteRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestEvents"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequestRules"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CancelServiceRequestResult",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestCommand",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.GeocodedAddress"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ICategoryReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IGeocoder"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ILocalityCatalog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantStatusReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventLocation"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.ServiceRequestCreatedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestCommand"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.CoverageArea"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.Locality"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequestRules"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestResult",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetPlatformSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IPlatformServiceRequestCounter"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetPlatformSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.StatusCountRow"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetPlatformSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.TenantStatusCountRow"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetPlatformSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.BogotaDay"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetPlatformSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.PlatformServiceRequestSummary"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetPlatformSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestCounts"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetPlatformSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.TenantServiceRequestCounts"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IRatingRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IUserDirectory"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.UserContact"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ClientView"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestViewer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.TechnicianView"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestResult",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ClientView"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestResult",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.TechnicianView"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestResult",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetServiceRequestResult",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetTenantSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetTenantSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetTenantSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.StatusCountRow"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetTenantSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.BogotaDay"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetTenantSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestCounts"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.GetTenantSummaryHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestSummary"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListFilters",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListFilters",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequestStatus"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IRatingRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListFilters"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsQuery"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.TechnicianServiceRequestPage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTechnicianServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListFilters"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsQuery"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.TenantServiceRequestPage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ListTenantServiceRequestsQuery",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ListScope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PlatformServiceRequestSummary",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.TenantServiceRequestCounts"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.GeocodedAddress"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IGeocoder"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ILocalityCatalog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationResult"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.CoverageArea"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.Locality"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequestRules"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationResult",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationResult",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.Locality"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestCounts",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.StatusCountRow"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestSummary",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestCounts"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.TechnicianServiceRequestPage",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.TechnicianServiceRequestPage",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.TenantServiceRequestCounts",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceRequestCounts"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.TenantServiceRequestPage",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Tenants.ApplyTenantStatusChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Tenants.ApplyTenantStatusChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantStatusReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Tenants.ApplyTenantStatusChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Tenants.ApplyTenantStatusChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Tenants.ApplyTenantStatusChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Events.TenantStatusChangedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Tenants.ApplyTenantStatusChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Application.Tenants.TenantStatusChangeOutcome"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.Tenants.ApplyTenantStatusChangedHandler",
+   "a": "QuickPatch.ServiceRequest.Domain.Tenants.TenantStatusReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.Evidence.EvidenceImage",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.Quotes.Quote",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.Ratings.Rating",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.ServiceRequests.CoverageArea",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.CancellationActor"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.MatchingEventOutcome"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequestRules"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequestRules",
+   "a": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IAuditLog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ICategoryReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IDistributedLock"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceStorage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IExpiredQuoteFinder"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IGeocoder"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ILocalityCatalog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IPlatformServiceRequestCounter"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IQuoteRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IRatingRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantStatusReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IUserDirectory"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.QuoteSettings"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.CoverageArea"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Geocoding.GeocodingOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Geocoding.NominatimGeocoder"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Identity.IdentityOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Identity.IdentityUserDirectory"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Messaging.CategoryChangedConsumer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Messaging.OutboxPublisher"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Messaging.TenantStatusChangedConsumer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.CoverageOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.EvidenceStorageOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.KafkaOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.OutboxOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.PlatformOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.QuotesOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.RedisOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.CategoryReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfAuditLog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EvidenceRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ExpiredQuoteFinder"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.LocalityCatalog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.PlatformServiceRequestCounter"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.QuoteRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.RatingRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.TenantStatusReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.TenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Scheduling.InProcessLock"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Scheduling.QuoteExpirer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Scheduling.RedisDistributedLock"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Storage.GarageEvidenceStorage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Storage.UnconfiguredEvidenceStorage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Geocoding.NominatimGeocoder",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.GeocodedAddress"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Geocoding.NominatimGeocoder",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IGeocoder"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Geocoding.NominatimGeocoder",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.CoverageArea"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Geocoding.NominatimGeocoder",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Geocoding.NominatimGeocoder",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Geocoding.GeocodingOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Identity.IdentityUserDirectory",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IUserDirectory"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Identity.IdentityUserDirectory",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.UserContact"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Identity.IdentityUserDirectory",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.CategoryChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Categories.ApplyCategoryChangedHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.CategoryChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Categories.CategoryChangeOutcome"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.CategoryChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.CategoryChangedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.CategoryChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.CategoryChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.NoTechnicianAvailableData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.SearchResumedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.TechnicianAssignedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Matching.MatchingEventHandlingOutcome"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.OutboxOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.OutboxEventRecord"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.OutboxPublisher",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.PaymentApprovedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.PaymentRejectedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventOutcome"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Payments.PaymentEventsHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.TenantStatusChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.TenantStatusChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.TenantStatusChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Events.TenantStatusChangedData"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.TenantStatusChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Tenants.ApplyTenantStatusChangedHandler"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.TenantStatusChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Application.Tenants.TenantStatusChangeOutcome"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.TenantStatusChangedConsumer",
+   "a": "QuickPatch.ServiceRequest.Domain.Tenants.TenantStatusReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.CategoryReplicaRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ICategoryReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.CategoryReplicaRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories.CategoryReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.CategoryReplicaRepository",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.DesignTimeDbContextFactory",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfAuditLog",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.AuditEntry"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfAuditLog",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IAuditLog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfAuditLog",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.AuditLogRecord"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfAuditLog",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.OutboxMessage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.OutboxEventRecord"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfOutbox",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EvidenceRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EvidenceRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence.ServiceEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EvidenceRepository",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ExpiredQuoteFinder",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ExpiredQuoteRef"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ExpiredQuoteFinder",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IExpiredQuoteFinder"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ExpiredQuoteFinder",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.QuotesOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ExpiredQuoteFinder",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.LocalityCatalog",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ILocalityCatalog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.LocalityCatalog",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.LocalityCatalog",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.Locality"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.LocalityCatalog",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.LocalityRecord"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.LocalityCatalog",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.PlatformServiceRequestCounter",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IPlatformServiceRequestCounter"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.PlatformServiceRequestCounter",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.TenantStatusCountRow"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.PlatformServiceRequestCounter",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.PlatformOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.PlatformServiceRequestCounter",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ProcessedEventRecord"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.QuoteRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IQuoteRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.QuoteRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.QuoteRepository",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.RatingRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IRatingRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.RatingRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.RatingRepository",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Domain.Categories.CategoryReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Domain.Evidence.ServiceEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Domain.Quotes.Quote"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Domain.Ratings.Rating"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Domain.Tenants.TenantStatusReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.AuditLogRecord"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.LocalityRecord"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.OutboxEventRecord"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ProcessedEventRecord"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IServiceRequestRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ListScope"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.StatusCountRow"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestRepository",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.TenantStatusReplicaRepository",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantStatusReplicaRepository"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.TenantStatusReplicaRepository",
+   "a": "QuickPatch.ServiceRequest.Domain.Tenants.TenantStatusReplica"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.TenantStatusReplicaRepository",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.TenantUnitOfWork",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.TenantUnitOfWork",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Scheduling.InProcessLock",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IDistributedLock"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Scheduling.QuoteExpirer",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IDistributedLock"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Scheduling.QuoteExpirer",
+   "a": "QuickPatch.ServiceRequest.Application.Quotes.ExpireQuotesBatch"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Scheduling.QuoteExpirer",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.QuotesOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Scheduling.RedisDistributedLock",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IDistributedLock"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Storage.GarageEvidenceStorage",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceStorage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Storage.GarageEvidenceStorage",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.StoredEvidence"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Storage.GarageEvidenceStorage",
+   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.EvidenceStorageOptions"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Storage.UnconfiguredEvidenceStorage",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IEvidenceStorage"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Infrastructure.Storage.UnconfiguredEvidenceStorage",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.StoredEvidence"
+  }
+ ],
+ "commit": "ebd07d8"
+}

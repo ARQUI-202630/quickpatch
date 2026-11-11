@@ -1,0 +1,1096 @@
+{
+ "servicio": "Matching",
+ "lenguaje": "java",
+ "resumen": {
+  "tipos": 49,
+  "paquetes": 14,
+  "dependencias_entre_tipos": 123,
+  "dependencias_entre_paquetes": 36,
+  "ciclos_entre_paquetes": 0,
+  "paquetes_en_ciclos": 0,
+  "ciclos_entre_tipos": 0,
+  "mayor_ciclo_de_tipos": 0,
+  "violaciones_de_capas": 0,
+  "tipos_de_mas_de_250_lineas": 0,
+  "fan_out_maximo": 13,
+  "fan_out_promedio": 2.51,
+  "cohesion_relacional_promedio": 0.75
+ },
+ "dependencias_entre_capas": {
+  "Api->Application": 2,
+  "Api->Domain": 4,
+  "Application->Domain": 29,
+  "Infrastructure->Application": 29,
+  "Infrastructure->Domain": 16
+ },
+ "violaciones": [],
+ "ciclos_entre_paquetes": [],
+ "ciclos_entre_tipos": [],
+ "mayor_fan_out": [
+  {
+   "tipo": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 81,
+   "fan_out": 13,
+   "fan_in": 0,
+   "archivo": "src/main/java/co/quickpatch/matching/infrastructure/messaging/KafkaConfig.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 64,
+   "fan_out": 10,
+   "fan_in": 2,
+   "archivo": "src/main/java/co/quickpatch/matching/application/events/TechnicianEventsHandler.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 76,
+   "fan_out": 8,
+   "fan_in": 2,
+   "archivo": "src/main/java/co/quickpatch/matching/application/events/ServiceRequestCancelledHandler.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 58,
+   "fan_out": 8,
+   "fan_in": 2,
+   "archivo": "src/main/java/co/quickpatch/matching/application/events/ServiceRequestCompletedHandler.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.matching.MatchingEngine",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 117,
+   "fan_out": 7,
+   "fan_in": 3,
+   "archivo": "src/main/java/co/quickpatch/matching/application/matching/MatchingEngine.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.matching.OfferService",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 128,
+   "fan_out": 7,
+   "fan_in": 3,
+   "archivo": "src/main/java/co/quickpatch/matching/application/matching/OfferService.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.events.ServiceRequestCreatedHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 37,
+   "fan_out": 5,
+   "fan_in": 2,
+   "archivo": "src/main/java/co/quickpatch/matching/application/events/ServiceRequestCreatedHandler.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.infrastructure.messaging.TechnicianEventsListener",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 70,
+   "fan_out": 5,
+   "fan_in": 0,
+   "archivo": "src/main/java/co/quickpatch/matching/infrastructure/messaging/TechnicianEventsListener.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.api.http.ApiExceptionHandler",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 65,
+   "fan_out": 4,
+   "fan_in": 0,
+   "archivo": "src/main/java/co/quickpatch/matching/api/http/ApiExceptionHandler.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.technicians.TechnicianAvailabilityService",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 104,
+   "fan_out": 4,
+   "fan_in": 2,
+   "archivo": "src/main/java/co/quickpatch/matching/application/technicians/TechnicianAvailabilityService.java"
+  }
+ ],
+ "mayor_fan_in": [
+  {
+   "tipo": "co.quickpatch.matching.domain.events.InvalidEventException",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 7,
+   "fan_out": 0,
+   "fan_in": 11,
+   "archivo": "src/main/java/co/quickpatch/matching/domain/events/InvalidEventException.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.domain.matching.Matching",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 98,
+   "fan_out": 0,
+   "fan_in": 11,
+   "archivo": "src/main/java/co/quickpatch/matching/domain/matching/Matching.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.common.TenantTransaction",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 10,
+   "fan_out": 0,
+   "fan_in": 10,
+   "archivo": "src/main/java/co/quickpatch/matching/application/common/TenantTransaction.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.domain.events.EventEnvelope",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 30,
+   "fan_out": 1,
+   "fan_in": 10,
+   "archivo": "src/main/java/co/quickpatch/matching/domain/events/EventEnvelope.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.matching.MatchingPorts",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 89,
+   "fan_out": 1,
+   "fan_in": 8,
+   "archivo": "src/main/java/co/quickpatch/matching/application/matching/MatchingPorts.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.technicians.TechnicianPorts",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 39,
+   "fan_out": 2,
+   "fan_in": 8,
+   "archivo": "src/main/java/co/quickpatch/matching/application/technicians/TechnicianPorts.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.domain.technicians.Technicians",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 53,
+   "fan_out": 0,
+   "fan_in": 8,
+   "archivo": "src/main/java/co/quickpatch/matching/domain/technicians/Technicians.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.common.ProcessedEventStore",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 7,
+   "fan_out": 0,
+   "fan_in": 6,
+   "archivo": "src/main/java/co/quickpatch/matching/application/common/ProcessedEventStore.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.domain.events.ServiceRequestCreated",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 33,
+   "fan_out": 1,
+   "fan_in": 4,
+   "archivo": "src/main/java/co/quickpatch/matching/domain/events/ServiceRequestCreated.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.matching.MatchingEngine",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 117,
+   "fan_out": 7,
+   "fan_in": 3,
+   "archivo": "src/main/java/co/quickpatch/matching/application/matching/MatchingEngine.java"
+  }
+ ],
+ "mas_grandes": [
+  {
+   "tipo": "co.quickpatch.matching.infrastructure.persistence.JdbcMatchingStores",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 220,
+   "fan_out": 2,
+   "fan_in": 0,
+   "archivo": "src/main/java/co/quickpatch/matching/infrastructure/persistence/JdbcMatchingStores.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.matching.OfferService",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 128,
+   "fan_out": 7,
+   "fan_in": 3,
+   "archivo": "src/main/java/co/quickpatch/matching/application/matching/OfferService.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.matching.MatchingEngine",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 117,
+   "fan_out": 7,
+   "fan_in": 3,
+   "archivo": "src/main/java/co/quickpatch/matching/application/matching/MatchingEngine.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.technicians.TechnicianAvailabilityService",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 104,
+   "fan_out": 4,
+   "fan_in": 2,
+   "archivo": "src/main/java/co/quickpatch/matching/application/technicians/TechnicianAvailabilityService.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.domain.matching.Matching",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 98,
+   "fan_out": 0,
+   "fan_in": 11,
+   "archivo": "src/main/java/co/quickpatch/matching/domain/matching/Matching.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.api.security.SecurityConfig",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 92,
+   "fan_out": 1,
+   "fan_in": 0,
+   "archivo": "src/main/java/co/quickpatch/matching/api/security/SecurityConfig.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.infrastructure.messaging.OutboxPublisher",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 91,
+   "fan_out": 1,
+   "fan_in": 0,
+   "archivo": "src/main/java/co/quickpatch/matching/infrastructure/messaging/OutboxPublisher.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.matching.MatchingPorts",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 89,
+   "fan_out": 1,
+   "fan_in": 8,
+   "archivo": "src/main/java/co/quickpatch/matching/application/matching/MatchingPorts.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 81,
+   "fan_out": 13,
+   "fan_in": 0,
+   "archivo": "src/main/java/co/quickpatch/matching/infrastructure/messaging/KafkaConfig.java"
+  },
+  {
+   "tipo": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 76,
+   "fan_out": 8,
+   "fan_in": 2,
+   "archivo": "src/main/java/co/quickpatch/matching/application/events/ServiceRequestCancelledHandler.java"
+  }
+ ],
+ "paquetes": [
+  {
+   "paquete": "co.quickpatch.matching",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 0,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "co.quickpatch.matching.api.controllers",
+   "tipos": 2,
+   "fan_out": 4,
+   "fan_in": 1,
+   "inestabilidad": 0.8,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "co.quickpatch.matching.api.http",
+   "tipos": 3,
+   "fan_out": 3,
+   "fan_in": 1,
+   "inestabilidad": 0.75,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "co.quickpatch.matching.api.security",
+   "tipos": 1,
+   "fan_out": 1,
+   "fan_in": 0,
+   "inestabilidad": 1.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "co.quickpatch.matching.application.common",
+   "tipos": 2,
+   "fan_out": 0,
+   "fan_in": 6,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "co.quickpatch.matching.application.events",
+   "tipos": 4,
+   "fan_out": 6,
+   "fan_in": 1,
+   "inestabilidad": 0.86,
+   "cohesion_relacional": 0.25
+  },
+  {
+   "paquete": "co.quickpatch.matching.application.matching",
+   "tipos": 4,
+   "fan_out": 5,
+   "fan_in": 5,
+   "inestabilidad": 0.5,
+   "cohesion_relacional": 1.25
+  },
+  {
+   "paquete": "co.quickpatch.matching.application.technicians",
+   "tipos": 4,
+   "fan_out": 3,
+   "fan_in": 5,
+   "inestabilidad": 0.38,
+   "cohesion_relacional": 0.75
+  },
+  {
+   "paquete": "co.quickpatch.matching.domain.events",
+   "tipos": 9,
+   "fan_out": 0,
+   "fan_in": 3,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.11
+  },
+  {
+   "paquete": "co.quickpatch.matching.domain.matching",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 6,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "co.quickpatch.matching.domain.technicians",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 6,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "co.quickpatch.matching.infrastructure.messaging",
+   "tipos": 8,
+   "fan_out": 6,
+   "fan_in": 0,
+   "inestabilidad": 1.0,
+   "cohesion_relacional": 0.12
+  },
+  {
+   "paquete": "co.quickpatch.matching.infrastructure.persistence",
+   "tipos": 6,
+   "fan_out": 5,
+   "fan_in": 2,
+   "inestabilidad": 0.71,
+   "cohesion_relacional": 0.17
+  },
+  {
+   "paquete": "co.quickpatch.matching.infrastructure.scheduling",
+   "tipos": 3,
+   "fan_out": 3,
+   "fan_in": 0,
+   "inestabilidad": 1.0,
+   "cohesion_relacional": 0.33
+  }
+ ],
+ "aristas_paquetes": [
+  {
+   "de": "co.quickpatch.matching.api.controllers",
+   "a": "co.quickpatch.matching.application.matching",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.api.controllers",
+   "a": "co.quickpatch.matching.application.technicians",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.api.controllers",
+   "a": "co.quickpatch.matching.domain.matching",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.api.controllers",
+   "a": "co.quickpatch.matching.domain.technicians",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.api.http",
+   "a": "co.quickpatch.matching.api.controllers",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.api.http",
+   "a": "co.quickpatch.matching.domain.matching",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.api.http",
+   "a": "co.quickpatch.matching.domain.technicians",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.api.security",
+   "a": "co.quickpatch.matching.api.http",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.application.events",
+   "a": "co.quickpatch.matching.application.common",
+   "n": 8
+  },
+  {
+   "de": "co.quickpatch.matching.application.events",
+   "a": "co.quickpatch.matching.application.matching",
+   "n": 3
+  },
+  {
+   "de": "co.quickpatch.matching.application.events",
+   "a": "co.quickpatch.matching.application.technicians",
+   "n": 5
+  },
+  {
+   "de": "co.quickpatch.matching.application.events",
+   "a": "co.quickpatch.matching.domain.events",
+   "n": 10
+  },
+  {
+   "de": "co.quickpatch.matching.application.events",
+   "a": "co.quickpatch.matching.domain.matching",
+   "n": 3
+  },
+  {
+   "de": "co.quickpatch.matching.application.events",
+   "a": "co.quickpatch.matching.domain.technicians",
+   "n": 2
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching",
+   "a": "co.quickpatch.matching.application.common",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching",
+   "a": "co.quickpatch.matching.application.technicians",
+   "n": 2
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching",
+   "a": "co.quickpatch.matching.domain.events",
+   "n": 6
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching",
+   "a": "co.quickpatch.matching.domain.matching",
+   "n": 3
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching",
+   "a": "co.quickpatch.matching.domain.technicians",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.application.technicians",
+   "a": "co.quickpatch.matching.application.common",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.application.technicians",
+   "a": "co.quickpatch.matching.domain.matching",
+   "n": 2
+  },
+  {
+   "de": "co.quickpatch.matching.application.technicians",
+   "a": "co.quickpatch.matching.domain.technicians",
+   "n": 2
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging",
+   "a": "co.quickpatch.matching.application.common",
+   "n": 2
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging",
+   "a": "co.quickpatch.matching.application.events",
+   "n": 8
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging",
+   "a": "co.quickpatch.matching.application.matching",
+   "n": 6
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging",
+   "a": "co.quickpatch.matching.application.technicians",
+   "n": 3
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging",
+   "a": "co.quickpatch.matching.domain.events",
+   "n": 14
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging",
+   "a": "co.quickpatch.matching.infrastructure.persistence",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence",
+   "a": "co.quickpatch.matching.application.common",
+   "n": 2
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence",
+   "a": "co.quickpatch.matching.application.matching",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence",
+   "a": "co.quickpatch.matching.application.technicians",
+   "n": 3
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence",
+   "a": "co.quickpatch.matching.domain.matching",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence",
+   "a": "co.quickpatch.matching.domain.technicians",
+   "n": 1
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.scheduling",
+   "a": "co.quickpatch.matching.application.common",
+   "n": 2
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.scheduling",
+   "a": "co.quickpatch.matching.application.matching",
+   "n": 2
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.scheduling",
+   "a": "co.quickpatch.matching.infrastructure.persistence",
+   "n": 2
+  }
+ ],
+ "aristas_tipos": [
+  {
+   "de": "co.quickpatch.matching.api.controllers.OffersController",
+   "a": "co.quickpatch.matching.api.controllers.TechniciansController"
+  },
+  {
+   "de": "co.quickpatch.matching.api.controllers.OffersController",
+   "a": "co.quickpatch.matching.application.matching.OfferService"
+  },
+  {
+   "de": "co.quickpatch.matching.api.controllers.OffersController",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.api.controllers.TechniciansController",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianAvailabilityService"
+  },
+  {
+   "de": "co.quickpatch.matching.api.controllers.TechniciansController",
+   "a": "co.quickpatch.matching.domain.technicians.Technicians"
+  },
+  {
+   "de": "co.quickpatch.matching.api.http.ApiExceptionHandler",
+   "a": "co.quickpatch.matching.api.controllers.TechniciansController"
+  },
+  {
+   "de": "co.quickpatch.matching.api.http.ApiExceptionHandler",
+   "a": "co.quickpatch.matching.api.http.Problems"
+  },
+  {
+   "de": "co.quickpatch.matching.api.http.ApiExceptionHandler",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.api.http.ApiExceptionHandler",
+   "a": "co.quickpatch.matching.domain.technicians.Technicians"
+  },
+  {
+   "de": "co.quickpatch.matching.api.http.Problems",
+   "a": "co.quickpatch.matching.api.http.CorrelationIdFilter"
+  },
+  {
+   "de": "co.quickpatch.matching.api.security.SecurityConfig",
+   "a": "co.quickpatch.matching.api.http.Problems"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler",
+   "a": "co.quickpatch.matching.application.common.ProcessedEventStore"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler",
+   "a": "co.quickpatch.matching.application.common.TenantTransaction"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler",
+   "a": "co.quickpatch.matching.application.matching.MatchingPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler",
+   "a": "co.quickpatch.matching.domain.events.EventEnvelope"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler",
+   "a": "co.quickpatch.matching.domain.events.ServiceRequestCancelled"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler",
+   "a": "co.quickpatch.matching.domain.technicians.Technicians"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler",
+   "a": "co.quickpatch.matching.application.common.ProcessedEventStore"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler",
+   "a": "co.quickpatch.matching.application.common.TenantTransaction"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler",
+   "a": "co.quickpatch.matching.application.matching.MatchingPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler",
+   "a": "co.quickpatch.matching.domain.events.EventEnvelope"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler",
+   "a": "co.quickpatch.matching.domain.events.ServiceRequestCompleted"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler",
+   "a": "co.quickpatch.matching.domain.technicians.Technicians"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCreatedHandler",
+   "a": "co.quickpatch.matching.application.common.ProcessedEventStore"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCreatedHandler",
+   "a": "co.quickpatch.matching.application.common.TenantTransaction"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCreatedHandler",
+   "a": "co.quickpatch.matching.application.matching.MatchingStarter"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCreatedHandler",
+   "a": "co.quickpatch.matching.domain.events.EventEnvelope"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.ServiceRequestCreatedHandler",
+   "a": "co.quickpatch.matching.domain.events.ServiceRequestCreated"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "a": "co.quickpatch.matching.application.common.ProcessedEventStore"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "a": "co.quickpatch.matching.application.common.TenantTransaction"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianProjection"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianSnapshot"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "a": "co.quickpatch.matching.domain.events.EventEnvelope"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "a": "co.quickpatch.matching.domain.events.TechnicianRegistered"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "a": "co.quickpatch.matching.domain.events.TechnicianVerificationChanged"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "a": "co.quickpatch.matching.domain.events.VerificationStatus"
+  },
+  {
+   "de": "co.quickpatch.matching.application.events.TechnicianEventsHandler",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.MatchingEngine",
+   "a": "co.quickpatch.matching.application.matching.MatchingPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.MatchingEngine",
+   "a": "co.quickpatch.matching.application.matching.MatchingStarter"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.MatchingEngine",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.MatchingEngine",
+   "a": "co.quickpatch.matching.domain.events.EventEnvelope"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.MatchingEngine",
+   "a": "co.quickpatch.matching.domain.events.MatchingEvents"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.MatchingEngine",
+   "a": "co.quickpatch.matching.domain.events.ServiceRequestCreated"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.MatchingEngine",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.MatchingPorts",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.MatchingStarter",
+   "a": "co.quickpatch.matching.domain.events.EventEnvelope"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.MatchingStarter",
+   "a": "co.quickpatch.matching.domain.events.ServiceRequestCreated"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.OfferService",
+   "a": "co.quickpatch.matching.application.common.TenantTransaction"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.OfferService",
+   "a": "co.quickpatch.matching.application.matching.MatchingEngine"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.OfferService",
+   "a": "co.quickpatch.matching.application.matching.MatchingPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.OfferService",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.OfferService",
+   "a": "co.quickpatch.matching.domain.events.MatchingEvents"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.OfferService",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.application.matching.OfferService",
+   "a": "co.quickpatch.matching.domain.technicians.Technicians"
+  },
+  {
+   "de": "co.quickpatch.matching.application.technicians.TechnicianAvailabilityService",
+   "a": "co.quickpatch.matching.application.common.TenantTransaction"
+  },
+  {
+   "de": "co.quickpatch.matching.application.technicians.TechnicianAvailabilityService",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.application.technicians.TechnicianAvailabilityService",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.application.technicians.TechnicianAvailabilityService",
+   "a": "co.quickpatch.matching.domain.technicians.Technicians"
+  },
+  {
+   "de": "co.quickpatch.matching.application.technicians.TechnicianPorts",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.application.technicians.TechnicianPorts",
+   "a": "co.quickpatch.matching.domain.technicians.Technicians"
+  },
+  {
+   "de": "co.quickpatch.matching.application.technicians.TechnicianProjection",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianSnapshot"
+  },
+  {
+   "de": "co.quickpatch.matching.domain.events.EventEnvelope",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.domain.events.ServiceRequestCancelled",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.domain.events.ServiceRequestCompleted",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.domain.events.ServiceRequestCreated",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.domain.events.TechnicianRegistered",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.domain.events.TechnicianRegistered",
+   "a": "co.quickpatch.matching.domain.events.VerificationStatus"
+  },
+  {
+   "de": "co.quickpatch.matching.domain.events.TechnicianVerificationChanged",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.domain.events.TechnicianVerificationChanged",
+   "a": "co.quickpatch.matching.domain.events.VerificationStatus"
+  },
+  {
+   "de": "co.quickpatch.matching.domain.events.VerificationStatus",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.JdbcOutbox",
+   "a": "co.quickpatch.matching.application.matching.MatchingPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.JdbcOutbox",
+   "a": "co.quickpatch.matching.domain.events.MatchingEvents"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.common.ProcessedEventStore"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.common.TenantTransaction"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.events.ServiceRequestCreatedHandler"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.events.TechnicianEventsHandler"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.matching.MatchingEngine"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.matching.MatchingPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.matching.MatchingStarter"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.matching.OfferService"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianAvailabilityService"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.KafkaConfig",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianProjection"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.MdcCorrelationContext",
+   "a": "co.quickpatch.matching.application.matching.MatchingPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.OutboxPublisher",
+   "a": "co.quickpatch.matching.infrastructure.persistence.DatabaseRoles"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCancelledListener",
+   "a": "co.quickpatch.matching.application.events.ServiceRequestCancelledHandler"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCancelledListener",
+   "a": "co.quickpatch.matching.domain.events.EventEnvelope"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCancelledListener",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCancelledListener",
+   "a": "co.quickpatch.matching.domain.events.ServiceRequestCancelled"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCompletedListener",
+   "a": "co.quickpatch.matching.application.events.ServiceRequestCompletedHandler"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCompletedListener",
+   "a": "co.quickpatch.matching.domain.events.EventEnvelope"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCompletedListener",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCompletedListener",
+   "a": "co.quickpatch.matching.domain.events.ServiceRequestCompleted"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCreatedListener",
+   "a": "co.quickpatch.matching.application.events.ServiceRequestCreatedHandler"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCreatedListener",
+   "a": "co.quickpatch.matching.domain.events.EventEnvelope"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCreatedListener",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.ServiceRequestCreatedListener",
+   "a": "co.quickpatch.matching.domain.events.ServiceRequestCreated"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.TechnicianEventsListener",
+   "a": "co.quickpatch.matching.application.events.TechnicianEventsHandler"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.TechnicianEventsListener",
+   "a": "co.quickpatch.matching.domain.events.EventEnvelope"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.TechnicianEventsListener",
+   "a": "co.quickpatch.matching.domain.events.InvalidEventException"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.TechnicianEventsListener",
+   "a": "co.quickpatch.matching.domain.events.TechnicianRegistered"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.messaging.TechnicianEventsListener",
+   "a": "co.quickpatch.matching.domain.events.TechnicianVerificationChanged"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence.JdbcMatchingStores",
+   "a": "co.quickpatch.matching.application.matching.MatchingPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence.JdbcMatchingStores",
+   "a": "co.quickpatch.matching.domain.matching.Matching"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence.JdbcProcessedEventStore",
+   "a": "co.quickpatch.matching.application.common.ProcessedEventStore"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence.JdbcTechnicianProjection",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianProjection"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence.JdbcTechnicianProjection",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianSnapshot"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence.JdbcTechnicianStores",
+   "a": "co.quickpatch.matching.application.technicians.TechnicianPorts"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence.JdbcTechnicianStores",
+   "a": "co.quickpatch.matching.domain.technicians.Technicians"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.persistence.JdbcTenantTransaction",
+   "a": "co.quickpatch.matching.application.common.TenantTransaction"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.scheduling.OfferExpirer",
+   "a": "co.quickpatch.matching.application.common.TenantTransaction"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.scheduling.OfferExpirer",
+   "a": "co.quickpatch.matching.application.matching.OfferService"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.scheduling.OfferExpirer",
+   "a": "co.quickpatch.matching.infrastructure.persistence.DatabaseRoles"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.scheduling.WaitingRequestsSweeper",
+   "a": "co.quickpatch.matching.application.common.TenantTransaction"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.scheduling.WaitingRequestsSweeper",
+   "a": "co.quickpatch.matching.application.matching.MatchingEngine"
+  },
+  {
+   "de": "co.quickpatch.matching.infrastructure.scheduling.WaitingRequestsSweeper",
+   "a": "co.quickpatch.matching.infrastructure.persistence.DatabaseRoles"
+  }
+ ],
+ "commit": "8e6450c"
+}

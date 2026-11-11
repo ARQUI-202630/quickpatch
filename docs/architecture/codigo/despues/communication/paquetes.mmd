@@ -1,0 +1,70 @@
+flowchart LR
+  subgraph Api
+    _global_["(global) (1)"]
+    QuickPatch_Communication_Api_Endpoints["Api.Endpoints (7)"]
+    QuickPatch_Communication_Api_Http["Api.Http (2)"]
+    QuickPatch_Communication_Api_Realtime["Api.Realtime (9)"]
+  end
+  subgraph Application
+    QuickPatch_Communication_Application["Application (1)"]
+    QuickPatch_Communication_Application_Abstractions["Application.Abstractions (5)"]
+    QuickPatch_Communication_Application_Chat["Application.Chat (6)"]
+    QuickPatch_Communication_Application_Events["Application.Events (5)"]
+    QuickPatch_Communication_Application_Inbox["Application.Inbox (10)"]
+    QuickPatch_Communication_Application_Realtime["Application.Realtime (4)"]
+  end
+  subgraph Domain
+    QuickPatch_Communication_Domain["Domain (1)"]
+    QuickPatch_Communication_Domain_Chat["Domain.Chat (3)"]
+    QuickPatch_Communication_Domain_Inbox["Domain.Inbox (2)"]
+    QuickPatch_Communication_Domain_Realtime["Domain.Realtime (11)"]
+  end
+  subgraph Infrastructure
+    QuickPatch_Communication_Infrastructure["Infrastructure (1)"]
+    QuickPatch_Communication_Infrastructure_Messaging["Infrastructure.Messaging (3)"]
+    QuickPatch_Communication_Infrastructure_Persistence["Infrastructure.Persistence (6)"]
+  end
+  _global_ -->|3| QuickPatch_Communication_Api_Endpoints
+  _global_ -->|2| QuickPatch_Communication_Api_Http
+  _global_ -->|1| QuickPatch_Communication_Application
+  _global_ -->|1| QuickPatch_Communication_Infrastructure
+  QuickPatch_Communication_Api_Endpoints -->|6| QuickPatch_Communication_Api_Realtime
+  QuickPatch_Communication_Api_Endpoints -->|1| QuickPatch_Communication_Application_Abstractions
+  QuickPatch_Communication_Api_Endpoints -->|4| QuickPatch_Communication_Application_Chat
+  QuickPatch_Communication_Api_Endpoints -->|5| QuickPatch_Communication_Application_Inbox
+  QuickPatch_Communication_Api_Endpoints -->|2| QuickPatch_Communication_Domain_Chat
+  QuickPatch_Communication_Api_Endpoints -->|2| QuickPatch_Communication_Domain_Inbox
+  QuickPatch_Communication_Api_Realtime -->|1| QuickPatch_Communication_Application_Abstractions
+  QuickPatch_Communication_Api_Realtime -->|2| QuickPatch_Communication_Application_Events
+  QuickPatch_Communication_Api_Realtime -->|5| QuickPatch_Communication_Domain_Realtime
+  QuickPatch_Communication_Application -->|3| QuickPatch_Communication_Application_Chat
+  QuickPatch_Communication_Application -->|3| QuickPatch_Communication_Application_Inbox
+  QuickPatch_Communication_Application -->|2| QuickPatch_Communication_Application_Realtime
+  QuickPatch_Communication_Application_Abstractions -->|3| QuickPatch_Communication_Domain_Chat
+  QuickPatch_Communication_Application_Abstractions -->|2| QuickPatch_Communication_Domain_Inbox
+  QuickPatch_Communication_Application_Abstractions -->|1| QuickPatch_Communication_Domain_Realtime
+  QuickPatch_Communication_Application_Chat -->|5| QuickPatch_Communication_Application_Abstractions
+  QuickPatch_Communication_Application_Chat -->|4| QuickPatch_Communication_Application_Events
+  QuickPatch_Communication_Application_Chat -->|1| QuickPatch_Communication_Application_Inbox
+  QuickPatch_Communication_Application_Chat -->|5| QuickPatch_Communication_Domain_Chat
+  QuickPatch_Communication_Application_Chat -->|4| QuickPatch_Communication_Domain_Realtime
+  QuickPatch_Communication_Application_Inbox -->|4| QuickPatch_Communication_Application_Abstractions
+  QuickPatch_Communication_Application_Inbox -->|6| QuickPatch_Communication_Application_Events
+  QuickPatch_Communication_Application_Inbox -->|1| QuickPatch_Communication_Application_Realtime
+  QuickPatch_Communication_Application_Inbox -->|3| QuickPatch_Communication_Domain_Inbox
+  QuickPatch_Communication_Application_Realtime -->|1| QuickPatch_Communication_Application_Abstractions
+  QuickPatch_Communication_Application_Realtime -->|5| QuickPatch_Communication_Application_Events
+  QuickPatch_Communication_Application_Realtime -->|7| QuickPatch_Communication_Domain_Realtime
+  QuickPatch_Communication_Infrastructure -->|2| QuickPatch_Communication_Application_Abstractions
+  QuickPatch_Communication_Infrastructure -->|1| QuickPatch_Communication_Application_Chat
+  QuickPatch_Communication_Infrastructure -->|1| QuickPatch_Communication_Application_Events
+  QuickPatch_Communication_Infrastructure -->|1| QuickPatch_Communication_Application_Inbox
+  QuickPatch_Communication_Infrastructure -->|3| QuickPatch_Communication_Infrastructure_Messaging
+  QuickPatch_Communication_Infrastructure -->|5| QuickPatch_Communication_Infrastructure_Persistence
+  QuickPatch_Communication_Infrastructure_Messaging -->|1| QuickPatch_Communication_Application_Events
+  QuickPatch_Communication_Infrastructure_Messaging -->|2| QuickPatch_Communication_Application_Realtime
+  QuickPatch_Communication_Infrastructure_Persistence -->|8| QuickPatch_Communication_Application_Abstractions
+  QuickPatch_Communication_Infrastructure_Persistence -->|1| QuickPatch_Communication_Application_Chat
+  QuickPatch_Communication_Infrastructure_Persistence -->|1| QuickPatch_Communication_Application_Inbox
+  QuickPatch_Communication_Infrastructure_Persistence -->|6| QuickPatch_Communication_Domain_Chat
+  QuickPatch_Communication_Infrastructure_Persistence -->|4| QuickPatch_Communication_Domain_Inbox
