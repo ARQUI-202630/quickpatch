@@ -41,7 +41,7 @@ docker run --rm -i plantuml/plantuml -tpng -pipe < C4-07-Codigo-AislamientoTenan
 
 También se pueden pegar en https://www.plantuml.com/plantuml.
 
-## Imágenes (27)
+## Imágenes (28)
 
 En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el prefijo `structurizr-` que pone Structurizr al exportar. Se exportan con metadatos y sin recortar (opciones por defecto del botón de exportar).
 
@@ -49,7 +49,8 @@ En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el 
 |---|---|---|
 | `C4-01-Landscape` | System Landscape | 3 |
 | `C4-02-Contexto` | System Context | 4 |
-| `C4-03-Contenedores` | Container | 5.1 |
+| `C4-03a-Contenedores-Sincrono` | Container (REST y datos) | 5.1 |
+| `C4-03b-Contenedores-Eventos` | Container (eventos en Kafka) | 5.1 |
 | `C4-04-Componentes-Web` | Component | 6.2 |
 | `C4-04-Componentes-Mobile` | Component | 6.2 |
 | `C4-04-Componentes-Identity` | Component | 6.4 |
@@ -79,7 +80,8 @@ En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el 
 
 - Cada vista fija su `autoLayout` (dirección y separación) para que el PNG quede apaisado y sin solapamientos; si un cambio del modelo desordena una vista, se ajusta ahí y no en la imagen.
 - Las vistas donde los grupos estorban la distribución los ocultan con la propiedad `structurizr.groups false`.
-- `C4-02-Contexto` y `C4-03-Contenedores` llevan `title` en el DSL y se exportan con la leyenda (key) pegada a la imagen: a la derecha si la vista es apaisada y debajo si es vertical (SCRUM-578). El botón de exportar de Structurizr guarda el diagrama y la leyenda por separado; hay que unirlos en una sola imagen.
+- Desde SCRUM-676 (11 de noviembre de 2026) la vista de contenedores está partida en dos: `C4-03a` con la comunicación síncrona y los datos, y `C4-03b` con lo que cada servicio publica y consume en Kafka. Con todo en una imagen, las líneas hacia Kafka y las bases cruzaban el diagrama. Las relaciones resumen servicio → Kafka están declaradas antes de las de componentes para que su etiqueta no sea la primera relación implícita.
+- `C4-02-Contexto` y las dos vistas `C4-03` llevan `title` en el DSL y se exportan con la leyenda (key) pegada a la imagen: a la derecha si la vista es apaisada y debajo si es vertical (SCRUM-578). El botón de exportar de Structurizr guarda el diagrama y la leyenda por separado; hay que unirlos en una sola imagen.
 
 - Los elementos y relaciones con la etiqueta `Planeado` están diseñados pero no existen en `develop`; se dibujan punteados.
 - Un cambio de arquitectura se hace en el DSL o en el `.puml` y se vuelve a exportar; las imágenes no se editan a mano.

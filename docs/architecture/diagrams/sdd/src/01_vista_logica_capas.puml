@@ -1,6 +1,6 @@
 @startuml 01_vista_logica_capas
 ' Figura 4 del SDD (sección 5.2): vista lógica por capas. Usa los mismos contenedores y relaciones
-' que el diagrama de contenedores C4 (Figura 3, C4-03-Contenedores), sin nombrar el framework de los clientes.
+' que el diagrama de contenedores C4 (Figuras 3a y 3b, C4-03a y C4-03b), sin nombrar el framework de los clientes.
 ' Generar: docker run --rm -v "$PWD:/data" plantuml/plantuml:1.2026.8 -tsvg -charset UTF-8 -o .. /data/01_vista_logica_capas.puml
 skinparam defaultFontName Arial
 skinparam shadowing false

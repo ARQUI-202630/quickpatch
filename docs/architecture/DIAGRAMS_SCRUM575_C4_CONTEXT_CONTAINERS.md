@@ -104,7 +104,7 @@ Notas:
 - **El buzón no es un servicio aparte:** vive dentro de Communication, junto con el canal en tiempo real y el chat (ADR-023, ADR-024, ADR-026).
 - **El outbox es la tabla `outbox_events` de la base de cada servicio**, escrita en la misma transacción que el cambio (ADR-007). Redis no guarda outbox ni sesiones: hoy solo lo usa ServiceRequest como candado de sus tareas programadas.
 
-Imagen formal: `docs/architecture/diagrams/c4/C4-03-Contenedores.png`.
+Imagen formal: desde SCRUM-676 la vista está partida en `docs/architecture/diagrams/c4/C4-03a-Contenedores-Sincrono.png` (REST y datos) y `C4-03b-Contenedores-Eventos.png` (eventos).
 
 ---
 
