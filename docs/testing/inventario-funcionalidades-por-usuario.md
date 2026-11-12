@@ -4,6 +4,8 @@
 **Fecha de corte del inventario:** 27 de octubre de 2026, sobre `develop` de `quickpatch-mobile`, `quickpatch-web` y el SRS V5.6.
 **Siguientes pasos:** SCRUM-561 (Katherine) llena las columnas de estado con su evidencia, y SCRUM-562 calcula el avance.
 
+> **Nota del 12 de noviembre de 2026 (SCRUM-700):** este documento es un corte histórico del 27 de octubre. La unidad de avance vigente es el requisito funcional del SRS (33 RF), con los cuatro indicadores de [`indicadores-funcionales.md`](indicadores-funcionales.md). Las 78 funcionalidades se quedan como desglose por tipo de usuario y no se recalcularon.
+
 ## Cómo se armó
 
 - **Del SRS:** cada RF (RF-01 a RF-29 y RF-34 a RF-37, 33 en total) queda en al menos una fila, con la HU que el SRS le asigna (sección 3, columna HU). Los RF que no son de un usuario sino del sistema van en "Transversal".

@@ -1,11 +1,11 @@
 # Informe Consolidado de Pruebas — Sprint 5 (SCRUM-524 / SCRUM-528)
 
 **Código del Documento:** `INF-QA-SP5-2026-11-04`  
-**Versión:** `1.2 (cifras oficiales del Informe UAT de la Product Owner)`  
-**Fecha de Emisión:** 4 de noviembre de 2026 (versiones 1.1 y 1.2: 5 de noviembre de 2026)  
+**Versión:** `1.3 (cifras conciliadas con las fuentes únicas, SCRUM-701)`  
+**Fecha de Emisión:** 4 de noviembre de 2026 (versiones 1.1 y 1.2: 5 de noviembre de 2026; versión 1.3: 12 de noviembre de 2026)  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
 **Trazabilidad Jira:** Historia Padre `SCRUM-524` | Subtareas `SCRUM-525`, `SCRUM-526`, `SCRUM-527`, `SCRUM-528`  
-**Referencias:** SRS V5.11 / SAD V4 / DD V5.19 / TD V3.2 / ADR-015 / ADR-022 / ADR-023 / RNF-08  
+**Referencias:** SRS V5.11 / SAD V4 / DD V5.19 / TD V3.3 / ADR-015 / ADR-022 / ADR-023 / RNF-08  
 **Clasificación:** Quality Gate 3 (Aseguramiento de Calidad del Sprint 5)
 
 ---
@@ -24,10 +24,9 @@
 >
 > El recorrido de pantallas de la app (SCRUM-618) ya se hizo en QA con el APK `v0.5.5-qa` (PR #267, 23 capturas).
 >
-> La Product Owner aceptó las 37 funcionalidades en el Informe UAT oficial del 5 de noviembre, con observaciones en RF-10. Decidió con las evidencias de QA, sin la sesión de los 8 casos.
+> La Product Owner aceptó en el Informe UAT oficial del 5 de noviembre los 33 requisitos funcionales del SRS y las 4 extensiones (EXT-01 a EXT-04), con observaciones en RF-10. Decidió con las evidencias de QA, sin la sesión de los 8 casos.
 >
-> El GO queda condicionado solo a una verificación final, que no es un defecto bloqueante:
-> 1. La firma del acta de UAT (SCRUM-608).
+> El GO quedaba condicionado solo a la firma del acta de UAT (SCRUM-608). El acta quedó registrada en `develop` el 11 de noviembre (PR #272), así que la condición está cumplida.
 
 **Cifras clave (todas con evidencia en el repositorio o en GitHub Actions):**
 - **QA, 4 de noviembre:** las 27 colecciones Newman vigentes tienen corrida sin fallos ([`tests/e2e/evidencias/regresion-sprint5-qa-2026-11-04.md`](../../tests/e2e/evidencias/regresion-sprint5-qa-2026-11-04.md)).
@@ -55,20 +54,22 @@
 
 ### 1.3 Cuadro de Mando de Avance del Producto
 
-Corte del 5 de noviembre de 2026. Las cifras de avance salen del Informe UAT oficial que entregó la Product Owner ([`informe-uat-oficial-po-2026-11-05.xlsx`](informe-uat-oficial-po-2026-11-05.xlsx)). Las cifras de pruebas salen de `scripts/generar_estadisticas_qa.py` y de [`estadisticas-pruebas-sprint5.md`](estadisticas-pruebas-sprint5.md).
+Corte del 12 de noviembre de 2026. Los indicadores funcionales salen de [`indicadores-funcionales.md`](indicadores-funcionales.md) (SCRUM-700), y los escenarios de la [matriz de 52 escenarios](matriz-escenarios-calidad-52.md) (SCRUM-664). Las dos fuentes se recalculan con `python scripts/calcular_indicadores_qa.py`. Las cifras de pruebas salen de `scripts/generar_estadisticas_qa.py` y de [`estadisticas-pruebas-sprint5.md`](estadisticas-pruebas-sprint5.md).
 
 | Indicador | Valor | Detalle |
 |---|---|---|
-| Avance oficial del producto (Informe UAT de la PO) | **91.92%** | Meta del Sprint 5: mínimo 90%; se supera por 1.92 puntos. Fórmula: 0.7 × 100% (aceptado en UAT) + 0.3 × 73.08% (escenarios de calidad) |
-| Funcionalidades implementadas en develop | **100%** | 37 de 37 |
-| Funcionalidades probadas por QA con evidencia | **100%** | 37 de 37 |
-| Funcionalidades aceptadas por la PO en UAT | **100%** | 37 de 37; RF-10 con observaciones |
-| Cumplimiento de escenarios de calidad (SAD §3) | **73.08%** | 52 escenarios: 34 Cumple, 8 Parcial, 4 No cumple y 6 No medido. AC4-E2 y AC9-E2 cuentan como Cumple por decisión de la PO, todavía sin evidencia |
+| Avance del producto | **92.50%** | Meta del Sprint 5: mínimo 90%. Fórmula: 0.7 × 100% (RF aceptados) + 0.3 × 75.00% (escenarios de calidad) |
+| Requisitos funcionales definidos (SRS v5.6) | **33** | RF-01 a RF-29 y RF-34 a RF-37 |
+| RF implementados en develop y desplegados en QA | **100%** | 33 de 33. RF-22 y RF-23 usan la pasarela simulada (ADR-009) |
+| RF verificados en QA con evidencia | **100%** | 33 de 33 |
+| RF aceptados por la PO en UAT | **100%** | 33 de 33; RF-10 con observaciones. Los 24 RF de prioridad Alta están aceptados |
+| Extensiones fuera del SRS | **4 de 4** | EXT-01 a EXT-04, implementadas, verificadas y aceptadas. Se reportan aparte y no entran al denominador |
+| Cumplimiento de escenarios de calidad (SAD §3) | **75.00%** | 52 escenarios: 35 Cumple, 8 Parcial, 3 No cumple y 6 No medido |
 | Cobertura de código en CI (SCRUM-602) | **91.7% a 100.0%** | 10 repositorios, todos sobre el umbral de 80% |
 | Tasa de aprobación global | **100.0% PASS** | 2,469 pruebas y aserciones: 1,368 unitarias, 157 de integración, 931 E2E y 13 de seguridad, con 0 fallos en las corridas oficiales |
 | Rendimiento k6 (run 41940280403) | **Cumple** | 50 VU: p95 de 88 ms (crear solicitud) y 32 ms (catálogo). 150 VU: p95 de 1,183 ms, 0 errores 5xx y 0 pods caídos |
 
-> La [matriz de 52 escenarios](matriz-escenarios-calidad-52.md) quedó igual al Informe UAT oficial (versión 3.2, 73.08%), con las mediciones del 5 de noviembre validadas por QA.
+> **Conciliación del 12 de noviembre (SCRUM-701).** La versión 1.2 de este informe contaba «37 funcionalidades», que eran los 33 RF más las 4 extensiones, y daba 73.08% de escenarios y 91.92% de avance. Eso era el corte del 5 de noviembre, que el acta firmada conserva como registro histórico. Desde el 11 de noviembre, AC7-E5 cumple (SCRUM-657), así que la matriz queda en 75.00% y el avance en 92.50%. La segunda versión del Excel de la PO, que daba 94.52%, está retirada: contaba como Cumple 5 escenarios AC4 sin medición. El detalle está en [`conciliacion-cifras-qa-2026-11-12.md`](conciliacion-cifras-qa-2026-11-12.md).
 
 #### Gráfica 1: Distribución de pruebas por tipo
 ![Gráfica 1: Distribución de pruebas por tipo](img/grafica-1-pruebas-por-tipo.png)
@@ -295,9 +296,9 @@ Estos hallazgos se suman al registro de defectos cuando se fusione el PR #254.
 
 1. **SCRUM-526:** hecho. La carga k6 pasó en el run 41940280403, la limpieza quedó registrada y la compuerta 3.5 está aprobada.
 2. **SCRUM-618:** hecho en QA con el APK `v0.5.5-qa` (PR #267). Falta probar el enlace de invitación. Mientras no existan las pruebas de Playwright, ese recorrido es la evidencia de las pantallas.
-3. **SCRUM-608:** la Product Owner aceptó el incremento en el Informe UAT oficial del 5 de noviembre. Falta firmar el acta. AC4-E3, AC4-E4 y AC4-E9 siguen sin medir con personas.
+3. **SCRUM-608:** hecho. La Product Owner aceptó el incremento en el Informe UAT oficial del 5 de noviembre, y el acta quedó en `develop` con el PR #272. AC4-E3, AC4-E4 y AC4-E9 siguen sin medir con personas; se miden en la UAT de cierre (SCRUM-658).
 4. **SCRUM-569:** con el PR #254, la matriz de 52 escenarios queda alineada con esta evaluación (AC4-E2, AC4-E5, AC4-E6 y AC4-E9), y el porcentaje de escenarios pasa de 49.04% a 51.92%.
-5. **SCRUM-566:** cuando se cierren la 563 y la 569, Juan Diego calcula el porcentaje final de la matriz.
+5. **SCRUM-566 y SCRUM-664:** la matriz de 52 escenarios es la fuente única de los escenarios. Al 12 de noviembre da 75.00% (35 Cumple, 8 Parcial, 3 No cumple y 6 No medido), y `scripts/calcular_indicadores_qa.py` la recalcula.
 6. **Registro de defectos:** sumar al registro y a la hoja `Defectos` el hallazgo del puntaje como texto (quickpatch-service-request#39), el apagado de QuoteExpirer y los DEF-INT del PR #254.
 
 ---
