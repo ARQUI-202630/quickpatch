@@ -66,7 +66,7 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 | **AC7-E2** | Maintainability | Acoplamiento entre módulos | $\ge 80\%$ de los cambios afectan un solo servicio | 64,7 % de los cambios toca un solo servicio; 78,6 % solo con funcionalidades y correcciones (meta: ≥ 80 %) | `tests/e2e/evidencias/ac7-mantenibilidad-e2-e3-e5-medicion-2026-11-05.md` | **No cumple** | No llega con ninguna definición. Muestra de 17 cambios. Juan Diego fija qué cuenta como cambio. |
 | **AC7-E3** | Maintainability | Incorporación de un nuevo microservicio | 0 cambios de código en servicios existentes | Ranking tocó 2 servicios existentes (identity y service-request); meta literal: 0 | `tests/e2e/evidencias/ac7-mantenibilidad-e2-e3-e5-medicion-2026-11-05.md` | **No cumple** | Ningún servicio tuvo que cambiar para que Ranking arrancara. Juan Diego decide si esos cambios cuentan. |
 | **AC7-E4** | Maintainability | Diagnóstico de un fallo en producción | Causa identificada en $\le 1\text{ h}$ con Grafana/Loki | Diagnóstico verificado en QA con correlationId | `tests/e2e/evidencias/scrum-325-diagnostico-error-qa-2026-10-07.txt` | **Parcial** | Verificado en QA, pendiente en producción. |
-| **AC7-E5** | Maintainability | Reutilización de la lógica transversal | 0 copias de la lógica transversal entre servicios | 11-nov, tras ADR-020 v0.1.0: Outbox 4 → 0 y correlación 5 → 0 (código en `quickpatch-shared-dotnet`); siguen tenant en 6, idempotencia en 4 y el publicador propio de identity | `tests/e2e/evidencias/ac7-e5-remedicion-2026-11-11.md` (antes: `ac7-mantenibilidad-e2-e3-e5-medicion-2026-11-05.md`) | **No cumple** (avance parcial) | Tenant e idempotencia están mezclados con reglas de cada servicio (ADR-020). |
+| **AC7-E5** | Maintainability | Reutilización de la lógica transversal | 0 copias de la lógica transversal entre servicios | 0 copias en .NET el 11-nov con ADR-020 (`quickpatch-shared-dotnet` v0.2.1): tenant, idempotencia, Outbox, consumo de Kafka, correlación, registro y JWT tienen una sola implementación. Matching (Java) es la única de su stack | `tests/e2e/evidencias/ac7-e5-remedicion-2026-11-11.md` (antes: `ac7-mantenibilidad-e2-e3-e5-medicion-2026-11-05.md`) | **Cumple** | Desplegado en QA el 11-nov; los servicios usan el código compartido solo desde Infrastructure y Api. |
 | **AC7-E6** | Maintainability | Validación del incremento en QA antes de producción | 100% de despliegues pasan por QA; 0 pruebas carga en prod | Compuertas 2.1 a 2.6 aprobadas; k6 y ZAP ejecutados contra `qa.quickpatch.internal` (ADR-015) | `docs/testing/informe-pruebas-sprint4.md` §5; `tests/performance/evidencias/k6-stress-150vu-qa-2026-10-18.txt`; `tests/security/evidencias/zap-dast-baseline-qa-2026-10-18.txt` | **Cumple** | Aislamiento total de producción. |
 | **AC8-E1** | Flexibility | Alta de nuevo tenant | Tenant funcional en $< 1\text{ h}$, sin downtime | Aprovisionamiento verificado en QA | `tests/e2e/evidencias/tenant-beta-qa-2026-10-15.txt` | **Parcial** | Falta medición formal de tiempo $< 1\text{ h}$. |
 | **AC8-E2** | Flexibility | Escalado independiente de un servicio | Escalar sin cambios de código ni downtime | Sin prueba de escalado en caliente | *(Sin archivo de evidencia)* | **No medido** | Soportado por k3s / HPA. |
@@ -87,12 +87,12 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 ## 3. Balance Cuantitativo de los Escenarios de Calidad
 
 * **Total de Escenarios Evaluados:** **52 Escenarios de Arquitectura (SAD §3)**.
-* **Escenarios en Estado CUMPLE:** **34 escenarios (65.4%)**. Cinco de ellos cuentan por decisión de la Product Owner: AC1-E2, AC2-E5, AC3-E1, AC4-E2 y AC9-E2. AC4-E2 todavía no tiene evidencia; AC9-E2 la tiene desde el 11 de noviembre (SCRUM-642).
+* **Escenarios en Estado CUMPLE:** **35 escenarios (67.3%)**. Cinco de ellos cuentan por decisión de la Product Owner: AC1-E2, AC2-E5, AC3-E1, AC4-E2 y AC9-E2. AC4-E2 todavía no tiene evidencia; AC9-E2 la tiene desde el 11 de noviembre (SCRUM-642).
 * **Escenarios en Estado PARCIAL:** **8 escenarios (15.4%)** (AC4-E9, AC5-E3, AC5-E4, AC5-E6, AC7-E4, AC8-E1, AC8-E4, AC9-E8).
-* **Escenarios en Estado NO CUMPLE:** **4 escenarios (7.7%)** (AC7-E2, AC7-E3, AC7-E5 y AC9-E3).
+* **Escenarios en Estado NO CUMPLE:** **3 escenarios (5.8%)** (AC7-E2, AC7-E3 y AC9-E3).
 * **Escenarios en Estado NO MEDIDO / PENDIENTE:** **6 escenarios (11.5%)** (AC4-E3, AC4-E4, AC4-E6, AC4-E8, AC8-E2 y AC8-E5).
-* **Porcentaje de Escenarios de Calidad:** **73.08%** ($[34 \times 1.0 + 8 \times 0.5] / 52$).
-* **Avance Oficial del Producto (Informe UAT de la Product Owner):** **91.92%** ($0.7 \times 100\% \text{ [aceptado en UAT]} + 0.3 \times 73.08\% \text{ [Calidad]}$).
+* **Porcentaje de Escenarios de Calidad:** **75.00%** ($[35 \times 1.0 + 8 \times 0.5] / 52$).
+* **Avance Oficial del Producto (Informe UAT de la Product Owner):** **92.50%** ($0.7 \times 100\% \text{ [aceptado en UAT]} + 0.3 \times 75.00\% \text{ [Calidad]}$). Era 91.92 % en el informe del 5-nov; el cambio sale de AC7-E5 (11-nov) y la Product Owner debe ratificarlo en su informe.
 
 **Cambios del 1 de noviembre de 2026 (SCRUM-565):** AC5-E5 y AC6-E7 pasan de No medido a Parcial con pruebas de integración de CI. AC4-E1, AC5-E6, AC7-E6 y AC9-E7 suman evidencia sin cambiar de estado. AC4-E6 y AC9-E2 siguen en No cumple con el motivo actualizado. AC4-E7 corrige su valor medido: no hay escaneo de accesibilidad.
 
@@ -112,12 +112,12 @@ Misma fórmula que el porcentaje global: un escenario que cumple vale 1, uno par
 | AC4 Interaction Capability | 9 | 4 | 1 | 0 | 4 | 50.00% |
 | AC5 Reliability | 6 | 3 | 3 | 0 | 0 | 75.00% |
 | AC6 Security | 8 | 8 | 0 | 0 | 0 | 100.00% |
-| AC7 Maintainability | 6 | 2 | 1 | 3 | 0 | 41.67% |
+| AC7 Maintainability | 6 | 3 | 1 | 2 | 0 | 58.33% |
 | AC8 Flexibility | 5 | 1 | 2 | 0 | 2 | 40.00% |
 | AC9 Safety | 8 | 6 | 1 | 1 | 0 | 81.25% |
-| **Total** | **52** | **34** | **8** | **4** | **6** | **73.08%** |
+| **Total** | **52** | **35** | **8** | **3** | **6** | **75.00%** |
 
-Los atributos con más trabajo pendiente son AC8 Flexibility (40.00%), AC7 Maintainability (41.67%) y AC4 Interaction Capability (50.00%). En AC4 faltan las mediciones con personas (AC4-E3, AC4-E4 y AC4-E6), que no se hicieron porque la UAT fue sin sesión, y el perfil de gama baja (AC4-E8). En AC7, tres escenarios no cumplen y Juan Diego define qué cuenta como cambio.
+Los atributos con más trabajo pendiente son AC8 Flexibility (40.00%), AC4 Interaction Capability (50.00%) y AC7 Maintainability (58.33%). En AC4 faltan las mediciones con personas (AC4-E3, AC4-E4 y AC4-E6), que no se hicieron porque la UAT fue sin sesión, y el perfil de gama baja (AC4-E8). En AC7, dos escenarios no cumplen (AC7-E2 y AC7-E3) y Juan Diego define qué cuenta como cambio.
 
 ### 3.2 Escenarios que no cumplen y su HU en Jira (SCRUM-566)
 
@@ -125,8 +125,9 @@ Los atributos con más trabajo pendiente son AC8 Flexibility (40.00%), AC7 Maint
 |---|---|---|
 | AC7-E2 Acoplamiento entre módulos | Con la definición fijada en SCRUM-669, el 78,6 % de los cambios toca un solo servicio (meta: 80 % o más). | **Decidido (SCRUM-669):** un «cambio» es una HU o corrección con código de producto (`feat` o `fix`); se excluyen las subidas mecánicas de los submódulos de contratos y los refactors estructurales planeados para varios servicios, que no nacen del acoplamiento. Sigue en **No cumple**. Se vuelve a medir al cierre con la misma definición |
 | AC7-E3 Incorporación de un nuevo microservicio | Ranking tocó 2 servicios existentes (identity y service-request); la meta es 0. | **Decidido (SCRUM-669):** sí cuentan. Ranking arrancó sin cambios en los demás, pero su valor de negocio necesitó que ServiceRequest publicara `service-request.rated` e Identity proyectara la reputación. La meta literal es 0, así que sigue en **No cumple**. Lectura arquitectónica: el acoplamiento es por eventos versionados, no por código compartido |
-| AC7-E5 Reutilización de la lógica transversal | ADR-020 aceptado el 11-nov: `quickpatch-shared-dotnet` v0.1.0 quitó las copias de Outbox y correlación. Quedan tenant (6), idempotencia (4) y el publicador de identity. | SCRUM-657: desplegado en QA; sigue en **No cumple** hasta compartir tenant e idempotencia |
 | AC9-E3 Servicio sin cierre | No existe la regla de 4 horas ni la marca de solicitudes vencidas en el panel. | Riesgo aceptado: fuera del cierre por el feature freeze (SCRUM-646) |
+
+AC7-E5 tampoco está en esta tabla desde el 11 de noviembre (SCRUM-657): con las v0.2.0 y v0.2.1 de `quickpatch-shared-dotnet` no quedan copias de la lógica transversal en .NET, y los 6 servicios están desplegados en QA con ellas.
 
 AC9-E2 ya no está en esta tabla: la Product Owner lo marcó como Cumple el 4 de noviembre, como compromiso, y desde el 11 de noviembre tiene evidencia en QA (SCRUM-642): el panel señala al 100 % de los técnicos que cumplen la condición y ninguno se suspende solo.
 

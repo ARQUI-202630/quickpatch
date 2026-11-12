@@ -44,7 +44,7 @@ Si un dato cambia, se cambia primero en su fuente y después aquí, en el mismo 
 | Fuera de alcance | **3** (FA1 a FA3) | SAD 1.3 |
 | Atributos de calidad | **9** (AC1 a AC9, ISO/IEC 25010:2023) | SAD 2 |
 | Escenarios de calidad | **52**: AC1 3, AC2 5, AC3 2, AC4 9, AC5 6, AC6 8, AC7 6, AC8 5 y AC9 8 | SAD 3; `docs/testing/matriz-escenarios-calidad-52.md` |
-| Estado de los escenarios | **34 Cumple, 8 Parcial, 4 No cumple, 6 No medido** (total 52) | `docs/testing/matriz-escenarios-calidad-52.md` (SCRUM-563), al 11-nov-2026. La fuente única la cierra SCRUM-664 |
+| Estado de los escenarios | **35 Cumple, 8 Parcial, 3 No cumple, 6 No medido** (total 52) | `docs/testing/matriz-escenarios-calidad-52.md` (SCRUM-563), al 11-nov-2026. La fuente única la cierra SCRUM-664 |
 | Riesgos aceptados | **4** | SAD 6.2 |
 
 ## Discrepancias encontradas al armar esta tabla
