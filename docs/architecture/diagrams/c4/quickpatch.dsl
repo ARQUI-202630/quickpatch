@@ -15,8 +15,12 @@
  *   C4-06  Deployment              (2)  uno por ambiente: producción y QA (ADR-022)
  *   C4-07  Code                         fuera de Structurizr: ver los .puml de esta carpeta
  *
- * Etiqueta "Planeado": elemento o relación diseñado en el SDD/DD que todavía no está en el
- * código de develop o no está desplegado (5 de noviembre de 2026). Se dibuja con borde punteado.
+ * Estado de cada elemento (SCRUM-707), con su estilo y en la leyenda de cada vista:
+ *   Implementado  está en el código de develop y desplegado. Borde verde continuo.
+ *   Planeado      diseñado en el SDD/DD, sin código en develop o sin desplegar. Borde gris discontinuo.
+ *   Externo       sistema de terceros fuera de QUICKPATCH. Fondo gris.
+ *   Mock          implementado como simulación del sistema real: la pasarela simulada de Payments
+ *                 (ADR-009 modificado). Fondo naranja y borde de puntos.
  *
  * Revisión del 5 de noviembre de 2026: componentes de la app y del panel según los features de develop
  * (ofertas, equipo, recuperación de la contraseña, panel operativo, presentación y activación), bases
@@ -52,10 +56,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
         # ---------------------------------------------------------------- Sistemas externos (ADR-024: solo la pasarela, R5)
         # La geocodificación (RIE-02) corre dentro con Nominatim y las notificaciones (RIE-03) son dentro de la app.
-        pasarela = softwareSystem "Pasarela de pagos PCI-DSS" "Tokeniza la tarjeta y cobra (RIE-01, ADR-009). Proveedor por definir." "Externo"
+        pasarela = softwareSystem "Pasarela de pagos PCI-DSS" "Tokeniza la tarjeta y cobra (RIE-01, ADR-009). Proveedor por definir." "Externo,Planeado"
 
         # ---------------------------------------------------------------- Sistemas de soporte del equipo
-        github = softwareSystem "GitHub" "12 repositorios + quickpatch, GitHub Actions y GitHub Container Registry (ADR-012, ADR-021)." "Soporte"
+        github = softwareSystem "GitHub" "12 repositorios + quickpatch, GitHub Actions y GitHub Container Registry (ADR-012, ADR-021)." "Soporte,Externo"
         observabilidad = softwareSystem "Observabilidad" "Prometheus, Loki y Grafana para producción y QA (VM1, ADR-022)." "Soporte"
 
         # ---------------------------------------------------------------- QUICKPATCH
@@ -133,7 +137,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
                     idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta la reputación en technician_profiles; descarta lo atrasado por changedAt (ADR-027)." "Kafka consumer · Infrastructure/Messaging"
                 }
-                actors = container "Actors Service" "Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio" {
+                actors = container "Actors Service" "Esqueleto sin lógica: solo Program.cs (SCRUM-696). Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio,Planeado" {
                     acApi = component "API de actores" "Consulta y mantenimiento de actores del tenant." "Minimal API" "Planeado"
                     acProveedores = component "Proveedores de materiales" "Supplier: proveedor de materiales o repuestos (concepto evolutivo)." "Domain" "Planeado"
                     acAliados = component "Aliados" "Ally: técnico, profesional o empresa aliada." "Domain" "Planeado"
@@ -242,7 +246,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     paPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
                     paCompletedConsumer = component "ServiceRequestCompletedConsumer" "Consume service-request.completed." "Kafka consumer · Infrastructure/Messaging"
                     paReconciliation = component "ReconciliationJob" "Cierra los pagos que la pasarela dejó sin respuesta (AC9-E5)." "BackgroundService · Infrastructure/Messaging"
-                    paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado)." "Infrastructure/Providers"
+                    paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado): no cobra de verdad." "Infrastructure/Providers" "Mock"
                     paPdf = component "InvoicePdfRenderer" "Arma el PDF del comprobante, sin validez fiscal." "Infrastructure/Documents"
                     paReceived = component "ReceivedPaymentEndpoints" "GET /v1/payments/received?page=&size=: pagos del técnico y, para el proveedor, de su equipo (RF-25, payments 1.2.0)." "Minimal API · Api/Endpoints"
                     paReceivedHandler = component "ReceivedPaymentsHandler" "Lista los pagos pendientes y aprobados según el rol: el técnico ve los suyos y el proveedor los de su equipo (SCRUM-501)." "Casos de uso · Application/Payments"
@@ -613,6 +617,25 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         quickpatch -> observabilidad "Envía métricas y logs" "HTTP"
 
         # ================================================================ Despliegue (ADR-022, INFRASTRUCTURE 3.3)
+
+        # Estado de cada elemento (SCRUM-707), visible en la leyenda de cada vista: Implementado, Planeado, Externo o Mock.
+        # Las expresiones de Structurizr solo combinan dos condiciones, por eso va por pasos con etiquetas auxiliares sin
+        # estilo, que no salen en la leyenda. Planeado, Externo y Mock se ponen a mano en cada elemento.
+        !elements "element.tag!=Planeado && element.tag!=Mock" {
+            tags "SinMarcaA"
+        }
+        !elements "element.tag==SinMarcaA && element.tag!=Externo" {
+            tags "SinMarca"
+        }
+        !elements "element.tag==SinMarca && element.type==Container" {
+            tags "Implementado"
+        }
+        !elements "element.tag==SinMarca && element.type==Component" {
+            tags "Implementado"
+        }
+        !elements "element.tag==SinMarca && element.type==SoftwareSystem" {
+            tags "Implementado"
+        }
         produccion = deploymentEnvironment "Producción" {
             deploymentNode "Teléfono del usuario" "" "Android o iOS" {
                 mobProd = containerInstance mobile
@@ -1083,11 +1106,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             element "Software System" {
                 background #1168bd
             }
-            element "Externo" {
-                background #999999
-            }
             element "Soporte" {
                 background #6b8fb3
+            }
+            element "Externo" {
+                background #999999
             }
             element "Container" {
                 background #438dd5
@@ -1115,9 +1138,24 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             element "Microservicio" {
                 shape Hexagon
             }
+            # Estado (SCRUM-707): borde verde continuo, gris punteado, gris de fondo o naranja de puntos.
+            element "Implementado" {
+                stroke #2e7d32
+                strokeWidth 4
+                border solid
+            }
             element "Planeado" {
                 border dashed
                 opacity 70
+                stroke #707070
+                strokeWidth 4
+            }
+            element "Mock" {
+                border dotted
+                stroke #e65100
+                strokeWidth 8
+                background #ffcc80
+                color #000000
             }
             element "Deployment Node" {
                 color #000000

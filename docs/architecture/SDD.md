@@ -64,7 +64,16 @@ C4 describe el software con un vocabulario fijo: *persona*, *sistema de software
 
 Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estructura del repositorio) se conservan donde complementan a un diagrama C4 y se señalan como complementarios.
 
-**Elementos planeados.** Los elementos y relaciones con la etiqueta `Planeado` están diseñados en el SDD o el DD pero todavía no existen en `develop`; se dibujan con borde punteado. Así, un diagrama sirve a la vez de diseño y de estado de avance. Actors, Ranking, Payments y Communication son hoy esqueletos, por eso todos sus componentes son planeados.
+**Estado de cada elemento (SCRUM-707).** Cada elemento de los diagramas C4 lleva uno de cuatro estados, con su estilo y en la leyenda pegada a cada figura, para que se lea a simple vista:
+
+| Estado | Significado | Cómo se dibuja |
+|---|---|---|
+| Implementado | Está en el código de `develop` y desplegado | Borde verde continuo |
+| Planeado | Diseñado en el SDD o el DD, sin código o sin desplegar | Borde gris discontinuo, atenuado; sus relaciones, punteadas |
+| Externo | Sistema de terceros fuera de QUICKPATCH | Fondo gris |
+| Mock | Implementado como simulación del sistema real | Fondo naranja y borde de puntos |
+
+Hoy son planeados Actors Service (un esqueleto sin lógica) con sus componentes y el receptor de webhooks del PSP. La pasarela de pagos certificada es externa y planeada, porque el proveedor está por definir. El único mock es `SimulatedPaymentProvider`, la pasarela simulada de Payments (ADR-009 modificado). El estado sale de la matriz modelado contra real (`matriz-modelado-vs-real.md`, SCRUM-697).
 
 **Inventario de vistas.**
 
@@ -2353,6 +2362,7 @@ Estos cambios responden a la retroalimentación final del profesor: arquitectura
 | Refactor interno de Catalog, ServiceRequest, Matching, Ranking y Payments con pruebas de arquitectura en su CI | 7.3 y 10.3.2 | SCRUM-651 a SCRUM-655 |
 | Contexto con los 6 roles agrupados por canal (4 en la app móvil y 2 en el panel web) y lectura vertical sin cruces; figuras 1 a 3 reexportadas | 3, 4 y 5.1 | SCRUM-688 y SCRUM-689 |
 | Vista de contenedores partida en dos para quitar los cruces: Figura 3a (REST y datos) y Figura 3b (qué publica y consume cada servicio en Kafka) | 5.1 | SCRUM-676 |
+| Estados IMPLEMENTADO, PLANEADO, EXTERNO y MOCK en todos los diagramas C4, con estilo propio y leyenda en cada figura; Actors marcado como planeado y la pasarela simulada como mock | 2 y todas las figuras C4 | SCRUM-707 |
 | Dinámicos verificados contra el código y `contracts/kafka`: creación y asignación en una sola vista (antes dos que se repetían), vistas nuevas de «sin técnico» y de ejecución, Matching libera al técnico con `service-request.completed` en el pago, la cotización avisa con `service-request.status-changed`; se quitan las secuencias de 8.3 y 8.4 que repetían esos escenarios con errores (Wompi, Communication consumiendo `payment.approved` y `matching.technician-assigned`); la secuencia de punta a punta incluye oferta, aceptación, cotización y evidencia, y la pasarela simulada | 8.3, 8.4, 8.5, 8.13.2, 8.13.3 y 8.13.4 | SCRUM-685 y SCRUM-686 |
 
 ---
