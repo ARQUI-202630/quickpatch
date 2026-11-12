@@ -44,24 +44,24 @@ Construir un MVP de una plataforma **multi-tenant** de servicios técnicos para 
 | Pasarela de pagos certificada real | Sin presupuesto ni dominio público (R5, R9); se usa la simulada detrás del mismo puerto | ADR-009 modificado; matriz de lo modelado frente a lo real |
 | Actors Service | Sus conceptos siguen siendo evolutivos; el equipo del proveedor vive en Identity mientras tanto | SAD 4.2.2 |
 | Regla de 4 horas para servicios sin cierre (AC9-E3) | Función nueva que no estaba comprometida; quedó fuera por el feature freeze | Working Agreements (SCRUM-646) |
-| Contexto de tenant e idempotencia compartidos (resto de AC7-E5) | Están mezclados con reglas de cada servicio; la v0.1.0 de ADR-020 cubre la correlación, el rol de sesión y el publicador del Outbox | SCRUM-657 |
 | Módulo de reclamos, modo sin conexión y SEO | Fuera de alcance del MVP | SAD 1.3 |
 
 ## 6. Evidencia de lo logrado
 
 | Indicador | Valor | Estado |
 |---|---|---|
-| Escenarios de calidad | 52: 34 Cumple, 8 Parcial, 4 No cumple, 6 No medido (al 11-nov) | **Pendiente:** cifra final de SCRUM-664 |
-| Escenarios que no cumplen | AC7-E2 (78,6 % frente a 80 %), AC7-E3 (Ranking tocó 2 servicios), AC7-E5 (lógica copiada) y AC9-E3 (sin regla de 4 horas), con su decisión | SCRUM-669 |
+| Escenarios de calidad | 52: 35 Cumple, 8 Parcial, 3 No cumple, 6 No medido (al 11-nov; AC7-E5 pasó a Cumple con SCRUM-657) | **Pendiente:** cifra final de SCRUM-664 |
+| Escenarios que no cumplen | AC7-E2 (78,6 % frente a 80 %), AC7-E3 (Ranking tocó 2 servicios) y AC9-E3 (sin regla de 4 horas), con su decisión | SCRUM-669 |
 | Requisitos funcionales | 33 definidos; implementados, verificados en QA y aceptados | **Pendiente:** indicadores de SCRUM-700 |
 | UAT | UAT por RF con la Product Owner (SCRUM-605, acta de SCRUM-608) | **Pendiente:** UAT de cierre con los 6 roles (SCRUM-658) |
 | Separación QA / producción | El token de QA es rechazado por producción (401); versiones verificadas con `kubectl` | `tests/e2e/evidencias/separacion-qa-produccion-2026-11-10.txt`; INFRA 4.16 |
+| Código transversal sin copias (AC7-E5) | 0 copias en .NET de tenant, idempotencia, Outbox, consumo de Kafka, correlación, registro y JWT: `quickpatch-shared-dotnet` v0.2.1 en los 6 servicios, desplegados en QA | `tests/e2e/evidencias/ac7-e5-remedicion-2026-11-11.md`; ADR-020 |
 | Confiabilidad | Kafka caído: el Outbox retuvo los eventos y los publicó solos en 34 s; consumidor caído: réplica al día 24 s después de volver | `tests/e2e/evidencias/confiabilidad-ac5-e3-e4-qa-2026-11-10.txt` |
 
 ## 7. Restricciones y riesgos aceptados
 
 - **Restricciones que marcaron el diseño:** 7 VM fijas (R10), sin presupuesto (R5), red privada sin dominio público (R9), una sola persona en infraestructura (R11) y unos 3 meses de proyecto (R3).
-- **Riesgos aceptados** (SAD 6.2): un solo nodo por componente en producción; un sistema distribuido con un equipo pequeño; lógica transversal copiada en .NET (AC7-E5); y los demás de esa sección.
+- **Riesgos aceptados** (SAD 6.2): un solo nodo por componente en producción; un sistema distribuido con un equipo pequeño; y los demás de esa sección. La lógica transversal copiada en .NET (AC7-E5) quedó mitigada con ADR-020; su riesgo residual es coordinar un cambio incompatible del código compartido.
 - **Riesgos del cierre:** AC9-E3 sin cubrir. Los cambios del Sprint 6 (SCRUM-642 y los refactors de cinco servicios) están en QA desde el 11 de noviembre y todavía no en producción. El secreto `PasswordEncryption__PrivateKeyPem` debe existir antes de escalar Identity a más de una réplica.
 
 ## 8. Conclusión

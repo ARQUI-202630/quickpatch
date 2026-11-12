@@ -1,0 +1,51 @@
+AC7-E5 (SCRUM-657): regresión en QA tras adoptar quickpatch-shared-dotnet v0.2.1
+Fecha: 2026-11-12T02:30Z. Huella de la CA de QA: 83:BE:B1:15 (coincide).
+Versiones en QA: identity 0.10.2, catalog 0.4.4, service-request 0.12.3, ranking 0.1.3, payments 0.3.3, communication 0.3.5 (despliegue al primer intento).
+Comando: node tests/e2e/correr-colecciones-qa.js humo-flujo-critico scrum-483-chat
+Resultado: humo-flujo-critico 29/29 aserciones; scrum-483-chat 69/69 aserciones; 0 fallas.
+----
+Login del administrador del tenant: OK
+
+▶ humo-flujo-critico contra https://qa.quickpatch.internal
+OK  tests\e2e\evidencias\humo-flujo-critico-qa-2026-11-12.txt
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  30 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  30 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  30 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  29 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 24.1s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 11.26kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 455ms [min: 44ms, max: 1546ms, s.d.: 463ms] │
+└────────────────────────────────────────────────────────────────────
+
+▶ scrum-483-chat contra https://qa.quickpatch.internal
+OK  tests\e2e\evidencias\scrum-483-chat-qa-2026-11-12.txt
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  43 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  43 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  43 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  69 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 26.1s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 16.14kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 389ms [min: 35ms, max: 1694ms, s.d.: 518ms] │
+└────────────────────────────────────────────────────────────────────

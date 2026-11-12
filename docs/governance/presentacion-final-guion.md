@@ -38,7 +38,7 @@ Fuente: `docs/architecture/matriz-modelado-vs-real.md` (SCRUM-697).
 | 15 | Escenarios de calidad | 52 escenarios: Cumple, Parcial, No cumple y No medido, con la cifra final de SCRUM-664; los que no cumplen, con su motivo | Matriz de 52 escenarios |
 | 16 | Funcionalidades | Definidas, implementadas, verificadas en QA y aceptadas: las cuatro cifras de SCRUM-700. **No usar** «37/37», «94 %» ni «91,92 %» | SCRUM-700 |
 | 17 | UAT | Escenarios por rol y resultado de la UAT de cierre | SCRUM-658 |
-| 18 | Lo que no se construyó | Pasarela real, Actors, AC9-E3 y paquete transversal (AC7-E5), cada uno con su motivo | Cierre §5 |
+| 18 | Lo que no se construyó | Pasarela real, Actors y AC9-E3, cada uno con su motivo. Lo que sí se cerró al final: el código transversal compartido (AC7-E5, ADR-020) | Cierre §5 y §6 |
 | 19 | Riesgos y restricciones | R3, R5, R9, R10 y R11; riesgos aceptados del SAD 6.2 | Cierre §7 |
 | 20 | Cierre | Qué se logró y qué lo demuestra | Cierre §8, con la revisión de la PO (SCRUM-704) |
 
@@ -55,5 +55,5 @@ Todo el equipo debe responderlas igual, con estas respuestas:
 | ¿Cuáles están en producción? | Los 7 con código, desde el 4 de noviembre; QA va adelante en Identity y ServiceRequest |
 | ¿Cuántos repositorios? | 14: 13 de componentes (el último, `quickpatch-shared-dotnet`, por ADR-020) y el principal |
 | ¿Cuántos topics? | 20 |
-| ¿Qué quedó pendiente? | Pasarela real, Actors, AC9-E3 y el paquete transversal (AC7-E5) |
+| ¿Qué quedó pendiente? | Pasarela real, Actors y AC9-E3 |
 | ¿Cuál fue el resultado? | El de la conclusión del documento de cierre, aprobada por la PO |
