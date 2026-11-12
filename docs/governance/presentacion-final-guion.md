@@ -17,6 +17,8 @@ Cada servicio, sistema o elemento de un diagrama lleva una de estas marcas, con 
 
 Fuente: `docs/architecture/matriz-modelado-vs-real.md` (SCRUM-697).
 
+Los 27 diagramas C4 exportados (`docs/architecture/diagrams/c4/`) llevan las mismas marcas con su leyenda pegada a la imagen (SCRUM-707): IMPLEMENTADO con borde verde, PLANEADO con borde gris discontinuo, EXTERNO con fondo gris y MOCK con fondo naranja y borde de puntos. En las láminas se usan esos mismos colores.
+
 ## Láminas
 
 | # | Lámina | Mensaje | Cifras y evidencia permitidas |
