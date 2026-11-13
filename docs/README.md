@@ -21,6 +21,7 @@ Este archivo es el punto de entrada a la documentación formal del proyecto.
 | `testing/avance-real-sprint5.md` | Avance real del producto con fórmula, fecha de corte y clasificación de cada funcionalidad con su evidencia (SCRUM-562). |
 | `testing/indicadores-funcionales.md` | Fuente única de los indicadores funcionales: 33 RF definidos, implementados, verificados en QA y aceptados, las 4 extensiones aparte y el avance del producto (SCRUM-700). Se recalcula con `scripts/calcular_indicadores_qa.py`. |
 | `testing/conciliacion-cifras-qa-2026-11-12.md` | Registro de discrepancias de cifras de QA y su corrección (SCRUM-664, SCRUM-695 y SCRUM-701). |
+| `testing/medicion-acoplamiento-cohesion-scrum-649.md` | Verificación de QA de la medición de acoplamiento y cohesión antes y después del refactor, tabla por servicio y nueva medición de AC7-E2 (SCRUM-649). |
 
 ## Documento histórico
 
