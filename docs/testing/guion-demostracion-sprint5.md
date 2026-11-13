@@ -54,7 +54,7 @@ Las claves de las cuentas de demostración las fija quien carga los datos (`QP_D
 ### Bloque 1. Qué cambió desde el Sprint 4 (2 min) — Juan Diego
 - Lo que observó el profesor el 24 de octubre y qué se hizo con cada punto: el gateway por ambiente (ADR-028), los diagramas C4 por componente y los dinámicos con escenario (SDD V4), la restricción geográfica (SRS 2.3.1), el mapa arquitectónico y la matriz de funcionalidades.
 - Las decisiones del sprint: la calificación por eventos con la reputación en Ranking (ADR-027) y el chat (ADR-026), los dos aceptados; el pago antes de la calificación en todo el ciclo de vida (SAD 2.46, SRS P2).
-- El avance real, con su fórmula y su fecha de corte (`docs/testing/avance-real-sprint5.md`, SCRUM-559). El corte del 27 de octubre dio **65.4%** de las 78 funcionalidades verificadas en QA y 82.1% implementadas. **Se actualiza con el corte final antes de presentar**, porque desde entonces llegaron a QA la calificación, el historial, el perfil, los pagos recibidos y el rechazo del tenant inactivo.
+- El avance real, con su fórmula y su fecha de corte (`docs/testing/avance-real-sprint5.md`, SCRUM-559). El corte del 27 de octubre dio **65.4%** de las 78 funcionalidades verificadas en QA y 82.1% implementadas. *(Corte histórico. Las cifras vigentes del cierre están en `docs/testing/indicadores-funcionales.md`: 33 de 33 RF verificados y aceptados, y 92.50% de avance al 12 de noviembre.)* **Se actualiza con el corte final antes de presentar**, porque desde entonces llegaron a QA la calificación, el historial, el perfil, los pagos recibidos y el rechazo del tenant inactivo.
 
 ### Bloque 2. Entrada al producto (2 min)
 1. Abrir `https://qa.quickpatch.internal`: la página de presentación (SCRUM-491).

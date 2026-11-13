@@ -18,6 +18,10 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+# Indicadores funcionales y escenarios desde sus fuentes únicas (SCRUM-700, SCRUM-664)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from calcular_indicadores_qa import calcular as calcular_indicadores  # noqa: E402
+
 # Evitar errores de codificación en consolas Windows
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -278,7 +282,8 @@ def parse_k6_results():
     if os.path.exists(load_json):
         with open(load_json, 'r', encoding='utf-8') as f:
             d = json.load(f)
-        p95 = d['metrics']['http_req_duration{expected_response:true}']['p(95)']
+        # p95 de crear solicitud: es la métrica del umbral de la prueba (2 s), la misma del informe y de INFRASTRUCTURE
+        p95 = d['metrics']['http_req_duration{endpoint:crear_solicitud}']['p(95)']
         err_rate = d['metrics']['http_req_failed']['value'] * 100
         reqs = d['metrics']['http_reqs']['count']
         iters = d['metrics']['iterations']['count']
@@ -298,7 +303,8 @@ def parse_k6_results():
     if os.path.exists(stress_json):
         with open(stress_json, 'r', encoding='utf-8') as f:
             d = json.load(f)
-        p95 = d['metrics']['http_req_duration']['p(95)']
+        # p95 de la prueba (test_type): es la métrica del umbral (5 s), la misma del informe y de INFRASTRUCTURE
+        p95 = d['metrics']['http_req_duration{test_type:stress_150vu}']['p(95)']
         err_rate = d['metrics']['http_req_failed']['value'] * 100
         reqs = d['metrics']['http_reqs']['count']
         iters = d['metrics']['iterations']['count']
@@ -536,8 +542,8 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map):
     md = []
     md.append("# Cuadro de Mando de Estadísticas de Pruebas — Sprint 5 (SCRUM-604)\n")
     md.append("**Código del Documento:** `MET-QA-SP5-2026-11-02`  ")
-    md.append("**Versión:** `2.2 Dinámica Oficial (Cobertura de CI SCRUM-602 incorporada)`  ")
-    md.append("**Fecha de Generación:** 2 de noviembre de 2026  ")
+    md.append("**Versión:** `2.3 (indicadores desde las fuentes únicas, SCRUM-701 y SCRUM-695)`  ")
+    md.append("**Fecha de Generación:** 2 de noviembre de 2026 (versión 2.3: 12 de noviembre de 2026)  ")
     md.append("**Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  ")
     md.append("**Trazabilidad Jira:** Tarea `SCRUM-604` | Requisito RNF-08 | Documento de Pruebas `TD.md` V3.0  ")
     md.append("**Principio Metodológico:** Toda cifra reportada proviene directamente de archivos de resultados de CI (.trx/surefire), evidencias Newman en QA, resúmenes JSON de k6 y la Matriz de Avance UAT en Excel. Cero cifras escritas a mano.\n")
@@ -598,7 +604,7 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map):
 
     md.append("## 3. Métricas de Rendimiento k6 (Carga y Estrés)\n")
     md.append("Conforme a la directriz técnica de QA, las peticiones masivas de carga no se contabilizan como casos de prueba unitarios, sino que se reportan en su propia tabla con sus percentiles de latencia y tasa de fallo:\n")
-    md.append("| Escenario de Carga | Concurrencia (VUs) | Duración | Iteraciones | Peticiones HTTP | Latencia p95 | Tasa de Error | Archivo de Evidencia |")
+    md.append("| Escenario de Carga | Concurrencia (VUs) | Duración | Iteraciones | Peticiones HTTP | Latencia p95 (métrica del umbral) | Tasa de Error | Archivo de Evidencia |")
     md.append("|---|:---:|:---:|:---:|:---:|:---:|:---:|---|")
 
     for k in k6_data:
@@ -629,9 +635,12 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map):
         md.append(f"* **Capacidad de Carga k6:** **{k6_max['requests']:,} peticiones procesadas** con {k6_max['error_rate']} de errores y p95 de {k6_max['p95_ms']} ms bajo {k6_max['vus']} VU.")
     md.append(f"* **Cobertura de Código en CI (SCRUM-602):** **{cov_rango}** en {len(cov_vals)} repositorios; todos sobre el umbral de {umbral:.0f}%." if cov_vals and min(cov_vals) >= umbral else f"* **Cobertura de Código en CI (SCRUM-602):** {cov_rango}.")
     md.append(f"* **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.")
-    md.append(f"* **Avance Oficial del Producto (Informe UAT de la PO, 5-nov):** **91.92%** (Meta Sprint 5: mínimo 90%; 0.7 × 100% aceptado en UAT + 0.3 × 73.08% escenarios).")
-    md.append(f"* **% Funcionalidades Implementadas, Probadas por QA y Aceptadas en UAT:** **100%** (37 de 37; RF-10 aceptada con observaciones).")
-    md.append(f"* **% Escenarios de Calidad (SAD §3):** **73.08%** (52 escenarios: 34 Cumple, 8 Parcial, 4 No cumple, 6 No medido; fuente: `docs/testing/informe-uat-oficial-po-2026-11-05.xlsx`).\n")
+    ind = calcular_indicadores()
+    i = ind['indicadores']
+    esc = ind['escenarios']
+    md.append(f"* **Avance del Producto:** **{ind['avance_producto']:.2f}%** (Meta Sprint 5: mínimo 90%; 0.7 × {ind['pct_funcional_aceptado']:.0f}% RF aceptados + 0.3 × {ind['pct_escenarios']:.2f}% escenarios; fuente: `docs/testing/indicadores-funcionales.md`).")
+    md.append(f"* **Requisitos Funcionales (SRS v5.6):** {i['definida']} definidos, {i['implementada']} implementados, {i['verificada']} verificados en QA y {i['aceptada']} aceptados por la PO (RF-10 con observaciones). Las {ind['extensiones']['total']} extensiones EXT-01 a EXT-04 se reportan aparte.")
+    md.append(f"* **% Escenarios de Calidad (SAD §3):** **{ind['pct_escenarios']:.2f}%** ({ind['escenarios_total']} escenarios: {esc['Cumple']} Cumple, {esc['Parcial']} Parcial, {esc['No cumple']} No cumple, {esc['No medido']} No medido; fuente: `docs/testing/matriz-escenarios-calidad-52.md`).\n")
 
     md.append("### Gráfica 1: Distribución de Pruebas por Tipo")
     md.append("![Gráfica 1: Distribución por Tipo](img/grafica-1-pruebas-por-tipo.png)\n")

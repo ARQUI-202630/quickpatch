@@ -8,6 +8,8 @@
 - Las evidencias de `tests/e2e/evidencias/` y `tests/security/evidencias/` en `develop`.
 - Los PR fusionados hasta la fecha de corte.
 
+> **Nota del 12 de noviembre de 2026 (SCRUM-700):** este documento es un corte histórico del 27 de octubre. La unidad de avance vigente es el requisito funcional del SRS (33 RF), con los cuatro indicadores de [`indicadores-funcionales.md`](indicadores-funcionales.md). Las 78 funcionalidades se quedan como desglose por tipo de usuario y no se recalcularon.
+
 ## Cómo se calcula
 
 Cada funcionalidad cae en una sola clase:
