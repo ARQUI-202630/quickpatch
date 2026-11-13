@@ -1,8 +1,8 @@
 # Registro y Clasificación Consolidada de Defectos — Sprints 4 y 5 (SCRUM-603)
 
 **Código del Documento:** `DEF-QA-SP4-SP5-2026-10-25`  
-**Versión:** `2.0 Final`  
-**Fecha:** 25 de octubre de 2026  
+**Versión:** `2.1`  
+**Fecha:** 25 de octubre de 2026 (v2.1: 13 de noviembre de 2026)  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
 **Trazabilidad Jira:** Tarea `SCRUM-603` | RNF-08 (Aseguramiento de Calidad) | Documento de Pruebas `TD.md` V3.0  
 **Normas Aplicadas:** IEEE 1044 (Classification for Software Anomalies) / ISO/IEC 25010:2023 / RFC 9457  
@@ -42,6 +42,11 @@ La siguiente tabla consolida los defectos identificados en los ciclos de prueba 
 | **DEF-S5-02** | Baja | `quickpatch-payments` | Facturación y Comprobante PDF (`scrum-495`) | **En mitigación** | Sprint 5 | Desglose formal de impuestos en PDF de liquidación (mejora técnica post-MVP) |
 | **DEF-S5-03** | Media | `quickpatch-mobile` | Pruebas UAT Emulador Android (GPS Mock) | **En mitigación** | Sprint 5 | Inyección de coordenadas geográficas en emulador Android (arnés de prueba UAT) |
 | **DEF-S5-04** | Baja | `quickpatch-web` | Interacción UI Web Admin (Paginación) | **En mitigación** | Sprint 5 | Ajuste de paginación reactiva en listado de técnicos (mejora UI post-MVP) |
+| **HAL-S5-01** | Media (propuesta) | `quickpatch-service-request` | E2E QA (`scrum-32-calificacion`, 4-nov): aceptaba `{"score":"5"}` (texto) con 201, aunque el contrato pide `integer` | **Corregido** | Sprint 5 | quickpatch-service-request#39 (`release/0.11.2`) / Corrida: `tests/e2e/evidencias/scrum-32-calificacion-qa-2026-11-04.txt` |
+| **HAL-S5-02** | Alta (propuesta) | `quickpatch-service-request` | Humo en producción (SCRUM-523, 4-nov): el servicio se apagaba por un `TaskCanceledException` sin capturar en `QuoteExpirer` | **Corregido** | Sprint 5 | service-request 0.11.1 / Corrida: `tests/e2e/evidencias/humo-produccion-lectura-2026-11-04.txt` (14/14) |
+| **DEF-INT-01** | Media | `quickpatch-mobile` | Evaluación de capacidad de interacción (SCRUM-569, AC4-E6): faltaba la pantalla móvil de calificación | **Corregido** | Sprint 5 | SCRUM-86, APK `v0.5.4-qa` / [`capacidad-interaccion-scrum-569.md`](capacidad-interaccion-scrum-569.md) §5 |
+| **DEF-INT-02** | Baja | `quickpatch-mobile` (pruebas) | Evaluación de capacidad de interacción (SCRUM-569, AC4-E7): faltaba el arnés automatizado de accesibilidad en `flutter test` | **Corregido** | Sprint 5 | quickpatch-mobile#58 (pruebas `meetsGuideline`, CI en verde; AC4-E7 Cumple desde el 5-nov en [`matriz-escenarios-calidad-52.md`](matriz-escenarios-calidad-52.md)) |
+| **DEF-INT-03** | Baja | QA (infraestructura) | Evaluación de capacidad de interacción (SCRUM-569, AC4-E8): no hay perfil definido de dispositivo de gama baja | **Abierto** | Sprint 6 (SCRUM-667, Frontend) | [`capacidad-interaccion-scrum-569.md`](capacidad-interaccion-scrum-569.md) §5; AC4-E8 sigue No medido |
 
 ---
 
@@ -49,6 +54,21 @@ La siguiente tabla consolida los defectos identificados en los ciclos de prueba 
 
 | Estado del Defecto | Cantidad | Porcentaje |
 |---|:---:|:---:|
+| **Solucionados / Verificados / No aplica a producción** | 14 | 70.0% |
+| **Descartados / Inválidos (Retractados)** | 1 | 5.0% |
+| **En mitigación (no bloqueantes)** | 4 | 20.0% |
+| **Abiertos (no bloqueantes)** | 1 | 5.0% |
+| **Total de Defectos Registrados (S4 y S5)** | **20** | **100.0%** |
+
+> **Cambio de la versión 2.1 (13-nov-2026):** se suman cinco hallazgos del Sprint 5 que estaban fuera del registro (sección 4.2 del informe del Sprint 5 y hoja `Defectos` del Informe UAT oficial de la PO): HAL-S5-01, HAL-S5-02 y DEF-INT-01 a DEF-INT-03. DEF-INT-02 queda corregido con quickpatch-mobile#58. Con los 4 defectos del Sprint 3 (`registro-defectos-sprint3.md`), el total del proyecto pasa de 19 a **24**, igual que la hoja `Defectos` de la PO. La severidad de HAL-S5-01 y HAL-S5-02 es la propuesta en esa hoja.
+
+### Distribución por Severidad
+* **Bloqueantes (S1):** 0 detectados (0.0%).
+* **Alta (S2):** 2 registradas y corregidas (DEF-S4-02 cancelación k6; HAL-S5-02 apagado de `QuoteExpirer`).
+* **Media (S3) / Falla de Arnés:** 12 registrados (6 corregidos en producto/suite, 2 fallas de arnés comprobadas con evidencia, 1 descartado, 1 no aplica a producción: DEF-S4-03, 2 en mitigación: DEF-S5-01 y DEF-S5-03), más HAL-S5-01 y DEF-INT-01, corregidos.
+* **Baja (S4):** 6 registrados (2 corregidos en Sprint 4, 2 en mitigación: DEF-S5-02 y DEF-S5-04, DEF-INT-02 corregido y DEF-INT-03 abierto).
+
+---|:---:|:---:|
 | **Solucionados / Verificados / No aplica a producción** | 10 | 66.7% |
 | **Descartados / Inválidos (Retractados)** | 1 | 6.7% |
 | **En mitigación (Pendientes en Sprint 5)** | 4 | 26.6% |
@@ -92,4 +112,4 @@ La siguiente tabla consolida los defectos identificados en los ciclos de prueba 
 
 ## 5. Dictamen del Registro de Defectos
 
-El sistema no presenta defectos bloqueantes (S1) ni defectos de severidad alta (S2) abiertos. Los defectos identificados en el arnés de pruebas se encuentran debidamente justificados con sus commits y archivos de corrida correspondientes. Las anomalías del Sprint 5 se encuentran priorizadas para resolución en sus respectivas historias de usuario.
+El sistema no presenta defectos bloqueantes (S1) ni defectos de severidad alta (S2) abiertos. El único defecto abierto (DEF-INT-03, Baja) depende de que Frontend defina el dispositivo de referencia de gama baja (SCRUM-667). Los defectos identificados en el arnés de pruebas se encuentran debidamente justificados con sus commits y archivos de corrida correspondientes. Las anomalías del Sprint 5 se encuentran priorizadas para resolución en sus respectivas historias de usuario.

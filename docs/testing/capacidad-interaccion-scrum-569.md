@@ -192,7 +192,7 @@ En cumplimiento de los criterios de aceptación de la tarea `SCRUM-569`, se regi
 | ID Defecto / Hallazgo | Severidad | Módulo / Componente | Escenario Impactado | Descripción Técnica | Estado / Acción en Jira |
 |:---:|:---:|---|:---:|---|:---:|
 | **DEF-INT-01** | Media | `quickpatch-mobile` | **AC4-E6** | **Ausencia de pantalla móvil de calificación de servicio (RF-12):** detectado en la revisión inicial. | **Cerrado:** la pantalla entró con `SCRUM-86` (Finalizado) y se publica en el APK `v0.5.4-qa`. |
-| **DEF-INT-02** | Baja | `quickpatch-mobile` (Test) | **AC4-E7** | **Falta de arnés automatizado de accesibilidad en Flutter test:** La suite de pruebas de widgets carece de aserciones de directrices de accesibilidad (`meetsGuideline`) y prueba automatizada con `textScaler: 2.0`. | Registrado como mejora técnica para el arnés de pruebas de Flutter en Sprint 5. |
+| **DEF-INT-02** | Baja | `quickpatch-mobile` (Test) | **AC4-E7** | **Falta de arnés automatizado de accesibilidad en Flutter test:** La suite de pruebas de widgets carece de aserciones de directrices de accesibilidad (`meetsGuideline`) y prueba automatizada con `textScaler: 2.0`. | **Cerrado:** las pruebas `meetsGuideline` entraron con quickpatch-mobile#58 (CI en verde) y AC4-E7 pasó a Cumple el 5-nov (`matriz-escenarios-calidad-52.md`). |
 | **DEF-INT-03** | Baja | `quickpatch-qa` (Infra) | **AC4-E8** | **Indefinición de dispositivo de referencia de gama baja:** No existe un perfil estandarizado en emulador Android con limitación de CPU y RAM para cronometrar formalmente el umbral de $< 3\text{ s}$ en hardware base. | Registrado para definición conjunta entre Frontend y QA. |
 
 ---

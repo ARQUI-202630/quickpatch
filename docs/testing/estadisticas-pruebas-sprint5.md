@@ -1,8 +1,8 @@
 # Cuadro de Mando de Estadísticas de Pruebas — Sprint 5 (SCRUM-604)
 
 **Código del Documento:** `MET-QA-SP5-2026-11-02`  
-**Versión:** `2.3 (indicadores desde las fuentes únicas, SCRUM-701 y SCRUM-695)`  
-**Fecha de Generación:** 2 de noviembre de 2026 (versión 2.3: 12 de noviembre de 2026)  
+**Versión:** `2.4 (registro de defectos completo: 24)`  
+**Fecha de Generación:** 2 de noviembre de 2026 (versión 2.3: 12 de noviembre de 2026; versión 2.4: 13 de noviembre de 2026)  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
 **Trazabilidad Jira:** Tarea `SCRUM-604` | Requisito RNF-08 | Documento de Pruebas `TD.md` V3.0  
 **Principio Metodológico:** Toda cifra reportada proviene directamente de archivos de resultados de CI (.trx/surefire), evidencias Newman en QA, resúmenes JSON de k6 y la Matriz de Avance UAT en Excel. Cero cifras escritas a mano.
@@ -92,10 +92,10 @@ Conforme a la directriz técnica de QA, las peticiones masivas de carga no se co
 
 ## 4. Registro Consolidado de Defectos (SCRUM-603)
 
-* **Total de Defectos Registrados:** **19 anomalías**.
-* **Defectos Corregidos o No aplicables:** **15 (78.9%)** (14 corregidos y verificados + 1 no aplica a producción: DEF-S4-03).
+* **Total de Defectos Registrados:** **24 anomalías**.
+* **Defectos Corregidos o No aplicables:** **19 (79.2%)** (18 corregidos y verificados + 1 no aplica a producción: DEF-S4-03).
 * **Defectos Descartados / Retractados:** **0 (0.0%)**.
-* **Defectos en Mitigación en Sprint 5:** **4 (21.1%)** (ninguno bloqueante: DEF-S5-01 a DEF-S5-04).
+* **Defectos en Mitigación o Abiertos:** **5 (20.8%)** (ninguno bloqueante; 4 en mitigación: DEF-S5-01 a DEF-S5-04; 1 abierto: DEF-INT-03).
 * **Defectos Críticos o Bloqueantes Abiertos:** **0 (0.0%)**.
 
 Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-defectos-sprint4-sprint5.md) y en la hoja `Defectos` de la Matriz UAT Excel.

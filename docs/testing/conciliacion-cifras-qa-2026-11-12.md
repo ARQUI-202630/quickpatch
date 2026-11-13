@@ -54,7 +54,7 @@
 
 | # | Qué | Valor | Quién |
 |---|---|---|---|
-| 1 | Defectos: el informe y las estadísticas cuentan 19, y la hoja Defectos del Informe UAT de la PO cuenta 24 | Faltan HAL-S5-01, HAL-S5-02 y DEF-INT-01 a DEF-INT-03 en `registro-defectos-sprint4-sprint5.md` y en `Matriz_UAT_Avance_QuickPatch.xlsx`. DEF-INT-02 debería quedar Resuelto con quickpatch-mobile#58 | QA (Katherine), en un PR aparte |
+| 1 | Defectos: el informe y las estadísticas cuentan 19, y la hoja Defectos del Informe UAT de la PO cuenta 24 | Faltan HAL-S5-01, HAL-S5-02 y DEF-INT-01 a DEF-INT-03 en `registro-defectos-sprint4-sprint5.md` y en `Matriz_UAT_Avance_QuickPatch.xlsx`. DEF-INT-02 debería quedar Resuelto con quickpatch-mobile#58 | QA (Katherine). **Hecho el 13-nov:** registro v2.1 y hoja `Defectos` con 24 |
 | 2 | `cifras-canonicas.md` todavía dice «unidad por decidir (SCRUM-700)» y «la fuente única la cierra SCRUM-664» | Apuntar a `indicadores-funcionales.md` y a la matriz de 52: 33 RF, 33/33/33/33 y 75,00 % | Arquitectura (Juan Diego, SCRUM-691) |
 | 3 | `docs/governance/cierre-proyecto.md` y `presentacion-final-guion.md` esperan las cifras de SCRUM-700 y SCRUM-664 | 33/33/33/33, 92,50 % y 35/8/3/6 | Juan Diego (SCRUM-703 y SCRUM-706) |
 | 4 | Las gráficas PNG de `docs/testing/img/` no se regeneran en este PR | Solo las tocan las fuentes del sistema; las cifras no cambian | — |
