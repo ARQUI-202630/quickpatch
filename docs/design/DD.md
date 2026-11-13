@@ -10,10 +10,10 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.21|
+|**Versión**|5.22|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-644 — Contraseña cifrada en el cliente con RSA-OAEP-256 (5.21); SCRUM-637 — Calificación en el detalle de la solicitud (5.20); SCRUM-625 — Hash del correo con HMAC y la invitación pendiente en la recuperación de la contraseña (5.19); SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-693 — Auditoría del modelo y los eventos contra el código (5.22); SCRUM-644 — Contraseña cifrada en el cliente con RSA-OAEP-256 (5.21); SCRUM-637 — Calificación en el detalle de la solicitud (5.20); SCRUM-625 — Hash del correo con HMAC y la invitación pendiente en la recuperación de la contraseña (5.19); SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -241,15 +241,15 @@ QUICKPATCH se descompone en 8 microservicios de dominio (SAD, sección 4.2.2), d
 
 |Servicio|Entidades persistentes en esta versión|
 |---|---|
-|Identity Service|`tenants`, `users`, `technician_profiles`, `password_setup_tokens` (v5), `password_recovery_requests` y `password_recovery_attempts` (v5.18). El equipo de un proveedor se representa con `technician_profiles.provider_id` (P-02).|
+|Identity Service|`tenants`, `users`, `technician_profiles`, `client_companies`, `password_setup_tokens` (v5), `password_recovery_requests` y `password_recovery_attempts` (v5.18). El equipo de un proveedor se representa con `technician_profiles.provider_id` (P-02).|
 |Actors Service|Ninguna todavía. `Supplier`, `Ally` y `Client` son conceptos evolutivos (SDD, sección 6.14).|
 |Catalog Service|`service_categories`|
 |Matching Service|`technician_availability` (incluye la proyección de especialidad y verificación, P-01), `coverage_zones`, `matching_attempts`, `matching_requests` (P-05) y el catálogo de referencia `localities` (P-04).|
-|ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence`, la réplica de lectura `service_request_categories` y la réplica del estado de los tenants `tenant_status_replica` (v5.17, RN-T1)|
-|Ranking Service|Ninguna todavía. Consume el evento `service-request.rated`; su persistencia es evolutiva (SDD, sección 6.14).|
+|ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence`, la réplica de lectura `service_request_categories` la réplica del estado de los tenants `tenant_status_replica` (v5.17, RN-T1) y la copia de `localities` (P-09)|
+|Ranking Service|`technician_reputations` y `applied_ratings` (v5.22, ADR-027) en `db_ranking`.|
 |Payments Service|`payments`, `invoices` y la proyección `payment_technicians` (v5.16, equipo de cada proveedor, P-02)|
-|Communication Service|`notifications` (v5, buzón de ADR-024) en `db_communication`. `Conversation` y `Complaint` son evolutivos.|
-|Transversal (en cada servicio)|`audit_logs`, `outbox_events`, `processed_events`|
+|Communication Service|`notifications` (v5, buzón de ADR-024), `chat_participants` y `chat_messages` (v5.11, ADR-026) en `db_communication`. `Complaint` es evolutivo.|
+|Transversal (según el servicio)|`outbox_events` en los que publican eventos (Identity, Catalog, ServiceRequest, Matching, Ranking y Payments); `processed_events` en los que consumen con tabla de idempotencia (ServiceRequest, Matching, Ranking y Payments); `audit_logs` en Identity y ServiceRequest. Communication no publica y es idempotente por `notifications.source_event_id`; Identity aplica la reputación por fecha (`technician_profiles.reputation_changed_at`).|
 
 _Cuadro 7: Propiedad de las entidades por microservicio_
 
@@ -279,6 +279,12 @@ flowchart TB
         users["users"]:::entity
         technician_profiles["technician_profiles"]:::entity
         client_companies["client_companies"]:::entity
+        password_setup_tokens["password_setup_tokens"]:::entity
+        password_recovery_requests["password_recovery_requests"]:::entity
+        password_recovery_attempts["password_recovery_attempts"]:::entity
+        users -->|"1 : N"| password_setup_tokens
+        users -->|"1 : N"| password_recovery_requests
+        tenants -->|"1 : N"| password_recovery_attempts
         tenants -->|"1 : N"| client_companies
         client_companies -->|"1 : N"| users
         tenants -->|"1 : N"| users
@@ -299,6 +305,7 @@ flowchart TB
         ratings["ratings"]:::entity
         service_evidence["service_evidence"]:::entity
         service_request_categories["service_request_categories<br/>(réplica de lectura)"]:::entity
+        tenant_status_replica["tenant_status_replica<br/>(réplica de lectura)"]:::entity
         service_requests -->|"1 : N"| quotes
         service_requests -->|"1 : 0..1"| ratings
         service_requests -->|"1 : N"| service_evidence
@@ -319,6 +326,7 @@ flowchart TB
         direction TB
         payments["payments"]:::entity
         invoices["invoices"]:::entity
+        payment_technicians["payment_technicians<br/>(proyección)"]:::entity
         payments -->|"1 : 0..1"| invoices
     end
 
@@ -327,14 +335,20 @@ flowchart TB
     end
 
     subgraph RNK["Ranking Service"]
-        rnk_empty["Sin tablas en esta versión"]:::empty
+        direction TB
+        technician_reputations["technician_reputations"]:::entity
+        applied_ratings["applied_ratings"]:::entity
     end
 
     subgraph COM["Communication Service"]
-        com_empty["Sin tablas en esta versión"]:::empty
+        direction TB
+        notifications["notifications"]:::entity
+        chat_participants["chat_participants<br/>(réplica de lectura)"]:::entity
+        chat_messages["chat_messages"]:::entity
+        chat_participants -->|"1 : N"| chat_messages
     end
 
-    subgraph TRV["Transversal · en cada servicio"]
+    subgraph TRV["Transversal · según el servicio (sección 3)"]
         direction TB
         audit_logs["audit_logs"]:::entity
         outbox_events["outbox_events"]:::entity
@@ -365,6 +379,12 @@ flowchart TB
     users -.->|"authorized_by_user_id"| payments
     users -.->|"actor_user_id"| audit_logs
     service_evidence -.->|"file_url"| garage
+    tenants -.->|"tenant.status-changed (réplica)"| tenant_status_replica
+    technician_profiles -.->|"technician.registered (proyección)"| payment_technicians
+    technician_profiles -.->|"technician_id"| technician_reputations
+    service_requests -.->|"service_request_id"| applied_ratings
+    users -.->|"user_id"| notifications
+    service_requests -.->|"service-request.status-changed (réplica)"| chat_participants
 
     style IDN fill:#E3ECF8,stroke:#00468C,stroke-width:2px
     style CAT fill:#FDF6DD,stroke:#9A7B00,stroke-width:2px
@@ -395,6 +415,10 @@ erDiagram
     service_requests ||--o| ratings : "recibe"
     service_requests ||--o{ service_evidence : "requiere"
     payments ||--o| invoices : "genera"
+    users ||--o{ password_setup_tokens : "user_id"
+    users ||--o{ password_recovery_requests : "user_id"
+    tenants ||--o{ password_recovery_attempts : "agrupa"
+    chat_participants ||--o{ chat_messages : "service_request_id"
 
     users ||..o{ service_requests : "client_id (ref. lógica)"
     technician_profiles |o..o{ service_requests : "technician_id (ref. lógica)"
@@ -416,7 +440,95 @@ erDiagram
     users |o..o{ payments : "authorized_by_user_id (ref. lógica)"
     technician_profiles ||..o{ payments : "technician_id (ref. lógica)"
     users |o..o{ audit_logs : "actor_user_id (ref. lógica)"
+    tenants ||..o| tenant_status_replica : "tenant_id (réplica por evento)"
+    technician_profiles ||..o| payment_technicians : "technician_id (proyección por evento)"
+    technician_profiles ||..o| technician_reputations : "technician_id (ref. lógica)"
+    service_requests ||..o| applied_ratings : "service_request_id (ref. lógica)"
+    users ||..o{ notifications : "user_id (ref. lógica)"
+    service_requests ||..o| chat_participants : "service_request_id (réplica por evento)"
 
+    password_setup_tokens {
+        uuid id PK
+        uuid tenant_id FK
+        uuid user_id FK
+        char token_hash UK
+        varchar purpose
+        timestamptz expires_at
+        timestamptz used_at
+        timestamptz created_at
+    }
+    password_recovery_requests {
+        uuid id PK
+        uuid tenant_id FK
+        uuid user_id FK
+        varchar status
+        timestamptz requested_at
+        timestamptz closed_at
+        timestamptz created_at
+    }
+    password_recovery_attempts {
+        uuid id PK
+        uuid tenant_id FK
+        char email_hash
+        timestamptz attempted_at
+    }
+    tenant_status_replica {
+        uuid tenant_id PK
+        varchar status
+        timestamptz updated_at
+    }
+    payment_technicians {
+        uuid technician_id PK
+        uuid tenant_id
+        uuid provider_id
+        timestamptz updated_at
+    }
+    technician_reputations {
+        uuid tenant_id PK
+        uuid technician_id PK
+        integer rating_sum
+        integer rating_count
+        numeric average_rating
+        boolean low_reputation
+        timestamptz updated_at
+    }
+    applied_ratings {
+        uuid tenant_id PK
+        uuid service_request_id PK
+        uuid technician_id
+        integer score
+        uuid event_id
+        timestamptz applied_at
+    }
+    notifications {
+        uuid id PK
+        uuid tenant_id
+        uuid user_id
+        varchar type
+        varchar title
+        varchar message
+        uuid service_request_id
+        uuid source_event_id UK
+        timestamptz read_at
+        timestamptz created_at
+    }
+    chat_participants {
+        uuid service_request_id PK
+        uuid tenant_id
+        uuid client_id
+        uuid technician_id
+        varchar status
+        timestamptz status_changed_at
+    }
+    chat_messages {
+        uuid id PK
+        uuid service_request_id FK
+        uuid tenant_id
+        uuid author_id
+        varchar author_role
+        varchar body
+        timestamptz sent_at
+    }
     tenants {
         uuid id PK
         varchar name
@@ -625,17 +737,18 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 
 ## 5. Diccionario de Datos
 
-**Estado de implementación (`develop`, 14 de octubre de 2026).** El diccionario describe el modelo completo de esta versión; no todas sus tablas existen todavía en el código. Este cuadro resume qué tablas ya tienen migración en cada servicio y qué falta. Las columnas pendientes se marcan en su tabla con **Pendiente de implementar**.
+**Estado de implementación (`develop`, 12 de noviembre de 2026; v5.22, SCRUM-693).** Todas las tablas del diccionario tienen migración en su servicio. La comparación columna por columna contra los snapshots de EF Core y las migraciones Flyway de Matching solo encontró, antes de esta versión, las dos tablas de Ranking y tres columnas de `technician_profiles` sin documentar; ya están en las secciones 5.3, 5.29 y 5.30.
 
 |Servicio|Tablas implementadas|Pendiente|
 |---|---|---|
-|Identity|`tenants`, `users`, `technician_profiles` (con `provider_id`), `password_setup_tokens`, `audit_logs`, `outbox_events`|`users.company_id` y `client_companies` (RF-06); `password_setup_tokens.purpose`, `password_recovery_requests` y `password_recovery_attempts` (recuperación de la contraseña, SCRUM-625, `quickpatch-identity#29`)|
-|Catalog|`service_categories` (con `updated_at`), `outbox_events`|—|
-|ServiceRequest|`service_requests` (con `matching_updated_at`), `service_request_categories`, `outbox_events`, `processed_events`|`company_id` y `client_type` (RF-08); `cancelled_by`, `cancelled_by_type` y `audit_logs` (RF-36, SCRUM-475); `quotes`, `ratings` y `service_evidence`|
+|Identity|`tenants`, `users`, `technician_profiles`, `client_companies`, `password_setup_tokens`, `password_recovery_requests`, `password_recovery_attempts`, `audit_logs`, `outbox_events`|—|
+|Catalog|`service_categories`, `outbox_events`|—|
+|ServiceRequest|`service_requests`, `quotes`, `ratings`, `service_evidence`, `service_request_categories`, `tenant_status_replica`, `localities` (copia, P-09), `audit_logs`, `outbox_events`, `processed_events`|—|
 |Matching|`technician_availability`, `coverage_zones`, `localities`, `matching_requests`, `matching_attempts`, `outbox_events`, `processed_events`|—|
-|Communication|—|`notifications` en `db_communication` (SCRUM-456); hoy solo el canal en tiempo real, sin base|
-|Payments|—|`payments` e `invoices`|
-|Actors y Ranking|—|Sin tablas en esta versión|
+|Ranking|`technician_reputations`, `applied_ratings`, `outbox_events`, `processed_events`|—|
+|Payments|`payments`, `invoices`, `payment_technicians`, `outbox_events`, `processed_events`|—|
+|Communication|`notifications`, `chat_participants`, `chat_messages`|—|
+|Actors|—|Sin tablas: Actors no tiene código y nadie usa `db_actors`|
 
 _Cuadro 8: Estado de implementación del modelo de datos_
 
@@ -720,7 +833,10 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 |specialty_id|UUID|No|Ref. lógica (P-03)|Especialidad principal del técnico: categoría de servicio que atiende (`service_categories.id`, Catalog Service).|
 |verification_status|VARCHAR(25)|No|—|Estado de verificación.|
 |verification_reason|TEXT|Sí|—|Razón de rechazo o suspensión.|
-|average_rating|NUMERIC(2,1)|Sí|—|Promedio de calificaciones del técnico. Proyección local; su cálculo corresponde a Ranking Service (SAD, D3).|
+|average_rating|NUMERIC(2,1)|Sí|—|Promedio de calificaciones del técnico. Proyección local de `ranking.technician-reputation-changed`; lo calcula Ranking Service (SAD, D3; ADR-027). Nulo mientras no tenga calificaciones.|
+|rating_count|INTEGER|No|—|**Documentada en v5.22** (existe desde la migración `ReputacionTecnico` de SCRUM-498). Cantidad de calificaciones con que Ranking calculó el promedio; 0 por defecto.|
+|low_reputation|BOOLEAN|No|—|**Documentada en v5.22.** Marca de reputación baja que calcula Ranking: al menos 5 calificaciones y promedio menor que 3,0 (AC9-E2). Falso por defecto.|
+|reputation_changed_at|TIMESTAMPTZ|Sí|—|**Documentada en v5.22.** `changedAt` del último `ranking.technician-reputation-changed` aplicado. Un evento con fecha anterior o igual se descarta, así que Identity es idempotente sin `processed_events` (ADR-017).|
 |created_at|TIMESTAMPTZ|No|—|Fecha de creación del perfil.|
 
 **Estados de `verification_status`:**
@@ -1439,6 +1555,47 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 ---
 
+### 5.29 Tabla `technician_reputations`
+
+**Documentada en v5.22 (implementada en SCRUM-85 y SCRUM-498; ADR-027).** **Servicio propietario:** Ranking Service, en su base `db_ranking`.
+
+**Propósito:** Reputación agregada de cada técnico. Ranking la recalcula al consumir `service-request.rated` y publica el resultado en `ranking.technician-reputation-changed`, que Identity proyecta en `technician_profiles` (sección 5.3).
+
+**Requisitos relacionados:** RF-12, RF-20, AC9-E2.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|tenant_id|UUID|No|PK (con `technician_id`)|Tenant del técnico (`tenantId` del evento).|
+|technician_id|UUID|No|PK (con `tenant_id`)|`technician_profiles.user_id` en Identity Service (ref. lógica).|
+|rating_sum|INTEGER|No|—|Suma de los puntajes aplicados.|
+|rating_count|INTEGER|No|CHECK|Cantidad de calificaciones aplicadas (`ck_technician_reputations_count`: mayor o igual que 0).|
+|average_rating|NUMERIC(2,1)|No|CHECK|`rating_sum / rating_count` con un decimal (`ck_technician_reputations_average`: de 0 a 5).|
+|low_reputation|BOOLEAN|No|—|Al menos 5 calificaciones y promedio menor que 3,0 (AC9-E2).|
+|updated_at|TIMESTAMPTZ|No|—|Fecha del último recálculo.|
+
+**Reglas:** el recálculo, la fila de `applied_ratings`, el `eventId` en `processed_events` y el evento en `outbox_events` se guardan en una transacción (ADR-007). RLS por tenant (`tenant_isolation`).
+
+### 5.30 Tabla `applied_ratings`
+
+**Documentada en v5.22 (implementada en SCRUM-85; ADR-027).** **Servicio propietario:** Ranking Service, en `db_ranking`.
+
+**Propósito:** Una fila por solicitud calificada que Ranking ya sumó. Evita sumar dos veces la calificación de una misma solicitud aunque llegue en otro evento.
+
+**Requisitos relacionados:** RF-12.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|tenant_id|UUID|No|PK (con `service_request_id`)|Tenant de la solicitud.|
+|service_request_id|UUID|No|PK (con `tenant_id`)|`service_requests.id` en ServiceRequest Service (ref. lógica).|
+|technician_id|UUID|No|—|Técnico calificado. Índice `ix_applied_ratings_technician` por `tenant_id, technician_id`.|
+|score|INTEGER|No|CHECK|Puntaje de 1 a 5 (`ck_applied_ratings_score`).|
+|event_id|UUID|No|—|`eventId` del `service-request.rated` que la aplicó.|
+|applied_at|TIMESTAMPTZ|No|—|Momento en que se sumó.|
+
+**Reglas:** RLS por tenant (`tenant_isolation`). El comentario de la calificación no llega a Ranking: el evento no lo trae (sección 8.4.2).
+
+---
+
 ## 6. Relaciones entre datos
 
 ### 6.1 Relaciones físicas dentro de un servicio
@@ -1458,6 +1615,10 @@ service_evidence.service_request_id  -> service_requests.id     (ServiceRequest)
 invoices.payment_id                  -> payments.id             (Payments)
 matching_attempts.service_request_id -> matching_requests.service_request_id (Matching, P-05)
 coverage_zones.locality_code         -> localities.code         (Matching, P-04)
+password_setup_tokens.user_id        -> users.id                (Identity)
+password_recovery_requests.user_id   -> users.id                (Identity)
+password_recovery_attempts.tenant_id -> tenants.id              (Identity)
+chat_messages.service_request_id     -> chat_participants.service_request_id (Communication)
 ```
 
 ### 6.2 Referencias lógicas entre microservicios
@@ -1481,6 +1642,15 @@ Hacia Identity Service
   payments.authorized_by_user_id       --> users.id
   payments.technician_id               --> technician_profiles.user_id
   audit_logs.actor_user_id             --> users.id
+  notifications.user_id                --> users.id
+  chat_participants.client_id          --> users.id
+  chat_participants.technician_id      --> technician_profiles.user_id
+  chat_messages.author_id              --> users.id
+  payment_technicians.technician_id    --> technician_profiles.user_id   (proyección de technician.registered)
+  payment_technicians.provider_id      --> users.id
+  technician_reputations.technician_id --> technician_profiles.user_id
+  applied_ratings.technician_id        --> technician_profiles.user_id
+  tenant_status_replica.tenant_id      --> tenants.id   (réplica de tenant.status-changed)
   <tabla>.tenant_id                    --> tenants.id   (toda tabla fuera de Identity Service que tenga tenant_id, sección 10.1)
 
 Hacia Catalog Service
@@ -1493,6 +1663,9 @@ Hacia Catalog Service
 Hacia ServiceRequest Service
   matching_requests.service_request_id --> service_requests.id
   payments.service_request_id          --> service_requests.id
+  applied_ratings.service_request_id   --> service_requests.id
+  notifications.service_request_id     --> service_requests.id
+  chat_participants.service_request_id --> service_requests.id   (réplica de service-request.status-changed)
 ```
 
 Estas referencias se validan mediante reglas de negocio, contratos REST o eventos. Ningún servicio escribe en tablas de otro dominio.
@@ -2379,7 +2552,7 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 
 |Evento|Productor|Consumidores|Finalidad|v3|
 |---|---|---|---|---|
-|`technician.registered`|Identity|Matching, Communication|Crear la fila de `technician_availability` con la especialidad y el estado `no_disponible` (P-01).|Contrato v1 (v4)|
+|`technician.registered`|Identity|Matching, Communication, Payments|Crear la fila de `technician_availability` con la especialidad y el estado `no_disponible` (P-01); Payments guarda el proveedor del técnico en `payment_technicians` (v5.16).|Contrato v1 (v4)|
 |`technician.verification-changed`|Identity|Matching, Communication|Actualizar la copia de `verification_status`; si pasa a `aprobado` dispara RN-M10.|Contrato v1 (v4)|
 |`service-request.created`|ServiceRequest|Matching, Communication|Iniciar el matching y notificar.||
 |`matching.offer-created`|Matching|Communication|Notificar al técnico que tiene una oferta (SCRUM-30).|Contrato v1 (v4)|
@@ -2392,11 +2565,12 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 |`service-request.quote-rejected`|ServiceRequest|Communication|Notificar al técnico que debe emitir otra cotización.|Contrato v1 (5.5, SCRUM-487)|
 |`service-request.started`|ServiceRequest|Communication (previsto)|Notificar al cliente que el servicio inició (RF-11, D2).|Contrato v1 (5.6, SCRUM-94). Hoy sin consumidor: el aviso al cliente sale de `service-request.status-changed`, que se publica en la misma transacción (sección 8.5).|
 |`service-request.cancelled`|ServiceRequest|Matching|Matching anula la oferta pendiente y libera al técnico (RN-M5, RN-M6). **v5.3:** Communication no lo consume; el aviso sale de `service-request.status-changed`, que se publica en la misma transacción.|Contrato v1 (5.3, SCRUM-474)|
-|`service-request.completed`|ServiceRequest|Payments, Matching, Communication|Payments crea el pago pendiente (RN-P4) y Matching libera al técnico (RN-M6).|Contrato v1 (5.6, SCRUM-94). Lo consume Matching; Payments, cuando exista. El aviso al cliente sale de `status-changed`.|
-|`service-request.rated`|ServiceRequest|Ranking, Communication|Ranking actualiza la reputación del técnico (D3, DEP-04).|Nuevo|
-|`payment.approved`|Payments|ServiceRequest, Communication|La solicitud pasa a `pagado`; Payments emite la factura.||
-|`payment.rejected`|Payments|ServiceRequest, Communication|La solicitud permanece en `completado` (RN-SR5).||
-|`catalog.category-changed`|Catalog|ServiceRequest, Matching|Estado completo de una categoría para las réplicas locales (`service_request_categories`). Desde ADR-025, ServiceRequest sirve con ella la lista de categorías de las apps.|Contrato v1; `description` opcional desde quickpatch-kafka v0.8.0 (5.7)|
+|`service-request.completed`|ServiceRequest|Payments, Matching|Payments crea el pago pendiente (RN-P4) y Matching libera al técnico (RN-M6).|Contrato v1 (5.6, SCRUM-94). Lo consumen Matching y Payments. El aviso al cliente sale de `status-changed`.|
+|`service-request.rated`|ServiceRequest|Ranking|Ranking recalcula la reputación del técnico (D3, ADR-027). No lleva el comentario.|Contrato v1 (SCRUM-85)|
+|`ranking.technician-reputation-changed`|Ranking|Identity|Identity actualiza `average_rating`, `rating_count` y `low_reputation` de `technician_profiles` (AC9-E2) y descarta lo que sea más viejo que `reputation_changed_at`.|Contrato v1 (ADR-027)|
+|`payment.approved`|Payments|ServiceRequest|La solicitud pasa a `pagado`; Payments emite el comprobante en la misma transacción del cobro. El aviso sale de `service-request.status-changed`.|Contrato v1|
+|`payment.rejected`|Payments|ServiceRequest|La solicitud permanece en `completado` (RN-SR5).|Contrato v1|
+|`catalog.category-changed`|Catalog|ServiceRequest; Matching previsto (aún no lo consume)|Estado completo de una categoría para las réplicas locales (`service_request_categories`). Desde ADR-025, ServiceRequest sirve con ella la lista de categorías de las apps.|Contrato v1; `description` opcional desde quickpatch-kafka v0.8.0 (5.7)|
 |`tenant.status-changed`|Identity|ServiceRequest|El administrador de la plataforma activó o desactivó un tenant (RF-21). Lleva el estado completo (`activo` o `inactivo`) y `updatedAt` como versión (ADR-017). Se publica por Outbox en la misma transacción del cambio de `tenants.status`, solo si el estado cambió, y el `tenantId` del sobre y la clave del mensaje son los del tenant que cambió, no los del administrador. ServiceRequest guarda la réplica `tenant_status_replica` (sección 5.26) y rechaza crear solicitudes de un tenant inactivo (RN-T1). Un topic de una partición; el consumidor descarta el evento si ya tiene un `updatedAt` más reciente.|Contrato v1 (5.17, SCRUM-508). Topic con retención de 7 días.|
 
 _Cuadro 11: Eventos Kafka, productores y consumidores_
@@ -2731,9 +2905,10 @@ El aislamiento entre tenants sigue ADR-005 (shared-schema con `tenant_id` + Row 
 |---|---|---|
 |`tenants`|No aplica: es la tabla raíz|Política sobre `id`; el rol `_app` solo puede consultarla.|
 |`users`, `technician_profiles`, `client_companies`|NOT NULL, FK física|Política de aislamiento por tenant.|
-|`password_setup_tokens` (v5)|NOT NULL, FK física|Política de aislamiento por tenant, como `users`.|
+|`password_setup_tokens` (v5), `password_recovery_requests` y `password_recovery_attempts` (v5.18)|NOT NULL, FK física|Política de aislamiento por tenant, como `users`.|
 |`service_categories`, `service_requests`, `quotes`, `ratings`, `service_evidence`, `technician_availability`, `coverage_zones`, `matching_attempts`, `matching_requests`, `payments`, `invoices`|NOT NULL, referencia lógica|Política de aislamiento por tenant.|
-|`notifications` (v5)|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant; solo la escriben los consumidores de Communication.|
+|`notifications` (v5), `chat_participants` y `chat_messages` (v5.11)|NOT NULL, con el `tenantId` del evento o de la sesión|Política de aislamiento por tenant. `notifications` y `chat_participants` solo las escriben los consumidores de Communication.|
+|`tenant_status_replica` (v5.17), `payment_technicians` (v5.16), `technician_reputations` y `applied_ratings` (v5.22)|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant; solo las escribe el consumidor que las alimenta.|
 |`service_request_categories`|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant; solo la escribe el consumidor de `catalog.category-changed`.|
 |`processed_events`|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant.|
 |`outbox_events`|NOT NULL, con el tenant de la sesión por defecto|Política de inserción por tenant; la lectura para publicar la hace el rol del publicador (sección 10.2).|
@@ -2832,7 +3007,7 @@ El modelo de esta versión depende de las siguientes decisiones de diseño, que 
 |DEP-01|RN-TP1 y RN-TP2 en Matching Service|Mecanismo por el cual Matching Service conoce `technician_profiles.verification_status`.|SAD, sección 3.9|Propuesta P-01: proyección por eventos (sección 5.6; SDD V2, antes DD §10.13). Falta reflejarla en el SAD.|
 |DEP-02|`technician_profiles.specialty_id` y `provider_id`|Persistencia de las especialidades en Catalog Service y de proveedores y aliados en Actors Service.|SAD, sección 8.1; SDD, sección 6.14|Propuestas P-02 y P-03: equipo en Identity y especialidad como categoría. Sigue abierta la persistencia definitiva de Actors.|
 |DEP-03|`service_categories`|Atributo de riesgo físico por categoría de servicio, requerido por los escenarios de Safety.|SAD, sección 3.9 (AC9)|Abierta.|
-|DEP-04|`technician_profiles.average_rating`|Persistencia de Ranking Service y evento que publica ServiceRequest al registrar una calificación (`SERVICE_EVALUATED` en el SAD).|SAD, D3; SDD, sección 6.14|Parcial: se agrega `service-request.rated` (sección 8.4). Falta definir cómo Ranking devuelve el promedio a Identity.|
+|DEP-04|`technician_profiles.average_rating`|Persistencia de Ranking Service y evento que publica ServiceRequest al registrar una calificación (`SERVICE_EVALUATED` en el SAD).|SAD, D3; SDD, sección 6.14|Resuelta (v5.22): ADR-027. Ranking publica `ranking.technician-reputation-changed` e Identity lo proyecta en `technician_profiles` (secciones 5.3, 5.29 y 8.4).|
 |DEP-05|`users.role`|Correspondencia entre los valores de `role` y los roles del SAD. `admin_plataforma` y `admin_tenant` corresponden a `PLATFORM_ADMIN` y `TENANT_ADMIN`; falta definir cómo se reflejan `EMPLOYEE`, `ALLY`, `SUPPLIER` y `BUSINESS_CLIENT`.|SAD, sección 7.2|Abierta.|
 |DEP-06|Contratos de la sección 8|Incorporación en el SDD de los endpoints de ofertas, cotización y cancelación, de los eventos nuevos y de la propiedad de `service_categories` por Catalog Service.|SDD, secciones 6.7 y 5.6|Abierta. La sección 8.7 lista exactamente qué corregir en el SDD.|
 |DEP-07|Sección 13|ADR de adopción de la capa analítica, con evaluación de capacidad frente a R5 y R10.|SAD, sección 6|Abierta.|
@@ -2902,7 +3077,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.19|SCRUM-625|**Decisiones de la recuperación de la contraseña (`quickpatch-identity#29`).** `password_recovery_attempts.email_hash` pasa de SHA-256 a HMAC-SHA256 con una clave del servicio (sección 5.28). Al confirmar la recuperación se marcan como usadas las invitaciones pendientes del usuario (RN-U7). Se aprueba el modelo de las tablas 5.27 y 5.28 y de la columna `purpose` (5.21) tal como lo implementa el PR.|
 |5.20|SCRUM-637|**Calificación en el detalle de la solicitud (RF-12).** `service-request.v1.yaml` 1.12.0: `GET /v1/service-requests/{id}` agrega `rating` (`score`, `comment` y `ratedAt`), opcional y `null` mientras no se califique, para SCRUM-86 y SCRUM-32. Cambio compatible; RN-SR13 no cambia. Secciones 5.9, 8.2.4 y 8.3.4.|
 |5.21|SCRUM-644|**Contraseña cifrada en el cliente (RF-03, RNF-03; observación del profesor).** `identity.v1.yaml` 1.11.0 (`quickpatch-api-gateway` v0.23.0): `GET /v1/auth/password-key` y `encryptedPassword` (RSA-OAEP-256) en el login, los registros, `password/setup` y `password-recovery/confirm`; `400 llave-desconocida` (secciones 8.2.1 y 8.3.2). Sin cambios en las tablas.|
-|5.22|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.22|SCRUM-693|**Auditoría contra el código (SCRUM-690).** Se compararon el diccionario, las figuras y los eventos con los snapshots de EF Core, las migraciones Flyway de Matching, `quickpatch-kafka` v0.10.0 y `quickpatch-api-gateway` v0.24.0. Se documentan `technician_reputations` y `applied_ratings` (5.29 y 5.30) y tres columnas de `technician_profiles`; las figuras 1 y 2 y las secciones 3, 6 y 10.1 incluyen las 10 tablas que faltaban; el Cuadro 8 pasa al 12 de noviembre; en el Cuadro 11 se quitan consumidores que no existen (Communication en `service-request.completed`, `service-request.rated` y `payment.*`) y se agregan Payments en `technician.registered` y el evento `ranking.technician-reputation-changed`. DEP-04 queda resuelta. Las rutas REST del documento coinciden con los contratos.|
+|5.23|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 
