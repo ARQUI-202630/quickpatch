@@ -1,16 +1,16 @@
-# Documento de Pruebas (TD V3.0) — QUICKPATCH
+# Documento de Pruebas (TD V3.3) — QUICKPATCH
 ## Sistema Multi-tenant de Servicios Técnicos para el Hogar y las Empresas
 
 | | |
 |---|---|
 | **Tipo de documento** | Documento de Diseño y Definición de Pruebas (Test Document - TD) |
-| **Versión** | 3.2 (Incremento Técnico y Funcional Sprint 5 / Entrega Final) |
+| **Versión** | 3.3 (Incremento Técnico y Funcional Sprint 5 / Entrega Final; cifras conciliadas con las fuentes únicas, SCRUM-695) |
 | **Curso** | Arquitectura de Software |
 | **Proyecto Jira** | SCRUM — Arquitectura de Software |
 | **Rol Responsable** | Katherine Bravo (QA Lead) |
 | **Trazabilidad Jira** | Historia `SCRUM-529` (Subtareas `SCRUM-530`, `SCRUM-531`, `SCRUM-532`) |
 | **Estándares Aplicados** | ISO/IEC/IEEE 29119 (Software Testing), ISO/IEC 25010:2023 (Calidad de Software), RFC 9457 (Problem Details), PCI-DSS v4.0 (K2) |
-| **Alcance** | Estrategia de pruebas automatizadas sobre 12 repositorios de componentes más el repositorio principal, y validación en 7 Máquinas Virtuales (ADR-022) |
+| **Alcance** | Estrategia de pruebas automatizadas sobre 13 repositorios de componentes más el repositorio principal (14 en total, ADR-021 y ADR-020; `docs/architecture/cifras-canonicas.md`), y validación en 7 Máquinas Virtuales (ADR-022) |
 
 ---
 
@@ -33,7 +33,7 @@
 ## 1. Introducción y Propósito
 
 ### 1.1 Propósito
-El presente Documento de Pruebas (TD V3.0) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 5.11, borrador de la V6, con 33 RFs canónicos y RF-38 y RF-39 propuestos en su sección 7.6) y los escenarios de calidad del SAD (versión vigente V2.47, 52 escenarios) de cara a los entregables del Sprint 5 y la Entrega Final.
+El presente Documento de Pruebas (TD V3.3) formaliza la estrategia integral de aseguramiento de calidad (QA) para la plataforma QUICKPATCH. Este documento establece los tipos de prueba, herramientas, ambientes de ejecución, compuertas de promoción y el catálogo detallado de casos de prueba automatizados requeridos para validar los requisitos del SRS (versión vigente 5.11, borrador de la V6, con 33 RFs canónicos y RF-38 y RF-39 propuestos en su sección 7.6) y los escenarios de calidad del SAD (versión vigente V2.47, 52 escenarios) de cara a los entregables del Sprint 5 y la Entrega Final.
 
 ### 1.2 Objetivos de Calidad
 1. **Garantizar la verificación automática:** Eliminar la dependencia de pruebas manuales no reproducibles mediante la automatización de pruebas unitarias, de integración, de contratos, E2E, de rendimiento y de seguridad.
@@ -382,6 +382,8 @@ El SRS 5.11 (borrador de la V6) formaliza un total de **33 Requisitos Funcionale
 > [!NOTE]
 > **Alineación con SRS 5.11 (SCRUM-531, 4 de noviembre de 2026):** la matriz mapea los **33 Requisitos Funcionales oficiales** del SRS (RF-01 a RF-29 y RF-34 a RF-37) y los dos que la revisión del Product Owner propone en la sección 7.6 del SRS 5.11: RF-38 (recuperación de contraseña, SCRUM-623) y RF-39 (edición del perfil, SCRUM-609). Los dos esperan el visto bueno de Juan Diego Rojas; si se aprueban, la fila queda igual y solo se quita la marca *Propuesto*. Todo RF tiene al menos un caso del catálogo de la sección 7. Las familias `REG`, `RLS`, `GEO`, `OFF`, `TRK`, `AVA`, `COV`, `DTL`, `PRV`, `PNL`, `VER` y `SUS` son casos de las colecciones de `tests/e2e`, registrados en las tablas de ejecución de la sección 10. Las extensiones operativas de interacción (notificaciones push, buzón offline, geocodificación local y landing institucional) se gestionan a nivel de componentes sin alterar la numeración contractual del SRS.
 
+> **Estado de cada RF (SCRUM-700, 12 de noviembre de 2026):** los 33 RF están implementados, verificados en QA y aceptados por la Product Owner (RF-10 con observaciones). El estado, la evidencia y la observación de cada uno están en `docs/testing/indicadores-funcionales.md`, que es la fuente única de los indicadores funcionales. RF-38 y RF-39 no cuentan en el denominador mientras sean propuestos; en el Informe UAT de la PO aparecen como EXT-04 y EXT-01.
+
 | ID RF | Feature | Descripción Funcional (SRS v5.6) | Módulo / Servicio Propietario | Casos de Prueba Automatizados Asociados (TD V3) |
 |---|---|---|---|---|
 | **RF-01** | F1.1 | Registro de Cliente con validación de formato de email, complejidad de password ($\ge 8$ caracteres) y unicidad por tenant. | Identity | `IDN-001`, `IDN-002`, `IDN-003`, `E2E-001` |
@@ -423,20 +425,28 @@ El SRS 5.11 (borrador de la V6) formaliza un total de **33 Requisitos Funcionale
 ---
 
 #### 7.1.2 Trazabilidad hacia Escenarios de Calidad del SAD (V2.47)
-El SAD formaliza **52 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **38 escenarios arquitectónicos y de software**. El estado medido de cada uno está en `docs/testing/matriz-escenarios-calidad-52.md`. Los 14 escenarios restantes corresponden a pruebas presenciales de interacción humana con 5 participantes (AC4-E3 a AC4-E9), análisis estático de código documental (AC7-E1, AC7-E2, AC8-E3, AC8-E4) y escenarios con dependencias de diseño pendientes en el backend (AC9-E2, AC9-E7, AC9-E8).
+El SAD formaliza **52 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40 subcaracterísticas de ISO/IEC 25010:2023. De estos, el presente plan automatiza **42 escenarios arquitectónicos y de software**. Los 10 escenarios restantes corresponden a:
+
+- pruebas presenciales con 5 participantes o con un dispositivo de referencia (AC4-E3, AC4-E4, AC4-E6, AC4-E8 y AC4-E9);
+- análisis estático de código y documentación (AC7-E1, AC7-E2, AC8-E3 y AC8-E4);
+- la regresión del cambio de proveedor de geolocalización (AC9-E8), que todavía no tiene prueba.
+
+> **Estado medido (fuente única, SCRUM-664):** al 12 de noviembre de 2026 los 52 escenarios están en 35 Cumple, 8 Parcial, 3 No cumple y 6 No medido, para un 75.00%. El estado de cada uno está en `docs/testing/matriz-escenarios-calidad-52.md`, y se recalcula con `python scripts/calcular_indicadores_qa.py`. Que un escenario esté automatizado en esta tabla no significa que cumpla.
+
+> **Cambio frente a la versión 3.2:** la tabla pasa de 38 a 42 automatizados. Se suman AC4-E5 (colecciones `scrum-458` con 400 y 422), AC4-E7 (pruebas de accesibilidad de Flutter, quickpatch-mobile#58), AC9-E2 (colección `scrum-642-reputacion-baja`, 11-nov) y AC9-E7 (humo del flujo crítico, `SMK-001`).
 
 | Atributo de Calidad (ISO 25010) | Escenarios Automatizados | Total SAD | Casos de Prueba Automatizados |
 |---|:---:|:---:|---|
 | **AC1: Adecuación Funcional** | 3 / 3 | 3 | `AC1-E1` (MAT-001), `AC1-E2` (E2E-001), `AC1-E3` (SRQ-005) |
 | **AC2: Eficiencia de Desempeño** | 5 / 5 | 5 | `AC2-E1` (PRF-001), `AC2-E2` (PRF-002), `AC2-E3` (PRF-003), `AC2-E4` (PRF-004), `AC2-E5` (PRF-005) |
 | **AC3: Compatibilidad** | 2 / 2 | 2 | `AC3-E1` (PAY-014), `AC3-E2` (MAT-022) |
-| **AC4: Capacidad de Interacción** | 2 / 9 | 9 | `AC4-E1` (E2E-005), `AC4-E2` (E2E-006). *(AC4-E3 a AC4-E9 son pruebas presenciales con 5 participantes)* |
+| **AC4: Capacidad de Interacción** | 4 / 9 | 9 | `AC4-E1` (E2E-005), `AC4-E2` (E2E-006), `AC4-E5` (colección `scrum-458`: 400 con el campo y 422 ante dirección inválida), `AC4-E7` (pruebas `meetsGuideline` de Flutter, quickpatch-mobile#58). *(AC4-E3, AC4-E4, AC4-E6, AC4-E8 y AC4-E9 se miden con personas o con el dispositivo de referencia)* |
 | **AC5: Confiabilidad** | 6 / 6 | 6 | `AC5-E1` (INF-008), `AC5-E2` (INF-015), `AC5-E3` (RNK-006), `AC5-E4` (INF-014), `AC5-E5` (SRQ-024, AC5-E5 Idempotencia), `AC5-E6` (E2E-012) |
 | **AC6: Seguridad** | 8 / 8 | 8 | `AC6-E1` (PAY-001, PAY-002), `AC6-E2` (IDN-009, RLS-001..005), `AC6-E3` (IDN-011), `AC6-E4` (IDN-017), `AC6-E5` (E2E-011), `AC6-E6` (PAY-015), `AC6-E7` (IDN-020), `AC6-E8` (IDN-007, IDN-008) |
 | **AC7: Mantenibilidad** | 4 / 6 | 6 | `AC7-E3` (CTR-001), `AC7-E4` (INF-012), `AC7-E5` (ACT-013), `AC7-E6` (SMK-003). *(AC7-E1/E2 verificados por linters estáticos)* |
 | **AC8: Flexibilidad** | 3 / 5 | 5 | `AC8-E1` (E2E-004), `AC8-E2` (MAT-020), `AC8-E5` (INF-002). *(AC8-E3/E4 portabilidad externa documentada)* |
-| **AC9: Seguridad Operativa (Safety)**| 5 / 8 | 8 | `AC9-E1` (SRQ-015, SRQ-017), `AC9-E3` (SRQ-025), `AC9-E4` (MAT-013), `AC9-E5` (PAY-009), `AC9-E6` (PRF-010). *(AC9-E2/E7/E8 pendientes de diseño)* |
-| **Total Escenarios** | **38 automatizados** | **52** | **100% de los escenarios de software y arquitectura cubiertos** |
+| **AC9: Seguridad Operativa (Safety)**| 7 / 8 | 8 | `AC9-E1` (SRQ-015, SRQ-017), `AC9-E2` (colección `scrum-642-reputacion-baja`), `AC9-E3` (SRQ-025), `AC9-E4` (MAT-013), `AC9-E5` (PAY-009), `AC9-E6` (PRF-010), `AC9-E7` (SMK-001, humo del flujo crítico). *(AC9-E8 sin prueba de regresión del cambio de proveedor)* |
+| **Total Escenarios** | **42 automatizados** | **52** | **100% de los escenarios de software y arquitectura cubiertos** |
 
 ---
 
@@ -1108,6 +1118,8 @@ El sistema retornó HTTP 500 Internal Server Error o no generó el evento en la 
 ## 10. Informe de Ejecución de Pruebas (Test Execution Report - Sprint 3 & Sprint 4)
 
 ### 10.1 Resumen Ejecutivo del Incremento de Valor
+
+> **Corte histórico del Sprint 3 (3 de octubre de 2026).** Esta tabla usa el SRS v3.3 (32 RF) y el SAD v2.24 (37 escenarios automatizables) de esa fecha. Las cifras vigentes son 33 RF (`docs/testing/indicadores-funcionales.md`) y 52 escenarios (`docs/testing/matriz-escenarios-calidad-52.md`).
 En el marco del **Sprint 3 (Semana 10)**, el equipo de Aseguramiento de Calidad (QA) ha completado el diseño, estructuración y especificación formal de la arquitectura de pruebas integral para la plataforma QUICKPATCH sobre los 13 repositorios y el entorno de las 7 Máquinas Virtuales (ADR-022).
 
 | Métrica de Aseguramiento de Calidad | Meta del Sprint 3 | Estado Alcanzado | Cumplimiento |
@@ -1741,6 +1753,7 @@ Detalle del resumen estadístico de Newman en consola para la suite `scrum-108-a
 | **3.0** | 25 de octubre de 2026 | Katherine Bravo (QA Lead) | **Línea Base Final del Documento de Pruebas (TD V3.0 — SCRUM-529):**<br>1. **Casos de Prueba del Incremento Sprint 5 (SCRUM-530):** Incorporación formal de los casos de prueba automatizados para Calificación del servicio (`SCRUM-32` / `CAL-001..006`), Historial de servicios atendidos por el técnico (`SCRUM-37` / `HIS-001..005`), Pago corporativo centralizado de empresa (`SCRUM-43` / `PAY-019..023`), Registro de pagos recibidos por técnico/proveedor (`SCRUM-45` / `PAY-024..027`), Smoke Test E2E del flujo crítico (`SCRUM-47` / `SMK-001..004`), Cifrado en tránsito y reposo (`SCRUM-49` / `SEC-001..005`) y Rechazo inmediato de tenants inactivos por eventos réplica (`SCRUM-348` / `TNT-001..005`).<br>2. **Actualización de la RTM a SRS v5.6 (SCRUM-531):** Trazabilidad bidireccional completa de los 33 Requisitos Funcionales canónicos del SRS v5.6 (RF-01 a RF-29 y RF-34 a RF-37) y matriz de correspondencia hacia las Historias de Usuario de Sprint 5.<br>3. **Estrategia de Prueba de Humo y Compuerta a Producción (SCRUM-532):** Formalización de la Compuerta 3 (§3.3) bajo RNF-08 sobre la topología de 7 VMs (ADR-022: VM1, VM3, VM4, VM6), definiendo el Smoke Test de 9 pasos y el protocolo de Rollback automático (`kubectl rollout undo`). |
 | **3.1** | 3 de noviembre de 2026 | Katherine Bravo (QA Lead) | **Casos de prueba del Sprint 5 contra los contratos publicados (SCRUM-530):**<br>1. Se rediseñan contra los endpoints reales `CAL-001..023` (SCRUM-32, `POST /v1/service-requests/{id}/rating`), `HIS-001..016` (SCRUM-37) y `PAY-024..040` (SCRUM-45, `GET /v1/payments/received`).<br>2. Se agregan `PER-001..022` (edición del perfil, SCRUM-609), `REC-001..027` (recuperación de contraseña, SCRUM-623) y `NAV-001..022` (navegación hacia atrás, SCRUM-615).<br>3. Correcciones: `TNT-003` responde 422 `tenant-inactivo` (no 403), `ACT-011` edita nombre y teléfono, `SRQ-026` usa `/v1/technicians/me/service-requests`.<br>4. RTM del Sprint 5 (§7.1.3b) con las HU SCRUM-609, SCRUM-615 y SCRUM-623. Los casos nuevos quedan diseñados y pendientes de ejecución en QA.<br>5. Ajustes de la revisión por las decisiones de SCRUM-625 (DD 5.19): `REC-020` ya no queda a confirmar (las sesiones abiertas siguen hasta que vence su token); se agregan `REC-026` (técnico con la invitación sin usar) y `REC-027` (HMAC-SHA256 del correo en `password_recovery_attempts`). |
 | **3.2** | 4 de noviembre de 2026 | Juan Diego Rojas (apoyo a QA) | **RTM y compuerta de producción (SCRUM-531 y SCRUM-532):** la RTM traza el SRS 5.11 y el SAD V2.47, con RF-38 y RF-39 como propuestos de la sección 7.6 del SRS; RF-12 y RF-17 citan los casos completos (`CAL-001`..`023`, `HIS-001`..`016`); el RF-37 deja de citar casos inexistentes con `CHT-001`..`006` en la sección 7.9; el catálogo pasa a 339 casos y la 7.1.2 a 52 escenarios. La sección 3.3 y los casos `SMK-001`..`004` describen la prueba de humo y la compuerta que de verdad corren: `humo-flujo-critico` contra QA desde `pruebas-sistema.yml`, `compuerta-qa` antes de producción y sin rollback automático. Las colecciones `scrum-614-perfil`, `scrum-37-historial` y `scrum-32-calificacion` corrieron sin fallos en QA el 4 de noviembre. |
+| **3.3** | 12 de noviembre de 2026 | Katherine Bravo (QA Lead) | **Conciliación con las fuentes únicas (SCRUM-695):** (1) el estado de los RF remite a `indicadores-funcionales.md` (SCRUM-700): 33 de 33 implementados, verificados y aceptados; (2) el estado de los escenarios remite a la matriz de 52 (SCRUM-664): 35 Cumple, 8 Parcial, 3 No cumple y 6 No medido; (3) la sección 7.1.2 pasa de 38 a 42 escenarios automatizados (AC4-E5, AC4-E7, AC9-E2 y AC9-E7); (4) el alcance cuenta 14 repositorios (13 de componentes más el principal); (5) la tabla del Sprint 3 (sección 10.1) queda marcada como corte histórico. El registro de discrepancias está en `docs/testing/conciliacion-cifras-qa-2026-11-12.md`. |
 
 
 

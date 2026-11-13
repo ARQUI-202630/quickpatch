@@ -15,10 +15,12 @@ Este archivo es el punto de entrada a la documentación formal del proyecto.
 | `design/DD.md` | Documento de Diseño vigente temporal: datos y contratos. |
 | `Documento de Infraestructura.md` | Topología, ambientes, despliegue, observabilidad y operación. |
 | `Documento Politicas y Herramientas.md` | GitFlow, colaboración, herramientas, calidad y uso de IA. |
-| `testing/TD.md` | Documento de Pruebas (TD V1): Estrategia de pruebas automatizadas, compuertas de calidad, RTM y catálogo de pruebas. |
+| `testing/TD.md` | Documento de Pruebas (TD V3.3): Estrategia de pruebas automatizadas, compuertas de calidad, RTM y catálogo de pruebas. |
 | `testing/evidencias-sprint4.md` | Evidencias del Sprint 4 en QA (SCRUM-449): versiones y pipelines, pruebas de sistema, humo de los frontends, evidencias por historia y capturas. Insumo del informe (SCRUM-394) y la presentación (SCRUM-429). |
 | `testing/inventario-funcionalidades-por-usuario.md` | Inventario de 78 funcionalidades por tipo de usuario, con su RF y su HU (SCRUM-560). |
 | `testing/avance-real-sprint5.md` | Avance real del producto con fórmula, fecha de corte y clasificación de cada funcionalidad con su evidencia (SCRUM-562). |
+| `testing/indicadores-funcionales.md` | Fuente única de los indicadores funcionales: 33 RF definidos, implementados, verificados en QA y aceptados, las 4 extensiones aparte y el avance del producto (SCRUM-700). Se recalcula con `scripts/calcular_indicadores_qa.py`. |
+| `testing/conciliacion-cifras-qa-2026-11-12.md` | Registro de discrepancias de cifras de QA y su corrección (SCRUM-664, SCRUM-695 y SCRUM-701). |
 
 ## Documento histórico
 

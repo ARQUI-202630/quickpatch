@@ -1,8 +1,8 @@
 # Cuadro de Mando de Estadísticas de Pruebas — Sprint 5 (SCRUM-604)
 
 **Código del Documento:** `MET-QA-SP5-2026-11-02`  
-**Versión:** `2.2 Dinámica Oficial (Cobertura de CI SCRUM-602 incorporada)`  
-**Fecha de Generación:** 2 de noviembre de 2026  
+**Versión:** `2.3 (indicadores desde las fuentes únicas, SCRUM-701 y SCRUM-695)`  
+**Fecha de Generación:** 2 de noviembre de 2026 (versión 2.3: 12 de noviembre de 2026)  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
 **Trazabilidad Jira:** Tarea `SCRUM-604` | Requisito RNF-08 | Documento de Pruebas `TD.md` V3.0  
 **Principio Metodológico:** Toda cifra reportada proviene directamente de archivos de resultados de CI (.trx/surefire), evidencias Newman en QA, resúmenes JSON de k6 y la Matriz de Avance UAT en Excel. Cero cifras escritas a mano.
@@ -83,10 +83,10 @@ Evaluación oficial de las colecciones de prueba automatizadas ejecutadas contra
 
 Conforme a la directriz técnica de QA, las peticiones masivas de carga no se contabilizan como casos de prueba unitarios, sino que se reportan en su propia tabla con sus percentiles de latencia y tasa de fallo:
 
-| Escenario de Carga | Concurrencia (VUs) | Duración | Iteraciones | Peticiones HTTP | Latencia p95 | Tasa de Error | Archivo de Evidencia |
+| Escenario de Carga | Concurrencia (VUs) | Duración | Iteraciones | Peticiones HTTP | Latencia p95 (métrica del umbral) | Tasa de Error | Archivo de Evidencia |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|---|
-| **Prueba de Carga Concurrente (50 VU)** | 50 VUs | 2m 30s | 2,817 | 8,454 | **79.66 ms** | **0.01%** | `tests/performance/evidencias/k6-load-50vu-qa-2026-11-04-run-41940280403.json` |
-| **Prueba de Estrés Extremo (150 VU)** | 150 VUs | 4m 00s | 16,378 | 32,750 | **1105.96 ms** | **0.03%** | `tests/performance/evidencias/k6-stress-150vu-qa-2026-11-04-run-41940280403.json` |
+| **Prueba de Carga Concurrente (50 VU)** | 50 VUs | 2m 30s | 2,817 | 8,454 | **88.16 ms** | **0.01%** | `tests/performance/evidencias/k6-load-50vu-qa-2026-11-04-run-41940280403.json` |
+| **Prueba de Estrés Extremo (150 VU)** | 150 VUs | 4m 00s | 16,378 | 32,750 | **1183.24 ms** | **0.03%** | `tests/performance/evidencias/k6-stress-150vu-qa-2026-11-04-run-41940280403.json` |
 
 ---
 
@@ -106,12 +106,12 @@ Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-def
 
 * **Total de Pruebas Reales Automatizadas:** **2,469 pruebas / aserciones** (1,525 unitarias/integración + 931 E2E + 13 seguridad).
 * **Tasa de Aprobación de Pruebas:** **100.0% PASS (0 fallos en runs oficiales)**.
-* **Capacidad de Carga k6:** **32,750 peticiones procesadas** con 0.03% de errores y p95 de 1105.96 ms bajo 150 VU.
+* **Capacidad de Carga k6:** **32,750 peticiones procesadas** con 0.03% de errores y p95 de 1183.24 ms bajo 150 VU.
 * **Cobertura de Código en CI (SCRUM-602):** **91.7% – 100.0%** en 10 repositorios; todos sobre el umbral de 80%.
 * **Aislamiento Multi-Tenant (RLS) y Seguridad PCI-DSS:** 100% verificado en QA.
-* **Avance Oficial del Producto (Informe UAT de la PO, 5-nov):** **91.92%** (Meta Sprint 5: mínimo 90%; 0.7 × 100% aceptado en UAT + 0.3 × 73.08% escenarios).
-* **% Funcionalidades Implementadas, Probadas por QA y Aceptadas en UAT:** **100%** (37 de 37; RF-10 aceptada con observaciones).
-* **% Escenarios de Calidad (SAD §3):** **73.08%** (52 escenarios: 34 Cumple, 8 Parcial, 4 No cumple, 6 No medido; fuente: `docs/testing/informe-uat-oficial-po-2026-11-05.xlsx`).
+* **Avance del Producto:** **92.50%** (Meta Sprint 5: mínimo 90%; 0.7 × 100% RF aceptados + 0.3 × 75.00% escenarios; fuente: `docs/testing/indicadores-funcionales.md`).
+* **Requisitos Funcionales (SRS v5.6):** 33 definidos, 33 implementados, 33 verificados en QA y 33 aceptados por la PO (RF-10 con observaciones). Las 4 extensiones EXT-01 a EXT-04 se reportan aparte.
+* **% Escenarios de Calidad (SAD §3):** **75.00%** (52 escenarios: 35 Cumple, 8 Parcial, 3 No cumple, 6 No medido; fuente: `docs/testing/matriz-escenarios-calidad-52.md`).
 
 ### Gráfica 1: Distribución de Pruebas por Tipo
 ![Gráfica 1: Distribución por Tipo](img/grafica-1-pruebas-por-tipo.png)
