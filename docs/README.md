@@ -19,6 +19,7 @@ Este archivo es el punto de entrada a la documentación formal del proyecto.
 | `testing/evidencias-sprint4.md` | Evidencias del Sprint 4 en QA (SCRUM-449): versiones y pipelines, pruebas de sistema, humo de los frontends, evidencias por historia y capturas. Insumo del informe (SCRUM-394) y la presentación (SCRUM-429). |
 | `testing/inventario-funcionalidades-por-usuario.md` | Inventario de 78 funcionalidades por tipo de usuario, con su RF y su HU (SCRUM-560). |
 | `testing/avance-real-sprint5.md` | Avance real del producto con fórmula, fecha de corte y clasificación de cada funcionalidad con su evidencia (SCRUM-562). |
+| `testing/protocolo-scrum-668-multitenant-geolocalizacion.md` | Protocolo para medir en QA el alta de un tenant (AC8-E1) y el cambio de proveedor de geolocalización (AC8-E4 y AC9-E8), con su registro de ejecución (SCRUM-668). |
 | `testing/indicadores-funcionales.md` | Fuente única de los indicadores funcionales: 33 RF definidos, implementados, verificados en QA y aceptados, las 4 extensiones aparte y el avance del producto (SCRUM-700). Se recalcula con `scripts/calcular_indicadores_qa.py`. |
 | `testing/conciliacion-cifras-qa-2026-11-12.md` | Registro de discrepancias de cifras de QA y su corrección (SCRUM-664, SCRUM-695 y SCRUM-701). |
 
