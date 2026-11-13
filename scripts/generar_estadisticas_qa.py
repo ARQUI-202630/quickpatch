@@ -456,11 +456,11 @@ def generate_charts(ci_data, e2e_data, sec_data, defects, cov_map):
     # GRÁFICA 3: Defectos por Estado y Severidad
     corr = sum(1 for d in defects if any(k in d['estado'] for k in ['Corregido', 'Resuelto', 'Verificado']))
     no_aplica = sum(1 for d in defects if 'No aplica' in d['estado'])
-    pend = sum(1 for d in defects if any(k in d['estado'] for k in ['Pendiente', 'En corrección', 'En mitigación']))
+    pend = sum(1 for d in defects if any(k in d['estado'] for k in ['Pendiente', 'En corrección', 'En mitigación', 'Abierto']))
     desc = sum(1 for d in defects if any(k in d['estado'] for k in ['Descartado', 'Inválido']))
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 5))
-    states = ['Corregidos o\nno aplicables', 'En mitigación\n(Sp5)', 'Descartados']
+    states = ['Corregidos o\nno aplicables', 'En mitigación\no abiertos', 'Descartados']
     s_counts = [corr + no_aplica, pend, desc]
     s_colors = [success, warning, '#94A3B8']
 
@@ -542,8 +542,8 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map):
     md = []
     md.append("# Cuadro de Mando de Estadísticas de Pruebas — Sprint 5 (SCRUM-604)\n")
     md.append("**Código del Documento:** `MET-QA-SP5-2026-11-02`  ")
-    md.append("**Versión:** `2.3 (indicadores desde las fuentes únicas, SCRUM-701 y SCRUM-695)`  ")
-    md.append("**Fecha de Generación:** 2 de noviembre de 2026 (versión 2.3: 12 de noviembre de 2026)  ")
+    md.append("**Versión:** `2.4 (registro de defectos completo: 24)`  ")
+    md.append("**Fecha de Generación:** 2 de noviembre de 2026 (versión 2.3: 12 de noviembre de 2026; versión 2.4: 13 de noviembre de 2026)  ")
     md.append("**Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  ")
     md.append("**Trazabilidad Jira:** Tarea `SCRUM-604` | Requisito RNF-08 | Documento de Pruebas `TD.md` V3.0  ")
     md.append("**Principio Metodológico:** Toda cifra reportada proviene directamente de archivos de resultados de CI (.trx/surefire), evidencias Newman en QA, resúmenes JSON de k6 y la Matriz de Avance UAT en Excel. Cero cifras escritas a mano.\n")
@@ -615,14 +615,17 @@ def generate_markdown(ci_data, e2e_data, sec_data, k6_data, defects, cov_map):
     md.append("## 4. Registro Consolidado de Defectos (SCRUM-603)\n")
     corr = sum(1 for d in defects if any(k in d['estado'] for k in ['Corregido', 'Resuelto', 'Verificado']))
     no_aplica = sum(1 for d in defects if 'No aplica' in d['estado'])
-    pend = sum(1 for d in defects if any(k in d['estado'] for k in ['Pendiente', 'En corrección', 'En mitigación']))
+    pend = sum(1 for d in defects if any(k in d['estado'] for k in ['Pendiente', 'En corrección', 'En mitigación', 'Abierto']))
     desc = sum(1 for d in defects if any(k in d['estado'] for k in ['Descartado', 'Inválido']))
     tot_def = len(defects)
 
     md.append(f"* **Total de Defectos Registrados:** **{tot_def} anomalías**.")
     md.append(f"* **Defectos Corregidos o No aplicables:** **{corr + no_aplica} ({(corr + no_aplica)/tot_def*100:.1f}%)** ({corr} corregidos y verificados + {no_aplica} no aplica a producción: DEF-S4-03).")
     md.append(f"* **Defectos Descartados / Retractados:** **{desc} ({desc/tot_def*100:.1f}%)**.")
-    md.append(f"* **Defectos en Mitigación en Sprint 5:** **{pend} ({pend/tot_def*100:.1f}%)** (ninguno bloqueante: DEF-S5-01 a DEF-S5-04).")
+    abiertos = [d['id'] for d in defects if 'Abierto' in d['estado']]
+    mitig = pend - len(abiertos)
+    det = f"{mitig} en mitigación: DEF-S5-01 a DEF-S5-04" + (f"; {len(abiertos)} abierto: {', '.join(abiertos)}" if abiertos else "")
+    md.append(f"* **Defectos en Mitigación o Abiertos:** **{pend} ({pend/tot_def*100:.1f}%)** (ninguno bloqueante; {det}).")
     md.append(f"* **Defectos Críticos o Bloqueantes Abiertos:** **0 (0.0%)**.\n")
     md.append("Ver detalle exhaustivo en: [`registro-defectos-sprint4-sprint5.md`](registro-defectos-sprint4-sprint5.md) y en la hoja `Defectos` de la Matriz UAT Excel.\n")
     md.append("---\n")
