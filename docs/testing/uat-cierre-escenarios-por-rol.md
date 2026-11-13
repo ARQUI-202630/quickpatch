@@ -19,7 +19,7 @@ La UAT del Sprint 5 (SCRUM-608) se cerró sin sesión: la PO aceptó con las evi
 
 Este documento reemplaza la especificación de 8 casos de [`uat-product-owner.md`](uat-product-owner.md) para el cierre. Esa especificación citaba RF que ya no corresponden, como RF-30 y RF-31, que están retirados, o RF-06 y RF-07 para pagos.
 
-**Cobertura:** los 33 RF del SRS y las extensiones EXT-01, EXT-02 y EXT-04 tienen al menos un escenario (sección 6).
+**Cobertura:** los 33 RF del SRS y las 4 extensiones (EXT-01 a EXT-04) tienen al menos un escenario (sección 6).
 
 ## 2. Plantilla de registro
 
