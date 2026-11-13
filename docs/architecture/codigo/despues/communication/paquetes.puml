@@ -1,14 +1,14 @@
 @startuml
 !pragma layout smetana
-title Communication — paquetes (despues, 120623a)
+title Communication — paquetes (despues, fe01c13)
 skinparam packageStyle rectangle
 skinparam shadowing false
 left to right direction
 package "Api" {
   component "(global)\n1 tipos" as _global_
   component "Api.Endpoints\n7 tipos" as QuickPatch_Communication_Api_Endpoints
-  component "Api.Http\n2 tipos" as QuickPatch_Communication_Api_Http
-  component "Api.Realtime\n9 tipos" as QuickPatch_Communication_Api_Realtime
+  component "Api.Http\n1 tipos" as QuickPatch_Communication_Api_Http
+  component "Api.Realtime\n8 tipos" as QuickPatch_Communication_Api_Realtime
 }
 package "Application" {
   component "Application\n1 tipos" as QuickPatch_Communication_Application
@@ -30,10 +30,10 @@ package "Infrastructure" {
   component "Infrastructure.Persistence\n6 tipos" as QuickPatch_Communication_Infrastructure_Persistence
 }
 _global_ --> QuickPatch_Communication_Api_Endpoints #607D8B : 3
-_global_ --> QuickPatch_Communication_Api_Http #607D8B : 2
+_global_ --> QuickPatch_Communication_Api_Http #607D8B : 1
 _global_ --> QuickPatch_Communication_Application #607D8B : 1
 _global_ --> QuickPatch_Communication_Infrastructure #607D8B : 1
-QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Api_Realtime #607D8B : 6
+QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Api_Realtime #607D8B : 4
 QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Application_Abstractions #607D8B : 1
 QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Application_Chat #607D8B : 4
 QuickPatch_Communication_Api_Endpoints --> QuickPatch_Communication_Application_Inbox #607D8B : 5

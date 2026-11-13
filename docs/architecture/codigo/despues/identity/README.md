@@ -1,22 +1,22 @@
 # Identity — despues
 
-Código de `origin/develop` en `abffadb`, generado el 2026-11-11 con `tools/arquitectura/generar.py`.
+Código de `origin/develop` en `fe22c14`, generado el 2026-11-12 con `tools/arquitectura/generar.py`.
 
 | Métrica | Valor |
 |---|---|
-| Tipos (sin migraciones) | 186 |
+| Tipos (sin migraciones) | 182 |
 | Paquetes | 24 |
-| Dependencias entre tipos | 599 |
-| Dependencias entre paquetes | 93 |
-| Ciclos entre paquetes | 1 |
-| Paquetes dentro de ciclos | 2 |
+| Dependencias entre tipos | 589 |
+| Dependencias entre paquetes | 91 |
+| Ciclos entre paquetes | 0 |
+| Paquetes dentro de ciclos | 0 |
 | Ciclos entre tipos | 0 |
 | Tipos en el mayor ciclo | 0 |
 | Violaciones de SDD 10.3.2 | 11 |
 | Tipos de más de 250 líneas | 2 |
-| Fan-out máximo (sin raíces de composición) | 80 |
-| Fan-out promedio | 3.22 |
-| Cohesión relacional promedio (H) | 0.81 |
+| Fan-out máximo (sin raíces de composición) | 79 |
+| Fan-out promedio | 3.24 |
+| Cohesión relacional promedio (H) | 0.79 |
 
 ## Dependencias entre capas
 
@@ -33,7 +33,7 @@ Código de `origin/develop` en `abffadb`, generado el 2026-11-11 con `tools/arqu
 
 | Tipo | Capa | Líneas | Sale | Entra |
 |---|---|---|---|---|
-| `Api.Endpoints.IdentityEndpoints` | Api | 735 | 80 | 1 |
+| `Api.Endpoints.IdentityEndpoints` | Api | 736 | 79 | 1 |
 | `Api.Endpoints.CompanyEndpoints` | Api | 189 | 28 | 1 |
 | `Application.Technicians.CreateTeamTechnicianHandler` | Application | 71 | 15 | 2 |
 | `Api.Bootstrap.DevelopmentUsersSeed` | Api | 56 | 12 | 1 |
@@ -54,7 +54,7 @@ Código de `origin/develop` en `abffadb`, generado el 2026-11-11 con `tools/arqu
 | `Application.Abstractions.IUserRepository` | Application | 21 | 1 |
 | `Domain.Technicians.TechnicianProfile` | Domain | 21 | 1 |
 | `Domain.Common.DomainValidationException` | Domain | 14 | 0 |
-| `Infrastructure.Persistence.IdentityDbContext` | Infrastructure | 14 | 9 |
+| `Infrastructure.Persistence.IdentityDbContext` | Infrastructure | 13 | 8 |
 | `Application.Abstractions.ITechnicianProfileRepository` | Application | 12 | 3 |
 | `Application.Abstractions.ITenantRepository` | Application | 12 | 1 |
 | `Application.Abstractions.IPasswordHasher` | Application | 11 | 0 |
@@ -63,20 +63,20 @@ Código de `origin/develop` en `abffadb`, generado el 2026-11-11 con `tools/arqu
 
 | Tipo | Capa | Líneas | Archivo |
 |---|---|---|---|
-| `Api.Endpoints.IdentityEndpoints` | Api | 735 | `src/QuickPatch.Identity.Api/Endpoints/IdentityEndpoints.cs` |
+| `Api.Endpoints.IdentityEndpoints` | Api | 736 | `src/QuickPatch.Identity.Api/Endpoints/IdentityEndpoints.cs` |
 | `Domain.Users.User` | Domain | 335 | `src/QuickPatch.Identity.Domain/Users/User.cs` |
-| `Infrastructure.Persistence.IdentityDbContext` | Infrastructure | 190 | `src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs` |
 | `Api.Endpoints.CompanyEndpoints` | Api | 189 | `src/QuickPatch.Identity.Api/Endpoints/CompanyEndpoints.cs` |
+| `Infrastructure.Persistence.IdentityDbContext` | Infrastructure | 177 | `src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs` |
 | `Domain.Technicians.TechnicianProfile` | Domain | 132 | `src/QuickPatch.Identity.Domain/Technicians/TechnicianProfile.cs` |
 | `Domain.Users.PasswordSetupToken` | Domain | 99 | `src/QuickPatch.Identity.Domain/Users/PasswordSetupToken.cs` |
 | `Application.Companies.RegisterCompanyHandler` | Application | 87 | `src/QuickPatch.Identity.Application/Companies/Companies.cs` |
-| `Infrastructure.Messaging.ReputationChangedConsumer` | Infrastructure | 87 | `src/QuickPatch.Identity.Infrastructure/Messaging/ReputationChangedConsumer.cs` |
-| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 83 | `src/QuickPatch.Identity.Infrastructure/Messaging/Outbox.cs` |
+| `Infrastructure.Persistence.TechnicianProfileRepository` | Infrastructure | 77 | `src/QuickPatch.Identity.Infrastructure/Persistence/Repositories.cs` |
 | `Domain.Companies.ClientCompany` | Domain | 73 | `src/QuickPatch.Identity.Domain/Companies/ClientCompany.cs` |
+| `Application.Technicians.CreateTeamTechnicianHandler` | Application | 71 | `src/QuickPatch.Identity.Application/Technicians/ProviderTeam.cs` |
 
 ## Ciclos entre paquetes
 
-- `Infrastructure.Messaging`, `Infrastructure.Persistence`
+Ninguno.
 
 ## Violaciones de las reglas de dependencia (SDD 10.3.2)
 
@@ -100,8 +100,8 @@ Código de `origin/develop` en `abffadb`, generado el 2026-11-11 con `tools/arqu
 |---|---|---|---|---|---|
 | `(global)` | 1 | 0 | 6 | 1.0 | 1.0 |
 | `Api.Bootstrap` | 5 | 1 | 3 | 0.75 | 1.0 |
-| `Api.Endpoints` | 25 | 1 | 14 | 0.93 | 1.4 |
-| `Api.Http` | 3 | 2 | 0 | 0.0 | 0.67 |
+| `Api.Endpoints` | 25 | 1 | 13 | 0.93 | 1.4 |
+| `Api.Http` | 2 | 1 | 0 | 0.0 | 0.5 |
 | `Api.Security` | 6 | 2 | 2 | 0.5 | 0.67 |
 | `Application` | 1 | 1 | 6 | 0.86 | 1.0 |
 | `Application.Abstractions` | 28 | 11 | 5 | 0.31 | 0.39 |
@@ -118,9 +118,9 @@ Código de `origin/develop` en `abffadb`, generado el 2026-11-11 con `tools/arqu
 | `Domain.Tenants` | 1 | 8 | 1 | 0.11 | 1.0 |
 | `Domain.Users` | 5 | 9 | 1 | 0.1 | 1.0 |
 | `Infrastructure` | 1 | 1 | 5 | 0.83 | 1.0 |
-| `Infrastructure.Messaging` | 6 | 2 | 4 | 0.67 | 0.67 |
+| `Infrastructure.Messaging` | 3 | 1 | 4 | 0.8 | 0.33 |
 | `Infrastructure.Options` | 7 | 6 | 0 | 0.0 | 0.14 |
-| `Infrastructure.Persistence` | 13 | 2 | 8 | 0.8 | 1.08 |
+| `Infrastructure.Persistence` | 13 | 2 | 7 | 0.78 | 1.08 |
 | `Infrastructure.Security` | 4 | 2 | 3 | 0.6 | 0.25 |
 
 ## Diagrama de paquetes
@@ -133,7 +133,7 @@ flowchart LR
     _global_["(global) (1)"]
     QuickPatch_Identity_Api_Bootstrap["Api.Bootstrap (5)"]
     QuickPatch_Identity_Api_Endpoints["Api.Endpoints (25)"]
-    QuickPatch_Identity_Api_Http["Api.Http (3)"]
+    QuickPatch_Identity_Api_Http["Api.Http (2)"]
     QuickPatch_Identity_Api_Security["Api.Security (6)"]
   end
   subgraph Application
@@ -156,21 +156,20 @@ flowchart LR
   end
   subgraph Infrastructure
     QuickPatch_Identity_Infrastructure["Infrastructure (1)"]
-    QuickPatch_Identity_Infrastructure_Messaging["Infrastructure.Messaging (6)"]
+    QuickPatch_Identity_Infrastructure_Messaging["Infrastructure.Messaging (3)"]
     QuickPatch_Identity_Infrastructure_Options["Infrastructure.Options (7)"]
     QuickPatch_Identity_Infrastructure_Persistence["Infrastructure.Persistence (13)"]
     QuickPatch_Identity_Infrastructure_Security["Infrastructure.Security (4)"]
   end
   _global_ -->|3| QuickPatch_Identity_Api_Bootstrap
   _global_ -->|2| QuickPatch_Identity_Api_Endpoints
-  _global_ -->|3| QuickPatch_Identity_Api_Http
+  _global_ -->|2| QuickPatch_Identity_Api_Http
   _global_ -->|2| QuickPatch_Identity_Api_Security
   _global_ -->|1| QuickPatch_Identity_Application
   _global_ -->|1| QuickPatch_Identity_Infrastructure
   QuickPatch_Identity_Api_Bootstrap -->|12| QuickPatch_Identity_Application_Auth
   QuickPatch_Identity_Api_Bootstrap -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Api_Bootstrap -->|2| QuickPatch_Identity_Infrastructure_Options
-  QuickPatch_Identity_Api_Endpoints -->|1| QuickPatch_Identity_Api_Http
   QuickPatch_Identity_Api_Endpoints -->|9| QuickPatch_Identity_Api_Security
   QuickPatch_Identity_Api_Endpoints -->|5| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Api_Endpoints -->|19| QuickPatch_Identity_Application_Auth
@@ -235,31 +234,26 @@ flowchart LR
   QuickPatch_Identity_Domain_Tenants -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Domain_Users -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Infrastructure -->|14| QuickPatch_Identity_Application_Abstractions
-  QuickPatch_Identity_Infrastructure -->|5| QuickPatch_Identity_Infrastructure_Messaging
+  QuickPatch_Identity_Infrastructure -->|3| QuickPatch_Identity_Infrastructure_Messaging
   QuickPatch_Identity_Infrastructure -->|7| QuickPatch_Identity_Infrastructure_Options
   QuickPatch_Identity_Infrastructure -->|11| QuickPatch_Identity_Infrastructure_Persistence
   QuickPatch_Identity_Infrastructure -->|4| QuickPatch_Identity_Infrastructure_Security
   QuickPatch_Identity_Infrastructure_Messaging -->|2| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Infrastructure_Messaging -->|3| QuickPatch_Identity_Application_Events
   QuickPatch_Identity_Infrastructure_Messaging -->|2| QuickPatch_Identity_Application_Technicians
-  QuickPatch_Identity_Infrastructure_Messaging -->|2| QuickPatch_Identity_Infrastructure_Persistence
+  QuickPatch_Identity_Infrastructure_Messaging -->|1| QuickPatch_Identity_Infrastructure_Persistence
   QuickPatch_Identity_Infrastructure_Persistence -->|22| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Infrastructure_Persistence -->|2| QuickPatch_Identity_Domain_Audit
   QuickPatch_Identity_Infrastructure_Persistence -->|2| QuickPatch_Identity_Domain_Companies
   QuickPatch_Identity_Infrastructure_Persistence -->|2| QuickPatch_Identity_Domain_Technicians
   QuickPatch_Identity_Infrastructure_Persistence -->|3| QuickPatch_Identity_Domain_Tenants
   QuickPatch_Identity_Infrastructure_Persistence -->|10| QuickPatch_Identity_Domain_Users
-  QuickPatch_Identity_Infrastructure_Persistence -->|1| QuickPatch_Identity_Infrastructure_Messaging
   QuickPatch_Identity_Infrastructure_Persistence -->|1| QuickPatch_Identity_Infrastructure_Options
   QuickPatch_Identity_Infrastructure_Security -->|4| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Infrastructure_Security -->|1| QuickPatch_Identity_Domain_Users
   QuickPatch_Identity_Infrastructure_Security -->|4| QuickPatch_Identity_Infrastructure_Options
-  style QuickPatch_Identity_Infrastructure_Persistence fill:#FFCDD2
-  style QuickPatch_Identity_Infrastructure_Messaging fill:#FFCDD2
   linkStyle 8 stroke:#C62828,stroke-width:2px
+  linkStyle 21 stroke:#C62828,stroke-width:2px
   linkStyle 22 stroke:#C62828,stroke-width:2px
   linkStyle 23 stroke:#C62828,stroke-width:2px
-  linkStyle 24 stroke:#C62828,stroke-width:2px
-  linkStyle 81 stroke:#EF6C00,stroke-width:2px
-  linkStyle 88 stroke:#EF6C00,stroke-width:2px
 ```

@@ -21,6 +21,14 @@ METRICAS = [
     ("cohesion_relacional_promedio", "Cohesión relacional promedio (H)", "mas"),
     ("tipos", "Tipos", None),
 ]
+# Qué explica el cambio cuando el servicio no tiene su refactor integrado. Se actualiza al fusionar SCRUM-650 y SCRUM-656.
+NOTAS = {
+    "identity": "Sin el refactor de SCRUM-650 (pendiente). El cambio sale de adoptar `quickpatch-shared-dotnet` "
+                "(ADR-020, SCRUM-657): el Outbox y el consumo de Kafka salen del servicio y desaparece el ciclo "
+                "entre `Infrastructure.Messaging` e `Infrastructure.Persistence`. Las 11 violaciones siguen.",
+    "communication": "Sin el refactor de SCRUM-656 (pendiente). El cambio sale de adoptar `quickpatch-shared-dotnet` "
+                     "(ADR-020, SCRUM-657): 2 tipos transversales menos; el resto de las métricas no se mueve.",
+}
 
 
 def flecha(a, d, sentido):
@@ -56,7 +64,7 @@ def main():
     for n, ca, cd, mismo, ra, rd in filas_resumen:
         def c(k):
             return f"{ra[k]} → {rd[k]}"
-        nota = " (sin refactor integrado)" if mismo else ""
+        nota = " (sin refactor integrado)" if mismo or n.lower() in NOTAS else ""
         l.append(f"| {n}{nota} | `{ca}` | `{cd}` | {c('violaciones_de_capas')} | {c('ciclos_entre_paquetes')} | "
                  f"{c('tipos_de_mas_de_250_lineas')} | {c('fan_out_maximo')} | {c('cohesion_relacional_promedio')} |")
     l += ["", "1. Sin las raíces de composición (`Program` y `DependencyInjection`).", ""]
@@ -65,6 +73,9 @@ def main():
         if mismo:
             l += ["Mismo commit en las dos mediciones: el refactor de este servicio todavía no está en `develop`.", ""]
             continue
+        clave = next((k for k in NOTAS if k.replace("-", "") == n.lower()), None)
+        if clave:
+            l += [NOTAS[clave], ""]
         l += ["| Métrica | Antes | Después | Resultado |", "|---|---|---|---|"]
         for k, etiqueta, sentido in METRICAS:
             l.append(f"| {etiqueta} | {ra[k]} | {rd[k]} | {flecha(ra[k], rd[k], sentido)} |")

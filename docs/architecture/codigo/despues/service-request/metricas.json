@@ -2,19 +2,19 @@
  "servicio": "ServiceRequest",
  "lenguaje": "csharp",
  "resumen": {
-  "tipos": 217,
+  "tipos": 211,
   "paquetes": 31,
-  "dependencias_entre_tipos": 618,
-  "dependencias_entre_paquetes": 111,
+  "dependencias_entre_tipos": 601,
+  "dependencias_entre_paquetes": 109,
   "ciclos_entre_paquetes": 0,
   "paquetes_en_ciclos": 0,
   "ciclos_entre_tipos": 0,
   "mayor_ciclo_de_tipos": 0,
   "violaciones_de_capas": 0,
   "tipos_de_mas_de_250_lineas": 1,
-  "fan_out_maximo": 22,
+  "fan_out_maximo": 21,
   "fan_out_promedio": 2.85,
-  "cohesion_relacional_promedio": 0.78
+  "cohesion_relacional_promedio": 0.77
  },
  "dependencias_entre_capas": {
   "Api->Application": 54,
@@ -33,7 +33,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 188,
-   "fan_out": 22,
+   "fan_out": 21,
    "fan_in": 1,
    "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs"
   },
@@ -60,7 +60,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 109,
-   "fan_out": 18,
+   "fan_out": 17,
    "fan_in": 1,
    "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/QuoteEndpoints.cs"
   },
@@ -69,7 +69,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 114,
-   "fan_out": 15,
+   "fan_out": 14,
    "fan_in": 1,
    "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ServiceRequestEndpoints.cs"
   },
@@ -148,15 +148,6 @@
    "archivo": null
   },
   {
-   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 197,
-   "fan_out": 11,
-   "fan_in": 16,
-   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs"
-  },
-  {
    "tipo": "QuickPatch.ServiceRequest.Domain.Ratings.Rating",
    "capa": "Domain",
    "clase": "class",
@@ -164,6 +155,15 @@
    "fan_out": 1,
    "fan_in": 15,
    "archivo": "src/QuickPatch.ServiceRequest.Domain/Ratings/Rating.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 175,
+   "fan_out": 9,
+   "fan_in": 15,
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Domain.Common.DomainValidationException",
@@ -231,47 +231,29 @@
    "archivo": "src/QuickPatch.ServiceRequest.Domain/Quotes/Quote.cs"
   },
   {
-   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 197,
-   "fan_out": 11,
-   "fan_in": 16,
-   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs"
-  },
-  {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
    "capa": "Api",
    "clase": "static",
    "lineas": 188,
-   "fan_out": 22,
+   "fan_out": 21,
    "fan_in": 1,
    "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs"
   },
   {
-   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
+   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
    "capa": "Infrastructure",
    "clase": "class",
-   "lineas": 143,
-   "fan_out": 7,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Messaging/MatchingEventsConsumer.cs"
-  },
-  {
-   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 132,
-   "fan_out": 6,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Messaging/PaymentEventsConsumer.cs"
+   "lineas": 175,
+   "fan_out": 9,
+   "fan_in": 15,
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Persistence/ServiceRequestDbContext.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
    "capa": "Api",
    "clase": "static",
    "lineas": 114,
-   "fan_out": 15,
+   "fan_out": 14,
    "fan_in": 1,
    "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ServiceRequestEndpoints.cs"
   },
@@ -280,7 +262,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 109,
-   "fan_out": 18,
+   "fan_out": 17,
    "fan_in": 1,
    "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/QuoteEndpoints.cs"
   },
@@ -301,6 +283,24 @@
    "fan_out": 14,
    "fan_in": 2,
    "archivo": "src/QuickPatch.ServiceRequest.Application/Matching/MatchingStatusHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Messaging.MatchingEventsConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 95,
+   "fan_out": 7,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Messaging/MatchingEventsConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Infrastructure.Geocoding.NominatimGeocoder",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 94,
+   "fan_out": 5,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.ServiceRequest.Infrastructure/Geocoding/NominatimGeocoder.cs"
   }
  ],
  "paquetes": [
@@ -322,19 +322,19 @@
   },
   {
    "paquete": "QuickPatch.ServiceRequest.Api.Http",
+   "tipos": 3,
+   "fan_out": 0,
+   "fan_in": 2,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.33
+  },
+  {
+   "paquete": "QuickPatch.ServiceRequest.Api.Security",
    "tipos": 4,
    "fan_out": 0,
    "fan_in": 2,
    "inestabilidad": 0.0,
    "cohesion_relacional": 0.5
-  },
-  {
-   "paquete": "QuickPatch.ServiceRequest.Api.Security",
-   "tipos": 5,
-   "fan_out": 0,
-   "fan_in": 2,
-   "inestabilidad": 0.0,
-   "cohesion_relacional": 0.6
   },
   {
    "paquete": "QuickPatch.ServiceRequest.Application",
@@ -514,27 +514,27 @@
   },
   {
    "paquete": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
-   "tipos": 5,
-   "fan_out": 8,
+   "tipos": 4,
+   "fan_out": 6,
    "fan_in": 1,
-   "inestabilidad": 0.89,
-   "cohesion_relacional": 0.2
+   "inestabilidad": 0.86,
+   "cohesion_relacional": 0.25
   },
   {
    "paquete": "QuickPatch.ServiceRequest.Infrastructure.Options",
-   "tipos": 7,
+   "tipos": 6,
    "fan_out": 0,
-   "fan_in": 5,
+   "fan_in": 4,
    "inestabilidad": 0.0,
-   "cohesion_relacional": 0.14
+   "cohesion_relacional": 0.17
   },
   {
    "paquete": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
-   "tipos": 20,
+   "tipos": 18,
    "fan_out": 8,
-   "fan_in": 2,
-   "inestabilidad": 0.8,
-   "cohesion_relacional": 1.15
+   "fan_in": 1,
+   "inestabilidad": 0.89,
+   "cohesion_relacional": 1.06
   },
   {
    "paquete": "QuickPatch.ServiceRequest.Infrastructure.Scheduling",
@@ -562,7 +562,7 @@
   {
    "de": "(global)",
    "a": "QuickPatch.ServiceRequest.Api.Http",
-   "n": 3
+   "n": 2
   },
   {
    "de": "(global)",
@@ -582,7 +582,7 @@
   {
    "de": "QuickPatch.ServiceRequest.Api.Endpoints",
    "a": "QuickPatch.ServiceRequest.Api.Http",
-   "n": 13
+   "n": 8
   },
   {
    "de": "QuickPatch.ServiceRequest.Api.Endpoints",
@@ -962,12 +962,12 @@
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure",
    "a": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
-   "n": 5
+   "n": 4
   },
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure",
    "a": "QuickPatch.ServiceRequest.Infrastructure.Options",
-   "n": 7
+   "n": 6
   },
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure",
@@ -1033,16 +1033,6 @@
    "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
    "a": "QuickPatch.ServiceRequest.Domain.Tenants",
    "n": 1
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Options",
-   "n": 1
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
-   "n": 2
   },
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence",
@@ -1150,10 +1140,6 @@
   {
    "de": "Program",
    "a": "QuickPatch.ServiceRequest.Api.Http.BadRequestExceptionHandler"
-  },
-  {
-   "de": "Program",
-   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
   },
   {
    "de": "Program",
@@ -1273,10 +1259,6 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
-   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Api.Endpoints.CancellationEndpoints",
    "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
   },
   {
@@ -1330,10 +1312,6 @@
   {
    "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
    "a": "QuickPatch.ServiceRequest.Api.Http.ApiResults"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
-   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
   },
   {
    "de": "QuickPatch.ServiceRequest.Api.Endpoints.ExecutionEndpoints",
@@ -1477,10 +1455,6 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
-   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
    "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
   },
   {
@@ -1549,10 +1523,6 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
-   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Api.Endpoints.RatingEndpoints",
    "a": "QuickPatch.ServiceRequest.Api.Security.AuthenticatedUser"
   },
   {
@@ -1618,10 +1588,6 @@
   {
    "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
    "a": "QuickPatch.ServiceRequest.Api.Http.ApiResults"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
-   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
   },
   {
    "de": "QuickPatch.ServiceRequest.Api.Endpoints.ServiceRequestEndpoints",
@@ -1748,16 +1714,8 @@
    "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.ServiceRequest"
   },
   {
-   "de": "QuickPatch.ServiceRequest.Api.Http.Problems",
-   "a": "QuickPatch.ServiceRequest.Api.Http.CorrelationId"
-  },
-  {
    "de": "QuickPatch.ServiceRequest.Api.Security.AuthenticationSetup",
    "a": "QuickPatch.ServiceRequest.Api.Security.ForbiddenAuditHandler"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Api.Security.AuthenticationSetup",
-   "a": "QuickPatch.ServiceRequest.Api.Security.JwtSettings"
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.Abstractions.GeocodedAddress",
@@ -3057,10 +3015,6 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Messaging.OutboxPublisher"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
    "a": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer"
   },
   {
@@ -3078,10 +3032,6 @@
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
    "a": "QuickPatch.ServiceRequest.Infrastructure.Options.KafkaOptions"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.OutboxOptions"
   },
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure.DependencyInjection",
@@ -3252,18 +3202,6 @@
    "a": "QuickPatch.ServiceRequest.Application.Matching.MatchingStatusHandler"
   },
   {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Options.OutboxOptions"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
-  },
-  {
    "de": "QuickPatch.ServiceRequest.Infrastructure.Messaging.PaymentEventsConsumer",
    "a": "QuickPatch.ServiceRequest.Application.Events.EventEnvelope"
   },
@@ -3353,10 +3291,6 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfOutbox",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.EfOutbox",
    "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
   },
   {
@@ -3429,10 +3363,6 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ProcessedEventRepository",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ProcessedEventRecord"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ProcessedEventRepository",
    "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext"
   },
   {
@@ -3494,14 +3424,6 @@
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
    "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.LocalityRecord"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestDbContext",
-   "a": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ProcessedEventRecord"
   },
   {
    "de": "QuickPatch.ServiceRequest.Infrastructure.Persistence.ServiceRequestRepository",
@@ -3584,5 +3506,5 @@
    "a": "QuickPatch.ServiceRequest.Application.Abstractions.StoredEvidence"
   }
  ],
- "commit": "ebd07d8"
+ "commit": "45c0653"
 }

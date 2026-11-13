@@ -69,6 +69,21 @@ def exportar(repo: Path, ref: str, destino: Path) -> str:
     tar = sh(["git", "-C", str(repo), "archive", "--format=tar", ref], salida_binaria=True)
     with tarfile.open(fileobj=io.BytesIO(tar)) as t:
         t.extractall(destino, filter="data")
+    # git archive no incluye los submódulos. Desde ADR-020 los servicios .NET compilan
+    # shared/dotnet (quickpatch-shared-dotnet), así que se exporta el commit que fija la referencia.
+    for linea in sh(["git", "-C", str(repo), "ls-tree", "-r", ref]).splitlines():
+        meta, _, ruta = linea.partition("\t")
+        modo, tipo, commit = meta.split()
+        if tipo != "commit":
+            continue
+        sub = repo / ruta
+        if not (sub / ".git").exists():
+            sh(["git", "-C", str(repo), "submodule", "update", "--init", "--", ruta])
+        if subprocess.run(["git", "-C", str(sub), "cat-file", "-e", commit], capture_output=True).returncode != 0:
+            sh(["git", "-C", str(sub), "fetch", "-q", "origin"])
+        tar = sh(["git", "-C", str(sub), "archive", "--format=tar", commit], salida_binaria=True)
+        with tarfile.open(fileobj=io.BytesIO(tar)) as t:
+            t.extractall(destino / ruta, filter="data")
     return sha
 
 

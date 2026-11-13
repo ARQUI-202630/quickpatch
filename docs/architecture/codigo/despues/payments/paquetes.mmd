@@ -2,8 +2,8 @@ flowchart LR
   subgraph Api
     _global_["(global) (1)"]
     QuickPatch_Payments_Api_Endpoints["Api.Endpoints (9)"]
-    QuickPatch_Payments_Api_Http["Api.Http (3)"]
-    QuickPatch_Payments_Api_Security["Api.Security (4)"]
+    QuickPatch_Payments_Api_Http["Api.Http (2)"]
+    QuickPatch_Payments_Api_Security["Api.Security (3)"]
   end
   subgraph Application
     QuickPatch_Payments_Application["Application (1)"]
@@ -19,17 +19,16 @@ flowchart LR
   subgraph Infrastructure
     QuickPatch_Payments_Infrastructure["Infrastructure (1)"]
     QuickPatch_Payments_Infrastructure_Documents["Infrastructure.Documents (2)"]
-    QuickPatch_Payments_Infrastructure_Messaging["Infrastructure.Messaging (4)"]
-    QuickPatch_Payments_Infrastructure_Options["Infrastructure.Options (3)"]
-    QuickPatch_Payments_Infrastructure_Persistence["Infrastructure.Persistence (11)"]
+    QuickPatch_Payments_Infrastructure_Messaging["Infrastructure.Messaging (3)"]
+    QuickPatch_Payments_Infrastructure_Options["Infrastructure.Options (2)"]
+    QuickPatch_Payments_Infrastructure_Persistence["Infrastructure.Persistence (8)"]
     QuickPatch_Payments_Infrastructure_Providers["Infrastructure.Providers (1)"]
   end
   _global_ -->|3| QuickPatch_Payments_Api_Endpoints
-  _global_ -->|3| QuickPatch_Payments_Api_Http
+  _global_ -->|2| QuickPatch_Payments_Api_Http
   _global_ -->|1| QuickPatch_Payments_Api_Security
   _global_ -->|1| QuickPatch_Payments_Application
   _global_ -->|1| QuickPatch_Payments_Infrastructure
-  QuickPatch_Payments_Api_Endpoints -->|2| QuickPatch_Payments_Api_Http
   QuickPatch_Payments_Api_Endpoints -->|3| QuickPatch_Payments_Api_Security
   QuickPatch_Payments_Api_Endpoints -->|3| QuickPatch_Payments_Application_Abstractions
   QuickPatch_Payments_Api_Endpoints -->|1| QuickPatch_Payments_Application_Invoices
@@ -49,16 +48,15 @@ flowchart LR
   QuickPatch_Payments_Domain_Payments -->|1| QuickPatch_Payments_Domain_Common
   QuickPatch_Payments_Infrastructure -->|8| QuickPatch_Payments_Application_Abstractions
   QuickPatch_Payments_Infrastructure -->|1| QuickPatch_Payments_Infrastructure_Documents
-  QuickPatch_Payments_Infrastructure -->|4| QuickPatch_Payments_Infrastructure_Messaging
-  QuickPatch_Payments_Infrastructure -->|3| QuickPatch_Payments_Infrastructure_Options
+  QuickPatch_Payments_Infrastructure -->|3| QuickPatch_Payments_Infrastructure_Messaging
+  QuickPatch_Payments_Infrastructure -->|2| QuickPatch_Payments_Infrastructure_Options
   QuickPatch_Payments_Infrastructure -->|7| QuickPatch_Payments_Infrastructure_Persistence
   QuickPatch_Payments_Infrastructure -->|1| QuickPatch_Payments_Infrastructure_Providers
   QuickPatch_Payments_Infrastructure_Documents -->|2| QuickPatch_Payments_Application_Abstractions
   QuickPatch_Payments_Infrastructure_Documents -->|3| QuickPatch_Payments_Domain_Payments
   QuickPatch_Payments_Infrastructure_Messaging -->|6| QuickPatch_Payments_Application_Events
   QuickPatch_Payments_Infrastructure_Messaging -->|5| QuickPatch_Payments_Application_Payments
-  QuickPatch_Payments_Infrastructure_Messaging -->|2| QuickPatch_Payments_Infrastructure_Options
-  QuickPatch_Payments_Infrastructure_Messaging -->|3| QuickPatch_Payments_Infrastructure_Persistence
+  QuickPatch_Payments_Infrastructure_Messaging -->|1| QuickPatch_Payments_Infrastructure_Options
   QuickPatch_Payments_Infrastructure_Persistence -->|9| QuickPatch_Payments_Application_Abstractions
   QuickPatch_Payments_Infrastructure_Persistence -->|8| QuickPatch_Payments_Domain_Payments
   QuickPatch_Payments_Infrastructure_Persistence -->|1| QuickPatch_Payments_Infrastructure_Options
