@@ -37,8 +37,8 @@ Los 27 diagramas C4 exportados (`docs/architecture/diagrams/c4/`) llevan las mis
 | 12 | Dinámico: creación y asignación | Pasos numerados con origen, destino y evento: solicitud, búsqueda del técnico, oferta y aceptación | `C4-05-Dinamico-CreacionAsignacion` (23 pasos), SDD 8.3 (SCRUM-684) |
 | 13 | Despliegue | QA y producción separados (7 VM, 2 ambientes). El panel se entrega desde el Nginx y se ejecuta en el navegador; la app corre en el dispositivo | `C4-06-*` (SCRUM-674) |
 | 14 | QA → producción | A producción solo llega lo probado en QA; un token de QA es rechazado por producción (401) | `tests/e2e/evidencias/separacion-qa-produccion-2026-11-10.txt` |
-| 15 | Escenarios de calidad | 52 escenarios: Cumple, Parcial, No cumple y No medido, con la cifra final de SCRUM-664; los que no cumplen, con su motivo | Matriz de 52 escenarios |
-| 16 | Funcionalidades | Definidas, implementadas, verificadas en QA y aceptadas: las cuatro cifras de SCRUM-700. **No usar** «37/37», «94 %» ni «91,92 %» | SCRUM-700 |
+| 15 | Escenarios de calidad | 52 escenarios: 35 Cumple, 8 Parcial, 3 No cumple y 6 No medido = 75,00 % (SCRUM-664); los que no cumplen, con su motivo | Matriz de 52 escenarios |
+| 16 | Funcionalidades | 33 RF definidos, 33 implementados, 33 verificados en QA y 33 aceptados (SCRUM-700); 4 extensiones aparte; avance 92,50 %. **No usar** «37/37», «94 %», «91,92 %» ni «81,73 %» | SCRUM-700 |
 | 17 | UAT | Escenarios por rol y resultado de la UAT de cierre | SCRUM-658 |
 | 18 | Lo que no se construyó | Pasarela real, Actors y AC9-E3, cada uno con su motivo. Lo que sí se cerró al final: el código transversal compartido (AC7-E5, ADR-020) | Cierre §5 y §6 |
 | 19 | Riesgos y restricciones | R3, R5, R9, R10 y R11; riesgos aceptados del SAD 6.2 | Cierre §7 |
@@ -51,13 +51,13 @@ Todo el equipo debe responderlas igual, con estas respuestas:
 | Pregunta | Respuesta |
 |---|---|
 | ¿Cuántos usuarios o roles hay? | 6: Cliente, Empresa, Técnico y Proveedor (app); Admin del tenant y Admin de plataforma (panel) |
-| ¿Cuántas funcionalidades? | 33 requisitos funcionales en el SRS; avance según las cuatro cifras de SCRUM-700 |
-| ¿Cuántos escenarios? | 52, con el estado final de SCRUM-664 |
+| ¿Cuántas funcionalidades? | 33 requisitos funcionales: 33 implementados, 33 verificados en QA y 33 aceptados; más 4 extensiones aparte. Avance 92,50 % |
+| ¿Cuántos escenarios? | 52, en 9 atributos de calidad |
 | ¿Cuántos servicios? | 8 definidos; 7 implementados; Actors planeado |
 | ¿Cuáles están en producción? | Los 7 con código, el panel y la app, desde el 4 de noviembre. QA va adelante en los 7 servicios y en el panel (refactor del Sprint 6 y código compartido de ADR-020); llegan a producción solo por `release/*` → `main` (matriz de lo modelado frente a lo real) |
 | ¿Cuántos repositorios? | 14: 13 de componentes (el último, `quickpatch-shared-dotnet`, por ADR-020) y el principal |
 | ¿Cuántos topics? | 20 |
 | ¿Qué quedó pendiente? | Pasarela real, Actors y AC9-E3 |
-| ¿Cuántos escenarios cumplen? | 35 Cumple, 8 Parcial, 3 No cumple y 6 No medido, hasta que SCRUM-664 publique la cifra final |
+| ¿Cuántos escenarios cumplen? | 35 Cumple, 8 Parcial, 3 No cumple y 6 No medido: 75,00 % (SCRUM-664) |
 | ¿Cuántos diagramas C4 hay? | 27 vistas del modelo de Structurizr, todas con la leyenda de estados, más 2 diagramas de código (C4-07) |
 | ¿Cuál fue el resultado? | El de la conclusión del documento de cierre, aprobada por la PO |

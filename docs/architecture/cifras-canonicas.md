@@ -1,7 +1,7 @@
 # Cifras canónicas de QUICKPATCH
 
 **Tarea:** SCRUM-691 (historia SCRUM-690, auditoría de consistencia del cierre)
-**Fecha de corte:** 11 de noviembre de 2026, sobre `develop` del superproyecto y de cada repositorio
+**Fecha de corte:** 11 de noviembre de 2026 (indicadores de QA al 12 de noviembre), sobre `develop` del superproyecto y de cada repositorio
 
 El profesor encontró en la entrega del Sprint 5 que la misma cifra cambiaba entre diapositivas y documentos. Esta tabla es la **fuente única**: SRS, SAD, SDD, DD, Infraestructura, TD, los informes y la presentación deben usar estos valores y citar este documento. Cada valor sale de una fuente verificable (código, contratos, repositorios o el documento dueño del dato), no de otro documento derivado.
 
@@ -17,7 +17,7 @@ Si un dato cambia, se cambia primero en su fuente y después aquí, en el mismo 
 | Requisitos no funcionales | **14** (RNF-01 a RNF-14) | SRS | — |
 | Área de operación | Bogotá D.C. | SAD, restricción R6 | — |
 
-**Funcionalidades: unidad por decidir (SCRUM-699 / SCRUM-700).** Hoy conviven tres conteos: 33 requisitos funcionales (SRS v5.6), 78 funcionalidades por usuario (`docs/testing/avance-real-sprint5.md`) y el «37» de la presentación del Sprint 5, que no corresponde a ninguno. Hasta que SCRUM-700 fije la unidad y los cuatro indicadores (definidas, implementadas, verificadas en QA y aceptadas), **la presentación usa los 33 RF del SRS**, y las 78 funcionalidades solo como desglose por usuario.
+**Funcionalidades (SCRUM-700, 12-nov).** La unidad es el RF vigente del SRS v5.6. Los cuatro indicadores son **33 definidos, 33 implementados, 33 verificados en QA y 33 aceptados por la PO** (`docs/testing/indicadores-funcionales.md`, recalculables con `python scripts/calcular_indicadores_qa.py`). Las 4 extensiones (EXT-01 a EXT-04) se reportan aparte: el «37» del Sprint 5 era 33 RF + 4 extensiones. Las 78 funcionalidades por usuario quedan solo como desglose por rol. **Avance del producto: 92,50 %** (0,7 × 100 % de RF aceptados + 0,3 × 75,00 % de escenarios).
 
 ## Arquitectura
 
@@ -44,7 +44,7 @@ Si un dato cambia, se cambia primero en su fuente y después aquí, en el mismo 
 | Fuera de alcance | **3** (FA1 a FA3) | SAD 1.3 |
 | Atributos de calidad | **9** (AC1 a AC9, ISO/IEC 25010:2023) | SAD 2 |
 | Escenarios de calidad | **52**: AC1 3, AC2 5, AC3 2, AC4 9, AC5 6, AC6 8, AC7 6, AC8 5 y AC9 8 | SAD 3; `docs/testing/matriz-escenarios-calidad-52.md` |
-| Estado de los escenarios | **35 Cumple, 8 Parcial, 3 No cumple, 6 No medido** (total 52) | `docs/testing/matriz-escenarios-calidad-52.md` (SCRUM-563), al 11-nov-2026. La fuente única la cierra SCRUM-664 |
+| Estado de los escenarios | **35 Cumple, 8 Parcial, 3 No cumple, 6 No medido** (total 52) | `docs/testing/matriz-escenarios-calidad-52.md` v3.3, fuente única desde SCRUM-664 (12-nov-2026): **75,00 %** (Cumple 1, Parcial 0,5). La segunda versión del Excel de la PO (81,73 %) está retirada |
 | Riesgos aceptados | **4** | SAD 6.2 |
 
 ## Discrepancias encontradas al armar esta tabla
