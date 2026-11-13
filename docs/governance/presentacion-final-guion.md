@@ -59,5 +59,5 @@ Todo el equipo debe responderlas igual, con estas respuestas:
 | ¿Cuántos topics? | 20 |
 | ¿Qué quedó pendiente? | Pasarela real, Actors y AC9-E3 |
 | ¿Cuántos escenarios cumplen? | 35 Cumple, 8 Parcial, 3 No cumple y 6 No medido, hasta que SCRUM-664 publique la cifra final |
-| ¿Cuántos diagramas C4 hay? | 27 vistas exportadas, todas con la leyenda de estados |
+| ¿Cuántos diagramas C4 hay? | 27 vistas del modelo de Structurizr, todas con la leyenda de estados, más 2 diagramas de código (C4-07) |
 | ¿Cuál fue el resultado? | El de la conclusión del documento de cierre, aprobada por la PO |
