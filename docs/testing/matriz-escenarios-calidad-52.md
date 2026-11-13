@@ -1,10 +1,10 @@
 # Matriz de Evaluación de los 52 Escenarios de Calidad del SAD (SCRUM-565)
 
 **Código del Documento:** `MTX-CAL-SAD-52-2026-10-26`  
-**Versión:** `3.2`  
-**Fecha:** 1 de noviembre de 2026 (versión 3.2: 5 de noviembre de 2026)  
+**Versión:** `3.3` (fuente única de los 52 escenarios, SCRUM-664)  
+**Fecha:** 1 de noviembre de 2026 (versión 3.2: 5 de noviembre de 2026; versión 3.3: 12 de noviembre de 2026)  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
-**Trazabilidad Jira:** Tareas `SCRUM-564` (métrica verificable, sección 4) y `SCRUM-565` (medición) | SAD §3 (52 Escenarios de Calidad en 9 Atributos ISO/IEC 25010) | `TD.md` V3.0  
+**Trazabilidad Jira:** Tareas `SCRUM-564` (métrica verificable, sección 4) y `SCRUM-565` (medición) | SAD §3 (52 Escenarios de Calidad en 9 Atributos ISO/IEC 25010) | `TD.md` V3.3 | Fuente única de los escenarios (SCRUM-664): el informe, las estadísticas, el TD, el SAD y la presentación citan las cantidades de esta matriz. Se recalculan con `python scripts/calcular_indicadores_qa.py`  
 **Criterio de Evaluación:** Conforme a la directriz técnica de Juan Diego, un escenario se clasifica como **Cumple** únicamente si cuenta con una **medición cuantitativa explícita**, **fecha de ejecución** y **archivo de evidencia verificable** en el repositorio. Todo escenario sin medición cuantitativa formal permanece como **No medido** / **Pendiente** (es preferible un porcentaje sincero a observaciones del profesor).
 
 ---
@@ -30,7 +30,7 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 | ID | Atributo de Calidad | Nombre del Escenario | Métrica / Criterio Esperado (SAD §3) | Valor Medido | Archivo de Evidencia (Ruta Relativa) | Estado | Observaciones Técnicas |
 |:---:|---|---|---|---|---|:---:|---|
 | **AC1-E1** | Functional Suitability | Filtro de especialidad en el matching | 0% de asignaciones a técnico de otra especialidad | 0 asignaciones a técnicos de otra especialidad | `tests/e2e/evidencias/scrum-78-qa-2026-10-22.txt`; `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` | **Cumple** | Filtro validado en motor de matching con PostGIS. |
-| **AC1-E2** | Functional Suitability | Cobertura de requisitos del MVP | 100% de los RF de prioridad Alta con prueba de aceptación | Verificado en 28 RFs de 33 | `docs/testing/informe-uat-oficial-po-2026-11-05.xlsx,` columna P | **Cumple** | Marcado por la PO: 24 de 24 RF de prioridad Alta aceptadas, RF-10 con observaciones. Falta firmar el acta (SCRUM-608) para que quede como evidencia en el repositorio. |
+| **AC1-E2** | Functional Suitability | Cobertura de requisitos del MVP | 100% de los RF de prioridad Alta con prueba de aceptación | 24 de 24 RF de prioridad Alta aceptados en UAT, con evidencia de QA (33 de 33 RF verificados en QA) | `docs/testing/indicadores-funcionales.md`; `docs/testing/acta-uat-scrum-608.md` (PR #272); `docs/testing/informe-uat-oficial-po-2026-11-05.xlsx`, columna P | **Cumple** | Marcado por la PO el 5-nov, con RF-10 con observaciones. Desde el 11-nov el acta está en el repositorio (PR #272). |
 | **AC1-E3** | Functional Suitability | Información suficiente para ejecutar el servicio | 100% de solicitudes asignadas muestran categoría, dirección y descripción | Detalle completo (categoría, dirección, teléfono) entregado al técnico | `tests/e2e/evidencias/scrum-incremento-tecnico-qa-2026-10-22.txt` (bloque 3.1 DTL-001) | **Cumple** | Cumple RN-SR13; terceros reciben HTTP 403. |
 | **AC2-E1** | Performance Efficiency | Búsqueda de técnicos cercanos | $< 3\text{ s}$ para el 95% de las solicitudes | **p95 = 73.55 ms** en carga 50 VU ($< 3\text{ s}$) | `tests/performance/evidencias/k6-load-50vu-summary.json` | **Cumple** | Latencia percentil 95 en búsqueda geoespacial PostGIS. |
 | **AC2-E2** | Performance Efficiency | Consulta de historial | $< 1.5\text{ s}$ por página de resultados | 36 consultas de historial y listados en 2 corridas: máximo 66 ms por página (< 1,5 s) | run 41935076005 y run 41940280403 (Newman, scrum-37, paginación HIS-006) | **Cumple** | Cumple la medida del SAD, con un historial de 3 páginas. Se midió con Newman y sin carga; la verificación de la matriz sugiere k6, cuyos scripts aún no consultan el historial. |
@@ -87,18 +87,22 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 ## 3. Balance Cuantitativo de los Escenarios de Calidad
 
 * **Total de Escenarios Evaluados:** **52 Escenarios de Arquitectura (SAD §3)**.
-* **Escenarios en Estado CUMPLE:** **35 escenarios (67.3%)**. Cinco de ellos cuentan por decisión de la Product Owner: AC1-E2, AC2-E5, AC3-E1, AC4-E2 y AC9-E2. AC4-E2 todavía no tiene evidencia; AC9-E2 la tiene desde el 11 de noviembre (SCRUM-642).
+* **Escenarios en Estado CUMPLE:** **35 escenarios (67.3%)**. Cinco de ellos los marcó la Product Owner como Cumple: AC1-E2, AC2-E5, AC3-E1, AC4-E2 y AC9-E2. AC4-E2 es el único que todavía no tiene evidencia. AC1-E2 la tiene con el acta (PR #272) y AC9-E2 desde el 11 de noviembre (SCRUM-642).
 * **Escenarios en Estado PARCIAL:** **8 escenarios (15.4%)** (AC4-E9, AC5-E3, AC5-E4, AC5-E6, AC7-E4, AC8-E1, AC8-E4, AC9-E8).
 * **Escenarios en Estado NO CUMPLE:** **3 escenarios (5.8%)** (AC7-E2, AC7-E3 y AC9-E3).
 * **Escenarios en Estado NO MEDIDO / PENDIENTE:** **6 escenarios (11.5%)** (AC4-E3, AC4-E4, AC4-E6, AC4-E8, AC8-E2 y AC8-E5).
 * **Porcentaje de Escenarios de Calidad:** **75.00%** ($[35 \times 1.0 + 8 \times 0.5] / 52$).
-* **Avance Oficial del Producto (Informe UAT de la Product Owner):** **92.50%** ($0.7 \times 100\% \text{ [aceptado en UAT]} + 0.3 \times 75.00\% \text{ [Calidad]}$). Era 91.92 % en el informe del 5-nov; el cambio sale de AC7-E5 (11-nov) y la Product Owner debe ratificarlo en su informe.
+* **Avance del Producto:** **92.50%** ($0.7 \times 100\% \text{ [33 de 33 RF aceptados]} + 0.3 \times 75.00\% \text{ [Calidad]}$), con los indicadores de [`indicadores-funcionales.md`](indicadores-funcionales.md) (SCRUM-700). Era 91.92 % en el Informe UAT del 5-nov; el cambio sale solo de AC7-E5 (11-nov).
 
 **Cambios del 1 de noviembre de 2026 (SCRUM-565):** AC5-E5 y AC6-E7 pasan de No medido a Parcial con pruebas de integración de CI. AC4-E1, AC5-E6, AC7-E6 y AC9-E7 suman evidencia sin cambiar de estado. AC4-E6 y AC9-E2 siguen en No cumple con el motivo actualizado. AC4-E7 corrige su valor medido: no hay escaneo de accesibilidad.
 
 **Cambios del 4 de noviembre de 2026 (SCRUM-569):** con la evaluación de `docs/testing/capacidad-interaccion-scrum-569.md`, AC4-E5 pasa de Parcial a Cumple; AC4-E2 y AC4-E9 pasan de No medido a Parcial; AC4-E6 pasa de No cumple a No medido, porque la pantalla de calificación (SCRUM-86) ya existe y falta medir la tasa con servicios reales. El porcentaje sube de 49.04% a 51.92%.
 
 **Cambios del 5 de noviembre de 2026 (SCRUM-563):** la matriz queda igual al Informe UAT oficial de la Product Owner ([`informe-uat-oficial-po-2026-11-05.xlsx`](informe-uat-oficial-po-2026-11-05.xlsx)). QA validó las mediciones del 5 de noviembre (PR #266, #269 y #270). Cambian 19 escenarios: AC1-E2 (Parcial → Cumple), AC2-E2 (No medido → Cumple), AC2-E5 (Parcial → Cumple), AC3-E1 (Parcial → Cumple), AC4-E2 (Parcial → Cumple), AC4-E7 (No medido → Cumple), AC5-E1 (No medido → Cumple), AC5-E2 (No medido → Cumple), AC5-E5 (Parcial → Cumple), AC6-E6 (No medido → Cumple), AC6-E7 (Parcial → Cumple), AC7-E2 (No medido → No cumple), AC7-E3 (No medido → No cumple), AC7-E5 (No medido → No cumple), AC8-E4 (No medido → Parcial), AC9-E2 (No cumple → Cumple), AC9-E3 (No medido → No cumple), AC9-E6 (No medido → Cumple), AC9-E8 (No medido → Parcial). El porcentaje sube de 51.92% a 73.08%.
+
+**Cambios del 11 de noviembre de 2026 (SCRUM-657 y SCRUM-642):** AC7-E5 pasa de No cumple a Cumple: con `quickpatch-shared-dotnet` v0.2.1 (ADR-020) no quedan copias de la lógica transversal en .NET (PR #296). AC9-E2 sigue en Cumple y ahora tiene evidencia en QA. El porcentaje sube de 73.08% a 75.00%.
+
+**Fuente única (12 de noviembre de 2026, SCRUM-664):** la segunda versión del Excel de la PO (5-nov) marcaba además AC4-E3, AC4-E4, AC4-E6, AC4-E8 y AC4-E9 como Cumple, y daba 81.73%. Esta matriz no toma esas marcas, porque esos escenarios no tienen medición ni evidencia, y eso va contra el criterio de evaluación del encabezado. Esa cifra está retirada. Se vuelven a evaluar con la UAT de cierre (SCRUM-658) y con SCRUM-667.
 
 ### 3.1 Cumplimiento por atributo (SCRUM-566)
 
