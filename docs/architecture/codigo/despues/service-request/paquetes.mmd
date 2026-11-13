@@ -2,8 +2,8 @@ flowchart LR
   subgraph Api
     _global_["(global) (1)"]
     QuickPatch_ServiceRequest_Api_Endpoints["Api.Endpoints (37)"]
-    QuickPatch_ServiceRequest_Api_Http["Api.Http (4)"]
-    QuickPatch_ServiceRequest_Api_Security["Api.Security (5)"]
+    QuickPatch_ServiceRequest_Api_Http["Api.Http (3)"]
+    QuickPatch_ServiceRequest_Api_Security["Api.Security (4)"]
   end
   subgraph Application
     QuickPatch_ServiceRequest_Application["Application (1)"]
@@ -32,18 +32,18 @@ flowchart LR
     QuickPatch_ServiceRequest_Infrastructure["Infrastructure (1)"]
     QuickPatch_ServiceRequest_Infrastructure_Geocoding["Infrastructure.Geocoding (2)"]
     QuickPatch_ServiceRequest_Infrastructure_Identity["Infrastructure.Identity (2)"]
-    QuickPatch_ServiceRequest_Infrastructure_Messaging["Infrastructure.Messaging (5)"]
-    QuickPatch_ServiceRequest_Infrastructure_Options["Infrastructure.Options (7)"]
-    QuickPatch_ServiceRequest_Infrastructure_Persistence["Infrastructure.Persistence (20)"]
+    QuickPatch_ServiceRequest_Infrastructure_Messaging["Infrastructure.Messaging (4)"]
+    QuickPatch_ServiceRequest_Infrastructure_Options["Infrastructure.Options (6)"]
+    QuickPatch_ServiceRequest_Infrastructure_Persistence["Infrastructure.Persistence (18)"]
     QuickPatch_ServiceRequest_Infrastructure_Scheduling["Infrastructure.Scheduling (3)"]
     QuickPatch_ServiceRequest_Infrastructure_Storage["Infrastructure.Storage (2)"]
   end
   _global_ -->|9| QuickPatch_ServiceRequest_Api_Endpoints
-  _global_ -->|3| QuickPatch_ServiceRequest_Api_Http
+  _global_ -->|2| QuickPatch_ServiceRequest_Api_Http
   _global_ -->|2| QuickPatch_ServiceRequest_Api_Security
   _global_ -->|1| QuickPatch_ServiceRequest_Application
   _global_ -->|1| QuickPatch_ServiceRequest_Infrastructure
-  QuickPatch_ServiceRequest_Api_Endpoints -->|13| QuickPatch_ServiceRequest_Api_Http
+  QuickPatch_ServiceRequest_Api_Endpoints -->|8| QuickPatch_ServiceRequest_Api_Http
   QuickPatch_ServiceRequest_Api_Endpoints -->|10| QuickPatch_ServiceRequest_Api_Security
   QuickPatch_ServiceRequest_Api_Endpoints -->|2| QuickPatch_ServiceRequest_Application_Abstractions
   QuickPatch_ServiceRequest_Api_Endpoints -->|11| QuickPatch_ServiceRequest_Application_Execution
@@ -119,8 +119,8 @@ flowchart LR
   QuickPatch_ServiceRequest_Infrastructure -->|1| QuickPatch_ServiceRequest_Domain_ServiceRequests
   QuickPatch_ServiceRequest_Infrastructure -->|2| QuickPatch_ServiceRequest_Infrastructure_Geocoding
   QuickPatch_ServiceRequest_Infrastructure -->|2| QuickPatch_ServiceRequest_Infrastructure_Identity
-  QuickPatch_ServiceRequest_Infrastructure -->|5| QuickPatch_ServiceRequest_Infrastructure_Messaging
-  QuickPatch_ServiceRequest_Infrastructure -->|7| QuickPatch_ServiceRequest_Infrastructure_Options
+  QuickPatch_ServiceRequest_Infrastructure -->|4| QuickPatch_ServiceRequest_Infrastructure_Messaging
+  QuickPatch_ServiceRequest_Infrastructure -->|6| QuickPatch_ServiceRequest_Infrastructure_Options
   QuickPatch_ServiceRequest_Infrastructure -->|14| QuickPatch_ServiceRequest_Infrastructure_Persistence
   QuickPatch_ServiceRequest_Infrastructure -->|3| QuickPatch_ServiceRequest_Infrastructure_Scheduling
   QuickPatch_ServiceRequest_Infrastructure -->|2| QuickPatch_ServiceRequest_Infrastructure_Storage
@@ -134,8 +134,6 @@ flowchart LR
   QuickPatch_ServiceRequest_Infrastructure_Messaging -->|2| QuickPatch_ServiceRequest_Application_Payments
   QuickPatch_ServiceRequest_Infrastructure_Messaging -->|2| QuickPatch_ServiceRequest_Application_Tenants
   QuickPatch_ServiceRequest_Infrastructure_Messaging -->|1| QuickPatch_ServiceRequest_Domain_Tenants
-  QuickPatch_ServiceRequest_Infrastructure_Messaging -->|1| QuickPatch_ServiceRequest_Infrastructure_Options
-  QuickPatch_ServiceRequest_Infrastructure_Messaging -->|2| QuickPatch_ServiceRequest_Infrastructure_Persistence
   QuickPatch_ServiceRequest_Infrastructure_Persistence -->|19| QuickPatch_ServiceRequest_Application_Abstractions
   QuickPatch_ServiceRequest_Infrastructure_Persistence -->|2| QuickPatch_ServiceRequest_Domain_Categories
   QuickPatch_ServiceRequest_Infrastructure_Persistence -->|2| QuickPatch_ServiceRequest_Domain_Evidence

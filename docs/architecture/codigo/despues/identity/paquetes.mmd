@@ -3,7 +3,7 @@ flowchart LR
     _global_["(global) (1)"]
     QuickPatch_Identity_Api_Bootstrap["Api.Bootstrap (5)"]
     QuickPatch_Identity_Api_Endpoints["Api.Endpoints (25)"]
-    QuickPatch_Identity_Api_Http["Api.Http (3)"]
+    QuickPatch_Identity_Api_Http["Api.Http (2)"]
     QuickPatch_Identity_Api_Security["Api.Security (6)"]
   end
   subgraph Application
@@ -26,21 +26,20 @@ flowchart LR
   end
   subgraph Infrastructure
     QuickPatch_Identity_Infrastructure["Infrastructure (1)"]
-    QuickPatch_Identity_Infrastructure_Messaging["Infrastructure.Messaging (6)"]
+    QuickPatch_Identity_Infrastructure_Messaging["Infrastructure.Messaging (3)"]
     QuickPatch_Identity_Infrastructure_Options["Infrastructure.Options (7)"]
     QuickPatch_Identity_Infrastructure_Persistence["Infrastructure.Persistence (13)"]
     QuickPatch_Identity_Infrastructure_Security["Infrastructure.Security (4)"]
   end
   _global_ -->|3| QuickPatch_Identity_Api_Bootstrap
   _global_ -->|2| QuickPatch_Identity_Api_Endpoints
-  _global_ -->|3| QuickPatch_Identity_Api_Http
+  _global_ -->|2| QuickPatch_Identity_Api_Http
   _global_ -->|2| QuickPatch_Identity_Api_Security
   _global_ -->|1| QuickPatch_Identity_Application
   _global_ -->|1| QuickPatch_Identity_Infrastructure
   QuickPatch_Identity_Api_Bootstrap -->|12| QuickPatch_Identity_Application_Auth
   QuickPatch_Identity_Api_Bootstrap -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Api_Bootstrap -->|2| QuickPatch_Identity_Infrastructure_Options
-  QuickPatch_Identity_Api_Endpoints -->|1| QuickPatch_Identity_Api_Http
   QuickPatch_Identity_Api_Endpoints -->|9| QuickPatch_Identity_Api_Security
   QuickPatch_Identity_Api_Endpoints -->|5| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Api_Endpoints -->|19| QuickPatch_Identity_Application_Auth
@@ -105,30 +104,25 @@ flowchart LR
   QuickPatch_Identity_Domain_Tenants -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Domain_Users -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Infrastructure -->|14| QuickPatch_Identity_Application_Abstractions
-  QuickPatch_Identity_Infrastructure -->|5| QuickPatch_Identity_Infrastructure_Messaging
+  QuickPatch_Identity_Infrastructure -->|3| QuickPatch_Identity_Infrastructure_Messaging
   QuickPatch_Identity_Infrastructure -->|7| QuickPatch_Identity_Infrastructure_Options
   QuickPatch_Identity_Infrastructure -->|11| QuickPatch_Identity_Infrastructure_Persistence
   QuickPatch_Identity_Infrastructure -->|4| QuickPatch_Identity_Infrastructure_Security
   QuickPatch_Identity_Infrastructure_Messaging -->|2| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Infrastructure_Messaging -->|3| QuickPatch_Identity_Application_Events
   QuickPatch_Identity_Infrastructure_Messaging -->|2| QuickPatch_Identity_Application_Technicians
-  QuickPatch_Identity_Infrastructure_Messaging -->|2| QuickPatch_Identity_Infrastructure_Persistence
+  QuickPatch_Identity_Infrastructure_Messaging -->|1| QuickPatch_Identity_Infrastructure_Persistence
   QuickPatch_Identity_Infrastructure_Persistence -->|22| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Infrastructure_Persistence -->|2| QuickPatch_Identity_Domain_Audit
   QuickPatch_Identity_Infrastructure_Persistence -->|2| QuickPatch_Identity_Domain_Companies
   QuickPatch_Identity_Infrastructure_Persistence -->|2| QuickPatch_Identity_Domain_Technicians
   QuickPatch_Identity_Infrastructure_Persistence -->|3| QuickPatch_Identity_Domain_Tenants
   QuickPatch_Identity_Infrastructure_Persistence -->|10| QuickPatch_Identity_Domain_Users
-  QuickPatch_Identity_Infrastructure_Persistence -->|1| QuickPatch_Identity_Infrastructure_Messaging
   QuickPatch_Identity_Infrastructure_Persistence -->|1| QuickPatch_Identity_Infrastructure_Options
   QuickPatch_Identity_Infrastructure_Security -->|4| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Infrastructure_Security -->|1| QuickPatch_Identity_Domain_Users
   QuickPatch_Identity_Infrastructure_Security -->|4| QuickPatch_Identity_Infrastructure_Options
-  style QuickPatch_Identity_Infrastructure_Persistence fill:#FFCDD2
-  style QuickPatch_Identity_Infrastructure_Messaging fill:#FFCDD2
   linkStyle 8 stroke:#C62828,stroke-width:2px
+  linkStyle 21 stroke:#C62828,stroke-width:2px
   linkStyle 22 stroke:#C62828,stroke-width:2px
   linkStyle 23 stroke:#C62828,stroke-width:2px
-  linkStyle 24 stroke:#C62828,stroke-width:2px
-  linkStyle 81 stroke:#EF6C00,stroke-width:2px
-  linkStyle 88 stroke:#EF6C00,stroke-width:2px

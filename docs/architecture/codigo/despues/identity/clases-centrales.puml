@@ -1,10 +1,10 @@
 @startuml
 !pragma layout smetana
-title Identity — clases más conectadas (despues, abffadb)
+title Identity — clases más conectadas (despues, fe22c14)
 hide empty members
 skinparam shadowing false
 class "Api.Endpoints.IdentityEndpoints" as QuickPatch_Identity_Api_Endpoints_IdentityEndpoints <<Api>> {
-  735 líneas · entra 1 · sale 80
+  736 líneas · entra 1 · sale 79
 }
 class "Domain.Users.User" as QuickPatch_Identity_Domain_Users_User <<Domain>> {
   335 líneas · entra 40 · sale 3
@@ -18,14 +18,14 @@ interface "Application.Abstractions.ITenantUnitOfWork" as QuickPatch_Identity_Ap
 class "Domain.Tenants.Tenant" as QuickPatch_Identity_Domain_Tenants_Tenant <<Domain>> {
   65 líneas · entra 23 · sale 1
 }
-class "Infrastructure.Persistence.IdentityDbContext" as QuickPatch_Identity_Infrastructure_Persistence_IdentityDbContext <<Infrastructure>> {
-  190 líneas · entra 14 · sale 9
-}
 interface "Application.Abstractions.IUserRepository" as QuickPatch_Identity_Application_Abstractions_IUserRepository <<Application>> {
   0 líneas · entra 21 · sale 1
 }
 class "Domain.Technicians.TechnicianProfile" as QuickPatch_Identity_Domain_Technicians_TechnicianProfile <<Domain>> {
   132 líneas · entra 21 · sale 1
+}
+class "Infrastructure.Persistence.IdentityDbContext" as QuickPatch_Identity_Infrastructure_Persistence_IdentityDbContext <<Infrastructure>> {
+  177 líneas · entra 13 · sale 8
 }
 class "Application.Technicians.CreateTeamTechnicianHandler" as QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler <<Application>> {
   71 líneas · entra 2 · sale 15
