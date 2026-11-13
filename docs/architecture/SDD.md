@@ -819,11 +819,11 @@ Los diagramas de 7.1 y 7.2 se trazaron sobre el código de `develop` del 7 de oc
 | `CreateServiceRequestHandler` | `quickpatch-service-request` | Dentro de `ITenantUnitOfWork.ExecuteAsync` agrega la solicitud y encola el evento en `IOutbox`; los dos cambios se confirman en la misma transacción (ADR-007). El `eventId` es un UUID v7. |
 | `TenantUnitOfWork` | `quickpatch-service-request` | Abre la transacción, fija `app.current_tenant` con `set_config(..., true)` (RLS), ejecuta el trabajo, guarda y confirma. |
 | `EfOutbox` | `quickpatch-service-request` | Inserta el mensaje en `outbox_events` con el mismo `DbContext` de la solicitud. |
-| `OutboxPublisher` | `quickpatch-service-request` | Servicio en segundo plano: toma lotes con `FOR UPDATE SKIP LOCKED` y el rol de publicación (`SET LOCAL ROLE`), publica en Kafka con la clave del agregado y las cabeceras `eventId` y `eventType`, y marca `published_at`. Si Kafka falla, incrementa `attempts` y reintenta en el siguiente ciclo. |
+| `OutboxPublisher<TContext, TRecord>` | `quickpatch-shared-dotnet` (ADR-020), registrado por `quickpatch-service-request` | Servicio en segundo plano común a los 6 servicios .NET: toma lotes con `FOR UPDATE SKIP LOCKED` y el rol de publicación (`SET LOCAL ROLE`), publica en Kafka con la clave del agregado y las cabeceras `eventId` y `eventType`, y marca `published_at`. Si Kafka falla, incrementa `attempts` y reintenta en el siguiente ciclo. |
 | `ServiceRequestCreatedListener` | `quickpatch-matching` | Consume el topic, descarta y registra los mensajes que no cumplen el contrato, y propaga `correlationId`, `tenantId` y `eventId` en el MDC de los logs. |
 | `ServiceRequestCreatedHandler` | `quickpatch-matching` | En una transacción por tenant, registra el evento y solo si es nuevo inicia el matching: resultado `APPLIED` o `DUPLICATE`. |
 | `JdbcProcessedEventStore` | `quickpatch-matching` | `INSERT ... ON CONFLICT (event_id) DO NOTHING` en `processed_events`: la base de datos garantiza la deduplicación aun con dos consumidores concurrentes (RN-EV1). |
-| `PendingMatchingStarter` | `quickpatch-matching` | Punto de extensión donde entra el algoritmo de matching (RF-09); hoy solo registra el inicio. |
+| `MatchingEngine` | `quickpatch-matching` | Implementa `MatchingStarter`: guarda la solicitud y ofrece al técnico disponible más cercano de la especialidad (RF-09, RN-M1, RN-M4). |
 
 Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija de 2 segundos y sin límite de intentos (`KafkaConfig`). La DLQ de la sección 8.9 todavía no está implementada.
 
@@ -1741,7 +1741,7 @@ Las cuatro capas son **proyectos** separados en .NET y **paquetes raíz** en Jav
 src/
 ├── QuickPatch.<Servicio>.Api/              # Interfaz: lo que entra por HTTP o WebSocket
 │   ├── Endpoints/                          #   <Recurso>Endpoints.cs: rutas, validación de entrada y mapeo a resultados HTTP
-│   ├── Http/                               #   Problems (RFC 9457), CorrelationId, middleware
+│   ├── Http/                               #   Problems (RFC 9457) y manejo de errores; X-Correlation-Id y logging vienen de quickpatch-shared-dotnet (ADR-020)
 │   ├── Security/                           #   AuthenticatedUser (claims del JWT), políticas por rol
 │   ├── Bootstrap/                          #   (opcional) semillas y tareas de arranque
 │   └── Program.cs
@@ -1837,9 +1837,9 @@ La convención de 10.3.1 ordena las carpetas, pero el profesor observó en el ci
 | `DbContext`, configuraciones, migraciones | `Infrastructure/Persistence/` | Solo los usa `Infrastructure`. |
 | Contrato de evento (publicado o consumido) | `Application/Events/` | Copia del esquema de `contracts/kafka/` (regla 4 de 10.3.1). |
 | Handler de un evento consumido | `Application/Events/` | La regla de negocio del consumo. Es testeable sin Kafka. |
-| Consumidor de Kafka | `Infrastructure/Messaging/<Topic>Consumer.cs` | Transporte: deserializa, aplica la idempotencia con `processed_events` (ADR-007), abre la unidad de trabajo del tenant y delega en el handler de `Application/Events`. |
+| Consumidor de Kafka | `Infrastructure/Messaging/<Topic>Consumer.cs`, sobre `KafkaConsumerService` de `quickpatch-shared-dotnet` | Transporte: deserializa, aplica la idempotencia con `processed_events` (ADR-007), abre la unidad de trabajo del tenant y delega en el handler de `Application/Events`. |
 | Outbox: escritura | Puerto `IOutbox` en `Application/Abstractions`; implementación en `Infrastructure/Persistence` | El handler agrega el evento al Outbox en la misma transacción del cambio. |
-| Outbox: publicador | `Infrastructure/Messaging/OutboxPublisher.cs` | `BackgroundService`; el único que usa el productor de Kafka. |
+| Outbox: publicador | `OutboxPublisher<TContext, TRecord>` de `quickpatch-shared-dotnet` (ADR-020), registrado en `Infrastructure/DependencyInjection.cs` | `BackgroundService`; el único que usa el productor de Kafka. El servicio no lo copia. |
 | Integración externa (Garage, Nominatim, PSP, correo, PDF) | `Infrastructure/<Sistema>/`, detrás de un puerto | Un adaptador por sistema. |
 | Configuración tipada | `Infrastructure/Options/` (o `Api/Security` si solo la usa el API) | Se valida al arrancar. |
 | Seguridad del API (claims, políticas) | `Api/Security/` | `AuthenticatedUser` entrega el tenant y el rol del JWT. El tenant nunca sale del cuerpo de la petición. |
