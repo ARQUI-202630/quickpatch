@@ -1,6 +1,6 @@
 # Matching — despues
 
-Código de `origin/develop` en `8e6450c`, generado el 2026-11-11 con `tools/arquitectura/generar.py`.
+Código de `origin/develop` en `8e6450c`, generado el 2026-11-12 con `tools/arquitectura/generar.py`.
 
 | Métrica | Valor |
 |---|---|

@@ -1,14 +1,14 @@
 @startuml
 !pragma layout smetana
-title ServiceRequest — paquetes (despues, ebd07d8)
+title ServiceRequest — paquetes (despues, 45c0653)
 skinparam packageStyle rectangle
 skinparam shadowing false
 left to right direction
 package "Api" {
   component "(global)\n1 tipos" as _global_
   component "Api.Endpoints\n37 tipos" as QuickPatch_ServiceRequest_Api_Endpoints
-  component "Api.Http\n4 tipos" as QuickPatch_ServiceRequest_Api_Http
-  component "Api.Security\n5 tipos" as QuickPatch_ServiceRequest_Api_Security
+  component "Api.Http\n3 tipos" as QuickPatch_ServiceRequest_Api_Http
+  component "Api.Security\n4 tipos" as QuickPatch_ServiceRequest_Api_Security
 }
 package "Application" {
   component "Application\n1 tipos" as QuickPatch_ServiceRequest_Application
@@ -37,18 +37,18 @@ package "Infrastructure" {
   component "Infrastructure\n1 tipos" as QuickPatch_ServiceRequest_Infrastructure
   component "Infrastructure.Geocoding\n2 tipos" as QuickPatch_ServiceRequest_Infrastructure_Geocoding
   component "Infrastructure.Identity\n2 tipos" as QuickPatch_ServiceRequest_Infrastructure_Identity
-  component "Infrastructure.Messaging\n5 tipos" as QuickPatch_ServiceRequest_Infrastructure_Messaging
-  component "Infrastructure.Options\n7 tipos" as QuickPatch_ServiceRequest_Infrastructure_Options
-  component "Infrastructure.Persistence\n20 tipos" as QuickPatch_ServiceRequest_Infrastructure_Persistence
+  component "Infrastructure.Messaging\n4 tipos" as QuickPatch_ServiceRequest_Infrastructure_Messaging
+  component "Infrastructure.Options\n6 tipos" as QuickPatch_ServiceRequest_Infrastructure_Options
+  component "Infrastructure.Persistence\n18 tipos" as QuickPatch_ServiceRequest_Infrastructure_Persistence
   component "Infrastructure.Scheduling\n3 tipos" as QuickPatch_ServiceRequest_Infrastructure_Scheduling
   component "Infrastructure.Storage\n2 tipos" as QuickPatch_ServiceRequest_Infrastructure_Storage
 }
 _global_ --> QuickPatch_ServiceRequest_Api_Endpoints #607D8B : 9
-_global_ --> QuickPatch_ServiceRequest_Api_Http #607D8B : 3
+_global_ --> QuickPatch_ServiceRequest_Api_Http #607D8B : 2
 _global_ --> QuickPatch_ServiceRequest_Api_Security #607D8B : 2
 _global_ --> QuickPatch_ServiceRequest_Application #607D8B : 1
 _global_ --> QuickPatch_ServiceRequest_Infrastructure #607D8B : 1
-QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Api_Http #607D8B : 13
+QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Api_Http #607D8B : 8
 QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Api_Security #607D8B : 10
 QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 2
 QuickPatch_ServiceRequest_Api_Endpoints --> QuickPatch_ServiceRequest_Application_Execution #607D8B : 11
@@ -124,8 +124,8 @@ QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Applicati
 QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 1
 QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Geocoding #607D8B : 2
 QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Identity #607D8B : 2
-QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Messaging #607D8B : 5
-QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Options #607D8B : 7
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Messaging #607D8B : 4
+QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Options #607D8B : 6
 QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Persistence #607D8B : 14
 QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Scheduling #607D8B : 3
 QuickPatch_ServiceRequest_Infrastructure --> QuickPatch_ServiceRequest_Infrastructure_Storage #607D8B : 2
@@ -139,8 +139,6 @@ QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest
 QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Application_Payments #607D8B : 2
 QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Application_Tenants #607D8B : 2
 QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Domain_Tenants #607D8B : 1
-QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Infrastructure_Options #607D8B : 1
-QuickPatch_ServiceRequest_Infrastructure_Messaging --> QuickPatch_ServiceRequest_Infrastructure_Persistence #607D8B : 2
 QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 19
 QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Domain_Categories #607D8B : 2
 QuickPatch_ServiceRequest_Infrastructure_Persistence --> QuickPatch_ServiceRequest_Domain_Evidence #607D8B : 2

@@ -2,18 +2,18 @@
  "servicio": "Catalog",
  "lenguaje": "csharp",
  "resumen": {
-  "tipos": 43,
-  "paquetes": 14,
-  "dependencias_entre_tipos": 84,
-  "dependencias_entre_paquetes": 26,
+  "tipos": 38,
+  "paquetes": 13,
+  "dependencias_entre_tipos": 73,
+  "dependencias_entre_paquetes": 22,
   "ciclos_entre_paquetes": 0,
   "paquetes_en_ciclos": 0,
   "ciclos_entre_tipos": 0,
   "mayor_ciclo_de_tipos": 0,
   "violaciones_de_capas": 0,
   "tipos_de_mas_de_250_lineas": 0,
-  "fan_out_maximo": 15,
-  "fan_out_promedio": 1.95,
+  "fan_out_maximo": 14,
+  "fan_out_promedio": 1.92,
   "cohesion_relacional_promedio": 0.86
  },
  "dependencias_entre_capas": {
@@ -33,7 +33,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 88,
-   "fan_out": 15,
+   "fan_out": 14,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Catalog.Api/Endpoints/CategoryEndpoints.cs"
   },
@@ -65,15 +65,6 @@
    "archivo": "src/QuickPatch.Catalog.Application/Events/EventContracts.cs"
   },
   {
-   "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.EfOutbox",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 16,
-   "fan_out": 4,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/EfOutbox.cs"
-  },
-  {
    "tipo": "QuickPatch.Catalog.Application.Categories.ListCategoriesHandler",
    "capa": "Application",
    "clase": "class",
@@ -81,15 +72,6 @@
    "fan_out": 3,
    "fan_in": 2,
    "archivo": "src/QuickPatch.Catalog.Application/Categories/ListCategories.cs"
-  },
-  {
-   "tipo": "QuickPatch.Catalog.Infrastructure.Messaging.OutboxPublisher",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 84,
-   "fan_out": 3,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Catalog.Infrastructure/Messaging/OutboxPublisher.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.CategoryRepository",
@@ -101,22 +83,40 @@
    "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/CategoryRepository.cs"
   },
   {
+   "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.EfOutbox",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 7,
+   "fan_out": 3,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/EfOutbox.cs"
+  },
+  {
    "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.TenantUnitOfWork",
    "capa": "Infrastructure",
    "clase": "class",
-   "lineas": 30,
+   "lineas": 15,
    "fan_out": 3,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/TenantUnitOfWork.cs"
   },
   {
-   "tipo": "QuickPatch.Catalog.Api.Security.AuthenticationSetup",
+   "tipo": "QuickPatch.Catalog.Api.Security.RequestTenant",
    "capa": "Api",
-   "clase": "static",
-   "lineas": 39,
+   "clase": "class",
+   "lineas": 24,
    "fan_out": 2,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Catalog.Api/Security/RequestTenant.cs"
+  },
+  {
+   "tipo": "QuickPatch.Catalog.Api.Endpoints.AdminCategoryResponse",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 3,
+   "fan_out": 1,
    "fan_in": 1,
-   "archivo": "src/QuickPatch.Catalog.Api/Security/AuthenticatedUser.cs"
+   "archivo": "src/QuickPatch.Catalog.Api/Endpoints/CategoryContracts.cs"
   }
  ],
  "mayor_fan_in": [
@@ -128,15 +128,6 @@
    "fan_out": 1,
    "fan_in": 11,
    "archivo": "src/QuickPatch.Catalog.Domain/Categories/Category.cs"
-  },
-  {
-   "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 37,
-   "fan_out": 2,
-   "fan_in": 6,
-   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Abstractions.ICategoryRepository",
@@ -157,6 +148,15 @@
    "archivo": null
   },
   {
+   "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 25,
+   "fan_out": 1,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
+  },
+  {
    "tipo": "QuickPatch.Catalog.Application.Abstractions.IOutbox",
    "capa": "Application",
    "clase": "interface",
@@ -164,15 +164,6 @@
    "fan_out": 1,
    "fan_in": 4,
    "archivo": null
-  },
-  {
-   "tipo": "QuickPatch.Catalog.Api.Http.CorrelationId",
-   "capa": "Api",
-   "clase": "static",
-   "lineas": 18,
-   "fan_out": 0,
-   "fan_in": 3,
-   "archivo": "src/QuickPatch.Catalog.Api/Http/CorrelationId.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Abstractions.OutboxMessage",
@@ -184,19 +175,10 @@
    "archivo": "src/QuickPatch.Catalog.Application/Abstractions/IOutbox.cs"
   },
   {
-   "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.OutboxEventRecord",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 15,
-   "fan_out": 0,
-   "fan_in": 3,
-   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
-  },
-  {
    "tipo": "QuickPatch.Catalog.Api.Security.AuthenticatedUser",
    "capa": "Api",
    "clase": "class",
-   "lineas": 20,
+   "lineas": 19,
    "fan_out": 0,
    "fan_in": 2,
    "archivo": "src/QuickPatch.Catalog.Api/Security/AuthenticatedUser.cs"
@@ -209,6 +191,24 @@
    "fan_out": 0,
    "fan_in": 2,
    "archivo": "src/QuickPatch.Catalog.Api/Security/ChannelOptions.cs"
+  },
+  {
+   "tipo": "QuickPatch.Catalog.Api.Security.RequestTenant",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 24,
+   "fan_out": 2,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Catalog.Api/Security/RequestTenant.cs"
+  },
+  {
+   "tipo": "QuickPatch.Catalog.Application.Categories.CreateCategoryCommand",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 1,
+   "fan_out": 0,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Catalog.Application/Categories/CreateCategory.cs"
   }
  ],
  "mas_grandes": [
@@ -226,36 +226,9 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 88,
-   "fan_out": 15,
+   "fan_out": 14,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Catalog.Api/Endpoints/CategoryEndpoints.cs"
-  },
-  {
-   "tipo": "QuickPatch.Catalog.Infrastructure.Messaging.OutboxPublisher",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 84,
-   "fan_out": 3,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Catalog.Infrastructure/Messaging/OutboxPublisher.cs"
-  },
-  {
-   "tipo": "QuickPatch.Catalog.Api.Security.AuthenticationSetup",
-   "capa": "Api",
-   "clase": "static",
-   "lineas": 39,
-   "fan_out": 2,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Catalog.Api/Security/AuthenticatedUser.cs"
-  },
-  {
-   "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 37,
-   "fan_out": 2,
-   "fan_in": 6,
-   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Application.Categories.CreateCategoryHandler",
@@ -267,15 +240,6 @@
    "archivo": "src/QuickPatch.Catalog.Application/Categories/CreateCategory.cs"
   },
   {
-   "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.TenantUnitOfWork",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 30,
-   "fan_out": 3,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/TenantUnitOfWork.cs"
-  },
-  {
    "tipo": "QuickPatch.Catalog.Application.Categories.UpdateCategoryHandler",
    "capa": "Application",
    "clase": "class",
@@ -283,6 +247,15 @@
    "fan_out": 6,
    "fan_in": 2,
    "archivo": "src/QuickPatch.Catalog.Application/Categories/UpdateCategory.cs"
+  },
+  {
+   "tipo": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 25,
+   "fan_out": 1,
+   "fan_in": 5,
+   "archivo": "src/QuickPatch.Catalog.Infrastructure/Persistence/CatalogDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Catalog.Api.Http.BadRequestExceptionHandler",
@@ -301,6 +274,33 @@
    "fan_out": 2,
    "fan_in": 2,
    "archivo": "src/QuickPatch.Catalog.Api/Security/RequestTenant.cs"
+  },
+  {
+   "tipo": "QuickPatch.Catalog.Domain.Common.DomainValidationException",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 23,
+   "fan_out": 0,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Catalog.Domain/Common/DomainValidationException.cs"
+  },
+  {
+   "tipo": "QuickPatch.Catalog.Api.Security.ChannelOptions",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 22,
+   "fan_out": 0,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Catalog.Api/Security/ChannelOptions.cs"
+  },
+  {
+   "tipo": "QuickPatch.Catalog.Api.Security.AuthenticatedUser",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 19,
+   "fan_out": 0,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Catalog.Api/Security/AuthenticatedUser.cs"
   }
  ],
  "paquetes": [
@@ -315,26 +315,26 @@
   {
    "paquete": "QuickPatch.Catalog.Api.Endpoints",
    "tipos": 5,
-   "fan_out": 5,
+   "fan_out": 4,
    "fan_in": 1,
-   "inestabilidad": 0.83,
+   "inestabilidad": 0.8,
    "cohesion_relacional": 1.0
   },
   {
    "paquete": "QuickPatch.Catalog.Api.Http",
-   "tipos": 3,
+   "tipos": 2,
    "fan_out": 0,
-   "fan_in": 2,
+   "fan_in": 1,
    "inestabilidad": 0.0,
-   "cohesion_relacional": 0.67
+   "cohesion_relacional": 0.5
   },
   {
    "paquete": "QuickPatch.Catalog.Api.Security",
-   "tipos": 6,
+   "tipos": 5,
    "fan_out": 0,
    "fan_in": 2,
    "inestabilidad": 0.0,
-   "cohesion_relacional": 0.83
+   "cohesion_relacional": 0.8
   },
   {
    "paquete": "QuickPatch.Catalog.Application",
@@ -387,34 +387,26 @@
   {
    "paquete": "QuickPatch.Catalog.Infrastructure",
    "tipos": 1,
-   "fan_out": 4,
+   "fan_out": 3,
    "fan_in": 1,
-   "inestabilidad": 0.8,
-   "cohesion_relacional": 1.0
-  },
-  {
-   "paquete": "QuickPatch.Catalog.Infrastructure.Messaging",
-   "tipos": 1,
-   "fan_out": 2,
-   "fan_in": 1,
-   "inestabilidad": 0.67,
+   "inestabilidad": 0.75,
    "cohesion_relacional": 1.0
   },
   {
    "paquete": "QuickPatch.Catalog.Infrastructure.Options",
-   "tipos": 2,
+   "tipos": 1,
    "fan_out": 0,
-   "fan_in": 2,
+   "fan_in": 1,
    "inestabilidad": 0.0,
-   "cohesion_relacional": 0.5
+   "cohesion_relacional": 1.0
   },
   {
    "paquete": "QuickPatch.Catalog.Infrastructure.Persistence",
-   "tipos": 7,
+   "tipos": 6,
    "fan_out": 2,
-   "fan_in": 2,
-   "inestabilidad": 0.5,
-   "cohesion_relacional": 1.0
+   "fan_in": 1,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 0.83
   }
  ],
  "aristas_paquetes": [
@@ -426,7 +418,7 @@
   {
    "de": "(global)",
    "a": "QuickPatch.Catalog.Api.Http",
-   "n": 3
+   "n": 2
   },
   {
    "de": "(global)",
@@ -441,11 +433,6 @@
   {
    "de": "(global)",
    "a": "QuickPatch.Catalog.Infrastructure",
-   "n": 1
-  },
-  {
-   "de": "QuickPatch.Catalog.Api.Endpoints",
-   "a": "QuickPatch.Catalog.Api.Http",
    "n": 1
   },
   {
@@ -515,28 +502,13 @@
   },
   {
    "de": "QuickPatch.Catalog.Infrastructure",
-   "a": "QuickPatch.Catalog.Infrastructure.Messaging",
-   "n": 1
-  },
-  {
-   "de": "QuickPatch.Catalog.Infrastructure",
    "a": "QuickPatch.Catalog.Infrastructure.Options",
-   "n": 2
+   "n": 1
   },
   {
    "de": "QuickPatch.Catalog.Infrastructure",
    "a": "QuickPatch.Catalog.Infrastructure.Persistence",
    "n": 4
-  },
-  {
-   "de": "QuickPatch.Catalog.Infrastructure.Messaging",
-   "a": "QuickPatch.Catalog.Infrastructure.Options",
-   "n": 1
-  },
-  {
-   "de": "QuickPatch.Catalog.Infrastructure.Messaging",
-   "a": "QuickPatch.Catalog.Infrastructure.Persistence",
-   "n": 2
   },
   {
    "de": "QuickPatch.Catalog.Infrastructure.Persistence",
@@ -557,10 +529,6 @@
   {
    "de": "Program",
    "a": "QuickPatch.Catalog.Api.Http.BadRequestExceptionHandler"
-  },
-  {
-   "de": "Program",
-   "a": "QuickPatch.Catalog.Api.Http.CorrelationId"
   },
   {
    "de": "Program",
@@ -608,10 +576,6 @@
   },
   {
    "de": "QuickPatch.Catalog.Api.Endpoints.CategoryEndpoints",
-   "a": "QuickPatch.Catalog.Api.Http.CorrelationId"
-  },
-  {
-   "de": "QuickPatch.Catalog.Api.Endpoints.CategoryEndpoints",
    "a": "QuickPatch.Catalog.Api.Security.AuthenticatedUser"
   },
   {
@@ -655,16 +619,8 @@
    "a": "QuickPatch.Catalog.Domain.Categories.Category"
   },
   {
-   "de": "QuickPatch.Catalog.Api.Http.Problems",
-   "a": "QuickPatch.Catalog.Api.Http.CorrelationId"
-  },
-  {
    "de": "QuickPatch.Catalog.Api.Security.AuthenticationSetup",
    "a": "QuickPatch.Catalog.Api.Security.ForbiddenAuditHandler"
-  },
-  {
-   "de": "QuickPatch.Catalog.Api.Security.AuthenticationSetup",
-   "a": "QuickPatch.Catalog.Api.Security.JwtSettings"
   },
   {
    "de": "QuickPatch.Catalog.Api.Security.RequestTenant",
@@ -796,15 +752,7 @@
   },
   {
    "de": "QuickPatch.Catalog.Infrastructure.DependencyInjection",
-   "a": "QuickPatch.Catalog.Infrastructure.Messaging.OutboxPublisher"
-  },
-  {
-   "de": "QuickPatch.Catalog.Infrastructure.DependencyInjection",
    "a": "QuickPatch.Catalog.Infrastructure.Options.KafkaOptions"
-  },
-  {
-   "de": "QuickPatch.Catalog.Infrastructure.DependencyInjection",
-   "a": "QuickPatch.Catalog.Infrastructure.Options.OutboxOptions"
   },
   {
    "de": "QuickPatch.Catalog.Infrastructure.DependencyInjection",
@@ -823,24 +771,8 @@
    "a": "QuickPatch.Catalog.Infrastructure.Persistence.TenantUnitOfWork"
   },
   {
-   "de": "QuickPatch.Catalog.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Catalog.Infrastructure.Options.OutboxOptions"
-  },
-  {
-   "de": "QuickPatch.Catalog.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext"
-  },
-  {
-   "de": "QuickPatch.Catalog.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Catalog.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
    "de": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext",
    "a": "QuickPatch.Catalog.Domain.Categories.Category"
-  },
-  {
-   "de": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext",
-   "a": "QuickPatch.Catalog.Infrastructure.Persistence.OutboxEventRecord"
   },
   {
    "de": "QuickPatch.Catalog.Infrastructure.Persistence.CategoryRepository",
@@ -871,10 +803,6 @@
    "a": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext"
   },
   {
-   "de": "QuickPatch.Catalog.Infrastructure.Persistence.EfOutbox",
-   "a": "QuickPatch.Catalog.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
    "de": "QuickPatch.Catalog.Infrastructure.Persistence.TenantUnitOfWork",
    "a": "QuickPatch.Catalog.Application.Abstractions.DuplicateCategoryNameException"
   },
@@ -887,5 +815,5 @@
    "a": "QuickPatch.Catalog.Infrastructure.Persistence.CatalogDbContext"
   }
  ],
- "commit": "44373e3"
+ "commit": "6345700"
 }
