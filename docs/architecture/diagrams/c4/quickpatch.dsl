@@ -10,12 +10,17 @@
  *                                       API Gateway, Kafka, PostgreSQL, Redis y Garage no
  *                                       tienen componentes propios que diseñar (son
  *                                       configuración de productos), por eso no tienen vista.
- *   C4-05  Dynamic                 (10) un diagrama por flujo crítico, no por sistema
+ *   C4-05  Dynamic                 (11) un diagrama por flujo crítico, no por sistema; pasos
+ *                                       numerados con el evento real de contracts/kafka (SCRUM-684)
  *   C4-06  Deployment              (2)  uno por ambiente: producción y QA (ADR-022)
  *   C4-07  Code                         fuera de Structurizr: ver los .puml de esta carpeta
  *
- * Etiqueta "Planeado": elemento o relación diseñado en el SDD/DD que todavía no está en el
- * código de develop o no está desplegado (5 de noviembre de 2026). Se dibuja con borde punteado.
+ * Estado de cada elemento (SCRUM-707), con su estilo y en la leyenda de cada vista:
+ *   Implementado  está en el código de develop y desplegado. Borde verde continuo.
+ *   Planeado      diseñado en el SDD/DD, sin código en develop o sin desplegar. Borde gris discontinuo.
+ *   Externo       sistema de terceros fuera de QUICKPATCH. Fondo gris.
+ *   Mock          implementado como simulación del sistema real: la pasarela simulada de Payments
+ *                 (ADR-009 modificado). Fondo naranja y borde de puntos.
  *
  * Revisión del 5 de noviembre de 2026: componentes de la app y del panel según los features de develop
  * (ofertas, equipo, recuperación de la contraseña, panel operativo, presentación y activación), bases
@@ -51,10 +56,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
         # ---------------------------------------------------------------- Sistemas externos (ADR-024: solo la pasarela, R5)
         # La geocodificación (RIE-02) corre dentro con Nominatim y las notificaciones (RIE-03) son dentro de la app.
-        pasarela = softwareSystem "Pasarela de pagos PCI-DSS" "Tokeniza la tarjeta y cobra (RIE-01, ADR-009). Proveedor por definir." "Externo"
+        pasarela = softwareSystem "Pasarela de pagos PCI-DSS" "Tokeniza la tarjeta y cobra (RIE-01, ADR-009). Proveedor por definir." "Externo,Planeado"
 
         # ---------------------------------------------------------------- Sistemas de soporte del equipo
-        github = softwareSystem "GitHub" "12 repositorios + quickpatch, GitHub Actions y GitHub Container Registry (ADR-012, ADR-021)." "Soporte"
+        github = softwareSystem "GitHub" "12 repositorios + quickpatch, GitHub Actions y GitHub Container Registry (ADR-012, ADR-021)." "Soporte,Externo"
         observabilidad = softwareSystem "Observabilidad" "Prometheus, Loki y Grafana para producción y QA (VM1, ADR-022)." "Soporte"
 
         # ---------------------------------------------------------------- QUICKPATCH
@@ -132,7 +137,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
                     idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta la reputación en technician_profiles; descarta lo atrasado por changedAt (ADR-027)." "Kafka consumer · Infrastructure/Messaging"
                 }
-                actors = container "Actors Service" "Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio" {
+                actors = container "Actors Service" "Esqueleto sin lógica: solo Program.cs (SCRUM-696). Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio,Planeado" {
                     acApi = component "API de actores" "Consulta y mantenimiento de actores del tenant." "Minimal API" "Planeado"
                     acProveedores = component "Proveedores de materiales" "Supplier: proveedor de materiales o repuestos (concepto evolutivo)." "Domain" "Planeado"
                     acAliados = component "Aliados" "Ally: técnico, profesional o empresa aliada." "Domain" "Planeado"
@@ -241,7 +246,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     paPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
                     paCompletedConsumer = component "ServiceRequestCompletedConsumer" "Consume service-request.completed." "Kafka consumer · Infrastructure/Messaging"
                     paReconciliation = component "ReconciliationJob" "Cierra los pagos que la pasarela dejó sin respuesta (AC9-E5)." "BackgroundService · Infrastructure/Messaging"
-                    paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado)." "Infrastructure/Providers"
+                    paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado): no cobra de verdad." "Infrastructure/Providers" "Mock"
                     paPdf = component "InvoicePdfRenderer" "Arma el PDF del comprobante, sin validez fiscal." "Infrastructure/Documents"
                     paReceived = component "ReceivedPaymentEndpoints" "GET /v1/payments/received?page=&size=: pagos del técnico y, para el proveedor, de su equipo (RF-25, payments 1.2.0)." "Minimal API · Api/Endpoints"
                     paReceivedHandler = component "ReceivedPaymentsHandler" "Lista los pagos pendientes y aprobados según el rol: el técnico ve los suyos y el proveedor los de su equipo (SCRUM-501)." "Casos de uso · Application/Payments"
@@ -612,6 +617,25 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         quickpatch -> observabilidad "Envía métricas y logs" "HTTP"
 
         # ================================================================ Despliegue (ADR-022, INFRASTRUCTURE 3.3)
+
+        # Estado de cada elemento (SCRUM-707), visible en la leyenda de cada vista: Implementado, Planeado, Externo o Mock.
+        # Las expresiones de Structurizr solo combinan dos condiciones, por eso va por pasos con etiquetas auxiliares sin
+        # estilo, que no salen en la leyenda. Planeado, Externo y Mock se ponen a mano en cada elemento.
+        !elements "element.tag!=Planeado && element.tag!=Mock" {
+            tags "SinMarcaA"
+        }
+        !elements "element.tag==SinMarcaA && element.tag!=Externo" {
+            tags "SinMarca"
+        }
+        !elements "element.tag==SinMarca && element.type==Container" {
+            tags "Implementado"
+        }
+        !elements "element.tag==SinMarca && element.type==Component" {
+            tags "Implementado"
+        }
+        !elements "element.tag==SinMarca && element.type==SoftwareSystem" {
+            tags "Implementado"
+        }
         produccion = deploymentEnvironment "Producción" {
             deploymentNode "Teléfono del usuario" "" "Android o iOS" {
                 mobProd = containerInstance mobile
@@ -845,49 +869,55 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-CrearSolicitud" "Creación de una solicitud, búsqueda del técnico y oferta (RF-07, RF-09, RN-M9, ADR-007, ADR-023). La aceptación está en C4-05-Dinamico-AsignacionTecnico." {
-            title "Escenario: creación de una solicitud y búsqueda del técnico"
-            mobile -> gateway "Abre el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
+        dynamic quickpatch "C4-05-Dinamico-CreacionAsignacion" "Desde que el cliente crea la solicitud hasta que ve a su técnico (RF-07, RF-09, RF-10, RF-11; RN-M2, RN-M6, RN-M9; ADR-007, ADR-023). Si el técnico rechaza o la oferta vence a los 3 min, Matching repite los pasos 8 a 13 con el siguiente candidato (RN-M3). Sin candidatos, ver C4-05-Dinamico-SinTecnico." {
+            title "Escenario: creación de la solicitud y asignación del técnico"
+            mobile -> gateway "Las apps del cliente y del técnico abren el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
             gateway -> communication "Enruta el WebSocket; Communication valida el token"
-            mobile -> gateway "POST /api/v1/service-requests" "HTTPS/JSON"
-            gateway -> serviceRequest "Enruta con el JWT del cliente"
-            serviceRequest -> dbServiceRequest "Valida la categoría en la réplica y guarda solicitud y outbox (una transacción)"
+            mobile -> gateway "El cliente crea la solicitud: POST /api/v1/service-requests con categoría, descripción, dirección y ubicación" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del cliente (el tenant sale del token, ADR-018)"
+            serviceRequest -> dbServiceRequest "Valida la categoría en su réplica (ADR-017), guarda la solicitud en buscando_tecnico y service-request.created en el Outbox (una transacción); responde 201"
             serviceRequest -> kafka "El publicador envía service-request.created"
-            matching -> kafka "Consume service-request.created"
-            matching -> dbMatching "Registra el eventId, busca candidatos (RN-M9, PostGIS) y registra la oferta con vencimiento a 3 min"
-            matching -> kafka "Publica matching.offer-created o, sin candidatos, matching.no-technician-available"
-            serviceRequest -> kafka "Sin candidatos, consume el resultado y pasa la solicitud a en_espera"
-            communication -> kafka "Consume matching.offer-created o, sin candidatos, service-request.status-changed (en_espera)"
-            communication -> dbCommunication "Guarda la notificación en el buzón del destinatario"
-            communication -> gateway "Avisa por el WebSocket abierto: al técnico, la oferta (ADR-023)"
-            gateway -> mobile "Entrega el aviso; la app pide el detalle por REST" "WebSocket (wss)"
-            autoLayout lr 200 100
+            matching -> kafka "Consume service-request.created (una vez por eventId)"
+            matching -> dbMatching "Busca candidatos aprobados, disponibles, de la especialidad y con cobertura, por cercanía (RN-M9, PostGIS); registra la oferta con vencimiento a 3 min y matching.offer-created en el Outbox"
+            matching -> kafka "Publica matching.offer-created"
+            communication -> kafka "Consume service-request.created y matching.offer-created"
+            communication -> dbCommunication "Guarda en el buzón «Recibimos tu solicitud» para el cliente y la oferta para el técnico"
+            communication -> gateway "Avisa por WebSocket: al cliente, buscando_tecnico; al técnico, la oferta"
+            gateway -> mobile "La app del técnico muestra la oferta con localidad y distancia, sin la dirección (RN-SR13)" "WebSocket (wss)"
+            mobile -> gateway "El técnico acepta: POST /api/v1/matching/offers/{attemptId}/accept" "HTTPS/JSON"
+            gateway -> matching "Enruta con el JWT del técnico"
+            matching -> dbMatching "Acepta solo si la oferta sigue pendiente, es suya y no venció; el técnico pasa a ocupado y matching.technician-assigned queda en el Outbox (RN-M2, RN-M6; una transacción)"
+            matching -> kafka "Publica matching.technician-assigned"
+            serviceRequest -> kafka "Consume matching.technician-assigned (una vez por eventId)"
+            serviceRequest -> dbServiceRequest "Pasa la solicitud a asignado y guarda service-request.status-changed en el Outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.status-changed"
+            communication -> kafka "Consume service-request.status-changed (no matching.technician-assigned, SCRUM-466)"
+            communication -> gateway "Guarda la notificación y avisa al cliente y al técnico por su WebSocket"
+            gateway -> mobile "La app del cliente pide el detalle por REST y muestra al técnico asignado" "WebSocket (wss)"
+            autoLayout lr 250 120
             properties {
                 "structurizr.groups" false
             }
         }
 
-        dynamic quickpatch "C4-05-Dinamico-AsignacionTecnico" "Desde que se crea la solicitud hasta que el cliente ve a su técnico (RF-09, RF-10, RF-11; RN-M2, RN-M6, RN-M9; ADR-007, ADR-023). Si el técnico rechaza o la oferta vence a los 3 min, Matching repite los pasos 5 a 9 con el siguiente candidato (RN-M3)." {
-            title "Escenario: asignación de técnico a una solicitud"
-            mobile -> gateway "Las apps del técnico y del cliente abren el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
+        dynamic quickpatch "C4-05-Dinamico-SinTecnico" "Sin técnico disponible (AC9-E4; RN-M9, RN-M10; ADR-007). Matching no relaja los filtros: la solicitud espera hasta que aparece un técnico que podría atenderla (se marca disponible, cambia su cobertura, lo aprueban o termina otro servicio). Después del paso 16 la oferta sigue como en C4-05-Dinamico-CreacionAsignacion desde el paso 10." {
+            title "Escenario: solicitud sin técnico disponible y reanudación de la búsqueda"
+            mobile -> gateway "Las apps del cliente y del técnico tienen abierto el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
             gateway -> communication "Enruta el WebSocket; Communication valida el token"
             serviceRequest -> kafka "Publica service-request.created desde el Outbox (la solicitud quedó en buscando_tecnico)"
             matching -> kafka "Consume service-request.created (una vez por eventId)"
-            matching -> dbMatching "Busca candidatos aprobados, disponibles, de la especialidad y con cobertura, por cercanía (RN-M9, PostGIS), y registra la oferta con vencimiento a 3 min"
-            matching -> kafka "Publica matching.offer-created"
-            communication -> kafka "Consume matching.offer-created"
-            communication -> gateway "Avisa al técnico por su WebSocket /v1/realtime"
-            gateway -> mobile "La app del técnico muestra la oferta: localidad y distancia, sin la dirección (RN-SR13)" "WebSocket (wss)"
-            mobile -> gateway "El técnico acepta: POST /api/v1/matching/offers/{attemptId}/accept" "HTTPS/JSON"
-            gateway -> matching "Enruta con el JWT del técnico"
-            matching -> dbMatching "Acepta solo si la oferta sigue pendiente, es suya y no venció; el técnico pasa a ocupado (RN-M2, RN-M6; una transacción con el Outbox)"
-            matching -> kafka "Publica matching.technician-assigned"
-            serviceRequest -> kafka "Consume matching.technician-assigned"
-            serviceRequest -> dbServiceRequest "Pasa la solicitud a asignado y guarda service-request.status-changed en el Outbox (una transacción)"
+            matching -> dbMatching "No hay candidatos que cumplan todos los filtros (RN-M9); deja la búsqueda en espera y matching.no-technician-available en el Outbox"
+            matching -> kafka "Publica matching.no-technician-available"
+            serviceRequest -> kafka "Consume matching.no-technician-available"
+            serviceRequest -> dbServiceRequest "Pasa la solicitud a en_espera y guarda service-request.status-changed en el Outbox (una transacción)"
             serviceRequest -> kafka "Publica service-request.status-changed"
             communication -> kafka "Consume service-request.status-changed"
-            communication -> gateway "Avisa al cliente por su WebSocket"
-            gateway -> mobile "La app del cliente pide el detalle por REST y muestra al técnico asignado" "WebSocket (wss)"
+            communication -> gateway "Guarda la notificación y avisa al cliente por su WebSocket"
+            gateway -> mobile "La app del cliente muestra que la solicitud está en espera" "WebSocket (wss)"
+            matching -> dbMatching "Más tarde un técnico queda disponible: toma la solicitud en espera más antigua para la que es candidato y le registra la oferta (RN-M10)"
+            matching -> kafka "Publica matching.search-resumed y matching.offer-created"
+            serviceRequest -> kafka "Consume matching.search-resumed"
+            serviceRequest -> dbServiceRequest "Vuelve la solicitud a buscando_tecnico y guarda service-request.status-changed en el Outbox"
             autoLayout lr 250 120
             properties {
                 "structurizr.groups" false
@@ -901,32 +931,56 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             mobile -> gateway "El técnico cotiza: POST /api/v1/service-requests/{id}/quotes con mano de obra, materiales y detalle" "HTTPS/JSON"
             gateway -> serviceRequest "Enruta con el JWT del técnico asignado"
             serviceRequest -> dbServiceRequest "Guarda la cotización pendiente (de 1 a 3, vence en 24 h), pasa la solicitud a cotizado y guarda service-request.quoted y status-changed en el Outbox (una transacción)"
-            serviceRequest -> kafka "Publica service-request.quoted"
-            communication -> kafka "Consume service-request.quoted (una vez por eventId)"
-            communication -> gateway "Avisa al cliente por su WebSocket y guarda la notificación en el buzón"
+            serviceRequest -> kafka "Publica service-request.quoted y service-request.status-changed"
+            communication -> kafka "Consume service-request.quoted (buzón) y service-request.status-changed (tiempo real), una vez por eventId"
+            communication -> gateway "Guarda la cotización en el buzón del cliente y le avisa por su WebSocket el cambio a cotizado"
             gateway -> mobile "La app del cliente muestra la cotización con el total y el vencimiento" "WebSocket (wss)"
             mobile -> gateway "El cliente acepta: POST /api/v1/service-requests/{id}/quotes/{quoteId}/accept" "HTTPS/JSON"
             gateway -> serviceRequest "Enruta con el JWT del cliente dueño"
             serviceRequest -> dbServiceRequest "Acepta la cotización, pasa la solicitud a cotizacion_aceptada y guarda service-request.quote-accepted y status-changed en el Outbox"
-            serviceRequest -> kafka "Publica service-request.quote-accepted"
-            communication -> kafka "Consume service-request.quote-accepted"
-            communication -> gateway "Avisa al técnico por su WebSocket"
-            gateway -> mobile "La app del técnico habilita Iniciar el servicio" "WebSocket (wss)"
+            serviceRequest -> kafka "Publica service-request.quote-accepted y service-request.status-changed"
+            communication -> kafka "Consume service-request.quote-accepted (buzón) y service-request.status-changed (tiempo real)"
+            communication -> gateway "Guarda «Aceptaron tu cotización» en el buzón del técnico y le avisa por su WebSocket"
+            gateway -> mobile "La app del técnico habilita Iniciar el servicio (C4-05-Dinamico-Ejecucion)" "WebSocket (wss)"
             autoLayout lr 250 120
             properties {
                 "structurizr.groups" false
             }
         }
-        dynamic quickpatch "C4-05-Dinamico-Pago" "Desde que el técnico completa hasta que el cliente tiene el comprobante (RF-22 a RF-24; RN-P1, RN-P4, RN-SR4; ADR-007, ADR-009 modificado). Si la pasarela rechaza, Payments publica payment.rejected en el paso 12 y la solicitud sigue en completado para reintentar (RN-SR5); si no responde, la conciliación cierra el pago (AC9-E5)." {
+
+        dynamic quickpatch "C4-05-Dinamico-Ejecucion" "Desde que el técnico inicia el servicio hasta que sube la evidencia (RF-14, RF-15; RN-SR3; ADR-007, ADR-016, ADR-023). Solo se inicia desde cotizacion_aceptada; si no, 409 transicion-invalida. Sin al menos una foto, completar se rechaza (paso 5 de C4-05-Dinamico-Pago). Nadie consume service-request.started hoy (topics.yaml)." {
+            title "Escenario: ejecución del servicio y evidencia"
+            mobile -> gateway "Las apps del cliente y del técnico tienen abierto el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
+            gateway -> communication "Enruta el WebSocket; Communication valida el token"
+            mobile -> gateway "El técnico inicia: POST /api/v1/service-requests/{id}/start" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del técnico asignado"
+            serviceRequest -> dbServiceRequest "Pasa la solicitud de cotizacion_aceptada a en_progreso y guarda service-request.started y status-changed en el Outbox (una transacción)"
+            serviceRequest -> kafka "Publica service-request.started y service-request.status-changed"
+            communication -> kafka "Consume service-request.status-changed"
+            communication -> gateway "Guarda la notificación y avisa al cliente por su WebSocket"
+            gateway -> mobile "La app del cliente muestra el servicio en progreso" "WebSocket (wss)"
+            mobile -> gateway "El técnico sube la foto: POST /api/v1/service-requests/{id}/evidence (multipart)" "HTTPS/JSON"
+            gateway -> serviceRequest "Enruta con el JWT del técnico asignado"
+            serviceRequest -> garage "Guarda la foto en el bucket de evidencias (ADR-016)" "S3/HTTPS"
+            serviceRequest -> dbServiceRequest "Registra la referencia en service_evidence; responde 201"
+            autoLayout lr 250 120
+            properties {
+                "structurizr.groups" false
+            }
+        }
+
+        dynamic quickpatch "C4-05-Dinamico-Pago" "Desde que el técnico completa hasta que el cliente tiene el comprobante (RF-22 a RF-24; RN-P1, RN-P4, RN-SR4; ADR-007, ADR-009 modificado). Si la pasarela rechaza, Payments publica payment.rejected en el paso 14 y la solicitud sigue en completado para reintentar (RN-SR5); si no responde, la conciliación cierra el pago (AC9-E5)." {
             title "Escenario: pago del servicio y comprobante"
             mobile -> gateway "Las apps del cliente y del técnico tienen abierto el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
             gateway -> communication "Enruta el WebSocket; Communication valida el token"
             mobile -> gateway "El técnico completa: POST /api/v1/service-requests/{id}/complete" "HTTPS/JSON"
             gateway -> serviceRequest "Enruta con el JWT del técnico asignado"
-            serviceRequest -> dbServiceRequest "Pasa la solicitud a completado y guarda service-request.completed (con el total) y status-changed en el Outbox (una transacción)"
+            serviceRequest -> dbServiceRequest "Verifica que haya evidencia (RN-SR3), pasa la solicitud a completado y guarda service-request.completed (con el total) y status-changed en el Outbox (una transacción)"
             serviceRequest -> kafka "Publica service-request.completed"
             payments -> kafka "Consume service-request.completed (una vez por eventId)"
             payments -> dbPayments "Crea el pago pendiente con el total de la cotización aceptada (RN-P4)"
+            matching -> kafka "Consume service-request.completed (una vez por eventId)"
+            matching -> dbMatching "El técnico vuelve a disponible y se le ofrece la solicitud en espera más antigua (RN-M6, RN-M10)"
             mobile -> gateway "El cliente paga: POST /api/v1/service-requests/{id}/payment con el token de la tarjeta, que se tokeniza en el teléfono (RN-P1)" "HTTPS/JSON"
             gateway -> payments "Enruta con el JWT del cliente"
             payments -> dbPayments "Cobra con la pasarela simulada (adaptador dentro de Payments, ADR-009) y guarda el pago aprobado, el comprobante y payment.approved en el Outbox (una transacción)"
@@ -942,6 +996,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 "structurizr.groups" false
             }
         }
+
         dynamic quickpatch "C4-05-Dinamico-Cancelacion" "El cliente dueño cancela antes de que empiece el servicio (RF-36; RN-Q5, RN-M5, RN-M6; ADR-007). Desde en_progreso responde 409 transicion-invalida. El admin_tenant también puede cancelar desde el panel, y queda en audit_logs. Communication no consume service-request.cancelled: avisa con service-request.status-changed." {
             title "Escenario: cancelación de una solicitud"
             mobile -> gateway "Las apps del cliente y del técnico tienen abierto el WebSocket /api/v1/realtime (ADR-023)" "WebSocket (wss)"
@@ -963,14 +1018,14 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
         dynamic quickpatch "C4-05-Dinamico-Calificacion" "Escenario: calificación del servicio y reputación del técnico (RF-12, RF-20, AC9-E2; ADR-027; Ranking en QA desde SCRUM-512)." {
             title "Escenario: calificación del servicio y reputación del técnico"
-            mobile -> gateway "POST /v1/service-requests/{id}/rating con score y comment opcional" "HTTPS/JSON"
+            mobile -> gateway "El cliente califica: POST /api/v1/service-requests/{id}/rating con score y comment opcional" "HTTPS/JSON"
             gateway -> serviceRequest "Enruta con el JWT del cliente"
             serviceRequest -> dbServiceRequest "Valida dueño y estado pagado; guarda ratings y service-request.rated en outbox (una transacción)"
             serviceRequest -> kafka "Publica service-request.rated (sin el comentario)"
-            ranking -> kafka "Consume service-request.rated, una vez por eventId"
+            ranking -> kafka "Consume service-request.rated (una vez por eventId)"
             ranking -> dbRanking "Suma la calificación, recalcula el promedio y la marca; guarda el evento en outbox"
             ranking -> kafka "Publica ranking.technician-reputation-changed"
-            identity -> kafka "Consume la reputación"
+            identity -> kafka "Consume ranking.technician-reputation-changed (una vez por eventId)"
             identity -> dbIdentity "Actualiza technician_profiles.average_rating y la marca de reputación baja"
             autoLayout lr 200 100
             properties {
@@ -1051,11 +1106,11 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             element "Software System" {
                 background #1168bd
             }
-            element "Externo" {
-                background #999999
-            }
             element "Soporte" {
                 background #6b8fb3
+            }
+            element "Externo" {
+                background #999999
             }
             element "Container" {
                 background #438dd5
@@ -1083,9 +1138,24 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             element "Microservicio" {
                 shape Hexagon
             }
+            # Estado (SCRUM-707): borde verde continuo, gris punteado, gris de fondo o naranja de puntos.
+            element "Implementado" {
+                stroke #2e7d32
+                strokeWidth 4
+                border solid
+            }
             element "Planeado" {
                 border dashed
                 opacity 70
+                stroke #707070
+                strokeWidth 4
+            }
+            element "Mock" {
+                border dotted
+                stroke #e65100
+                strokeWidth 8
+                background #ffcc80
+                color #000000
             }
             element "Deployment Node" {
                 color #000000

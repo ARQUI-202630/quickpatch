@@ -64,7 +64,16 @@ C4 describe el software con un vocabulario fijo: *persona*, *sistema de software
 
 Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estructura del repositorio) se conservan donde complementan a un diagrama C4 y se señalan como complementarios.
 
-**Elementos planeados.** Los elementos y relaciones con la etiqueta `Planeado` están diseñados en el SDD o el DD pero todavía no existen en `develop`; se dibujan con borde punteado. Así, un diagrama sirve a la vez de diseño y de estado de avance. Actors, Ranking, Payments y Communication son hoy esqueletos, por eso todos sus componentes son planeados.
+**Estado de cada elemento (SCRUM-707).** Cada elemento de los diagramas C4 lleva uno de cuatro estados, con su estilo y en la leyenda pegada a cada figura, para que se lea a simple vista:
+
+| Estado | Significado | Cómo se dibuja |
+|---|---|---|
+| Implementado | Está en el código de `develop` y desplegado | Borde verde continuo |
+| Planeado | Diseñado en el SDD o el DD, sin código o sin desplegar | Borde gris discontinuo, atenuado; sus relaciones, punteadas |
+| Externo | Sistema de terceros fuera de QUICKPATCH | Fondo gris |
+| Mock | Implementado como simulación del sistema real | Fondo naranja y borde de puntos |
+
+Hoy son planeados Actors Service (un esqueleto sin lógica) con sus componentes y el receptor de webhooks del PSP. La pasarela de pagos certificada es externa y planeada, porque el proveedor está por definir. El único mock es `SimulatedPaymentProvider`, la pasarela simulada de Payments (ADR-009 modificado). El estado sale de la matriz modelado contra real (`matriz-modelado-vs-real.md`, SCRUM-697).
 
 **Inventario de vistas.**
 
@@ -86,9 +95,10 @@ Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estruc
 | `C4-04-Componentes-Communication` | Component | 18 |
 | `C4-07-Codigo-OutboxIdempotencia` | Code (PlantUML) | 19 |
 | `C4-07-Codigo-AislamientoTenant` | Code (PlantUML) | 20 |
-| `C4-05-Dinamico-CrearSolicitud` | Dynamic | 22 |
-| `C4-05-Dinamico-AsignacionTecnico` | Dynamic | 22b |
-| `C4-05-Dinamico-Cotizacion` | Dynamic | 22c |
+| `C4-05-Dinamico-CreacionAsignacion` | Dynamic | 21 |
+| `C4-05-Dinamico-SinTecnico` | Dynamic | 22 |
+| `C4-05-Dinamico-Cotizacion` | Dynamic | 22b |
+| `C4-05-Dinamico-Ejecucion` | Dynamic | 23 |
 | `C4-05-Dinamico-Pago` | Dynamic | 24 |
 | `C4-05-Dinamico-InicioSesion` | Dynamic | 25 |
 | `C4-05-Dinamico-ReplicaCategorias` | Dynamic | 26 |
@@ -893,155 +903,59 @@ Toda coordinación, cálculo derivado y propagación de estado entre microservic
 - Emisión de facturas/comprobantes por el Payments Service.
 - Recálculo de reputación promedio de técnicos por el Ranking Service tras una calificación.
 
-## 8.3 Secuencia de creación de solicitud y matching
+## 8.3 Creación de la solicitud y asignación del técnico
 
-Este flujo va desde la solicitud del cliente hasta que un técnico acepta la oferta (RF-07, RF-09, RF-10, D1, AC1-E1, AC2-E3). Sigue las reglas de matching del DD V4 (RN-M1 a RN-M10) y los contratos `service-request.v1.yaml` 1.1.0, `matching.v1.yaml` 1.0.0 y `asyncapi/realtime.v1.yaml` 1.0.0 de `quickpatch-api-gateway` v0.5.0. El aviso a cada persona llega por el canal de estado en tiempo real (ADR-023).
+Este flujo va desde la solicitud del cliente hasta que ve a su técnico asignado (RF-07, RF-09, RF-10, RF-11, D1, AC1-E1, AC2-E3). Sigue las reglas de matching del DD V4 (RN-M1 a RN-M10) y los contratos `service-request.v1.yaml`, `matching.v1.yaml` y `asyncapi/realtime.v1.yaml` de `quickpatch-api-gateway`. Cada escenario tiene un solo diagrama: el dinámico de C4, con los pasos numerados y el evento real de `contracts/kafka` en cada paso (SCRUM-684). Las secuencias de detalle con las alternativas y los errores de cada contrato están en `DIAGRAMS_SCRUM591_DYNAMIC_FLOWS.md` y no repiten estos escenarios.
 
-1. **Recepción:** el cliente envía `POST /v1/service-requests` con la categoría, la descripción, la dirección y la ubicación. El API Gateway quita `/api` y enruta a ServiceRequest Service, que valida el JWT y toma el tenant y el usuario del token (ADR-018); el gateway no valida el token.
-2. **Persistencia y Outbox:** ServiceRequest valida la categoría en su réplica (ADR-017), guarda la solicitud en `buscando_tecnico` y, en la misma transacción, el evento `service-request.created` en `outbox_events` (ADR-007). El publicador lo envía a Kafka.
-3. **Búsqueda:** Matching Service consume el evento una vez por `eventId` y busca candidatos con PostGIS: técnicos **aprobados**, **disponibles**, de la **especialidad** de la solicitud, con una **localidad de cobertura** que contiene la ubicación, **sin otra oferta pendiente** y a los que no se les haya ofrecido ya esta solicitud (RN-M9). La especialidad y la verificación vienen de su proyección de `technician.*` (P-01).
-4. **Oferta:** al candidato más cercano le registra una oferta en `matching_attempts` que vence a los **3 minutos** (RN-M8) y publica `matching.offer-created`. Una solicitud tiene una sola oferta pendiente a la vez (RN-M1). Communication avisa al técnico por su WebSocket.
-5. **Respuesta del técnico** (sección 8.3.1): si **acepta** antes de que venza, el técnico pasa a `ocupado` y Matching publica `matching.technician-assigned` (RN-M2, RN-M4, RN-M6, RN-M7); ServiceRequest pasa la solicitud a `asignado` y Communication avisa al cliente. Si **rechaza o deja vencer** la oferta, Matching se la ofrece al siguiente candidato (RN-M3).
-6. **Sin candidatos (AC9-E4):** si no hay técnicos que cumplan todos los filtros, Matching no relaja las reglas: publica `matching.no-technician-available` y la solicitud pasa a `en_espera`. Cuando aparece un técnico que podría atenderla (se marca disponible, cambia su cobertura, es aprobado o termina otro servicio), Matching publica `matching.search-resumed`, empezando por la solicitud más antigua, y la búsqueda vuelve al paso 3 (RN-M10).
+1. **Recepción (pasos 3 a 5):** el cliente envía `POST /api/v1/service-requests`. El API Gateway quita `/api` y enruta a ServiceRequest, que valida el JWT y toma el tenant y el usuario del token (ADR-018); el gateway no valida el token. ServiceRequest valida la categoría en su réplica (ADR-017) y guarda la solicitud en `buscando_tecnico` y `service-request.created` en `outbox_events`, en una transacción (ADR-007).
+2. **Búsqueda y oferta (pasos 6 a 13):** Matching consume el evento una vez por `eventId` y busca con PostGIS técnicos **aprobados**, **disponibles**, de la **especialidad**, con una **localidad de cobertura** que contiene la ubicación, **sin otra oferta pendiente** y a los que no se les haya ofrecido ya esta solicitud (RN-M9). Al más cercano le registra una oferta que vence a los **3 minutos** (RN-M8) y publica `matching.offer-created`. Communication consume `service-request.created` y `matching.offer-created`, guarda las notificaciones en el buzón y avisa por WebSocket (ADR-023).
+3. **Aceptación (pasos 14 a 23):** Matching acepta solo si la oferta sigue pendiente, es del técnico y no venció, y si el técnico sigue `disponible`; si no, responde `409 oferta-no-disponible` o `409 tecnico-no-disponible`. Marca al técnico `ocupado` y publica `matching.technician-assigned` (RN-M2, RN-M4, RN-M6, RN-M7). ServiceRequest pasa la solicitud a `asignado` y publica `service-request.status-changed`; Communication avisa con ese evento y no con el de Matching (SCRUM-466). El técnico ve la localidad y la distancia, y la dirección solo al quedar asignado (RN-SR13).
+4. **Rechazo o vencimiento:** Matching repite los pasos 8 a 13 con el siguiente candidato (RN-M3).
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor C as Cliente
-    participant GW as API Gateway
-    participant SR as ServiceRequest Service
-    participant K as Kafka
-    participant M as Matching Service
-    participant COM as Communication Service
-    actor T as Técnico
+![Creación de la solicitud y asignación del técnico (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-CreacionAsignacion.png)
 
-    C->>GW: POST /v1/service-requests (categoría, ubicación, dirección)
-    GW->>SR: Enruta (SR valida el JWT; tenant y usuario del token)
-    SR->>SR: Guarda la solicitud (buscando_tecnico) y el outbox en una transacción
-    SR-->>C: 201 Created
-    SR->>K: Publicador del outbox: service-request.created
-    K-->>M: Consume (una vez por eventId)
-    M->>M: Candidatos RN-M9 (PostGIS) y oferta con vencimiento a 3 min
-    M->>K: matching.offer-created
-    K-->>COM: Consume la oferta
-    COM-->>T: Aviso por WebSocket (ADR-023)
+**Figura 21. Escenario: creación de la solicitud y asignación del técnico (C4 · Dynamic; SCRUM-684). Vista `C4-05-Dinamico-CreacionAsignacion`.**
 
-    alt El técnico acepta antes de que venza
-        T->>GW: POST /v1/matching/offers/{attemptId}/accept
-        GW->>M: Enruta (Matching valida el JWT del técnico)
-        M->>M: Oferta aceptada; técnico ocupado (RN-M2, RN-M6, RN-M7)
-        M->>K: matching.technician-assigned
-        par Estado
-            K-->>SR: Consume: la solicitud pasa a asignado
-        and Aviso
-            K-->>COM: Consume la asignación
-            COM-->>C: Aviso por WebSocket; la app pide el detalle
-        end
-    else Rechaza o la oferta vence
-        M->>M: Oferta al siguiente candidato (RN-M3)
-    else No quedan candidatos
-        M->>K: matching.no-technician-available
-        K-->>SR: Consume: la solicitud pasa a en_espera
-        Note over M: Cuando aparece un técnico que puede atenderla, matching.search-resumed (RN-M10)
-    end
-```
+### 8.3.1 Sin técnico disponible (AC9-E4)
 
-**Figura 21. Creación de solicitud, oferta al técnico y respuesta (secuencia; DD V4).**
+Si ningún técnico cumple todos los filtros, Matching no los relaja: publica `matching.no-technician-available` y ServiceRequest pasa la solicitud a `en_espera`. Cuando aparece un técnico que podría atenderla (se marca disponible, cambia su cobertura, lo aprueban o termina otro servicio), Matching toma la solicitud en espera más antigua, publica `matching.search-resumed` y le ofrece la solicitud; ServiceRequest la vuelve a `buscando_tecnico` (RN-M10).
 
----
+![Sin técnico disponible (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-SinTecnico.png)
 
-**Vista C4.** Los diagramas dinámicos muestran el flujo a nivel de contenedores y numerado: cada uno lleva como título el escenario que representa, y sus pasos nombran el evento de Kafka que viaja en cada uno. La Figura 22 va de la solicitud a la oferta, y la Figura 22b recorre el escenario completo de la asignación, desde `service-request.created` hasta que el cliente ve a su técnico (SCRUM-590).
+**Figura 22. Escenario: solicitud sin técnico disponible y reanudación de la búsqueda (C4 · Dynamic; SCRUM-684). Vista `C4-05-Dinamico-SinTecnico`.**
 
-![Creación de solicitud y matching (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-CrearSolicitud.png)
+### 8.3.2 Cotización
 
-**Figura 22. Creación de una solicitud, búsqueda del técnico y oferta (C4 · Dynamic). Vista `C4-05-Dinamico-CrearSolicitud`.**
-
-### 8.3.1 Aceptación de la oferta por el técnico (SCRUM-30)
-
-El técnico ve sus ofertas pendientes con la localidad y la distancia, pero no la dirección, que solo recibe al quedar asignado (RN-SR13; `GET /v1/matching/offers?status=pendiente`). Al aceptar (`POST /v1/matching/offers/{attemptId}/accept`), Matching Service verifica en una sola transacción que la oferta siga `pendiente`, sea de ese técnico y no haya vencido, y que el técnico siga `disponible`. Si no, responde `409 oferta-no-disponible` o `409 tecnico-no-disponible`. Si todo se cumple, marca al técnico `ocupado` y publica `matching.technician-assigned` por el Outbox. ServiceRequest la consume, pasa la solicitud a `asignado` y publica `service-request.status-changed` en la misma transacción; Communication consume ese evento (no el de Matching, SCRUM-466), guarda la notificación en el buzón y avisa al cliente por su WebSocket.
-
-![Aceptación del técnico (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-AsignacionTecnico.png)
-
-**Figura 22b. Escenario: asignación de técnico a una solicitud (C4 · Dynamic). Vista `C4-05-Dinamico-AsignacionTecnico`.**
-
-**Cotización.** Con el técnico asignado, la solicitud pasa por la cotización antes de iniciar (RF-34, RF-35). El técnico emite hasta tres cotizaciones; cada una vence a las 24 horas, y al rechazar la tercera la solicitud se cancela (RN-Q2, RN-Q6 a RN-Q8). Cada paso guarda el cambio y sus eventos en una transacción (ADR-007), y Communication avisa al otro participante por el canal en tiempo real y el buzón.
+Con el técnico asignado, la solicitud pasa por la cotización antes de iniciar (RF-34, RF-35). El técnico emite hasta tres cotizaciones; cada una vence a las 24 horas, y al rechazar la tercera la solicitud se cancela (RN-Q2, RN-Q6 a RN-Q8). Cada paso guarda el cambio y sus eventos en una transacción (ADR-007). Communication guarda `service-request.quoted` y `service-request.quote-accepted` en el buzón y avisa en tiempo real con `service-request.status-changed`.
 
 ![Cotización del servicio (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Cotizacion.png)
 
-**Figura 22c. Escenario: cotización del servicio (C4 · Dynamic; SCRUM-589, desde los flujos de SCRUM-591). Vista `C4-05-Dinamico-Cotizacion`.**
+**Figura 22b. Escenario: cotización del servicio (C4 · Dynamic; SCRUM-589 y SCRUM-684). Vista `C4-05-Dinamico-Cotizacion`.**
 
-## 8.4 Secuencia de pago y facturación
+## 8.4 Ejecución, pago y comprobante
 
-Este flujo describe el cierre operativo del servicio y el cobro bajo el estándar PCI-DSS y el modelo Merchant of Record (RF-15, RF-22, RF-24, D4, D7, K2, ADR-009, AC3-E1, AC6-E1, AC9-E1, AC9-E5):
+Este flujo describe el cierre operativo del servicio y el cobro, como está implementado (RF-14, RF-15, RF-22, RF-24, D4, D7, K2, ADR-009 modificado, AC3-E1, AC6-E1, AC9-E1, AC9-E5):
 
-1. **Inicio y Evidencia:** El técnico ejecuta el servicio (`POST /v1/service-requests/{id}/start`, estado `en_progreso`). Antes de completar, sube la foto obligatoria vía `POST /v1/service-requests/{id}/evidence`; el archivo se guarda en Garage (VM6; VM7 en QA) y la referencia URL se persiste en `service_evidence` (D7).
-2. **Cierre Técnico:** El técnico solicita completar el servicio (`POST /v1/service-requests/{id}/complete`). `ServiceRequest Service` valida como precondición obligatoria que exista al menos una evidencia en `service_evidence` (AC9-E1). Si se cumple, el estado cambia a `completado` y se publica `service-request.completed`.
-3. **Tokenización de Tarjeta (PCI-DSS):** El cliente ingresa los datos de su tarjeta directamente en el formulario o SDK provisto por la pasarela de pagos (PSP - Wompi). Ni el PAN ni el CVV pasan por el backend propio (K2, ADR-009, AC6-E1). El cliente recibe un token temporal (`provider_token_ref`).
-4. **Solicitud de Cobro:** El cliente confirma el pago en la app enviando `POST /v1/service-requests/{id}/payment` con el token.
-5. **Procesamiento de Pago:** `Payments Service` crea el registro en `payments` (estado `pendiente`) y llama a la API del PSP para procesar la transacción.
-6. **Resolución del Cobro:**
-   - *Aprobado:* Actualiza `payments.status = 'aprobado'`, genera el comprobante en `invoices` a nombre de la plataforma (Merchant of Record, D4) con número único de factura, y publica `payment.approved` vía Transactional Outbox.
-   - *Rechazado o Fallo del PSP (AC9-E5):* Actualiza a `rechazado`, publica `payment.rejected` y la solicitud no pasa a pagada, evitando cobros dobles y permitiendo reintento seguro.
-7. **Cierre de Ciclo:** `ServiceRequest Service` consume `payment.approved` y actualiza el estado a `pagado`. `Communication Service` notifica la aprobación y envía el enlace de descarga de la factura.
-8. **Calificación:** El cliente califica el servicio (`POST /v1/service-requests/{id}/rating`, 1 a 5 estrellas). Se almacena en `ratings` y se emite el evento para que `Ranking Service` actualice la reputación agregada del técnico.
+1. **Inicio (Figura 23, pasos 3 a 9):** el técnico asignado envía `POST /api/v1/service-requests/{id}/start`. Solo se inicia desde `cotizacion_aceptada`; la solicitud pasa a `en_progreso` y ServiceRequest publica `service-request.started`, que hoy nadie consume, y `service-request.status-changed`, con el que Communication avisa al cliente.
+2. **Evidencia (Figura 23, pasos 10 a 13):** el técnico sube la foto con `POST /api/v1/service-requests/{id}/evidence`. ServiceRequest la guarda en Garage (VM6; VM7 en QA, ADR-016) y registra la referencia en `service_evidence` (D7).
+3. **Cierre técnico (Figura 24, pasos 3 a 6):** `POST /api/v1/service-requests/{id}/complete`. ServiceRequest exige al menos una evidencia (RN-SR3, AC9-E1), pasa la solicitud a `completado` y publica `service-request.completed` con el total de la cotización aceptada.
+4. **Pago pendiente y liberación del técnico (pasos 7 a 10):** Payments consume `service-request.completed` y crea el pago pendiente (RN-P4). Matching consume el mismo evento y devuelve al técnico a `disponible`, con lo que puede tomar la solicitud en espera más antigua (RN-M6, RN-M10).
+5. **Cobro (pasos 11 a 14):** la app tokeniza la tarjeta en el teléfono y envía solo el token con `POST /api/v1/service-requests/{id}/payment`; ni el PAN ni el CVV llegan al backend (K2, AC6-E1). Payments cobra con la pasarela simulada, un adaptador dentro del servicio (ADR-009 modificado), y guarda el pago aprobado, el comprobante a nombre de la plataforma (Merchant of Record, D4) y `payment.approved` en una transacción. Si la pasarela rechaza, publica `payment.rejected` y la solicitud sigue en `completado` para reintentar (RN-SR5, AC9-E5).
+6. **Cierre del ciclo (pasos 15 a 21):** ServiceRequest consume `payment.approved`, pasa la solicitud a `pagado` (RN-SR4) y publica `service-request.status-changed`; Communication avisa al cliente y al técnico. El comprobante se descarga con `GET /api/v1/payments/{id}/invoice`.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor T as Técnico
-    participant GW as API Gateway
-    participant S3 as Garage (Almacenamiento)
-    participant SR as ServiceRequest Service
-    actor C as Cliente
-    participant PSP as Wompi (PSP)
-    participant P as Payments Service
-    participant K as Kafka Broker
-    participant COM as Communication Service
+La pasarela certificada y su webhook siguen planeados (sección 6.10). La calificación que sigue al pago está en la Figura 27.
 
-    T->>GW: POST /v1/service-requests/{id}/evidence (Foto)
-    GW->>S3: Guarda archivo fotográfico
-    S3-->>GW: URL de la evidencia
-    GW->>SR: Guarda URL en service_evidence
-    
-    T->>GW: POST /v1/service-requests/{id}/complete
-    GW->>SR: Valida que exista evidencia previa
-    SR->>SR: Cambia estado a 'completado'
-    SR->>K: Publica: service-request.completed
-    
-    C->>PSP: Ingresa tarjeta (Directo al SDK de Wompi - PCI-DSS)
-    PSP-->>C: Retorna Token Seguro (provider_token_ref)
-    
-    C->>GW: POST /v1/service-requests/{id}/payment (Token)
-    GW->>P: Solicita cobro
-    P->>PSP: Autoriza cobro con el Token
-    PSP-->>P: Pago Aprobado
-    
-    P->>P: Cambia estado a 'aprobado'
-    P->>P: Genera Factura en BD
-    P->>K: Outbox publica: payment.approved
-    
-    par Actualización de Solicitud
-        K-->>SR: Consume evento
-        SR->>SR: Cambia estado a 'pagado'
-    and Notificación al Cliente
-        K-->>COM: Consume evento
-        COM-->>C: Notifica pago exitoso y envía enlace Factura
-    end
-```
+![Ejecución del servicio y evidencia (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Ejecucion.png)
 
-**Figura 23. Flujo de finalización de servicio, tokenización PCI-DSS y facturación.**
+**Figura 23. Escenario: ejecución del servicio y evidencia (C4 · Dynamic; SCRUM-684). Vista `C4-05-Dinamico-Ejecucion`.**
 
----
+![Pago y comprobante (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Pago.png)
 
-**Vista C4.** El escenario de pago a nivel de contenedores, como está implementado: el pago pendiente lo crea `service-request.completed`, el cobro lo hace la pasarela simulada dentro de Payments (ADR-009 modificado) y la solicitud pasa a `pagado` con `payment.approved`. La pasarela certificada y su webhook siguen planeados (sección 6.10).
-
-![Pago tokenizado y facturación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Pago.png)
-
-**Figura 24. Escenario: pago del servicio y comprobante (C4 · Dynamic; SCRUM-589). Vista `C4-05-Dinamico-Pago`.**
+**Figura 24. Escenario: pago del servicio y comprobante (C4 · Dynamic; SCRUM-589 y SCRUM-684). Vista `C4-05-Dinamico-Pago`.**
 
 ## 8.5 Otros flujos críticos
 
-Cada diagrama dinámico numera la colaboración entre contenedores para un flujo. Se documentan los flujos que cruzan más de un contenedor o que fijan una regla de seguridad; los de creación de solicitud y pago están en las secciones 8.3 y 8.4.
+Cada diagrama dinámico numera la colaboración entre contenedores para un flujo. Se documentan los flujos que cruzan más de un contenedor o que fijan una regla de seguridad; los de creación, asignación, cotización, ejecución y pago están en las secciones 8.3 y 8.4.
 
 **Inicio de sesión.** El tenant sale del canal (`X-Channel-Id`, RN-U5) y el JWT lo firma Identity con RS256 (ADR-018).
 
@@ -1055,7 +969,7 @@ Cada diagrama dinámico numera la colaboración entre contenedores para un flujo
 
 **Figura 26. Alta de una categoría y su réplica en ServiceRequest (C4 · Dynamic). Vista `C4-05-Dinamico-ReplicaCategorias`.**
 
-**Calificación y reputación.** La calificación del cliente recalcula la reputación del técnico de forma asíncrona (RF-12; diseño).
+**Calificación y reputación.** La calificación del cliente recalcula la reputación del técnico de forma asíncrona (RF-12, RF-20).
 
 ![Calificación y reputación (C4 · Dynamic)](diagrams/c4/C4-05-Dinamico-Calificacion.png)
 
@@ -1293,7 +1207,7 @@ Para cada escenario se documenta: actor, precondiciones, flujo principal, flujos
 | **Datos involucrados** | `technician_availability`, `coverage_zones`, `matching_attempts`, `service_requests`. |
 | **Eventos / Endpoints** | Consume `service-request.created` · produce `matching.technician-assigned`. |
 | **Relación con Container y Component** | Matching Service (Sección 6.8), Figura 14 (flujo lógico del matching). |
-| **Relación con Dynamic (sección 8)** | **Resuelto:** Figuras 21, 22 y 22b (búsqueda, oferta y aceptación), **Sección 8.7** (Consumer Groups asignados) y **Sección 8.8** (Concurrencia y bloqueo temporal `expires_at`). |
+| **Relación con Dynamic (sección 8)** | **Resuelto:** Figura 21 (búsqueda, oferta y aceptación), **Sección 8.7** (Consumer Groups asignados) y **Sección 8.8** (Concurrencia y bloqueo temporal `expires_at`). |
 | **Relación con la organización del código (sección 10)** | **Resuelto:** Matching Service en Java + Spring Boot con capas `api`, `application`, `domain` e `infrastructure` (secciones 6.8 y 10.8); en la app, `features/solicitudes` (Servicios del técnico) y las ofertas con SCRUM-80. |
 | **Relación con Deployment (sección 9)** | **Resuelto:** Figuras 30 y 31: Matching corre en el k3s de VM3 (VM2 en QA) y consulta PostgreSQL + PostGIS en VM4 (VM5); la latencia se mide en las pruebas de carga (sección 8.12). |
 | **Requisitos (SRS)** | RF-09, RF-10 · RNF-05 (asignación en menos de 60s) |
@@ -1310,7 +1224,7 @@ Para cada escenario se documenta: actor, precondiciones, flujo principal, flujos
 | **Datos involucrados** | `matching_attempts`, `service_requests`. |
 | **Eventos / Endpoints** | Produce `matching.no-technician-available`. |
 | **Relación con Container y Component** | Matching Service, estado `en_espera` de `ServiceRequestStatus`. |
-| **Relación con Dynamic (sección 8)** | **Resuelto:** rama «No quedan candidatos» de la Figura 21 y sección 8.3, paso 6 (`matching.no-technician-available` y `matching.search-resumed`, RN-M10). No tiene vista C4 dinámica propia. |
+| **Relación con Dynamic (sección 8)** | **Resuelto:** Figura 22 y sección 8.3.1 (`matching.no-technician-available` y `matching.search-resumed`, RN-M10). |
 | **Relación con la organización del código (sección 10)** | **Resuelto:** consumidor de Matching en ServiceRequest (sección 6.7) y `WaitingRequestsSweeper` en Matching (sección 6.8); en la app, el indicador de búsqueda de `features/solicitudes` (SCRUM-77). |
 | **Relación con Deployment (sección 9)** | **Resuelto:** los mismos contenedores del escenario 2 (Figuras 30 y 31). |
 | **Requisitos (SRS)** | RF-09 (manejo explícito de "En espera" cuando no hay técnico disponible) |
@@ -1349,15 +1263,15 @@ Para cada escenario se documenta: actor, precondiciones, flujo principal, flujos
 
 | | |
 |---|---|
-| **Actor** | Sistema (Payments Service), PSP externo |
+| **Actor** | Sistema (Payments Service, con la pasarela simulada de ADR-009 modificado) |
 | **Precondiciones** | Pago iniciado (Escenario 5). |
-| **Flujo principal** | 1. El PSP responde de forma asíncrona. 2. Payments Service produce `payment.approved` o `payment.rejected`. 3. ServiceRequest Service consume el evento: si es `approved`, transiciona a `pagado`; si es `rejected`, permanece en `completado` y permite reintento. 4. Si fue aprobado, Billing genera `Invoice`. |
+| **Flujo principal** | 1. La pasarela simulada responde dentro de Payments (la pasarela certificada y su webhook siguen planeados). 2. Payments Service produce `payment.approved` o `payment.rejected`. 3. ServiceRequest Service consume el evento: si es `approved`, transiciona a `pagado`; si es `rejected`, permanece en `completado` y permite reintento. 4. Si fue aprobado, Billing genera `Invoice`. |
 | **Flujos alternos** | Pago rechazado → el cliente puede reintentar (vuelve al Escenario 5). |
 | **Servicios participantes** | Payments Service, ServiceRequest Service. |
 | **Datos involucrados** | `payments`, `invoices`. |
 | **Eventos / Endpoints** | Produce `payment.approved` / `payment.rejected` · `GET /v1/payments/{id}/invoice`. |
 | **Relación con Container y Component** | Payments Service — módulo *Billing / Invoice Management*. |
-| **Relación con Dynamic (sección 8)** | **Resuelto:** Ver **Sección 8.4** (Separación entre interacción PCI-DSS de Wompi y el procesamiento asíncrono) y **Sección 8.10** (Idempotencia). |
+| **Relación con Dynamic (sección 8)** | **Resuelto:** Figura 24 y **Sección 8.4**, pasos 5 y 6 (tokenización en el teléfono, cobro y `payment.rejected`), y **Sección 8.10** (Idempotencia). |
 | **Requisitos (SRS)** | RF-24 |
 
 #### Escenario 7 — El cliente califica el servicio
@@ -1410,6 +1324,7 @@ Cubre el flujo Escenarios 1 → 2 → 4 → 5 → 6 → 7 (registro → matching
 
 ```mermaid
 sequenceDiagram
+    autonumber
     actor C as Cliente
     actor T as Técnico
     participant GW as API Gateway
@@ -1417,44 +1332,56 @@ sequenceDiagram
     participant SR as ServiceRequest Service
     participant MS as Matching Service
     participant PAY as Payments Service
-    participant PSP as PSP externo
     participant RK as Ranking Service
+    participant COM as Communication Service
     participant K as Kafka
 
-    C->>GW: POST /auth/register/client
-    GW->>ID: registrar usuario
-    C->>GW: POST /auth/login
-    GW->>ID: validar credenciales
-    ID-->>C: AuthenticatedContext
+    C->>GW: POST /api/v1/auth/register/client (X-Channel-Id)
+    GW->>ID: Registra al usuario en el tenant del canal
+    C->>GW: POST /api/v1/auth/login
+    GW->>ID: Valida credenciales y firma el JWT RS256 (ADR-018)
+    ID-->>C: accessToken
 
-    C->>GW: POST /service-requests
-    GW->>SR: crear solicitud
+    C->>GW: POST /api/v1/service-requests
+    GW->>SR: Guarda la solicitud (buscando_tecnico) y el Outbox
     SR->>K: service-request.created
-
-    K->>MS: consume service-request.created
-    MS->>MS: Candidate Search (PostGIS)
+    K->>MS: Consume: candidatos RN-M9 (PostGIS) y oferta a 3 min
+    MS->>K: matching.offer-created
+    K->>COM: Consume: avisa al técnico por WebSocket
+    T->>GW: POST /api/v1/matching/offers/{attemptId}/accept
+    GW->>MS: Técnico ocupado (RN-M6)
     MS->>K: matching.technician-assigned
-    K->>SR: consume evento -> estado asignado
+    K->>SR: Consume: asignado y service-request.status-changed
 
-    T->>GW: POST /service-requests/{id}/start
-    GW->>SR: estado en_progreso
-    T->>GW: POST /service-requests/{id}/complete
-    GW->>SR: estado completado
+    T->>GW: POST /api/v1/service-requests/{id}/quotes
+    C->>GW: POST /api/v1/service-requests/{id}/quotes/{quoteId}/accept
+    GW->>SR: cotizado y después cotizacion_aceptada
 
-    C->>GW: POST /service-requests/{id}/payment
-    GW->>PAY: iniciar pago
-    PAY->>PSP: tokenizar y procesar
-    PSP-->>PAY: aprobado
+    T->>GW: POST /api/v1/service-requests/{id}/start
+    GW->>SR: en_progreso
+    T->>GW: POST /api/v1/service-requests/{id}/evidence
+    GW->>SR: Foto en Garage y referencia en service_evidence
+    T->>GW: POST /api/v1/service-requests/{id}/complete
+    GW->>SR: Exige evidencia (RN-SR3): completado
+    SR->>K: service-request.completed
+    K->>PAY: Consume: pago pendiente (RN-P4)
+    K->>MS: Consume: el técnico vuelve a disponible
+
+    C->>GW: POST /api/v1/service-requests/{id}/payment (token de la tarjeta)
+    GW->>PAY: Cobra con la pasarela simulada (ADR-009 modificado) y genera el comprobante
     PAY->>K: payment.approved
-    K->>SR: consume evento -> estado pagado
+    K->>SR: Consume: pagado y service-request.status-changed
+    K->>COM: Consume service-request.status-changed: avisa a cliente y técnico
 
-    C->>GW: POST /service-requests/{id}/rating
-    GW->>SR: guardar ratings y Outbox (misma transacción)
+    C->>GW: POST /api/v1/service-requests/{id}/rating
+    GW->>SR: Guarda ratings y el Outbox (una transacción)
     SR->>K: service-request.rated
-    K->>RK: consume evento -> recalcula reputación
+    K->>RK: Consume: recalcula la reputación
     RK->>K: ranking.technician-reputation-changed
-    K->>ID: consume evento -> technician_profiles
+    K->>ID: Consume: technician_profiles
 ```
+
+Es un resumen de los escenarios 1 a 7 para la prueba de punta a punta. Cada tramo tiene su diagrama dinámico con todos los pasos (figuras 21, 22b, 23, 24 y 27); los avisos de Communication se resumen aquí con `service-request.status-changed`.
 
 ---
 
@@ -1462,12 +1389,12 @@ sequenceDiagram
 
 | # | Escenario | Componentes principales | Container y Component | Dynamic | Organización del código | Deployment |
 |---|---|---|---|---|---|---|
-| 1 | Registro y creación de solicitud | Identity, Catalog, ServiceRequest | ✅ Figuras 3, 9, 10, 12 y 13 | ✅ Figuras 21, 22 y 25 | ✅ Secciones 6.2, 10.2 y 10.3 | ✅ Figuras 30 y 31 |
-| 2 | Matching y asignación | Matching, ServiceRequest, Communication | ✅ Figuras 3, 13, 15 y 18 | ✅ Figuras 21, 22 y 22b | ✅ Secciones 6.8 y 10.8 | ✅ Figuras 30 y 31 |
-| 3 | Sin técnico disponible | Matching, ServiceRequest | ✅ Figuras 13 y 15 | 🟡 Figura 21 (rama sin candidatos), sin vista C4 propia | ✅ Secciones 6.7 y 6.8 | ✅ Figuras 30 y 31 |
-| 4 | Ejecución del servicio | ServiceRequest, Communication | ✅ Figura 13 | 🟡 Figura 23 (diseño) | ✅ Secciones 6.7 y 10.2 (evidencia en QA: `scrum-96-evidencia`) | ✅ Figuras 30 y 31 (Garage) |
-| 5 | Pago | Payments, ServiceRequest | ✅ Figura 17 (pasarela simulada) | 🟡 Figuras 23 y 24 (diseño) | ✅ Sección 6.10 (evidencia en QA: `scrum-495-comprobante`) | 🟡 Sin la pasarela certificada (proveedor por definir) |
-| 6 | Aprobación/rechazo PSP | Payments, ServiceRequest | ✅ Figura 17 (aprobado y rechazado con la pasarela simulada) | 🟡 Figuras 23 y 24 (diseño) | ✅ Sección 6.10 | 🟡 Sin la pasarela certificada (proveedor por definir) |
+| 1 | Registro y creación de solicitud | Identity, Catalog, ServiceRequest | ✅ Figuras 3, 9, 10, 12 y 13 | ✅ Figuras 21 y 25 | ✅ Secciones 6.2, 10.2 y 10.3 | ✅ Figuras 30 y 31 |
+| 2 | Matching y asignación | Matching, ServiceRequest, Communication | ✅ Figuras 3, 13, 15 y 18 | ✅ Figura 21 | ✅ Secciones 6.8 y 10.8 | ✅ Figuras 30 y 31 |
+| 3 | Sin técnico disponible | Matching, ServiceRequest | ✅ Figuras 13 y 15 | ✅ Figura 22 | ✅ Secciones 6.7 y 6.8 | ✅ Figuras 30 y 31 |
+| 4 | Ejecución del servicio | ServiceRequest, Communication | ✅ Figura 13 | ✅ Figura 23 | ✅ Secciones 6.7 y 10.2 (evidencia en QA: `scrum-96-evidencia`) | ✅ Figuras 30 y 31 (Garage) |
+| 5 | Pago | Payments, ServiceRequest | ✅ Figura 17 (pasarela simulada) | ✅ Figura 24 (pasarela simulada) | ✅ Sección 6.10 (evidencia en QA: `scrum-495-comprobante`) | 🟡 Sin la pasarela certificada (proveedor por definir) |
+| 6 | Aprobación/rechazo PSP | Payments, ServiceRequest | ✅ Figura 17 (aprobado y rechazado con la pasarela simulada) | ✅ Figura 24 (rechazo en la descripción de la vista) | ✅ Sección 6.10 | 🟡 Sin la pasarela certificada (proveedor por definir) |
 | 7 | Calificación | ServiceRequest, Ranking, Identity | ✅ Figuras 10, 13 y 16 | ✅ Figura 27 | ✅ Secciones 6.7, 6.9 y 10.2 (SCRUM-85 y SCRUM-498) | 🟡 Ranking en QA (figura 31, SCRUM-512); en producción llega con la promoción del MVP (figura 30, SCRUM-518) |
 | 8 | Aislamiento multi-tenant | API Gateway, todos los servicios | ✅ Figura 3a y sección 6.12 | ✅ Figuras 25 y 28; Figura 20 (C4 · Code) | ✅ Secciones 6.12 y 10.3 | ✅ Figuras 30, 31 y 33 |
 | 9 | Falla temporal de Kafka | Cualquier productor, Kafka | ✅ Figura 3b y sección 6.12 | ✅ Figura 29; Figura 19 (C4 · Code) | ✅ Secciones 8.10 y 10.3 | ✅ Figuras 30 y 31 |
@@ -2435,6 +2362,8 @@ Estos cambios responden a la retroalimentación final del profesor: arquitectura
 | Refactor interno de Catalog, ServiceRequest, Matching, Ranking y Payments con pruebas de arquitectura en su CI | 7.3 y 10.3.2 | SCRUM-651 a SCRUM-655 |
 | Contexto con los 6 roles agrupados por canal (4 en la app móvil y 2 en el panel web) y lectura vertical sin cruces; figuras 1 a 3 reexportadas | 3, 4 y 5.1 | SCRUM-688 y SCRUM-689 |
 | Vista de contenedores partida en dos para quitar los cruces: Figura 3a (REST y datos) y Figura 3b (qué publica y consume cada servicio en Kafka) | 5.1 | SCRUM-676 |
+| Estados IMPLEMENTADO, PLANEADO, EXTERNO y MOCK en todos los diagramas C4, con estilo propio y leyenda en cada figura; Actors marcado como planeado y la pasarela simulada como mock | 2 y todas las figuras C4 | SCRUM-707 |
+| Dinámicos verificados contra el código y `contracts/kafka`: creación y asignación en una sola vista (antes dos que se repetían), vistas nuevas de «sin técnico» y de ejecución, Matching libera al técnico con `service-request.completed` en el pago, la cotización avisa con `service-request.status-changed`; se quitan las secuencias de 8.3 y 8.4 que repetían esos escenarios con errores (Wompi, Communication consumiendo `payment.approved` y `matching.technician-assigned`); la secuencia de punta a punta incluye oferta, aceptación, cotización y evidencia, y la pasarela simulada | 8.3, 8.4, 8.5, 8.13.2, 8.13.3 y 8.13.4 | SCRUM-685 y SCRUM-686 |
 
 ---
 

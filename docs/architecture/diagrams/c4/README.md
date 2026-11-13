@@ -63,9 +63,10 @@ En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el 
 | `C4-04-Componentes-Communication` | Component | 6.11 |
 | `C4-07-Codigo-OutboxIdempotencia` | Code (PlantUML) | 7.1 |
 | `C4-07-Codigo-AislamientoTenant` | Code (PlantUML) | 7.2 |
-| `C4-05-Dinamico-CrearSolicitud` | Dynamic | 8.3 |
-| `C4-05-Dinamico-AsignacionTecnico` | Dynamic | 8.3.1 |
-| `C4-05-Dinamico-Cotizacion` | Dynamic | 8.3 |
+| `C4-05-Dinamico-CreacionAsignacion` | Dynamic | 8.3 |
+| `C4-05-Dinamico-SinTecnico` | Dynamic | 8.3.1 |
+| `C4-05-Dinamico-Cotizacion` | Dynamic | 8.3.2 |
+| `C4-05-Dinamico-Ejecucion` | Dynamic | 8.4 |
 | `C4-05-Dinamico-Pago` | Dynamic | 8.4 |
 | `C4-05-Dinamico-Cancelacion` | Dynamic | 8.5 |
 | `C4-05-Dinamico-InicioSesion` | Dynamic | 8.5 |
@@ -81,7 +82,7 @@ En el repositorio están en `docs/architecture/diagrams/c4/<clave>.png`, sin el 
 - Cada vista fija su `autoLayout` (dirección y separación) para que el PNG quede apaisado y sin solapamientos; si un cambio del modelo desordena una vista, se ajusta ahí y no en la imagen.
 - Las vistas donde los grupos estorban la distribución los ocultan con la propiedad `structurizr.groups false`.
 - Desde SCRUM-676 (11 de noviembre de 2026) la vista de contenedores está partida en dos: `C4-03a` con la comunicación síncrona y los datos, y `C4-03b` con lo que cada servicio publica y consume en Kafka. Con todo en una imagen, las líneas hacia Kafka y las bases cruzaban el diagrama. Las relaciones resumen servicio → Kafka están declaradas antes de las de componentes para que su etiqueta no sea la primera relación implícita.
-- `C4-02-Contexto` y las dos vistas `C4-03` llevan `title` en el DSL y se exportan con la leyenda (key) pegada a la imagen: a la derecha si la vista es apaisada y debajo si es vertical (SCRUM-578). El botón de exportar de Structurizr guarda el diagrama y la leyenda por separado; hay que unirlos en una sola imagen.
+- Todas las vistas se exportan con la leyenda (key) pegada a la imagen (SCRUM-707; antes solo `C4-02-Contexto` y las dos `C4-03`): a la derecha si la vista es apaisada y debajo si es vertical (SCRUM-578). El botón de exportar de Structurizr guarda el diagrama y la leyenda por separado; hay que unirlos en una sola imagen.
 
-- Los elementos y relaciones con la etiqueta `Planeado` están diseñados pero no existen en `develop`; se dibujan punteados.
+- Estado de cada elemento (SCRUM-707): `Implementado` (borde verde), `Planeado` (borde gris discontinuo; relaciones punteadas), `Externo` (fondo gris) y `Mock` (fondo naranja, borde de puntos). `Planeado`, `Externo` y `Mock` se ponen a mano en el elemento; `Implementado` lo agregan los bloques `!elements` del modelo a todo sistema, contenedor y componente sin otra marca.
 - Un cambio de arquitectura se hace en el DSL o en el `.puml` y se vuelve a exportar; las imágenes no se editan a mano.
