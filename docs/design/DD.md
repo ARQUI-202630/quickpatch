@@ -7,13 +7,13 @@ Plataforma Digital Multi-tenant de Servicios Técnicos para el Hogar y las Empre
 |---|---|
 |**Tipo de documento**|Documento de Diseño Detallado: Modelos de Datos + Contratos (diccionario de datos evolutivo, DER, contratos REST y de eventos)|
 |**Arquitectura**|Microservicios + Event-Driven Architecture|
-|**Backend principal**|ASP.NET Core / .NET 10 (7 servicios); Matching Service: Java 25 + Spring Boot 4.1.1|
+|**Backend principal**|ASP.NET Core / .NET 10 (7 servicios, con Actors desde la 5.23); Matching Service: Java 25 + Spring Boot 4.1.1|
 |**Mensajería**|Apache Kafka|
 |**Persistencia**|PostgreSQL + PostGIS|
-|**Versión**|5.22|
+|**Versión**|5.23|
 |**Fecha**|Octubre de 2026|
 |**Alineado con**|SRS V5, SAD v2.27 (ADR-017, ADR-023 y ADR-024), SDD organizado por C4 (octubre de 2026), Documento de Infraestructura v2.5|
-|**Historia en Jira**|SCRUM-693 — Auditoría del modelo y los eventos contra el código (5.22); SCRUM-644 — Contraseña cifrada en el cliente con RSA-OAEP-256 (5.21); SCRUM-637 — Calificación en el detalle de la solicitud (5.20); SCRUM-625 — Hash del correo con HMAC y la invitación pendiente en la recuperación de la contraseña (5.19); SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
+|**Historia en Jira**|SCRUM-640 — Actors Service con el directorio de proveedores y clientes por eventos (5.23); SCRUM-693 — Auditoría del modelo y los eventos contra el código (5.22); SCRUM-644 — Contraseña cifrada en el cliente con RSA-OAEP-256 (5.21); SCRUM-637 — Calificación en el detalle de la solicitud (5.20); SCRUM-625 — Hash del correo con HMAC y la invitación pendiente en la recuperación de la contraseña (5.19); SCRUM-597 — Recuperación de la contraseña olvidada con enlace del `admin_tenant` (5.18); SCRUM-508 — RN-T1 con la réplica del estado del tenant y el evento `tenant.status-changed` (5.17); SCRUM-501 — Equipo del proveedor en Payments y pagos recibidos del proveedor (5.16); SCRUM-499 — Calificación en el historial del técnico (5.15); SCRUM-636 — Cobertura por localidades (5.14); SCRUM-73 — Solicitud de empresa (5.13); SCRUM-484 — Cuenta corporativa (5.12); ADR-025 — REST solo hacia Identity, ServiceRequest y Payments (5.7); SCRUM-94 — Inicio, evidencia y cierre del servicio (5.6); SCRUM-487 — Contratos de la cotización (5.5); SCRUM-456 y SCRUM-472 — Buzón desde `status-changed` y `solicitud-cancelada` (5.4); SCRUM-474 — Cancelación de la solicitud (5.3); SCRUM-485 — Panel operativo de solicitudes (5.2); SCRUM-466 — Aviso de estado desde ServiceRequest (5.1); SCRUM-455 — Contratos y DD de la geocodificación y el buzón (ADR-024), DD V5; antes SCRUM-416 (DD V4) y SCRUM-259 (DD V3)|
 |**Curso**|Arquitectura de Software|
 |**Proyecto**|QUICKPATCH|
 
@@ -110,7 +110,7 @@ Algunos elementos de esta versión resuelven dependencias que el DD v2.2 dejaba 
 |ID|Propuesta|Dependencia que resuelve|Documento que debe reflejarla|
 |---|---|---|---|
 |P-01|Matching Service mantiene una proyección local de la especialidad y del estado de verificación de cada técnico, alimentada por los eventos `technician.registered` y `technician.verification-changed` de Identity Service.|DEP-01|**Resuelta en v4:** P-01 adoptada y alineada con el ADR-017 (`technician.registered` y `technician.verification-changed` v1, sección 1.8). Falta actualizar el pendiente de Safety del SAD (sección 3.9).|
-|P-02|Mientras Actors Service no tenga persistencia, `technician_profiles.provider_id` referencia al usuario con rol `proveedor` dentro de Identity Service (FK física). **Desde la 5.16 (SCRUM-501)** Payments guarda de cada técnico su proveedor en la proyección `payment_technicians` (sección 5.25), alimentada por `technician.registered`, para los pagos recibidos del equipo.|DEP-02 (parcial)|SDD, sección 6.14|
+|P-02|Mientras Actors Service no tenga persistencia, `technician_profiles.provider_id` referencia al usuario con rol `proveedor` dentro de Identity Service (FK física). **Desde la 5.16 (SCRUM-501)** Payments guarda de cada técnico su proveedor en la proyección `payment_technicians` (sección 5.25), alimentada por `technician.registered`, para los pagos recibidos del equipo. **Desde la 5.23 (SCRUM-640)** Actors Service proyecta el equipo de cada proveedor en `technician_actors` y `suppliers` (secciones 5.31 y 5.32) con los mismos eventos, sin administrarlo: el equipo se sigue creando en Identity.|DEP-02 (parcial)|SDD, sección 6.14|
 |P-03|La especialidad de un técnico es una categoría de servicio: `technician_profiles.specialty_id` referencia `service_categories.id`.|DEP-02 (parcial)|SDD, sección 6.6|
 |P-04|La cobertura de un técnico se expresa por localidades de Bogotá, a partir de un catálogo de referencia `localities` en Matching Service.|RF-13 (SCRUM-33)|SDD, sección 6.8|
 |P-05|Matching Service persiste las solicitudes que debe asignar (`matching_requests`) para poder reintentar las que quedan en espera.|SCRUM-29, criterio 3|SDD, sección 8.3|
@@ -242,7 +242,7 @@ QUICKPATCH se descompone en 8 microservicios de dominio (SAD, sección 4.2.2), d
 |Servicio|Entidades persistentes en esta versión|
 |---|---|
 |Identity Service|`tenants`, `users`, `technician_profiles`, `client_companies`, `password_setup_tokens` (v5), `password_recovery_requests` y `password_recovery_attempts` (v5.18). El equipo de un proveedor se representa con `technician_profiles.provider_id` (P-02).|
-|Actors Service|Ninguna todavía. `Supplier`, `Ally` y `Client` son conceptos evolutivos (SDD, sección 6.14).|
+|Actors Service|Desde la 5.23 (SCRUM-640), el directorio de actores del tenant armado con eventos: `technician_actors`, `suppliers` y `client_actors` en `db_actors`. `Ally` sigue siendo evolutivo (SDD, sección 6.14): ningún evento lo origina.|
 |Catalog Service|`service_categories`|
 |Matching Service|`technician_availability` (incluye la proyección de especialidad y verificación, P-01), `coverage_zones`, `matching_attempts`, `matching_requests` (P-05) y el catálogo de referencia `localities` (P-04).|
 |ServiceRequest Service|`service_requests`, `quotes`, `ratings`, `service_evidence`, la réplica de lectura `service_request_categories` la réplica del estado de los tenants `tenant_status_replica` (v5.17, RN-T1) y la copia de `localities` (P-09)|
@@ -331,7 +331,11 @@ flowchart TB
     end
 
     subgraph ACT["Actors Service"]
-        act_empty["Sin tablas en esta versión"]:::empty
+        direction TB
+        technician_actors["technician_actors<br/>(proyección)"]:::entity
+        suppliers["suppliers<br/>(proyección)"]:::entity
+        client_actors["client_actors<br/>(proyección)"]:::entity
+        technician_actors -.->|"supplier_id"| suppliers
     end
 
     subgraph RNK["Ranking Service"]
@@ -382,6 +386,8 @@ flowchart TB
     tenants -.->|"tenant.status-changed (réplica)"| tenant_status_replica
     technician_profiles -.->|"technician.registered (proyección)"| payment_technicians
     technician_profiles -.->|"technician_id"| technician_reputations
+    technician_profiles -.->|"technician.registered y verification-changed (proyección)"| technician_actors
+    service_requests -.->|"service-request.created (proyección)"| client_actors
     service_requests -.->|"service_request_id"| applied_ratings
     users -.->|"user_id"| notifications
     service_requests -.->|"service-request.status-changed (réplica)"| chat_participants
@@ -443,6 +449,9 @@ erDiagram
     tenants ||..o| tenant_status_replica : "tenant_id (réplica por evento)"
     technician_profiles ||..o| payment_technicians : "technician_id (proyección por evento)"
     technician_profiles ||..o| technician_reputations : "technician_id (ref. lógica)"
+    technician_profiles ||..o| technician_actors : "technician_id (proyección por evento)"
+    users ||..o| suppliers : "supplier_id (proyección por evento)"
+    users ||..o| client_actors : "client_id (proyección por evento)"
     service_requests ||..o| applied_ratings : "service_request_id (ref. lógica)"
     users ||..o{ notifications : "user_id (ref. lógica)"
     service_requests ||..o| chat_participants : "service_request_id (réplica por evento)"
@@ -482,6 +491,29 @@ erDiagram
         uuid tenant_id
         uuid provider_id
         timestamptz updated_at
+    }
+    technician_actors {
+        uuid tenant_id PK
+        uuid technician_id PK
+        uuid supplier_id
+        uuid specialty_id
+        varchar verification_status
+        boolean registered
+        timestamptz status_updated_at
+    }
+    suppliers {
+        uuid tenant_id PK
+        uuid supplier_id PK
+        integer technician_count
+        integer approved_technician_count
+        timestamptz updated_at
+    }
+    client_actors {
+        uuid tenant_id PK
+        uuid client_id PK
+        integer request_count
+        timestamptz first_request_at
+        timestamptz last_request_at
     }
     technician_reputations {
         uuid tenant_id PK
@@ -748,7 +780,7 @@ _En la Figura 2, la línea continua es una FK física dentro del mismo servicio 
 |Ranking|`technician_reputations`, `applied_ratings`, `outbox_events`, `processed_events`|—|
 |Payments|`payments`, `invoices`, `payment_technicians`, `outbox_events`, `processed_events`|—|
 |Communication|`notifications`, `chat_participants`, `chat_messages`|—|
-|Actors|—|Sin tablas: Actors no tiene código y nadie usa `db_actors`|
+|Actors|`technician_actors`, `suppliers`, `client_actors`, `processed_events` (v5.23, SCRUM-640)|Despliegue en QA|
 
 _Cuadro 8: Estado de implementación del modelo de datos_
 
@@ -1594,6 +1626,62 @@ _Cuadro 8: Estado de implementación del modelo de datos_
 
 **Reglas:** RLS por tenant (`tenant_isolation`). El comentario de la calificación no llega a Ranking: el evento no lo trae (sección 8.4.2).
 
+### 5.31 Tabla `technician_actors`
+
+**Nueva en v5.23 (SCRUM-640).** **Servicio propietario:** Actors Service, en `db_actors`.
+
+**Propósito:** Cada técnico del tenant en el directorio de actores: a qué proveedor pertenece, su especialidad y su estado de verificación. Es una proyección de `technician.registered` y `technician.verification-changed`; el técnico se administra en Identity (P-02).
+
+**Requisitos relacionados:** RF-16, RF-19, RF-20.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|tenant_id|UUID|No|PK (con `technician_id`)|Tenant del evento.|
+|technician_id|UUID|No|PK (con `tenant_id`)|`technician_profiles.user_id` en Identity (ref. lógica).|
+|supplier_id|UUID|Sí|—|Proveedor del equipo (`providerId` de `technician.registered`); nulo si es independiente o si el registro aún no llegó. Índice `ix_technician_actors_supplier` por `tenant_id, supplier_id`.|
+|specialty_id|UUID|No|—|Especialidad (`service_categories.id`, P-03).|
+|verification_status|VARCHAR(20)|No|CHECK|`pendiente`, `aprobado`, `rechazado` o `suspendido` (`ck_technician_actors_status`).|
+|registered|BOOLEAN|No|—|Si ya se aplicó `technician.registered`, la única fuente del proveedor.|
+|status_updated_at|TIMESTAMPTZ|No|—|`updatedAt` del último estado aplicado; un evento más viejo se descarta (ADR-017).|
+
+**Reglas:** RLS por tenant (`tenant_isolation`). El proveedor se toma siempre del registro; la especialidad y el estado, solo si el evento no es más viejo que lo guardado. Si `verification-changed` llega antes que el registro, el técnico entra sin proveedor.
+
+### 5.32 Tabla `suppliers`
+
+**Nueva en v5.23 (SCRUM-640).** **Servicio propietario:** Actors Service, en `db_actors`.
+
+**Propósito:** Cada proveedor del tenant (Supplier, SDD 6.14) con el tamaño de su equipo y cuántos técnicos están aprobados.
+
+**Requisitos relacionados:** RF-16.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|tenant_id|UUID|No|PK (con `supplier_id`)|Tenant del evento.|
+|supplier_id|UUID|No|PK (con `tenant_id`)|`users.id` del usuario con rol `proveedor` en Identity (ref. lógica).|
+|technician_count|INTEGER|No|CHECK|Técnicos del equipo en `technician_actors`.|
+|approved_technician_count|INTEGER|No|CHECK|Técnicos aprobados del equipo (`ck_suppliers_counts`: entre 0 y `technician_count`).|
+|updated_at|TIMESTAMPTZ|No|—|Último recuento.|
+
+**Reglas:** RLS por tenant. Los conteos se recalculan desde `technician_actors` en la misma transacción del evento, no se suman, para que un evento repetido no los infle.
+
+### 5.33 Tabla `client_actors`
+
+**Nueva en v5.23 (SCRUM-640).** **Servicio propietario:** Actors Service, en `db_actors`.
+
+**Propósito:** Cada cliente del tenant (Client, SDD 6.14) que ha creado solicitudes, con cuántas y cuándo fueron la primera y la última.
+
+**Requisitos relacionados:** RF-07, RF-08.
+
+|Campo|Tipo|Nulo|Clave|Descripción|
+|---|---|---|---|---|
+|tenant_id|UUID|No|PK (con `client_id`)|Tenant del evento.|
+|client_id|UUID|No|PK (con `tenant_id`)|`users.id` del cliente en Identity (ref. lógica).|
+|request_count|INTEGER|No|CHECK|Solicitudes creadas (`ck_client_actors_requests`: 1 o más).|
+|first_request_at|TIMESTAMPTZ|No|CHECK|`createdAt` de la primera solicitud.|
+|last_request_at|TIMESTAMPTZ|No|CHECK|`createdAt` de la última; no es anterior a la primera.|
+
+**Reglas:** RLS por tenant. Se alimenta solo de `service-request.created`, una vez por `eventId`. No guarda la descripción ni la ubicación de la solicitud (RN-SR13).
+
 ---
 
 ## 6. Relaciones entre datos
@@ -1650,6 +1738,9 @@ Hacia Identity Service
   payment_technicians.provider_id      --> users.id
   technician_reputations.technician_id --> technician_profiles.user_id
   applied_ratings.technician_id        --> technician_profiles.user_id
+  technician_actors.technician_id      --> technician_profiles.user_id   (proyección de technician.registered, v5.23)
+  suppliers.supplier_id                --> users.id   (proveedor, v5.23)
+  client_actors.client_id              --> users.id   (proyección de service-request.created, v5.23)
   tenant_status_replica.tenant_id      --> tenants.id   (réplica de tenant.status-changed)
   <tabla>.tenant_id                    --> tenants.id   (toda tabla fuera de Identity Service que tenga tenant_id, sección 10.1)
 
@@ -1670,7 +1761,7 @@ Hacia ServiceRequest Service
 
 Estas referencias se validan mediante reglas de negocio, contratos REST o eventos. Ningún servicio escribe en tablas de otro dominio.
 
-Actors Service no aparece en el listado: en esta versión el equipo de un proveedor se resuelve dentro de Identity Service (P-02). Cuando Actors Service tenga persistencia propia, `technician_profiles.provider_id` volverá a ser una referencia lógica hacia ese servicio mediante una migración *expand-contract* (Documento de Infraestructura, sección 5.8).
+Desde la 5.23 Actors Service tiene persistencia propia, pero solo como proyección: el equipo de un proveedor se sigue creando en Identity Service (P-02). Si algún día Actors pasa a ser su dueño, `technician_profiles.provider_id` volverá a ser una referencia lógica hacia ese servicio mediante una migración *expand-contract* (Documento de Infraestructura, sección 5.8).
 
 ---
 
@@ -2552,9 +2643,9 @@ Cada tipo de evento tiene su propio tópico con el mismo nombre. La clave de par
 
 |Evento|Productor|Consumidores|Finalidad|v3|
 |---|---|---|---|---|
-|`technician.registered`|Identity|Matching, Communication, Payments|Crear la fila de `technician_availability` con la especialidad y el estado `no_disponible` (P-01); Payments guarda el proveedor del técnico en `payment_technicians` (v5.16).|Contrato v1 (v4)|
-|`technician.verification-changed`|Identity|Matching, Communication|Actualizar la copia de `verification_status`; si pasa a `aprobado` dispara RN-M10.|Contrato v1 (v4)|
-|`service-request.created`|ServiceRequest|Matching, Communication|Iniciar el matching y notificar.||
+|`technician.registered`|Identity|Matching, Communication, Payments, Actors|Crear la fila de `technician_availability` con la especialidad y el estado `no_disponible` (P-01); Payments guarda el proveedor del técnico en `payment_technicians` (v5.16); Actors lo agrega al directorio y recuenta el equipo del proveedor (v5.23).|Contrato v1 (v4)|
+|`technician.verification-changed`|Identity|Matching, Communication, Actors|Actualizar la copia de `verification_status`; si pasa a `aprobado` dispara RN-M10. Actors recuenta los aprobados del equipo (v5.23).|Contrato v1 (v4)|
+|`service-request.created`|ServiceRequest|Matching, Communication, Actors|Iniciar el matching y notificar; Actors suma la solicitud al cliente sin guardar la descripción ni la ubicación (v5.23).|Contrato v1; Actors desde quickpatch-kafka v0.11.0|
 |`matching.offer-created`|Matching|Communication|Notificar al técnico que tiene una oferta (SCRUM-30).|Contrato v1 (v4)|
 |`matching.technician-assigned`|Matching|ServiceRequest|Un técnico aceptó; la solicitud pasa a `asignado`.|Contrato v1 (v4)|
 |`matching.no-technician-available`|Matching|ServiceRequest|Se agotaron los candidatos; la solicitud pasa a `en_espera`.|Contrato v1 (v4)|
@@ -2908,7 +2999,7 @@ El aislamiento entre tenants sigue ADR-005 (shared-schema con `tenant_id` + Row 
 |`password_setup_tokens` (v5), `password_recovery_requests` y `password_recovery_attempts` (v5.18)|NOT NULL, FK física|Política de aislamiento por tenant, como `users`.|
 |`service_categories`, `service_requests`, `quotes`, `ratings`, `service_evidence`, `technician_availability`, `coverage_zones`, `matching_attempts`, `matching_requests`, `payments`, `invoices`|NOT NULL, referencia lógica|Política de aislamiento por tenant.|
 |`notifications` (v5), `chat_participants` y `chat_messages` (v5.11)|NOT NULL, con el `tenantId` del evento o de la sesión|Política de aislamiento por tenant. `notifications` y `chat_participants` solo las escriben los consumidores de Communication.|
-|`tenant_status_replica` (v5.17), `payment_technicians` (v5.16), `technician_reputations` y `applied_ratings` (v5.22)|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant; solo las escribe el consumidor que las alimenta.|
+|`tenant_status_replica` (v5.17), `payment_technicians` (v5.16), `technician_reputations` y `applied_ratings` (v5.22), `technician_actors`, `suppliers` y `client_actors` (v5.23)|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant; solo las escribe el consumidor que las alimenta.|
 |`service_request_categories`|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant; solo la escribe el consumidor de `catalog.category-changed`.|
 |`processed_events`|NOT NULL, con el `tenantId` del evento|Política de aislamiento por tenant.|
 |`outbox_events`|NOT NULL, con el tenant de la sesión por defecto|Política de inserción por tenant; la lectura para publicar la hace el rol del publicador (sección 10.2).|
@@ -3078,7 +3169,8 @@ La inclusión de estos modelos no se considera comprometida en esta versión del
 |5.20|SCRUM-637|**Calificación en el detalle de la solicitud (RF-12).** `service-request.v1.yaml` 1.12.0: `GET /v1/service-requests/{id}` agrega `rating` (`score`, `comment` y `ratedAt`), opcional y `null` mientras no se califique, para SCRUM-86 y SCRUM-32. Cambio compatible; RN-SR13 no cambia. Secciones 5.9, 8.2.4 y 8.3.4.|
 |5.21|SCRUM-644|**Contraseña cifrada en el cliente (RF-03, RNF-03; observación del profesor).** `identity.v1.yaml` 1.11.0 (`quickpatch-api-gateway` v0.23.0): `GET /v1/auth/password-key` y `encryptedPassword` (RSA-OAEP-256) en el login, los registros, `password/setup` y `password-recovery/confirm`; `400 llave-desconocida` (secciones 8.2.1 y 8.3.2). Sin cambios en las tablas.|
 |5.22|SCRUM-693|**Auditoría contra el código (SCRUM-690).** Se compararon el diccionario, las figuras y los eventos con los snapshots de EF Core, las migraciones Flyway de Matching, `quickpatch-kafka` v0.10.0 y `quickpatch-api-gateway` v0.24.0. Se documentan `technician_reputations` y `applied_ratings` (5.29 y 5.30) y tres columnas de `technician_profiles`; las figuras 1 y 2 y las secciones 3, 6 y 10.1 incluyen las 10 tablas que faltaban; el Cuadro 8 pasa al 12 de noviembre; en el Cuadro 11 se quitan consumidores que no existen (Communication en `service-request.completed`, `service-request.rated` y `payment.*`) y se agregan Payments en `technician.registered` y el evento `ranking.technician-reputation-changed`. DEP-04 queda resuelta. Las rutas REST del documento coinciden con los contratos.|
-|5.23|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
+|5.23|SCRUM-640|**Actors Service con persistencia.** Nuevas tablas `technician_actors`, `suppliers` y `client_actors` (secciones 5.31 a 5.33) en `db_actors`: el directorio de proveedores con su equipo y de clientes de cada tenant, armado con `technician.registered`, `technician.verification-changed` y `service-request.created` (quickpatch-kafka v0.11.0, Cuadro 11). Sin REST (ADR-025), sin eventos publicados y sin cambios de contrato. Se actualizan P-02, la sección 3, las figuras 1 y 2, el Cuadro 8 y las secciones 6.2 y 10.1.|
+|5.24|Futuros Sprint|Se agregarán nuevas entidades, campos y relaciones conforme las Historias de Usuario lo requieran, y se cerrarán las propuestas pendientes según la validación del equipo.|
 
 _Cuadro 16: Evolución del documento de diseño_
 

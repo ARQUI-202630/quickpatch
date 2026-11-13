@@ -17,7 +17,7 @@ El profesor pidió que la arquitectura mostrada refleje el código real y pregun
 | Panel web (Angular) | Sí | `release/0.7.0` | `v0.5.5` | Implementado y desplegado en los dos ambientes. **Discrepancia:** INFRA 4.3 todavía dice «página provisional» en producción, y SCRUM-694 no lo verificó | SCRUM-641 (panel verificado en producción el 4-nov); INFRA 4.16 |
 | API Gateway (Nginx) | Sí | Sí, VM2 | Sí, VM3 | Implementado y desplegado | ADR-028 |
 | Identity | Sí | 0.10.2 | 0.8.1 | Implementado y desplegado; en QA está la 0.10.x (contraseña cifrada, SCRUM-644; reputación en el panel, SCRUM-642; código compartido v0.2.1 de `quickpatch-shared-dotnet`, ADR-020), todavía no en producción | INFRA 4.16; CI de `release/0.10.2` del 12-nov |
-| Actors | **No**: solo `Program.cs`, sin lógica | No | No | **Planeado** (esqueleto). `db_actors` existe y nadie la usa | `codigo/antes/README.md`; SAD 4.2.2 |
+| Actors | Sí, desde el 12-nov (SCRUM-640) | Pendiente | No | **Implementado**, sin desplegar: directorio de proveedores y clientes por eventos en `db_actors` (DD 5.31 a 5.33) | quickpatch-actors#7; SAD 4.2.2 |
 | Catalog | Sí | 0.4.4 | 0.4.1 | Implementado y desplegado; la 0.4.x (refactor SCRUM-651 y código compartido de ADR-020) está solo en QA | INFRA 4.16; CI del 12-nov |
 | ServiceRequest | Sí | 0.12.3 | 0.11.2 | Implementado y desplegado; la 0.12.x (con el refactor SCRUM-652 y el código compartido de ADR-020) está solo en QA | INFRA 4.16; CI del 12-nov |
 | Matching | Sí | 0.6.2 | 0.6.1 | Implementado y desplegado; la 0.6.2 (refactor SCRUM-653) está solo en QA | INFRA 4.16; CI del 11-nov |
@@ -46,7 +46,7 @@ Las versiones de QA que no están en producción (Identity 0.10.2, Catalog 0.4.4
 | Elemento | Estado | Nota |
 |---|---|---|
 | Componentes de Identity, Catalog, ServiceRequest, Matching, Ranking, Payments y Communication | Implementados | Nombres del código de `develop`; los de Catalog, ServiceRequest, Matching, Ranking y Payments se actualizaron tras el refactor (SCRUM-678, quickpatch#283). Identity y Communication esperan SCRUM-650 y 656 |
-| Componentes de Actors (API, proveedores, aliados, clientes, persistencia) | **Planeado** | Ya etiquetados «Planeado» en el DSL |
+| Componentes de Actors (consumidores, casos de uso, dominio y persistencia) | **Implementados** (SCRUM-640) | Solo el concepto Ally sigue «Planeado» en el DSL; no hay API de actores (ADR-025) |
 
 ## Eventos (topics de Kafka)
 
@@ -54,10 +54,10 @@ Los 20 topics de `quickpatch-kafka` tienen productor en el código. Todos tienen
 
 | Topic | Servicios que lo usan en `develop` |
 |---|---|
-| `service-request.created` | service-request (productor), matching, communication |
+| `service-request.created` | service-request (productor), matching, communication, actors (desde el 12-nov) |
 | `catalog.category-changed` | catalog (productor), service-request |
-| `technician.registered` | identity (productor), matching, payments, communication |
-| `technician.verification-changed` | identity (productor), matching, communication |
+| `technician.registered` | identity (productor), matching, payments, communication, actors (desde el 12-nov) |
+| `technician.verification-changed` | identity (productor), matching, communication, actors (desde el 12-nov) |
 | `matching.offer-created` | matching (productor), communication |
 | `matching.technician-assigned`, `.no-technician-available`, `.search-resumed` | matching (productor), service-request |
 | `service-request.status-changed` | service-request (productor), communication |

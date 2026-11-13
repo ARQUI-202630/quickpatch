@@ -1,0 +1,48 @@
+flowchart LR
+  subgraph Api
+    _global_["(global) (1)"]
+  end
+  subgraph Application
+    QuickPatch_Actors_Application["Application (1)"]
+    QuickPatch_Actors_Application_Abstractions["Application.Abstractions (6)"]
+    QuickPatch_Actors_Application_Clients["Application.Clients (1)"]
+    QuickPatch_Actors_Application_Events["Application.Events (9)"]
+    QuickPatch_Actors_Application_Technicians["Application.Technicians (1)"]
+  end
+  subgraph Domain
+    QuickPatch_Actors_Domain_Clients["Domain.Clients (1)"]
+    QuickPatch_Actors_Domain_Suppliers["Domain.Suppliers (1)"]
+    QuickPatch_Actors_Domain_Technicians["Domain.Technicians (2)"]
+  end
+  subgraph Infrastructure
+    QuickPatch_Actors_Infrastructure["Infrastructure (1)"]
+    QuickPatch_Actors_Infrastructure_Messaging["Infrastructure.Messaging (2)"]
+    QuickPatch_Actors_Infrastructure_Options["Infrastructure.Options (1)"]
+    QuickPatch_Actors_Infrastructure_Persistence["Infrastructure.Persistence (7)"]
+  end
+  _global_ -->|1| QuickPatch_Actors_Application
+  _global_ -->|1| QuickPatch_Actors_Infrastructure
+  QuickPatch_Actors_Application -->|1| QuickPatch_Actors_Application_Clients
+  QuickPatch_Actors_Application -->|1| QuickPatch_Actors_Application_Technicians
+  QuickPatch_Actors_Application_Abstractions -->|1| QuickPatch_Actors_Domain_Clients
+  QuickPatch_Actors_Application_Abstractions -->|1| QuickPatch_Actors_Domain_Suppliers
+  QuickPatch_Actors_Application_Abstractions -->|1| QuickPatch_Actors_Domain_Technicians
+  QuickPatch_Actors_Application_Clients -->|3| QuickPatch_Actors_Application_Abstractions
+  QuickPatch_Actors_Application_Clients -->|3| QuickPatch_Actors_Application_Events
+  QuickPatch_Actors_Application_Clients -->|1| QuickPatch_Actors_Domain_Clients
+  QuickPatch_Actors_Application_Events -->|1| QuickPatch_Actors_Domain_Technicians
+  QuickPatch_Actors_Application_Technicians -->|5| QuickPatch_Actors_Application_Abstractions
+  QuickPatch_Actors_Application_Technicians -->|4| QuickPatch_Actors_Application_Events
+  QuickPatch_Actors_Application_Technicians -->|1| QuickPatch_Actors_Domain_Suppliers
+  QuickPatch_Actors_Application_Technicians -->|1| QuickPatch_Actors_Domain_Technicians
+  QuickPatch_Actors_Infrastructure -->|5| QuickPatch_Actors_Application_Abstractions
+  QuickPatch_Actors_Infrastructure -->|2| QuickPatch_Actors_Infrastructure_Messaging
+  QuickPatch_Actors_Infrastructure -->|1| QuickPatch_Actors_Infrastructure_Options
+  QuickPatch_Actors_Infrastructure -->|6| QuickPatch_Actors_Infrastructure_Persistence
+  QuickPatch_Actors_Infrastructure_Messaging -->|1| QuickPatch_Actors_Application_Clients
+  QuickPatch_Actors_Infrastructure_Messaging -->|10| QuickPatch_Actors_Application_Events
+  QuickPatch_Actors_Infrastructure_Messaging -->|1| QuickPatch_Actors_Application_Technicians
+  QuickPatch_Actors_Infrastructure_Persistence -->|6| QuickPatch_Actors_Application_Abstractions
+  QuickPatch_Actors_Infrastructure_Persistence -->|2| QuickPatch_Actors_Domain_Clients
+  QuickPatch_Actors_Infrastructure_Persistence -->|2| QuickPatch_Actors_Domain_Suppliers
+  QuickPatch_Actors_Infrastructure_Persistence -->|2| QuickPatch_Actors_Domain_Technicians

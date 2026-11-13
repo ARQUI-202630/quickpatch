@@ -1,0 +1,59 @@
+@startuml
+!pragma layout smetana
+title Actors — clases más conectadas (despues, 5c85eb6)
+hide empty members
+skinparam shadowing false
+class "Application.Technicians.TechnicianEventsHandler" as QuickPatch_Actors_Application_Technicians_TechnicianEventsHandler <<Application>> {
+  99 líneas · entra 2 · sale 11
+}
+class "Infrastructure.Persistence.ActorsDbContext" as QuickPatch_Actors_Infrastructure_Persistence_ActorsDbContext <<Infrastructure>> {
+  57 líneas · entra 7 · sale 3
+}
+class "Application.Clients.ServiceRequestCreatedHandler" as QuickPatch_Actors_Application_Clients_ServiceRequestCreatedHandler <<Application>> {
+  31 líneas · entra 2 · sale 7
+}
+class "Infrastructure.Messaging.ServiceRequestCreatedConsumer" as QuickPatch_Actors_Infrastructure_Messaging_ServiceRequestCreatedConsumer <<Infrastructure>> {
+  36 líneas · entra 1 · sale 6
+}
+class "Infrastructure.Messaging.TechnicianEventsConsumer" as QuickPatch_Actors_Infrastructure_Messaging_TechnicianEventsConsumer <<Infrastructure>> {
+  53 líneas · entra 1 · sale 6
+}
+class "Application.Events.EventEnvelope" as QuickPatch_Actors_Application_Events_EventEnvelope <<Application>> {
+  9 líneas · entra 6 · sale 0
+}
+class "Application.Events.TechnicianEventsContract" as QuickPatch_Actors_Application_Events_TechnicianEventsContract <<Application>> {
+  14 líneas · entra 1 · sale 4
+}
+class "Infrastructure.Persistence.TechnicianActorRepository" as QuickPatch_Actors_Infrastructure_Persistence_TechnicianActorRepository <<Infrastructure>> {
+  16 líneas · entra 1 · sale 4
+}
+interface "Application.Abstractions.ITechnicianActorRepository" as QuickPatch_Actors_Application_Abstractions_ITechnicianActorRepository <<Application>> {
+  0 líneas · entra 3 · sale 2
+}
+class "Domain.Technicians.TechnicianActor" as QuickPatch_Actors_Domain_Technicians_TechnicianActor <<Domain>> {
+  82 líneas · entra 4 · sale 1
+}
+class "Infrastructure.Persistence.ClientActorRepository" as QuickPatch_Actors_Infrastructure_Persistence_ClientActorRepository <<Infrastructure>> {
+  6 líneas · entra 1 · sale 3
+}
+class "Infrastructure.Persistence.SupplierRepository" as QuickPatch_Actors_Infrastructure_Persistence_SupplierRepository <<Infrastructure>> {
+  6 líneas · entra 1 · sale 3
+}
+QuickPatch_Actors_Application_Abstractions_ITechnicianActorRepository ..> QuickPatch_Actors_Domain_Technicians_TechnicianActor
+QuickPatch_Actors_Application_Clients_ServiceRequestCreatedHandler ..> QuickPatch_Actors_Application_Events_EventEnvelope
+QuickPatch_Actors_Application_Events_TechnicianEventsContract ..> QuickPatch_Actors_Application_Events_EventEnvelope
+QuickPatch_Actors_Application_Technicians_TechnicianEventsHandler ..> QuickPatch_Actors_Application_Abstractions_ITechnicianActorRepository
+QuickPatch_Actors_Application_Technicians_TechnicianEventsHandler ..> QuickPatch_Actors_Application_Events_EventEnvelope
+QuickPatch_Actors_Application_Technicians_TechnicianEventsHandler ..> QuickPatch_Actors_Domain_Technicians_TechnicianActor
+QuickPatch_Actors_Infrastructure_Messaging_ServiceRequestCreatedConsumer ..> QuickPatch_Actors_Application_Clients_ServiceRequestCreatedHandler
+QuickPatch_Actors_Infrastructure_Messaging_ServiceRequestCreatedConsumer ..> QuickPatch_Actors_Application_Events_EventEnvelope
+QuickPatch_Actors_Infrastructure_Messaging_TechnicianEventsConsumer ..> QuickPatch_Actors_Application_Events_EventEnvelope
+QuickPatch_Actors_Infrastructure_Messaging_TechnicianEventsConsumer ..> QuickPatch_Actors_Application_Events_TechnicianEventsContract
+QuickPatch_Actors_Infrastructure_Messaging_TechnicianEventsConsumer ..> QuickPatch_Actors_Application_Technicians_TechnicianEventsHandler
+QuickPatch_Actors_Infrastructure_Persistence_ActorsDbContext ..> QuickPatch_Actors_Domain_Technicians_TechnicianActor
+QuickPatch_Actors_Infrastructure_Persistence_ClientActorRepository ..> QuickPatch_Actors_Infrastructure_Persistence_ActorsDbContext
+QuickPatch_Actors_Infrastructure_Persistence_SupplierRepository ..> QuickPatch_Actors_Infrastructure_Persistence_ActorsDbContext
+QuickPatch_Actors_Infrastructure_Persistence_TechnicianActorRepository ..> QuickPatch_Actors_Application_Abstractions_ITechnicianActorRepository
+QuickPatch_Actors_Infrastructure_Persistence_TechnicianActorRepository ..> QuickPatch_Actors_Domain_Technicians_TechnicianActor
+QuickPatch_Actors_Infrastructure_Persistence_TechnicianActorRepository ..> QuickPatch_Actors_Infrastructure_Persistence_ActorsDbContext
+@enduml

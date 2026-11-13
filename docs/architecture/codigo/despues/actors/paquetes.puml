@@ -1,0 +1,58 @@
+@startuml
+!pragma layout smetana
+title Actors — paquetes (despues, 5c85eb6)
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+package "Api" {
+  component "(global)\n1 tipos" as _global_
+}
+package "Application" {
+  component "Application\n1 tipos" as QuickPatch_Actors_Application
+  component "Application.Abstractions\n6 tipos" as QuickPatch_Actors_Application_Abstractions
+  component "Application.Clients\n1 tipos" as QuickPatch_Actors_Application_Clients
+  component "Application.Events\n9 tipos" as QuickPatch_Actors_Application_Events
+  component "Application.Technicians\n1 tipos" as QuickPatch_Actors_Application_Technicians
+}
+package "Domain" {
+  component "Domain.Clients\n1 tipos" as QuickPatch_Actors_Domain_Clients
+  component "Domain.Suppliers\n1 tipos" as QuickPatch_Actors_Domain_Suppliers
+  component "Domain.Technicians\n2 tipos" as QuickPatch_Actors_Domain_Technicians
+}
+package "Infrastructure" {
+  component "Infrastructure\n1 tipos" as QuickPatch_Actors_Infrastructure
+  component "Infrastructure.Messaging\n2 tipos" as QuickPatch_Actors_Infrastructure_Messaging
+  component "Infrastructure.Options\n1 tipos" as QuickPatch_Actors_Infrastructure_Options
+  component "Infrastructure.Persistence\n7 tipos" as QuickPatch_Actors_Infrastructure_Persistence
+}
+_global_ --> QuickPatch_Actors_Application #607D8B : 1
+_global_ --> QuickPatch_Actors_Infrastructure #607D8B : 1
+QuickPatch_Actors_Application --> QuickPatch_Actors_Application_Clients #607D8B : 1
+QuickPatch_Actors_Application --> QuickPatch_Actors_Application_Technicians #607D8B : 1
+QuickPatch_Actors_Application_Abstractions --> QuickPatch_Actors_Domain_Clients #607D8B : 1
+QuickPatch_Actors_Application_Abstractions --> QuickPatch_Actors_Domain_Suppliers #607D8B : 1
+QuickPatch_Actors_Application_Abstractions --> QuickPatch_Actors_Domain_Technicians #607D8B : 1
+QuickPatch_Actors_Application_Clients --> QuickPatch_Actors_Application_Abstractions #607D8B : 3
+QuickPatch_Actors_Application_Clients --> QuickPatch_Actors_Application_Events #607D8B : 3
+QuickPatch_Actors_Application_Clients --> QuickPatch_Actors_Domain_Clients #607D8B : 1
+QuickPatch_Actors_Application_Events --> QuickPatch_Actors_Domain_Technicians #607D8B : 1
+QuickPatch_Actors_Application_Technicians --> QuickPatch_Actors_Application_Abstractions #607D8B : 5
+QuickPatch_Actors_Application_Technicians --> QuickPatch_Actors_Application_Events #607D8B : 4
+QuickPatch_Actors_Application_Technicians --> QuickPatch_Actors_Domain_Suppliers #607D8B : 1
+QuickPatch_Actors_Application_Technicians --> QuickPatch_Actors_Domain_Technicians #607D8B : 1
+QuickPatch_Actors_Infrastructure --> QuickPatch_Actors_Application_Abstractions #607D8B : 5
+QuickPatch_Actors_Infrastructure --> QuickPatch_Actors_Infrastructure_Messaging #607D8B : 2
+QuickPatch_Actors_Infrastructure --> QuickPatch_Actors_Infrastructure_Options #607D8B : 1
+QuickPatch_Actors_Infrastructure --> QuickPatch_Actors_Infrastructure_Persistence #607D8B : 6
+QuickPatch_Actors_Infrastructure_Messaging --> QuickPatch_Actors_Application_Clients #607D8B : 1
+QuickPatch_Actors_Infrastructure_Messaging --> QuickPatch_Actors_Application_Events #607D8B : 10
+QuickPatch_Actors_Infrastructure_Messaging --> QuickPatch_Actors_Application_Technicians #607D8B : 1
+QuickPatch_Actors_Infrastructure_Persistence --> QuickPatch_Actors_Application_Abstractions #607D8B : 6
+QuickPatch_Actors_Infrastructure_Persistence --> QuickPatch_Actors_Domain_Clients #607D8B : 2
+QuickPatch_Actors_Infrastructure_Persistence --> QuickPatch_Actors_Domain_Suppliers #607D8B : 2
+QuickPatch_Actors_Infrastructure_Persistence --> QuickPatch_Actors_Domain_Technicians #607D8B : 2
+legend right
+Rojo: viola SDD 10.3.2 · Naranja: ciclo entre paquetes
+Número: dependencias entre tipos
+endlegend
+@enduml
