@@ -8,7 +8,7 @@
 
 Cada servicio, sistema o elemento de un diagrama lleva una de estas marcas, con la misma leyenda y los mismos colores en todas las láminas:
 
-| Marca | Significa | Elementos al 11 de noviembre |
+| Marca | Significa | Elementos al 12 de noviembre |
 |---|---|---|
 | **IMPLEMENTADO** | Hay código en `develop` y corre en QA y en producción | Identity, Catalog, ServiceRequest, Matching, Ranking, Payments, Communication, API Gateway, panel web, app móvil |
 | **PLANEADO** | Diseñado, sin código | Actors (esqueleto), receptor de webhooks del PSP, regla de 4 horas (AC9-E3) |
@@ -34,7 +34,7 @@ Los 27 diagramas C4 exportados (`docs/architecture/diagrams/c4/`) llevan las mis
 | 9 | Arquitectura interna | Cuatro capas con reglas verificadas en el CI de cada servicio (SDD 10.3.2) | — |
 | 10 | Refactor del cierre | Antes y después medidos con la misma herramienta: Matching y Payments de 1 a 0 ciclos; fan-out máximo de ServiceRequest de 31 a 22. Mostrar también lo que empeoró (fan-out de Matching de 10 a 13) | `docs/architecture/codigo/README.md` |
 | 11 | Diagrama de código | Generado desde el código, no dibujado a mano | `tools/arquitectura/`, SDD 7.3 |
-| 12 | Dinámico: asignación del técnico | Pasos numerados con origen, destino y evento | SDD 8 (SCRUM-684) |
+| 12 | Dinámico: creación y asignación | Pasos numerados con origen, destino y evento: solicitud, búsqueda del técnico, oferta y aceptación | `C4-05-Dinamico-CreacionAsignacion` (23 pasos), SDD 8.3 (SCRUM-684) |
 | 13 | Despliegue | QA y producción separados (7 VM, 2 ambientes). El panel se entrega desde el Nginx y se ejecuta en el navegador; la app corre en el dispositivo | `C4-06-*` (SCRUM-674) |
 | 14 | QA → producción | A producción solo llega lo probado en QA; un token de QA es rechazado por producción (401) | `tests/e2e/evidencias/separacion-qa-produccion-2026-11-10.txt` |
 | 15 | Escenarios de calidad | 52 escenarios: Cumple, Parcial, No cumple y No medido, con la cifra final de SCRUM-664; los que no cumplen, con su motivo | Matriz de 52 escenarios |
@@ -54,8 +54,10 @@ Todo el equipo debe responderlas igual, con estas respuestas:
 | ¿Cuántas funcionalidades? | 33 requisitos funcionales en el SRS; avance según las cuatro cifras de SCRUM-700 |
 | ¿Cuántos escenarios? | 52, con el estado final de SCRUM-664 |
 | ¿Cuántos servicios? | 8 definidos; 7 implementados; Actors planeado |
-| ¿Cuáles están en producción? | Los 7 con código, desde el 4 de noviembre; QA va adelante en Identity y ServiceRequest |
+| ¿Cuáles están en producción? | Los 7 con código, el panel y la app, desde el 4 de noviembre. QA va adelante en los 7 servicios y en el panel (refactor del Sprint 6 y código compartido de ADR-020); llegan a producción solo por `release/*` → `main` (matriz de lo modelado frente a lo real) |
 | ¿Cuántos repositorios? | 14: 13 de componentes (el último, `quickpatch-shared-dotnet`, por ADR-020) y el principal |
 | ¿Cuántos topics? | 20 |
 | ¿Qué quedó pendiente? | Pasarela real, Actors y AC9-E3 |
+| ¿Cuántos escenarios cumplen? | 35 Cumple, 8 Parcial, 3 No cumple y 6 No medido, hasta que SCRUM-664 publique la cifra final |
+| ¿Cuántos diagramas C4 hay? | 27 vistas del modelo de Structurizr, todas con la leyenda de estados, más 2 diagramas de código (C4-07) |
 | ¿Cuál fue el resultado? | El de la conclusión del documento de cierre, aprobada por la PO |
