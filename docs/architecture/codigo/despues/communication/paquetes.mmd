@@ -2,8 +2,8 @@ flowchart LR
   subgraph Api
     _global_["(global) (1)"]
     QuickPatch_Communication_Api_Endpoints["Api.Endpoints (7)"]
-    QuickPatch_Communication_Api_Http["Api.Http (2)"]
-    QuickPatch_Communication_Api_Realtime["Api.Realtime (9)"]
+    QuickPatch_Communication_Api_Http["Api.Http (1)"]
+    QuickPatch_Communication_Api_Realtime["Api.Realtime (8)"]
   end
   subgraph Application
     QuickPatch_Communication_Application["Application (1)"]
@@ -25,10 +25,10 @@ flowchart LR
     QuickPatch_Communication_Infrastructure_Persistence["Infrastructure.Persistence (6)"]
   end
   _global_ -->|3| QuickPatch_Communication_Api_Endpoints
-  _global_ -->|2| QuickPatch_Communication_Api_Http
+  _global_ -->|1| QuickPatch_Communication_Api_Http
   _global_ -->|1| QuickPatch_Communication_Application
   _global_ -->|1| QuickPatch_Communication_Infrastructure
-  QuickPatch_Communication_Api_Endpoints -->|6| QuickPatch_Communication_Api_Realtime
+  QuickPatch_Communication_Api_Endpoints -->|4| QuickPatch_Communication_Api_Realtime
   QuickPatch_Communication_Api_Endpoints -->|1| QuickPatch_Communication_Application_Abstractions
   QuickPatch_Communication_Api_Endpoints -->|4| QuickPatch_Communication_Application_Chat
   QuickPatch_Communication_Api_Endpoints -->|5| QuickPatch_Communication_Application_Inbox

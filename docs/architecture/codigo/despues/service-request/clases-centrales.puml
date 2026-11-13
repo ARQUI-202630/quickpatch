@@ -1,16 +1,16 @@
 @startuml
 !pragma layout smetana
-title ServiceRequest — clases más conectadas (despues, ebd07d8)
+title ServiceRequest — clases más conectadas (despues, 45c0653)
 hide empty members
 skinparam shadowing false
 class "Domain.ServiceRequests.ServiceRequest" as QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest <<Domain>> {
   299 líneas · entra 34 · sale 5
 }
 class "Infrastructure.Persistence.ServiceRequestDbContext" as QuickPatch_ServiceRequest_Infrastructure_Persistence_ServiceRequestDbContext <<Infrastructure>> {
-  197 líneas · entra 16 · sale 11
+  175 líneas · entra 15 · sale 9
 }
 class "Api.Endpoints.ExecutionEndpoints" as QuickPatch_ServiceRequest_Api_Endpoints_ExecutionEndpoints <<Api>> {
-  188 líneas · entra 1 · sale 22
+  188 líneas · entra 1 · sale 21
 }
 class "Application.ServiceRequests.CreateServiceRequestHandler" as QuickPatch_ServiceRequest_Application_ServiceRequests_CreateServiceRequestHandler <<Application>> {
   93 líneas · entra 2 · sale 20
@@ -28,16 +28,16 @@ class "Api.Endpoints.AdminServiceRequestEndpoints" as QuickPatch_ServiceRequest_
   97 líneas · entra 1 · sale 19
 }
 class "Api.Endpoints.QuoteEndpoints" as QuickPatch_ServiceRequest_Api_Endpoints_QuoteEndpoints <<Api>> {
-  109 líneas · entra 1 · sale 18
-}
-class "Api.Endpoints.ServiceRequestEndpoints" as QuickPatch_ServiceRequest_Api_Endpoints_ServiceRequestEndpoints <<Api>> {
-  114 líneas · entra 1 · sale 15
+  109 líneas · entra 1 · sale 17
 }
 class "Application.Matching.MatchingStatusHandler" as QuickPatch_ServiceRequest_Application_Matching_MatchingStatusHandler <<Application>> {
   95 líneas · entra 2 · sale 14
 }
 class "Domain.Ratings.Rating" as QuickPatch_ServiceRequest_Domain_Ratings_Rating <<Domain>> {
   62 líneas · entra 15 · sale 1
+}
+class "Api.Endpoints.ServiceRequestEndpoints" as QuickPatch_ServiceRequest_Api_Endpoints_ServiceRequestEndpoints <<Api>> {
+  114 líneas · entra 1 · sale 14
 }
 QuickPatch_ServiceRequest_Api_Endpoints_AdminServiceRequestEndpoints ..> QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest
 QuickPatch_ServiceRequest_Api_Endpoints_ExecutionEndpoints ..> QuickPatch_ServiceRequest_Domain_ServiceRequests_ServiceRequest
