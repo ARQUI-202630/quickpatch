@@ -2,19 +2,19 @@
  "servicio": "Payments",
  "lenguaje": "csharp",
  "resumen": {
-  "tipos": 84,
+  "tipos": 77,
   "paquetes": 17,
-  "dependencias_entre_tipos": 214,
-  "dependencias_entre_paquetes": 39,
+  "dependencias_entre_tipos": 198,
+  "dependencias_entre_paquetes": 37,
   "ciclos_entre_paquetes": 0,
   "paquetes_en_ciclos": 0,
   "ciclos_entre_tipos": 0,
   "mayor_ciclo_de_tipos": 0,
   "violaciones_de_capas": 0,
   "tipos_de_mas_de_250_lineas": 0,
-  "fan_out_maximo": 12,
-  "fan_out_promedio": 2.55,
-  "cohesion_relacional_promedio": 0.78
+  "fan_out_maximo": 11,
+  "fan_out_promedio": 2.57,
+  "cohesion_relacional_promedio": 0.77
  },
  "dependencias_entre_capas": {
   "Api->Application": 13,
@@ -33,7 +33,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 69,
-   "fan_out": 12,
+   "fan_out": 11,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Payments.Api/Endpoints/PaymentEndpoints.cs"
   },
@@ -65,15 +65,6 @@
    "archivo": "src/QuickPatch.Payments.Application/Payments/ReconcilePayments.cs"
   },
   {
-   "tipo": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
-   "capa": "Api",
-   "clase": "static",
-   "lineas": 69,
-   "fan_out": 7,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs"
-  },
-  {
    "tipo": "QuickPatch.Payments.Application.Events.PaymentEvents",
    "capa": "Application",
    "clase": "static",
@@ -99,6 +90,15 @@
    "fan_out": 7,
    "fan_in": 2,
    "archivo": "src/QuickPatch.Payments.Application/Payments/TechnicianRegisteredHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 69,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
@@ -169,9 +169,9 @@
    "tipo": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
    "capa": "Infrastructure",
    "clase": "class",
-   "lineas": 99,
-   "fan_out": 5,
-   "fan_in": 9,
+   "lineas": 78,
+   "fan_out": 3,
+   "fan_in": 8,
    "archivo": "src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs"
   },
   {
@@ -231,33 +231,6 @@
    "archivo": "src/QuickPatch.Payments.Infrastructure/Documents/InvoicePdfRenderer.cs"
   },
   {
-   "tipo": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 99,
-   "fan_out": 5,
-   "fan_in": 9,
-   "archivo": "src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs"
-  },
-  {
-   "tipo": "QuickPatch.Payments.Infrastructure.Messaging.ServiceRequestCompletedConsumer",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 87,
-   "fan_out": 5,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Payments.Infrastructure/Messaging/ServiceRequestCompletedConsumer.cs"
-  },
-  {
-   "tipo": "QuickPatch.Payments.Infrastructure.Messaging.TechnicianRegisteredConsumer",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 87,
-   "fan_out": 5,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Payments.Infrastructure/Messaging/TechnicianRegisteredConsumer.cs"
-  },
-  {
    "tipo": "QuickPatch.Payments.Infrastructure.Persistence.PaymentRepository",
    "capa": "Infrastructure",
    "clase": "class",
@@ -265,6 +238,15 @@
    "fan_out": 5,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Payments.Infrastructure/Persistence/PaymentRepository.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 78,
+   "fan_out": 3,
+   "fan_in": 8,
+   "archivo": "src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Payments.Api.Endpoints.ReceivedPaymentEndpoints",
@@ -285,22 +267,40 @@
    "archivo": "src/QuickPatch.Payments.Application/Payments/Pay.cs"
   },
   {
-   "tipo": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 73,
-   "fan_out": 4,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Payments.Infrastructure/Messaging/OutboxPublisher.cs"
-  },
-  {
    "tipo": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
    "capa": "Api",
    "clase": "static",
    "lineas": 69,
-   "fan_out": 7,
+   "fan_out": 6,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 69,
+   "fan_out": 11,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Payments.Api/Endpoints/PaymentEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Application.Payments.ReceivedPaymentsHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 53,
+   "fan_out": 4,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Payments.Application/Payments/ReceivedPaymentsHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.Payments.Domain.Payments.Billing",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 52,
+   "fan_out": 1,
+   "fan_in": 9,
+   "archivo": "src/QuickPatch.Payments.Domain/Payments/Billing.cs"
   }
  ],
  "paquetes": [
@@ -315,26 +315,26 @@
   {
    "paquete": "QuickPatch.Payments.Api.Endpoints",
    "tipos": 9,
-   "fan_out": 7,
+   "fan_out": 6,
    "fan_in": 1,
-   "inestabilidad": 0.88,
+   "inestabilidad": 0.86,
    "cohesion_relacional": 1.0
   },
   {
    "paquete": "QuickPatch.Payments.Api.Http",
+   "tipos": 2,
+   "fan_out": 0,
+   "fan_in": 1,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.Payments.Api.Security",
    "tipos": 3,
    "fan_out": 0,
    "fan_in": 2,
    "inestabilidad": 0.0,
    "cohesion_relacional": 0.67
-  },
-  {
-   "paquete": "QuickPatch.Payments.Api.Security",
-   "tipos": 4,
-   "fan_out": 0,
-   "fan_in": 2,
-   "inestabilidad": 0.0,
-   "cohesion_relacional": 0.75
   },
   {
    "paquete": "QuickPatch.Payments.Application",
@@ -410,27 +410,27 @@
   },
   {
    "paquete": "QuickPatch.Payments.Infrastructure.Messaging",
-   "tipos": 4,
-   "fan_out": 4,
-   "fan_in": 1,
-   "inestabilidad": 0.8,
-   "cohesion_relacional": 0.25
-  },
-  {
-   "paquete": "QuickPatch.Payments.Infrastructure.Options",
    "tipos": 3,
-   "fan_out": 0,
-   "fan_in": 3,
-   "inestabilidad": 0.0,
+   "fan_out": 3,
+   "fan_in": 1,
+   "inestabilidad": 0.75,
    "cohesion_relacional": 0.33
   },
   {
+   "paquete": "QuickPatch.Payments.Infrastructure.Options",
+   "tipos": 2,
+   "fan_out": 0,
+   "fan_in": 3,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 0.5
+  },
+  {
    "paquete": "QuickPatch.Payments.Infrastructure.Persistence",
-   "tipos": 11,
+   "tipos": 8,
    "fan_out": 3,
-   "fan_in": 2,
-   "inestabilidad": 0.6,
-   "cohesion_relacional": 1.18
+   "fan_in": 1,
+   "inestabilidad": 0.75,
+   "cohesion_relacional": 1.0
   },
   {
    "paquete": "QuickPatch.Payments.Infrastructure.Providers",
@@ -450,7 +450,7 @@
   {
    "de": "(global)",
    "a": "QuickPatch.Payments.Api.Http",
-   "n": 3
+   "n": 2
   },
   {
    "de": "(global)",
@@ -466,11 +466,6 @@
    "de": "(global)",
    "a": "QuickPatch.Payments.Infrastructure",
    "n": 1
-  },
-  {
-   "de": "QuickPatch.Payments.Api.Endpoints",
-   "a": "QuickPatch.Payments.Api.Http",
-   "n": 2
   },
   {
    "de": "QuickPatch.Payments.Api.Endpoints",
@@ -570,12 +565,12 @@
   {
    "de": "QuickPatch.Payments.Infrastructure",
    "a": "QuickPatch.Payments.Infrastructure.Messaging",
-   "n": 4
+   "n": 3
   },
   {
    "de": "QuickPatch.Payments.Infrastructure",
    "a": "QuickPatch.Payments.Infrastructure.Options",
-   "n": 3
+   "n": 2
   },
   {
    "de": "QuickPatch.Payments.Infrastructure",
@@ -610,12 +605,7 @@
   {
    "de": "QuickPatch.Payments.Infrastructure.Messaging",
    "a": "QuickPatch.Payments.Infrastructure.Options",
-   "n": 2
-  },
-  {
-   "de": "QuickPatch.Payments.Infrastructure.Messaging",
-   "a": "QuickPatch.Payments.Infrastructure.Persistence",
-   "n": 3
+   "n": 1
   },
   {
    "de": "QuickPatch.Payments.Infrastructure.Persistence",
@@ -657,10 +647,6 @@
   },
   {
    "de": "Program",
-   "a": "QuickPatch.Payments.Api.Http.CorrelationId"
-  },
-  {
-   "de": "Program",
    "a": "QuickPatch.Payments.Api.Http.Problems"
   },
   {
@@ -678,10 +664,6 @@
   {
    "de": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
    "a": "QuickPatch.Payments.Api.Endpoints.InvoiceResponse"
-  },
-  {
-   "de": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
-   "a": "QuickPatch.Payments.Api.Http.CorrelationId"
   },
   {
    "de": "QuickPatch.Payments.Api.Endpoints.InvoiceEndpoints",
@@ -734,10 +716,6 @@
   {
    "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
    "a": "QuickPatch.Payments.Api.Endpoints.PaymentResponse"
-  },
-  {
-   "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
-   "a": "QuickPatch.Payments.Api.Http.CorrelationId"
   },
   {
    "de": "QuickPatch.Payments.Api.Endpoints.PaymentEndpoints",
@@ -812,16 +790,8 @@
    "a": "QuickPatch.Payments.Domain.Payments.Payment"
   },
   {
-   "de": "QuickPatch.Payments.Api.Http.Problems",
-   "a": "QuickPatch.Payments.Api.Http.CorrelationId"
-  },
-  {
    "de": "QuickPatch.Payments.Api.Security.AuthenticationSetup",
    "a": "QuickPatch.Payments.Api.Security.ForbiddenAuditHandler"
-  },
-  {
-   "de": "QuickPatch.Payments.Api.Security.AuthenticationSetup",
-   "a": "QuickPatch.Payments.Api.Security.JwtSettings"
   },
   {
    "de": "QuickPatch.Payments.Application.Abstractions.IInvoicePdfRenderer",
@@ -1221,10 +1191,6 @@
   },
   {
    "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
-   "a": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher"
-  },
-  {
-   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
    "a": "QuickPatch.Payments.Infrastructure.Messaging.ReconciliationJob"
   },
   {
@@ -1238,10 +1204,6 @@
   {
    "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
    "a": "QuickPatch.Payments.Infrastructure.Options.KafkaOptions"
-  },
-  {
-   "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
-   "a": "QuickPatch.Payments.Infrastructure.Options.OutboxOptions"
   },
   {
    "de": "QuickPatch.Payments.Infrastructure.DependencyInjection",
@@ -1302,22 +1264,6 @@
   {
    "de": "QuickPatch.Payments.Infrastructure.Documents.InvoicePdfRenderer",
    "a": "QuickPatch.Payments.Infrastructure.Documents.PdfFile"
-  },
-  {
-   "de": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Payments.Infrastructure.Options.OutboxOptions"
-  },
-  {
-   "de": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Payments.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
-  },
-  {
-   "de": "QuickPatch.Payments.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Payments.Infrastructure.Persistence.SessionRole"
   },
   {
    "de": "QuickPatch.Payments.Infrastructure.Messaging.ReconciliationJob",
@@ -1381,10 +1327,6 @@
   },
   {
    "de": "QuickPatch.Payments.Infrastructure.Persistence.EfOutbox",
-   "a": "QuickPatch.Payments.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.Payments.Infrastructure.Persistence.EfOutbox",
    "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
   },
   {
@@ -1432,24 +1374,12 @@
    "a": "QuickPatch.Payments.Domain.Payments.PaymentTechnician"
   },
   {
-   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
-   "a": "QuickPatch.Payments.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext",
-   "a": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRecord"
-  },
-  {
    "de": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRepository",
    "a": "QuickPatch.Payments.Application.Abstractions.IProcessedEventRepository"
   },
   {
    "de": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRepository",
    "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
-  },
-  {
-   "de": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRepository",
-   "a": "QuickPatch.Payments.Infrastructure.Persistence.ProcessedEventRecord"
   },
   {
    "de": "QuickPatch.Payments.Infrastructure.Persistence.ReconciliationSource",
@@ -1472,10 +1402,6 @@
    "a": "QuickPatch.Payments.Infrastructure.Persistence.PaymentsDbContext"
   },
   {
-   "de": "QuickPatch.Payments.Infrastructure.Persistence.ReconciliationSource",
-   "a": "QuickPatch.Payments.Infrastructure.Persistence.SessionRole"
-  },
-  {
    "de": "QuickPatch.Payments.Infrastructure.Persistence.TenantUnitOfWork",
    "a": "QuickPatch.Payments.Application.Abstractions.ITenantUnitOfWork"
   },
@@ -1496,5 +1422,5 @@
    "a": "QuickPatch.Payments.Application.Abstractions.ProviderResult"
   }
  ],
- "commit": "cf3af88"
+ "commit": "6a2b893"
 }

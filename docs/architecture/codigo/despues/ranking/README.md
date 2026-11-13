@@ -1,13 +1,13 @@
 # Ranking — despues
 
-Código de `origin/develop` en `19d7908`, generado el 2026-11-11 con `tools/arquitectura/generar.py`.
+Código de `origin/develop` en `1679652`, generado el 2026-11-12 con `tools/arquitectura/generar.py`.
 
 | Métrica | Valor |
 |---|---|
-| Tipos (sin migraciones) | 33 |
+| Tipos (sin migraciones) | 28 |
 | Paquetes | 11 |
-| Dependencias entre tipos | 64 |
-| Dependencias entre paquetes | 19 |
+| Dependencias entre tipos | 54 |
+| Dependencias entre paquetes | 17 |
 | Ciclos entre paquetes | 0 |
 | Paquetes dentro de ciclos | 0 |
 | Ciclos entre tipos | 0 |
@@ -15,8 +15,8 @@ Código de `origin/develop` en `19d7908`, generado el 2026-11-11 con `tools/arqu
 | Violaciones de SDD 10.3.2 | 0 |
 | Tipos de más de 250 líneas | 0 |
 | Fan-out máximo (sin raíces de composición) | 10 |
-| Fan-out promedio | 1.94 |
-| Cohesión relacional promedio (H) | 0.81 |
+| Fan-out promedio | 1.93 |
+| Cohesión relacional promedio (H) | 0.89 |
 
 ## Dependencias entre capas
 
@@ -33,21 +33,21 @@ Código de `origin/develop` en `19d7908`, generado el 2026-11-11 con `tools/arqu
 | Tipo | Capa | Líneas | Sale | Entra |
 |---|---|---|---|---|
 | `Application.Reputation.ServiceRequestRatedHandler` | Application | 49 | 10 | 2 |
-| `Infrastructure.Messaging.ServiceRequestRatedConsumer` | Infrastructure | 86 | 6 | 1 |
+| `Infrastructure.Messaging.ServiceRequestRatedConsumer` | Infrastructure | 39 | 6 | 1 |
 | `Application.Events.RankingEvents` | Application | 14 | 5 | 1 |
-| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 73 | 4 | 1 |
-| `Infrastructure.Persistence.EfOutbox` | Infrastructure | 16 | 4 | 1 |
-| `Infrastructure.Persistence.RankingDbContext` | Infrastructure | 71 | 4 | 7 |
 | `Infrastructure.Persistence.ReputationRepository` | Infrastructure | 13 | 4 | 1 |
-| `Infrastructure.Persistence.ProcessedEventRepository` | Infrastructure | 7 | 3 | 1 |
+| `Infrastructure.Persistence.EfOutbox` | Infrastructure | 7 | 3 | 1 |
 | `Application.Abstractions.IReputationRepository` | Application | 0 | 2 | 3 |
 | `Application.Events.ServiceRequestRatedContract` | Application | 7 | 2 | 1 |
+| `Infrastructure.Persistence.ProcessedEventRepository` | Infrastructure | 1 | 2 | 1 |
+| `Infrastructure.Persistence.RankingDbContext` | Infrastructure | 49 | 2 | 6 |
+| `Infrastructure.Persistence.TenantUnitOfWork` | Infrastructure | 6 | 2 | 1 |
 
 ## Clases más usadas (fan-in)
 
 | Tipo | Capa | Entra | Sale |
 |---|---|---|---|
-| `Infrastructure.Persistence.RankingDbContext` | Infrastructure | 7 | 4 |
+| `Infrastructure.Persistence.RankingDbContext` | Infrastructure | 6 | 2 |
 | `Domain.Reputation.TechnicianReputation` | Domain | 5 | 0 |
 | `Application.Events.EventEnvelope` | Application | 4 | 0 |
 | `Domain.Reputation.AppliedRating` | Domain | 4 | 0 |
@@ -62,16 +62,16 @@ Código de `origin/develop` en `19d7908`, generado el 2026-11-11 con `tools/arqu
 
 | Tipo | Capa | Líneas | Archivo |
 |---|---|---|---|
-| `Infrastructure.Messaging.ServiceRequestRatedConsumer` | Infrastructure | 86 | `src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs` |
-| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 73 | `src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs` |
-| `Infrastructure.Persistence.RankingDbContext` | Infrastructure | 71 | `src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs` |
 | `Domain.Reputation.TechnicianReputation` | Domain | 55 | `src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs` |
 | `Application.Reputation.ServiceRequestRatedHandler` | Application | 49 | `src/QuickPatch.Ranking.Application/Reputation/ServiceRequestRatedHandler.cs` |
+| `Infrastructure.Persistence.RankingDbContext` | Infrastructure | 49 | `src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs` |
+| `Infrastructure.Messaging.ServiceRequestRatedConsumer` | Infrastructure | 39 | `src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs` |
 | `Domain.Reputation.AppliedRating` | Domain | 24 | `src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs` |
-| `Infrastructure.Persistence.TenantUnitOfWork` | Infrastructure | 21 | `src/QuickPatch.Ranking.Infrastructure/Persistence/TenantUnitOfWork.cs` |
-| `Infrastructure.Persistence.EfOutbox` | Infrastructure | 16 | `src/QuickPatch.Ranking.Infrastructure/Persistence/EfOutbox.cs` |
-| `Infrastructure.Persistence.OutboxEventRecord` | Infrastructure | 15 | `src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs` |
 | `Application.Events.RankingEvents` | Application | 14 | `src/QuickPatch.Ranking.Application/Events/TechnicianReputationChanged.cs` |
+| `Infrastructure.Persistence.ReputationRepository` | Infrastructure | 13 | `src/QuickPatch.Ranking.Infrastructure/Persistence/ReputationRepository.cs` |
+| `Application.Events.EventEnvelope` | Application | 9 | `src/QuickPatch.Ranking.Application/Events/EventEnvelope.cs` |
+| `Application.Events.EventSerializer` | Application | 8 | `src/QuickPatch.Ranking.Application/Events/EventSerializer.cs` |
+| `Application.Events.ServiceRequestRatedContract` | Application | 7 | `src/QuickPatch.Ranking.Application/Events/ServiceRequestRated.cs` |
 
 ## Ciclos entre paquetes
 
@@ -93,9 +93,9 @@ Ninguna.
 | `Domain` | 1 | 0 | 0 | 0.0 | 1.0 |
 | `Domain.Reputation` | 2 | 4 | 0 | 0.0 | 0.5 |
 | `Infrastructure` | 1 | 1 | 4 | 0.8 | 1.0 |
-| `Infrastructure.Messaging` | 2 | 1 | 4 | 0.8 | 0.5 |
-| `Infrastructure.Options` | 2 | 2 | 0 | 0.0 | 0.5 |
-| `Infrastructure.Persistence` | 9 | 2 | 2 | 0.5 | 1.11 |
+| `Infrastructure.Messaging` | 1 | 1 | 2 | 0.67 | 1.0 |
+| `Infrastructure.Options` | 1 | 1 | 0 | 0.0 | 1.0 |
+| `Infrastructure.Persistence` | 6 | 1 | 2 | 0.67 | 1.0 |
 
 ## Diagrama de paquetes
 
@@ -118,9 +118,9 @@ flowchart LR
   end
   subgraph Infrastructure
     QuickPatch_Ranking_Infrastructure["Infrastructure (1)"]
-    QuickPatch_Ranking_Infrastructure_Messaging["Infrastructure.Messaging (2)"]
-    QuickPatch_Ranking_Infrastructure_Options["Infrastructure.Options (2)"]
-    QuickPatch_Ranking_Infrastructure_Persistence["Infrastructure.Persistence (9)"]
+    QuickPatch_Ranking_Infrastructure_Messaging["Infrastructure.Messaging (1)"]
+    QuickPatch_Ranking_Infrastructure_Options["Infrastructure.Options (1)"]
+    QuickPatch_Ranking_Infrastructure_Persistence["Infrastructure.Persistence (6)"]
   end
   _global_ -->|1| QuickPatch_Ranking_Application
   _global_ -->|1| QuickPatch_Ranking_Infrastructure
@@ -132,13 +132,11 @@ flowchart LR
   QuickPatch_Ranking_Application_Reputation -->|3| QuickPatch_Ranking_Application_Events
   QuickPatch_Ranking_Application_Reputation -->|2| QuickPatch_Ranking_Domain_Reputation
   QuickPatch_Ranking_Infrastructure -->|4| QuickPatch_Ranking_Application_Abstractions
-  QuickPatch_Ranking_Infrastructure -->|2| QuickPatch_Ranking_Infrastructure_Messaging
-  QuickPatch_Ranking_Infrastructure -->|2| QuickPatch_Ranking_Infrastructure_Options
+  QuickPatch_Ranking_Infrastructure -->|1| QuickPatch_Ranking_Infrastructure_Messaging
+  QuickPatch_Ranking_Infrastructure -->|1| QuickPatch_Ranking_Infrastructure_Options
   QuickPatch_Ranking_Infrastructure -->|5| QuickPatch_Ranking_Infrastructure_Persistence
   QuickPatch_Ranking_Infrastructure_Messaging -->|4| QuickPatch_Ranking_Application_Events
   QuickPatch_Ranking_Infrastructure_Messaging -->|2| QuickPatch_Ranking_Application_Reputation
-  QuickPatch_Ranking_Infrastructure_Messaging -->|1| QuickPatch_Ranking_Infrastructure_Options
-  QuickPatch_Ranking_Infrastructure_Messaging -->|3| QuickPatch_Ranking_Infrastructure_Persistence
   QuickPatch_Ranking_Infrastructure_Persistence -->|5| QuickPatch_Ranking_Application_Abstractions
   QuickPatch_Ranking_Infrastructure_Persistence -->|4| QuickPatch_Ranking_Domain_Reputation
 ```

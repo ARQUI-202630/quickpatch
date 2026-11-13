@@ -32,7 +32,7 @@ Los 27 diagramas C4 exportados (`docs/architecture/diagrams/c4/`) llevan las mis
 | 7 | Contexto (C4 nivel 1) | Los 6 roles agrupados por canal y la pasarela como externo | Figura `C4-02-Contexto` (SCRUM-689) |
 | 8 | Contenedores (C4 nivel 2) | 8 microservicios definidos, **7 IMPLEMENTADOS** y Actors **PLANEADO**; 20 eventos de Kafka; 8 bases lógicas | `C4-03a-Contenedores-Sincrono` y `C4-03b-Contenedores-Eventos` (una lámina cada una si hace falta); cifras canónicas |
 | 9 | Arquitectura interna | Cuatro capas con reglas verificadas en el CI de cada servicio (SDD 10.3.2) | — |
-| 10 | Refactor del cierre | Antes y después medidos con la misma herramienta: Matching y Payments de 1 a 0 ciclos; fan-out máximo de ServiceRequest de 31 a 22. Mostrar también lo que empeoró (fan-out de Matching de 10 a 13) | `docs/architecture/codigo/README.md` |
+| 10 | Refactor del cierre | Antes y después medidos con la misma herramienta (12-nov): de 3 servicios con ciclos entre paquetes a ninguno (Identity, Matching y Payments); fan-out máximo de ServiceRequest de 31 a 21. Mostrar también lo que empeoró (fan-out de Matching de 10 a 13) y lo pendiente (Identity: 11 violaciones, SCRUM-650) | `docs/architecture/codigo/README.md` |
 | 11 | Diagrama de código | Generado desde el código, no dibujado a mano | `tools/arquitectura/`, SDD 7.3 |
 | 12 | Dinámico: creación y asignación | Pasos numerados con origen, destino y evento: solicitud, búsqueda del técnico, oferta y aceptación | `C4-05-Dinamico-CreacionAsignacion` (23 pasos), SDD 8.3 (SCRUM-684) |
 | 13 | Despliegue | QA y producción separados (7 VM, 2 ambientes). El panel se entrega desde el Nginx y se ejecuta en el navegador; la app corre en el dispositivo | `C4-06-*` (SCRUM-674) |

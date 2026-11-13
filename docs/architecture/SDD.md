@@ -844,19 +844,21 @@ Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija d
 
 **Qué se publica**, en `docs/architecture/codigo/<fase>/<servicio>/`: el diagrama de paquetes agrupado por capa (`paquetes.puml` y `paquetes.mmd`, con los ciclos en naranja y las violaciones de 10.3.2 en rojo), las clases más conectadas (`clases-centrales.puml`) y las métricas (`README.md` y `metricas.json`): ciclos entre paquetes y entre tipos, fan-in y fan-out por clase, inestabilidad y cohesión relacional por paquete, clases de más de 250 líneas y violaciones de la matriz de 10.3.2.
 
-**Antes y después del refactor.** La línea base (`codigo/antes/`, SCRUM-682) se tomó sobre `develop` antes del primer PR de refactor. La medición «después» (`codigo/despues/`) usa la misma herramienta y la misma configuración, y la comparación está en `codigo/README.md` (SCRUM-683):
+**Antes y después del refactor.** La línea base (`codigo/antes/`, SCRUM-682) se tomó sobre `develop` antes del primer PR de refactor. La medición «después» (`codigo/despues/`) se tomó el 12 de noviembre sobre `develop`, ya con el código transversal compartido de ADR-020 (SCRUM-657). Usa la misma herramienta y la misma configuración, y la comparación está en `codigo/README.md` (SCRUM-683):
 
 | Servicio | Violaciones | Ciclos entre paquetes | Tipos > 250 líneas | Fan-out máximo | Cambio principal |
 |---|---|---|---|---|---|
-| Identity | 11 → pendiente | 1 → pendiente | 2 → pendiente | 80 → pendiente | SCRUM-650 (en curso) |
-| Catalog | 0 → 0 | 0 → 0 | 0 → 0 | 15 → 15 | Resolución del tenant fuera del endpoint; un archivo por caso de uso, puerto y adaptador; pruebas de arquitectura |
-| ServiceRequest | 0 → 0 | 0 → 0 | 2 → 1 | 31 → 22 | Endpoints por recurso y sin dependencias entre grupos; validación fuera del agregado |
+| Identity | 11 → 11 | **1 → 0** | 2 → 2 | 80 → 79 | Sin su refactor (SCRUM-650 pendiente). El ciclo entre `Infrastructure.Messaging` e `Infrastructure.Persistence` desaparece al mover el Outbox y el consumo de Kafka a `quickpatch-shared-dotnet` (ADR-020); las 11 violaciones siguen |
+| Catalog | 0 → 0 | 0 → 0 | 0 → 0 | 15 → 14 | Resolución del tenant fuera del endpoint; un archivo por caso de uso, puerto y adaptador; pruebas de arquitectura |
+| ServiceRequest | 0 → 0 | 0 → 0 | 2 → 1 | 31 → 21 | Endpoints por recurso y sin dependencias entre grupos; validación fuera del agregado |
 | Matching | 0 → 0 | **1 → 0** | 0 → 0 | 10 → 13 | Puertos repartidos por responsabilidad; ArchUnit prohíbe ciclos |
 | Ranking | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | Contrato del evento en Application; consumidor solo como transporte |
-| Payments | 0 → 0 | **1 → 0** | 0 → 0 | 12 → 12 | `InvoiceDocument` junto a su puerto |
-| Communication | 0 → pendiente | 0 → pendiente | 0 → pendiente | 10 → pendiente | SCRUM-656 (en curso) |
+| Payments | 0 → 0 | **1 → 0** | 0 → 0 | 12 → 11 | `InvoiceDocument` junto a su puerto |
+| Communication | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | Sin su refactor (SCRUM-656 pendiente). Solo cambia la adopción de ADR-020: 2 tipos transversales menos. Mantiene 1 ciclo entre 2 tipos, igual que en la línea base |
 
 En Matching, el fan-out máximo sube de 10 a 13 y la cohesión relacional promedio baja de 0,85 a 0,75. Las dos cosas son efecto de separar los puertos: `KafkaConfig` ahora importa cada interfaz por separado, y el paquete nuevo `application.common` tiene dos interfaces que no se usan entre sí. A cambio, desaparece el ciclo entre `events`, `matching` y `technicians`. Las cifras se reportan como salen.
+
+En resumen: ningún servicio tiene ciclos entre paquetes después del cierre (había 3: Identity, Matching y Payments), y los cinco servicios refactorizados no tienen violaciones de 10.3.2. Lo que queda abierto es Identity, con 11 violaciones y un fan-out máximo de 79, que resuelve SCRUM-650. Cuando se fusionen SCRUM-650 y SCRUM-656 se repite `generar.py --fase despues --servicios identity communication` y `comparar.py`.
 
 Las reglas de 10.3.2 ya no dependen de esta medición: cada servicio refactorizado tiene pruebas de arquitectura en su CI (NetArchTest o ArchUnit), y una violación nueva rompe el PR.
 

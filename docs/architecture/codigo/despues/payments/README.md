@@ -1,22 +1,22 @@
 # Payments — despues
 
-Código de `origin/develop` en `cf3af88`, generado el 2026-11-11 con `tools/arquitectura/generar.py`.
+Código de `origin/develop` en `6a2b893`, generado el 2026-11-12 con `tools/arquitectura/generar.py`.
 
 | Métrica | Valor |
 |---|---|
-| Tipos (sin migraciones) | 84 |
+| Tipos (sin migraciones) | 77 |
 | Paquetes | 17 |
-| Dependencias entre tipos | 214 |
-| Dependencias entre paquetes | 39 |
+| Dependencias entre tipos | 198 |
+| Dependencias entre paquetes | 37 |
 | Ciclos entre paquetes | 0 |
 | Paquetes dentro de ciclos | 0 |
 | Ciclos entre tipos | 0 |
 | Tipos en el mayor ciclo | 0 |
 | Violaciones de SDD 10.3.2 | 0 |
 | Tipos de más de 250 líneas | 0 |
-| Fan-out máximo (sin raíces de composición) | 12 |
-| Fan-out promedio | 2.55 |
-| Cohesión relacional promedio (H) | 0.78 |
+| Fan-out máximo (sin raíces de composición) | 11 |
+| Fan-out promedio | 2.57 |
+| Cohesión relacional promedio (H) | 0.77 |
 
 ## Dependencias entre capas
 
@@ -33,14 +33,14 @@ Código de `origin/develop` en `cf3af88`, generado el 2026-11-11 con `tools/arqu
 
 | Tipo | Capa | Líneas | Sale | Entra |
 |---|---|---|---|---|
-| `Api.Endpoints.PaymentEndpoints` | Api | 69 | 12 | 1 |
+| `Api.Endpoints.PaymentEndpoints` | Api | 69 | 11 | 1 |
 | `Application.Payments.PayHandler` | Application | 75 | 10 | 2 |
 | `Application.Payments.PaymentSettlement` | Application | 45 | 9 | 3 |
 | `Application.Payments.ReconcilePaymentsHandler` | Application | 44 | 9 | 2 |
-| `Api.Endpoints.InvoiceEndpoints` | Api | 69 | 7 | 1 |
 | `Application.Events.PaymentEvents` | Application | 20 | 7 | 1 |
 | `Application.Payments.ServiceRequestCompletedHandler` | Application | 39 | 7 | 2 |
 | `Application.Payments.TechnicianRegisteredHandler` | Application | 36 | 7 | 2 |
+| `Api.Endpoints.InvoiceEndpoints` | Api | 69 | 6 | 1 |
 | `Api.Endpoints.ReceivedPaymentEndpoints` | Api | 76 | 6 | 1 |
 | `Application.Invoices.GetInvoiceHandler` | Application | 20 | 6 | 2 |
 
@@ -53,7 +53,7 @@ Código de `origin/develop` en `cf3af88`, generado el 2026-11-11 con `tools/arqu
 | `Domain.Payments.Invoice` | Domain | 10 | 2 |
 | `Application.Abstractions.IPaymentRepository` | Application | 9 | 2 |
 | `Domain.Payments.Billing` | Domain | 9 | 1 |
-| `Infrastructure.Persistence.PaymentsDbContext` | Infrastructure | 9 | 5 |
+| `Infrastructure.Persistence.PaymentsDbContext` | Infrastructure | 8 | 3 |
 | `Application.Payments.PaymentView` | Application | 7 | 1 |
 | `Application.Abstractions.InvoiceDocument` | Application | 5 | 3 |
 | `Application.Abstractions.ProviderResult` | Application | 5 | 0 |
@@ -65,14 +65,14 @@ Código de `origin/develop` en `cf3af88`, generado el 2026-11-11 con `tools/arqu
 |---|---|---|---|
 | `Domain.Payments.Payment` | Domain | 143 | `src/QuickPatch.Payments.Domain/Payments/Payment.cs` |
 | `Infrastructure.Documents.InvoicePdfRenderer` | Infrastructure | 118 | `src/QuickPatch.Payments.Infrastructure/Documents/InvoicePdfRenderer.cs` |
-| `Infrastructure.Persistence.PaymentsDbContext` | Infrastructure | 99 | `src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs` |
-| `Infrastructure.Messaging.ServiceRequestCompletedConsumer` | Infrastructure | 87 | `src/QuickPatch.Payments.Infrastructure/Messaging/ServiceRequestCompletedConsumer.cs` |
-| `Infrastructure.Messaging.TechnicianRegisteredConsumer` | Infrastructure | 87 | `src/QuickPatch.Payments.Infrastructure/Messaging/TechnicianRegisteredConsumer.cs` |
 | `Infrastructure.Persistence.PaymentRepository` | Infrastructure | 80 | `src/QuickPatch.Payments.Infrastructure/Persistence/PaymentRepository.cs` |
+| `Infrastructure.Persistence.PaymentsDbContext` | Infrastructure | 78 | `src/QuickPatch.Payments.Infrastructure/Persistence/PaymentsDbContext.cs` |
 | `Api.Endpoints.ReceivedPaymentEndpoints` | Api | 76 | `src/QuickPatch.Payments.Api/Endpoints/ReceivedPaymentEndpoints.cs` |
 | `Application.Payments.PayHandler` | Application | 75 | `src/QuickPatch.Payments.Application/Payments/Pay.cs` |
-| `Infrastructure.Messaging.OutboxPublisher` | Infrastructure | 73 | `src/QuickPatch.Payments.Infrastructure/Messaging/OutboxPublisher.cs` |
 | `Api.Endpoints.InvoiceEndpoints` | Api | 69 | `src/QuickPatch.Payments.Api/Endpoints/InvoiceEndpoints.cs` |
+| `Api.Endpoints.PaymentEndpoints` | Api | 69 | `src/QuickPatch.Payments.Api/Endpoints/PaymentEndpoints.cs` |
+| `Application.Payments.ReceivedPaymentsHandler` | Application | 53 | `src/QuickPatch.Payments.Application/Payments/ReceivedPaymentsHandler.cs` |
+| `Domain.Payments.Billing` | Domain | 52 | `src/QuickPatch.Payments.Domain/Payments/Billing.cs` |
 
 ## Ciclos entre paquetes
 
@@ -87,9 +87,9 @@ Ninguna.
 | Paquete | Tipos | Fan-in | Fan-out | Inestabilidad | Cohesión H |
 |---|---|---|---|---|---|
 | `(global)` | 1 | 0 | 5 | 1.0 | 1.0 |
-| `Api.Endpoints` | 9 | 1 | 7 | 0.88 | 1.0 |
-| `Api.Http` | 3 | 2 | 0 | 0.0 | 0.67 |
-| `Api.Security` | 4 | 2 | 0 | 0.0 | 0.75 |
+| `Api.Endpoints` | 9 | 1 | 6 | 0.86 | 1.0 |
+| `Api.Http` | 2 | 1 | 0 | 0.0 | 0.5 |
+| `Api.Security` | 3 | 2 | 0 | 0.0 | 0.67 |
 | `Application` | 1 | 1 | 2 | 0.67 | 1.0 |
 | `Application.Abstractions` | 13 | 8 | 1 | 0.11 | 0.38 |
 | `Application.Events` | 8 | 2 | 2 | 0.5 | 0.62 |
@@ -99,9 +99,9 @@ Ninguna.
 | `Domain.Payments` | 6 | 7 | 1 | 0.12 | 0.5 |
 | `Infrastructure` | 1 | 1 | 6 | 0.86 | 1.0 |
 | `Infrastructure.Documents` | 2 | 1 | 2 | 0.67 | 1.0 |
-| `Infrastructure.Messaging` | 4 | 1 | 4 | 0.8 | 0.25 |
-| `Infrastructure.Options` | 3 | 3 | 0 | 0.0 | 0.33 |
-| `Infrastructure.Persistence` | 11 | 2 | 3 | 0.6 | 1.18 |
+| `Infrastructure.Messaging` | 3 | 1 | 3 | 0.75 | 0.33 |
+| `Infrastructure.Options` | 2 | 3 | 0 | 0.0 | 0.5 |
+| `Infrastructure.Persistence` | 8 | 1 | 3 | 0.75 | 1.0 |
 | `Infrastructure.Providers` | 1 | 1 | 1 | 0.5 | 1.0 |
 
 ## Diagrama de paquetes
@@ -113,8 +113,8 @@ flowchart LR
   subgraph Api
     _global_["(global) (1)"]
     QuickPatch_Payments_Api_Endpoints["Api.Endpoints (9)"]
-    QuickPatch_Payments_Api_Http["Api.Http (3)"]
-    QuickPatch_Payments_Api_Security["Api.Security (4)"]
+    QuickPatch_Payments_Api_Http["Api.Http (2)"]
+    QuickPatch_Payments_Api_Security["Api.Security (3)"]
   end
   subgraph Application
     QuickPatch_Payments_Application["Application (1)"]
@@ -130,17 +130,16 @@ flowchart LR
   subgraph Infrastructure
     QuickPatch_Payments_Infrastructure["Infrastructure (1)"]
     QuickPatch_Payments_Infrastructure_Documents["Infrastructure.Documents (2)"]
-    QuickPatch_Payments_Infrastructure_Messaging["Infrastructure.Messaging (4)"]
-    QuickPatch_Payments_Infrastructure_Options["Infrastructure.Options (3)"]
-    QuickPatch_Payments_Infrastructure_Persistence["Infrastructure.Persistence (11)"]
+    QuickPatch_Payments_Infrastructure_Messaging["Infrastructure.Messaging (3)"]
+    QuickPatch_Payments_Infrastructure_Options["Infrastructure.Options (2)"]
+    QuickPatch_Payments_Infrastructure_Persistence["Infrastructure.Persistence (8)"]
     QuickPatch_Payments_Infrastructure_Providers["Infrastructure.Providers (1)"]
   end
   _global_ -->|3| QuickPatch_Payments_Api_Endpoints
-  _global_ -->|3| QuickPatch_Payments_Api_Http
+  _global_ -->|2| QuickPatch_Payments_Api_Http
   _global_ -->|1| QuickPatch_Payments_Api_Security
   _global_ -->|1| QuickPatch_Payments_Application
   _global_ -->|1| QuickPatch_Payments_Infrastructure
-  QuickPatch_Payments_Api_Endpoints -->|2| QuickPatch_Payments_Api_Http
   QuickPatch_Payments_Api_Endpoints -->|3| QuickPatch_Payments_Api_Security
   QuickPatch_Payments_Api_Endpoints -->|3| QuickPatch_Payments_Application_Abstractions
   QuickPatch_Payments_Api_Endpoints -->|1| QuickPatch_Payments_Application_Invoices
@@ -160,16 +159,15 @@ flowchart LR
   QuickPatch_Payments_Domain_Payments -->|1| QuickPatch_Payments_Domain_Common
   QuickPatch_Payments_Infrastructure -->|8| QuickPatch_Payments_Application_Abstractions
   QuickPatch_Payments_Infrastructure -->|1| QuickPatch_Payments_Infrastructure_Documents
-  QuickPatch_Payments_Infrastructure -->|4| QuickPatch_Payments_Infrastructure_Messaging
-  QuickPatch_Payments_Infrastructure -->|3| QuickPatch_Payments_Infrastructure_Options
+  QuickPatch_Payments_Infrastructure -->|3| QuickPatch_Payments_Infrastructure_Messaging
+  QuickPatch_Payments_Infrastructure -->|2| QuickPatch_Payments_Infrastructure_Options
   QuickPatch_Payments_Infrastructure -->|7| QuickPatch_Payments_Infrastructure_Persistence
   QuickPatch_Payments_Infrastructure -->|1| QuickPatch_Payments_Infrastructure_Providers
   QuickPatch_Payments_Infrastructure_Documents -->|2| QuickPatch_Payments_Application_Abstractions
   QuickPatch_Payments_Infrastructure_Documents -->|3| QuickPatch_Payments_Domain_Payments
   QuickPatch_Payments_Infrastructure_Messaging -->|6| QuickPatch_Payments_Application_Events
   QuickPatch_Payments_Infrastructure_Messaging -->|5| QuickPatch_Payments_Application_Payments
-  QuickPatch_Payments_Infrastructure_Messaging -->|2| QuickPatch_Payments_Infrastructure_Options
-  QuickPatch_Payments_Infrastructure_Messaging -->|3| QuickPatch_Payments_Infrastructure_Persistence
+  QuickPatch_Payments_Infrastructure_Messaging -->|1| QuickPatch_Payments_Infrastructure_Options
   QuickPatch_Payments_Infrastructure_Persistence -->|9| QuickPatch_Payments_Application_Abstractions
   QuickPatch_Payments_Infrastructure_Persistence -->|8| QuickPatch_Payments_Domain_Payments
   QuickPatch_Payments_Infrastructure_Persistence -->|1| QuickPatch_Payments_Infrastructure_Options

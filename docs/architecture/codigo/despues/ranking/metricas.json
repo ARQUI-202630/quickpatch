@@ -2,10 +2,10 @@
  "servicio": "Ranking",
  "lenguaje": "csharp",
  "resumen": {
-  "tipos": 33,
+  "tipos": 28,
   "paquetes": 11,
-  "dependencias_entre_tipos": 64,
-  "dependencias_entre_paquetes": 19,
+  "dependencias_entre_tipos": 54,
+  "dependencias_entre_paquetes": 17,
   "ciclos_entre_paquetes": 0,
   "paquetes_en_ciclos": 0,
   "ciclos_entre_tipos": 0,
@@ -13,8 +13,8 @@
   "violaciones_de_capas": 0,
   "tipos_de_mas_de_250_lineas": 0,
   "fan_out_maximo": 10,
-  "fan_out_promedio": 1.94,
-  "cohesion_relacional_promedio": 0.81
+  "fan_out_promedio": 1.93,
+  "cohesion_relacional_promedio": 0.89
  },
  "dependencias_entre_capas": {
   "Api->Application": 1,
@@ -40,7 +40,7 @@
    "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
    "capa": "Infrastructure",
    "clase": "class",
-   "lineas": 86,
+   "lineas": 39,
    "fan_out": 6,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs"
@@ -55,33 +55,6 @@
    "archivo": "src/QuickPatch.Ranking.Application/Events/TechnicianReputationChanged.cs"
   },
   {
-   "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 73,
-   "fan_out": 4,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs"
-  },
-  {
-   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 16,
-   "fan_out": 4,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/EfOutbox.cs"
-  },
-  {
-   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 71,
-   "fan_out": 4,
-   "fan_in": 7,
-   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
-  },
-  {
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.ReputationRepository",
    "capa": "Infrastructure",
    "clase": "class",
@@ -91,13 +64,13 @@
    "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/ReputationRepository.cs"
   },
   {
-   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository",
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
    "capa": "Infrastructure",
    "clase": "class",
    "lineas": 7,
    "fan_out": 3,
    "fan_in": 1,
-   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/ProcessedEventRepository.cs"
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/EfOutbox.cs"
   },
   {
    "tipo": "QuickPatch.Ranking.Application.Abstractions.IReputationRepository",
@@ -116,6 +89,33 @@
    "fan_out": 2,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Ranking.Application/Events/ServiceRequestRated.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 1,
+   "fan_out": 2,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/ProcessedEventRepository.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 49,
+   "fan_out": 2,
+   "fan_in": 6,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.TenantUnitOfWork",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 6,
+   "fan_out": 2,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/TenantUnitOfWork.cs"
   }
  ],
  "mayor_fan_in": [
@@ -123,9 +123,9 @@
    "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
    "capa": "Infrastructure",
    "clase": "class",
-   "lineas": 71,
-   "fan_out": 4,
-   "fan_in": 7,
+   "lineas": 49,
+   "fan_out": 2,
+   "fan_in": 6,
    "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
   },
   {
@@ -212,33 +212,6 @@
  ],
  "mas_grandes": [
   {
-   "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 86,
-   "fan_out": 6,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs"
-  },
-  {
-   "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 73,
-   "fan_out": 4,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/OutboxPublisher.cs"
-  },
-  {
-   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 71,
-   "fan_out": 4,
-   "fan_in": 7,
-   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
-  },
-  {
    "tipo": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation",
    "capa": "Domain",
    "clase": "class",
@@ -257,6 +230,24 @@
    "archivo": "src/QuickPatch.Ranking.Application/Reputation/ServiceRequestRatedHandler.cs"
   },
   {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 49,
+   "fan_out": 2,
+   "fan_in": 6,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 39,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Messaging/ServiceRequestRatedConsumer.cs"
+  },
+  {
    "tipo": "QuickPatch.Ranking.Domain.Reputation.AppliedRating",
    "capa": "Domain",
    "clase": "class",
@@ -266,33 +257,6 @@
    "archivo": "src/QuickPatch.Ranking.Domain/Reputation/TechnicianReputation.cs"
   },
   {
-   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.TenantUnitOfWork",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 21,
-   "fan_out": 2,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/TenantUnitOfWork.cs"
-  },
-  {
-   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 16,
-   "fan_out": 4,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/EfOutbox.cs"
-  },
-  {
-   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 15,
-   "fan_out": 0,
-   "fan_in": 3,
-   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/RankingDbContext.cs"
-  },
-  {
    "tipo": "QuickPatch.Ranking.Application.Events.RankingEvents",
    "capa": "Application",
    "clase": "static",
@@ -300,6 +264,42 @@
    "fan_out": 5,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Ranking.Application/Events/TechnicianReputationChanged.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Infrastructure.Persistence.ReputationRepository",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 13,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Infrastructure/Persistence/ReputationRepository.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Events.EventEnvelope",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 9,
+   "fan_out": 0,
+   "fan_in": 4,
+   "archivo": "src/QuickPatch.Ranking.Application/Events/EventEnvelope.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Events.EventSerializer",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 8,
+   "fan_out": 0,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Ranking.Application/Events/EventSerializer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Ranking.Application.Events.ServiceRequestRatedContract",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 7,
+   "fan_out": 2,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Ranking.Application/Events/ServiceRequestRated.cs"
   }
  ],
  "paquetes": [
@@ -369,27 +369,27 @@
   },
   {
    "paquete": "QuickPatch.Ranking.Infrastructure.Messaging",
-   "tipos": 2,
-   "fan_out": 4,
+   "tipos": 1,
+   "fan_out": 2,
    "fan_in": 1,
-   "inestabilidad": 0.8,
-   "cohesion_relacional": 0.5
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 1.0
   },
   {
    "paquete": "QuickPatch.Ranking.Infrastructure.Options",
-   "tipos": 2,
+   "tipos": 1,
    "fan_out": 0,
-   "fan_in": 2,
+   "fan_in": 1,
    "inestabilidad": 0.0,
-   "cohesion_relacional": 0.5
+   "cohesion_relacional": 1.0
   },
   {
    "paquete": "QuickPatch.Ranking.Infrastructure.Persistence",
-   "tipos": 9,
+   "tipos": 6,
    "fan_out": 2,
-   "fan_in": 2,
-   "inestabilidad": 0.5,
-   "cohesion_relacional": 1.11
+   "fan_in": 1,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 1.0
   }
  ],
  "aristas_paquetes": [
@@ -446,12 +446,12 @@
   {
    "de": "QuickPatch.Ranking.Infrastructure",
    "a": "QuickPatch.Ranking.Infrastructure.Messaging",
-   "n": 2
+   "n": 1
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure",
    "a": "QuickPatch.Ranking.Infrastructure.Options",
-   "n": 2
+   "n": 1
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure",
@@ -467,16 +467,6 @@
    "de": "QuickPatch.Ranking.Infrastructure.Messaging",
    "a": "QuickPatch.Ranking.Application.Reputation",
    "n": 2
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.Messaging",
-   "a": "QuickPatch.Ranking.Infrastructure.Options",
-   "n": 1
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.Messaging",
-   "a": "QuickPatch.Ranking.Infrastructure.Persistence",
-   "n": 3
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure.Persistence",
@@ -600,19 +590,11 @@
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
-   "a": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher"
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
    "a": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer"
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
    "a": "QuickPatch.Ranking.Infrastructure.Options.KafkaOptions"
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
-   "a": "QuickPatch.Ranking.Infrastructure.Options.OutboxOptions"
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
@@ -633,22 +615,6 @@
   {
    "de": "QuickPatch.Ranking.Infrastructure.DependencyInjection",
    "a": "QuickPatch.Ranking.Infrastructure.Persistence.TenantUnitOfWork"
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Ranking.Infrastructure.Options.OutboxOptions"
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext"
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Ranking.Infrastructure.Persistence.SessionRole"
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure.Messaging.ServiceRequestRatedConsumer",
@@ -688,19 +654,11 @@
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
-   "a": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.Persistence.EfOutbox",
    "a": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext"
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository",
    "a": "QuickPatch.Ranking.Application.Abstractions.IProcessedEventRepository"
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository",
-   "a": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRecord"
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRepository",
@@ -713,14 +671,6 @@
   {
    "de": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
    "a": "QuickPatch.Ranking.Domain.Reputation.TechnicianReputation"
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
-   "a": "QuickPatch.Ranking.Infrastructure.Persistence.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext",
-   "a": "QuickPatch.Ranking.Infrastructure.Persistence.ProcessedEventRecord"
   },
   {
    "de": "QuickPatch.Ranking.Infrastructure.Persistence.ReputationRepository",
@@ -747,5 +697,5 @@
    "a": "QuickPatch.Ranking.Infrastructure.Persistence.RankingDbContext"
   }
  ],
- "commit": "19d7908"
+ "commit": "1679652"
 }

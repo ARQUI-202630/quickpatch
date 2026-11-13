@@ -2,19 +2,19 @@
  "servicio": "Identity",
  "lenguaje": "csharp",
  "resumen": {
-  "tipos": 186,
+  "tipos": 182,
   "paquetes": 24,
-  "dependencias_entre_tipos": 599,
-  "dependencias_entre_paquetes": 93,
-  "ciclos_entre_paquetes": 1,
-  "paquetes_en_ciclos": 2,
+  "dependencias_entre_tipos": 589,
+  "dependencias_entre_paquetes": 91,
+  "ciclos_entre_paquetes": 0,
+  "paquetes_en_ciclos": 0,
   "ciclos_entre_tipos": 0,
   "mayor_ciclo_de_tipos": 0,
   "violaciones_de_capas": 11,
   "tipos_de_mas_de_250_lineas": 2,
-  "fan_out_maximo": 80,
-  "fan_out_promedio": 3.22,
-  "cohesion_relacional_promedio": 0.81
+  "fan_out_maximo": 79,
+  "fan_out_promedio": 3.24,
+  "cohesion_relacional_promedio": 0.79
  },
  "dependencias_entre_capas": {
   "Api->Application": 80,
@@ -81,20 +81,15 @@
    "a": "QuickPatch.Identity.Infrastructure.Security.PasswordEncryptionKey"
   }
  ],
- "ciclos_entre_paquetes": [
-  [
-   "QuickPatch.Identity.Infrastructure.Messaging",
-   "QuickPatch.Identity.Infrastructure.Persistence"
-  ]
- ],
+ "ciclos_entre_paquetes": [],
  "ciclos_entre_tipos": [],
  "mayor_fan_out": [
   {
    "tipo": "QuickPatch.Identity.Api.Endpoints.IdentityEndpoints",
    "capa": "Api",
    "clase": "static",
-   "lineas": 735,
-   "fan_out": 80,
+   "lineas": 736,
+   "fan_out": 79,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Identity.Api/Endpoints/IdentityEndpoints.cs"
   },
@@ -239,9 +234,9 @@
    "tipo": "QuickPatch.Identity.Infrastructure.Persistence.IdentityDbContext",
    "capa": "Infrastructure",
    "clase": "class",
-   "lineas": 190,
-   "fan_out": 9,
-   "fan_in": 14,
+   "lineas": 177,
+   "fan_out": 8,
+   "fan_in": 13,
    "archivo": "src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs"
   },
   {
@@ -277,8 +272,8 @@
    "tipo": "QuickPatch.Identity.Api.Endpoints.IdentityEndpoints",
    "capa": "Api",
    "clase": "static",
-   "lineas": 735,
-   "fan_out": 80,
+   "lineas": 736,
+   "fan_out": 79,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Identity.Api/Endpoints/IdentityEndpoints.cs"
   },
@@ -292,15 +287,6 @@
    "archivo": "src/QuickPatch.Identity.Domain/Users/User.cs"
   },
   {
-   "tipo": "QuickPatch.Identity.Infrastructure.Persistence.IdentityDbContext",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 190,
-   "fan_out": 9,
-   "fan_in": 14,
-   "archivo": "src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs"
-  },
-  {
    "tipo": "QuickPatch.Identity.Api.Endpoints.CompanyEndpoints",
    "capa": "Api",
    "clase": "static",
@@ -308,6 +294,15 @@
    "fan_out": 28,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Identity.Api/Endpoints/CompanyEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Identity.Infrastructure.Persistence.IdentityDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 177,
+   "fan_out": 8,
+   "fan_in": 13,
+   "archivo": "src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Domain.Technicians.TechnicianProfile",
@@ -337,22 +332,13 @@
    "archivo": "src/QuickPatch.Identity.Application/Companies/Companies.cs"
   },
   {
-   "tipo": "QuickPatch.Identity.Infrastructure.Messaging.ReputationChangedConsumer",
+   "tipo": "QuickPatch.Identity.Infrastructure.Persistence.TechnicianProfileRepository",
    "capa": "Infrastructure",
    "clase": "class",
-   "lineas": 87,
-   "fan_out": 5,
+   "lineas": 77,
+   "fan_out": 8,
    "fan_in": 1,
-   "archivo": "src/QuickPatch.Identity.Infrastructure/Messaging/ReputationChangedConsumer.cs"
-  },
-  {
-   "tipo": "QuickPatch.Identity.Infrastructure.Messaging.OutboxPublisher",
-   "capa": "Infrastructure",
-   "clase": "class",
-   "lineas": 83,
-   "fan_out": 3,
-   "fan_in": 1,
-   "archivo": "src/QuickPatch.Identity.Infrastructure/Messaging/Outbox.cs"
+   "archivo": "src/QuickPatch.Identity.Infrastructure/Persistence/Repositories.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Domain.Companies.ClientCompany",
@@ -362,6 +348,15 @@
    "fan_out": 1,
    "fan_in": 8,
    "archivo": "src/QuickPatch.Identity.Domain/Companies/ClientCompany.cs"
+  },
+  {
+   "tipo": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 71,
+   "fan_out": 15,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Identity.Application/Technicians/ProviderTeam.cs"
   }
  ],
  "paquetes": [
@@ -384,18 +379,18 @@
   {
    "paquete": "QuickPatch.Identity.Api.Endpoints",
    "tipos": 25,
-   "fan_out": 14,
+   "fan_out": 13,
    "fan_in": 1,
    "inestabilidad": 0.93,
    "cohesion_relacional": 1.4
   },
   {
    "paquete": "QuickPatch.Identity.Api.Http",
-   "tipos": 3,
+   "tipos": 2,
    "fan_out": 0,
-   "fan_in": 2,
+   "fan_in": 1,
    "inestabilidad": 0.0,
-   "cohesion_relacional": 0.67
+   "cohesion_relacional": 0.5
   },
   {
    "paquete": "QuickPatch.Identity.Api.Security",
@@ -527,11 +522,11 @@
   },
   {
    "paquete": "QuickPatch.Identity.Infrastructure.Messaging",
-   "tipos": 6,
+   "tipos": 3,
    "fan_out": 4,
-   "fan_in": 2,
-   "inestabilidad": 0.67,
-   "cohesion_relacional": 0.67
+   "fan_in": 1,
+   "inestabilidad": 0.8,
+   "cohesion_relacional": 0.33
   },
   {
    "paquete": "QuickPatch.Identity.Infrastructure.Options",
@@ -544,9 +539,9 @@
   {
    "paquete": "QuickPatch.Identity.Infrastructure.Persistence",
    "tipos": 13,
-   "fan_out": 8,
+   "fan_out": 7,
    "fan_in": 2,
-   "inestabilidad": 0.8,
+   "inestabilidad": 0.78,
    "cohesion_relacional": 1.08
   },
   {
@@ -572,7 +567,7 @@
   {
    "de": "(global)",
    "a": "QuickPatch.Identity.Api.Http",
-   "n": 3
+   "n": 2
   },
   {
    "de": "(global)",
@@ -603,11 +598,6 @@
    "de": "QuickPatch.Identity.Api.Bootstrap",
    "a": "QuickPatch.Identity.Infrastructure.Options",
    "n": 2
-  },
-  {
-   "de": "QuickPatch.Identity.Api.Endpoints",
-   "a": "QuickPatch.Identity.Api.Http",
-   "n": 1
   },
   {
    "de": "QuickPatch.Identity.Api.Endpoints",
@@ -932,7 +922,7 @@
   {
    "de": "QuickPatch.Identity.Infrastructure",
    "a": "QuickPatch.Identity.Infrastructure.Messaging",
-   "n": 5
+   "n": 3
   },
   {
    "de": "QuickPatch.Identity.Infrastructure",
@@ -967,7 +957,7 @@
   {
    "de": "QuickPatch.Identity.Infrastructure.Messaging",
    "a": "QuickPatch.Identity.Infrastructure.Persistence",
-   "n": 2
+   "n": 1
   },
   {
    "de": "QuickPatch.Identity.Infrastructure.Persistence",
@@ -998,11 +988,6 @@
    "de": "QuickPatch.Identity.Infrastructure.Persistence",
    "a": "QuickPatch.Identity.Domain.Users",
    "n": 10
-  },
-  {
-   "de": "QuickPatch.Identity.Infrastructure.Persistence",
-   "a": "QuickPatch.Identity.Infrastructure.Messaging",
-   "n": 1
   },
   {
    "de": "QuickPatch.Identity.Infrastructure.Persistence",
@@ -1049,10 +1034,6 @@
   {
    "de": "Program",
    "a": "QuickPatch.Identity.Api.Http.BadRequestExceptionHandler"
-  },
-  {
-   "de": "Program",
-   "a": "QuickPatch.Identity.Api.Http.CorrelationId"
   },
   {
    "de": "Program",
@@ -1349,10 +1330,6 @@
   {
    "de": "QuickPatch.Identity.Api.Endpoints.IdentityEndpoints",
    "a": "QuickPatch.Identity.Api.Endpoints.VerificationReasonRequest"
-  },
-  {
-   "de": "QuickPatch.Identity.Api.Endpoints.IdentityEndpoints",
-   "a": "QuickPatch.Identity.Api.Http.CorrelationId"
   },
   {
    "de": "QuickPatch.Identity.Api.Endpoints.IdentityEndpoints",
@@ -1665,10 +1642,6 @@
   {
    "de": "QuickPatch.Identity.Api.Endpoints.UserProfile",
    "a": "QuickPatch.Identity.Domain.Users.User"
-  },
-  {
-   "de": "QuickPatch.Identity.Api.Http.Problems",
-   "a": "QuickPatch.Identity.Api.Http.CorrelationId"
   },
   {
    "de": "QuickPatch.Identity.Api.Security.AuthenticationSetup",
@@ -3016,14 +2989,6 @@
   },
   {
    "de": "QuickPatch.Identity.Infrastructure.DependencyInjection",
-   "a": "QuickPatch.Identity.Infrastructure.Messaging.OutboxOptions"
-  },
-  {
-   "de": "QuickPatch.Identity.Infrastructure.DependencyInjection",
-   "a": "QuickPatch.Identity.Infrastructure.Messaging.OutboxPublisher"
-  },
-  {
-   "de": "QuickPatch.Identity.Infrastructure.DependencyInjection",
    "a": "QuickPatch.Identity.Infrastructure.Messaging.ReputationChangedConsumer"
   },
   {
@@ -3124,22 +3089,6 @@
   },
   {
    "de": "QuickPatch.Identity.Infrastructure.Messaging.EfOutbox",
-   "a": "QuickPatch.Identity.Infrastructure.Messaging.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.Identity.Infrastructure.Messaging.EfOutbox",
-   "a": "QuickPatch.Identity.Infrastructure.Persistence.IdentityDbContext"
-  },
-  {
-   "de": "QuickPatch.Identity.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Identity.Infrastructure.Messaging.OutboxEventRecord"
-  },
-  {
-   "de": "QuickPatch.Identity.Infrastructure.Messaging.OutboxPublisher",
-   "a": "QuickPatch.Identity.Infrastructure.Messaging.OutboxOptions"
-  },
-  {
-   "de": "QuickPatch.Identity.Infrastructure.Messaging.OutboxPublisher",
    "a": "QuickPatch.Identity.Infrastructure.Persistence.IdentityDbContext"
   },
   {
@@ -3233,10 +3182,6 @@
   {
    "de": "QuickPatch.Identity.Infrastructure.Persistence.IdentityDbContext",
    "a": "QuickPatch.Identity.Domain.Users.User"
-  },
-  {
-   "de": "QuickPatch.Identity.Infrastructure.Persistence.IdentityDbContext",
-   "a": "QuickPatch.Identity.Infrastructure.Messaging.OutboxEventRecord"
   },
   {
    "de": "QuickPatch.Identity.Infrastructure.Persistence.IdentityDbContext",
@@ -3423,5 +3368,5 @@
    "a": "QuickPatch.Identity.Infrastructure.Options.JwtIssuerOptions"
   }
  ],
- "commit": "abffadb"
+ "commit": "fe22c14"
 }
