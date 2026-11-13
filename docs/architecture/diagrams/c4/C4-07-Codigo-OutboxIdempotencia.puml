@@ -1,7 +1,7 @@
 @startuml C4-07-Codigo-OutboxIdempotencia
 ' QUICKPATCH — C4 nivel 4 (Code): publicación y consumo de service-request.created
 ' Transactional Outbox en ServiceRequest (.NET) y consumo idempotente en Matching (Java).
-' Clases reales de develop (7 de octubre de 2026); se omiten métodos que no intervienen.
+' Clases reales de develop (12 de noviembre de 2026, con quickpatch-shared-dotnet de ADR-020); se omiten métodos que no intervienen.
 ' Fuentes: ADR-007, DD RN-EV1, SDD 7.1 y 8.10.
 title C4-07 · Code · Outbox e idempotencia de service-request.created
 skinparam classAttributeIconSize 0
@@ -38,15 +38,18 @@ package "quickpatch-service-request (ASP.NET Core)" {
   }
   class ServiceRequestRepository <<Infrastructure>>
   class EfOutbox <<Infrastructure>>
-  class OutboxPublisher <<BackgroundService>> {
-    +PublishPendingAsync(ct) : int
-    lee outbox_events y marca published_at
-    FOR UPDATE SKIP LOCKED
-    SET LOCAL ROLE (publicador)
-  }
   class outbox_events <<tabla>> {
     published_at
     attempts
+  }
+}
+
+package "quickpatch-shared-dotnet (ADR-020), compilado dentro de ServiceRequest" {
+  class "OutboxPublisher<TContext, TRecord>" as OutboxPublisher <<BackgroundService>> {
+    +PublishPendingAsync(ct) : int
+    lee outbox_events y marca published_at
+    FOR UPDATE SKIP LOCKED
+    SessionRole: SET LOCAL ROLE (publicador)
   }
 }
 
@@ -76,7 +79,9 @@ package "quickpatch-matching (Spring Boot)" {
   class JdbcProcessedEventStore <<infrastructure>> {
     INSERT ... ON CONFLICT (event_id) DO NOTHING
   }
-  class PendingMatchingStarter <<infrastructure>>
+  class MatchingEngine <<application>> {
+    ofrece al técnico disponible más cercano
+  }
 }
 
 CreateServiceRequestHandler --> ITenantUnitOfWork
@@ -97,7 +102,7 @@ ServiceRequestCreatedHandler --> MatchingStarter
 ServiceRequestCreatedHandler ..> Outcome
 JdbcTenantTransaction ..|> TenantTransaction
 JdbcProcessedEventStore ..|> ProcessedEventStore
-PendingMatchingStarter ..|> MatchingStarter
+MatchingEngine ..|> MatchingStarter
 
 note bottom of CreateServiceRequestHandler
   Solicitud + evento en una sola transacción
