@@ -35,10 +35,10 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
 SERVICIOS_DIR = RAIZ / "apps" / "backend" / "services"
-DOTNET = {"identity": "Identity", "catalog": "Catalog", "service-request": "ServiceRequest",
+DOTNET = {"identity": "Identity", "actors": "Actors", "catalog": "Catalog", "service-request": "ServiceRequest",
           "ranking": "Ranking", "payments": "Payments", "communication": "Communication"}
 JAVA = {"matching": "Matching"}
-TODOS = ["identity", "catalog", "service-request", "matching", "ranking", "payments", "communication"]
+TODOS = ["identity", "actors", "catalog", "service-request", "matching", "ranking", "payments", "communication"]
 CAPAS = ["Api", "Application", "Domain", "Infrastructure"]
 
 # Reglas del SDD 10.3.2: (capa origen, capa destino) prohibidas entre tipos propios.
@@ -440,7 +440,7 @@ def main() -> None:
                      f"{r['ciclos_entre_paquetes']} | {r['ciclos_entre_tipos']} ({r['mayor_ciclo_de_tipos']}) | {r['violaciones_de_capas']} | "
                      f"{r['tipos_de_mas_de_250_lineas']} | {r['fan_out_maximo']} | {r['cohesion_relacional_promedio']} |")
         l += ["", "1. Sin las raíces de composición (`Program` y `DependencyInjection`), que por diseño conocen todo el servicio.", "",
-              "Actors no se analiza: es un esqueleto sin lógica (solo `Program.cs`).", ""]
+              "Actors se analiza desde SCRUM-640; antes era un esqueleto sin lógica (solo `Program.cs`), así que no tiene línea base.", ""]
         (salida / "README.md").write_text("\n".join(l), encoding="utf-8")
     shutil.rmtree(trabajo, ignore_errors=True)
 

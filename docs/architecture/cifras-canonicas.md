@@ -24,7 +24,8 @@ Si un dato cambia, se cambia primero en su fuente y después aquí, en el mismo 
 | Cifra | Valor | Fuente de verdad | Evidencia |
 |---|---|---|---|
 | Microservicios definidos | **8**: Identity, Actors, Catalog, ServiceRequest, Matching, Ranking, Payments y Communication | SAD, sección 4; ADR-003 | — |
-| Microservicios con código | **7**. Actors es un esqueleto: solo `Program.cs`, sin lógica (el SAD 4.2.2 ya lo marca como Planeado) | Código de `develop` | `docs/architecture/codigo/antes/README.md` (SCRUM-682) |
+| Microservicios con código | **8** desde el 12-nov (SCRUM-640). Actors pasó de esqueleto a directorio de proveedores y clientes por eventos | Código de `develop` | `docs/architecture/codigo/despues/README.md`; quickpatch-actors#7 |
+| Microservicios desplegados | **7** en QA y en producción. Actors tiene código, pero su despliegue en QA está pendiente (SCRUM-640) | INFRA 4.16 (`kubectl` del 10-nov) | `matriz-modelado-vs-real.md` |
 | Stack por servicio | 7 en ASP.NET Core / .NET 10; Matching en Java + Spring Boot | ADR-012 | `apps/backend/CLAUDE.md` |
 | Repositorios | **14**: 13 de componentes (web, mobile, API Gateway, los 8 microservicios, Kafka y, desde el 11-nov, `quickpatch-shared-dotnet` de ADR-020) más el principal `quickpatch` | ADR-021 y ADR-020 | `gh repo list ARQUI-202630`: los 14 `quickpatch*` activos (`quickpatch-contracts` e `quickpatch-infrastructure` están archivados). La infraestructura vive en `quickpatch/infrastructure` (SCRUM-338), no en un repositorio propio |
 | Topics de Kafka | **20** | `quickpatch-kafka`, `topics/topics.yaml` | `develop` del 11-nov-2026 |

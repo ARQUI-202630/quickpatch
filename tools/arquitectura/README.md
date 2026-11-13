@@ -1,6 +1,6 @@
 # Ingeniería inversa de los microservicios (SCRUM-680)
 
-Genera, **desde el código compilado de `develop`**, los diagramas de paquetes y de clases y las métricas de acoplamiento y cohesión de los 7 servicios con código. Responde a la observación final del profesor: el nivel de código de C4 no se dibuja a mano, sale del código y se puede regenerar.
+Genera, **desde el código compilado de `develop`**, los diagramas de paquetes y de clases y las métricas de acoplamiento y cohesión de los 8 servicios con código (Actors desde SCRUM-640). Responde a la observación final del profesor: el nivel de código de C4 no se dibuja a mano, sale del código y se puede regenerar.
 
 ```bash
 # Desde la raíz del superproyecto. Requiere git, .NET SDK 10, JDK 17+ (jdeps) y Maven.
@@ -51,4 +51,4 @@ Las raíces de composición (`Program`, las clases `DependencyInjection` y `Matc
 - Las líneas no son comparables entre .NET y Java porque se miden distinto. En los dos lenguajes, los tipos anidados se cuentan dentro del tipo que los declara.
 - La capa sale del ensamblado (.NET) o del primer segmento del paquete (Java); un tipo mal ubicado se cuenta en la capa donde está, que es justo lo que se quiere detectar.
 - No mide llamadas por reflexión ni configuración (por ejemplo, el registro de consumidores de Spring por anotaciones).
-- Actors no se analiza mientras sea un esqueleto (solo `Program.cs`).
+- Actors solo tiene medición «después»: en la línea base era un esqueleto (solo `Program.cs`). `comparar.py` omite los servicios sin las dos fases.

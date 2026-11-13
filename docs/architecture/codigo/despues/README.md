@@ -5,6 +5,7 @@ Generado el 2026-11-12 con `python tools/arquitectura/generar.py --fase despues`
 | Servicio | Commit | Tipos | Paquetes | Dep. entre tipos | Dep. entre paquetes | Ciclos paquetes | Ciclos tipos (mayor) | Violaciones | Tipos > 250 líneas | Fan-out máx. | Cohesión H prom. |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | [Identity](identity/README.md) | `fe22c14` | 182 | 24 | 589 | 91 | 0 | 0 (0) | 11 | 2 | 79 | 0.79 |
+| [Actors](actors/README.md) | `5c85eb6` | 34 | 13 | 77 | 26 | 0 | 0 (0) | 0 | 0 | 11 | 0.88 |
 | [Catalog](catalog/README.md) | `6345700` | 38 | 13 | 73 | 22 | 0 | 0 (0) | 0 | 0 | 14 | 0.86 |
 | [ServiceRequest](service-request/README.md) | `45c0653` | 211 | 31 | 601 | 109 | 0 | 0 (0) | 0 | 1 | 21 | 0.77 |
 | [Matching](matching/README.md) | `8e6450c` | 49 | 14 | 123 | 36 | 0 | 0 (0) | 0 | 0 | 13 | 0.75 |
@@ -14,4 +15,4 @@ Generado el 2026-11-12 con `python tools/arquitectura/generar.py --fase despues`
 
 1. Sin las raíces de composición (`Program` y `DependencyInjection`), que por diseño conocen todo el servicio.
 
-Actors no se analiza: es un esqueleto sin lógica (solo `Program.cs`).
+Actors se analiza desde SCRUM-640; antes era un esqueleto sin lógica (solo `Program.cs`), así que no tiene línea base.

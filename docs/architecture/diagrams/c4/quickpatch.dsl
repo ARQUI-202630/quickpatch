@@ -137,12 +137,17 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
                     idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta la reputación en technician_profiles; descarta lo atrasado por changedAt (ADR-027)." "Kafka consumer · Infrastructure/Messaging"
                 }
-                actors = container "Actors Service" "Esqueleto sin lógica: solo Program.cs (SCRUM-696). Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio,Planeado" {
-                    acApi = component "API de actores" "Consulta y mantenimiento de actores del tenant." "Minimal API" "Planeado"
-                    acProveedores = component "Proveedores de materiales" "Supplier: proveedor de materiales o repuestos (concepto evolutivo)." "Domain" "Planeado"
-                    acAliados = component "Aliados" "Ally: técnico, profesional o empresa aliada." "Domain" "Planeado"
-                    acClientes = component "Clientes" "Client: cliente hogar o empresarial." "Domain" "Planeado"
-                    acPersistencia = component "Persistencia con RLS" "Repositorios de actores por tenant." "EF Core + Npgsql" "Planeado"
+                actors = container "Actors Service" "Directorio de actores de negocio del tenant, armado con eventos (SCRUM-640): proveedores con su equipo y clientes. Sin REST (ADR-025) y sin eventos publicados." "ASP.NET Core (.NET 10)" "Microservicio" {
+                    # Application
+                    acTechnicianHandler = component "TechnicianEventsHandler" "Aplica technician.registered y .verification-changed una vez por eventId bajo el tenant del evento; descarta lo atrasado por updatedAt (ADR-017) y recuenta el equipo del proveedor." "Casos de uso · Application/Technicians"
+                    acClientHandler = component "ServiceRequestCreatedHandler" "Suma la solicitud al cliente una vez por eventId, sin la descripción ni la ubicación (RN-SR13)." "Casos de uso · Application/Clients"
+                    # Domain
+                    acDomain = component "Dominio de actores" "TechnicianActor (proveedor, especialidad y estado con descarte por updatedAt), Supplier (tamaño del equipo y aprobados) y ClientActor (solicitudes, primera y última)." "Domain/Technicians, Suppliers y Clients"
+                    # Infrastructure
+                    acPersistence = component "TenantUnitOfWork y repositorios" "TechnicianActorRepository, SupplierRepository, ClientActorRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                    acTechnicianConsumer = component "TechnicianEventsConsumer" "Consume technician.registered y technician.verification-changed; solo transporte: el contrato lo valida Application." "Kafka consumer · Infrastructure/Messaging"
+                    acClientConsumer = component "ServiceRequestCreatedConsumer" "Consume service-request.created; solo transporte." "Kafka consumer · Infrastructure/Messaging"
+                    acAllies = component "Aliados (Ally)" "Concepto evolutivo (SDD 6.14): ningún evento lo origina." "Domain" "Planeado"
                 }
                 catalog = container "Catalog Service" "Categorías y especialidades de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
@@ -286,7 +291,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
             group "PostgreSQL + PostGIS (una instancia, una base por servicio, ADR-014)" {
                 dbIdentity = container "db_identity" "tenants, users, client_companies, technician_profiles, password_setup_tokens, password_recovery_requests, password_recovery_attempts, audit_logs y outbox_events." "PostgreSQL" "Database"
-                dbActors = container "db_actors" "Base y roles creados; sin servicio que la use (Actors no tiene código)." "PostgreSQL" "Database"
+                dbActors = container "db_actors" "technician_actors, suppliers, client_actors y processed_events (DD 5.31 a 5.33)." "PostgreSQL" "Database"
                 dbCatalog = container "db_catalog" "service_categories y outbox_events." "PostgreSQL" "Database"
                 dbServiceRequest = container "db_service_request" "service_requests, quotes, ratings, service_evidence, service_request_categories, tenant_status_replica, localities, audit_logs, outbox_events y processed_events." "PostgreSQL + PostGIS" "Database"
                 dbMatching = container "db_matching" "matching_requests, matching_attempts, technician_availability, coverage_zones, localities, outbox_events y processed_events." "PostgreSQL + PostGIS" "Database"
@@ -307,6 +312,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         ranking -> kafka "Publica ranking.technician-reputation-changed. Consume service-request.rated" "Kafka"
         payments -> kafka "Publica payment.approved y payment.rejected. Consume service-request.completed y technician.registered" "Kafka"
         communication -> kafka "Consume service-request.created, .status-changed, .quoted, .quote-accepted y .quote-rejected, matching.offer-created, technician.registered y technician.verification-changed (no publica)" "Kafka"
+
+        actors -> kafka "Consume technician.registered, technician.verification-changed y service-request.created (no publica)" "Kafka"
 
         # Personas → apps
         cliente -> mobNavegacion "Pide, sigue, paga y califica servicios"
@@ -409,7 +416,6 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         gateway -> srExecutionEndpoints "Enruta /start, /evidence y /complete" "HTTP"
         gateway -> srRatingEndpoints "Enruta /api/v1/service-requests/{id}/rating" "HTTP"
         gateway -> srAdminEndpoints "Enruta /api/v1/admin y /api/v1/platform/service-requests" "HTTP"
-        gateway -> acApi "Enruta /api/v1/actors" "HTTP" "Planeado"
         gateway -> paPaymentEndpoints "Enruta /api/v1/service-requests/{id}/payment" "HTTP"
         gateway -> paInvoiceEndpoints "Enruta /api/v1/payments" "HTTP"
         gateway -> paReceived "Enruta /api/v1/payments/received" "HTTP"
@@ -449,11 +455,15 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         idReputationConsumer -> idPersistence "Actualiza la reputación del técnico con"
 
         # Actors
-        acApi -> acProveedores "Usa" "" "Planeado"
-        acApi -> acAliados "Usa" "" "Planeado"
-        acApi -> acClientes "Usa" "" "Planeado"
-        acApi -> acPersistencia "Lee y escribe con" "" "Planeado"
-        acPersistencia -> dbActors "Lee y escribe (RLS)" "SQL" "Planeado"
+        acTechnicianConsumer -> kafka "Consume technician.registered y technician.verification-changed" "Kafka"
+        acClientConsumer -> kafka "Consume service-request.created" "Kafka"
+        acTechnicianConsumer -> acTechnicianHandler "Entrega el evento a"
+        acClientConsumer -> acClientHandler "Entrega el evento a"
+        acTechnicianHandler -> acDomain "Aplica el registro o la verificación con"
+        acClientHandler -> acDomain "Suma la solicitud con"
+        acTechnicianHandler -> acPersistence "Registra el eventId, guarda el técnico y recuenta el equipo con"
+        acClientHandler -> acPersistence "Registra el eventId y guarda el cliente con"
+        acPersistence -> dbActors "Lee y escribe technician_actors, suppliers, client_actors y processed_events (RLS)" "SQL"
 
         # Catalog
         catEndpoints -> catSecurity "Autoriza con"
@@ -783,8 +793,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             title "Contenedores de QUICKPATCH: REST y datos (C4 nivel 2)"
             include *
             exclude equipo github observabilidad
-            # Actors está planeado y no tiene despliegue: no se dibuja lo que todavía no existe.
-            exclude actors dbActors
+            # Actors no tiene REST (ADR-025): aquí solo aparece con su base; sus eventos están en C4-03b.
             # Los eventos van en C4-03b-Contenedores-Eventos.
             exclude kafka
             autoLayout tb 200 100
@@ -792,7 +801,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
         container quickpatch "C4-03b-Contenedores-Eventos" "Contenedores de QUICKPATCH, comunicación por eventos: qué servicio publica y cuál consume en Kafka (ADR-006, ADR-007; SDD 8.6)." {
             title "Contenedores de QUICKPATCH: eventos en Kafka (C4 nivel 2)"
-            include kafka identity catalog serviceRequest matching ranking payments communication
+            include kafka identity actors catalog serviceRequest matching ranking payments communication
             # La consulta interna de usuarios es REST y está en C4-03a.
             exclude "serviceRequest -> identity"
             autoLayout lr 500 60
@@ -815,7 +824,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             exclude "gateway -> serviceRequest"
             autoLayout lr
         }
-        component actors "C4-04-Componentes-Actors" "Componentes de Actors Service (diseño; el servicio es un esqueleto)." {
+        component actors "C4-04-Componentes-Actors" "Componentes de Actors Service por capa: Application, Domain e Infrastructure (SCRUM-640). No tiene endpoints de negocio." {
             include *
             autoLayout lr
         }

@@ -1,0 +1,854 @@
+{
+ "servicio": "Actors",
+ "lenguaje": "csharp",
+ "resumen": {
+  "tipos": 34,
+  "paquetes": 13,
+  "dependencias_entre_tipos": 77,
+  "dependencias_entre_paquetes": 26,
+  "ciclos_entre_paquetes": 0,
+  "paquetes_en_ciclos": 0,
+  "ciclos_entre_tipos": 0,
+  "mayor_ciclo_de_tipos": 0,
+  "violaciones_de_capas": 0,
+  "tipos_de_mas_de_250_lineas": 0,
+  "fan_out_maximo": 11,
+  "fan_out_promedio": 2.26,
+  "cohesion_relacional_promedio": 0.88
+ },
+ "dependencias_entre_capas": {
+  "Api->Application": 1,
+  "Api->Infrastructure": 1,
+  "Application->Domain": 7,
+  "Infrastructure->Application": 23,
+  "Infrastructure->Domain": 6
+ },
+ "violaciones": [],
+ "ciclos_entre_paquetes": [],
+ "ciclos_entre_tipos": [],
+ "mayor_fan_out": [
+  {
+   "tipo": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 99,
+   "fan_out": 11,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Actors.Application/Technicians/TechnicianEventsHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 31,
+   "fan_out": 7,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Actors.Application/Clients/ServiceRequestCreatedHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Messaging.ServiceRequestCreatedConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 36,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Messaging/ServiceRequestCreatedConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Messaging.TechnicianEventsConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 53,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Messaging/TechnicianEventsConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Events.TechnicianEventsContract",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 14,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Actors.Application/Events/TechnicianEvents.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Persistence.TechnicianActorRepository",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 16,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Persistence/TechnicianActorRepository.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 57,
+   "fan_out": 3,
+   "fan_in": 7,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Persistence/ActorsDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Persistence.ClientActorRepository",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 6,
+   "fan_out": 3,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Persistence/ClientActorRepository.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Persistence.SupplierRepository",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 6,
+   "fan_out": 3,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Persistence/SupplierRepository.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Abstractions.ITechnicianActorRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 2,
+   "fan_in": 3,
+   "archivo": null
+  }
+ ],
+ "mayor_fan_in": [
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 57,
+   "fan_out": 3,
+   "fan_in": 7,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Persistence/ActorsDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Events.EventEnvelope",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 9,
+   "fan_out": 0,
+   "fan_in": 6,
+   "archivo": "src/QuickPatch.Actors.Application/Events/EventEnvelope.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Abstractions.IProcessedEventRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 0,
+   "fan_in": 4,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Abstractions.ITenantUnitOfWork",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 0,
+   "fan_in": 4,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Actors.Domain.Clients.ClientActor",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 38,
+   "fan_out": 0,
+   "fan_in": 4,
+   "archivo": "src/QuickPatch.Actors.Domain/Clients/ClientActor.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Domain.Suppliers.Supplier",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 36,
+   "fan_out": 0,
+   "fan_in": 4,
+   "archivo": "src/QuickPatch.Actors.Domain/Suppliers/Supplier.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Domain.Technicians.TechnicianActor",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 82,
+   "fan_out": 1,
+   "fan_in": 4,
+   "archivo": "src/QuickPatch.Actors.Domain/Technicians/TechnicianActor.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Abstractions.IClientActorRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 1,
+   "fan_in": 3,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Abstractions.ISupplierRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 1,
+   "fan_in": 3,
+   "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Abstractions.ITechnicianActorRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 2,
+   "fan_in": 3,
+   "archivo": null
+  }
+ ],
+ "mas_grandes": [
+  {
+   "tipo": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 99,
+   "fan_out": 11,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Actors.Application/Technicians/TechnicianEventsHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Domain.Technicians.TechnicianActor",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 82,
+   "fan_out": 1,
+   "fan_in": 4,
+   "archivo": "src/QuickPatch.Actors.Domain/Technicians/TechnicianActor.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 57,
+   "fan_out": 3,
+   "fan_in": 7,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Persistence/ActorsDbContext.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Messaging.TechnicianEventsConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 53,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Messaging/TechnicianEventsConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Domain.Clients.ClientActor",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 38,
+   "fan_out": 0,
+   "fan_in": 4,
+   "archivo": "src/QuickPatch.Actors.Domain/Clients/ClientActor.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Domain.Suppliers.Supplier",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 36,
+   "fan_out": 0,
+   "fan_in": 4,
+   "archivo": "src/QuickPatch.Actors.Domain/Suppliers/Supplier.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Messaging.ServiceRequestCreatedConsumer",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 36,
+   "fan_out": 6,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Messaging/ServiceRequestCreatedConsumer.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 31,
+   "fan_out": 7,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Actors.Application/Clients/ServiceRequestCreatedHandler.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Infrastructure.Persistence.TechnicianActorRepository",
+   "capa": "Infrastructure",
+   "clase": "class",
+   "lineas": 16,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Actors.Infrastructure/Persistence/TechnicianActorRepository.cs"
+  },
+  {
+   "tipo": "QuickPatch.Actors.Application.Events.TechnicianEventsContract",
+   "capa": "Application",
+   "clase": "static",
+   "lineas": 14,
+   "fan_out": 4,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Actors.Application/Events/TechnicianEvents.cs"
+  }
+ ],
+ "paquetes": [
+  {
+   "paquete": "(global)",
+   "tipos": 1,
+   "fan_out": 2,
+   "fan_in": 0,
+   "inestabilidad": 1.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Actors.Application",
+   "tipos": 1,
+   "fan_out": 2,
+   "fan_in": 1,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Actors.Application.Abstractions",
+   "tipos": 6,
+   "fan_out": 3,
+   "fan_in": 4,
+   "inestabilidad": 0.43,
+   "cohesion_relacional": 0.33
+  },
+  {
+   "paquete": "QuickPatch.Actors.Application.Clients",
+   "tipos": 1,
+   "fan_out": 3,
+   "fan_in": 2,
+   "inestabilidad": 0.6,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Actors.Application.Events",
+   "tipos": 9,
+   "fan_out": 1,
+   "fan_in": 3,
+   "inestabilidad": 0.25,
+   "cohesion_relacional": 0.67
+  },
+  {
+   "paquete": "QuickPatch.Actors.Application.Technicians",
+   "tipos": 1,
+   "fan_out": 4,
+   "fan_in": 2,
+   "inestabilidad": 0.67,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Actors.Domain.Clients",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 3,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Actors.Domain.Suppliers",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 3,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Actors.Domain.Technicians",
+   "tipos": 2,
+   "fan_out": 0,
+   "fan_in": 4,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Actors.Infrastructure",
+   "tipos": 1,
+   "fan_out": 4,
+   "fan_in": 1,
+   "inestabilidad": 0.8,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Actors.Infrastructure.Messaging",
+   "tipos": 2,
+   "fan_out": 3,
+   "fan_in": 1,
+   "inestabilidad": 0.75,
+   "cohesion_relacional": 0.5
+  },
+  {
+   "paquete": "QuickPatch.Actors.Infrastructure.Options",
+   "tipos": 1,
+   "fan_out": 0,
+   "fan_in": 1,
+   "inestabilidad": 0.0,
+   "cohesion_relacional": 1.0
+  },
+  {
+   "paquete": "QuickPatch.Actors.Infrastructure.Persistence",
+   "tipos": 7,
+   "fan_out": 4,
+   "fan_in": 1,
+   "inestabilidad": 0.8,
+   "cohesion_relacional": 1.0
+  }
+ ],
+ "aristas_paquetes": [
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Actors.Application",
+   "n": 1
+  },
+  {
+   "de": "(global)",
+   "a": "QuickPatch.Actors.Infrastructure",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Application",
+   "a": "QuickPatch.Actors.Application.Clients",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Application",
+   "a": "QuickPatch.Actors.Application.Technicians",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Abstractions",
+   "a": "QuickPatch.Actors.Domain.Clients",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Abstractions",
+   "a": "QuickPatch.Actors.Domain.Suppliers",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Abstractions",
+   "a": "QuickPatch.Actors.Domain.Technicians",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Clients",
+   "a": "QuickPatch.Actors.Application.Abstractions",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Clients",
+   "a": "QuickPatch.Actors.Application.Events",
+   "n": 3
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Clients",
+   "a": "QuickPatch.Actors.Domain.Clients",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Events",
+   "a": "QuickPatch.Actors.Domain.Technicians",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians",
+   "a": "QuickPatch.Actors.Application.Abstractions",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians",
+   "a": "QuickPatch.Actors.Application.Events",
+   "n": 4
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians",
+   "a": "QuickPatch.Actors.Domain.Suppliers",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians",
+   "a": "QuickPatch.Actors.Domain.Technicians",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure",
+   "a": "QuickPatch.Actors.Application.Abstractions",
+   "n": 5
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure",
+   "a": "QuickPatch.Actors.Infrastructure.Messaging",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure",
+   "a": "QuickPatch.Actors.Infrastructure.Options",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence",
+   "n": 6
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging",
+   "a": "QuickPatch.Actors.Application.Clients",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging",
+   "a": "QuickPatch.Actors.Application.Events",
+   "n": 10
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging",
+   "a": "QuickPatch.Actors.Application.Technicians",
+   "n": 1
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence",
+   "a": "QuickPatch.Actors.Application.Abstractions",
+   "n": 6
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence",
+   "a": "QuickPatch.Actors.Domain.Clients",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence",
+   "a": "QuickPatch.Actors.Domain.Suppliers",
+   "n": 2
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence",
+   "a": "QuickPatch.Actors.Domain.Technicians",
+   "n": 2
+  }
+ ],
+ "aristas_tipos": [
+  {
+   "de": "Program",
+   "a": "QuickPatch.Actors.Application.DependencyInjection"
+  },
+  {
+   "de": "Program",
+   "a": "QuickPatch.Actors.Infrastructure.DependencyInjection"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Abstractions.IClientActorRepository",
+   "a": "QuickPatch.Actors.Domain.Clients.ClientActor"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Abstractions.ISupplierRepository",
+   "a": "QuickPatch.Actors.Domain.Suppliers.Supplier"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Abstractions.ITechnicianActorRepository",
+   "a": "QuickPatch.Actors.Application.Abstractions.TeamCount"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Abstractions.ITechnicianActorRepository",
+   "a": "QuickPatch.Actors.Domain.Technicians.TechnicianActor"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler",
+   "a": "QuickPatch.Actors.Application.Abstractions.IClientActorRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler",
+   "a": "QuickPatch.Actors.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler",
+   "a": "QuickPatch.Actors.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler",
+   "a": "QuickPatch.Actors.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler",
+   "a": "QuickPatch.Actors.Application.Events.HandlingOutcome"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler",
+   "a": "QuickPatch.Actors.Application.Events.ServiceRequestCreatedData"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler",
+   "a": "QuickPatch.Actors.Domain.Clients.ClientActor"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.DependencyInjection",
+   "a": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.DependencyInjection",
+   "a": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Events.ServiceRequestCreatedContract",
+   "a": "QuickPatch.Actors.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Events.ServiceRequestCreatedContract",
+   "a": "QuickPatch.Actors.Application.Events.ServiceRequestCreatedData"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Events.TechnicianEventsContract",
+   "a": "QuickPatch.Actors.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Events.TechnicianEventsContract",
+   "a": "QuickPatch.Actors.Application.Events.TechnicianRegisteredData"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Events.TechnicianEventsContract",
+   "a": "QuickPatch.Actors.Application.Events.TechnicianVerificationChangedData"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Events.TechnicianEventsContract",
+   "a": "QuickPatch.Actors.Domain.Technicians.VerificationStatus"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Application.Abstractions.ISupplierRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Application.Abstractions.ITechnicianActorRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Application.Abstractions.TeamCount"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Application.Events.HandlingOutcome"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Application.Events.TechnicianRegisteredData"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Application.Events.TechnicianVerificationChangedData"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Domain.Suppliers.Supplier"
+  },
+  {
+   "de": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler",
+   "a": "QuickPatch.Actors.Domain.Technicians.TechnicianActor"
+  },
+  {
+   "de": "QuickPatch.Actors.Domain.Technicians.TechnicianActor",
+   "a": "QuickPatch.Actors.Domain.Technicians.VerificationStatus"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Application.Abstractions.IClientActorRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Application.Abstractions.ISupplierRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Application.Abstractions.ITechnicianActorRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Infrastructure.Messaging.ServiceRequestCreatedConsumer"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Infrastructure.Messaging.TechnicianEventsConsumer"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Infrastructure.Options.KafkaOptions"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.ClientActorRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.ProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.SupplierRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.TechnicianActorRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.DependencyInjection",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.TenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.ServiceRequestCreatedConsumer",
+   "a": "QuickPatch.Actors.Application.Clients.ServiceRequestCreatedHandler"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.ServiceRequestCreatedConsumer",
+   "a": "QuickPatch.Actors.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.ServiceRequestCreatedConsumer",
+   "a": "QuickPatch.Actors.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.ServiceRequestCreatedConsumer",
+   "a": "QuickPatch.Actors.Application.Events.HandlingOutcome"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.ServiceRequestCreatedConsumer",
+   "a": "QuickPatch.Actors.Application.Events.ServiceRequestCreatedContract"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.ServiceRequestCreatedConsumer",
+   "a": "QuickPatch.Actors.Application.Events.ServiceRequestCreatedData"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.TechnicianEventsConsumer",
+   "a": "QuickPatch.Actors.Application.Events.EventEnvelope"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.TechnicianEventsConsumer",
+   "a": "QuickPatch.Actors.Application.Events.EventSerializer"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.TechnicianEventsConsumer",
+   "a": "QuickPatch.Actors.Application.Events.TechnicianEventsContract"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.TechnicianEventsConsumer",
+   "a": "QuickPatch.Actors.Application.Events.TechnicianRegisteredData"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.TechnicianEventsConsumer",
+   "a": "QuickPatch.Actors.Application.Events.TechnicianVerificationChangedData"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Messaging.TechnicianEventsConsumer",
+   "a": "QuickPatch.Actors.Application.Technicians.TechnicianEventsHandler"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext",
+   "a": "QuickPatch.Actors.Domain.Clients.ClientActor"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext",
+   "a": "QuickPatch.Actors.Domain.Suppliers.Supplier"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext",
+   "a": "QuickPatch.Actors.Domain.Technicians.TechnicianActor"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.ClientActorRepository",
+   "a": "QuickPatch.Actors.Application.Abstractions.IClientActorRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.ClientActorRepository",
+   "a": "QuickPatch.Actors.Domain.Clients.ClientActor"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.ClientActorRepository",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.DesignTimeDbContextFactory",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.Actors.Application.Abstractions.IProcessedEventRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.ProcessedEventRepository",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.SupplierRepository",
+   "a": "QuickPatch.Actors.Application.Abstractions.ISupplierRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.SupplierRepository",
+   "a": "QuickPatch.Actors.Domain.Suppliers.Supplier"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.SupplierRepository",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.TechnicianActorRepository",
+   "a": "QuickPatch.Actors.Application.Abstractions.ITechnicianActorRepository"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.TechnicianActorRepository",
+   "a": "QuickPatch.Actors.Application.Abstractions.TeamCount"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.TechnicianActorRepository",
+   "a": "QuickPatch.Actors.Domain.Technicians.TechnicianActor"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.TechnicianActorRepository",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.TenantUnitOfWork",
+   "a": "QuickPatch.Actors.Application.Abstractions.ITenantUnitOfWork"
+  },
+  {
+   "de": "QuickPatch.Actors.Infrastructure.Persistence.TenantUnitOfWork",
+   "a": "QuickPatch.Actors.Infrastructure.Persistence.ActorsDbContext"
+  }
+ ],
+ "commit": "5c85eb6"
+}

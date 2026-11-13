@@ -10,7 +10,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[2]
 CODIGO = RAIZ / "docs" / "architecture" / "codigo"
-SERVICIOS = ["identity", "catalog", "service-request", "matching", "ranking", "payments", "communication"]
+SERVICIOS = ["identity", "actors", "catalog", "service-request", "matching", "ranking", "payments", "communication"]
 METRICAS = [
     ("violaciones_de_capas", "Violaciones de SDD 10.3.2", "menos"),
     ("ciclos_entre_paquetes", "Ciclos entre paquetes", "menos"),

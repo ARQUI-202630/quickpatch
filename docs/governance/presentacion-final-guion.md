@@ -11,7 +11,7 @@ Cada servicio, sistema o elemento de un diagrama lleva una de estas marcas, con 
 | Marca | Significa | Elementos al 12 de noviembre |
 |---|---|---|
 | **IMPLEMENTADO** | Hay código en `develop` y corre en QA y en producción | Identity, Catalog, ServiceRequest, Matching, Ranking, Payments, Communication, API Gateway, panel web, app móvil |
-| **PLANEADO** | Diseñado, sin código | Actors (esqueleto), receptor de webhooks del PSP, regla de 4 horas (AC9-E3) |
+| **PLANEADO** | Diseñado, sin código | Receptor de webhooks del PSP, aliados de Actors (Ally), regla de 4 horas (AC9-E3) |
 | **EXTERNO** | Sistema de un tercero | Pasarela de pagos PCI-DSS certificada (sin contratar), GitHub |
 | **MOCK** | Reemplazo simulado de un externo | Pasarela simulada (`SimulatedPaymentProvider`, ADR-009 modificado) |
 
@@ -30,7 +30,7 @@ Los 27 diagramas C4 exportados (`docs/architecture/diagrams/c4/`) llevan las mis
 | 5 | Alcance | 6 roles (4 en la app y 2 en el panel), 33 RF y 14 RNF, Bogotá D.C., pago con pasarela simulada; lo que quedó fuera (FA1 a FA3, R1) | Cifras canónicas: «Producto y alcance» |
 | 6 | Solución, recorrido del cliente | Solicitar → técnico asignado → acepta → chat → cotización → acepta → ejecución con evidencia → pago → comprobante → calificación → reputación | Humo del flujo crítico en QA (30-oct) |
 | 7 | Contexto (C4 nivel 1) | Los 6 roles agrupados por canal y la pasarela como externo | Figura `C4-02-Contexto` (SCRUM-689) |
-| 8 | Contenedores (C4 nivel 2) | 8 microservicios definidos, **7 IMPLEMENTADOS** y Actors **PLANEADO**; 20 eventos de Kafka; 8 bases lógicas | `C4-03a-Contenedores-Sincrono` y `C4-03b-Contenedores-Eventos` (una lámina cada una si hace falta); cifras canónicas |
+| 8 | Contenedores (C4 nivel 2) | 8 microservicios definidos y **8 IMPLEMENTADOS** (Actors desde SCRUM-640, como directorio por eventos); 7 desplegados; 20 eventos de Kafka; 8 bases lógicas | `C4-03a-Contenedores-Sincrono` y `C4-03b-Contenedores-Eventos` (una lámina cada una si hace falta); cifras canónicas |
 | 9 | Arquitectura interna | Cuatro capas con reglas verificadas en el CI de cada servicio (SDD 10.3.2) | — |
 | 10 | Refactor del cierre | Antes y después medidos con la misma herramienta (12-nov): de 3 servicios con ciclos entre paquetes a ninguno (Identity, Matching y Payments); fan-out máximo de ServiceRequest de 31 a 21. Mostrar también lo que empeoró (fan-out de Matching de 10 a 13) y lo pendiente (Identity: 11 violaciones, SCRUM-650) | `docs/architecture/codigo/README.md` |
 | 11 | Diagrama de código | Generado desde el código, no dibujado a mano | `tools/arquitectura/`, SDD 7.3 |
@@ -40,7 +40,7 @@ Los 27 diagramas C4 exportados (`docs/architecture/diagrams/c4/`) llevan las mis
 | 15 | Escenarios de calidad | 52 escenarios: 35 Cumple, 8 Parcial, 3 No cumple y 6 No medido = 75,00 % (SCRUM-664); los que no cumplen, con su motivo | Matriz de 52 escenarios |
 | 16 | Funcionalidades | 33 RF definidos, 33 implementados, 33 verificados en QA y 33 aceptados (SCRUM-700); 4 extensiones aparte; avance 92,50 %. **No usar** «37/37», «94 %», «91,92 %» ni «81,73 %» | SCRUM-700 |
 | 17 | UAT | Escenarios por rol y resultado de la UAT de cierre | SCRUM-658 |
-| 18 | Lo que no se construyó | Pasarela real, Actors y AC9-E3, cada uno con su motivo. Lo que sí se cerró al final: el código transversal compartido (AC7-E5, ADR-020) | Cierre §5 y §6 |
+| 18 | Lo que no se construyó | Pasarela real, aliados de Actors (Ally) y AC9-E3, cada uno con su motivo. Lo que sí se cerró al final: el código transversal compartido (AC7-E5, ADR-020) y Actors como directorio por eventos (SCRUM-640) | Cierre §5 y §6 |
 | 19 | Riesgos y restricciones | R3, R5, R9, R10 y R11; riesgos aceptados del SAD 6.2 | Cierre §7 |
 | 20 | Cierre | Qué se logró y qué lo demuestra | Cierre §8, con la revisión de la PO (SCRUM-704) |
 
@@ -53,11 +53,11 @@ Todo el equipo debe responderlas igual, con estas respuestas:
 | ¿Cuántos usuarios o roles hay? | 6: Cliente, Empresa, Técnico y Proveedor (app); Admin del tenant y Admin de plataforma (panel) |
 | ¿Cuántas funcionalidades? | 33 requisitos funcionales: 33 implementados, 33 verificados en QA y 33 aceptados; más 4 extensiones aparte. Avance 92,50 % |
 | ¿Cuántos escenarios? | 52, en 9 atributos de calidad |
-| ¿Cuántos servicios? | 8 definidos; 7 implementados; Actors planeado |
+| ¿Cuántos servicios? | 8 definidos y 8 con código. 7 desplegados; Actors, implementado el 12-nov, espera su despliegue en QA |
 | ¿Cuáles están en producción? | Los 7 con código, el panel y la app, desde el 4 de noviembre. QA va adelante en los 7 servicios y en el panel (refactor del Sprint 6 y código compartido de ADR-020); llegan a producción solo por `release/*` → `main` (matriz de lo modelado frente a lo real) |
 | ¿Cuántos repositorios? | 14: 13 de componentes (el último, `quickpatch-shared-dotnet`, por ADR-020) y el principal |
 | ¿Cuántos topics? | 20 |
-| ¿Qué quedó pendiente? | Pasarela real, Actors y AC9-E3 |
+| ¿Qué quedó pendiente? | Pasarela real, aliados de Actors (Ally), el despliegue de Actors y AC9-E3 |
 | ¿Cuántos escenarios cumplen? | 35 Cumple, 8 Parcial, 3 No cumple y 6 No medido: 75,00 % (SCRUM-664) |
 | ¿Cuántos diagramas C4 hay? | 27 vistas del modelo de Structurizr, todas con la leyenda de estados, más 2 diagramas de código (C4-07) |
 | ¿Cuál fue el resultado? | El de la conclusión del documento de cierre, aprobada por la PO |

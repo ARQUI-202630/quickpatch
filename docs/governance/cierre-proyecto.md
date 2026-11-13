@@ -35,14 +35,14 @@ Construir un MVP de una plataforma **multi-tenant** de servicios técnicos para 
 | Administración | Verificación y suspensión de técnicos, gestión de tenants y panel operativo | Panel web, Identity |
 | Infraestructura y calidad | 14 repositorios con CI propio; 2 ambientes (QA y producción) en 7 VM; promoción a producción solo desde `release/*` probado en QA; observabilidad con Prometheus, Loki y Grafana | ADR-021, ADR-022, ADR-028 |
 
-**Arquitectura final.** 8 microservicios definidos, de los cuales 7 tienen código y están desplegados en QA y en producción; Actors es un esqueleto (planeado). Hay 20 eventos de Kafka con Outbox e idempotencia, y 8 bases lógicas en una instancia de PostgreSQL por ambiente. En el Sprint 6, cinco servicios se refactorizaron con reglas de dependencia verificadas por pruebas de arquitectura en su CI. Medido con la misma herramienta antes y después (12-nov, SDD 7.3), ningún servicio quedó con ciclos entre paquetes (antes había 3: Identity, Matching y Payments) y el fan-out máximo de ServiceRequest bajó de 31 a 21. Identity mantiene 11 violaciones de la matriz de dependencias hasta su refactor (SCRUM-650). El nivel de código se genera desde el código.
+**Arquitectura final.** 8 microservicios definidos, todos con código. 7 están desplegados en QA y en producción. Actors pasó de esqueleto a directorio de proveedores y clientes por eventos el 12 de noviembre (SCRUM-640), y su despliegue en QA está pendiente. Hay 20 eventos de Kafka con Outbox e idempotencia, y 8 bases lógicas en una instancia de PostgreSQL por ambiente. En el Sprint 6, cinco servicios se refactorizaron con reglas de dependencia verificadas por pruebas de arquitectura en su CI. Medido con la misma herramienta antes y después (12-nov, SDD 7.3), ningún servicio quedó con ciclos entre paquetes (antes había 3: Identity, Matching y Payments) y el fan-out máximo de ServiceRequest bajó de 31 a 21. Identity mantiene 11 violaciones de la matriz de dependencias hasta su refactor (SCRUM-650). El nivel de código se genera desde el código.
 
 ## 5. Qué no construimos
 
 | Elemento | Por qué | Dónde queda registrado |
 |---|---|---|
 | Pasarela de pagos certificada real | Sin presupuesto ni dominio público (R5, R9); se usa la simulada detrás del mismo puerto | ADR-009 modificado; matriz de lo modelado frente a lo real |
-| Actors Service | Sus conceptos siguen siendo evolutivos; el equipo del proveedor vive en Identity mientras tanto | SAD 4.2.2 |
+| Aliados en Actors Service (Ally) y la administración del equipo desde Actors | Ally sigue siendo evolutivo y ningún evento lo origina. Actors proyecta el equipo del proveedor (SCRUM-640), pero el equipo se sigue creando en Identity (P-02) | SAD 4.2.2; SDD 6.5 |
 | Regla de 4 horas para servicios sin cierre (AC9-E3) | Función nueva que no estaba comprometida; quedó fuera por el feature freeze | Working Agreements (SCRUM-646) |
 | Módulo de reclamos, modo sin conexión y SEO | Fuera de alcance del MVP | SAD 1.3 |
 

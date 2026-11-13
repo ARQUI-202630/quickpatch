@@ -73,7 +73,7 @@ Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estruc
 | Externo | Sistema de terceros fuera de QUICKPATCH | Fondo gris |
 | Mock | Implementado como simulación del sistema real | Fondo naranja y borde de puntos |
 
-Hoy son planeados Actors Service (un esqueleto sin lógica) con sus componentes y el receptor de webhooks del PSP. La pasarela de pagos certificada es externa y planeada, porque el proveedor está por definir. El único mock es `SimulatedPaymentProvider`, la pasarela simulada de Payments (ADR-009 modificado). El estado sale de la matriz modelado contra real (`matriz-modelado-vs-real.md`, SCRUM-697).
+Hoy son planeados el receptor de webhooks del PSP y, dentro de Actors, el concepto de aliados (Ally). Actors Service tiene código desde SCRUM-640 (directorio por eventos, sección 6.5); su despliegue en QA está pendiente. La pasarela de pagos certificada es externa y planeada, porque el proveedor está por definir. El único mock es `SimulatedPaymentProvider`, la pasarela simulada de Payments (ADR-009 modificado). El estado sale de la matriz modelado contra real (`matriz-modelado-vs-real.md`, SCRUM-697).
 
 **Inventario de vistas.**
 
@@ -494,19 +494,21 @@ En el incremento del Sprint 4, Identity suma:
 
 | Concepto | Estado | Responsabilidad |
 |---|---|---|
-| `Supplier` | Conceptual / evolutivo | Proveedor de materiales o repuestos. |
-| `Ally` | Conceptual / evolutivo | Técnico, profesional o empresa aliada que presta servicios. |
-| `Client` | Conceptual / evolutivo | Cliente hogar o empresarial que contrata servicios. |
+| `Supplier` | Implementado (SCRUM-640), como proyección | Proveedor con su equipo de técnicos (RF-16): tamaño del equipo y cuántos están aprobados. El equipo se sigue creando en Identity (DD, P-02). |
+| `Ally` | Conceptual / evolutivo | Técnico, profesional o empresa aliada que presta servicios. Ningún evento lo origina. |
+| `Client` | Implementado (SCRUM-640), como proyección | Cliente hogar o empresarial: cuántas solicitudes ha creado y cuándo fueron la primera y la última. |
 
-La persistencia detallada de estos conceptos se incorpora al DD cuando el Sprint correspondiente defina sus atributos y reglas.
+**Qué hace desde SCRUM-640.** Actors arma el directorio de actores de cada tenant solo con eventos que ya existen: `technician.registered` y `technician.verification-changed` de Identity, y `service-request.created` de ServiceRequest (quickpatch-kafka v0.11.0). No tiene REST (ADR-025), no publica eventos y no cambió ningún contrato. Cada evento se aplica una vez por `eventId` (ADR-007) bajo el tenant del evento. Los dos topics de técnicos llegan por separado, así que un cambio con `updatedAt` anterior al guardado se descarta, como en la réplica de Matching (ADR-017). Las tablas están en el DD 5.31 a 5.33. Límite: los topics guardan 7 días, así que el directorio empieza con lo que siga en Kafka al desplegarse.
+
+La persistencia de `Ally` se incorporará al DD cuando un Sprint defina sus atributos y reglas.
 
 **Componentes (C4).**
 
 ![Componentes de Actors Service](diagrams/c4/C4-04-Componentes-Actors.png)
 
-**Figura 11. Componentes de Actors Service (C4 · Component; diseño). Vista `C4-04-Componentes-Actors`.**
+**Figura 11. Componentes de Actors Service (C4 · Component). Vista `C4-04-Componentes-Actors`.**
 
-Todos los componentes están planeados: el servicio es hoy un esqueleto y sus conceptos siguen siendo evolutivos (sección 6.14).
+Los consumidores (`Infrastructure/Messaging`) solo deserializan y delegan. Las reglas están en el dominio, y los casos de uso, en `Application`. Las pruebas de arquitectura (NetArchTest) verifican las reglas de 10.3.2 y que ningún consumidor toque los repositorios. Solo `Ally` sigue planeado.
 
 ## 6.6 Catalog Service
 
@@ -793,7 +795,7 @@ Los cambios relevantes del ciclo de servicio y pago conservan información sufic
 
 Permanecen sujetos a definición de Sprints posteriores:
 
-1. persistencia definitiva de Actors (`Supplier`, `Ally`, `Client`);
+1. persistencia de `Ally` en Actors y si Actors pasa a ser dueño del equipo del proveedor (hoy es una proyección, SCRUM-640);
 2. persistencia detallada de Ranking;
 3. modelos persistentes de Notification, Chat y Complaints;
 4. modelos relacionados con payroll-lite, si entran en alcance implementable;
@@ -804,7 +806,7 @@ Permanecen sujetos a definición de Sprints posteriores:
 
 # 7. Code diagrams
 
-**Desde el cierre (SCRUM-680), el nivel de código sale del código.** Los diagramas de paquetes y de clases, y las métricas de acoplamiento y cohesión de los 7 servicios con código, se generan desde los binarios de `develop` con `python tools/arquitectura/generar.py` (sección 7.3). No se dibujan a mano, así que no se desactualizan: se regeneran con un comando. Las secciones 7.1 y 7.2 se conservan como explicación de dos mecanismos, publicación confiable de eventos y aislamiento entre tenants, donde importa el orden de las llamadas dentro de una transacción y no solo quién depende de quién.
+**Desde el cierre (SCRUM-680), el nivel de código sale del código.** Los diagramas de paquetes y de clases, y las métricas de acoplamiento y cohesión de los 8 servicios con código (Actors desde SCRUM-640), se generan desde los binarios de `develop` con `python tools/arquitectura/generar.py` (sección 7.3). No se dibujan a mano, así que no se desactualizan: se regeneran con un comando. Las secciones 7.1 y 7.2 se conservan como explicación de dos mecanismos, publicación confiable de eventos y aislamiento entre tenants, donde importa el orden de las llamadas dentro de una transacción y no solo quién depende de quién.
 
 Los diagramas de 7.1 y 7.2 se trazaron sobre el código de `develop` del 7 de octubre de 2026 y nombran clases reales; los métodos y las dependencias que no intervienen en el mecanismo se omiten. Están en PlantUML (`diagrams/c4/C4-07-*.puml`) porque Structurizr no dibuja el nivel de código.
 
@@ -849,6 +851,7 @@ Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija d
 | Servicio | Violaciones | Ciclos entre paquetes | Tipos > 250 líneas | Fan-out máximo | Cambio principal |
 |---|---|---|---|---|---|
 | Identity | 11 → 11 | **1 → 0** | 2 → 2 | 80 → 79 | Sin su refactor (SCRUM-650 pendiente). El ciclo entre `Infrastructure.Messaging` e `Infrastructure.Persistence` desaparece al mover el Outbox y el consumo de Kafka a `quickpatch-shared-dotnet` (ADR-020); las 11 violaciones siguen |
+| Actors | — → 0 | — → 0 | — → 0 | — → 11 | Sin línea base: antes era un esqueleto. Implementado en SCRUM-640 en cuatro capas, con 0 ciclos, 0 violaciones y cohesión relacional de 0,88 |
 | Catalog | 0 → 0 | 0 → 0 | 0 → 0 | 15 → 14 | Resolución del tenant fuera del endpoint; un archivo por caso de uso, puerto y adaptador; pruebas de arquitectura |
 | ServiceRequest | 0 → 0 | 0 → 0 | 2 → 1 | 31 → 21 | Endpoints por recurso y sin dependencias entre grupos; validación fuera del agregado |
 | Matching | 0 → 0 | **1 → 0** | 0 → 0 | 10 → 13 | Puertos repartidos por responsabilidad; ArchUnit prohíbe ciclos |
@@ -1795,7 +1798,7 @@ infrastructure/   persistence/, messaging/, scheduling/, config/ (configuración
 | Communication | Sí | — (quickpatch-communication#19): `Api` en `Endpoints/` y `Http/`, puertos en `Application/Abstractions`, contratos en `Application/Events` y pruebas por capa. `Api/Realtime` agrupa el canal WebSocket (sesión, registro de conexiones y validación del token de la primera trama), que es entrada del API (ADR-023) | SCRUM-588 |
 | Matching | Sí | — (quickpatch-matching#19): `api/` en `controllers/`, `http/` y `security/` | SCRUM-588 |
 | Ranking | Sí | — (implementado en SCRUM-498 con la convención: `Domain/Reputation`, `Application`, `Infrastructure/Persistence` y `Infrastructure/Messaging`) | — |
-| Actors | — | Esqueleto: sigue la convención cuando se implemente. | — |
+| Actors | Sí | — (implementado en SCRUM-640 con la convención: `Domain/Technicians`, `Suppliers` y `Clients`, `Application/Technicians` y `Clients`, `Infrastructure/Persistence` y `Infrastructure/Messaging`) | — |
 
 ### 10.3.2 Reglas de dependencia verificables (SCRUM-648)
 
@@ -1864,7 +1867,7 @@ La convención de 10.3.1 ordena las carpetas, pero el profesor observó en el ci
    - `Infrastructure` no depende de `Api`.
 
    Corren en el CI del servicio: una violación rompe el PR. Cada refactor del Sprint 6 agrega estas pruebas a su servicio.
-3. **Análisis de dependencias desde el código** (SCRUM-680, sección 7). Mide los ciclos entre paquetes, el fan-in y el fan-out, y las violaciones de la matriz en los 7 servicios con código, antes y después del refactor (SCRUM-649).
+3. **Análisis de dependencias desde el código** (SCRUM-680, sección 7). Mide los ciclos entre paquetes, el fan-in y el fan-out, y las violaciones de la matriz en los servicios con código, antes y después del refactor (SCRUM-649). Actors solo tiene medición «después», porque antes era un esqueleto.
 
 ---
 
