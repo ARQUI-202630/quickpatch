@@ -120,7 +120,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idEndpoints = component "IdentityEndpoints" "Registro, login, /password/setup y /password-recovery (SCRUM-624); /users/me (SCRUM-611); /platform/tenants; /admin/technicians y /admin/password-recovery-requests; /providers/me/technicians; /internal/v1/users (solo en el clúster)." "Minimal API · Api/Endpoints"
                     idCompanyEndpoints = component "CompanyEndpoints" "POST /v1/auth/register/company; GET /v1/companies/me y POST /v1/companies/me/users (RF-06)." "Minimal API · Api/Endpoints"
                     idSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Lee usuario, tenant, rol y company_id del JWT y registra cada 403 (RNF-04)." "ASP.NET Core · Api/Security"
-                    idHttp = component "CorrelationId y Problems" "Propaga X-Correlation-Id y responde application/problem+json." "ASP.NET Core · Api/Http"
+                    idHttp = component "Problems y BadRequestExceptionHandler" "Responde application/problem+json. X-Correlation-Id y el registro estructurado vienen de quickpatch-shared-dotnet (ADR-020)." "ASP.NET Core · Api/Http"
                     idBootstrap = component "TenantAdminBootstrap" "Al arrancar crea el admin del tenant y el de plataforma desde el Secret (SCRUM-450)." "Hosted service · Api/Bootstrap"
                     # Application
                     idAuth = component "Auth" "LoginHandler (bloqueo tras 5 intentos), RegisterClientHandler, RegisterTechnicianHandler y EnsureTenantAdminHandler; Request, ListPasswordRecoveries, IssueRecoveryLink y ConfirmPasswordRecoveryHandler (SCRUM-624)." "Casos de uso · Application/Auth"
@@ -134,7 +134,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idPersistence = component "TenantUnitOfWork, PlatformUnitOfWork y repositorios" "UserRepository, TenantRepository, TechnicianProfileRepository, ClientCompanyRepository, PasswordSetupTokenRepository, PasswordRecoveryRepository y AuditLog; RLS con app.current_tenant o SET LOCAL ROLE identity_platform." "EF Core + Npgsql · Infrastructure/Persistence"
                     idSecurityAdapters = component "RsaTokenIssuer, BCryptPasswordHasher y HmacEmailHasher" "Firma el JWT RS256 (ADR-018), hace el hash de las contraseñas (RNF-03) y el HMAC-SHA256 del correo de la recuperación (SCRUM-624)." "Infrastructure/Security"
                     idOutbox = component "EfOutbox" "Guarda technician.registered, technician.verification-changed y tenant.status-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Messaging"
-                    idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
+                    idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
                     idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta la reputación en technician_profiles; descarta lo atrasado por changedAt (ADR-027)." "Kafka consumer · Infrastructure/Messaging"
                 }
                 actors = container "Actors Service" "Esqueleto sin lógica: solo Program.cs (SCRUM-696). Proveedores, aliados y clientes como actores de negocio." "ASP.NET Core (.NET 10)" "Microservicio,Planeado" {
@@ -148,7 +148,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     # Api
                     catEndpoints = component "CategoryEndpoints" "GET /v1/catalog/categories (obsoleta por ADR-025); POST y PATCH /v1/catalog/admin/categories." "Minimal API · Api/Endpoints"
                     catSecurity = component "AuthenticatedUser, RequestTenant y ForbiddenAuditHandler" "Usuario, tenant y rol del JWT. RequestTenant resuelve el tenant del token o, sin token, del canal (RN-U5), fuera del endpoint. Registra los 403." "ASP.NET Core · Api/Security"
-                    catHttp = component "CorrelationId y Problems" "Propaga X-Correlation-Id y responde application/problem+json." "ASP.NET Core · Api/Http"
+                    catHttp = component "Problems y BadRequestExceptionHandler" "Responde application/problem+json. X-Correlation-Id y el registro estructurado vienen de quickpatch-shared-dotnet (ADR-020)." "ASP.NET Core · Api/Http"
                     # Application
                     catHandlers = component "Categories" "ListCategories, CreateCategory y UpdateCategory, un caso de uso por archivo; nombre único por tenant (409)." "Casos de uso · Application/Categories"
                     # Domain
@@ -157,7 +157,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     catPersistence = component "TenantUnitOfWork y CategoryRepository" "service_categories bajo RLS (app.current_tenant)." "EF Core + Npgsql · Infrastructure/Persistence"
                     catOutbox = component "EfOutbox" "Guarda catalog.category-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
                     catResync = component "CategoryResync" "Vuelve a publicar todas las categorías una vez, con la descripción, para la réplica de ServiceRequest (ADR-025)." "Infrastructure/Persistence"
-                    catPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
+                    catPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
                 }
                 serviceRequest = container "ServiceRequest Service" "Ciclo de vida de la solicitud de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
@@ -180,7 +180,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     # Infrastructure
                     srPersistence = component "TenantUnitOfWork y repositorios" "ServiceRequestRepository, QuoteRepository, EvidenceRepository, RatingRepository, CategoryReplicaRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
                     srOutbox = component "EfOutbox" "Guarda los eventos de la solicitud en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
-                    srPublisher = component "OutboxPublisher" "Lotes con FOR UPDATE SKIP LOCKED; publica y marca published_at." "BackgroundService · Infrastructure/Messaging"
+                    srPublisher = component "OutboxPublisher" "Lotes con FOR UPDATE SKIP LOCKED; publica y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
                     srTenantConsumer = component "TenantStatusChangedConsumer" "Consume tenant.status-changed (SCRUM-510)." "Kafka consumer · Infrastructure/Messaging"
                     srCategoryConsumer = component "CategoryChangedConsumer" "Consume catalog.category-changed." "Kafka consumer · Infrastructure/Messaging"
                     srMatchingConsumer = component "MatchingEventsConsumer" "Consume matching.technician-assigned, .no-technician-available y .search-resumed." "Kafka consumer · Infrastructure/Messaging"
@@ -226,7 +226,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     # Infrastructure
                     raPersistence = component "TenantUnitOfWork y repositorios" "ReputationRepository (FOR UPDATE por técnico) y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
                     raOutbox = component "EfOutbox" "Guarda ranking.technician-reputation-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
-                    raPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol ranking_outbox y marca published_at." "BackgroundService · Infrastructure/Messaging"
+                    raPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol ranking_outbox y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
                     raConsumer = component "ServiceRequestRatedConsumer" "Consume service-request.rated y confirma el offset después de aplicar; solo transporte: el contrato lo valida Application." "Kafka consumer · Infrastructure/Messaging"
                 }
                 payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" "Microservicio" {
@@ -243,7 +243,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     # Infrastructure
                     paPersistence = component "TenantUnitOfWork y repositorios" "PaymentRepository, PaymentTechnicianRepository, ReconciliationSource y ProcessedEventRepository bajo RLS, un adaptador por archivo." "EF Core + Npgsql · Infrastructure/Persistence"
                     paOutbox = component "EfOutbox" "Guarda payment.approved o payment.rejected en outbox_events en la misma transacción." "EF Core · Infrastructure/Persistence"
-                    paPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at." "BackgroundService · Infrastructure/Messaging"
+                    paPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
                     paCompletedConsumer = component "ServiceRequestCompletedConsumer" "Consume service-request.completed." "Kafka consumer · Infrastructure/Messaging"
                     paReconciliation = component "ReconciliationJob" "Cierra los pagos que la pasarela dejó sin respuesta (AC9-E5)." "BackgroundService · Infrastructure/Messaging"
                     paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado): no cobra de verdad." "Infrastructure/Providers" "Mock"
