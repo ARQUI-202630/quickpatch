@@ -1,0 +1,57 @@
+AC4-E8: uso de la app en un dispositivo de gama baja contra QA (SCRUM-667), 19 de noviembre de 2026
+=================================================================================================
+
+Meta (matriz-escenarios-calidad-52.md): el flujo se completa sin cierres inesperados y cada pantalla carga en menos de 3 s
+en el dispositivo de referencia de gama baja.
+
+Perfil del dispositivo de referencia (emulador de Android)
+- AVD «quickpatch», imagen Google APIs x86_64, Android 16 (API 36).
+- Lanzado con: emulator -avd quickpatch -memory 2048 -cores 2 -skin 720x1600 -no-snapshot
+  · RAM: 2 GB (MemTotal visto por el sistema: 2.532.300 kB); heap de la VM: 228 MB.
+  · CPU: 2 núcleos (nproc = 2).
+  · Pantalla: 720 x 1600 (wm size), como un teléfono de entrada.
+- Red: la del equipo de desarrollo por la VPN del laboratorio, hacia VM1 (10.43.100.168) con Host qa.quickpatch.internal y
+  el certificado fijado de config/qa.json.
+
+Versión probada
+- quickpatch-mobile v0.6.0-qa (commit 0d0b0b1), la misma que está publicada en QA, contra los servicios de QA del 19-nov
+  (identity 0.10.4, catalog 0.4.4, service-request 0.12.3, communication 0.3.6).
+- Prueba: integration_test/humo_qa_test.dart (SCRUM-448), que corre la app real: inicio de sesión de un cliente nuevo,
+  formulario con categorías de Catalog, dirección ubicada («¿Es aquí?»), creación de la solicitud y cancelación con motivo.
+  Mide en cada paso el tiempo desde la acción hasta que aparece la pantalla siguiente.
+- La prueba corre en modo debug (JIT, sin las optimizaciones de release), que es más lento que el APK de release que instala
+  el usuario. Los tiempos son, por tanto, una cota superior.
+
+Hallazgo previo a la medición
+- La primera corrida terminó el flujo (la solicitud quedó cancelada), pero la prueba falló en la última comprobación con
+  «Bad state: No element». La causa es de la prueba, no de la app: la lista del detalle es perezosa, y tras bajar hasta el
+  botón de cancelar el encabezado con el estado ya no está construido. Se corrigió en quickpatch-mobile#61 (la prueba vuelve
+  a subir antes de comprobar «Cancelada»), y las tres corridas medidas usan esa corrección.
+
+Resultados (ms; 3 corridas seguidas, cada una con un cliente nuevo de clave aleatoria)
+
+| Paso                                              | Corrida 1 | Corrida 2 | Corrida 3 | Máximo | < 3 s |
+|---------------------------------------------------|-----------|-----------|-----------|--------|-------|
+| Pantalla de inicio de sesión (arranque de la app) |      1315 |       942 |      1133 |   1315 | Sí    |
+| Inicio de sesión del cliente (Identity)           |      1492 |      1415 |      1582 |   1582 | Sí    |
+| Formulario con las categorías de Catalog          |       242 |       244 |       251 |    251 | Sí    |
+| Lista de categorías                               |       226 |       256 |       247 |    256 | Sí    |
+| «¿Es aquí?» con la dirección ubicada              |       317 |       292 |       309 |    317 | Sí    |
+| Solicitud creada y detalle abierto                |       332 |       358 |       365 |    365 | Sí    |
+| Diálogo de cancelación                            |       264 |       250 |       275 |    275 | Sí    |
+| Solicitud cancelada con su motivo                 |       255 |       237 |       288 |    288 | Sí    |
+| Resultado de la prueba                            |    pasa   |    pasa   |    pasa   |        |       |
+
+- Pantalla más lenta: el inicio de sesión, con 1582 ms (incluye la llamada a Identity por la VPN). Margen frente a 3 s: 47 %.
+- Cierres inesperados: 0. adb logcat -d, revisado al final, no tiene «FATAL EXCEPTION» ni «ANR in» del paquete de la app.
+
+Alcance y límites
+- Cubre el recorrido del cliente: solicitud y cancelación. La aceptación por el técnico ya la miden las colecciones de Newman
+  y el humo del flujo crítico contra QA (tests/e2e/evidencias/humo-flujo-critico-qa-2026-11-19.txt). Esta prueba no la
+  recorre en la app.
+- Es un emulador acelerado sobre el procesador del equipo de desarrollo, con la RAM y los núcleos limitados, y no un teléfono
+  físico de gama baja.
+
+Estado propuesto para AC4-E8: Cumple (0 cierres; máximo 1,58 s por pantalla frente a 3 s), pendiente de que QA y la PO lo
+ratifiquen en la matriz (SCRUM-663).
+Cuentas de prueba: humo448.<sufijo>@quickpatch.test, con clave aleatoria que no se guarda; cada solicitud quedó cancelada.
