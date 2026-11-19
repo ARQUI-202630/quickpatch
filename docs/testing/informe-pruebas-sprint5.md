@@ -1,8 +1,8 @@
 # Informe Consolidado de Pruebas — Sprint 5 (SCRUM-524 / SCRUM-528)
 
 **Código del Documento:** `INF-QA-SP5-2026-11-04`  
-**Versión:** `1.3 (cifras conciliadas con las fuentes únicas, SCRUM-701)`  
-**Fecha de Emisión:** 4 de noviembre de 2026 (versiones 1.1 y 1.2: 5 de noviembre de 2026; versión 1.3: 12 de noviembre de 2026)  
+**Versión:** `1.4 (registro de defectos completo: 24)`  
+**Fecha de Emisión:** 4 de noviembre de 2026 (versiones 1.1 y 1.2: 5 de noviembre de 2026; versión 1.3: 12 de noviembre de 2026; versión 1.4: 13 de noviembre de 2026)  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
 **Trazabilidad Jira:** Historia Padre `SCRUM-524` | Subtareas `SCRUM-525`, `SCRUM-526`, `SCRUM-527`, `SCRUM-528`  
 **Referencias:** SRS V5.11 / SAD V4 / DD V5.19 / TD V3.3 / ADR-015 / ADR-022 / ADR-023 / RNF-08  
@@ -37,7 +37,7 @@
 - **PCI-DSS:** 4 corridas en el sprint, cada una con 5000 líneas de Loki revisadas y 0 hallazgos (SCRUM-527).
 - **k6, 5 de noviembre (noche del 4 en Colombia):** con 50 usuarios, crear solicitud p95 de 88 ms y catálogo p95 de 32 ms, con 0,01 % de peticiones fallidas. Con 150 usuarios, 0 errores 5xx y p95 de 1.183 ms, con 0,03 % de peticiones fallidas. Con esta corrida no queda ninguna excepción al RNF-08 vigente (SCRUM-526).
 - **ZAP:** el escaneo base terminó con 0 FAIL en todas las corridas del sprint. Las 4 advertencias son de cabeceras en QA y están conocidas (DEF-S4-03).
-- **Defectos:** 19 registrados entre los Sprints 3 y 5 (14 corregidos, 1 no aplica a producción, 4 en mitigación); 0 bloqueantes abiertos. En este sprint se encontró y se corrigió además el defecto del puntaje como texto en ServiceRequest (SCRUM-87).
+- **Defectos:** 24 registrados entre los Sprints 3 y 5 (18 corregidos, 1 no aplica a producción, 4 en mitigación y 1 abierto de severidad Baja); 0 bloqueantes abiertos. Incluye los hallazgos del Sprint 5 que estaban fuera del registro: el puntaje como texto en ServiceRequest (SCRUM-87), el apagado de QuoteExpirer y DEF-INT-01 a DEF-INT-03.
 
 ### 1.2 Cuadro de Mando de Compuertas
 
@@ -78,7 +78,7 @@ Corte del 12 de noviembre de 2026. Los indicadores funcionales salen de [`indica
 ![Gráfica 2: Tasa de éxito de las pruebas](img/grafica-2-torta-exito-pruebas.png)
 
 #### Gráfica 3: Estado y severidad de los defectos
-19 defectos registrados entre los Sprints 3 y 5: 15 corregidos o no aplicables, 4 en mitigación y 0 bloqueantes abiertos.
+24 defectos registrados entre los Sprints 3 y 5: 19 corregidos o no aplicables, 4 en mitigación, 1 abierto (Baja) y 0 bloqueantes abiertos.
 
 ![Gráfica 3: Estado y severidad de los defectos](img/grafica-3-barras-defectos.png)
 
@@ -267,19 +267,21 @@ Fuentes: hoja `Defectos` de [`docs/testing/Matriz_UAT_Avance_QuickPatch.xlsx`](M
 |---|---|---|
 | Corregidos y verificados (Sprint 3) | 4 | BUG-001 a BUG-004 |
 | Corregidos y verificados (Sprint 4) | 10 | BUG-SP4-001 a BUG-SP4-009, DEF-S4-02 |
+| Corregidos y verificados (Sprint 5) | 4 | HAL-S5-01, HAL-S5-02, DEF-INT-01 y DEF-INT-02 |
 | No aplica a producción | 1 | DEF-S4-03 (HSTS y nosniff solo en QA) |
 | En mitigación, no bloqueantes | 4 | DEF-S5-01 a DEF-S5-04 |
-| **Total** | **19** | 0 bloqueantes abiertos (15 de ellos en el registro de los Sprints 4 y 5) |
+| Abierto, no bloqueante | 1 | DEF-INT-03 (Baja: perfil de gama baja, depende de SCRUM-667) |
+| **Total** | **24** | 0 bloqueantes abiertos (20 de ellos en el registro de los Sprints 4 y 5) |
 
-### 4.2 Hallazgos del Sprint 5 fuera del registro
+### 4.2 Hallazgos del Sprint 5 que se sumaron al registro
 
 | Hallazgo | Dónde se encontró | Estado |
 |---|---|---|
-| ServiceRequest aceptaba `{"score":"5"}` (texto) con 201, aunque el contrato pide `integer` | Colección `scrum-32-calificacion` contra QA, 4 de noviembre (SCRUM-87) | Corregido en quickpatch-service-request#39 (`release/0.11.2`). La corrida quedó sin fallos |
-| ServiceRequest se apagaba por un `TaskCanceledException` sin capturar en QuoteExpirer | Primer intento del humo en producción, 4 de noviembre (SCRUM-523) | Corregido en service-request 0.11.1. Lectura repetida 14/14 |
-| DEF-INT-01 (faltaba la pantalla de calificación), DEF-INT-02 (arnés de accesibilidad) y DEF-INT-03 (perfil de gama baja) | SCRUM-569 | DEF-INT-01 cerrado con SCRUM-86; DEF-INT-02 y DEF-INT-03 abiertos. Registrados en el PR #254 |
+| HAL-S5-01: ServiceRequest aceptaba `{"score":"5"}` (texto) con 201, aunque el contrato pide `integer` | Colección `scrum-32-calificacion` contra QA, 4 de noviembre (SCRUM-87) | Corregido en quickpatch-service-request#39 (`release/0.11.2`). La corrida quedó sin fallos |
+| HAL-S5-02: ServiceRequest se apagaba por un `TaskCanceledException` sin capturar en QuoteExpirer | Primer intento del humo en producción, 4 de noviembre (SCRUM-523) | Corregido en service-request 0.11.1. Lectura repetida 14/14 |
+| DEF-INT-01 (faltaba la pantalla de calificación), DEF-INT-02 (arnés de accesibilidad) y DEF-INT-03 (perfil de gama baja) | SCRUM-569 | DEF-INT-01 cerrado con SCRUM-86 y DEF-INT-02 con quickpatch-mobile#58. DEF-INT-03 sigue abierto |
 
-Estos hallazgos se suman al registro de defectos cuando se fusione el PR #254.
+Desde el 13 de noviembre están en `registro-defectos-sprint4-sprint5.md` (v2.1) y en la hoja `Defectos` de `Matriz_UAT_Avance_QuickPatch.xlsx`, igual que en la hoja `Defectos` del Informe UAT oficial de la PO.
 
 ### 4.3 Defectos en mitigación
 
@@ -299,7 +301,7 @@ Estos hallazgos se suman al registro de defectos cuando se fusione el PR #254.
 3. **SCRUM-608:** hecho. La Product Owner aceptó el incremento en el Informe UAT oficial del 5 de noviembre, y el acta quedó en `develop` con el PR #272. AC4-E3, AC4-E4 y AC4-E9 siguen sin medir con personas; se miden en la UAT de cierre (SCRUM-658).
 4. **SCRUM-569:** con el PR #254, la matriz de 52 escenarios queda alineada con esta evaluación (AC4-E2, AC4-E5, AC4-E6 y AC4-E9), y el porcentaje de escenarios pasa de 49.04% a 51.92%.
 5. **SCRUM-566 y SCRUM-664:** la matriz de 52 escenarios es la fuente única de los escenarios. Al 12 de noviembre da 75.00% (35 Cumple, 8 Parcial, 3 No cumple y 6 No medido), y `scripts/calcular_indicadores_qa.py` la recalcula.
-6. **Registro de defectos:** sumar al registro y a la hoja `Defectos` el hallazgo del puntaje como texto (quickpatch-service-request#39), el apagado de QuoteExpirer y los DEF-INT del PR #254.
+6. **Registro de defectos:** hecho el 13 de noviembre. El registro y la hoja `Defectos` suman HAL-S5-01, HAL-S5-02 y DEF-INT-01 a DEF-INT-03, y el total queda en 24.
 
 ---
 
