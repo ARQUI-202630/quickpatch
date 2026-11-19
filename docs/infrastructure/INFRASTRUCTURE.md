@@ -348,7 +348,7 @@ Foto de lo que corre hoy, tomada con comandos de solo lectura (SCRUM-553 y SCRUM
 
 | | Producción (VM3, VM4, VM6) | QA (VM2, VM5, VM7) |
 |---|---|---|
-| Microservicios en k3s | 7 Deployment, todos en servicio: identity 0.8.1, catalog 0.4.1, service-request 0.11.2, matching 0.6.1, payments 0.3.0, communication 0.3.3 y ranking 0.1.0 | 7, todos en servicio: los mismos, salvo identity 0.9.0 (contraseña cifrada, SCRUM-644) y service-request 0.12.0, sin promover |
+| Microservicios en k3s | 7 Deployment, todos en servicio: identity 0.8.1, catalog 0.4.1, service-request 0.11.2, matching 0.6.1, payments 0.3.0, communication 0.3.3 y ranking 0.1.0 | 7, todos en servicio, por delante de producción: identity 0.10.4, catalog 0.4.4, service-request 0.12.3, matching 0.6.2, ranking 0.1.3, payments 0.3.3 y communication 0.3.6 (al 19 de noviembre; [inventario](inventario-versiones-por-ambiente.md)) |
 | Pods | 7 de 7 en `1/1 Running`, 0 reinicios (service-request, sin reiniciar desde la promoción de la 0.11.2 el 4 de noviembre) | 7 de 7 en `1/1 Running`, 0 reinicios |
 | `Secret` y `ConfigMap` | Los de los 7 servicios; los 14 `Secret` del almacén de k3s están cifrados en reposo desde el 4 de noviembre (sección 10.5) | Los de los 7 servicios; cifrados desde el 30 de octubre |
 | Ingress | Catalog, Communication, Identity, Matching y ServiceRequest, más las `IngressRoute` de `payments` y `communication-chat`; Ranking no expone REST | Los mismos |
@@ -357,8 +357,8 @@ Foto de lo que corre hoy, tomada con comandos de solo lectura (SCRUM-553 y SCRUM
 | Kafka | 20 topics (los mismos que QA; el 4 de noviembre se crearon `service-request.rated`, `ranking.technician-reputation-changed` y `tenant.status-changed`) y 6 grupos de consumidores, todos estables y con lag 0 | 20 topics y 28 pares grupo-topic con lag 0 |
 | Garage | En servicio (VM6), con el bucket `service-request-evidencias` | En servicio (VM7) |
 | Catálogo | 6 categorías base sembradas el 4 de noviembre (Plomería, Eléctrico, Cerrajería, Electrodomésticos, Aire acondicionado y Pintura); la réplica de ServiceRequest las muestra | 6 categorías base |
-| Panel Angular | Página provisional: el panel real no se ha promovido | Build real de `release/0.6.0` (10 de noviembre) |
-| App móvil | Sin promover | APK `v0.6.0-qa` (10 de noviembre) |
+| Panel Angular | Build real de `release/0.5.5`, promovido la noche del 4 de noviembre (job «Panel en produccion») | Build real de `release/0.7.0` (11 de noviembre) |
+| App móvil | APK de `release/0.5.4`, publicado el 4 de noviembre (job «Publicar el APK de producción») | APK `v0.6.0-qa` (10 de noviembre) |
 | Gateway | Nginx propio en VM3 (ADR-028) | Nginx propio en VM2 (ADR-028) |
 
 **Cómo se promovió (4 de noviembre de 2026).** Orden: identity, catalog, service-request, matching, payments, communication y ranking, de uno en uno. Para cada servicio: PR de `release/*` a `main` con el CI en verde y el mismo commit que corre en QA; **manifiestos de `main` aplicados con `primer-despliegue-servicios.yml` antes de aprobar el despliegue** (el pipeline solo cambia la imagen: un manifiesto con variables nuevas que el clúster no tiene deja el pod sin arrancar y el pipeline hace `rollout undo`); aprobación del ambiente `produccion`; `aplicar-roles-db.yml` después de la migración, porque los `GRANT` necesitan las tablas que crea el init container; y comprobación de pods, rutas del contrato y grupos de Kafka. La compuerta automática de QA (RNF-08) bloqueó el primer despliegue de identity porque el humo de los frontends era anterior a la llegada de la versión a QA, y se repitió. En un primer despliegue, el Deployment que esperó mucho con la imagen `:pendiente` arrastra `ProgressDeadlineExceeded` y el job puede fallar aunque el pod llegue a `Ready` (pasó con ranking): se reintenta de inmediato.
@@ -367,9 +367,9 @@ Foto de lo que corre hoy, tomada con comandos de solo lectura (SCRUM-553 y SCRUM
 
 Lo que falta:
 
-- **Panel real y app móvil.** El job de `quickpatch-web` publica en VM3 al hacer push a `main`, pero el panel y la app no se han promovido (decisión del 4 de noviembre). Antes hay que repetir `humo-frontends.yml` y `pruebas-sistema.yml`.
-- **Actors.** No tiene código ni manifiesto: sus bases y roles existen, pero no hay servicio que desplegar (sección 5.3).
-- **Identity 0.9.0 y service-request 0.12.0.** Corren en QA (identity con la contraseña cifrada en el cliente, SCRUM-644) y no se han promovido; producción tiene identity 0.8.1 y service-request 0.11.2, esta última promovida el 4 de noviembre por la noche. Las imágenes de catalog, communication, matching, payments y ranking son idénticas en QA y producción (mismo hash `t-<hash>`).
+- **Panel real y app móvil.** Se promovieron la noche del 4 de noviembre, después de `humo-frontends.yml` y `pruebas-sistema.yml` en verde: panel 0.5.5 y APK 0.5.4. Al 19 de noviembre, QA tiene el panel 0.7.0 y el APK `v0.6.0-qa`, sin promover.
+- **Actors.** Desde el 19 de noviembre tiene código, manifiesto (`deploy/k8s/actors.yaml`) y rol `actors_app` (SCRUM-640), pero todavía no se ha hecho su primer despliegue (sección 5.3).
+- **Versiones de QA sin promover.** Al 19 de noviembre, los 7 servicios de QA están por delante de producción: contraseña cifrada (SCRUM-644), refactors de Identity y Communication (SCRUM-650, SCRUM-656) y biblioteca compartida (SCRUM-657). La tabla completa y la traza release → QA → producción, con 0 versiones en producción sin corrida de QA, están en el [inventario por ambiente](inventario-versiones-por-ambiente.md) (SCRUM-671, SCRUM-672).
 - **Carga k6 del Sprint 5 (SCRUM-526).** La última medición bajo carga con 7 servicios fue el 28 de octubre (SCRUM-635); no se ha repetido con las versiones de hoy.
 
 Las imágenes de los servicios se etiquetan por el hash de su contenido (`t-<árbol>`, sección 6.1), así que la versión de cada servicio se ve en el release de su repositorio y no en el nombre de la imagen.

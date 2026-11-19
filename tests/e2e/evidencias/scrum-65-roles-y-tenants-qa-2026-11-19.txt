@@ -1,0 +1,83 @@
+scrum-65-roles-y-tenants contra QA, 2026-11-19
+Colección: tests/e2e/scrum-65-roles-y-tenants.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-11-19T16:32:03.387Z. Duración: 11 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — Roles, Permisos y Tenants (SCRUM-65, SCRUM-114)
+
+□ 1. Autenticación y Semillas de Prueba
+└ 1.1 Login Administrador de Tenant (Identity)
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1073ms]
+  √  [Auth] Login de administrador exitoso (200 OK)
+  √  [RBAC] Rol verificado como admin_tenant
+
+└ 1.2 Crear Categoría de Servicio (Catalog)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 421B, 51ms]
+  √  [Catalog] Categoría creada exitosamente (201 Created)
+
+└ 1.3 Registro de Usuario con Rol Cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 440B, 952ms]
+  √  [Auth] Registro de cliente exitoso (201 Created)
+
+└ 1.4 Login de Usuario Cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1109ms]
+  √  [Auth] Login de cliente exitoso (200 OK)
+  √  [RBAC] Rol verificado como cliente
+
+□ 2. SCRUM-65 — Control de Acceso por Roles (RBAC)
+└ 2.1 [IDN-012] Administrador intentando crear solicitud → 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/service-requests [403 Forbidden, 443B, 55ms]
+  √  [SCRUM-65 / IDN-012] Código 403 Forbidden para rol admin creando solicitud
+  √  [SCRUM-65] Tipo de error no-autorizado según contrato
+  √  [RFC 9457] Content-Type es application/problem+json
+  √  [Auditoría] correlationId presente en el cuerpo de error
+
+└ 2.2 [CAT-010] Cliente intentando crear categoría administrativa → 403 Forbidden
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [403 Forbidden, 443B, 82ms]
+  √  [SCRUM-65 / CAT-010] Código 403 Forbidden para cliente mutando catálogo
+  √  [SCRUM-65] Tipo de error no-autorizado según contrato
+  √  [RFC 9457] Content-Type es application/problem+json
+  √  [Auditoría] correlationId presente en el cuerpo de error
+
+└ 2.3 [IDN-017] Petición anónima sin token → 401 Unauthorized
+  POST https://qa.quickpatch.internal/api/v1/service-requests [401 Unauthorized, 476B, 48ms]
+  √  [SCRUM-65 / IDN-017] Código 401 Unauthorized ante petición anónima
+  √  [SCRUM-65] Tipo de error no-autenticado según contrato
+  √  [RFC 9457] Content-Type es application/problem+json
+  √  [Auditoría] correlationId presente en el cuerpo de error
+
+□ 3. SCRUM-114 — Gestión y Ciclo de Vida de Tenants
+└ 3.1 [IDN-019 / E2E-004] Rechazo de autenticación para usuario de tenant inactivo
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 478B, 2.3s]
+  -  [skipped] [SCRUM-114 / IDN-019] Login rechazado para tenant inactivo (403): pendiente de SCRUM-41, el MVP tiene un solo tenant
+  √  [SCRUM-114] Credenciales inexistentes: 401
+  √  [SCRUM-114] Problem Details (RFC 9457) con correlationId y tipo credenciales-invalidas
+
+└ 3.2 [TEN-001] Control positivo: Creación de solicitud por cliente de tenant activo
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 863B, 715ms]
+  √  [SCRUM-114 / TEN-001] Solicitud creada exitosamente (201 Created)
+  √  [SCRUM-114] Estado inicial en buscando_tecnico
+
+┌─────────────────────────┬────────────────────┬───────────────────┐
+│                         │           executed │            failed │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│              iterations │                  1 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│                requests │                  9 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│            test-scripts │                  9 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│      prerequest-scripts │                  0 │                 0 │
+├─────────────────────────┼────────────────────┼───────────────────┤
+│              assertions │                 23 │                 0 │
+├─────────────────────────┴────────────────────┴───────────────────┤
+│ total run duration: 7.1s                                         │
+├──────────────────────────────────────────────────────────────────┤
+│ total data received: 3.85kB (approx)                             │
+├──────────────────────────────────────────────────────────────────┤
+│ average response time: 710ms [min: 48ms, max: 2.3s, s.d.: 714ms] │
+└──────────────────────────────────────────────────────────────────┘
+(node:61968) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
