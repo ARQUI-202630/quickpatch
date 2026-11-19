@@ -1084,7 +1084,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción al 4 de noviembre de 2026, tras la promoción del MVP (SCRUM-518): los 7 servicios con código en el k3s de VM3, con VM4 y VM6 (ADR-022) y la entrada de VM1; gateway en el Nginx de VM3 (ADR-028). El panel se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Punteado: Actors, sin código." {
+        deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción al 4 de noviembre de 2026, tras la promoción del MVP (SCRUM-518): los 7 servicios con código en el k3s de VM3, con VM4 y VM6 (ADR-022) y la entrada de VM1; gateway en el Nginx de VM3 (ADR-028). El panel se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Punteado: Actors, implementado como directorio por eventos (SCRUM-640) y aún sin desplegar." {
             include *
             exclude "mobProd -> gatewayProd" "webProd -> gatewayProd"
             exclude "* -> kafkaProd" "* -> redisProd" "* -> garageProd"
@@ -1092,7 +1092,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             autoLayout lr 250 150
         }
 
-        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 4 de noviembre de 2026: los 7 servicios con código en el k3s de VM2, con VM5 y VM7 y la misma VM1 (ADR-022); gateway en el Nginx de VM2 (ADR-028). El panel (release/0.6.0) se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Punteado: Actors, sin código." {
+        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 19 de noviembre de 2026: los 7 servicios desplegados en el k3s de VM2, con VM5 y VM7 y la misma VM1 (ADR-022); gateway en el Nginx de VM2 (ADR-028). El panel (release/0.7.0) se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Punteado: Actors, implementado (SCRUM-640) y pendiente de su primer despliegue." {
             include *
             exclude "mobQa -> gatewayQa" "webQa -> gatewayQa"
             exclude "* -> kafkaQa" "* -> redisQa" "* -> garageQa"
