@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.17 |
+| **Versión** | 4.18 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -418,6 +418,12 @@ Los grupos `produccion` (VM3, VM4 y VM6) y `qa` (VM2, VM5 y VM7) reúnen los de 
 | `primer-despliegue-servicios.yml` | VM1, hacia el k3s de VM2 y VM3 | Crea el `Secret` de cada servicio desde el vault y aplica su `deploy/k8s/<servicio>.yaml` con la IP de Kafka del ambiente (los manifiestos salen de `develop` en QA y de `main` en producción, para no publicar en producción la configuración de `develop` sobre una imagen de `main`; `-e ref=` lo cambia); se puede repetir sin cambiar la imagen que corre. No forma parte de `site.yml` |
 | `reiniciar-servicio.yml` | VM1, hacia el k3s de VM2 y VM3 | `rollout restart` de un servicio y espera a que el pod nuevo esté listo; sirve para que lea un `Secret` o un `ConfigMap` que cambió. No forma parte de `site.yml` |
 | `migrar-adr-022.yml` | VM1 a VM7 | Pasa un ambiente del reparto anterior al del ADR-022, por fases con etiquetas; solo borra lo viejo con `-e confirmar_borrado=true` |
+| `habilitar-tenant-beta.yml` | VM1, hacia el k3s de VM2 | Solo QA: agrega `Channel__Tenants__quickpatch-beta` a los `ConfigMap` de Identity y Catalog y los reinicia (SCRUM-62); el id del tenant sale de `POST /v1/platform/tenants` |
+| `verificar-rls.yml` | VM5 | Solo lectura: por base, tablas con `tenant_id` y si tienen RLS habilitado y forzado, roles sin `BYPASSRLS` y filas visibles por tenant (DD 10, ADR-005) |
+| `diagnostico-carga.yml` | VM1, VM2 y VM5 | Solo lectura: errores de PostgreSQL, conexiones por rol y eventos del clúster en una ventana de tiempo de QA (`-e desde= -e hasta=`, en UTC) |
+| `limpiar-carga-qa.yml` | VM5 | Solo QA: borra las solicitudes que dejan las pruebas de k6 y lo que generaron en Matching y Communication; por defecto solo cuenta, con `-e borrar=si` respalda y borra |
+| `limpiar-qa-uat.yml` | VM5 | Solo QA: conserva las cuentas y solicitudes de las demostraciones de la UAT y borra el resto (SCRUM-607); por defecto solo cuenta, con `-e ensayo=si` borra dentro de una transacción y la revierte |
+| `limpiar-humo-produccion.yml` | VM4 | Solo producción: borra los datos de la prueba de humo del flujo crítico con un filtro estricto (SCRUM-523); por defecto solo cuenta, con `-e ensayo=si` ensaya y revierte |
 | `site.yml` | Todas | Aplica los de despliegue en orden (Anexo A) |
 
 Las tareas compartidas están en `ansible/tasks/`: la base de cada familia de sistema operativo (`base-debian.yml` y `base-redhat.yml`), la instalación de k3s (`k3s.yml`, usada por VM3 y VM2) y la configuración de Garage (`garage.yml`, usada por VM6 y VM7). El antiguo `deploy-frontend.yml` desapareció: el panel ahora lo sirve el gateway. Con el ADR-022 desaparecieron también `deploy-qa.yml` y `deploy-storage-observability.yml`: QA usa los mismos playbooks que producción, y la observabilidad tiene el suyo.
@@ -440,7 +446,7 @@ Estado al 8 de octubre de 2026:
 | ServiceRequest | Sí | Desplegado | Desplegado |
 | Matching | Sí (con Secret propio: `app-password` y `migrator-password`) | Desplegado | Desplegado |
 | Payments, Communication y Ranking | Sí | Desplegado | Desplegado |
-| Actors | No (solo el README y los contratos) | No desplegado | No desplegado |
+| Actors | Sí desde el 19 de noviembre (`deploy/k8s/actors.yaml` y `db/roles.sql` con `actors_app`, SCRUM-640) | Pendiente del primer despliegue | No desplegado |
 
 Orden para llevar un servicio nuevo a un ambiente:
 
@@ -496,7 +502,7 @@ VM3 tiene 4 vCPU y 11 GiB de RAM fijos (sección 3.1), compartidos entre el cont
 | Identity, Catalog, ServiceRequest y Payments (ASP.NET Core, c/u) | 100 m / 500 m | 160 MiB / 384 MiB; el init container de migraciones pide 64 MiB y llega a 256 MiB, solo mientras migra | Burstable |
 | Communication (ASP.NET Core) | 50 m / 500 m | 128 MiB / 512 MiB (el manifiesto de `develop`; en QA corre con 192 MiB de request); el init container de migraciones, 64 MiB / 256 MiB | Burstable |
 | Ranking (ASP.NET Core) | 50 m / 500 m | 128 MiB / 320 MiB; el init container de migraciones, 64 MiB / 256 MiB | Burstable |
-| Actors | Sin manifiesto: su repositorio solo tiene el README y los contratos | Sin manifiesto | — |
+| Actors (ASP.NET Core) | 50 m / 500 m | 128 MiB / 320 MiB; el init container de migraciones, 64 MiB / 256 MiB (manifiesto del 19 de noviembre, aún sin desplegar) | Burstable |
 
 Los límites históricos calculados para NestJS no se reutilizan para ASP.NET Core. Los manifiestos de Identity, Catalog, ServiceRequest y Payments fijan un límite de 384 MiB para el contenedor de la aplicación, el de Communication 512 MiB y el de Matching 1 GiB, con una réplica por servicio. Antes de la revisión del 26 de octubre de 2026 este documento decía 256 MiB para los servicios .NET (con una suma de 6,0 GiB); los manifiestos ya tenían 384 MiB. Con los límites reales, la suma en VM3 es 3,0 + 1,0 + 4 × 0,375 + 0,5 = 6,0 GiB para los 6 servicios que existen, y **6,5 GiB con Actors y Ranking en 256 MiB, o 6,75 GiB si adoptan 384 MiB** como los demás: queda en el umbral de 6,5 GiB o por encima. Es una cuenta de límites, el peor caso; el uso medido es mucho menor (más abajo).
 
@@ -637,7 +643,9 @@ El pipeline está en GitHub Actions y sigue el multirepo (SAD, ADR-013 y ADR-021
 | `imagen` | Construye y publica la imagen en GitHub Container Registry, etiquetada por contenido | Servicios |
 | `desplegar` | Actualiza la imagen en k3s de QA (`release/*`) o producción (`main`) y espera el rolling update; si falla, lo revierte | Servicios |
 | `desplegar` | Publica el build del panel en QA o en producción | `quickpatch-web` |
-| `pruebas-sistema.yml` | E2E, OWASP ZAP, escáner PCI-DSS y k6 contra QA | Repositorio principal |
+| `pruebas-sistema.yml` | E2E, OWASP ZAP, escáner PCI-DSS y k6 contra QA (k6 solo con la casilla «carga» al lanzarlo a mano) | Repositorio principal |
+| `humo-frontends.yml` | Humo del panel publicado en QA con Playwright; la compuerta `compuerta-qa` (RNF-08) exige que haya pasado después de que la versión llegó a QA | Repositorio principal |
+| `apk` y `publicar` | Compilan el APK con `config/qa.json` en `release/*` (artefacto `apk-qa` y release `vX.Y.Z-qa`) y con `config/produccion.json` en `main`, publicado tras aprobar el ambiente `produccion` | `quickpatch-mobile` |
 
 El repositorio principal revisa además la infraestructura en cada PR (`pr-quality.yml`): actionlint, sintaxis y `ansible-lint` de los playbooks y gitleaks sobre `infrastructure/`. El detalle está en `infrastructure/CI-CD.md`.
 
@@ -1101,7 +1109,7 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | VM1 es la única entrada desde la VPN a producción, QA y Grafana | R9 | SAD, ADR-015; sección 2.3 |
 | Las 7 VMs tienen la misma especificación sin importar el rol, y el software del laboratorio ya usa unos 2,3 GiB de RAM en cada una | Laboratorio de la Javeriana | Sección 3.1 |
 | La prueba de carga en QA es una aproximación: sus VMs tienen la misma especificación que las de producción, pero con datos de prueba y sin tráfico real | R10 | SAD, ADR-015; sección 6.2 |
-| AC2-E5 se midió con 7 servicios en QA (28 de octubre, bajo carga con k6: 0 `OOMKilled` y cada pod dentro de su límite; foto en reposo del 4 de noviembre en QA y en producción, igual), no con los 8: Actors no tiene código ni manifiesto. La carga con las versiones de hoy queda para SCRUM-526 | Mediciones del 28 de octubre y del 4 de noviembre | Sección 5.6 |
+| AC2-E5 se midió con 7 servicios en QA (28 de octubre, bajo carga con k6: 0 `OOMKilled` y cada pod dentro de su límite; foto en reposo del 4 de noviembre en QA y en producción, igual), no con los 8: Actors tiene código y manifiesto desde el 19 de noviembre (SCRUM-640) pero no está desplegado. La medición con los 8 queda para SCRUM-640, después de su primer despliegue | Mediciones del 28 de octubre y del 4 de noviembre | Sección 5.6 |
 | `kubectl rollout undo` solo revierte la imagen del contenedor, no las migraciones de esquema: exige expand-contract | Diseño de Kubernetes | Secciones 5.8 y 6.2 |
 | Evidencias en Garage sin copia en otra VM | R10 | Sección 9.5 |
 | El vault y su contraseña existen en un solo computador | R11 | Sección 9.4 |
@@ -1110,7 +1118,7 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | Probes con valores iniciales, sin `startupProbe` ni ajuste con arranques medidos | Falta de datos medidos | Sección 5.8 |
 | La excepción escrita al RNF-08 del despliegue del 8 de octubre (la prueba de 150 usuarios no pasaba por las conexiones de PostgreSQL) se levantó el 27 de octubre, se renovó el 4 de noviembre para el MVP de 7 servicios y **se levantó otra vez la noche del 4 de noviembre**: el estrés de 150 usuarios pasó en QA con las versiones que corren en producción (run 41940280403, SCRUM-526). Hoy no hay ninguna excepción vigente. La carga no se mide en producción | Hallazgo del 8 de octubre; levantada el 27 de octubre; renovada y levantada el 4 de noviembre | Secciones 5.7 y 6.2 |
 | La rama `main` no tiene protección; la aprobación del ambiente `produccion` es la única compuerta | Decisión pendiente del equipo | Sección 6.2 |
-| Actors no tiene código, manifiesto ni `roles.sql`: no está desplegado (Ranking, Payments y Communication ya corren en QA y en producción) | Depende del código del equipo | Sección 5.3 |
+| Actors tiene código, manifiesto y `roles.sql` (SCRUM-640) pero no está desplegado en ningún ambiente | Primer despliegue pendiente de DevOps | Sección 5.3 |
 | Certificados TLS autofirmados, sin CA reconocida | R9 | Secciones 10.1 y 11 |
 | Sin cifrado en reposo (discos, PostgreSQL, Garage y respaldos; los `Secret` de k3s están cifrados en QA desde el 30 de octubre y en producción desde el 4 de noviembre) y tráfico interno sin TLS (PostgreSQL, Kafka, Garage y Redis) | Decisión pendiente del equipo | Sección 10.5 |
 | SSH con contraseña, la misma en las 7 VMs | Decisión del equipo | Sección 10.4 |
@@ -1269,3 +1277,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.15 | 4 nov 2026 | Excepción al RNF-08 levantada (SCRUM-526): la carga k6 coordinada pasó en QA con las versiones que corren en producción (run 41940280403: 50 usuarios con p95 de 88 ms en crear solicitud y de 32 ms en catálogo; 150 usuarios con 0 errores 5xx y p95 de 1.183 ms); la sección 6.2 agrega el levantamiento después de la renovación, y se alinean la sección 5.7, la tabla de limitaciones e `infrastructure/CI-CD.md`. |
 | 4.16 | 10 nov 2026 | Auditoría contra lo desplegado (SCRUM-694): versiones de QA y producción verificadas con `kubectl` el 10 de noviembre (producción con service-request 0.11.2; QA con identity 0.9.0, service-request 0.12.0, panel 0.6.0 y APK `v0.6.0-qa`), la tabla de la sección 5.3 deja de decir que Payments, Communication y Ranking no están desplegados, y la lista de lo que falta de la sección 4.3 se pone al día. |
 | 4.17 | 11 nov 2026 | Gateway y panel por ambiente (sección 3): el Nginx entrega los archivos del panel y el navegador del administrador los ejecuta, como la vista de despliegue de SCRUM-674 (SCRUM-675). |
+| 4.18 | 19 nov 2026 | Segunda auditoría contra Ansible, los workflows y lo publicado (SCRUM-694). En 4.3: versiones de QA al 19 de noviembre, el panel 0.5.5 y el APK 0.5.4 sí promovidos a producción el 4 de noviembre (producción sirve un build de Angular distinto del de QA, no la página provisional), Actors con código y sin desplegar y enlace al [inventario por ambiente](inventario-versiones-por-ambiente.md) (SCRUM-671, SCRUM-672). En 5.2: seis playbooks que faltaban (`habilitar-tenant-beta`, `verificar-rls`, `diagnostico-carga`, `limpiar-carga-qa`, `limpiar-qa-uat` y `limpiar-humo-produccion`). En 5.3, 5.6 y la tabla de limitaciones: Actors con manifiesto, `roles.sql` y recursos. En 6.2: los jobs de `humo-frontends.yml` y del APK. |
