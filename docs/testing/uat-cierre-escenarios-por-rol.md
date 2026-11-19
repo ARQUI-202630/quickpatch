@@ -1,14 +1,18 @@
 # Escenarios de la UAT de cierre por rol (SCRUM-659)
 
 **Código del documento:** `SPEC-UAT-CIERRE-2026-11-12`
-**Versión:** 1.0, borrador para revisión de la Product Owner
-**Fecha:** 12 de noviembre de 2026
+**Versión:** 1.1, lista para revisión de la Product Owner
+**Fecha:** 19 de noviembre de 2026 (versión 1.0: 12 de noviembre de 2026)
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`), QA Lead
 **Trazabilidad Jira:** historia SCRUM-658 (UAT de cierre con todos los roles). Subtareas: SCRUM-659 (este documento), SCRUM-660 (ejecución del flujo crítico), SCRUM-661 (ejecución de los roles corporativos y administrativos) y SCRUM-662 (revisión y firma de la PO).
-**Ambiente:** QA (`https://qa.quickpatch.internal`): app móvil con el APK `-qa` vigente y panel web. Nunca producción (ADR-015).
-**Fuentes:** SRS v5.6, sección 5 (33 RF); [`indicadores-funcionales.md`](indicadores-funcionales.md); [`matriz-escenarios-calidad-52.md`](matriz-escenarios-calidad-52.md), escenarios AC4.
+**Ambiente:** QA (`https://qa.quickpatch.internal`, y `https://beta.qa.quickpatch.internal` para el tenant Beta): app móvil con el APK `-qa` vigente y panel web. Nunca producción (ADR-015).
+**Fuentes:** SRS v5.12, sección 5 (33 RF); [`indicadores-funcionales.md`](indicadores-funcionales.md); [`matriz-escenarios-calidad-52.md`](matriz-escenarios-calidad-52.md), escenarios AC4.
 
 ---
+
+## Qué se le pide a la Product Owner
+
+Antes de ejecutar la UAT, la PO revisa este documento y decide si los escenarios están completos (criterio de SCRUM-659). Para cada rol, la pregunta es: **¿si estos escenarios pasan, la PO acepta que el rol funciona?** La decisión se anota en la sección 7.1. Con el visto bueno, QA ejecuta SCRUM-660 y SCRUM-661. Al terminar, la PO revisa los resultados y firma el acta (SCRUM-662, sección 7.2).
 
 ## 1. Alcance
 
@@ -23,7 +27,7 @@ Este documento reemplaza la especificación de 8 casos de [`uat-product-owner.md
 
 ## 2. Plantilla de registro
 
-Cada escenario se registra con estos campos. Los primeros seis vienen en este documento. **Resultado real**, **PASS/FAIL** y **Evidencia** los llena quien ejecuta, en SCRUM-660 o SCRUM-661, en el registro de ejecución de la sección 5.
+Cada escenario se registra con estos campos. Los primeros siete vienen en este documento; el **Usuario** es el rol del título de cada tabla de la sección 4, salvo en la 4.7, que lo indica por escenario. **Resultado real**, **PASS/FAIL** y **Evidencia** los llena quien ejecuta, en SCRUM-660 o SCRUM-661, en el registro de ejecución de la sección 5.
 
 | Campo | Qué va |
 |---|---|
@@ -42,7 +46,8 @@ Un FAIL se registra como defecto en Jira y en [`registro-defectos-sprint4-sprint
 
 ## 3. Datos y cuentas de prueba
 
-- Se usan los dos tenants de QA: **Alfa**, donde se hace la prueba, y **Beta**, para el aislamiento. Las cuentas se crean el día de la sesión con correos `@quickpatch.test`. Las contraseñas no se escriben en este documento ni en la evidencia.
+- Se usan los dos tenants de QA: **Alfa**, donde se hace la prueba, y **Beta**, para el aislamiento.
+- Antes de la sesión se cargan los datos de demostración (`tests/datos-demo/`, SCRUM-632): categorías activas, técnicos aprobados con cobertura en las 20 localidades, el Admin del tenant y el Admin de plataforma. Las cuentas que los escenarios crean desde cero (cliente, técnico, proveedor, empresa) se crean el día de la sesión con correos `@quickpatch.test`. Las contraseñas no se escriben en este documento ni en la evidencia.
 - Pagos con las tarjetas de prueba de la pasarela simulada (ADR-009). Nunca se usa una tarjeta real.
 - Direcciones de Bogotá para el flujo normal, y una de fuera de Bogotá para el caso de rechazo.
 - Al terminar, los datos de la sesión se limpian de QA y la limpieza se registra.
@@ -53,12 +58,12 @@ Un FAIL se registra como defecto en Jira y en [`registro-defectos-sprint4-sprint
 
 | ID | Escenario | Requisitos | Precondición | Pasos | Resultado esperado |
 |---|---|---|---|---|---|
-| UAT-CLI-01 | Descargar la app, crear la cuenta y entrar | EXT-03, RF-01, RF-03, EXT-01 | Sin cuenta en Alfa | 1. Descargar el APK desde la landing. 2. Crear la cuenta con correo y contraseña de 8 o más caracteres. 3. Probar una contraseña de menos de 8. 4. Iniciar sesión. 5. Editar nombre y teléfono en el perfil | La descarga funciona. La contraseña corta se rechaza con un mensaje que dice qué corregir. La cuenta se crea y se entra. El perfil guarda los cambios, y el correo y el rol no se pueden editar |
-| UAT-CLI-02 | Crear una solicitud en pocos pasos | RF-07, AC4-E1, AC4-E5 | UAT-CLI-01 hecho | 1. Desde el inicio, crear una solicitud con categoría, descripción y dirección en Bogotá. 2. Repetir con un campo obligatorio vacío. 3. Repetir con una dirección fuera de Bogotá | La solicitud queda creada en máximo 3 pasos y en estado de búsqueda de técnico. El campo vacío y la dirección fuera de Bogotá no se aceptan, y la app dice qué campo corregir |
-| UAT-CLI-03 | Seguir el estado de la solicitud en tiempo real | RF-11, AC4-E9 | Solicitud de UAT-CLI-02 | 1. Abrir la solicitud y dejar la pantalla abierta mientras el técnico avanza. 2. En cada estado, la persona dice qué está pasando y qué sigue, sin ayuda | La pantalla cambia sola en cada uno de los 4 estados o más. Cada estado tiene un texto que explica qué ocurre. Para AC4-E9 se anota si la persona lo describió bien (sección 4.7) |
-| UAT-CLI-04 | Revisar y aceptar la cotización, y conversar con el técnico | RF-35, RF-37 | Cotización emitida en UAT-TEC-02 | 1. Abrir la cotización y revisar mano de obra y materiales. 2. Rechazarla una vez. 3. Aceptar la segunda. 4. Escribir en el chat de la solicitud | El rechazo deja pedir otra cotización (máximo 3). La aceptación avanza la solicitud. El técnico recibe el mensaje en tiempo real |
-| UAT-CLI-05 | Pagar el servicio y recibir el comprobante | RF-22, RF-24 | Servicio completado en UAT-TEC-03 | 1. Pagar con la tarjeta de prueba. 2. Abrir el comprobante | El pago queda aprobado y la solicitud pasa a «Pagado». El comprobante tiene el desglose y la fecha. La app no muestra el número completo de la tarjeta |
-| UAT-CLI-06 | Calificar el servicio una sola vez | RF-12, AC4-E6 | Solicitud en «Pagado» | 1. Calificar de 1 a 5, con un comentario. 2. Intentar calificar otra vez | La calificación queda guardada. El segundo intento no se permite. Para AC4-E6 se cuenta si la persona calificó sin que se le pidiera (sección 4.7) |
+| UAT-CLI-01 | Descargar la app, crear la cuenta y entrar | EXT-03, RF-01, RF-03, EXT-01 | Sin cuenta en Alfa | 1. Descargar el APK desde la landing. 2. Crear la cuenta con correo y contraseña de 8 o más caracteres. 3. Probar una contraseña de menos de 8. 4. Intentar crear otra cuenta con el mismo correo. 5. Iniciar sesión. 6. Editar nombre y teléfono en el perfil. 7. Con una cuenta de prueba aparte, fallar la contraseña 5 veces seguidas | La descarga funciona. La contraseña corta y el correo repetido se rechazan con un mensaje que dice qué corregir. La cuenta se crea y se entra. El perfil guarda los cambios, y el correo y el rol no se pueden editar. Tras 5 intentos fallidos la cuenta queda bloqueada por un tiempo y la app lo informa |
+| UAT-CLI-02 | Crear una solicitud en pocos pasos | RF-07, AC4-E1, AC4-E5 | UAT-CLI-01 hecho | 1. Desde el inicio, crear una solicitud con categoría, descripción y la ubicación del GPS del teléfono. 2. Crear otra sin compartir la ubicación, escribiendo una dirección en Bogotá. 3. Repetir con un campo obligatorio vacío. 4. Repetir con una dirección fuera de Bogotá | Cada solicitud queda creada en máximo 3 pasos y en estado de búsqueda de técnico, con GPS y con dirección escrita. El campo vacío y la dirección fuera de Bogotá no se aceptan, y la app dice qué corregir o pide compartir la ubicación |
+| UAT-CLI-03 | Seguir el estado de la solicitud en tiempo real | RF-11, AC4-E9 | Solicitud de UAT-CLI-02 | 1. Abrir la solicitud y dejar la pantalla abierta mientras el técnico avanza. 2. En cada estado, la persona dice qué está pasando y qué sigue, sin ayuda | La pantalla cambia sola en cada uno de los 4 estados o más. Cada estado tiene un texto que explica qué ocurre. Para AC4-E9 se anota si la persona lo describió bien (sección 4.8) |
+| UAT-CLI-04 | Revisar y aceptar la cotización, y conversar con el técnico | RF-35, RF-37 | Cotización emitida en UAT-TEC-02 | 1. Abrir la cotización y revisar mano de obra y materiales. 2. Rechazarla una vez. 3. Aceptar la segunda. 4. Escribir en el chat de la solicitud. 5. Cuando el servicio quede completado (UAT-TEC-03), intentar escribir otra vez | El rechazo deja pedir otra cotización (máximo 3). La aceptación avanza la solicitud. El técnico recibe el mensaje en tiempo real. Con el servicio completado el chat queda de solo lectura, con el historial visible |
+| UAT-CLI-05 | Pagar el servicio y recibir el comprobante | RF-22, RF-24 | Servicio completado en UAT-TEC-03 | 1. Pagar con la tarjeta de prueba que la pasarela simulada rechaza. 2. Reintentar con la tarjeta de prueba aprobada. 3. Abrir el comprobante | El pago rechazado no cambia el estado de la solicitud y deja reintentar. El segundo pago queda aprobado y la solicitud pasa a «Pagado». El comprobante tiene el desglose y la fecha. La app no muestra el número completo de la tarjeta |
+| UAT-CLI-06 | Calificar el servicio una sola vez | RF-12, AC4-E6 | Solicitud en «Pagado» | 1. Calificar de 1 a 5, con un comentario. 2. Intentar calificar otra vez | La calificación queda guardada. El segundo intento no se permite. Para AC4-E6 se cuenta si la persona calificó sin que se le pidiera (sección 4.8) |
 | UAT-CLI-07 | Cancelar una solicitud antes de que empiece | RF-36 | Solicitud nueva, sin iniciar | 1. Cancelar indicando el motivo. 2. Intentar cancelar una solicitud ya en progreso | La primera queda cancelada con su motivo. La segunda no se puede cancelar |
 
 ### 4.2 Técnico (app móvil): flujo crítico (SCRUM-660)
@@ -69,7 +74,7 @@ Un FAIL se registra como defecto en Jira y en [`registro-defectos-sprint4-sprint
 | UAT-TEC-02 | Recibir la oferta, aceptarla y cotizar | RF-09, RF-10, RF-14, RF-34 | Técnico aprobado (UAT-ADT-01), disponible y con cobertura en la localidad | 1. Recibir la oferta de UAT-CLI-02. 2. Aceptarla antes de 3 minutos. 3. Abrir el detalle. 4. Emitir la cotización con mano de obra y materiales | La oferta llega solo a un técnico de la especialidad. Al aceptar, la solicitud queda asignada. El detalle muestra categoría, dirección y teléfono. El cliente recibe la cotización |
 | UAT-TEC-03 | Iniciar y completar el trabajo con foto | RF-15 | Cotización aceptada | 1. Iniciar el trabajo. 2. Intentar completarlo sin foto. 3. Completarlo con foto | Sin foto no se puede completar. Con foto queda completado y el cliente puede pagar |
 | UAT-TEC-04 | Dejar vencer una oferta | RF-10 | Otro técnico candidato disponible | 1. Recibir una oferta y no responder durante 3 minutos | La oferta vence y pasa al siguiente técnico. El primero no puede aceptarla después |
-| UAT-TEC-05 | Cambiar la disponibilidad y la zona de cobertura | RF-13 | Técnico aprobado | 1. Pasar a no disponible. 2. Cambiar las localidades de cobertura. 3. Volver a disponible | Mientras está no disponible no recibe ofertas. Después solo las recibe de sus localidades |
+| UAT-TEC-05 | Cambiar la disponibilidad y la zona de cobertura | RF-13, RF-09 | Técnico aprobado, único de su especialidad en una localidad | 1. Pasar a no disponible. 2. Un cliente crea una solicitud de su especialidad en esa localidad. 3. Cambiar las localidades de cobertura. 4. Volver a disponible | Mientras está no disponible no recibe ofertas, y la solicitud queda en espera de técnico (no se cancela). Al volver a disponible, la solicitud en espera se le ofrece, y en adelante solo recibe ofertas de sus localidades |
 | UAT-TEC-06 | Ver el historial y los pagos recibidos | RF-17, RF-25 | Servicio pagado en UAT-CLI-05 | 1. Abrir el historial. 2. Abrir «Mis pagos» | El historial muestra el servicio con su fecha, estado y calificación. Los pagos muestran el monto recibido |
 
 ### 4.3 Empresa, usuario autorizado de la cuenta corporativa (SCRUM-661)
@@ -96,14 +101,14 @@ Un FAIL se registra como defecto en Jira y en [`registro-defectos-sprint4-sprint
 | UAT-ADT-02 | Ver las solicitudes activas por estado | RF-18 | Solicitudes del flujo crítico en curso | 1. Abrir el panel de solicitudes y filtrar por estado | Aparecen solo las solicitudes de su tenant, con su estado actual |
 | UAT-ADT-03 | Suspender a un técnico | RF-20 | Técnico aprobado sin servicio en curso | 1. Suspenderlo indicando el motivo. 2. Crear una solicitud de su especialidad | Queda suspendido con la fecha y el responsable, y no recibe la oferta |
 | UAT-ADT-04 | Ver los técnicos con reputación baja | AC9-E2 | Técnico con promedio menor a 3,0 y 5 calificaciones o más | 1. Abrir el listado de técnicos | El técnico aparece señalado con «Reputación baja» y sigue aprobado |
-| UAT-ADT-05 | Generar el enlace de recuperación de contraseña | EXT-04 | Usuario que olvidó la contraseña y la pidió con su correo | 1. Generar el enlace. 2. El usuario define una contraseña nueva. 3. Usar el enlace otra vez | El usuario entra con la contraseña nueva. El enlace no sirve una segunda vez |
+| UAT-ADT-05 | Generar el enlace de recuperación de contraseña | EXT-04 | Usuario que olvidó la contraseña y la pidió en la app con su correo | 1. Generar el enlace en el panel y entregárselo al usuario (no hay correo en el MVP, ADR-024). 2. El usuario define una contraseña nueva en la página `/recuperar`. 3. Usar el enlace otra vez | El usuario entra con la contraseña nueva. El enlace es de un solo uso y vence en 1 hora: la segunda vez no sirve |
 
 ### 4.6 Admin de plataforma (panel web) (SCRUM-661)
 
 | ID | Escenario | Requisitos | Precondición | Pasos | Resultado esperado |
 |---|---|---|---|---|---|
 | UAT-ADP-01 | Ver las solicitudes de todos los tenants | RF-18 | Solicitudes en Alfa y en Beta | 1. Abrir el panel de solicitudes. 2. Filtrar por tenant | Ve las de los dos tenants, y el filtro funciona |
-| UAT-ADP-02 | Desactivar y volver a activar un tenant | RF-21 | Tenant de prueba con un usuario | 1. Desactivarlo y confirmar. 2. El usuario intenta iniciar sesión. 3. Activarlo otra vez | Pide confirmación. Con el tenant desactivado el usuario no puede iniciar sesión, y el cambio queda en la auditoría. Al activarlo, el usuario entra de nuevo |
+| UAT-ADP-02 | Desactivar y volver a activar un tenant | RF-21 | Tenant de prueba con un usuario, que cierra sesión antes de empezar | 1. Desactivarlo y confirmar. 2. El usuario intenta iniciar sesión. 3. Activarlo otra vez | Pide confirmación. Con el tenant desactivado el usuario no puede iniciar sesión, y el cambio queda en la auditoría. Al activarlo, el usuario entra de nuevo |
 
 ### 4.7 Transversales: aislamiento, canal y operación
 
@@ -179,7 +184,8 @@ Lo llena quien ejecuta (SCRUM-660 y SCRUM-661). Una fila por escenario.
 | RF-06 | UAT-EMP-01 |
 | RF-07 | UAT-CLI-02 |
 | RF-08 | UAT-EMP-02 |
-| RF-09, RF-14, RF-34 | UAT-TEC-02 |
+| RF-09 | UAT-TEC-02, UAT-TEC-05 |
+| RF-14, RF-34 | UAT-TEC-02 |
 | RF-10 | UAT-TEC-02, UAT-TEC-04 |
 | RF-11 | UAT-CLI-03 |
 | RF-12 | UAT-CLI-06 |
@@ -208,7 +214,20 @@ Son 33 de 33 RF, 4 de 4 extensiones y los 4 escenarios AC4 pendientes.
 
 ## 7. Revisión de la Product Owner
 
-| Rol | Nombre | Decisión | Fecha |
-|---|---|---|---|
-| Product Owner | Angy Bautista | Pendiente de revisión (SCRUM-659 y SCRUM-662) | — |
-| QA Lead | Katherine Bravo | Propone los escenarios | 12/11/2026 |
+### 7.1 Aprobación de los escenarios, antes de ejecutar (SCRUM-659)
+
+| Rol | Nombre | Decisión | Observaciones | Fecha |
+|---|---|---|---|---|
+| QA Lead | Katherine Bravo | Propone los escenarios (versión 1.1) | — | 19/11/2026 |
+| Product Owner | Angy Bautista | Pendiente: aprobado / aprobado con cambios / no aprobado | | |
+
+### 7.2 Acta de aceptación, después de ejecutar (SCRUM-662)
+
+La PO revisa el registro de la sección 5 y decide por escenario. El acta firmada queda en un documento aparte en `docs/testing/`.
+
+## Historial de cambios
+
+| Versión | Fecha | Cambios |
+|---|---|---|
+| 1.0 | 12/11/2026 | Primera versión: 34 escenarios para los 6 roles (PR #298, #304) |
+| 1.1 | 19/11/2026 | Se separa la aprobación de los escenarios (7.1) del acta (7.2) y se agrega qué decide la PO. SRS actualizado a la 5.12. Datos de demostración de SCRUM-632 en la sección 3. Se agregan casos del SRS que faltaban: correo repetido y bloqueo tras 5 intentos (UAT-CLI-01), solicitud con GPS (UAT-CLI-02), chat de solo lectura al completar (UAT-CLI-04), pago rechazado y reintento (UAT-CLI-05), solicitud en espera sin técnico (UAT-TEC-05), enlace de recuperación de 1 hora entregado sin correo (UAT-ADT-05) y cierre de sesión antes de desactivar el tenant (UAT-ADP-02). Se corrige la referencia a la sección 4.8 en UAT-CLI-03 y UAT-CLI-06. Siguen siendo 34 escenarios |
