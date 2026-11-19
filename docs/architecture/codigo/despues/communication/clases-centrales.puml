@@ -1,10 +1,13 @@
 @startuml
 !pragma layout smetana
-title Communication — clases más conectadas (despues, fe01c13)
+title Communication — clases más conectadas (despues, ccd314d)
 hide empty members
 skinparam shadowing false
 class "Application.Chat.SendChatMessageHandler" as QuickPatch_Communication_Application_Chat_SendChatMessageHandler <<Application>> {
   48 líneas · entra 2 · sale 10
+}
+class "Api.Realtime.RealtimeSession" as QuickPatch_Communication_Api_Realtime_RealtimeSession <<Api>> {
+  132 líneas · entra 1 · sale 10
 }
 class "Api.Realtime.ConnectionRegistry" as QuickPatch_Communication_Api_Realtime_ConnectionRegistry <<Api>> {
   44 líneas · entra 2 · sale 8
@@ -23,9 +26,6 @@ class "Domain.Inbox.Notification" as QuickPatch_Communication_Domain_Inbox_Notif
 }
 class "Api.Endpoints.InboxEndpoints" as QuickPatch_Communication_Api_Endpoints_InboxEndpoints <<Api>> {
   112 líneas · entra 1 · sale 8
-}
-class "Api.Realtime.RealtimeSession" as QuickPatch_Communication_Api_Realtime_RealtimeSession <<Api>> {
-  216 líneas · entra 2 · sale 7
 }
 class "Application.Chat.ChatParticipantsRecorder" as QuickPatch_Communication_Application_Chat_ChatParticipantsRecorder <<Application>> {
   39 líneas · entra 2 · sale 7

@@ -1,16 +1,16 @@
 @startuml
 !pragma layout smetana
-title Identity — clases más conectadas (despues, fe22c14)
+title Identity — clases más conectadas (despues, 21fa2e6)
 hide empty members
 skinparam shadowing false
-class "Api.Endpoints.IdentityEndpoints" as QuickPatch_Identity_Api_Endpoints_IdentityEndpoints <<Api>> {
-  736 líneas · entra 1 · sale 79
-}
 class "Domain.Users.User" as QuickPatch_Identity_Domain_Users_User <<Domain>> {
-  335 líneas · entra 40 · sale 3
+  167 líneas · entra 41 · sale 3
 }
 class "Api.Endpoints.CompanyEndpoints" as QuickPatch_Identity_Api_Endpoints_CompanyEndpoints <<Api>> {
   189 líneas · entra 1 · sale 28
+}
+class "Api.Endpoints.PasswordEndpoints" as QuickPatch_Identity_Api_Endpoints_PasswordEndpoints <<Api>> {
+  165 líneas · entra 1 · sale 24
 }
 interface "Application.Abstractions.ITenantUnitOfWork" as QuickPatch_Identity_Application_Abstractions_ITenantUnitOfWork <<Application>> {
   0 líneas · entra 25 · sale 0
@@ -24,45 +24,35 @@ interface "Application.Abstractions.IUserRepository" as QuickPatch_Identity_Appl
 class "Domain.Technicians.TechnicianProfile" as QuickPatch_Identity_Domain_Technicians_TechnicianProfile <<Domain>> {
   132 líneas · entra 21 · sale 1
 }
+class "Api.Endpoints.AuthEndpoints" as QuickPatch_Identity_Api_Endpoints_AuthEndpoints <<Api>> {
+  138 líneas · entra 1 · sale 20
+}
 class "Infrastructure.Persistence.IdentityDbContext" as QuickPatch_Identity_Infrastructure_Persistence_IdentityDbContext <<Infrastructure>> {
   177 líneas · entra 13 · sale 8
 }
+class "Domain.Common.DomainValidationException" as QuickPatch_Identity_Domain_Common_DomainValidationException <<Domain>> {
+  23 líneas · entra 20 · sale 0
+}
 class "Application.Technicians.CreateTeamTechnicianHandler" as QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler <<Application>> {
-  71 líneas · entra 2 · sale 15
+  71 líneas · entra 2 · sale 16
 }
-class "Application.Auth.RegisterTechnicianHandler" as QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler <<Application>> {
-  60 líneas · entra 3 · sale 12
+class "Api.Endpoints.ProviderTeamEndpoints" as QuickPatch_Identity_Api_Endpoints_ProviderTeamEndpoints <<Api>> {
+  108 líneas · entra 1 · sale 16
 }
-interface "Application.Abstractions.ITechnicianProfileRepository" as QuickPatch_Identity_Application_Abstractions_ITechnicianProfileRepository <<Application>> {
-  0 líneas · entra 12 · sale 3
-}
-class "Application.Auth.ConfirmPasswordRecoveryHandler" as QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler <<Application>> {
-  57 líneas · entra 2 · sale 12
-}
-QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler
-QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler
-QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler
-QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Domain_Technicians_TechnicianProfile
-QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Domain_Tenants_Tenant
-QuickPatch_Identity_Api_Endpoints_IdentityEndpoints ..> QuickPatch_Identity_Domain_Users_User
-QuickPatch_Identity_Application_Abstractions_ITechnicianProfileRepository ..> QuickPatch_Identity_Domain_Technicians_TechnicianProfile
+QuickPatch_Identity_Api_Endpoints_AuthEndpoints ..> QuickPatch_Identity_Domain_Common_DomainValidationException
+QuickPatch_Identity_Api_Endpoints_CompanyEndpoints ..> QuickPatch_Identity_Domain_Common_DomainValidationException
+QuickPatch_Identity_Api_Endpoints_PasswordEndpoints ..> QuickPatch_Identity_Domain_Common_DomainValidationException
+QuickPatch_Identity_Api_Endpoints_ProviderTeamEndpoints ..> QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler
+QuickPatch_Identity_Api_Endpoints_ProviderTeamEndpoints ..> QuickPatch_Identity_Domain_Common_DomainValidationException
 QuickPatch_Identity_Application_Abstractions_IUserRepository ..> QuickPatch_Identity_Domain_Users_User
-QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler ..> QuickPatch_Identity_Application_Abstractions_ITenantUnitOfWork
-QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler ..> QuickPatch_Identity_Application_Abstractions_IUserRepository
-QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler ..> QuickPatch_Identity_Domain_Tenants_Tenant
-QuickPatch_Identity_Application_Auth_ConfirmPasswordRecoveryHandler ..> QuickPatch_Identity_Domain_Users_User
-QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_ITechnicianProfileRepository
-QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_ITenantUnitOfWork
-QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_IUserRepository
-QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Domain_Technicians_TechnicianProfile
-QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Domain_Tenants_Tenant
-QuickPatch_Identity_Application_Auth_RegisterTechnicianHandler ..> QuickPatch_Identity_Domain_Users_User
-QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_ITechnicianProfileRepository
 QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_ITenantUnitOfWork
 QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Application_Abstractions_IUserRepository
 QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Domain_Technicians_TechnicianProfile
 QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Domain_Tenants_Tenant
 QuickPatch_Identity_Application_Technicians_CreateTeamTechnicianHandler ..> QuickPatch_Identity_Domain_Users_User
+QuickPatch_Identity_Domain_Technicians_TechnicianProfile ..> QuickPatch_Identity_Domain_Common_DomainValidationException
+QuickPatch_Identity_Domain_Tenants_Tenant ..> QuickPatch_Identity_Domain_Common_DomainValidationException
+QuickPatch_Identity_Domain_Users_User ..> QuickPatch_Identity_Domain_Common_DomainValidationException
 QuickPatch_Identity_Infrastructure_Persistence_IdentityDbContext ..> QuickPatch_Identity_Domain_Technicians_TechnicianProfile
 QuickPatch_Identity_Infrastructure_Persistence_IdentityDbContext ..> QuickPatch_Identity_Domain_Tenants_Tenant
 QuickPatch_Identity_Infrastructure_Persistence_IdentityDbContext ..> QuickPatch_Identity_Domain_Users_User

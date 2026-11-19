@@ -1,19 +1,19 @@
 @startuml
 !pragma layout smetana
-title Identity — paquetes (despues, fe22c14)
+title Identity — paquetes (despues, 21fa2e6)
 skinparam packageStyle rectangle
 skinparam shadowing false
 left to right direction
 package "Api" {
   component "(global)\n1 tipos" as _global_
   component "Api.Bootstrap\n5 tipos" as QuickPatch_Identity_Api_Bootstrap
-  component "Api.Endpoints\n25 tipos" as QuickPatch_Identity_Api_Endpoints
-  component "Api.Http\n2 tipos" as QuickPatch_Identity_Api_Http
-  component "Api.Security\n6 tipos" as QuickPatch_Identity_Api_Security
+  component "Api.Endpoints\n31 tipos" as QuickPatch_Identity_Api_Endpoints
+  component "Api.Http\n3 tipos" as QuickPatch_Identity_Api_Http
+  component "Api.Security\n8 tipos" as QuickPatch_Identity_Api_Security
 }
 package "Application" {
   component "Application\n1 tipos" as QuickPatch_Identity_Application
-  component "Application.Abstractions\n28 tipos" as QuickPatch_Identity_Application_Abstractions
+  component "Application.Abstractions\n30 tipos" as QuickPatch_Identity_Application_Abstractions
   component "Application.Auth\n22 tipos" as QuickPatch_Identity_Application_Auth
   component "Application.Companies\n12 tipos" as QuickPatch_Identity_Application_Companies
   component "Application.Events\n9 tipos" as QuickPatch_Identity_Application_Events
@@ -27,39 +27,39 @@ package "Domain" {
   component "Domain.Companies\n1 tipos" as QuickPatch_Identity_Domain_Companies
   component "Domain.Technicians\n2 tipos" as QuickPatch_Identity_Domain_Technicians
   component "Domain.Tenants\n1 tipos" as QuickPatch_Identity_Domain_Tenants
-  component "Domain.Users\n5 tipos" as QuickPatch_Identity_Domain_Users
+  component "Domain.Users\n6 tipos" as QuickPatch_Identity_Domain_Users
 }
 package "Infrastructure" {
   component "Infrastructure\n1 tipos" as QuickPatch_Identity_Infrastructure
   component "Infrastructure.Messaging\n3 tipos" as QuickPatch_Identity_Infrastructure_Messaging
-  component "Infrastructure.Options\n7 tipos" as QuickPatch_Identity_Infrastructure_Options
+  component "Infrastructure.Options\n5 tipos" as QuickPatch_Identity_Infrastructure_Options
   component "Infrastructure.Persistence\n13 tipos" as QuickPatch_Identity_Infrastructure_Persistence
   component "Infrastructure.Security\n4 tipos" as QuickPatch_Identity_Infrastructure_Security
 }
 _global_ --> QuickPatch_Identity_Api_Bootstrap #607D8B : 3
 _global_ --> QuickPatch_Identity_Api_Endpoints #607D8B : 2
 _global_ --> QuickPatch_Identity_Api_Http #607D8B : 2
-_global_ --> QuickPatch_Identity_Api_Security #607D8B : 2
+_global_ --> QuickPatch_Identity_Api_Security #607D8B : 4
 _global_ --> QuickPatch_Identity_Application #607D8B : 1
 _global_ --> QuickPatch_Identity_Infrastructure #607D8B : 1
+QuickPatch_Identity_Api_Bootstrap --> QuickPatch_Identity_Api_Security #607D8B : 2
 QuickPatch_Identity_Api_Bootstrap --> QuickPatch_Identity_Application_Auth #607D8B : 12
 QuickPatch_Identity_Api_Bootstrap --> QuickPatch_Identity_Domain_Common #607D8B : 1
-QuickPatch_Identity_Api_Bootstrap --> QuickPatch_Identity_Infrastructure_Options #C62828 : 2
-QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Api_Security #607D8B : 9
+QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Api_Http #607D8B : 6
+QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Api_Security #607D8B : 21
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Application_Abstractions #607D8B : 5
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Application_Auth #607D8B : 19
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Application_Companies #607D8B : 11
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Application_Platform #607D8B : 7
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Application_Technicians #607D8B : 20
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Application_Users #607D8B : 5
-QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Domain_Common #607D8B : 2
+QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Domain_Common #607D8B : 7
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Domain_Companies #607D8B : 2
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Domain_Technicians #607D8B : 3
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Domain_Tenants #607D8B : 2
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Domain_Users #607D8B : 4
-QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Infrastructure_Options #C62828 : 5
-QuickPatch_Identity_Api_Security --> QuickPatch_Identity_Infrastructure_Options #C62828 : 2
-QuickPatch_Identity_Api_Security --> QuickPatch_Identity_Infrastructure_Security #C62828 : 2
+QuickPatch_Identity_Api_Http --> QuickPatch_Identity_Api_Security #607D8B : 1
+QuickPatch_Identity_Api_Security --> QuickPatch_Identity_Application_Abstractions #607D8B : 2
 QuickPatch_Identity_Application --> QuickPatch_Identity_Application_Auth #607D8B : 8
 QuickPatch_Identity_Application --> QuickPatch_Identity_Application_Companies #607D8B : 5
 QuickPatch_Identity_Application --> QuickPatch_Identity_Application_Platform #607D8B : 3
@@ -78,13 +78,13 @@ QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Domain_Audit #607D8
 QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Domain_Common #607D8B : 1
 QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Domain_Technicians #607D8B : 4
 QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Domain_Tenants #607D8B : 6
-QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Domain_Users #607D8B : 16
+QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Domain_Users #607D8B : 21
 QuickPatch_Identity_Application_Companies --> QuickPatch_Identity_Application_Abstractions #607D8B : 21
 QuickPatch_Identity_Application_Companies --> QuickPatch_Identity_Application_Technicians #607D8B : 4
 QuickPatch_Identity_Application_Companies --> QuickPatch_Identity_Domain_Common #607D8B : 2
 QuickPatch_Identity_Application_Companies --> QuickPatch_Identity_Domain_Companies #607D8B : 3
 QuickPatch_Identity_Application_Companies --> QuickPatch_Identity_Domain_Tenants #607D8B : 2
-QuickPatch_Identity_Application_Companies --> QuickPatch_Identity_Domain_Users #607D8B : 10
+QuickPatch_Identity_Application_Companies --> QuickPatch_Identity_Domain_Users #607D8B : 12
 QuickPatch_Identity_Application_Events --> QuickPatch_Identity_Application_Abstractions #607D8B : 3
 QuickPatch_Identity_Application_Events --> QuickPatch_Identity_Domain_Technicians #607D8B : 2
 QuickPatch_Identity_Application_Events --> QuickPatch_Identity_Domain_Tenants #607D8B : 1
@@ -99,7 +99,7 @@ QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Audit
 QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Common #607D8B : 2
 QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Technicians #607D8B : 7
 QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Tenants #607D8B : 2
-QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Users #607D8B : 7
+QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Users #607D8B : 9
 QuickPatch_Identity_Application_Users --> QuickPatch_Identity_Application_Abstractions #607D8B : 8
 QuickPatch_Identity_Application_Users --> QuickPatch_Identity_Domain_Common #607D8B : 1
 QuickPatch_Identity_Application_Users --> QuickPatch_Identity_Domain_Technicians #607D8B : 3
@@ -107,10 +107,10 @@ QuickPatch_Identity_Application_Users --> QuickPatch_Identity_Domain_Users #607D
 QuickPatch_Identity_Domain_Companies --> QuickPatch_Identity_Domain_Common #607D8B : 1
 QuickPatch_Identity_Domain_Technicians --> QuickPatch_Identity_Domain_Common #607D8B : 1
 QuickPatch_Identity_Domain_Tenants --> QuickPatch_Identity_Domain_Common #607D8B : 1
-QuickPatch_Identity_Domain_Users --> QuickPatch_Identity_Domain_Common #607D8B : 1
-QuickPatch_Identity_Infrastructure --> QuickPatch_Identity_Application_Abstractions #607D8B : 14
+QuickPatch_Identity_Domain_Users --> QuickPatch_Identity_Domain_Common #607D8B : 2
+QuickPatch_Identity_Infrastructure --> QuickPatch_Identity_Application_Abstractions #607D8B : 16
 QuickPatch_Identity_Infrastructure --> QuickPatch_Identity_Infrastructure_Messaging #607D8B : 3
-QuickPatch_Identity_Infrastructure --> QuickPatch_Identity_Infrastructure_Options #607D8B : 7
+QuickPatch_Identity_Infrastructure --> QuickPatch_Identity_Infrastructure_Options #607D8B : 5
 QuickPatch_Identity_Infrastructure --> QuickPatch_Identity_Infrastructure_Persistence #607D8B : 11
 QuickPatch_Identity_Infrastructure --> QuickPatch_Identity_Infrastructure_Security #607D8B : 4
 QuickPatch_Identity_Infrastructure_Messaging --> QuickPatch_Identity_Application_Abstractions #607D8B : 2
@@ -124,7 +124,7 @@ QuickPatch_Identity_Infrastructure_Persistence --> QuickPatch_Identity_Domain_Te
 QuickPatch_Identity_Infrastructure_Persistence --> QuickPatch_Identity_Domain_Tenants #607D8B : 3
 QuickPatch_Identity_Infrastructure_Persistence --> QuickPatch_Identity_Domain_Users #607D8B : 10
 QuickPatch_Identity_Infrastructure_Persistence --> QuickPatch_Identity_Infrastructure_Options #607D8B : 1
-QuickPatch_Identity_Infrastructure_Security --> QuickPatch_Identity_Application_Abstractions #607D8B : 4
+QuickPatch_Identity_Infrastructure_Security --> QuickPatch_Identity_Application_Abstractions #607D8B : 6
 QuickPatch_Identity_Infrastructure_Security --> QuickPatch_Identity_Domain_Users #607D8B : 1
 QuickPatch_Identity_Infrastructure_Security --> QuickPatch_Identity_Infrastructure_Options #607D8B : 4
 legend right

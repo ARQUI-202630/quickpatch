@@ -746,7 +746,7 @@ El canal en tiempo real está implementado (ADR-023): `/v1/realtime` valida el t
 
 **Clases de la figura 18** (`QuickPatch.Communication`, SCRUM-583):
 
-- **Canal en tiempo real:** `RealtimeEndpoints`, `RealtimeSession` y `TokenValidator` atienden `/v1/realtime`; `ConnectionRegistry` y `WebSocketClient` guardan las conexiones abiertas de la réplica. `RealtimeEventsConsumer` consume `service-request.created`, `.status-changed` y `matching.offer-created` desde el último offset y se los entrega a `RealtimeNotifier` y `NoticeRouter`, que descartan repetidos (`RecentEventIds`) y deciden a quién avisar.
+- **Canal en tiempo real:** `RealtimeEndpoints`, `RealtimeSession`, `AuthFrame` y `TokenValidator` atienden `/v1/realtime`; `ConnectionRegistry` y `WebSocketClient` guardan las conexiones abiertas de la réplica, y `WebSocketFrames` lee y cierra las tramas (SCRUM-656). `RealtimeEventsConsumer` consume `service-request.created`, `.status-changed` y `matching.offer-created` desde el último offset y se los entrega a `RealtimeNotifier` y `NoticeRouter`, que descartan repetidos (`RecentEventIds`) y deciden a quién avisar.
 - **Buzón:** `PersistentEventsConsumer`, con su propio grupo y desde el principio, consume 8 topics: `service-request.created`, `.status-changed`, `.quoted`, `.quote-accepted` y `.quote-rejected`, `matching.offer-created`, `technician.registered` y `technician.verification-changed`. `InboxRecorder` e `InboxRules` crean una notificación por destinatario e `InboxStore` la guarda en `notifications`. `InboxEndpoints` atiende `GET /v1/notifications` y `POST /v1/notifications/{id}/read` con `ListNotificationsHandler` y `MarkNotificationReadHandler`.
 - **Chat:** otro grupo de `PersistentEventsConsumer` lee `service-request.status-changed` para `ChatParticipantsRecorder`, que llena `chat_participants`. `ChatEndpoints` atiende `GET` y `POST /v1/service-requests/{id}/messages` con `ListChatMessagesHandler` y `SendChatMessageHandler`, que guardan en `chat_messages` (`ChatStore`) y entregan `chat.message` por `ConnectionRegistry`.
 
@@ -850,18 +850,18 @@ Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija d
 
 | Servicio | Violaciones | Ciclos entre paquetes | Tipos > 250 líneas | Fan-out máximo | Cambio principal |
 |---|---|---|---|---|---|
-| Identity | 11 → 11 | **1 → 0** | 2 → 2 | 80 → 79 | Sin su refactor (SCRUM-650 pendiente). El ciclo entre `Infrastructure.Messaging` e `Infrastructure.Persistence` desaparece al mover el Outbox y el consumo de Kafka a `quickpatch-shared-dotnet` (ADR-020); las 11 violaciones siguen |
+| Identity | **11 → 0** | **1 → 0** | **2 → 0** | **80 → 28** | SCRUM-650 (quickpatch-identity#41): el API usa los puertos `IPasswordDecryptor` e `ITokenValidationKey` y las opciones que solo él usa están en `Api/Security`; endpoints por recurso; un repositorio, un puerto y un caso de uso por archivo; `UserRules` separado de `User`. El ciclo entre paquetes había desaparecido antes, con ADR-020 |
 | Actors | — → 0 | — → 0 | — → 0 | — → 11 | Sin línea base: antes era un esqueleto. Implementado en SCRUM-640 en cuatro capas, con 0 ciclos, 0 violaciones y cohesión relacional de 0,88 |
 | Catalog | 0 → 0 | 0 → 0 | 0 → 0 | 15 → 14 | Resolución del tenant fuera del endpoint; un archivo por caso de uso, puerto y adaptador; pruebas de arquitectura |
 | ServiceRequest | 0 → 0 | 0 → 0 | 2 → 1 | 31 → 21 | Endpoints por recurso y sin dependencias entre grupos; validación fuera del agregado |
 | Matching | 0 → 0 | **1 → 0** | 0 → 0 | 10 → 13 | Puertos repartidos por responsabilidad; ArchUnit prohíbe ciclos |
 | Ranking | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | Contrato del evento en Application; consumidor solo como transporte |
 | Payments | 0 → 0 | **1 → 0** | 0 → 0 | 12 → 11 | `InvoiceDocument` junto a su puerto |
-| Communication | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | Sin su refactor (SCRUM-656 pendiente). Solo cambia la adopción de ADR-020: 2 tipos transversales menos. Mantiene 1 ciclo entre 2 tipos, igual que en la línea base |
+| Communication | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | SCRUM-656 (quickpatch-communication#27): `WebSocketFrames` y `AuthFrame` salen de `RealtimeSession`, y desaparece el único ciclo entre tipos (`RealtimeSession` ↔ `WebSocketClient`); chat y buzón quedan con un caso de uso por archivo |
 
 En Matching, el fan-out máximo sube de 10 a 13 y la cohesión relacional promedio baja de 0,85 a 0,75. Las dos cosas son efecto de separar los puertos: `KafkaConfig` ahora importa cada interfaz por separado, y el paquete nuevo `application.common` tiene dos interfaces que no se usan entre sí. A cambio, desaparece el ciclo entre `events`, `matching` y `technicians`. Las cifras se reportan como salen.
 
-En resumen: ningún servicio tiene ciclos entre paquetes después del cierre (había 3: Identity, Matching y Payments), y los cinco servicios refactorizados no tienen violaciones de 10.3.2. Lo que queda abierto es Identity, con 11 violaciones y un fan-out máximo de 79, que resuelve SCRUM-650. Cuando se fusionen SCRUM-650 y SCRUM-656 se repite `generar.py --fase despues --servicios identity communication` y `comparar.py`.
+En resumen: ningún servicio tiene ciclos entre paquetes después del cierre (había 3: Identity, Matching y Payments), y los cinco servicios refactorizados no tienen violaciones de 10.3.2. Desde el 19 de noviembre, con SCRUM-650 y SCRUM-656, los 8 servicios con código tienen 0 ciclos entre paquetes, 0 ciclos entre tipos, 0 violaciones de 10.3.2 y ninguna clase de más de 250 líneas, salvo una en ServiceRequest. Todos verifican las reglas con pruebas de arquitectura en su CI.
 
 Las reglas de 10.3.2 ya no dependen de esta medición: cada servicio refactorizado tiene pruebas de arquitectura en su CI (NetArchTest o ArchUnit), y una violación nueva rompe el PR.
 

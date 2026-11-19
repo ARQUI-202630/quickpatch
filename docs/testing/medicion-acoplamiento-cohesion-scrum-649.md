@@ -1,7 +1,7 @@
 # Medición de acoplamiento y cohesión antes y después del refactor (SCRUM-649)
 
 **Código del Documento:** `MET-QA-ACOPL-2026-11-13`  
-**Versión:** `1.0`  
+**Versión:** `1.1` (19 de noviembre: Identity y Communication con su refactor, SCRUM-650 y SCRUM-656)  
 **Fecha:** 13 de noviembre de 2026  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
 **Trazabilidad Jira:** Subtarea `SCRUM-649` de la historia `SCRUM-647` (refactor interno de los microservicios) | Escenarios `AC7-E2` y `AC7-E5` de la matriz de 52  
@@ -29,13 +29,13 @@ Comando: `python tests/mantenibilidad/verificar_linea_base.py`. Lee los commits 
 
 | Servicio | «Antes» | «Después» | PR entre las dos mediciones | Resultado |
 |---|---|---|---|---|
-| Identity | `abffadb` (5-nov) | `fe22c14` | #38 (funcionalidad SCRUM-642), #39 y #40 (código compartido, SCRUM-657). **No tiene su refactor (SCRUM-650)** | OK |
+| Identity | `abffadb` (5-nov) | `21fa2e6` | #38 (funcionalidad SCRUM-642), #39 y #40 (código compartido, SCRUM-657) y #41 (refactor, SCRUM-650, 19-nov) | OK |
 | Catalog | `b7c38cb` (4-nov) | `6345700` | #19 (refactor, SCRUM-651), #20 y #21 (SCRUM-657) | OK |
 | ServiceRequest | `394a1e8` (4-nov) | `45c0653` | #44 (refactor, SCRUM-652), #45 y #46 (SCRUM-657) | OK |
 | Matching | `3fade78` (4-nov) | `8e6450c` | #24 (refactor, SCRUM-653) | OK |
 | Ranking | `867716d` (4-nov) | `1679652` | #13 (refactor, SCRUM-654), #14 y #15 (SCRUM-657) | OK |
 | Payments | `4435eac` (4-nov) | `6a2b893` | #19 (refactor, SCRUM-655), #20 y #21 (SCRUM-657) | OK |
-| Communication | `120623a` (4-nov) | `fe01c13` | #25 y #26 (SCRUM-657). **No tiene su refactor (SCRUM-656)** | OK |
+| Communication | `120623a` (4-nov) | `ccd314d` | #25 y #26 (SCRUM-657) y #27 (refactor, SCRUM-656, 19-nov) | OK |
 
 En los 7 servicios, «antes» es ancestro de «después» y ningún PR de SCRUM-650 a SCRUM-657 entró antes de «antes». «Después» sigue siendo la punta de `develop`: no hay PR nuevos después de la medición. Identity es el único con un cambio de funcionalidad entre las dos fases (#38).
 
@@ -47,16 +47,16 @@ Valores de `docs/architecture/codigo/antes/` y `docs/architecture/codigo/despues
 
 | Servicio | Violaciones de SDD 10.3.2 | Ciclos entre paquetes | Tipos de más de 250 líneas | Fan-out máximo¹ | Dependencias entre paquetes | Cohesión H |
 |---|---|---|---|---|---|---|
-| Identity² | 11 → 11 | 1 → **0** | 2 → 2 | 80 → 79 | 93 → 91 | 0.81 → 0.79 |
+| Identity | 11 → **0** | 1 → **0** | 2 → **0** | 80 → **28** | 93 → 91 | 0.81 → 0.78 |
 | Catalog | 0 → 0 | 0 → 0 | 0 → 0 | 15 → 14 | 26 → 22 | 0.85 → 0.86 |
 | ServiceRequest | 0 → 0 | 0 → 0 | 2 → **1** | 31 → **21** | 111 → 109 | 0.79 → 0.77 |
 | Matching | 0 → 0 | 1 → **0** | 0 → 0 | 10 → 13 | 34 → 36 | 0.85 → 0.75 |
 | Ranking | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | 19 → 17 | 0.79 → **0.89** |
 | Payments | 0 → 0 | 1 → **0** | 0 → 0 | 12 → 11 | 41 → 37 | 0.78 → 0.77 |
-| Communication² | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | 44 → 44 | 0.83 → 0.83 |
+| Communication | 0 → 0 | 0 → 0 | 0 → 0 | 10 → 10 | 44 → 44 | 0.83 → 0.83 |
 
 1. Sin las raíces de composición (`Program` y `DependencyInjection`).
-2. Sin su refactor integrado. El cambio sale de adoptar `quickpatch-shared-dotnet` (ADR-020).
+2. Actualización del 19 de noviembre (Arquitectura): con SCRUM-650 y SCRUM-656, Identity pasa de 11 violaciones a 0 y Communication pierde su único ciclo entre tipos (`RealtimeSession` ↔ `WebSocketClient`). La medición se volvió a tomar con `generar.py --fase despues` en un equipo con .NET SDK 10 y Maven, desde cero.
 
 **Lectura de QA:**
 

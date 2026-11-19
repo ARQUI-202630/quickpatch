@@ -21,14 +21,8 @@ METRICAS = [
     ("cohesion_relacional_promedio", "Cohesión relacional promedio (H)", "mas"),
     ("tipos", "Tipos", None),
 ]
-# Qué explica el cambio cuando el servicio no tiene su refactor integrado. Se actualiza al fusionar SCRUM-650 y SCRUM-656.
-NOTAS = {
-    "identity": "Sin el refactor de SCRUM-650 (pendiente). El cambio sale de adoptar `quickpatch-shared-dotnet` "
-                "(ADR-020, SCRUM-657): el Outbox y el consumo de Kafka salen del servicio y desaparece el ciclo "
-                "entre `Infrastructure.Messaging` e `Infrastructure.Persistence`. Las 11 violaciones siguen.",
-    "communication": "Sin el refactor de SCRUM-656 (pendiente). El cambio sale de adoptar `quickpatch-shared-dotnet` "
-                     "(ADR-020, SCRUM-657): 2 tipos transversales menos; el resto de las métricas no se mueve.",
-}
+# Qué explica el cambio cuando un servicio no tiene su refactor integrado. Vacío desde SCRUM-650 y SCRUM-656.
+NOTAS: dict[str, str] = {}
 
 
 def flecha(a, d, sentido):

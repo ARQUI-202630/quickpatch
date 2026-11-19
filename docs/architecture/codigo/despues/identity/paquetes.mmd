@@ -2,13 +2,13 @@ flowchart LR
   subgraph Api
     _global_["(global) (1)"]
     QuickPatch_Identity_Api_Bootstrap["Api.Bootstrap (5)"]
-    QuickPatch_Identity_Api_Endpoints["Api.Endpoints (25)"]
-    QuickPatch_Identity_Api_Http["Api.Http (2)"]
-    QuickPatch_Identity_Api_Security["Api.Security (6)"]
+    QuickPatch_Identity_Api_Endpoints["Api.Endpoints (31)"]
+    QuickPatch_Identity_Api_Http["Api.Http (3)"]
+    QuickPatch_Identity_Api_Security["Api.Security (8)"]
   end
   subgraph Application
     QuickPatch_Identity_Application["Application (1)"]
-    QuickPatch_Identity_Application_Abstractions["Application.Abstractions (28)"]
+    QuickPatch_Identity_Application_Abstractions["Application.Abstractions (30)"]
     QuickPatch_Identity_Application_Auth["Application.Auth (22)"]
     QuickPatch_Identity_Application_Companies["Application.Companies (12)"]
     QuickPatch_Identity_Application_Events["Application.Events (9)"]
@@ -22,39 +22,39 @@ flowchart LR
     QuickPatch_Identity_Domain_Companies["Domain.Companies (1)"]
     QuickPatch_Identity_Domain_Technicians["Domain.Technicians (2)"]
     QuickPatch_Identity_Domain_Tenants["Domain.Tenants (1)"]
-    QuickPatch_Identity_Domain_Users["Domain.Users (5)"]
+    QuickPatch_Identity_Domain_Users["Domain.Users (6)"]
   end
   subgraph Infrastructure
     QuickPatch_Identity_Infrastructure["Infrastructure (1)"]
     QuickPatch_Identity_Infrastructure_Messaging["Infrastructure.Messaging (3)"]
-    QuickPatch_Identity_Infrastructure_Options["Infrastructure.Options (7)"]
+    QuickPatch_Identity_Infrastructure_Options["Infrastructure.Options (5)"]
     QuickPatch_Identity_Infrastructure_Persistence["Infrastructure.Persistence (13)"]
     QuickPatch_Identity_Infrastructure_Security["Infrastructure.Security (4)"]
   end
   _global_ -->|3| QuickPatch_Identity_Api_Bootstrap
   _global_ -->|2| QuickPatch_Identity_Api_Endpoints
   _global_ -->|2| QuickPatch_Identity_Api_Http
-  _global_ -->|2| QuickPatch_Identity_Api_Security
+  _global_ -->|4| QuickPatch_Identity_Api_Security
   _global_ -->|1| QuickPatch_Identity_Application
   _global_ -->|1| QuickPatch_Identity_Infrastructure
+  QuickPatch_Identity_Api_Bootstrap -->|2| QuickPatch_Identity_Api_Security
   QuickPatch_Identity_Api_Bootstrap -->|12| QuickPatch_Identity_Application_Auth
   QuickPatch_Identity_Api_Bootstrap -->|1| QuickPatch_Identity_Domain_Common
-  QuickPatch_Identity_Api_Bootstrap -->|2| QuickPatch_Identity_Infrastructure_Options
-  QuickPatch_Identity_Api_Endpoints -->|9| QuickPatch_Identity_Api_Security
+  QuickPatch_Identity_Api_Endpoints -->|6| QuickPatch_Identity_Api_Http
+  QuickPatch_Identity_Api_Endpoints -->|21| QuickPatch_Identity_Api_Security
   QuickPatch_Identity_Api_Endpoints -->|5| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Api_Endpoints -->|19| QuickPatch_Identity_Application_Auth
   QuickPatch_Identity_Api_Endpoints -->|11| QuickPatch_Identity_Application_Companies
   QuickPatch_Identity_Api_Endpoints -->|7| QuickPatch_Identity_Application_Platform
   QuickPatch_Identity_Api_Endpoints -->|20| QuickPatch_Identity_Application_Technicians
   QuickPatch_Identity_Api_Endpoints -->|5| QuickPatch_Identity_Application_Users
-  QuickPatch_Identity_Api_Endpoints -->|2| QuickPatch_Identity_Domain_Common
+  QuickPatch_Identity_Api_Endpoints -->|7| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Api_Endpoints -->|2| QuickPatch_Identity_Domain_Companies
   QuickPatch_Identity_Api_Endpoints -->|3| QuickPatch_Identity_Domain_Technicians
   QuickPatch_Identity_Api_Endpoints -->|2| QuickPatch_Identity_Domain_Tenants
   QuickPatch_Identity_Api_Endpoints -->|4| QuickPatch_Identity_Domain_Users
-  QuickPatch_Identity_Api_Endpoints -->|5| QuickPatch_Identity_Infrastructure_Options
-  QuickPatch_Identity_Api_Security -->|2| QuickPatch_Identity_Infrastructure_Options
-  QuickPatch_Identity_Api_Security -->|2| QuickPatch_Identity_Infrastructure_Security
+  QuickPatch_Identity_Api_Http -->|1| QuickPatch_Identity_Api_Security
+  QuickPatch_Identity_Api_Security -->|2| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Application -->|8| QuickPatch_Identity_Application_Auth
   QuickPatch_Identity_Application -->|5| QuickPatch_Identity_Application_Companies
   QuickPatch_Identity_Application -->|3| QuickPatch_Identity_Application_Platform
@@ -73,13 +73,13 @@ flowchart LR
   QuickPatch_Identity_Application_Auth -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Application_Auth -->|4| QuickPatch_Identity_Domain_Technicians
   QuickPatch_Identity_Application_Auth -->|6| QuickPatch_Identity_Domain_Tenants
-  QuickPatch_Identity_Application_Auth -->|16| QuickPatch_Identity_Domain_Users
+  QuickPatch_Identity_Application_Auth -->|21| QuickPatch_Identity_Domain_Users
   QuickPatch_Identity_Application_Companies -->|21| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Application_Companies -->|4| QuickPatch_Identity_Application_Technicians
   QuickPatch_Identity_Application_Companies -->|2| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Application_Companies -->|3| QuickPatch_Identity_Domain_Companies
   QuickPatch_Identity_Application_Companies -->|2| QuickPatch_Identity_Domain_Tenants
-  QuickPatch_Identity_Application_Companies -->|10| QuickPatch_Identity_Domain_Users
+  QuickPatch_Identity_Application_Companies -->|12| QuickPatch_Identity_Domain_Users
   QuickPatch_Identity_Application_Events -->|3| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Application_Events -->|2| QuickPatch_Identity_Domain_Technicians
   QuickPatch_Identity_Application_Events -->|1| QuickPatch_Identity_Domain_Tenants
@@ -94,7 +94,7 @@ flowchart LR
   QuickPatch_Identity_Application_Technicians -->|2| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Application_Technicians -->|7| QuickPatch_Identity_Domain_Technicians
   QuickPatch_Identity_Application_Technicians -->|2| QuickPatch_Identity_Domain_Tenants
-  QuickPatch_Identity_Application_Technicians -->|7| QuickPatch_Identity_Domain_Users
+  QuickPatch_Identity_Application_Technicians -->|9| QuickPatch_Identity_Domain_Users
   QuickPatch_Identity_Application_Users -->|8| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Application_Users -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Application_Users -->|3| QuickPatch_Identity_Domain_Technicians
@@ -102,10 +102,10 @@ flowchart LR
   QuickPatch_Identity_Domain_Companies -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Domain_Technicians -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Domain_Tenants -->|1| QuickPatch_Identity_Domain_Common
-  QuickPatch_Identity_Domain_Users -->|1| QuickPatch_Identity_Domain_Common
-  QuickPatch_Identity_Infrastructure -->|14| QuickPatch_Identity_Application_Abstractions
+  QuickPatch_Identity_Domain_Users -->|2| QuickPatch_Identity_Domain_Common
+  QuickPatch_Identity_Infrastructure -->|16| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Infrastructure -->|3| QuickPatch_Identity_Infrastructure_Messaging
-  QuickPatch_Identity_Infrastructure -->|7| QuickPatch_Identity_Infrastructure_Options
+  QuickPatch_Identity_Infrastructure -->|5| QuickPatch_Identity_Infrastructure_Options
   QuickPatch_Identity_Infrastructure -->|11| QuickPatch_Identity_Infrastructure_Persistence
   QuickPatch_Identity_Infrastructure -->|4| QuickPatch_Identity_Infrastructure_Security
   QuickPatch_Identity_Infrastructure_Messaging -->|2| QuickPatch_Identity_Application_Abstractions
@@ -119,10 +119,6 @@ flowchart LR
   QuickPatch_Identity_Infrastructure_Persistence -->|3| QuickPatch_Identity_Domain_Tenants
   QuickPatch_Identity_Infrastructure_Persistence -->|10| QuickPatch_Identity_Domain_Users
   QuickPatch_Identity_Infrastructure_Persistence -->|1| QuickPatch_Identity_Infrastructure_Options
-  QuickPatch_Identity_Infrastructure_Security -->|4| QuickPatch_Identity_Application_Abstractions
+  QuickPatch_Identity_Infrastructure_Security -->|6| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Infrastructure_Security -->|1| QuickPatch_Identity_Domain_Users
   QuickPatch_Identity_Infrastructure_Security -->|4| QuickPatch_Identity_Infrastructure_Options
-  linkStyle 8 stroke:#C62828,stroke-width:2px
-  linkStyle 21 stroke:#C62828,stroke-width:2px
-  linkStyle 22 stroke:#C62828,stroke-width:2px
-  linkStyle 23 stroke:#C62828,stroke-width:2px

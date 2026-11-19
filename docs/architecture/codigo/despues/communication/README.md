@@ -1,21 +1,21 @@
 # Communication — despues
 
-Código de `origin/develop` en `fe01c13`, generado el 2026-11-12 con `tools/arquitectura/generar.py`.
+Código de `origin/develop` en `ccd314d`, generado el 2026-11-19 con `tools/arquitectura/generar.py`.
 
 | Métrica | Valor |
 |---|---|
-| Tipos (sin migraciones) | 75 |
+| Tipos (sin migraciones) | 78 |
 | Paquetes | 17 |
-| Dependencias entre tipos | 176 |
+| Dependencias entre tipos | 180 |
 | Dependencias entre paquetes | 44 |
 | Ciclos entre paquetes | 0 |
 | Paquetes dentro de ciclos | 0 |
-| Ciclos entre tipos | 1 |
-| Tipos en el mayor ciclo | 2 |
+| Ciclos entre tipos | 0 |
+| Tipos en el mayor ciclo | 0 |
 | Violaciones de SDD 10.3.2 | 0 |
 | Tipos de más de 250 líneas | 0 |
 | Fan-out máximo (sin raíces de composición) | 10 |
-| Fan-out promedio | 2.35 |
+| Fan-out promedio | 2.31 |
 | Cohesión relacional promedio (H) | 0.83 |
 
 ## Dependencias entre capas
@@ -33,6 +33,7 @@ Código de `origin/develop` en `fe01c13`, generado el 2026-11-12 con `tools/arqu
 
 | Tipo | Capa | Líneas | Sale | Entra |
 |---|---|---|---|---|
+| `Api.Realtime.RealtimeSession` | Api | 132 | 10 | 1 |
 | `Application.Chat.SendChatMessageHandler` | Application | 48 | 10 | 2 |
 | `Api.Endpoints.InboxEndpoints` | Api | 112 | 8 | 1 |
 | `Api.Realtime.ConnectionRegistry` | Api | 44 | 8 | 2 |
@@ -40,7 +41,6 @@ Código de `origin/develop` en `fe01c13`, generado el 2026-11-12 con `tools/arqu
 | `Application.Realtime.NoticeRouter` | Application | 37 | 8 | 2 |
 | `Application.Realtime.RealtimeNotifier` | Application | 46 | 8 | 2 |
 | `Api.Endpoints.ChatEndpoints` | Api | 144 | 7 | 1 |
-| `Api.Realtime.RealtimeSession` | Api | 216 | 7 | 2 |
 | `Application.Chat.ChatParticipantsRecorder` | Application | 39 | 7 | 2 |
 | `Api.Endpoints.RealtimeEndpoints` | Api | 34 | 5 | 1 |
 
@@ -63,16 +63,16 @@ Código de `origin/develop` en `fe01c13`, generado el 2026-11-12 con `tools/arqu
 
 | Tipo | Capa | Líneas | Archivo |
 |---|---|---|---|
-| `Api.Realtime.RealtimeSession` | Api | 216 | `src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs` |
 | `Application.Inbox.InboxRules` | Application | 168 | `src/QuickPatch.Communication.Application/Inbox/InboxRules.cs` |
 | `Api.Endpoints.ChatEndpoints` | Api | 144 | `src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs` |
+| `Api.Realtime.RealtimeSession` | Api | 132 | `src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs` |
 | `Api.Endpoints.InboxEndpoints` | Api | 112 | `src/QuickPatch.Communication.Api/Endpoints/InboxEndpoints.cs` |
 | `Infrastructure.Persistence.CommunicationDbContext` | Infrastructure | 63 | `src/QuickPatch.Communication.Infrastructure/Persistence/CommunicationDbContext.cs` |
 | `Domain.Inbox.Notification` | Domain | 55 | `src/QuickPatch.Communication.Domain/Inbox/Notification.cs` |
 | `Infrastructure.Persistence.InboxStore` | Infrastructure | 53 | `src/QuickPatch.Communication.Infrastructure/Persistence/InboxStore.cs` |
+| `Api.Realtime.WebSocketFrames` | Api | 51 | `src/QuickPatch.Communication.Api/Realtime/WebSocketFrames.cs` |
 | `Infrastructure.Persistence.ChatStore` | Infrastructure | 50 | `src/QuickPatch.Communication.Infrastructure/Persistence/ChatStore.cs` |
-| `Application.Chat.SendChatMessageHandler` | Application | 48 | `src/QuickPatch.Communication.Application/Chat/Chat.cs` |
-| `Application.Realtime.RealtimeNotifier` | Application | 46 | `src/QuickPatch.Communication.Application/Realtime/RealtimeNotifier.cs` |
+| `Application.Chat.SendChatMessageHandler` | Application | 48 | `src/QuickPatch.Communication.Application/Chat/SendChatMessage.cs` |
 
 ## Ciclos entre paquetes
 
@@ -89,7 +89,7 @@ Ninguna.
 | `(global)` | 1 | 0 | 4 | 1.0 | 1.0 |
 | `Api.Endpoints` | 7 | 1 | 6 | 0.86 | 1.0 |
 | `Api.Http` | 1 | 1 | 0 | 0.0 | 1.0 |
-| `Api.Realtime` | 8 | 1 | 3 | 0.75 | 1.62 |
+| `Api.Realtime` | 11 | 1 | 3 | 0.75 | 1.55 |
 | `Application` | 1 | 1 | 3 | 0.75 | 1.0 |
 | `Application.Abstractions` | 5 | 7 | 3 | 0.3 | 0.6 |
 | `Application.Chat` | 6 | 4 | 5 | 0.56 | 0.83 |
@@ -114,7 +114,7 @@ flowchart LR
     _global_["(global) (1)"]
     QuickPatch_Communication_Api_Endpoints["Api.Endpoints (7)"]
     QuickPatch_Communication_Api_Http["Api.Http (1)"]
-    QuickPatch_Communication_Api_Realtime["Api.Realtime (8)"]
+    QuickPatch_Communication_Api_Realtime["Api.Realtime (11)"]
   end
   subgraph Application
     QuickPatch_Communication_Application["Application (1)"]
