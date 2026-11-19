@@ -1,0 +1,12 @@
+scrum-478-aviso-tiempo-real contra QA, 2026-11-19
+Script: tests/e2e/scrum-478-aviso-tiempo-real.mjs (Node; certificado de QA verificado con NODE_EXTRA_CA_CERTS, huella SHA-256 igual a tests/security/evidencias/tls-entrada-qa-*.txt). Código de salida: 0.
+Tras desplegar Communication 0.3.6 (SCRUM-656). No se guardan tokens ni claves.
+
+OK    Registro del cliente  (HTTP 201)
+OK    Login del cliente  (HTTP 200)
+OK    Solicitud creada  (HTTP 201, buscando_tecnico)
+OK    Canal /v1/realtime autenticado  (auth.accepted)
+OK    El cliente cancela  (HTTP 200)
+OK    Llega service-request.status-changed con cancelado  (267 ms después de cancelar)
+
+6/6 OK. Cliente de prueba: aviso478.mwnrvkql@quickpatch.test; solicitud 01a1f4aa-bd96-7b54-a5e1-856e04af9b90.
