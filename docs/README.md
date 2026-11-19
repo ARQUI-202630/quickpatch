@@ -22,6 +22,7 @@ Este archivo es el punto de entrada a la documentación formal del proyecto.
 | `testing/protocolo-scrum-668-multitenant-geolocalizacion.md` | Protocolo para medir en QA el alta de un tenant (AC8-E1) y el cambio de proveedor de geolocalización (AC8-E4 y AC9-E8), con su registro de ejecución (SCRUM-668). |
 | `testing/indicadores-funcionales.md` | Fuente única de los indicadores funcionales: 33 RF definidos, implementados, verificados en QA y aceptados, las 4 extensiones aparte y el avance del producto (SCRUM-700). Se recalcula con `scripts/calcular_indicadores_qa.py`. |
 | `testing/conciliacion-cifras-qa-2026-11-12.md` | Registro de discrepancias de cifras de QA y su corrección (SCRUM-664, SCRUM-695 y SCRUM-701). |
+| `testing/medicion-acoplamiento-cohesion-scrum-649.md` | Verificación de QA de la medición de acoplamiento y cohesión antes y después del refactor, tabla por servicio y nueva medición de AC7-E2 (SCRUM-649). |
 
 ## Documento histórico
 
