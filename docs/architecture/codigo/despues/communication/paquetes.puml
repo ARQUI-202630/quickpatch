@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title Communication — paquetes (despues, fe01c13)
+title Communication — paquetes (despues, ccd314d)
 skinparam packageStyle rectangle
 skinparam shadowing false
 left to right direction
@@ -8,7 +8,7 @@ package "Api" {
   component "(global)\n1 tipos" as _global_
   component "Api.Endpoints\n7 tipos" as QuickPatch_Communication_Api_Endpoints
   component "Api.Http\n1 tipos" as QuickPatch_Communication_Api_Http
-  component "Api.Realtime\n8 tipos" as QuickPatch_Communication_Api_Realtime
+  component "Api.Realtime\n11 tipos" as QuickPatch_Communication_Api_Realtime
 }
 package "Application" {
   component "Application\n1 tipos" as QuickPatch_Communication_Application

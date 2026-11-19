@@ -35,7 +35,7 @@ Construir un MVP de una plataforma **multi-tenant** de servicios técnicos para 
 | Administración | Verificación y suspensión de técnicos, gestión de tenants y panel operativo | Panel web, Identity |
 | Infraestructura y calidad | 14 repositorios con CI propio; 2 ambientes (QA y producción) en 7 VM; promoción a producción solo desde `release/*` probado en QA; observabilidad con Prometheus, Loki y Grafana | ADR-021, ADR-022, ADR-028 |
 
-**Arquitectura final.** 8 microservicios definidos, todos con código. 7 están desplegados en QA y en producción. Actors pasó de esqueleto a directorio de proveedores y clientes por eventos el 12 de noviembre (SCRUM-640), y su despliegue en QA está pendiente. Hay 20 eventos de Kafka con Outbox e idempotencia, y 8 bases lógicas en una instancia de PostgreSQL por ambiente. En el Sprint 6, cinco servicios se refactorizaron con reglas de dependencia verificadas por pruebas de arquitectura en su CI. Medido con la misma herramienta antes y después (12-nov, SDD 7.3), ningún servicio quedó con ciclos entre paquetes (antes había 3: Identity, Matching y Payments) y el fan-out máximo de ServiceRequest bajó de 31 a 21. Identity mantiene 11 violaciones de la matriz de dependencias hasta su refactor (SCRUM-650). El nivel de código se genera desde el código.
+**Arquitectura final.** 8 microservicios definidos, todos con código. 7 están desplegados en QA y en producción. Actors pasó de esqueleto a directorio de proveedores y clientes por eventos el 12 de noviembre (SCRUM-640), y su despliegue en QA está pendiente. Hay 20 eventos de Kafka con Outbox e idempotencia, y 8 bases lógicas en una instancia de PostgreSQL por ambiente. En el Sprint 6, los siete servicios que ya tenían código se refactorizaron con reglas de dependencia verificadas por pruebas de arquitectura en su CI. Medido con la misma herramienta antes y después (19-nov, SDD 7.3), los 8 servicios quedaron sin ciclos entre paquetes (antes había 3: Identity, Matching y Payments) y sin violaciones de la matriz de dependencias (Identity tenía 11); el fan-out máximo de Identity bajó de 80 a 28 y el de ServiceRequest de 31 a 21. El nivel de código se genera desde el código.
 
 ## 5. Qué no construimos
 
@@ -63,7 +63,7 @@ Construir un MVP de una plataforma **multi-tenant** de servicios técnicos para 
 
 - **Restricciones que marcaron el diseño:** 7 VM fijas (R10), sin presupuesto (R5), red privada sin dominio público (R9), una sola persona en infraestructura (R11) y unos 3 meses de proyecto (R3).
 - **Riesgos aceptados** (SAD 6.2): un solo nodo por componente en producción; un sistema distribuido con un equipo pequeño; y los demás de esa sección. La lógica transversal copiada en .NET (AC7-E5) quedó mitigada con ADR-020; su riesgo residual es coordinar un cambio incompatible del código compartido.
-- **Riesgos del cierre:** AC9-E3 sin cubrir. Los cambios del Sprint 6 (SCRUM-642 y los refactors de cinco servicios) están en QA desde el 11 de noviembre y todavía no en producción. El secreto `PasswordEncryption__PrivateKeyPem` debe existir antes de escalar Identity a más de una réplica.
+- **Riesgos del cierre:** AC9-E3 sin cubrir. Los cambios del Sprint 6 (SCRUM-642 y los refactors de los 7 servicios) están en QA o pendientes de su release a QA, y todavía no en producción. El secreto `PasswordEncryption__PrivateKeyPem` debe existir antes de escalar Identity a más de una réplica.
 
 ## 8. Conclusión
 

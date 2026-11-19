@@ -1,6 +1,6 @@
 # Payments — despues
 
-Código de `origin/develop` en `6a2b893`, generado el 2026-11-12 con `tools/arquitectura/generar.py`.
+Código de `origin/develop` en `6a2b893`, generado el 2026-11-19 con `tools/arquitectura/generar.py`.
 
 | Métrica | Valor |
 |---|---|

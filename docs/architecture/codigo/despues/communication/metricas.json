@@ -2,18 +2,18 @@
  "servicio": "Communication",
  "lenguaje": "csharp",
  "resumen": {
-  "tipos": 75,
+  "tipos": 78,
   "paquetes": 17,
-  "dependencias_entre_tipos": 176,
+  "dependencias_entre_tipos": 180,
   "dependencias_entre_paquetes": 44,
   "ciclos_entre_paquetes": 0,
   "paquetes_en_ciclos": 0,
-  "ciclos_entre_tipos": 1,
-  "mayor_ciclo_de_tipos": 2,
+  "ciclos_entre_tipos": 0,
+  "mayor_ciclo_de_tipos": 0,
   "violaciones_de_capas": 0,
   "tipos_de_mas_de_250_lineas": 0,
   "fan_out_maximo": 10,
-  "fan_out_promedio": 2.35,
+  "fan_out_promedio": 2.31,
   "cohesion_relacional_promedio": 0.83
  },
  "dependencias_entre_capas": {
@@ -26,13 +26,17 @@
  },
  "violaciones": [],
  "ciclos_entre_paquetes": [],
- "ciclos_entre_tipos": [
-  [
-   "QuickPatch.Communication.Api.Realtime.RealtimeSession",
-   "QuickPatch.Communication.Api.Realtime.WebSocketClient"
-  ]
- ],
+ "ciclos_entre_tipos": [],
  "mayor_fan_out": [
+  {
+   "tipo": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 132,
+   "fan_out": 10,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs"
+  },
   {
    "tipo": "QuickPatch.Communication.Application.Chat.SendChatMessageHandler",
    "capa": "Application",
@@ -40,7 +44,7 @@
    "lineas": 48,
    "fan_out": 10,
    "fan_in": 2,
-   "archivo": "src/QuickPatch.Communication.Application/Chat/Chat.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Chat/SendChatMessage.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
@@ -67,7 +71,7 @@
    "lineas": 37,
    "fan_out": 8,
    "fan_in": 2,
-   "archivo": "src/QuickPatch.Communication.Application/Inbox/Inbox.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Inbox/InboxRecorder.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Application.Realtime.NoticeRouter",
@@ -97,22 +101,13 @@
    "archivo": "src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs"
   },
   {
-   "tipo": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
-   "capa": "Api",
-   "clase": "class",
-   "lineas": 216,
-   "fan_out": 7,
-   "fan_in": 2,
-   "archivo": "src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs"
-  },
-  {
    "tipo": "QuickPatch.Communication.Application.Chat.ChatParticipantsRecorder",
    "capa": "Application",
    "clase": "class",
    "lineas": 39,
    "fan_out": 7,
    "fan_in": 2,
-   "archivo": "src/QuickPatch.Communication.Application/Chat/Chat.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Chat/ChatParticipantsRecorder.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Endpoints.RealtimeEndpoints",
@@ -218,15 +213,6 @@
  ],
  "mas_grandes": [
   {
-   "tipo": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
-   "capa": "Api",
-   "clase": "class",
-   "lineas": 216,
-   "fan_out": 7,
-   "fan_in": 2,
-   "archivo": "src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs"
-  },
-  {
    "tipo": "QuickPatch.Communication.Application.Inbox.InboxRules",
    "capa": "Application",
    "clase": "static",
@@ -243,6 +229,15 @@
    "fan_out": 7,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Communication.Api/Endpoints/ChatEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 132,
+   "fan_out": 10,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/RealtimeSession.cs"
   },
   {
    "tipo": "QuickPatch.Communication.Api.Endpoints.InboxEndpoints",
@@ -281,6 +276,15 @@
    "archivo": "src/QuickPatch.Communication.Infrastructure/Persistence/InboxStore.cs"
   },
   {
+   "tipo": "QuickPatch.Communication.Api.Realtime.WebSocketFrames",
+   "capa": "Api",
+   "clase": "static",
+   "lineas": 51,
+   "fan_out": 1,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.Communication.Api/Realtime/WebSocketFrames.cs"
+  },
+  {
    "tipo": "QuickPatch.Communication.Infrastructure.Persistence.ChatStore",
    "capa": "Infrastructure",
    "clase": "class",
@@ -296,16 +300,7 @@
    "lineas": 48,
    "fan_out": 10,
    "fan_in": 2,
-   "archivo": "src/QuickPatch.Communication.Application/Chat/Chat.cs"
-  },
-  {
-   "tipo": "QuickPatch.Communication.Application.Realtime.RealtimeNotifier",
-   "capa": "Application",
-   "clase": "class",
-   "lineas": 46,
-   "fan_out": 8,
-   "fan_in": 2,
-   "archivo": "src/QuickPatch.Communication.Application/Realtime/RealtimeNotifier.cs"
+   "archivo": "src/QuickPatch.Communication.Application/Chat/SendChatMessage.cs"
   }
  ],
  "paquetes": [
@@ -335,11 +330,11 @@
   },
   {
    "paquete": "QuickPatch.Communication.Api.Realtime",
-   "tipos": 8,
+   "tipos": 11,
    "fan_out": 3,
    "fan_in": 1,
    "inestabilidad": 0.75,
-   "cohesion_relacional": 1.62
+   "cohesion_relacional": 1.55
   },
   {
    "paquete": "QuickPatch.Communication.Application",
@@ -827,6 +822,10 @@
   },
   {
    "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "a": "QuickPatch.Communication.Api.Realtime.AuthFrame"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
    "a": "QuickPatch.Communication.Api.Realtime.ConnectionRegistry"
   },
   {
@@ -847,6 +846,14 @@
   },
   {
    "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "a": "QuickPatch.Communication.Api.Realtime.WebSocketFrameKind"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
+   "a": "QuickPatch.Communication.Api.Realtime.WebSocketFrames"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.RealtimeSession",
    "a": "QuickPatch.Communication.Application.Events.RealtimeJson"
   },
   {
@@ -863,11 +870,15 @@
   },
   {
    "de": "QuickPatch.Communication.Api.Realtime.WebSocketClient",
-   "a": "QuickPatch.Communication.Api.Realtime.RealtimeSession"
+   "a": "QuickPatch.Communication.Api.Realtime.RealtimeUser"
   },
   {
    "de": "QuickPatch.Communication.Api.Realtime.WebSocketClient",
-   "a": "QuickPatch.Communication.Api.Realtime.RealtimeUser"
+   "a": "QuickPatch.Communication.Api.Realtime.WebSocketFrames"
+  },
+  {
+   "de": "QuickPatch.Communication.Api.Realtime.WebSocketFrames",
+   "a": "QuickPatch.Communication.Api.Realtime.WebSocketFrameKind"
   },
   {
    "de": "QuickPatch.Communication.Application.Abstractions.ChatMessagePage",
@@ -1374,5 +1385,5 @@
    "a": "QuickPatch.Communication.Domain.Inbox.Notification"
   }
  ],
- "commit": "fe01c13"
+ "commit": "ccd314d"
 }

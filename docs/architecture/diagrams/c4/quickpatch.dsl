@@ -117,9 +117,9 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             group "Microservicios" {
                 identity = container "Identity Service" "Autenticación, usuarios, tenants y auditoría." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
-                    idEndpoints = component "IdentityEndpoints" "Registro, login, /password/setup y /password-recovery (SCRUM-624); /users/me (SCRUM-611); /platform/tenants; /admin/technicians y /admin/password-recovery-requests; /providers/me/technicians; /internal/v1/users (solo en el clúster)." "Minimal API · Api/Endpoints"
+                    idEndpoints = component "Endpoints por recurso" "AuthEndpoints, PasswordEndpoints, UserEndpoints, PlatformEndpoints, AdminTechnicianEndpoints y ProviderTeamEndpoints (SCRUM-650): solo validan la entrada, llaman al caso de uso y mapean la respuesta. Registro, login, /password/setup y /password-recovery (SCRUM-624); /users/me (SCRUM-611); /platform/tenants; /admin/technicians y /admin/password-recovery-requests; /providers/me/technicians; /internal/v1/users (solo en el clúster)." "Minimal API · Api/Endpoints"
                     idCompanyEndpoints = component "CompanyEndpoints" "POST /v1/auth/register/company; GET /v1/companies/me y POST /v1/companies/me/users (RF-06)." "Minimal API · Api/Endpoints"
-                    idSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Lee usuario, tenant, rol y company_id del JWT y registra cada 403 (RNF-04)." "ASP.NET Core · Api/Security"
+                    idSecurity = component "AuthenticatedUser, PasswordTransport y ChannelOptions" "Usuario, tenant, rol y company_id del JWT; registra cada 403 (RNF-04). PasswordTransport descifra encryptedPassword con el puerto IPasswordDecryptor, y la validación del JWT usa ITokenValidationKey: el API no conoce Infrastructure (SDD 10.3.2)." "ASP.NET Core · Api/Security"
                     idHttp = component "Problems y BadRequestExceptionHandler" "Responde application/problem+json. X-Correlation-Id y el registro estructurado vienen de quickpatch-shared-dotnet (ADR-020)." "ASP.NET Core · Api/Http"
                     idBootstrap = component "TenantAdminBootstrap" "Al arrancar crea el admin del tenant y el de plataforma desde el Secret (SCRUM-450)." "Hosted service · Api/Bootstrap"
                     # Application
@@ -132,7 +132,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     idDomain = component "Dominio de identidad" "User (LockoutPolicy), Tenant, TechnicianProfile (VerificationStatus), ClientCompany, PasswordSetupToken, PasswordRecoveryRequest, AuditEntry y Roles." "Domain"
                     # Infrastructure
                     idPersistence = component "TenantUnitOfWork, PlatformUnitOfWork y repositorios" "UserRepository, TenantRepository, TechnicianProfileRepository, ClientCompanyRepository, PasswordSetupTokenRepository, PasswordRecoveryRepository y AuditLog; RLS con app.current_tenant o SET LOCAL ROLE identity_platform." "EF Core + Npgsql · Infrastructure/Persistence"
-                    idSecurityAdapters = component "RsaTokenIssuer, BCryptPasswordHasher y HmacEmailHasher" "Firma el JWT RS256 (ADR-018), hace el hash de las contraseñas (RNF-03) y el HMAC-SHA256 del correo de la recuperación (SCRUM-624)." "Infrastructure/Security"
+                    idSecurityAdapters = component "RsaTokenIssuer, PasswordEncryptionKey, BCryptPasswordHasher y HmacEmailHasher" "Firma el JWT RS256 y expone la llave pública (ITokenIssuer, ITokenValidationKey; ADR-018), descifra la contraseña con RSA-OAEP-256 (IPasswordDecryptor), hace el hash de las contraseñas (RNF-03) y el HMAC del correo de la recuperación (SCRUM-624)." "Infrastructure/Security"
                     idOutbox = component "EfOutbox" "Guarda technician.registered, technician.verification-changed y tenant.status-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Messaging"
                     idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
                     idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta la reputación en technician_profiles; descarta lo atrasado por changedAt (ADR-027)." "Kafka consumer · Infrastructure/Messaging"
@@ -261,8 +261,8 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 }
                 communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" "Microservicio" {
                     # Api
-                    coRealtime = component "RealtimeEndpoints, RealtimeSession y TokenValidator" "WebSocket /v1/realtime: espera la trama auth, valida el JWT RS256 y cierra con los códigos del contrato (ADR-023)." "ASP.NET Core WebSockets · Api/Realtime"
-                    coConnections = component "ConnectionRegistry y WebSocketClient" "Conexiones abiertas de la réplica; entrega cada aviso solo al tenant y al destinatario del evento." "Api/Realtime"
+                    coRealtime = component "RealtimeEndpoints, RealtimeSession, AuthFrame y TokenValidator" "WebSocket /v1/realtime: la sesión espera la trama auth (AuthFrame), valida el JWT RS256 y cierra con los códigos del contrato (ADR-023). La lectura y el cierre de tramas están en WebSocketFrames (SCRUM-656)." "ASP.NET Core WebSockets · Api/Realtime"
+                    coConnections = component "ConnectionRegistry, WebSocketClient y WebSocketFrames" "Conexiones abiertas de la réplica; entrega cada aviso solo al tenant y al destinatario del evento. WebSocketClient ya no depende de la sesión." "Api/Realtime"
                     coInboxEndpoints = component "InboxEndpoints" "GET /v1/notifications y POST /v1/notifications/{id}/read (ADR-024)." "Minimal API · Api/Endpoints"
                     coChatEndpoints = component "ChatEndpoints" "GET y POST /v1/service-requests/{id}/messages (RF-37, ADR-026)." "Minimal API · Api/Endpoints"
                     # Application
