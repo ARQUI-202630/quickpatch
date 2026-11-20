@@ -103,7 +103,7 @@ def calcular():
 
 # Cifras que ya no se usan. Una línea que las cite debe decir que es histórica.
 CIFRAS_RETIRADAS = [r'37 de 37', r'37 funcionalidades', r'91[.,]92', r'73[.,]08', r'94[.,]52',
-                    r'81[.,]73', r'\b34 Cumple', r'\b39 Cumple', r'\b4 No cumple', r'36 aceptadas']
+                    r'81[.,]73', r'\b34 Cumple', r'\b39 Cumple, 7 Parcial',r'\b4 No cumple', r'36 aceptadas']
 MARCAS_HISTORICAS = ['histór', 'Histór', 'Era ', 'era ', 'etirad', 'o usar', 'antes', 'Antes',
                      'sube de', 'pasa de', 'corte del 5', 'primera versión', 'segunda versión']
 # Documentos que son registro histórico por definición.
