@@ -1665,7 +1665,7 @@
           ]
         },
         {
-          "name": "REC-006: el admin_tenant pide recuperar su clave → 202",
+          "name": "REC-006: el admin_tenant pide recuperar su clave → 202 (o 429 por RN-U7)",
           "request": {
             "method": "POST",
             "header": [
@@ -1714,7 +1714,11 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('202', () => pm.response.to.have.status(202));"
+                  "pm.test('REC-006: 202, o 429 si ya hubo 3 pedidos en la hora (RN-U7)', () => pm.expect(pm.response.code).to.be.oneOf([202, 429]));",
+                  "if (pm.response.code === 429) {",
+                  "  pm.test('tipo demasiadas-solicitudes', () => pm.expect(pm.response.json().type).to.match(/\\/demasiadas-solicitudes$/));",
+                  "  pm.test('Retry-After en segundos', () => pm.expect(Number(pm.response.headers.get('Retry-After'))).to.be.above(0));",
+                  "}"
                 ]
               }
             }
