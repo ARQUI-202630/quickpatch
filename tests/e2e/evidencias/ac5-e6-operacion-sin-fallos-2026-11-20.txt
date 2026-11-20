@@ -1,0 +1,29 @@
+AC5-E6: operación sin fallos del flujo crítico (SCRUM-665), 20 de noviembre de 2026
+=================================================================================
+
+Meta (matriz-escenarios-calidad-52.md): menos del 1 % de respuestas 5xx (logs del gateway en Loki) y 0 fallos en las
+ejecuciones de la prueba E2E. DevOps aceptó 3 corridas manuales seguidas en verde de pruebas-sistema.yml (sin k6) en
+lugar de corridas programadas, porque el workflow no tiene horario.
+
+1. Respuestas 5xx (Loki, Nginx de entrada en VM1: {job="docker", vm="vm1"})
+| Ventana | Peticiones | 5xx | % 5xx |
+|---|---|---|---|
+| Última hora | 4.863 | 4 | 0,08 % |
+| Últimas 24 h | 5.777 | 5 | 0,09 % |
+| Desde el 13-nov (primer log disponible) | 6.265 | 5 | 0,08 % |
+- Las 5 respuestas 5xx son 502 en POST /api/v1/service-requests/{id}/payment, una por cada corrida del 20-nov.
+- Límite: el Nginx de VM1 atiende QA y producción con el mismo log, así que la cifra mezcla los dos ambientes. Los
+  gateways de VM2 y VM3 no envían sus logs a Loki.
+
+2. Corridas de pruebas-sistema.yml (sin k6), 20-nov
+| Corrida | Run | Resultado | Motivo del fallo |
+|---|---|---|---|
+| 1 | 44819781232 | Pasó | — |
+| 2 | 44822001979 | Falló (1 de 523) | El aviso «solicitud-creada» no llegó a tiempo al buzón del cliente |
+| 3 | 44822911334 | Pasó | — |
+| 4 | 44825780519 | Pasó | — |
+| 5 | 44827890939 | Falló (1) | 429 en REC-006: la regla RN-U7 permite 3 pedidos de recuperación por correo por hora, y la colección usa siempre el mismo correo |
+
+Estado: la parte de 5xx cumple (0,08 %, meta < 1 %). La parte E2E no tiene todavía 3 corridas seguidas en verde. Sigue
+en Parcial hasta repetir las corridas con al menos 1 hora entre ellas o hasta que DevOps acepte estas 5 con los fallos
+explicados.

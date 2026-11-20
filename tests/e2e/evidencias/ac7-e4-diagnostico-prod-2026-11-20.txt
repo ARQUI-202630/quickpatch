@@ -1,0 +1,40 @@
+AC7-E4: diagnóstico de un fallo en producción con Grafana y Loki (SCRUM-665), 20 de noviembre de 2026
+====================================================================================================
+
+Meta (matriz-escenarios-calidad-52.md): causa identificada en 1 hora o menos desde que se inicia la revisión,
+usando solo Grafana/Loki y sin acceso por SSH a los contenedores.
+
+Fallo provocado
+- Producción, 20-nov 16:46 (hora de Bogotá), con el visto bueno de DevOps (Sebastián Sánchez), que lo provocó.
+- Cuenta de cliente de los datos de demostración. Solicitud de Cerrajería con una dirección de Medellín.
+- La app respondió: «No encontramos esa dirección en Bogotá. Revisa la calle y el número, o toca «Usar mi ubicación»».
+- No se creó ninguna solicitud.
+
+Diagnóstico (solo Grafana, fuente Loki; sin SSH ni kubectl)
+- Inicio de la revisión: 17:31:03 (hora de Bogotá).
+- Consulta 1: {entorno="prod", namespace="quickpatch", service="service-request"} |~ "(?i)bogot|geocod|422|direcci"
+  en la ventana 16:40 a 16:55. Devuelve 3 líneas de service-request, todas con el mismo TraceId y correlationId.
+- Consulta 2: {entorno="prod"} |= "f955c066-9805-4e81-9b82-65645a63df88" (el correlationId), para ver toda la petición.
+- Causa identificada: 17:31:18. Tiempo hasta la causa: 15 s (meta: 1 hora o menos).
+
+Lo que muestran los logs (correlationId f955c066-9805-4e81-9b82-65645a63df88)
+| Hora (Bogotá) | Servicio | Nivel | Mensaje |
+|---|---|---|---|
+| 16:46:22.471 | service-request | Information | IGeocoder: inicia GET al geocodificador (Nominatim, 10.43.98.209:8088/search) |
+| 16:46:22.494 | service-request | Information | IGeocoder: envía la petición |
+| 16:46:25.453 | service-request | Warning | NominatimGeocoder: «No se pudo geocodificar (TaskCanceledException)» |
+
+Causa: el geocodificador no respondió a tiempo (la petición se canceló a los 3 s). Por RF-07 y ADR-024, si el sistema
+no encuentra la dirección o el geocodificador no responde a tiempo, rechaza la solicitud y pide compartir la ubicación,
+que es lo que mostró la app. El rechazo no vino de comparar las coordenadas con el límite de Bogotá, sino del tiempo de
+espera del geocodificador.
+
+Observación para QA: una dirección fuera de Bogotá hace que el geocodificador de producción no responda a tiempo. El
+resultado para el usuario es el correcto, pero conviene confirmar con Backend si el geocodificador solo tiene datos de
+Bogotá (y por eso tarda) o si estaba lento a esa hora.
+
+Límites
+- El diagnóstico lo hizo QA sabiendo la hora aproximada del fallo, como en un simulacro.
+- Las consultas se hicieron con la API de Loki a través de Grafana (la misma que usa Explore), con la sesión de QA.
+
+Estado: Cumple (causa en 15 s, solo con Grafana y Loki, en producción).
