@@ -13,7 +13,8 @@ Fuera de la colección: REC-015 (habría que esperar 1 hora a que venza el enlac
 y REC-023 a REC-025 (pantallas). REC-009 y REC-012 se prueban desde el tenant principal: no hay administrador de Beta.
 
 El límite es de 3 pedidos por correo por hora. Los correos son nuevos en cada corrida, salvo el del admin_tenant
-(REC-006): la colección no se debe correr más de 3 veces en una hora. Necesita al administrador del tenant
+(REC-006): a partir de la cuarta corrida en la misma hora ese pedido recibe 429, que también cumple RN-U7, y la prueba
+lo acepta si trae el tipo demasiadas-solicitudes y Retry-After. Así la colección se puede correr seguida. Necesita al administrador del tenant
 (adminEmail y adminPassword, secretos de QA que nunca van al repositorio). Correr con --reporters cli: el reporte JSON
 de Newman guarda tokens y los enlaces de recuperación.
 """
@@ -60,6 +61,17 @@ def aceptado(extra=()):
 
 def confirmar(nombre, token, clave, pruebas, headers=(CANAL,)):
     return req(nombre, "POST", CONFIRMAR, [JSON, CORR, *headers], {"token": token, "password": clave}, pruebas=pruebas)
+
+
+def aceptado_o_limite(caso):
+    """202, o 429 cuando el mismo correo ya hizo 3 pedidos en la hora (RN-U7). Las dos respuestas son correctas."""
+    return [
+        f"pm.test('{caso}: 202, o 429 si ya hubo 3 pedidos en la hora (RN-U7)', () => pm.expect(pm.response.code).to.be.oneOf([202, 429]));",
+        "if (pm.response.code === 429) {",
+        "  pm.test('tipo demasiadas-solicitudes', () => pm.expect(pm.response.json().type).to.match(/\\/demasiadas-solicitudes$/));",
+        "  pm.test('Retry-After en segundos', () => pm.expect(Number(pm.response.headers.get('Retry-After'))).to.be.above(0));",
+        "}",
+    ]
 
 
 def enlace_invalido():
@@ -230,7 +242,8 @@ pedido = {
         ]),
         req("REC-005: un campo de más → 400", "POST", PEDIR, [JSON, CORR, CANAL],
             {"email": correo("rec1.qa"), "tenantId": "00000000-0000-0000-0000-000000000000"}, pruebas=error(400)),
-        pedir("REC-006: el admin_tenant pide recuperar su clave → 202", "{{adminEmail}}", aceptado()),
+        pedir("REC-006: el admin_tenant pide recuperar su clave → 202 (o 429 por RN-U7)", "{{adminEmail}}",
+              aceptado_o_limite("REC-006")),
         buscar("REC-006: no queda solicitud del administrador", "{{adminEmail}}",
                ausente("REC-006", "los administradores no usan este flujo")),
         pedir("REC-009: el cliente de Beta pide recuperar la suya", correo("rec.beta.qa"), aceptado(), headers=(BETA,)),
