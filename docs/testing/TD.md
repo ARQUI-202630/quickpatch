@@ -431,7 +431,7 @@ El SAD formaliza **52 escenarios de calidad (AC1-E1 a AC9-E8)** cubriendo las 40
 - análisis estático de código y documentación (AC7-E1, AC7-E2, AC8-E3 y AC8-E4);
 - la regresión del cambio de proveedor de geolocalización (AC9-E8), que todavía no tiene prueba.
 
-> **Estado medido (fuente única, SCRUM-664):** al 20 de noviembre de 2026 los 52 escenarios están en 39 Cumple, 5 Parcial, 3 No cumple y 5 No medido, para un 79.81%. El estado de cada uno está en `docs/testing/matriz-escenarios-calidad-52.md`, y se recalcula con `python scripts/calcular_indicadores_qa.py`. Que un escenario esté automatizado en esta tabla no significa que cumpla.
+> **Estado medido (fuente única, SCRUM-664):** al 22 de noviembre de 2026 los 52 escenarios están en 40 Cumple, 4 Parcial, 3 No cumple y 5 No medido, para un 80.77%. El estado de cada uno está en `docs/testing/matriz-escenarios-calidad-52.md`, y se recalcula con `python scripts/calcular_indicadores_qa.py`. Que un escenario esté automatizado en esta tabla no significa que cumpla.
 
 > **Cambio frente a la versión 3.2:** la tabla pasa de 38 a 42 automatizados. Se suman AC4-E5 (colecciones `scrum-458` con 400 y 422), AC4-E7 (pruebas de accesibilidad de Flutter, quickpatch-mobile#58), AC9-E2 (colección `scrum-642-reputacion-baja`, 11-nov) y AC9-E7 (humo del flujo crítico, `SMK-001`).
 

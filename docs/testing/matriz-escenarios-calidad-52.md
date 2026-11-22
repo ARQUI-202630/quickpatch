@@ -1,8 +1,8 @@
 # Matriz de Evaluación de los 52 Escenarios de Calidad del SAD (SCRUM-565)
 
 **Código del Documento:** `MTX-CAL-SAD-52-2026-10-26`  
-**Versión:** `3.4` (fuente única de los 52 escenarios, SCRUM-664)  
-**Fecha:** 1 de noviembre de 2026 (versión 3.2: 5 de noviembre de 2026; versión 3.3: 12 de noviembre de 2026; versión 3.4: 20 de noviembre de 2026)  
+**Versión:** `3.5` (fuente única de los 52 escenarios, SCRUM-664)  
+**Fecha:** 1 de noviembre de 2026 (versión 3.2: 5 de noviembre de 2026; versión 3.3: 12 de noviembre de 2026; versión 3.4: 20 de noviembre de 2026; versión 3.5: 22 de noviembre de 2026)  
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`) — QA Lead  
 **Trazabilidad Jira:** Tareas `SCRUM-564` (métrica verificable, sección 4) y `SCRUM-565` (medición) | SAD §3 (52 Escenarios de Calidad en 9 Atributos ISO/IEC 25010) | `TD.md` V3.3 | Fuente única de los escenarios (SCRUM-664): el informe, las estadísticas, el TD, el SAD y la presentación citan las cantidades de esta matriz. Se recalculan con `python scripts/calcular_indicadores_qa.py`  
 **Criterio de Evaluación:** Conforme a la directriz técnica de Juan Diego, un escenario se clasifica como **Cumple** únicamente si cuenta con una **medición cuantitativa explícita**, **fecha de ejecución** y **archivo de evidencia verificable** en el repositorio. Todo escenario sin medición cuantitativa formal permanece como **No medido** / **Pendiente** (es preferible un porcentaje sincero a observaciones del profesor).
@@ -53,7 +53,7 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 | **AC5-E3** | Reliability | Caída de un microservicio | 0% de eventos perdidos; procesa backlog al reiniciar | ServiceRequest en 0 réplicas: 4 eventos de Catalog generados con el consumidor caído, 0 perdidos; la réplica igualó a Catalog 24 s después de volver | `tests/e2e/evidencias/confiabilidad-ac5-e3-e4-qa-2026-11-10.txt`; `tests/e2e/evidencias/scripts-2026-11-10/ac5-e3-qa.py` | **Cumple** | Medido por DevOps el 10-nov y ratificado por QA el 20-nov (SCRUM-665). Límite: un solo flujo (Catalog a ServiceRequest). |
 | **AC5-E4** | Reliability | Kafka no disponible | 0 eventos perdidos; reintento automático | Kafka detenido: 4 altas respondieron 201, el outbox retuvo 4 pendientes y los publicó solo 34 s después de volver Kafka, sin intervención; 0 perdidos | `tests/e2e/evidencias/confiabilidad-ac5-e3-e4-qa-2026-11-10.txt`; `tests/e2e/evidencias/scripts-2026-11-10/ac5-e4-qa.py` | **Cumple** | Medido por DevOps el 10-nov y ratificado por QA el 20-nov (SCRUM-665). Límite: solo el outbox de Catalog. |
 | **AC5-E5** | Reliability | Evento duplicado por reintento | 0 efectos duplicados (`eventId`) | Mismo eventId publicado 3 veces en QA: 1 fila en processed_events y 0 efectos duplicados | `tests/e2e/evidencias/ac5-confiabilidad-e1-e5-e6-qa-2026-11-05.md` | **Cumple** | En QA se probó un consumidor (ServiceRequest, categorías); las pruebas de integración cubren los demás. |
-| **AC5-E6** | Reliability | Operación sin fallos del flujo crítico | $< 1\%$ de respuestas 5xx y 0 fallos en E2E | 5xx en Loki: 0,08 % (5 de 6.265 desde el 13-nov); los 5 son el 502 que la colección de pago provoca a propósito, así que hay 0 errores 5xx inesperados. Corridas de `pruebas-sistema.yml` del 20-nov: 3 de 5 en verde, no seguidas | `tests/e2e/evidencias/ac5-e6-operacion-sin-fallos-2026-11-20.txt`; `tests/e2e/evidencias/humo-flujo-critico-qa-2026-10-30.txt` | **Parcial** | La parte de 5xx cumple. Faltan 3 corridas seguidas en verde: los 2 fallos fueron un aviso que llegó tarde y el límite de RN-U7 (3 pedidos de recuperación por hora) con el mismo correo en la colección. |
+| **AC5-E6** | Reliability | Operación sin fallos del flujo crítico | $< 1\%$ de respuestas 5xx y 0 fallos en E2E | 5xx en Loki: 0,08 % (5 de 6.265 desde el 13-nov); los 5 son el 502 que la colección de pago provoca a propósito, así que hay 0 errores 5xx inesperados. Corridas de `pruebas-sistema.yml` del 22-nov: 3 de 3 en verde, seguidas y con 65 minutos entre una y otra (runs 45045654441, 45051767823 y 45057903310), 0 aserciones fallidas | `tests/e2e/evidencias/ac5-e6-operacion-sin-fallos-2026-11-20.txt`; `tests/e2e/evidencias/humo-flujo-critico-qa-2026-10-30.txt` | **Cumple** | Corridas manuales, porque el workflow no tiene horario; DevOps aceptó 3 corridas seguidas en verde en lugar de las programadas. Los 65 minutos entre corridas evitan el límite de RN-U7 (3 pedidos de recuperación por hora). Las 5 corridas del 20-nov dieron 3 de 5 por un aviso que llegó tarde y por ese límite; el aviso tarde no se repitió. El log de Loki mezcla QA y producción. |
 | **AC6-E1** | Security | Protección de datos de pago | 0 números de tarjeta/CVV en BD o logs | **0 números PAN/CVV** en 2,649 trazas auditadas en Loki | `tests/security/evidencias/pci-dss-loki-qa-2026-10-18.txt` | **Cumple** | Escaneo exhaustivo con regex PCI-DSS. |
 | **AC6-E2** | Security | Aislamiento multi-tenant | 0 fugas entre tenants | Accesos cross-tenant aislados responden HTTP 404 | `tests/e2e/evidencias/scrum-108-aprobacion-rechazo-qa-2026-10-22.txt`; `tests/e2e/evidencias/tenant-beta-qa-2026-10-15.txt` | **Cumple** | RLS en PostgreSQL VM5; 0 fugas. |
 | **AC6-E3** | Security | Control de acceso por rol | 100% de endpoints sensibles validan rol en backend | Accesos no autorizados bloqueados con HTTP 403 Forbidden | `tests/e2e/evidencias/scrum-56-registro-tecnico-qa-2026-10-22.txt`; `tests/e2e/evidencias/scrum-105-panel-operativo-qa-2026-10-22.txt` | **Cumple** | Validación estricta de RBAC. |
@@ -87,12 +87,12 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 ## 3. Balance Cuantitativo de los Escenarios de Calidad
 
 * **Total de Escenarios Evaluados:** **52 Escenarios de Arquitectura (SAD §3)**.
-* **Escenarios en Estado CUMPLE:** **39 escenarios (75.0%)**. Cinco de ellos los marcó la Product Owner como Cumple: AC1-E2, AC2-E5, AC3-E1, AC4-E2 y AC9-E2. AC4-E2 es el único que todavía no tiene evidencia. AC1-E2 la tiene con el acta (PR #272) y AC9-E2 desde el 11 de noviembre (SCRUM-642).
-* **Escenarios en Estado PARCIAL:** **5 escenarios (9.6%)** (AC4-E9, AC5-E6, AC8-E1, AC8-E4, AC9-E8).
+* **Escenarios en Estado CUMPLE:** **40 escenarios (76.9%)**. Cinco de ellos los marcó la Product Owner como Cumple: AC1-E2, AC2-E5, AC3-E1, AC4-E2 y AC9-E2. AC4-E2 es el único que todavía no tiene evidencia. AC1-E2 la tiene con el acta (PR #272) y AC9-E2 desde el 11 de noviembre (SCRUM-642).
+* **Escenarios en Estado PARCIAL:** **4 escenarios (7.7%)** (AC4-E9, AC8-E1, AC8-E4, AC9-E8).
 * **Escenarios en Estado NO CUMPLE:** **3 escenarios (5.8%)** (AC7-E2, AC7-E3 y AC9-E3).
 * **Escenarios en Estado NO MEDIDO / PENDIENTE:** **5 escenarios (9.6%)** (AC4-E3, AC4-E4, AC4-E6, AC4-E8 y AC8-E5).
-* **Porcentaje de Escenarios de Calidad:** **79.81%** ($[39 \times 1.0 + 5 \times 0.5] / 52$).
-* **Avance del Producto:** **93.94%** ($0.7 \times 100\% \text{ [33 de 33 RF aceptados]} + 0.3 \times 79.81\% \text{ [Calidad]}$), con los indicadores de [`indicadores-funcionales.md`](indicadores-funcionales.md) (SCRUM-700). Era 91.92 % en el Informe UAT del 5-nov y 92.50 % desde el 11-nov (AC7-E5); el cambio del 20-nov sale de AC5-E3, AC5-E4, AC8-E2 y AC7-E4.
+* **Porcentaje de Escenarios de Calidad:** **80.77%** ($[40 \times 1.0 + 4 \times 0.5] / 52$).
+* **Avance del Producto:** **94.23%** ($0.7 \times 100\% \text{ [33 de 33 RF aceptados]} + 0.3 \times 80.77\% \text{ [Calidad]}$), con los indicadores de [`indicadores-funcionales.md`](indicadores-funcionales.md) (SCRUM-700). Era 91.92 % en el Informe UAT del 5-nov, 92.50 % desde el 11-nov (AC7-E5) y 93.94 % desde el 20-nov (AC5-E3, AC5-E4, AC8-E2 y AC7-E4); el cambio del 22-nov sale de AC5-E6.
 
 **Cambios del 1 de noviembre de 2026 (SCRUM-565):** AC5-E5 y AC6-E7 pasan de No medido a Parcial con pruebas de integración de CI. AC4-E1, AC5-E6, AC7-E6 y AC9-E7 suman evidencia sin cambiar de estado. AC4-E6 y AC9-E2 siguen en No cumple con el motivo actualizado. AC4-E7 corrige su valor medido: no hay escaneo de accesibilidad.
 
@@ -106,6 +106,8 @@ La columna de métrica resume la del SAD. La medida completa de cada escenario y
 
 **Cambios del 20 de noviembre de 2026 (SCRUM-665 y SCRUM-666):** QA ratifica las mediciones que DevOps hizo en QA el 10 de noviembre. AC5-E3 (Parcial → Cumple) y AC5-E4 (Parcial → Cumple) con `tests/e2e/evidencias/confiabilidad-ac5-e3-e4-qa-2026-11-10.txt`; AC8-E2 (No medido → Cumple) con `tests/e2e/evidencias/ac8-e2-escalado-matching-qa-2026-11-10.txt` y el run 42957062365. Además, AC7-E4 pasa de Parcial a Cumple: QA diagnosticó en producción, en 15 s y solo con Grafana y Loki, un fallo que DevOps provocó ese día (`tests/e2e/evidencias/ac7-e4-diagnostico-prod-2026-11-20.txt`). AC5-E6 suma la medición de 5xx (0,08 %) y sigue en Parcial por las corridas. Cada uno conserva su límite en la columna de observaciones. El porcentaje sube de 75.00% a 79.81% y el avance del producto, de 92.50% a 93.94%.
 
+**Cambios del 22 de noviembre de 2026 (SCRUM-665):** AC5-E6 pasa de Parcial a Cumple: 3 corridas seguidas en verde de `pruebas-sistema.yml` (sin k6), con 65 minutos entre una y otra y 0 aserciones fallidas (`tests/e2e/evidencias/ac5-e6-operacion-sin-fallos-2026-11-20.txt`, sección 3). El porcentaje sube de 79.81% a 80.77% y el avance del producto, de 93.94% a 94.23%.
+
 **Fuente única (12 de noviembre de 2026, SCRUM-664):** la segunda versión del Excel de la PO (5-nov) marcaba además AC4-E3, AC4-E4, AC4-E6, AC4-E8 y AC4-E9 como Cumple, y daba 81.73%. Esta matriz no toma esas marcas, porque esos escenarios no tienen medición ni evidencia, y eso va contra el criterio de evaluación del encabezado. Esa cifra está retirada. Se vuelven a evaluar con la UAT de cierre (SCRUM-658) y con SCRUM-667.
 
 ### 3.1 Cumplimiento por atributo (SCRUM-566)
@@ -118,12 +120,12 @@ Misma fórmula que el porcentaje global: un escenario que cumple vale 1, uno par
 | AC2 Performance Efficiency | 5 | 5 | 0 | 0 | 0 | 100.00% |
 | AC3 Compatibility | 2 | 2 | 0 | 0 | 0 | 100.00% |
 | AC4 Interaction Capability | 9 | 4 | 1 | 0 | 4 | 50.00% |
-| AC5 Reliability | 6 | 5 | 1 | 0 | 0 | 91.67% |
+| AC5 Reliability | 6 | 6 | 0 | 0 | 0 | 100.00% |
 | AC6 Security | 8 | 8 | 0 | 0 | 0 | 100.00% |
 | AC7 Maintainability | 6 | 4 | 0 | 2 | 0 | 66.67% |
 | AC8 Flexibility | 5 | 2 | 2 | 0 | 1 | 60.00% |
 | AC9 Safety | 8 | 6 | 1 | 1 | 0 | 81.25% |
-| **Total** | **52** | **39** | **5** | **3** | **5** | **79.81%** |
+| **Total** | **52** | **40** | **4** | **3** | **5** | **80.77%** |
 
 Los atributos con más trabajo pendiente son AC4 Interaction Capability (50.00%), AC8 Flexibility (60.00%) y AC7 Maintainability (66.67%). En AC4 faltan las mediciones con personas (AC4-E3, AC4-E4 y AC4-E6, y la de AC4-E9), que se hacen en la UAT de cierre (SCRUM-660 y SCRUM-661) porque la UAT del Sprint 5 fue sin sesión, y el perfil de gama baja (AC4-E8). En AC7, dos escenarios no cumplen (AC7-E2 y AC7-E3) y Juan Diego define qué cuenta como cambio.
 

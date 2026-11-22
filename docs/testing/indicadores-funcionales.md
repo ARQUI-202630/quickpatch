@@ -1,7 +1,7 @@
 # Indicadores funcionales de QUICKPATCH: fuente única (SCRUM-700)
 
 **Código del documento:** `IND-FUNC-2026-11-12`
-**Versión:** 1.1
+**Versión:** 1.2
 **Fecha de corte:** 12 de noviembre de 2026, sobre `develop` (`ed3310d`)
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`), QA Lead
 **Trazabilidad Jira:** subtarea SCRUM-700 de la historia SCRUM-699. La usan SCRUM-701 (informes y presentación), SCRUM-664 (escenarios) y SCRUM-695 (auditoría del TD).
@@ -114,12 +114,13 @@ avance = 0,7 × (RF aceptadas / RF definidas) + 0,3 × (% de escenarios de calid
 
 | Corte | RF aceptadas | Escenarios (Cumple, Parcial, No cumple, No medido) | % escenarios | **Avance** | Estado |
 |---|---|---|---|---|---|
-| 20-nov-2026 (vigente) | 33 de 33 (100 %) | 39, 5, 3 y 5 | 79,81 % | **93,94 %** | Vigente. Es la cifra para la presentación final |
+| 22-nov-2026 (vigente) | 33 de 33 (100 %) | 40, 4, 3 y 5 | 80,77 % | **94,23 %** | Vigente. Es la cifra para la presentación final |
+| 20-nov-2026 | 33 de 33 (100 %) | 39, 5, 3 y 5 | 79,81 % | 93,94 % | Histórico. Antes de las 3 corridas seguidas en verde de AC5-E6 |
 | 12-nov-2026 | 33 de 33 (100 %) | 35, 8, 3 y 6 | 75,00 % | 92,50 % | Histórico. Antes de ratificar AC5-E3, AC5-E4 y AC8-E2 y de medir AC7-E4 en producción |
 | 5-nov-2026 (Informe UAT de la PO, primera versión) | 37 de 37 ítems (33 RF + 4 EXT) | 34, 8, 4 y 6 | 73,08 % | 91,92 % | Histórico. Lo conserva el acta firmada (PR #272) |
 | 5-nov-2026 (Informe UAT de la PO, segunda versión) | 37 de 37 ítems | 39, 7, 4 y 2 | 81,73 % | 94,52 % | **Retirado.** Contaba como Cumple AC4-E3, AC4-E4, AC4-E6, AC4-E8 y AC4-E9 sin medición ni evidencia, y eso va contra el criterio de la matriz |
 
-Entre el 5 y el 12 de noviembre, el avance cambia solo por AC7-E5, que pasó de No cumple a Cumple el 11 de noviembre (SCRUM-657, PR #296). El 20 de noviembre cambia porque QA ratifica AC5-E3, AC5-E4 y AC8-E2, que DevOps midió en QA el 10 de noviembre, y mide AC7-E4 en producción (SCRUM-665 y SCRUM-666). La parte funcional da 100 % con cualquiera de las dos unidades, 33 o 37. Lo único que cambia es el denominador.
+Entre el 5 y el 12 de noviembre, el avance cambia solo por AC7-E5, que pasó de No cumple a Cumple el 11 de noviembre (SCRUM-657, PR #296). El 20 de noviembre cambia porque QA ratifica AC5-E3, AC5-E4 y AC8-E2, que DevOps midió en QA el 10 de noviembre, y mide AC7-E4 en producción (SCRUM-665 y SCRUM-666). El 22 de noviembre cambia por AC5-E6, que pasa a Cumple con 3 corridas seguidas en verde de `pruebas-sistema.yml` (SCRUM-665). La parte funcional da 100 % con cualquiera de las dos unidades, 33 o 37. Lo único que cambia es el denominador.
 
 ## 6. Cómo se reproduce
 
@@ -136,3 +137,4 @@ Cuando cambie un RF o un escenario, se cambia primero la fila en este documento 
 |---|---|---|---|
 | 1.0 | 12 de noviembre de 2026 | Katherine Bravo (QA Lead) | Primera versión (SCRUM-700). Fija la unidad en 33 RF, separa las 4 extensiones, define los cuatro indicadores y calcula el avance vigente (92,50 %) |
 | 1.1 | 20 de noviembre de 2026 | Katherine Bravo (QA Lead) | Corte del 20-nov: 39, 5, 3 y 5 escenarios (79,81 %) y avance de 93,94 %, con AC5-E3, AC5-E4 y AC8-E2 ratificados y AC7-E4 medido en producción (SCRUM-665 y SCRUM-666) |
+| 1.2 | 22 de noviembre de 2026 | Katherine Bravo (QA Lead) | Corte del 22-nov: 40, 4, 3 y 5 escenarios (80,77 %) y avance de 94,23 %, con AC5-E6 en Cumple por 3 corridas seguidas en verde (SCRUM-665) |
