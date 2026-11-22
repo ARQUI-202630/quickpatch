@@ -32,6 +32,7 @@ espera del geocodificador.
 Observación para QA: una dirección fuera de Bogotá hace que el geocodificador de producción no responda a tiempo. El
 resultado para el usuario es el correcto, pero conviene confirmar con Backend si el geocodificador solo tiene datos de
 Bogotá (y por eso tarda) o si estaba lento a esa hora.
+Queda registrado como DEF-S6-01 en docs/testing/registro-defectos-sprint6.md (22-nov).
 
 Límites
 - El diagnóstico lo hizo QA sabiendo la hora aproximada del fallo, como en un simulacro.
