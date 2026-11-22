@@ -12,6 +12,10 @@ lugar de corridas programadas, porque el workflow no tiene horario.
 | Últimas 24 h | 5.777 | 5 | 0,09 % |
 | Desde el 13-nov (primer log disponible) | 6.265 | 5 | 0,08 % |
 - Las 5 respuestas 5xx son 502 en POST /api/v1/service-requests/{id}/payment, una por cada corrida del 20-nov.
+  No son un defecto: es el caso «La pasarela no responde → 502 pasarela-sin-respuesta» de
+  tests/e2e/scrum-117-pago.postman_collection.json, que paga con el token tok_sim_error_ para que la pasarela
+  simulada (ADR-009) no responda y la prueba espera ese 502 (AC9-E5). Cada corrida lo ejecuta una vez.
+  Errores 5xx inesperados: 0.
 - Límite: el Nginx de VM1 atiende QA y producción con el mismo log, así que la cifra mezcla los dos ambientes. Los
   gateways de VM2 y VM3 no envían sus logs a Loki.
 
