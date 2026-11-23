@@ -102,7 +102,7 @@ def calcular():
 
 
 # Cifras que ya no se usan. Una línea que las cite debe decir que es histórica.
-# 81,73 % y 94,52 % no se buscan solos: con AC4-E8 en Parcial el corte vigente da esas mismas cifras con 40, 5, 3 y 4.
+# 81,73 % y 94,52 % no se buscan solos: desde el 23-nov son también las cifras vigentes, con 40, 5, 3 y 4.
 # Lo retirado es la tupla 39, 7, 4 y 2 de la segunda versión del Excel de la PO (5-nov).
 CIFRAS_RETIRADAS = [r'37 de 37', r'37 funcionalidades', r'91[.,]92', r'73[.,]08', r'\b39, 7, 4 y 2',
                     r'\b34 Cumple', r'\b39 Cumple, 7 Parcial', r'\b4 No cumple', r'36 aceptadas']
