@@ -11,6 +11,10 @@ python tools/arquitectura/generar.py --fase antes --ref v1.2.0            # otra
 
 La salida va a `docs/architecture/codigo/<fase>/`: un `README.md` comparativo y, por servicio, `README.md` (métricas y tablas), `metricas.json`, `paquetes.puml`, `paquetes.mmd` (Mermaid, se ve directamente en GitHub), `clases-centrales.puml` y `caso-de-uso.md` con su `caso-de-uso.mmd`: las clases del caso de uso principal del servicio, desde la clase de entrada hasta los adaptadores, con un bloque por capa (C4 · Code, SCRUM-715). El caso de uso de cada servicio está en `CASOS` de `generar.py`; las dependencias inyectadas y las interfaces implementadas salen del extractor (.NET) o del fuente (Java), y los tipos del dominio, del IL o del bytecode. No toca las copias de trabajo: cada servicio se exporta con `git archive` a una carpeta temporal y se compila ahí.
 
+## Entre servicios (SCRUM-709)
+
+`python tools/arquitectura/servicios.py` mide el acoplamiento y la cohesión **entre** los microservicios y escribe `docs/architecture/codigo/servicios/README.md`: el catálogo de topics contrastado con el código, las llamadas HTTP y las referencias de código entre repositorios, la base de cada servicio, y Ce, Ca e inestabilidad por servicio junto a su cohesión interna. Usa la medición de `despues/`, así que va después de `generar.py`. Los consumidores que el catálogo lista como previstos y la documentación declara fuera del alcance van en `PREVISTOS`.
+
 ## Decisión de herramienta (SCRUM-681)
 
 **Criterios**, tomados de SCRUM-680: que se pueda volver a ejecutar con un comando; que muestre paquetes, clases principales y dependencias; que sirva para detectar acoplamiento (ciclos, clases sobreconectadas, baja cohesión); que funcione con C# y Java; y que la salida sea PlantUML, Mermaid, Graphviz, D2 o Structurizr.

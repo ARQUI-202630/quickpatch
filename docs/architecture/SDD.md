@@ -73,7 +73,7 @@ Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estruc
 | Externo | Sistema de terceros fuera de QUICKPATCH | Fondo gris |
 | Mock | Implementado como simulación del sistema real | Fondo naranja y borde de puntos |
 
-Hoy son planeados el receptor de webhooks del PSP y, dentro de Actors, el concepto de aliados (Ally). Actors Service tiene código desde SCRUM-640 (directorio por eventos, sección 6.5); su despliegue en QA está pendiente. La pasarela de pagos certificada es externa y planeada, porque el proveedor está por definir. El único mock es `SimulatedPaymentProvider`, la pasarela simulada de Payments (ADR-009 modificado). El estado sale de la matriz modelado contra real (`matriz-modelado-vs-real.md`, SCRUM-697).
+Hoy son planeados el receptor de webhooks del PSP y, dentro de Actors, el concepto de aliados (Ally). Actors Service tiene código desde SCRUM-640 (directorio por eventos, sección 6.5); está desplegado en QA desde el 23 de noviembre (`release/0.2.0`) y todavía no en producción. La pasarela de pagos certificada es externa y planeada, porque el proveedor está por definir. El único mock es `SimulatedPaymentProvider`, la pasarela simulada de Payments (ADR-009 modificado). El estado sale de la matriz modelado contra real (`matriz-modelado-vs-real.md`, SCRUM-697).
 
 **Inventario de vistas.**
 
@@ -885,6 +885,23 @@ El nivel 4 de C4 muestra las clases de un componente. Para cada microservicio se
 | Communication | Mensaje del chat: `ChatEndpoints` → `SendChatMessageHandler` | [`caso-de-uso.md`](codigo/despues/communication/caso-de-uso.md) |
 
 Los diagramas están en Mermaid, que GitHub dibuja dentro del Markdown, y no se editan a mano.
+
+## 7.5 Acoplamiento y cohesión entre los microservicios (SCRUM-709)
+
+7.3 mide cada servicio por dentro; `python tools/arquitectura/servicios.py` mide el sistema y publica [`codigo/servicios/README.md`](codigo/servicios/README.md). Contrasta el catálogo de topics de `quickpatch-kafka` con lo que el código de cada servicio publica y consume, busca las llamadas HTTP y las referencias de código entre repositorios, y toma la base de cada servicio y su cohesión interna.
+
+Resultado del 23 de noviembre de 2026, sobre `develop`:
+
+| Criterio | Resultado |
+|---|---|
+| Ningún servicio usa el código de otro | Cumple: solo comparten `quickpatch-shared-dotnet`, que es código transversal (ADR-020) |
+| Una base por servicio | Cumple (ADR-014) |
+| Un solo productor por evento, dueño de ese dato | Cumple: 20 topics (ADR-006) |
+| El catálogo de eventos coincide con el código | Cumple. Matching figura como consumidor previsto de `catalog.category-changed` y todavía no lo consume (DD 9, SAD 4.2.2) |
+| Llamadas síncronas mínimas y sin ciclos | Cumple: una sola, ServiceRequest → Identity (`GET /internal/v1/users`, ADR-025), que si falla devuelve los nombres vacíos y no detiene el flujo |
+| Cada servicio cohesivo por dentro | Cumple: 0 ciclos entre paquetes, 0 violaciones de capas y cohesión relacional de 0,75 a 0,89 |
+
+Los servicios más estables, de los que dependen más y que dependen de menos, son Identity (I = 0,17) y Catalog (I = 0); los más dependientes son Communication y Actors (I = 1), que solo consumen eventos y no publican ninguno. Esa es la dirección esperada: los servicios que proyectan o notifican dependen de los que son dueños del dato, y no al revés.
 
 # 8. Dynamic diagrams
 
