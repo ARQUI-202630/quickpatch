@@ -1,0 +1,38 @@
+UAT de cierre en QA (SCRUM-660 y SCRUM-661): resumen de la ejecución del 23 y 24 de noviembre de 2026
+=====================================================================================================
+
+Escenarios: docs/testing/uat-cierre-escenarios-por-rol.md, versión 1.2 (34 escenarios). Registro: sección 5 del
+mismo documento y hoja «UAT cierre» del Informe UAT oficial.
+
+Ambiente
+- QA: https://qa.quickpatch.internal, por la VPN del laboratorio.
+- App: APK v0.6.0-qa (GitHub Releases de quickpatch-mobile) en un emulador Android (API 36, 1080 x 2400).
+- Panel web: sesión de Admin del tenant de Katherine Bravo.
+- Cuentas creadas en la sesión: uat.cli01, uat.tec01, uat.tec99, uat.pro01, uat.eq01 y uat.emp01
+  (@quickpatch.test, sufijo 20261123). Las claves son de prueba y no se guardan en el repositorio.
+
+Resultado al 24-nov
+- 21 de 34 con resultado: 16 PASS y 5 FAIL.
+- 2 con un paso pendiente: UAT-TEC-04 (falta un segundo técnico) y UAT-TEC-05 (falta una localidad ajena).
+- 11 sin ejecutar: UAT-CLI-03, UAT-ADT-03, UAT-ADP-01, UAT-ADP-02, UAT-X-01, UAT-X-02, UAT-X-04 y UAT-M-01 a UAT-M-04.
+- Flujo crítico completo de punta a punta: UAT-CLI-02 → UAT-TEC-02 → UAT-CLI-04 → UAT-TEC-03 → UAT-CLI-05 → UAT-CLI-06.
+
+FAIL y defectos propuestos
+- UAT-CLI-02 → DEF-S6-02: la dirección escrita «El Poblado, Medellín, Antioquia» se ubica en Bogotá
+  (Localidad Suba) y no se rechaza. Con GPS en Medellín sí sale «Esa ubicación queda fuera de Bogotá».
+  Relacionado con DEF-S6-01 (el geocodificador no responde bien fuera de Bogotá).
+- UAT-EMP-01 → DEF-S6-03: ni la app ni el panel permiten agregar un segundo usuario autorizado (RF-06).
+- UAT-EMP-03: bloqueado por DEF-S6-03.
+- UAT-CLI-05 → DEF-S6-04: el comprobante muestra el total, la fecha, el pagador y el medio de pago, pero no separa
+  mano de obra y materiales. La PO decide si el total basta.
+- UAT-TEC-06: el historial del técnico muestra estado y fecha, pero no la calificación (observación).
+
+Observaciones del ambiente
+- La lista de técnicos pendientes del panel tiene 279 registros de las pruebas automáticas y las solicitudes de prueba
+  son cientos; esconden los registros de la sesión.
+- La app muestra unas 20 categorías de prueba («Plomería mwbllxya» y similares).
+- El emulador no resuelve qa.quickpatch.internal: los enlaces de recuperación e invitación se abrieron en el navegador
+  del equipo.
+
+Capturas
+- Se guardan en esta carpeta cuando se suban, sin claves, tokens ni enlaces de recuperación.
