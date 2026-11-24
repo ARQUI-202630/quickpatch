@@ -22,7 +22,7 @@ Las imágenes llevan como etiqueta el hash de su contenido (`t-<árbol>`, secci�
 | Componente | QA (VM2) | Desplegado en QA | Producción (VM3) | Desplegado en producción |
 |---|---|---|---|---|
 | Identity | 0.10.5 (`6631e7f`) | [23-nov](https://github.com/ARQUI-202630/quickpatch-identity/actions/runs/45316891282) | 0.8.1 (`e8208bd`) | [4-nov](https://github.com/ARQUI-202630/quickpatch-identity/actions/runs/41782130389) |
-| Actors | 0.2.0 (`5c85eb6`); el Deployment se llama `actors`. Falta `aplicar-roles-db.yml` y el reinicio | [23-nov](https://github.com/ARQUI-202630/quickpatch-actors/actions/runs/45274256368) | **No desplegado** | — |
+| Actors | 0.2.0 (`5c85eb6`); Deployment `actors`; roles aplicados y reinicio el 23 de noviembre | [23-nov](https://github.com/ARQUI-202630/quickpatch-actors/actions/runs/45274256368) | 0.2.0 (`5c85eb6`), misma imagen `t-dfd6da88c157`; roles aplicados y reinicio el 24 de noviembre | [24-nov](https://github.com/ARQUI-202630/quickpatch-actors/actions/runs/45333645185) |
 | Catalog | 0.4.4 (`6345700`) | [12-nov](https://github.com/ARQUI-202630/quickpatch-catalog/actions/runs/43137979426) | 0.4.1 (`7f0049e`) | [4-nov](https://github.com/ARQUI-202630/quickpatch-catalog/actions/runs/41783794405) |
 | ServiceRequest | 0.12.4 (`04391e4`) | [23-nov](https://github.com/ARQUI-202630/quickpatch-service-request/actions/runs/45317630297) | 0.11.2 (`28536b6`) | [4-nov](https://github.com/ARQUI-202630/quickpatch-service-request/actions/runs/41937038241) |
 | Matching | 0.6.2 (`8e6450c`) | [11-nov](https://github.com/ARQUI-202630/quickpatch-matching/actions/runs/43021330188) | 0.6.1 (`f1504d4`) | [4-nov](https://github.com/ARQUI-202630/quickpatch-matching/actions/runs/41785365995) |
@@ -60,7 +60,7 @@ Las pruebas del sistema en QA que acompañaron la promoción (`humo-frontends.ym
 **Excepciones**
 
 - **Gateway:** no tiene pipeline de despliegue. Se instala con Ansible (`deploy-gateway.yml`, y `verificar-gateway-ambiente.yml` comprueba que cada ambiente apunte a su propio k3s). Como no hay corrida de CI que enlazar, la traza del gateway es el registro de Ansible de DevOps.
-- **Actors:** sin despliegue en ningún ambiente; cuando exista, seguirá el mismo flujo (`release/0.2.0` → QA → `main`).
+- **Actors:** desplegado en QA (23 de noviembre) y en producción (24 de noviembre) con la misma imagen `t-dfd6da88c157`. Siguió el flujo `release/0.2.0` → QA → `main` (PR #10 de `quickpatch-actors`), y la producción usó la imagen de QA sin reconstruirla.
 
 ## 4. Versiones de QA del 23 de noviembre (SCRUM-709)
 
