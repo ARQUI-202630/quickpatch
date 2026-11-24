@@ -716,9 +716,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     deploymentNode "k3s (un nodo)" "" "k3s + Traefik" {
                         traefikProd = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
                         identityProd = containerInstance identity
-                        actorsProd = containerInstance actors {
-                            tags "Planeado"
-                        }
+                        actorsProd = containerInstance actors
                         catalogProd = containerInstance catalog
                         serviceRequestProd = containerInstance serviceRequest
                         matchingProd = containerInstance matching
@@ -1128,7 +1126,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             }
         }
 
-        deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción al 4 de noviembre de 2026, tras la promoción del MVP (SCRUM-518): los 7 servicios con código en el k3s de VM3, con VM4 y VM6 (ADR-022) y la entrada de VM1; gateway en el Nginx de VM3 (ADR-028). El panel se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Punteado: Actors, implementado como directorio por eventos (SCRUM-640) y aún sin desplegar." {
+        deployment quickpatch produccion "C4-06-Despliegue-Produccion" "Producción al 24 de noviembre de 2026, tras la promoción del MVP (SCRUM-518) y la de Actors 0.2.0: los 8 servicios en el k3s de VM3, con VM4 y VM6 (ADR-022) y la entrada de VM1; gateway en el Nginx de VM3 (ADR-028). El panel se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Actors (0.2.0, imagen de QA t-dfd6da88c157) desde el 24-nov." {
             include *
             exclude "mobProd -> gatewayProd" "webProd -> gatewayProd"
             exclude "* -> kafkaProd" "* -> redisProd" "* -> garageProd"
@@ -1168,9 +1166,12 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             element "Container" {
                 background #438dd5
             }
+            # Cajas más grandes que las de 450 x 300 por defecto: las descripciones largas se salían y tapaban la caja vecina.
             element "Component" {
                 background #85bbf0
                 color #000000
+                width 620
+                height 440
             }
             element "Database" {
                 shape Cylinder
@@ -1217,8 +1218,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                 background #ffffff
                 color #000000
             }
+            # Etiquetas más anchas y bajas: así no se apilan unas sobre otras cuando varias flechas corren juntas.
             relationship "Relationship" {
                 fontSize 22
+                width 360
                 dashed false
             }
             relationship "Planeado" {
