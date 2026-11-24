@@ -64,7 +64,9 @@ Las pruebas del sistema en QA que acompañaron la promoción (`humo-frontends.ym
 
 ## 4. Versiones de QA del 23 de noviembre (SCRUM-709)
 
-Identity 0.10.5, ServiceRequest 0.12.4 y Payments 0.3.4 reorganizan el código por capas sin cambiar contratos ni eventos (SCRUM-710 a SCRUM-712). El panel 0.7.1 mueve un helper a `core/` (SCRUM-713). El APK `v0.6.1-qa` corta las dependencias entre features (SCRUM-714) e incluye la corrección de la prueba de humo (quickpatch-mobile#61). Cada despliegue terminó con el `rollout status` en verde. Queda pendiente repetir la regresión de Newman contra QA, que necesita la VPN del laboratorio.
+Identity 0.10.5, ServiceRequest 0.12.4 y Payments 0.3.4 reorganizan el código por capas sin cambiar contratos ni eventos (SCRUM-710 a SCRUM-712). El panel 0.7.1 mueve un helper a `core/` (SCRUM-713). El APK `v0.6.1-qa` corta las dependencias entre features (SCRUM-714) e incluye la corrección de la prueba de humo (quickpatch-mobile#61). Cada despliegue terminó con el `rollout status` en verde. La regresión contra QA del 23 de noviembre pasó sin fallos: 26 colecciones de Newman (1.138 peticiones y 1.594 aserciones) que cubren Identity, ServiceRequest y Payments de punta a punta, el chat en tiempo real (23 de 23), el aviso de cancelación (6 de 6) y el enlace de recuperación vencido (11 de 11). Las evidencias están en `tests/e2e/evidencias/*-qa-2026-11-23.txt` y `*-qa-2026-11-24.txt` (la corrida cruzó la medianoche UTC).
+
+En esta corrida se corrigió el cargador local de credenciales, que dejaba vacía la clave del administrador de plataforma: Newman saltaba sin avisar los pasos que la usan. En la regresión del 19 de noviembre (sección 5) esos pasos no corrieron; las colecciones 105, 478-cancelación, 511 y 627-recuperación se repitieron el 23 de noviembre con ellos y pasaron.
 
 ## 5. Regresión de las versiones de QA del 19 de noviembre
 

@@ -1,0 +1,309 @@
+scrum-614-perfil contra QA, 2026-11-24
+Colección: tests/e2e/scrum-614-perfil.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-11-24T03:32:36.328Z. Duración: 24 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-614 Edición del perfil propio
+
+□ 0. Preparación: clientes, técnicos, empresa y cliente de Beta
+└ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1037ms]
+  √  200 con rol admin_tenant
+
+└ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 439B, 46ms]
+  √  201
+
+└ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 442B, 903ms]
+  √  201
+
+└ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a20b9c-e4b9-7413-b888-9d1b3d130dda/approve [200 OK, 321B, 42ms]
+  √  200
+
+└ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 915ms]
+  √  200 con rol tecnico
+
+└ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 46ms]
+  √  200
+
+└ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 37ms]
+  √  200
+
+└ Registro de otro técnico, sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 967ms]
+  √  201
+
+└ Login del otro técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 911ms]
+  √  200 con rol tecnico
+
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 915ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 906ms]
+  √  200 con rol cliente
+
+└ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 432B, 935ms]
+  √  201
+
+└ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 920ms]
+  √  200 con rol cliente
+
+└ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 439B, 1010ms]
+  √  201
+
+└ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 908ms]
+  √  200 con rol cliente
+
+└ Registro de Empresa
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [201 Created, 720B, 923ms]
+  √  201
+
+└ Login de la empresa
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.33kB, 959ms]
+  √  200 como empresa_contacto de su empresa
+
+└ Perfil del otro cliente antes de la prueba
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 427B, 40ms]
+  √  200
+
+└ Perfil del cliente antes de la prueba
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 421B, 72ms]
+  √  200
+  √  rol cliente
+
+└ Tenant del cliente de Beta (claim tenant_id de su token)
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 434B, 35ms]
+  √  200
+  ┌
+  │ `Using "atob" is deprecated. Use "require('atob')" ins
+  │ tead.`
+  └
+  √  el token trae tenant_id
+
+□ 1. Cada rol edita su propio perfil
+└ PER-001: el cliente cambia su nombre
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 422B, 48ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ PER-001: GET /v1/users/me devuelve el nombre nuevo
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 422B, 36ms]
+  √  200
+  √  nombre nuevo
+
+└ PER-002: cambia su teléfono
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 430B, 39ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ PER-003: borra su teléfono
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 422B, 40ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ PER-004: nombre y teléfono a la vez
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 428B, 40ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ PER-005: el técnico edita su perfil
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 436B, 43ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ PER-005: el empresa_contacto edita su perfil
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 469B, 36ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ Nombre actual del admin_tenant
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 423B, 32ms]
+  √  200
+
+└ PER-005: el admin_tenant reenvía su mismo nombre
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 423B, 35ms]
+  √  200
+  √  mismo nombre y rol admin_tenant
+
+□ 2. Validaciones y límites
+└ PER-006: cuerpo vacío → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 524B, 30ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+
+└ PER-007: nombre de 1 carácter → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 541B, 49ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  PER-017: errores por campo
+  √  error en fullName
+
+└ PER-007: nombre de 151 caracteres → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 541B, 34ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  PER-017: errores por campo
+  √  error en fullName
+
+└ PER-007: nombre de 2 caracteres → 200
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 414B, 35ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ PER-007: nombre de 150 caracteres → 200
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 574B, 35ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ PER-008: teléfono de 6 caracteres → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 540B, 35ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  PER-017: errores por campo
+  √  error en phone
+
+└ PER-008: teléfono de 31 caracteres → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 540B, 37ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  PER-017: errores por campo
+  √  error en phone
+
+└ PER-008: teléfono de 7 caracteres → 200
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 571B, 44ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ PER-008: teléfono de 30 caracteres → 200
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 594B, 37ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ PER-009: nombre vacío → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 541B, 35ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  PER-017: errores por campo
+  √  error en fullName
+
+└ PER-009: nombre con solo espacios → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 541B, 34ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  PER-017: errores por campo
+  √  error en fullName
+
+□ 3. Campos que no se editan y fugas
+└ PER-010: cambiar el correo → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 522B, 31ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+
+└ PER-011: cambiar el rol → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 521B, 30ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+
+└ PER-012: cambiar el tenant → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 526B, 32ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+
+└ PER-010 a PER-012: correo, rol y nombre no cambiaron
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 594B, 32ms]
+  √  200
+  √  mismo correo, rol cliente y el último nombre válido
+
+└ PER-012: el cliente sigue entrando en su tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.38kB, 1526ms]
+  √  200
+  √  rol cliente
+
+└ PER-013: el técnico pendiente se aprueba solo → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 535B, 41ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+
+└ PER-013: el técnico sigue pendiente
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 436B, 36ms]
+  √  200
+  √  pendiente
+
+└ PER-014: el cliente envía el id del otro cliente → 400
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [400 Bad Request, 519B, 33ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+
+└ PER-014: el otro cliente no cambió
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 427B, 34ms]
+  √  200
+  √  mismo nombre
+
+└ PER-015: X-Tenant-Id de Beta se ignora
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [200 OK, 455B, 42ms]
+  √  200
+  √  el perfil devuelto trae los datos nuevos
+
+└ PER-015: el cambio quedó en el cliente de su propio tenant
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 455B, 37ms]
+  √  200
+  √  nombre nuevo en el tenant principal
+
+└ PER-015: el cliente de Beta no cambió
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 434B, 38ms]
+  √  200
+  √  nombre de registro
+
+└ PER-016: sin sesión → 401
+  PATCH https://qa.quickpatch.internal/api/v1/users/me [401 Unauthorized, 476B, 30ms]
+  √  401
+
+└ PER-018: el mismo token sigue sirviendo tras editar
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 455B, 31ms]
+  √  200
+  √  sin volver a iniciar sesión
+
+□ Limpieza
+└ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a20b9c-e4b9-7413-b888-9d1b3d130dda/suspend [200 OK, 348B, 39ms]
+  √  200
+
+└ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a20b9c-e424-7571-bdff-cddd229c8100 [200 OK, 435B, 35ms]
+  √  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  56 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  56 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  56 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                 102 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 19.9s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 20.37kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 273ms [min: 30ms, max: 1526ms, s.d.: 415ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:49428) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
