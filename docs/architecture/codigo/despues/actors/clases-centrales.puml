@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title Actors — clases más conectadas (despues, 5c85eb6)
+title Actors — clases más conectadas (despues, 2759bd6)
 hide empty members
 skinparam shadowing false
 class "Application.Technicians.TechnicianEventsHandler" as QuickPatch_Actors_Application_Technicians_TechnicianEventsHandler <<Application>> {

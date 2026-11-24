@@ -1,0 +1,49 @@
+classDiagram
+    direction LR
+    namespace Api {
+        class PaymentEndpoints
+    }
+    namespace Application {
+        class PayHandler
+        class ITenantUnitOfWork {
+            <<interface>>
+        }
+        class IPaymentRepository {
+            <<interface>>
+        }
+        class IPaymentProvider {
+            <<interface>>
+        }
+        class PaymentSettlement
+        class IOutbox {
+            <<interface>>
+        }
+    }
+    namespace Domain {
+        class Billing
+        class Invoice
+        class Payment
+    }
+    namespace Infrastructure {
+        class TenantUnitOfWork
+        class PaymentRepository
+        class SimulatedPaymentProvider
+        class EfOutbox
+    }
+    PaymentEndpoints --> PayHandler : invoca
+    PayHandler --> ITenantUnitOfWork : usa
+    TenantUnitOfWork ..|> ITenantUnitOfWork : implementa
+    PayHandler --> IPaymentRepository : usa
+    PaymentRepository ..|> IPaymentRepository : implementa
+    PayHandler --> IPaymentProvider : usa
+    SimulatedPaymentProvider ..|> IPaymentProvider : implementa
+    PayHandler --> PaymentSettlement : usa
+    PaymentSettlement --> ITenantUnitOfWork : usa
+    PaymentSettlement --> IPaymentRepository : usa
+    PaymentSettlement --> IOutbox : usa
+    EfOutbox ..|> IOutbox : implementa
+    PaymentSettlement ..> Billing : crea o usa
+    PaymentSettlement ..> Invoice : crea o usa
+    PaymentSettlement ..> Payment : crea o usa
+    PayHandler ..> Billing : crea o usa
+    PayHandler ..> Payment : crea o usa

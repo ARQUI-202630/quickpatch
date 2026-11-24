@@ -1,6 +1,6 @@
 # Ranking — despues
 
-Código de `origin/develop` en `1679652`, generado el 2026-11-19 con `tools/arquitectura/generar.py`.
+Código de `origin/develop` en `9e4b500`, generado el 2026-11-23 con `tools/arquitectura/generar.py`.
 
 | Métrica | Valor |
 |---|---|
@@ -99,7 +99,7 @@ Ninguna.
 
 ## Diagrama de paquetes
 
-Fuente: [`paquetes.puml`](paquetes.puml) (PlantUML) y [`paquetes.mmd`](paquetes.mmd). Clases más conectadas: [`clases-centrales.puml`](clases-centrales.puml).
+Fuente: [`paquetes.puml`](paquetes.puml) (PlantUML) y [`paquetes.mmd`](paquetes.mmd). Clases más conectadas: [`clases-centrales.puml`](clases-centrales.puml). Clases del caso de uso principal (C4 · Code): [`caso-de-uso.md`](caso-de-uso.md).
 
 ```mermaid
 flowchart LR

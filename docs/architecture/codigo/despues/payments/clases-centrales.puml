@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title Payments — clases más conectadas (despues, 6a2b893)
+title Payments — clases más conectadas (despues, a665f4f)
 hide empty members
 skinparam shadowing false
 class "Domain.Payments.Payment" as QuickPatch_Payments_Domain_Payments_Payment <<Domain>> {

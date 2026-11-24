@@ -1,0 +1,39 @@
+classDiagram
+    direction LR
+    namespace Application {
+        class TechnicianEventsHandler
+        class ITenantUnitOfWork {
+            <<interface>>
+        }
+        class ITechnicianActorRepository {
+            <<interface>>
+        }
+        class ISupplierRepository {
+            <<interface>>
+        }
+        class IProcessedEventRepository {
+            <<interface>>
+        }
+    }
+    namespace Domain {
+        class Supplier
+        class TechnicianActor
+    }
+    namespace Infrastructure {
+        class TechnicianEventsConsumer
+        class TenantUnitOfWork
+        class TechnicianActorRepository
+        class SupplierRepository
+        class ProcessedEventRepository
+    }
+    TechnicianEventsConsumer --> TechnicianEventsHandler : invoca
+    TechnicianEventsHandler --> ITenantUnitOfWork : usa
+    TenantUnitOfWork ..|> ITenantUnitOfWork : implementa
+    TechnicianEventsHandler --> ITechnicianActorRepository : usa
+    TechnicianActorRepository ..|> ITechnicianActorRepository : implementa
+    TechnicianEventsHandler --> ISupplierRepository : usa
+    SupplierRepository ..|> ISupplierRepository : implementa
+    TechnicianEventsHandler --> IProcessedEventRepository : usa
+    ProcessedEventRepository ..|> IProcessedEventRepository : implementa
+    TechnicianEventsHandler ..> Supplier : crea o usa
+    TechnicianEventsHandler ..> TechnicianActor : crea o usa

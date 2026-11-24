@@ -2,25 +2,25 @@
  "servicio": "Identity",
  "lenguaje": "csharp",
  "resumen": {
-  "tipos": 192,
+  "tipos": 195,
   "paquetes": 24,
-  "dependencias_entre_tipos": 629,
-  "dependencias_entre_paquetes": 91,
+  "dependencias_entre_tipos": 637,
+  "dependencias_entre_paquetes": 89,
   "ciclos_entre_paquetes": 0,
   "paquetes_en_ciclos": 0,
   "ciclos_entre_tipos": 0,
   "mayor_ciclo_de_tipos": 0,
   "violaciones_de_capas": 0,
   "tipos_de_mas_de_250_lineas": 0,
-  "fan_out_maximo": 28,
-  "fan_out_promedio": 3.28,
-  "cohesion_relacional_promedio": 0.78
+  "fan_out_maximo": 29,
+  "fan_out_promedio": 3.27,
+  "cohesion_relacional_promedio": 0.79
  },
  "dependencias_entre_capas": {
   "Api->Application": 82,
   "Api->Domain": 19,
   "Api->Infrastructure": 1,
-  "Application->Domain": 102,
+  "Application->Domain": 104,
   "Infrastructure->Application": 51,
   "Infrastructure->Domain": 20
  },
@@ -33,7 +33,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 189,
-   "fan_out": 28,
+   "fan_out": 29,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Identity.Api/Endpoints/CompanyEndpoints.cs"
   },
@@ -42,7 +42,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 165,
-   "fan_out": 24,
+   "fan_out": 25,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Identity.Api/Endpoints/PasswordEndpoints.cs"
   },
@@ -51,7 +51,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 138,
-   "fan_out": 20,
+   "fan_out": 21,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Identity.Api/Endpoints/AuthEndpoints.cs"
   },
@@ -68,10 +68,10 @@
    "tipo": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
    "capa": "Application",
    "clase": "class",
-   "lineas": 71,
-   "fan_out": 16,
+   "lineas": 66,
+   "fan_out": 15,
    "fan_in": 2,
-   "archivo": "src/QuickPatch.Identity.Application/Technicians/ProviderTeam.cs"
+   "archivo": "src/QuickPatch.Identity.Application/Technicians/CreateTeamTechnician.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Api.Endpoints.PlatformEndpoints",
@@ -101,15 +101,6 @@
    "archivo": "src/QuickPatch.Identity.Application/Auth/ConfirmPasswordRecovery.cs"
   },
   {
-   "tipo": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
-   "capa": "Application",
-   "clase": "class",
-   "lineas": 60,
-   "fan_out": 13,
-   "fan_in": 3,
-   "archivo": "src/QuickPatch.Identity.Application/Auth/RegisterTechnician.cs"
-  },
-  {
    "tipo": "QuickPatch.Identity.Application.Companies.CreateCompanyUserHandler",
    "capa": "Application",
    "clase": "class",
@@ -117,6 +108,15 @@
    "fan_out": 13,
    "fan_in": 2,
    "archivo": "src/QuickPatch.Identity.Application/Companies/CreateCompanyUser.cs"
+  },
+  {
+   "tipo": "QuickPatch.Identity.Api.Bootstrap.DevelopmentUsersSeed",
+   "capa": "Api",
+   "clase": "class",
+   "lineas": 56,
+   "fan_out": 12,
+   "fan_in": 1,
+   "archivo": "src/QuickPatch.Identity.Api/Bootstrap/DevelopmentUsersSeed.cs"
   }
  ],
  "mayor_fan_in": [
@@ -126,7 +126,7 @@
    "clase": "class",
    "lineas": 167,
    "fan_out": 3,
-   "fan_in": 41,
+   "fan_in": 42,
    "archivo": "src/QuickPatch.Identity.Domain/Users/User.cs"
   },
   {
@@ -148,6 +148,15 @@
    "archivo": "src/QuickPatch.Identity.Domain/Tenants/Tenant.cs"
   },
   {
+   "tipo": "QuickPatch.Identity.Domain.Technicians.TechnicianProfile",
+   "capa": "Domain",
+   "clase": "class",
+   "lineas": 132,
+   "fan_out": 1,
+   "fan_in": 22,
+   "archivo": "src/QuickPatch.Identity.Domain/Technicians/TechnicianProfile.cs"
+  },
+  {
    "tipo": "QuickPatch.Identity.Application.Abstractions.IUserRepository",
    "capa": "Application",
    "clase": "interface",
@@ -155,15 +164,6 @@
    "fan_out": 1,
    "fan_in": 21,
    "archivo": null
-  },
-  {
-   "tipo": "QuickPatch.Identity.Domain.Technicians.TechnicianProfile",
-   "capa": "Domain",
-   "clase": "class",
-   "lineas": 132,
-   "fan_out": 1,
-   "fan_in": 21,
-   "archivo": "src/QuickPatch.Identity.Domain/Technicians/TechnicianProfile.cs"
   },
   {
    "tipo": "QuickPatch.Identity.Domain.Common.DomainValidationException",
@@ -184,15 +184,6 @@
    "archivo": "src/QuickPatch.Identity.Infrastructure/Persistence/IdentityDbContext.cs"
   },
   {
-   "tipo": "QuickPatch.Identity.Application.Abstractions.ITechnicianProfileRepository",
-   "capa": "Application",
-   "clase": "interface",
-   "lineas": 0,
-   "fan_out": 3,
-   "fan_in": 12,
-   "archivo": null
-  },
-  {
    "tipo": "QuickPatch.Identity.Application.Abstractions.ITenantRepository",
    "capa": "Application",
    "clase": "interface",
@@ -209,6 +200,15 @@
    "fan_out": 0,
    "fan_in": 11,
    "archivo": null
+  },
+  {
+   "tipo": "QuickPatch.Identity.Application.Abstractions.ITechnicianProfileRepository",
+   "capa": "Application",
+   "clase": "interface",
+   "lineas": 0,
+   "fan_out": 3,
+   "fan_in": 11,
+   "archivo": null
   }
  ],
  "mas_grandes": [
@@ -217,7 +217,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 189,
-   "fan_out": 28,
+   "fan_out": 29,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Identity.Api/Endpoints/CompanyEndpoints.cs"
   },
@@ -236,7 +236,7 @@
    "clase": "class",
    "lineas": 167,
    "fan_out": 3,
-   "fan_in": 41,
+   "fan_in": 42,
    "archivo": "src/QuickPatch.Identity.Domain/Users/User.cs"
   },
   {
@@ -244,7 +244,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 165,
-   "fan_out": 24,
+   "fan_out": 25,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Identity.Api/Endpoints/PasswordEndpoints.cs"
   },
@@ -262,7 +262,7 @@
    "capa": "Api",
    "clase": "static",
    "lineas": 138,
-   "fan_out": 20,
+   "fan_out": 21,
    "fan_in": 1,
    "archivo": "src/QuickPatch.Identity.Api/Endpoints/AuthEndpoints.cs"
   },
@@ -272,7 +272,7 @@
    "clase": "class",
    "lineas": 132,
    "fan_out": 1,
-   "fan_in": 21,
+   "fan_in": 22,
    "archivo": "src/QuickPatch.Identity.Domain/Technicians/TechnicianProfile.cs"
   },
   {
@@ -331,18 +331,18 @@
   {
    "paquete": "QuickPatch.Identity.Api.Http",
    "tipos": 3,
-   "fan_out": 1,
+   "fan_out": 0,
    "fan_in": 2,
-   "inestabilidad": 0.33,
+   "inestabilidad": 0.0,
    "cohesion_relacional": 0.33
   },
   {
    "paquete": "QuickPatch.Identity.Api.Security",
-   "tipos": 8,
+   "tipos": 9,
    "fan_out": 1,
-   "fan_in": 4,
-   "inestabilidad": 0.2,
-   "cohesion_relacional": 0.5
+   "fan_in": 3,
+   "inestabilidad": 0.25,
+   "cohesion_relacional": 0.56
   },
   {
    "paquete": "QuickPatch.Identity.Application",
@@ -363,9 +363,9 @@
   {
    "paquete": "QuickPatch.Identity.Application.Auth",
    "tipos": 22,
-   "fan_out": 8,
+   "fan_out": 7,
    "fan_in": 3,
-   "inestabilidad": 0.73,
+   "inestabilidad": 0.7,
    "cohesion_relacional": 0.68
   },
   {
@@ -380,8 +380,8 @@
    "paquete": "QuickPatch.Identity.Application.Events",
    "tipos": 9,
    "fan_out": 3,
-   "fan_in": 4,
-   "inestabilidad": 0.43,
+   "fan_in": 3,
+   "inestabilidad": 0.5,
    "cohesion_relacional": 0.78
   },
   {
@@ -394,11 +394,11 @@
   },
   {
    "paquete": "QuickPatch.Identity.Application.Technicians",
-   "tipos": 20,
+   "tipos": 22,
    "fan_out": 7,
    "fan_in": 5,
    "inestabilidad": 0.58,
-   "cohesion_relacional": 0.9
+   "cohesion_relacional": 0.95
   },
   {
    "paquete": "QuickPatch.Identity.Application.Users",
@@ -551,7 +551,7 @@
   {
    "de": "QuickPatch.Identity.Api.Endpoints",
    "a": "QuickPatch.Identity.Api.Security",
-   "n": 21
+   "n": 24
   },
   {
    "de": "QuickPatch.Identity.Api.Endpoints",
@@ -609,11 +609,6 @@
    "n": 4
   },
   {
-   "de": "QuickPatch.Identity.Api.Http",
-   "a": "QuickPatch.Identity.Api.Security",
-   "n": 1
-  },
-  {
    "de": "QuickPatch.Identity.Api.Security",
    "a": "QuickPatch.Identity.Application.Abstractions",
    "n": 2
@@ -636,7 +631,7 @@
   {
    "de": "QuickPatch.Identity.Application",
    "a": "QuickPatch.Identity.Application.Technicians",
-   "n": 7
+   "n": 8
   },
   {
    "de": "QuickPatch.Identity.Application",
@@ -676,17 +671,12 @@
   {
    "de": "QuickPatch.Identity.Application.Auth",
    "a": "QuickPatch.Identity.Application.Abstractions",
-   "n": 40
-  },
-  {
-   "de": "QuickPatch.Identity.Application.Auth",
-   "a": "QuickPatch.Identity.Application.Events",
-   "n": 1
+   "n": 37
   },
   {
    "de": "QuickPatch.Identity.Application.Auth",
    "a": "QuickPatch.Identity.Application.Technicians",
-   "n": 3
+   "n": 5
   },
   {
    "de": "QuickPatch.Identity.Application.Auth",
@@ -786,7 +776,7 @@
   {
    "de": "QuickPatch.Identity.Application.Technicians",
    "a": "QuickPatch.Identity.Application.Abstractions",
-   "n": 28
+   "n": 29
   },
   {
    "de": "QuickPatch.Identity.Application.Technicians",
@@ -806,7 +796,7 @@
   {
    "de": "QuickPatch.Identity.Application.Technicians",
    "a": "QuickPatch.Identity.Domain.Technicians",
-   "n": 7
+   "n": 8
   },
   {
    "de": "QuickPatch.Identity.Application.Technicians",
@@ -816,7 +806,7 @@
   {
    "de": "QuickPatch.Identity.Application.Technicians",
    "a": "QuickPatch.Identity.Domain.Users",
-   "n": 9
+   "n": 10
   },
   {
    "de": "QuickPatch.Identity.Application.Users",
@@ -1165,6 +1155,10 @@
   },
   {
    "de": "QuickPatch.Identity.Api.Endpoints.AuthEndpoints",
+   "a": "QuickPatch.Identity.Api.Security.ChannelTenant"
+  },
+  {
+   "de": "QuickPatch.Identity.Api.Endpoints.AuthEndpoints",
    "a": "QuickPatch.Identity.Api.Security.PasswordKeyResponse"
   },
   {
@@ -1258,6 +1252,10 @@
   {
    "de": "QuickPatch.Identity.Api.Endpoints.CompanyEndpoints",
    "a": "QuickPatch.Identity.Api.Security.ChannelOptions"
+  },
+  {
+   "de": "QuickPatch.Identity.Api.Endpoints.CompanyEndpoints",
+   "a": "QuickPatch.Identity.Api.Security.ChannelTenant"
   },
   {
    "de": "QuickPatch.Identity.Api.Endpoints.CompanyEndpoints",
@@ -1410,6 +1408,10 @@
   {
    "de": "QuickPatch.Identity.Api.Endpoints.PasswordEndpoints",
    "a": "QuickPatch.Identity.Api.Security.ChannelOptions"
+  },
+  {
+   "de": "QuickPatch.Identity.Api.Endpoints.PasswordEndpoints",
+   "a": "QuickPatch.Identity.Api.Security.ChannelTenant"
   },
   {
    "de": "QuickPatch.Identity.Api.Endpoints.PasswordEndpoints",
@@ -1700,16 +1702,16 @@
    "a": "QuickPatch.Identity.Domain.Users.User"
   },
   {
-   "de": "QuickPatch.Identity.Api.Http.IdentityResults",
-   "a": "QuickPatch.Identity.Api.Security.ChannelOptions"
-  },
-  {
    "de": "QuickPatch.Identity.Api.Security.AuthenticationSetup",
    "a": "QuickPatch.Identity.Api.Security.ForbiddenAuditHandler"
   },
   {
    "de": "QuickPatch.Identity.Api.Security.AuthenticationSetup",
    "a": "QuickPatch.Identity.Application.Abstractions.ITokenValidationKey"
+  },
+  {
+   "de": "QuickPatch.Identity.Api.Security.ChannelTenant",
+   "a": "QuickPatch.Identity.Api.Security.ChannelOptions"
   },
   {
    "de": "QuickPatch.Identity.Api.Security.PasswordTransport",
@@ -2061,15 +2063,7 @@
   },
   {
    "de": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
-   "a": "QuickPatch.Identity.Application.Abstractions.IOutbox"
-  },
-  {
-   "de": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
    "a": "QuickPatch.Identity.Application.Abstractions.IPasswordHasher"
-  },
-  {
-   "de": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
-   "a": "QuickPatch.Identity.Application.Abstractions.ITechnicianProfileRepository"
   },
   {
    "de": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
@@ -2081,10 +2075,6 @@
   },
   {
    "de": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
-   "a": "QuickPatch.Identity.Application.Abstractions.IUserRepository"
-  },
-  {
-   "de": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
    "a": "QuickPatch.Identity.Application.Auth.RegisterTechnicianCommand"
   },
   {
@@ -2093,7 +2083,11 @@
   },
   {
    "de": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
-   "a": "QuickPatch.Identity.Application.Events.TechnicianRegisteredEvent"
+   "a": "QuickPatch.Identity.Application.Technicians.TechnicianAccountConflict"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
+   "a": "QuickPatch.Identity.Application.Technicians.TechnicianAccounts"
   },
   {
    "de": "QuickPatch.Identity.Application.Auth.RegisterTechnicianHandler",
@@ -2473,6 +2467,10 @@
   },
   {
    "de": "QuickPatch.Identity.Application.DependencyInjection",
+   "a": "QuickPatch.Identity.Application.Technicians.TechnicianAccounts"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.DependencyInjection",
    "a": "QuickPatch.Identity.Application.Users.GetCurrentUserHandler"
   },
   {
@@ -2697,19 +2695,11 @@
   },
   {
    "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
-   "a": "QuickPatch.Identity.Application.Abstractions.IOutbox"
-  },
-  {
-   "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
    "a": "QuickPatch.Identity.Application.Abstractions.IPasswordHasher"
   },
   {
    "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
    "a": "QuickPatch.Identity.Application.Abstractions.IPasswordSetupTokenRepository"
-  },
-  {
-   "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
-   "a": "QuickPatch.Identity.Application.Abstractions.ITechnicianProfileRepository"
   },
   {
    "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
@@ -2725,10 +2715,6 @@
   },
   {
    "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
-   "a": "QuickPatch.Identity.Application.Events.TechnicianRegisteredEvent"
-  },
-  {
-   "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
    "a": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianCommand"
   },
   {
@@ -2738,6 +2724,14 @@
   {
    "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
    "a": "QuickPatch.Identity.Application.Technicians.IssuedInvitation"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
+   "a": "QuickPatch.Identity.Application.Technicians.TechnicianAccountConflict"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
+   "a": "QuickPatch.Identity.Application.Technicians.TechnicianAccounts"
   },
   {
    "de": "QuickPatch.Identity.Application.Technicians.CreateTeamTechnicianHandler",
@@ -2902,6 +2896,34 @@
   {
    "de": "QuickPatch.Identity.Application.Technicians.SetupPasswordHandler",
    "a": "QuickPatch.Identity.Domain.Users.UserRules"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.Technicians.TechnicianAccounts",
+   "a": "QuickPatch.Identity.Application.Abstractions.IOutbox"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.Technicians.TechnicianAccounts",
+   "a": "QuickPatch.Identity.Application.Abstractions.ITechnicianProfileRepository"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.Technicians.TechnicianAccounts",
+   "a": "QuickPatch.Identity.Application.Abstractions.IUserRepository"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.Technicians.TechnicianAccounts",
+   "a": "QuickPatch.Identity.Application.Events.TechnicianRegisteredEvent"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.Technicians.TechnicianAccounts",
+   "a": "QuickPatch.Identity.Application.Technicians.TechnicianAccountConflict"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.Technicians.TechnicianAccounts",
+   "a": "QuickPatch.Identity.Domain.Technicians.TechnicianProfile"
+  },
+  {
+   "de": "QuickPatch.Identity.Application.Technicians.TechnicianAccounts",
+   "a": "QuickPatch.Identity.Domain.Users.User"
   },
   {
    "de": "QuickPatch.Identity.Application.Users.CurrentUser",
@@ -3472,5 +3494,5 @@
    "a": "QuickPatch.Identity.Infrastructure.Options.JwtIssuerOptions"
   }
  ],
- "commit": "21fa2e6"
+ "commit": "6631e7f"
 }

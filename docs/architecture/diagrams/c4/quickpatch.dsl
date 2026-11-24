@@ -67,48 +67,62 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
             group "Clientes" {
                 mobile = container "App móvil" "App de clientes, empresas cliente, técnicos y proveedores." "App nativa (iOS y Android)" "Mobile App" {
-                    mobNavegacion = component "Navegación" "Rutas protegidas por sesión y por rol, barra inferior según el rol (Inicio; Solicitudes, Servicios o Equipo; Cuenta; SCRUM-441) y la regla del regreso: flecha en las pantallas secundarias y botón atrás de Android a Inicio desde las pestañas (SCRUM-615)." "go_router · app/router y app/shell"
-                    mobConfig = component "Configuración del ambiente" "URL base, Host del gateway y huella SHA-256 del certificado de QA (pinning)." "Dart · core/config"
-                    mobHttp = component "Cliente HTTP" "Adjunta JWT y X-Correlation-Id, valida el certificado y traduce problem+json en errores de la app." "Dio · core/network"
-                    mobSesion = component "Sesión" "Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol." "Almacenamiento seguro del dispositivo · core/session"
-                    mobAuth = component "Autenticación" "Login, registro de cliente hogar y de técnico o proveedor con su especialidad (SCRUM-55), registro de empresa (SCRUM-67), activación con el enlace de invitación y pedido de recuperación de la contraseña (SCRUM-626)." "Riverpod · features/autenticacion"
-                    mobInicio = component "Inicio por rol" "Acceso a la nueva solicitud y categorías de Catalog para el cliente; opciones (Disponibilidad y cobertura) y aviso de verificación para técnico y proveedor (SCRUM-441)." "Riverpod · features/inicio"
-                    mobCuenta = component "Cuenta" "Datos de la sesión, licencias y cierre de sesión (SCRUM-441); edición del perfil propio con PATCH /v1/users/me (SCRUM-612)." "Pantalla móvil · features/cuenta"
-                    mobDiseno = component "Sistema de diseño" "Tema azul y componentes compartidos: tarjetas, chips de estado, botones, estados vacío y de error (SCRUM-439), y ConfirmarSalida y AtrasConDestino (SCRUM-617)." "Componentes móviles · app/theme y shared/widgets"
-                    mobSolicitudes = component "Solicitudes" "Nueva solicitud en tres pasos en un formulario (RNF-11) y detalle con su estado (SCRUM-442)." "Riverpod · features/solicitudes"
-                    mobUbicacion = component "Ubicación del dispositivo" "Permiso y lectura del GPS con respaldo en LocationManager y límite de 15 s." "geolocator · features/solicitudes/data"
-                    mobDisponibilidad = component "Disponibilidad y cobertura" "Interruptor de disponibilidad (bloqueado si está ocupado, RN-M6) y elección de las localidades en el mapa o con chips sincronizados (RF-13, RN-M9; SCRUM-89)." "Riverpod · features/disponibilidad"
-                    mobMapa = component "Mapa de localidades" "Límites de las 20 localidades desde un GeoJSON de IDECA dentro de la app, con los códigos de GET /v1/localities; proyección, encuadre urbano y toque por localidad, sin mapa de fondo (R5, ADR-024)." "CustomPainter · features/disponibilidad"
-                    mobTiempoReal = component "Estado en tiempo real" "WebSocket /v1/realtime con el token en la primera trama; si se cae, consulta el detalle cada 30 s (RF-11, RNF-06, ADR-023)." "Dart · core/realtime"
-                    mobNotificaciones = component "Buzón de notificaciones" "Lista las notificaciones del usuario, las marca leídas y abre su solicitud (RIE-03, ADR-024; SCRUM-459)." "Riverpod · features/notificaciones"
-                    mobChat = component "Chat de la solicitud" "Historial paginado, envío y mensajes nuevos por la trama chat.message; solo lectura al cerrar (RF-37, ADR-026; SCRUM-482)." "Riverpod · features/chat"
-                    mobEmpresa = component "Usuarios de la empresa" "Empresa cliente del usuario y alta de otros usuarios con invitación (RF-06; SCRUM-67)." "Riverpod · features/empresa"
-                    mobCalificacion = component "Calificación" "Estrellas y comentario en el detalle de una solicitud pagada, para quien la creó (RF-12; SCRUM-86)." "Riverpod · features/calificacion"
-                    mobHistorial = component "Historial del técnico" "Servicios atendidos con filtros Completados, Pagados y Cancelados y la calificación recibida (RF-17; SCRUM-101)." "Riverpod · features/solicitudes"
-                    mobOfertas = component "Ofertas" "Oferta pendiente del técnico con localidad y distancia, aceptar o rechazar (RF-10), y aviso de oferta nueva con la trama offer.created en cualquier pestaña (SCRUM-80)." "Riverpod · features/ofertas"
-                    mobEquipo = component "Equipo del proveedor" "Lista los técnicos del equipo y da de alta uno nuevo con su invitación (RF-16; SCRUM-98)." "Riverpod · features/equipo"
-                    mobPagos = component "Pago, comprobante y Mis pagos" "Pago con la pasarela simulada (la tarjeta se tokeniza en el teléfono) y comprobante en PDF (RF-22 a RF-24); Mis pagos del técnico y del equipo del proveedor, por estado y por técnico (RF-25; SCRUM-502)." "Riverpod · features/pagos"
+                    group "app" {
+                        mobNavegacion = component "Navegación" "Rutas protegidas por sesión y por rol, barra inferior según el rol (Inicio; Solicitudes, Servicios o Equipo; Cuenta; SCRUM-441) y la regla del regreso: flecha en las pantallas secundarias y botón atrás de Android a Inicio desde las pestañas (SCRUM-615)." "go_router · app/router y app/shell"
+                        mobDiseno = component "Sistema de diseño" "Tema azul y componentes compartidos: tarjetas, chips de estado, botones, estados vacío y de error (SCRUM-439), y ConfirmarSalida y AtrasConDestino (SCRUM-617)." "Componentes móviles · app/theme y shared/widgets"
+                    }
+                    group "features" {
+                        mobAuth = component "Autenticación" "Login, registro de cliente hogar y de técnico o proveedor con su especialidad (SCRUM-55), registro de empresa (SCRUM-67), activación con el enlace de invitación y pedido de recuperación de la contraseña (SCRUM-626)." "Riverpod · features/autenticacion"
+                        mobInicio = component "Inicio por rol" "Acceso a la nueva solicitud y categorías de Catalog para el cliente; opciones (Disponibilidad y cobertura) y aviso de verificación para técnico y proveedor (SCRUM-441)." "Riverpod · features/inicio"
+                        mobCuenta = component "Cuenta" "Datos de la sesión, licencias y cierre de sesión (SCRUM-441); edición del perfil propio con PATCH /v1/users/me (SCRUM-612)." "Pantalla móvil · features/cuenta"
+                        mobSolicitudes = component "Solicitudes" "Nueva solicitud en tres pasos en un formulario (RNF-11) y detalle con su estado (SCRUM-442)." "Riverpod · features/solicitudes"
+                        mobUbicacion = component "Ubicación del dispositivo" "Permiso y lectura del GPS con respaldo en LocationManager y límite de 15 s." "geolocator · features/solicitudes/data"
+                        mobDisponibilidad = component "Disponibilidad y cobertura" "Interruptor de disponibilidad (bloqueado si está ocupado, RN-M6) y elección de las localidades en el mapa o con chips sincronizados (RF-13, RN-M9; SCRUM-89)." "Riverpod · features/disponibilidad"
+                        mobMapa = component "Mapa de localidades" "Límites de las 20 localidades desde un GeoJSON de IDECA dentro de la app, con los códigos de GET /v1/localities; proyección, encuadre urbano y toque por localidad, sin mapa de fondo (R5, ADR-024)." "CustomPainter · features/disponibilidad"
+                        mobNotificaciones = component "Buzón de notificaciones" "Lista las notificaciones del usuario, las marca leídas y abre su solicitud (RIE-03, ADR-024; SCRUM-459)." "Riverpod · features/notificaciones"
+                        mobChat = component "Chat de la solicitud" "Historial paginado, envío y mensajes nuevos por la trama chat.message; solo lectura al cerrar (RF-37, ADR-026; SCRUM-482)." "Riverpod · features/chat"
+                        mobEmpresa = component "Usuarios de la empresa" "Empresa cliente del usuario y alta de otros usuarios con invitación (RF-06; SCRUM-67)." "Riverpod · features/empresa"
+                        mobCalificacion = component "Calificación" "Estrellas y comentario en el detalle de una solicitud pagada, para quien la creó (RF-12; SCRUM-86)." "Riverpod · features/calificacion"
+                        mobHistorial = component "Historial del técnico" "Servicios atendidos con filtros Completados, Pagados y Cancelados y la calificación recibida (RF-17; SCRUM-101)." "Riverpod · features/solicitudes"
+                        mobOfertas = component "Ofertas" "Oferta pendiente del técnico con localidad y distancia, aceptar o rechazar (RF-10), y aviso de oferta nueva con la trama offer.created en cualquier pestaña (SCRUM-80)." "Riverpod · features/ofertas"
+                        mobEquipo = component "Equipo del proveedor" "Lista los técnicos del equipo y da de alta uno nuevo con su invitación (RF-16; SCRUM-98)." "Riverpod · features/equipo"
+                        mobPagos = component "Pago, comprobante y Mis pagos" "Pago con la pasarela simulada (la tarjeta se tokeniza en el teléfono) y comprobante en PDF (RF-22 a RF-24); Mis pagos del técnico y del equipo del proveedor, por estado y por técnico (RF-25; SCRUM-502)." "Riverpod · features/pagos"
+                    }
+                    group "core" {
+                        mobConfig = component "Configuración del ambiente" "URL base, Host del gateway y huella SHA-256 del certificado de QA (pinning)." "Dart · core/config"
+                        mobHttp = component "Cliente HTTP" "Adjunta JWT y X-Correlation-Id, valida el certificado y traduce problem+json en errores de la app." "Dio · core/network"
+                        mobSesion = component "Sesión" "Guarda el token en el almacenamiento seguro del dispositivo y expone usuario y rol." "Almacenamiento seguro del dispositivo · core/session"
+                        mobTiempoReal = component "Estado en tiempo real" "WebSocket /v1/realtime con el token en la primera trama; si se cae, consulta el detalle cada 30 s (RF-11, RNF-06, ADR-023)." "Dart · core/realtime"
+                    }
                 }
                 web = container "Panel web" "Panel de administración del tenant y de la plataforma." "SPA web + TypeScript" "Web Browser" {
-                    webShell = component "Shell y rutas" "Rutas, layout con barra lateral y encabezado, y redirección a login o al inicio del rol (SCRUM-435)." "Enrutador web · app.routes y layout"
-                    webSesion = component "Sesión" "Conserva el token y expone usuario y rol como signals." "Servicio web · core/sesion"
-                    webInterceptor = component "Interceptor HTTP" "Adjunta JWT y X-Correlation-Id; ante un 401 cierra la sesión y vuelve al login." "Interceptor funcional · core/http"
-                    webGuards = component "Guards de rol" "Permiten cada ruta según el rol y envían al inicio del rol si no corresponde (RN-U6)." "Guard funcional · core/guards"
-                    webLogin = component "Inicio de sesión" "Formulario de acceso con validaciones y errores." "Componente web · features/autenticacion"
-                    webInicio = component "Inicio" "Menú según el rol del administrador; la tarjeta de Técnicos lleva a su pantalla." "Componente web · features/inicio"
-                    webTenants = component "Gestión de tenants" "Lista y busca los tenants, crea uno con nombre y NIT, y los activa o desactiva con confirmación (SCRUM-41, SCRUM-61)." "Componente web · features/tenants"
-                    webTenantsApi = component "Cliente API de tenants" "GET, POST y PATCH /v1/platform/tenants." "HttpClient · features/tenants"
-                    webTecnicos = component "Aprobación de técnicos" "Lista técnicos y proveedores del tenant por estado de verificación, con paginación; aprueba, rechaza, suspende y reactiva con confirmación y motivo (RF-19, RF-20; SCRUM-107, SCRUM-110)." "Componente web · features/tecnicos"
-                    webTecnicosApi = component "Cliente API de técnicos" "GET /v1/admin/technicians y POST approve, reject y suspend (identity.v1.yaml); nombres de especialidad con GET /v1/catalog/categories." "HttpClient · features/tecnicos"
-                    webPerfil = component "Mi perfil" "Nombre y teléfono propios con GET y PATCH /v1/users/me; correo y rol de solo lectura y confirmación al salir sin guardar (SCRUM-613)." "Componente web · features/perfil"
-                    webPresentacion = component "Presentación" "Página pública en /: qué es QUICKPATCH, el ciclo del servicio, sus usuarios y la descarga de la APK del último release (SCRUM-491, SCRUM-628)." "Componente web · features/presentacion"
-                    webActivacion = component "Activar cuenta" "Página pública /activar: el técnico invitado define su contraseña con el token del enlace (SCRUM-463)." "Componente web · features/activacion"
-                    webSolicitudes = component "Solicitudes" "Panel operativo del admin del tenant y de plataforma: lista por estado con conteos, consulta cada minuto con la pestaña visible y cancelación con motivo (RF-18; SCRUM-38, SCRUM-105)." "Componente web · features/solicitudes"
-                    webSolicitudesApi = component "Cliente API de solicitudes" "GET /v1/admin/service-requests y /v1/platform/service-requests, resumen por estado y POST cancel (service-request.v1.yaml)." "HttpClient · features/solicitudes"
-                    webRecuperaciones = component "Recuperar contraseñas" "Bandeja del admin del tenant con las solicitudes pendientes, de la más antigua a la más reciente, y el enlace de un solo uso que vence en 1 hora (SCRUM-626, ADR-024)." "Componente web · features/recuperacion"
-                    webRecuperar = component "Define tu contraseña nueva" "Página pública /recuperar: el usuario define la contraseña nueva con el token del enlace, que va en el cuerpo y nunca en la URL (SCRUM-626)." "Componente web · features/recuperacion"
-                    webRecuperacionApi = component "Cliente API de recuperación" "GET /v1/admin/password-recovery-requests, POST .../{id}/link y POST /v1/auth/password-recovery/confirm (identity.v1.yaml 1.10.0)." "HttpClient · features/recuperacion"
-                    webDiseno = component "Sistema de diseño" "Tokens azules, fuente autoalojada y componentes reutilizables del panel; contraste WCAG AA verificado en el CI (SCRUM-433)." "SCSS · styles y shared"
+                    group "app" {
+                        webShell = component "Shell y rutas" "Rutas, layout con barra lateral y encabezado, y redirección a login o al inicio del rol (SCRUM-435)." "Enrutador web · app.routes y layout"
+                    }
+                    group "features" {
+                        webLogin = component "Inicio de sesión" "Formulario de acceso con validaciones y errores." "Componente web · features/autenticacion"
+                        webInicio = component "Inicio" "Menú según el rol del administrador; la tarjeta de Técnicos lleva a su pantalla." "Componente web · features/inicio"
+                        webTenants = component "Gestión de tenants" "Lista y busca los tenants, crea uno con nombre y NIT, y los activa o desactiva con confirmación (SCRUM-41, SCRUM-61)." "Componente web · features/tenants"
+                        webTenantsApi = component "Cliente API de tenants" "GET, POST y PATCH /v1/platform/tenants." "HttpClient · features/tenants"
+                        webTecnicos = component "Aprobación de técnicos" "Lista técnicos y proveedores del tenant por estado de verificación, con paginación; aprueba, rechaza, suspende y reactiva con confirmación y motivo (RF-19, RF-20; SCRUM-107, SCRUM-110)." "Componente web · features/tecnicos"
+                        webTecnicosApi = component "Cliente API de técnicos" "GET /v1/admin/technicians y POST approve, reject y suspend (identity.v1.yaml); nombres de especialidad con GET /v1/catalog/categories." "HttpClient · features/tecnicos"
+                        webPerfil = component "Mi perfil" "Nombre y teléfono propios con GET y PATCH /v1/users/me; correo y rol de solo lectura y confirmación al salir sin guardar (SCRUM-613)." "Componente web · features/perfil"
+                        webPresentacion = component "Presentación" "Página pública en /: qué es QUICKPATCH, el ciclo del servicio, sus usuarios y la descarga de la APK del último release (SCRUM-491, SCRUM-628)." "Componente web · features/presentacion"
+                        webActivacion = component "Activar cuenta" "Página pública /activar: el técnico invitado define su contraseña con el token del enlace (SCRUM-463)." "Componente web · features/activacion"
+                        webSolicitudes = component "Solicitudes" "Panel operativo del admin del tenant y de plataforma: lista por estado con conteos, consulta cada minuto con la pestaña visible y cancelación con motivo (RF-18; SCRUM-38, SCRUM-105)." "Componente web · features/solicitudes"
+                        webSolicitudesApi = component "Cliente API de solicitudes" "GET /v1/admin/service-requests y /v1/platform/service-requests, resumen por estado y POST cancel (service-request.v1.yaml)." "HttpClient · features/solicitudes"
+                        webRecuperaciones = component "Recuperar contraseñas" "Bandeja del admin del tenant con las solicitudes pendientes, de la más antigua a la más reciente, y el enlace de un solo uso que vence en 1 hora (SCRUM-626, ADR-024)." "Componente web · features/recuperacion"
+                        webRecuperar = component "Define tu contraseña nueva" "Página pública /recuperar: el usuario define la contraseña nueva con el token del enlace, que va en el cuerpo y nunca en la URL (SCRUM-626)." "Componente web · features/recuperacion"
+                        webRecuperacionApi = component "Cliente API de recuperación" "GET /v1/admin/password-recovery-requests, POST .../{id}/link y POST /v1/auth/password-recovery/confirm (identity.v1.yaml 1.10.0)." "HttpClient · features/recuperacion"
+                    }
+                    group "core" {
+                        webSesion = component "Sesión" "Conserva el token y expone usuario y rol como signals." "Servicio web · core/sesion"
+                        webInterceptor = component "Interceptor HTTP" "Adjunta JWT y X-Correlation-Id; ante un 401 cierra la sesión y vuelve al login." "Interceptor funcional · core/http"
+                        webGuards = component "Guards de rol" "Permiten cada ruta según el rol y envían al inicio del rol si no corresponde (RN-U6)." "Guard funcional · core/guards"
+                    }
+                    group "shared" {
+                        webDiseno = component "Sistema de diseño" "Tokens azules, fuente autoalojada y componentes reutilizables del panel; contraste WCAG AA verificado en el CI (SCRUM-433)." "SCSS · styles y shared"
+                    }
                 }
             }
 
@@ -116,168 +130,198 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
 
             group "Microservicios" {
                 identity = container "Identity Service" "Autenticación, usuarios, tenants y auditoría." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    # Api
-                    idEndpoints = component "Endpoints por recurso" "AuthEndpoints, PasswordEndpoints, UserEndpoints, PlatformEndpoints, AdminTechnicianEndpoints y ProviderTeamEndpoints (SCRUM-650): solo validan la entrada, llaman al caso de uso y mapean la respuesta. Registro, login, /password/setup y /password-recovery (SCRUM-624); /users/me (SCRUM-611); /platform/tenants; /admin/technicians y /admin/password-recovery-requests; /providers/me/technicians; /internal/v1/users (solo en el clúster)." "Minimal API · Api/Endpoints"
-                    idCompanyEndpoints = component "CompanyEndpoints" "POST /v1/auth/register/company; GET /v1/companies/me y POST /v1/companies/me/users (RF-06)." "Minimal API · Api/Endpoints"
-                    idSecurity = component "AuthenticatedUser, PasswordTransport y ChannelOptions" "Usuario, tenant, rol y company_id del JWT; registra cada 403 (RNF-04). PasswordTransport descifra encryptedPassword con el puerto IPasswordDecryptor, y la validación del JWT usa ITokenValidationKey: el API no conoce Infrastructure (SDD 10.3.2)." "ASP.NET Core · Api/Security"
-                    idHttp = component "Problems y BadRequestExceptionHandler" "Responde application/problem+json. X-Correlation-Id y el registro estructurado vienen de quickpatch-shared-dotnet (ADR-020)." "ASP.NET Core · Api/Http"
-                    idBootstrap = component "TenantAdminBootstrap" "Al arrancar crea el admin del tenant y el de plataforma desde el Secret (SCRUM-450)." "Hosted service · Api/Bootstrap"
-                    # Application
-                    idAuth = component "Auth" "LoginHandler (bloqueo tras 5 intentos), RegisterClientHandler, RegisterTechnicianHandler y EnsureTenantAdminHandler; Request, ListPasswordRecoveries, IssueRecoveryLink y ConfirmPasswordRecoveryHandler (SCRUM-624)." "Casos de uso · Application/Auth"
-                    idCompanies = component "Companies" "RegisterCompanyHandler, GetMyCompanyHandler y CreateCompanyUserHandler (RF-06)." "Casos de uso · Application/Companies"
-                    idTechnicians = component "Technicians" "ChangeVerificationHandler y ListTechniciansHandler (RF-19, RF-20); CreateTeamTechnicianHandler y ListTeamHandler (RF-16); SetupPasswordHandler y RenewInvitationHandler." "Casos de uso · Application/Technicians"
-                    idPlatform = component "Platform" "ListTenantsHandler, CreateTenantHandler y UpdateTenantStatusHandler con auditoría (RF-21); al cambiar el estado deja tenant.status-changed en el Outbox (RN-T1, SCRUM-509)." "Casos de uso · Application/Platform"
-                    idUsers = component "Users" "GetCurrentUserHandler, UpdateCurrentUserHandler (nombre y teléfono del perfil propio, SCRUM-611) y LookupUsersHandler (nombres por lote para otros servicios)." "Casos de uso · Application/Users"
-                    # Domain
-                    idDomain = component "Dominio de identidad" "User (LockoutPolicy), Tenant, TechnicianProfile (VerificationStatus), ClientCompany, PasswordSetupToken, PasswordRecoveryRequest, AuditEntry y Roles." "Domain"
-                    # Infrastructure
-                    idPersistence = component "TenantUnitOfWork, PlatformUnitOfWork y repositorios" "UserRepository, TenantRepository, TechnicianProfileRepository, ClientCompanyRepository, PasswordSetupTokenRepository, PasswordRecoveryRepository y AuditLog; RLS con app.current_tenant o SET LOCAL ROLE identity_platform." "EF Core + Npgsql · Infrastructure/Persistence"
-                    idSecurityAdapters = component "RsaTokenIssuer, PasswordEncryptionKey, BCryptPasswordHasher y HmacEmailHasher" "Firma el JWT RS256 y expone la llave pública (ITokenIssuer, ITokenValidationKey; ADR-018), descifra la contraseña con RSA-OAEP-256 (IPasswordDecryptor), hace el hash de las contraseñas (RNF-03) y el HMAC del correo de la recuperación (SCRUM-624)." "Infrastructure/Security"
-                    idOutbox = component "EfOutbox" "Guarda technician.registered, technician.verification-changed y tenant.status-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Messaging"
-                    idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
-                    idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta la reputación en technician_profiles; descarta lo atrasado por changedAt (ADR-027)." "Kafka consumer · Infrastructure/Messaging"
+                    group "Api" {
+                        idEndpoints = component "Endpoints por recurso" "AuthEndpoints, PasswordEndpoints, UserEndpoints, PlatformEndpoints, AdminTechnicianEndpoints y ProviderTeamEndpoints (SCRUM-650): solo validan la entrada, llaman al caso de uso y mapean la respuesta. Registro, login, /password/setup y /password-recovery (SCRUM-624); /users/me (SCRUM-611); /platform/tenants; /admin/technicians y /admin/password-recovery-requests; /providers/me/technicians; /internal/v1/users (solo en el clúster)." "Minimal API · Api/Endpoints"
+                        idCompanyEndpoints = component "CompanyEndpoints" "POST /v1/auth/register/company; GET /v1/companies/me y POST /v1/companies/me/users (RF-06)." "Minimal API · Api/Endpoints"
+                        idSecurity = component "AuthenticatedUser, ChannelTenant, PasswordTransport y ChannelOptions" "Usuario, tenant, rol y company_id del JWT; registra cada 403 (RNF-04). ChannelTenant resuelve el tenant de X-Channel-Id en las peticiones sin token (RN-U5, SCRUM-710). PasswordTransport descifra encryptedPassword con el puerto IPasswordDecryptor, y la validación del JWT usa ITokenValidationKey: el API no conoce Infrastructure (SDD 10.3.2)." "ASP.NET Core · Api/Security"
+                        idHttp = component "Problems y BadRequestExceptionHandler" "Responde application/problem+json. X-Correlation-Id y el registro estructurado vienen de quickpatch-shared-dotnet (ADR-020)." "ASP.NET Core · Api/Http"
+                        idBootstrap = component "TenantAdminBootstrap" "Al arrancar crea el admin del tenant y el de plataforma desde el Secret (SCRUM-450)." "Hosted service · Api/Bootstrap"
+                    }
+                    group "Application" {
+                        idAuth = component "Auth" "LoginHandler (bloqueo tras 5 intentos), RegisterClientHandler, RegisterTechnicianHandler y EnsureTenantAdminHandler; Request, ListPasswordRecoveries, IssueRecoveryLink y ConfirmPasswordRecoveryHandler (SCRUM-624)." "Casos de uso · Application/Auth"
+                        idCompanies = component "Companies" "RegisterCompanyHandler, GetMyCompanyHandler y CreateCompanyUserHandler (RF-06)." "Casos de uso · Application/Companies"
+                        idTechnicians = component "Technicians" "Un archivo por caso de uso (SCRUM-710): ChangeVerificationHandler y ListTechniciansHandler (RF-19, RF-20); CreateTeamTechnicianHandler y ListTeamHandler (RF-16); SetupPasswordHandler y RenewInvitationHandler. TechnicianAccounts reúne el alta de la cuenta que comparten el registro y el equipo: unicidad de correo y documento, usuario y perfil, y technician.registered en el Outbox." "Casos de uso · Application/Technicians"
+                        idPlatform = component "Platform" "ListTenantsHandler, CreateTenantHandler y UpdateTenantStatusHandler con auditoría (RF-21); al cambiar el estado deja tenant.status-changed en el Outbox (RN-T1, SCRUM-509)." "Casos de uso · Application/Platform"
+                        idUsers = component "Users" "GetCurrentUserHandler, UpdateCurrentUserHandler (nombre y teléfono del perfil propio, SCRUM-611) y LookupUsersHandler (nombres por lote para otros servicios)." "Casos de uso · Application/Users"
+                    }
+                    group "Domain" {
+                        idDomain = component "Dominio de identidad" "User (LockoutPolicy), Tenant, TechnicianProfile (VerificationStatus), ClientCompany, PasswordSetupToken, PasswordRecoveryRequest, AuditEntry y Roles." "Domain"
+                    }
+                    group "Infrastructure" {
+                        idPersistence = component "TenantUnitOfWork, PlatformUnitOfWork y repositorios" "UserRepository, TenantRepository, TechnicianProfileRepository, ClientCompanyRepository, PasswordSetupTokenRepository, PasswordRecoveryRepository y AuditLog; RLS con app.current_tenant o SET LOCAL ROLE identity_platform." "EF Core + Npgsql · Infrastructure/Persistence"
+                        idSecurityAdapters = component "RsaTokenIssuer, PasswordEncryptionKey, BCryptPasswordHasher y HmacEmailHasher" "Firma el JWT RS256 y expone la llave pública (ITokenIssuer, ITokenValidationKey; ADR-018), descifra la contraseña con RSA-OAEP-256 (IPasswordDecryptor), hace el hash de las contraseñas (RNF-03) y el HMAC del correo de la recuperación (SCRUM-624)." "Infrastructure/Security"
+                        idOutbox = component "EfOutbox" "Guarda technician.registered, technician.verification-changed y tenant.status-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Messaging"
+                        idPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
+                        idReputationConsumer = component "ReputationChangedConsumer" "Consume ranking.technician-reputation-changed y, con ApplyReputationHandler, proyecta la reputación en technician_profiles; descarta lo atrasado por changedAt (ADR-027)." "Kafka consumer · Infrastructure/Messaging"
+                    }
                 }
                 actors = container "Actors Service" "Directorio de actores de negocio del tenant, armado con eventos (SCRUM-640): proveedores con su equipo y clientes. Sin REST (ADR-025) y sin eventos publicados." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    # Application
-                    acTechnicianHandler = component "TechnicianEventsHandler" "Aplica technician.registered y .verification-changed una vez por eventId bajo el tenant del evento; descarta lo atrasado por updatedAt (ADR-017) y recuenta el equipo del proveedor." "Casos de uso · Application/Technicians"
-                    acClientHandler = component "ServiceRequestCreatedHandler" "Suma la solicitud al cliente una vez por eventId, sin la descripción ni la ubicación (RN-SR13)." "Casos de uso · Application/Clients"
-                    # Domain
-                    acDomain = component "Dominio de actores" "TechnicianActor (proveedor, especialidad y estado con descarte por updatedAt), Supplier (tamaño del equipo y aprobados) y ClientActor (solicitudes, primera y última)." "Domain/Technicians, Suppliers y Clients"
-                    # Infrastructure
-                    acPersistence = component "TenantUnitOfWork y repositorios" "TechnicianActorRepository, SupplierRepository, ClientActorRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
-                    acTechnicianConsumer = component "TechnicianEventsConsumer" "Consume technician.registered y technician.verification-changed; solo transporte: el contrato lo valida Application." "Kafka consumer · Infrastructure/Messaging"
-                    acClientConsumer = component "ServiceRequestCreatedConsumer" "Consume service-request.created; solo transporte." "Kafka consumer · Infrastructure/Messaging"
-                    acAllies = component "Aliados (Ally)" "Concepto evolutivo (SDD 6.14): ningún evento lo origina." "Domain" "Planeado"
+                    group "Application" {
+                        acTechnicianHandler = component "TechnicianEventsHandler" "Aplica technician.registered y .verification-changed una vez por eventId bajo el tenant del evento; descarta lo atrasado por updatedAt (ADR-017) y recuenta el equipo del proveedor." "Casos de uso · Application/Technicians"
+                        acClientHandler = component "ServiceRequestCreatedHandler" "Suma la solicitud al cliente una vez por eventId, sin la descripción ni la ubicación (RN-SR13)." "Casos de uso · Application/Clients"
+                    }
+                    group "Domain" {
+                        acDomain = component "Dominio de actores" "TechnicianActor (proveedor, especialidad y estado con descarte por updatedAt), Supplier (tamaño del equipo y aprobados) y ClientActor (solicitudes, primera y última)." "Domain/Technicians, Suppliers y Clients"
+                    }
+                    group "Infrastructure" {
+                        acPersistence = component "TenantUnitOfWork y repositorios" "TechnicianActorRepository, SupplierRepository, ClientActorRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                        acTechnicianConsumer = component "TechnicianEventsConsumer" "Consume technician.registered y technician.verification-changed; solo transporte: el contrato lo valida Application." "Kafka consumer · Infrastructure/Messaging"
+                        acClientConsumer = component "ServiceRequestCreatedConsumer" "Consume service-request.created; solo transporte." "Kafka consumer · Infrastructure/Messaging"
+                        acAllies = component "Aliados (Ally)" "Concepto evolutivo (SDD 6.14): ningún evento lo origina." "Domain" "Planeado"
+                    }
                 }
                 catalog = container "Catalog Service" "Categorías y especialidades de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    # Api
-                    catEndpoints = component "CategoryEndpoints" "GET /v1/catalog/categories (obsoleta por ADR-025); POST y PATCH /v1/catalog/admin/categories." "Minimal API · Api/Endpoints"
-                    catSecurity = component "AuthenticatedUser, RequestTenant y ForbiddenAuditHandler" "Usuario, tenant y rol del JWT. RequestTenant resuelve el tenant del token o, sin token, del canal (RN-U5), fuera del endpoint. Registra los 403." "ASP.NET Core · Api/Security"
-                    catHttp = component "Problems y BadRequestExceptionHandler" "Responde application/problem+json. X-Correlation-Id y el registro estructurado vienen de quickpatch-shared-dotnet (ADR-020)." "ASP.NET Core · Api/Http"
-                    # Application
-                    catHandlers = component "Categories" "ListCategories, CreateCategory y UpdateCategory, un caso de uso por archivo; nombre único por tenant (409)." "Casos de uso · Application/Categories"
-                    # Domain
-                    catDomain = component "Category" "Nombre normalizado, descripción, estado activo y updatedAt." "Domain/Categories"
-                    # Infrastructure
-                    catPersistence = component "TenantUnitOfWork y CategoryRepository" "service_categories bajo RLS (app.current_tenant)." "EF Core + Npgsql · Infrastructure/Persistence"
-                    catOutbox = component "EfOutbox" "Guarda catalog.category-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
-                    catResync = component "CategoryResync" "Vuelve a publicar todas las categorías una vez, con la descripción, para la réplica de ServiceRequest (ADR-025)." "Infrastructure/Persistence"
-                    catPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
+                    group "Api" {
+                        catEndpoints = component "CategoryEndpoints" "GET /v1/catalog/categories (obsoleta por ADR-025); POST y PATCH /v1/catalog/admin/categories." "Minimal API · Api/Endpoints"
+                        catSecurity = component "AuthenticatedUser, RequestTenant y ForbiddenAuditHandler" "Usuario, tenant y rol del JWT. RequestTenant resuelve el tenant del token o, sin token, del canal (RN-U5), fuera del endpoint. Registra los 403." "ASP.NET Core · Api/Security"
+                        catHttp = component "Problems y BadRequestExceptionHandler" "Responde application/problem+json. X-Correlation-Id y el registro estructurado vienen de quickpatch-shared-dotnet (ADR-020)." "ASP.NET Core · Api/Http"
+                    }
+                    group "Application" {
+                        catHandlers = component "Categories" "ListCategories, CreateCategory y UpdateCategory, un caso de uso por archivo; nombre único por tenant (409)." "Casos de uso · Application/Categories"
+                    }
+                    group "Domain" {
+                        catDomain = component "Category" "Nombre normalizado, descripción, estado activo y updatedAt." "Domain/Categories"
+                    }
+                    group "Infrastructure" {
+                        catPersistence = component "TenantUnitOfWork y CategoryRepository" "service_categories bajo RLS (app.current_tenant)." "EF Core + Npgsql · Infrastructure/Persistence"
+                        catOutbox = component "EfOutbox" "Guarda catalog.category-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
+                        catResync = component "CategoryResync" "Vuelve a publicar todas las categorías una vez, con la descripción, para la réplica de ServiceRequest (ADR-025)." "Infrastructure/Persistence"
+                        catPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
+                    }
                 }
                 serviceRequest = container "ServiceRequest Service" "Ciclo de vida de la solicitud de servicio." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    # Api
-                    srRequestEndpoints = component "Endpoints de la solicitud" "ServiceRequestEndpoints (POST y GET /v1/service-requests), LocationPreviewEndpoints (/location-preview), CancellationEndpoints (/{id}/cancel) y TechnicianServiceRequestEndpoints (GET /v1/technicians/me/service-requests). Comparten ApiResults y Routes de Api/Http, no entre sí." "Minimal API · Api/Endpoints"
-                    srReferenceEndpoints = component "ReferenceEndpoints" "GET /v1/service-requests/categories y /localities desde las réplicas (ADR-025)." "Minimal API · Api/Endpoints"
-                    srQuoteEndpoints = component "QuoteEndpoints" "GET y POST /v1/service-requests/{id}/quotes, accept y reject (RF-34, RF-35)." "Minimal API · Api/Endpoints"
-                    srExecutionEndpoints = component "ExecutionEndpoints" "POST /start, /evidence y /complete; GET de las evidencias (RF-14, RF-15)." "Minimal API · Api/Endpoints"
-                    srRatingEndpoints = component "RatingEndpoints" "POST /v1/service-requests/{id}/rating: dueño de la solicitud pagada; 403, 404 y 409 (RF-12, DD 8.3.11)." "Minimal API · Api/Endpoints"
-                    srAdminEndpoints = component "AdminServiceRequestEndpoints" "Lista y resumen por estado del admin del tenant y de plataforma (RF-18)." "Minimal API · Api/Endpoints"
-                    srSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Usuario, tenant, rol y company_id de los claims del JWT, nunca del cuerpo (RN-U3); registra los 403." "ASP.NET Core · Api/Security"
-                    # Application
-                    srRequests = component "ServiceRequests" "CreateServiceRequestHandler, GetServiceRequestHandler, CancelServiceRequestHandler, PreviewLocationHandler, ListTechnicianServiceRequestsHandler y los de administración." "Casos de uso · Application/ServiceRequests"
-                    srReferences = component "References" "ListCategoriesHandler y ListLocalitiesHandler." "Casos de uso · Application/References"
-                    srQuotes = component "Quotes" "IssueQuoteHandler, RespondQuoteHandler y ExpireQuoteHandler (máximo 3, vencimiento)." "Casos de uso · Application/Quotes"
-                    srExecution = component "Execution" "StartServiceHandler, UploadEvidenceHandler y CompleteServiceHandler." "Casos de uso · Application/Execution"
-                    srEventHandlers = component "Manejadores de eventos" "ApplyCategoryChangedHandler, MatchingStatusHandler, PaymentEventsHandler y ApplyTenantStatusChangedHandler (réplica del estado del tenant, RN-T1): aplican cada evento una vez por eventId." "Casos de uso · Application/Categories, Matching y Payments"
-                    srRating = component "Ratings" "RateServiceRequestHandler: valida dueño, estado pagado y que no esté calificada (RN-R1 a RN-R3) y deja service-request.rated en el Outbox (ADR-027)." "Casos de uso · Application/Ratings"
-                    # Domain
-                    srDomain = component "Dominio de la solicitud" "ServiceRequest (transiciones RN-SR2 a RN-SR7), ServiceRequestRules (validación RN-SR1, RN-SR11, RN-SR12 y RF-36), Quote, ServiceEvidence, Rating, CategoryReplica, GeoPoint, CoverageArea y Locality." "Domain"
-                    # Infrastructure
-                    srPersistence = component "TenantUnitOfWork y repositorios" "ServiceRequestRepository, QuoteRepository, EvidenceRepository, RatingRepository, CategoryReplicaRepository y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
-                    srOutbox = component "EfOutbox" "Guarda los eventos de la solicitud en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
-                    srPublisher = component "OutboxPublisher" "Lotes con FOR UPDATE SKIP LOCKED; publica y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
-                    srTenantConsumer = component "TenantStatusChangedConsumer" "Consume tenant.status-changed (SCRUM-510)." "Kafka consumer · Infrastructure/Messaging"
-                    srCategoryConsumer = component "CategoryChangedConsumer" "Consume catalog.category-changed." "Kafka consumer · Infrastructure/Messaging"
-                    srMatchingConsumer = component "MatchingEventsConsumer" "Consume matching.technician-assigned, .no-technician-available y .search-resumed." "Kafka consumer · Infrastructure/Messaging"
-                    srPaymentConsumer = component "PaymentEventsConsumer" "Consume payment.approved y payment.rejected." "Kafka consumer · Infrastructure/Messaging"
-                    srGeocoder = component "NominatimGeocoder" "Convierte la dirección en coordenadas dentro de Bogotá (RIE-02, ADR-024)." "HttpClient · Infrastructure/Geocoding"
-                    srStorage = component "GarageEvidenceStorage" "Guarda y sirve las fotos de la evidencia (ADR-016)." "S3 · Infrastructure/Storage"
-                    srUserDirectory = component "IdentityUserDirectory" "Nombres y contacto por lote con GET /internal/v1/users; si falla, devuelve vacío (ADR-025)." "HttpClient · Infrastructure/Identity"
-                    srScheduling = component "QuoteExpirer y RedisDistributedLock" "Vence las cotizaciones sin respuesta; una sola réplica a la vez (RN-Q6)." "BackgroundService · Infrastructure/Scheduling"
+                    group "Api" {
+                        srRequestEndpoints = component "Endpoints de la solicitud" "ServiceRequestEndpoints (POST y GET /v1/service-requests), LocationPreviewEndpoints (/location-preview), CancellationEndpoints (/{id}/cancel) y TechnicianServiceRequestEndpoints (GET /v1/technicians/me/service-requests). Comparten ApiResults y Routes de Api/Http, no entre sí." "Minimal API · Api/Endpoints"
+                        srReferenceEndpoints = component "ReferenceEndpoints" "GET /v1/service-requests/categories y /localities desde las réplicas (ADR-025)." "Minimal API · Api/Endpoints"
+                        srQuoteEndpoints = component "QuoteEndpoints" "GET y POST /v1/service-requests/{id}/quotes, accept y reject (RF-34, RF-35)." "Minimal API · Api/Endpoints"
+                        srExecutionEndpoints = component "ExecutionEndpoints" "POST /start, /evidence y /complete; GET de las evidencias (RF-14, RF-15)." "Minimal API · Api/Endpoints"
+                        srRatingEndpoints = component "RatingEndpoints" "POST /v1/service-requests/{id}/rating: dueño de la solicitud pagada; 403, 404 y 409 (RF-12, DD 8.3.11)." "Minimal API · Api/Endpoints"
+                        srAdminEndpoints = component "AdminServiceRequestEndpoints" "Lista y resumen por estado del admin del tenant y de plataforma (RF-18)." "Minimal API · Api/Endpoints"
+                        srSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Usuario, tenant, rol y company_id de los claims del JWT, nunca del cuerpo (RN-U3); registra los 403." "ASP.NET Core · Api/Security"
+                    }
+                    group "Application" {
+                        srRequests = component "ServiceRequests" "Un archivo por caso de uso (SCRUM-711): CreateServiceRequestHandler, GetServiceRequestHandler, CancelServiceRequestHandler, PreviewLocationHandler, ListTechnicianServiceRequestsHandler y los de administración. ServiceLocationResolver geocodifica y aplica la cobertura de RN-SR9 para crear y para la vista previa." "Casos de uso · Application/ServiceRequests"
+                        srReferences = component "References" "ListCategoriesHandler y ListLocalitiesHandler." "Casos de uso · Application/References"
+                        srQuotes = component "Quotes" "IssueQuoteHandler, ListQuotesHandler, RespondQuoteHandler y ExpireQuoteHandler (máximo 3, vencimiento)." "Casos de uso · Application/Quotes"
+                        srExecution = component "Execution" "StartServiceHandler, UploadEvidenceHandler, CompleteServiceHandler, ListEvidenceHandler y DownloadEvidenceHandler." "Casos de uso · Application/Execution"
+                        srEventHandlers = component "Manejadores de eventos" "ApplyCategoryChangedHandler, MatchingStatusHandler, PaymentEventsHandler y ApplyTenantStatusChangedHandler (réplica del estado del tenant, RN-T1): aplican cada evento una vez por eventId." "Casos de uso · Application/Categories, Matching y Payments"
+                        srRating = component "Ratings" "RateServiceRequestHandler: valida dueño, estado pagado y que no esté calificada (RN-R1 a RN-R3) y deja service-request.rated en el Outbox (ADR-027)." "Casos de uso · Application/Ratings"
+                    }
+                    group "Domain" {
+                        srDomain = component "Dominio de la solicitud" "ServiceRequest (transiciones RN-SR2 a RN-SR7), ServiceRequestRules (validación RN-SR1, RN-SR11, RN-SR12 y RF-36), Quote, ServiceEvidence, Rating, CategoryReplica, GeoPoint, CoverageArea y Locality." "Domain"
+                    }
+                    group "Infrastructure" {
+                        srPersistence = component "TenantUnitOfWork y repositorios" "Un archivo por adaptador (SCRUM-711): ServiceRequestRepository, QuoteRepository, EvidenceRepository, RatingRepository, CategoryReplicaRepository, TenantStatusReplicaRepository, ProcessedEventRepository, LocalityCatalog y EfAuditLog bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                        srOutbox = component "EfOutbox" "Guarda los eventos de la solicitud en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
+                        srPublisher = component "OutboxPublisher" "Lotes con FOR UPDATE SKIP LOCKED; publica y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
+                        srTenantConsumer = component "TenantStatusChangedConsumer" "Consume tenant.status-changed (SCRUM-510)." "Kafka consumer · Infrastructure/Messaging"
+                        srCategoryConsumer = component "CategoryChangedConsumer" "Consume catalog.category-changed." "Kafka consumer · Infrastructure/Messaging"
+                        srMatchingConsumer = component "MatchingEventsConsumer" "Consume matching.technician-assigned, .no-technician-available y .search-resumed." "Kafka consumer · Infrastructure/Messaging"
+                        srPaymentConsumer = component "PaymentEventsConsumer" "Consume payment.approved y payment.rejected." "Kafka consumer · Infrastructure/Messaging"
+                        srGeocoder = component "NominatimGeocoder" "Convierte la dirección en coordenadas dentro de Bogotá (RIE-02, ADR-024)." "HttpClient · Infrastructure/Geocoding"
+                        srStorage = component "GarageEvidenceStorage" "Guarda y sirve las fotos de la evidencia (ADR-016)." "S3 · Infrastructure/Storage"
+                        srUserDirectory = component "IdentityUserDirectory" "Nombres y contacto por lote con GET /internal/v1/users; si falla, devuelve vacío (ADR-025)." "HttpClient · Infrastructure/Identity"
+                        srScheduling = component "QuoteExpirer y RedisDistributedLock" "Vence las cotizaciones sin respuesta; una sola réplica a la vez (RN-Q6)." "BackgroundService · Infrastructure/Scheduling"
+                    }
                 }
                 matching = container "Matching Service" "Asignación geoespacial de técnicos." "Java 25 + Spring Boot 4.1" "Microservicio" {
-                    # api
-                    maOffersController = component "OffersController" "GET /v1/matching/offers y POST /v1/matching/offers/{attemptId}/accept y /reject (matching.v1.yaml); el técnico y el tenant salen del JWT (RN-U3)." "Spring MVC · api/controllers"
-                    maTechniciansController = component "TechniciansController" "GET /v1/localities y GET y PUT /v1/technicians/me/availability y /coverage (RF-13)." "Spring MVC · api/controllers"
-                    maSecurity = component "SecurityConfig y CorrelationIdFilter" "Valida el JWT RS256 de Identity (ADR-018) y propaga X-Correlation-Id." "Spring Security · api"
-                    # application
-                    maCreatedHandler = component "ServiceRequestCreatedHandler" "Registra el eventId e inicia el matching en la misma transacción del tenant (ADR-007)." "application/events"
-                    maCancelledHandler = component "ServiceRequestCancelledHandler" "Cancela la oferta pendiente y la búsqueda, y libera al técnico si había aceptado (RN-M5, RN-M6)." "application/events"
-                    maCompletedHandler = component "ServiceRequestCompletedHandler" "Devuelve al técnico a disponible y le ofrece la solicitud en espera más antigua (RN-M6, RN-M10)." "application/events"
-                    maTechnicianHandler = component "TechnicianEventsHandler" "Mantiene la proyección del técnico y descarta eventos con updatedAt anterior (P-01, ADR-017); un técnico aprobado reanuda solicitudes en espera (RN-M10)." "application/events"
-                    maEngine = component "MatchingEngine" "Guarda la solicitud, ofrece al candidato más cercano, publica el resultado y reanuda las solicitudes en espera (RN-M1, RN-M4, RN-M9, RN-M10)." "application/matching"
-                    maOfferService = component "OfferService" "Lista, acepta, rechaza y vence ofertas; al aceptar, el técnico pasa a ocupado (RN-M2, RN-M3, RN-M6 a RN-M8)." "application/matching"
-                    maAvailability = component "TechnicianAvailabilityService" "Disponibilidad y cobertura del técnico autenticado; un cambio puede reanudar solicitudes en espera (RF-13, RN-M10)." "application/technicians"
-                    # domain
-                    maDomain = component "Dominio de matching" "Matching, Technicians, VerificationStatus y los eventos (EventEnvelope, MatchingEvents y los de service-request y technician)." "domain"
-                    # infrastructure
-                    maCreatedListener = component "ServiceRequestCreatedListener" "Consume service-request.created." "@KafkaListener · infrastructure/messaging"
-                    maCancelledListener = component "ServiceRequestCancelledListener" "Consume service-request.cancelled." "@KafkaListener · infrastructure/messaging"
-                    maCompletedListener = component "ServiceRequestCompletedListener" "Consume service-request.completed." "@KafkaListener · infrastructure/messaging"
-                    maTechnicianListener = component "TechnicianEventsListener" "Consume technician.registered y technician.verification-changed." "@KafkaListener · infrastructure/messaging"
-                    maStores = component "JdbcMatchingStores y JdbcTechnicianStores" "Solicitudes, candidatos (PostGIS), ofertas, disponibilidad, cobertura y localidades bajo RLS." "JDBC · infrastructure/persistence"
-                    maProjection = component "JdbcTechnicianProjection" "INSERT ... ON CONFLICT en technician_availability: la fila nace en no_disponible." "JDBC · infrastructure/persistence"
-                    maTenantTx = component "JdbcTenantTransaction y JdbcProcessedEventStore" "Fija app.current_tenant en cada transacción y registra el eventId en processed_events. Implementan los puertos TenantTransaction y ProcessedEventStore de application/common." "JDBC · infrastructure/persistence"
-                    maOutbox = component "JdbcOutbox" "Guarda los eventos de Matching en outbox_events en la misma transacción." "JDBC · infrastructure/messaging"
-                    maPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol matching_outbox y marca published_at." "@Scheduled · infrastructure/messaging"
-                    maExpirer = component "OfferExpirer" "Cada MATCHING_EXPIRY_INTERVAL vence las ofertas sin respuesta y ofrece al siguiente candidato (RN-M3, RN-M8)." "@Scheduled · infrastructure/scheduling"
-                    maSweeper = component "WaitingRequestsSweeper" "Barrido de respaldo de RN-M10 cada MATCHING_SWEEP_INTERVAL: reanuda las solicitudes en espera que ya tienen candidato." "@Scheduled · infrastructure/scheduling"
+                    group "Api" {
+                        maOffersController = component "OffersController" "GET /v1/matching/offers y POST /v1/matching/offers/{attemptId}/accept y /reject (matching.v1.yaml); el técnico y el tenant salen del JWT (RN-U3)." "Spring MVC · api/controllers"
+                        maTechniciansController = component "TechniciansController" "GET /v1/localities y GET y PUT /v1/technicians/me/availability y /coverage (RF-13)." "Spring MVC · api/controllers"
+                        maSecurity = component "SecurityConfig y CorrelationIdFilter" "Valida el JWT RS256 de Identity (ADR-018) y propaga X-Correlation-Id." "Spring Security · api"
+                    }
+                    group "Application" {
+                        maCreatedHandler = component "ServiceRequestCreatedHandler" "Registra el eventId e inicia el matching en la misma transacción del tenant (ADR-007)." "application/events"
+                        maCancelledHandler = component "ServiceRequestCancelledHandler" "Cancela la oferta pendiente y la búsqueda, y libera al técnico si había aceptado (RN-M5, RN-M6)." "application/events"
+                        maCompletedHandler = component "ServiceRequestCompletedHandler" "Devuelve al técnico a disponible y le ofrece la solicitud en espera más antigua (RN-M6, RN-M10)." "application/events"
+                        maTechnicianHandler = component "TechnicianEventsHandler" "Mantiene la proyección del técnico y descarta eventos con updatedAt anterior (P-01, ADR-017); un técnico aprobado reanuda solicitudes en espera (RN-M10)." "application/events"
+                        maEngine = component "MatchingEngine" "Guarda la solicitud, ofrece al candidato más cercano, publica el resultado y reanuda las solicitudes en espera (RN-M1, RN-M4, RN-M9, RN-M10)." "application/matching"
+                        maOfferService = component "OfferService" "Lista, acepta, rechaza y vence ofertas; al aceptar, el técnico pasa a ocupado (RN-M2, RN-M3, RN-M6 a RN-M8)." "application/matching"
+                        maAvailability = component "TechnicianAvailabilityService" "Disponibilidad y cobertura del técnico autenticado; un cambio puede reanudar solicitudes en espera (RF-13, RN-M10)." "application/technicians"
+                    }
+                    group "Domain" {
+                        maDomain = component "Dominio de matching" "Matching, Technicians, VerificationStatus y los eventos (EventEnvelope, MatchingEvents y los de service-request y technician)." "domain"
+                    }
+                    group "Infrastructure" {
+                        maCreatedListener = component "ServiceRequestCreatedListener" "Consume service-request.created." "@KafkaListener · infrastructure/messaging"
+                        maCancelledListener = component "ServiceRequestCancelledListener" "Consume service-request.cancelled." "@KafkaListener · infrastructure/messaging"
+                        maCompletedListener = component "ServiceRequestCompletedListener" "Consume service-request.completed." "@KafkaListener · infrastructure/messaging"
+                        maTechnicianListener = component "TechnicianEventsListener" "Consume technician.registered y technician.verification-changed." "@KafkaListener · infrastructure/messaging"
+                        maStores = component "JdbcMatchingStores y JdbcTechnicianStores" "Solicitudes, candidatos (PostGIS), ofertas, disponibilidad, cobertura y localidades bajo RLS." "JDBC · infrastructure/persistence"
+                        maProjection = component "JdbcTechnicianProjection" "INSERT ... ON CONFLICT en technician_availability: la fila nace en no_disponible." "JDBC · infrastructure/persistence"
+                        maTenantTx = component "JdbcTenantTransaction y JdbcProcessedEventStore" "Fija app.current_tenant en cada transacción y registra el eventId en processed_events. Implementan los puertos TenantTransaction y ProcessedEventStore de application/common." "JDBC · infrastructure/persistence"
+                        maOutbox = component "JdbcOutbox" "Guarda los eventos de Matching en outbox_events en la misma transacción." "JDBC · infrastructure/messaging"
+                        maPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol matching_outbox y marca published_at." "@Scheduled · infrastructure/messaging"
+                        maExpirer = component "OfferExpirer" "Cada MATCHING_EXPIRY_INTERVAL vence las ofertas sin respuesta y ofrece al siguiente candidato (RN-M3, RN-M8)." "@Scheduled · infrastructure/scheduling"
+                        maSweeper = component "WaitingRequestsSweeper" "Barrido de respaldo de RN-M10 cada MATCHING_SWEEP_INTERVAL: reanuda las solicitudes en espera que ya tienen candidato." "@Scheduled · infrastructure/scheduling"
+                    }
                 }
                 ranking = container "Ranking Service" "Reputación de técnicos desde las calificaciones (ADR-027)." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    # Application
-                    raHandler = component "ServiceRequestRatedHandler" "ServiceRequestRatedContract valida el mensaje; el caso de uso suma la calificación bajo el tenant del evento, una vez por eventId y por solicitud, y deja ranking.technician-reputation-changed en el Outbox." "Casos de uso · Application/Reputation"
-                    # Domain
-                    raDomain = component "Dominio de reputación" "TechnicianReputation (cantidad, suma, promedio NUMERIC(2,1) y reputación baja con 5 o más calificaciones y promedio menor a 3.0, AC9-E2) y AppliedRating." "Domain/Reputation"
-                    # Infrastructure
-                    raPersistence = component "TenantUnitOfWork y repositorios" "ReputationRepository (FOR UPDATE por técnico) y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
-                    raOutbox = component "EfOutbox" "Guarda ranking.technician-reputation-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
-                    raPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol ranking_outbox y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
-                    raConsumer = component "ServiceRequestRatedConsumer" "Consume service-request.rated y confirma el offset después de aplicar; solo transporte: el contrato lo valida Application." "Kafka consumer · Infrastructure/Messaging"
+                    group "Application" {
+                        raHandler = component "ServiceRequestRatedHandler" "ServiceRequestRatedContract valida el mensaje; el caso de uso suma la calificación bajo el tenant del evento, una vez por eventId y por solicitud, y deja ranking.technician-reputation-changed en el Outbox." "Casos de uso · Application/Reputation"
+                    }
+                    group "Domain" {
+                        raDomain = component "Dominio de reputación" "TechnicianReputation (cantidad, suma, promedio NUMERIC(2,1) y reputación baja con 5 o más calificaciones y promedio menor a 3.0, AC9-E2) y AppliedRating." "Domain/Reputation"
+                    }
+                    group "Infrastructure" {
+                        raPersistence = component "TenantUnitOfWork y repositorios" "ReputationRepository (FOR UPDATE por técnico) y ProcessedEventRepository bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                        raOutbox = component "EfOutbox" "Guarda ranking.technician-reputation-changed en outbox_events en la misma transacción (ADR-007)." "EF Core · Infrastructure/Persistence"
+                        raPublisher = component "OutboxPublisher" "Publica los eventos pendientes con el rol ranking_outbox y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
+                        raConsumer = component "ServiceRequestRatedConsumer" "Consume service-request.rated y confirma el offset después de aplicar; solo transporte: el contrato lo valida Application." "Kafka consumer · Infrastructure/Messaging"
+                    }
                 }
                 payments = container "Payments Service" "Pagos tokenizados y facturación." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    # Api
-                    paPaymentEndpoints = component "PaymentEndpoints" "GET y POST /v1/service-requests/{id}/payment con el token de la tarjeta; nunca recibe PAN ni CVV (RNF-01)." "Minimal API · Api/Endpoints"
-                    paInvoiceEndpoints = component "InvoiceEndpoints" "GET /v1/payments/{id}/invoice en JSON o PDF (RF-24)." "Minimal API · Api/Endpoints"
-                    paSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Usuario, tenant, rol y company_id del JWT; registra los 403." "ASP.NET Core · Api/Security"
-                    # Application
-                    paPayments = component "Payments" "GetPayment, Pay, PaymentSettlement y ReconcilePayments, un caso de uso por archivo." "Casos de uso · Application/Payments"
-                    paCompletedHandler = component "ServiceRequestCompletedHandler" "Crea el pago pendiente con el total de la cotización aceptada (RN-P4)." "Casos de uso · Application/Payments"
-                    paInvoices = component "Invoices" "GetInvoiceHandler: solo el pagador lee el comprobante; entrega InvoiceDocument al puerto IInvoicePdfRenderer." "Casos de uso · Application/Invoices"
-                    # Domain
-                    paDomain = component "Dominio de pagos" "Payment (estados y RejectionReasons), Invoice y Billing." "Domain/Payments"
-                    # Infrastructure
-                    paPersistence = component "TenantUnitOfWork y repositorios" "PaymentRepository, PaymentTechnicianRepository, ReconciliationSource y ProcessedEventRepository bajo RLS, un adaptador por archivo." "EF Core + Npgsql · Infrastructure/Persistence"
-                    paOutbox = component "EfOutbox" "Guarda payment.approved o payment.rejected en outbox_events en la misma transacción." "EF Core · Infrastructure/Persistence"
-                    paPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
-                    paCompletedConsumer = component "ServiceRequestCompletedConsumer" "Consume service-request.completed." "Kafka consumer · Infrastructure/Messaging"
-                    paReconciliation = component "ReconciliationJob" "Cierra los pagos que la pasarela dejó sin respuesta (AC9-E5)." "BackgroundService · Infrastructure/Messaging"
-                    paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado): no cobra de verdad." "Infrastructure/Providers" "Mock"
-                    paPdf = component "InvoicePdfRenderer" "Arma el PDF del comprobante, sin validez fiscal." "Infrastructure/Documents"
-                    paReceived = component "ReceivedPaymentEndpoints" "GET /v1/payments/received?page=&size=: pagos del técnico y, para el proveedor, de su equipo (RF-25, payments 1.2.0)." "Minimal API · Api/Endpoints"
-                    paReceivedHandler = component "ReceivedPaymentsHandler" "Lista los pagos pendientes y aprobados según el rol: el técnico ve los suyos y el proveedor los de su equipo (SCRUM-501)." "Casos de uso · Application/Payments"
-                    paTechnicianHandler = component "TechnicianRegisteredHandler" "Guarda el proveedor de cada técnico en payment_technicians, una vez por eventId (DD 5.25, P-02)." "Casos de uso · Application/Payments"
-                    paTechnicianConsumer = component "TechnicianRegisteredConsumer" "Consume technician.registered." "Kafka consumer · Infrastructure/Messaging"
-                    paWebhook = component "Receptor de webhooks del PSP" "Confirmará el resultado de forma idempotente con la pasarela certificada." "Minimal API" "Planeado"
+                    group "Api" {
+                        paPaymentEndpoints = component "PaymentEndpoints" "GET y POST /v1/service-requests/{id}/payment con el token de la tarjeta; nunca recibe PAN ni CVV (RNF-01)." "Minimal API · Api/Endpoints"
+                        paInvoiceEndpoints = component "InvoiceEndpoints" "GET /v1/payments/{id}/invoice en JSON o PDF (RF-24)." "Minimal API · Api/Endpoints"
+                        paSecurity = component "AuthenticatedUser y ForbiddenAuditHandler" "Usuario, tenant, rol y company_id del JWT; registra los 403." "ASP.NET Core · Api/Security"
+                    }
+                    group "Application" {
+                        paPayments = component "Payments" "GetPayment, Pay, PaymentSettlement y ReconcilePayments, un caso de uso por archivo." "Casos de uso · Application/Payments"
+                        paCompletedHandler = component "ServiceRequestCompletedHandler" "Crea el pago pendiente con el total de la cotización aceptada (RN-P4)." "Casos de uso · Application/Payments"
+                        paInvoices = component "Invoices" "GetInvoiceHandler: solo el pagador lee el comprobante; entrega InvoiceDocument al puerto IInvoicePdfRenderer." "Casos de uso · Application/Invoices"
+                    }
+                    group "Domain" {
+                        paDomain = component "Dominio de pagos" "Payment (estados y RejectionReasons), Invoice y Billing." "Domain/Payments"
+                    }
+                    group "Infrastructure" {
+                        paPersistence = component "TenantUnitOfWork y repositorios" "PaymentRepository, PaymentTechnicianRepository, ReconciliationSource y ProcessedEventRepository bajo RLS, un adaptador por archivo." "EF Core + Npgsql · Infrastructure/Persistence"
+                        paOutbox = component "EfOutbox" "Guarda payment.approved o payment.rejected en outbox_events en la misma transacción." "EF Core · Infrastructure/Persistence"
+                        paPublisher = component "OutboxPublisher" "Publica los eventos pendientes y marca published_at. Es el publicador común de ADR-020: el servicio solo lo registra." "BackgroundService · quickpatch-shared-dotnet (ADR-020)"
+                        paCompletedConsumer = component "ServiceRequestCompletedConsumer" "Consume service-request.completed." "Kafka consumer · Infrastructure/Messaging"
+                        paReconciliation = component "ReconciliationJob" "Cierra los pagos que la pasarela dejó sin respuesta (AC9-E5)." "BackgroundService · Infrastructure/Messaging"
+                        paProvider = component "SimulatedPaymentProvider" "Pasarela simulada del MVP detrás del puerto IPaymentProvider (ADR-009 modificado): no cobra de verdad." "Infrastructure/Providers" "Mock"
+                        paPdf = component "InvoicePdfRenderer" "Arma el PDF del comprobante, sin validez fiscal." "Infrastructure/Documents"
+                        paReceived = component "ReceivedPaymentEndpoints" "GET /v1/payments/received?page=&size=: pagos del técnico y, para el proveedor, de su equipo (RF-25, payments 1.2.0)." "Minimal API · Api/Endpoints"
+                        paReceivedHandler = component "ReceivedPaymentsHandler" "Lista los pagos pendientes y aprobados según el rol: el técnico ve los suyos y el proveedor los de su equipo (SCRUM-501)." "Casos de uso · Application/Payments"
+                        paTechnicianHandler = component "TechnicianRegisteredHandler" "Guarda el proveedor de cada técnico en payment_technicians, una vez por eventId (DD 5.25, P-02)." "Casos de uso · Application/Payments"
+                        paTechnicianConsumer = component "TechnicianRegisteredConsumer" "Consume technician.registered." "Kafka consumer · Infrastructure/Messaging"
+                        paWebhook = component "Receptor de webhooks del PSP" "Confirmará el resultado de forma idempotente con la pasarela certificada." "Minimal API" "Planeado"
+                    }
                 }
                 communication = container "Communication Service" "Notificaciones del ciclo de servicio dentro de la app: canal en tiempo real y buzón (ADR-023, ADR-024)." "ASP.NET Core (.NET 10)" "Microservicio" {
-                    # Api
-                    coRealtime = component "RealtimeEndpoints, RealtimeSession, AuthFrame y TokenValidator" "WebSocket /v1/realtime: la sesión espera la trama auth (AuthFrame), valida el JWT RS256 y cierra con los códigos del contrato (ADR-023). La lectura y el cierre de tramas están en WebSocketFrames (SCRUM-656)." "ASP.NET Core WebSockets · Api/Realtime"
-                    coConnections = component "ConnectionRegistry, WebSocketClient y WebSocketFrames" "Conexiones abiertas de la réplica; entrega cada aviso solo al tenant y al destinatario del evento. WebSocketClient ya no depende de la sesión." "Api/Realtime"
-                    coInboxEndpoints = component "InboxEndpoints" "GET /v1/notifications y POST /v1/notifications/{id}/read (ADR-024)." "Minimal API · Api/Endpoints"
-                    coChatEndpoints = component "ChatEndpoints" "GET y POST /v1/service-requests/{id}/messages (RF-37, ADR-026)." "Minimal API · Api/Endpoints"
-                    # Application
-                    coNotifier = component "RealtimeNotifier y NoticeRouter" "Valida el sobre, descarta repetidos (RecentEventIds) y decide a quién avisar: status-changed, offer.created y counts-changed." "Application/Realtime"
-                    coInboxRecorder = component "InboxRecorder e InboxRules" "Convierte cada evento en una notificación por destinatario, sin dirección ni teléfono (RN-SR13)." "Application/Inbox"
-                    coInboxQueries = component "ListNotificationsHandler y MarkNotificationReadHandler" "Buzón del usuario del token y marca de leída." "Application/Inbox"
-                    coChatParticipants = component "ChatParticipantsRecorder" "Llena chat_participants con service-request.status-changed (RN-CH3)." "Application/Chat"
-                    coChatHandlers = component "ListChatMessagesHandler y SendChatMessageHandler" "Historial y envío de mensajes; el envío sale por el canal como chat.message (RN-CH1, RN-CH2)." "Application/Chat"
-                    # Domain
-                    coDomain = component "Dominio de Communication" "Notification y NotificationTypes, ChatParticipants y ChatMessage, y los avisos del canal (Notices)." "Domain"
-                    # Infrastructure
-                    coRealtimeConsumer = component "RealtimeEventsConsumer" "Consume service-request.created, .status-changed y matching.offer-created para el canal; empieza en el último offset." "Kafka consumer · Infrastructure/Messaging"
-                    coPersistentConsumer = component "PersistentEventsConsumer" "Dos grupos que leen desde el principio y confirman después de guardar: el buzón (8 topics) y la réplica del chat (status-changed)." "Kafka consumer · Infrastructure/Messaging"
-                    coInboxStore = component "InboxStore" "Tabla notifications bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
-                    coChatStore = component "ChatStore" "Tablas chat_participants y chat_messages bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                    group "Api" {
+                        coRealtime = component "RealtimeEndpoints, RealtimeSession, AuthFrame y TokenValidator" "WebSocket /v1/realtime: la sesión espera la trama auth (AuthFrame), valida el JWT RS256 y cierra con los códigos del contrato (ADR-023). La lectura y el cierre de tramas están en WebSocketFrames (SCRUM-656)." "ASP.NET Core WebSockets · Api/Realtime"
+                        coConnections = component "ConnectionRegistry, WebSocketClient y WebSocketFrames" "Conexiones abiertas de la réplica; entrega cada aviso solo al tenant y al destinatario del evento. WebSocketClient ya no depende de la sesión." "Api/Realtime"
+                        coInboxEndpoints = component "InboxEndpoints" "GET /v1/notifications y POST /v1/notifications/{id}/read (ADR-024)." "Minimal API · Api/Endpoints"
+                        coChatEndpoints = component "ChatEndpoints" "GET y POST /v1/service-requests/{id}/messages (RF-37, ADR-026)." "Minimal API · Api/Endpoints"
+                    }
+                    group "Application" {
+                        coNotifier = component "RealtimeNotifier y NoticeRouter" "Valida el sobre, descarta repetidos (RecentEventIds) y decide a quién avisar: status-changed, offer.created y counts-changed." "Application/Realtime"
+                        coInboxRecorder = component "InboxRecorder e InboxRules" "Convierte cada evento en una notificación por destinatario, sin dirección ni teléfono (RN-SR13)." "Application/Inbox"
+                        coInboxQueries = component "ListNotificationsHandler y MarkNotificationReadHandler" "Buzón del usuario del token y marca de leída." "Application/Inbox"
+                        coChatParticipants = component "ChatParticipantsRecorder" "Llena chat_participants con service-request.status-changed (RN-CH3)." "Application/Chat"
+                        coChatHandlers = component "ListChatMessagesHandler y SendChatMessageHandler" "Historial y envío de mensajes; el envío sale por el canal como chat.message (RN-CH1, RN-CH2)." "Application/Chat"
+                    }
+                    group "Domain" {
+                        coDomain = component "Dominio de Communication" "Notification y NotificationTypes, ChatParticipants y ChatMessage, y los avisos del canal (Notices)." "Domain"
+                    }
+                    group "Infrastructure" {
+                        coRealtimeConsumer = component "RealtimeEventsConsumer" "Consume service-request.created, .status-changed y matching.offer-created para el canal; empieza en el último offset." "Kafka consumer · Infrastructure/Messaging"
+                        coPersistentConsumer = component "PersistentEventsConsumer" "Dos grupos que leen desde el principio y confirman después de guardar: el buzón (8 topics) y la réplica del chat (status-changed)." "Kafka consumer · Infrastructure/Messaging"
+                        coInboxStore = component "InboxStore" "Tabla notifications bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                        coChatStore = component "ChatStore" "Tablas chat_participants y chat_messages bajo RLS." "EF Core + Npgsql · Infrastructure/Persistence"
+                    }
                 }
             }
 
@@ -341,8 +385,10 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
         mobOfertas -> mobTiempoReal "Recibe offer.created de"
         mobEquipo -> mobHttp "GET y POST /v1/providers/me/technicians con"
         mobSolicitudes -> mobChat "Abre el chat de la solicitud en"
-        mobSolicitudes -> mobPagos "Abre el pago y el comprobante en"
-        mobSolicitudes -> mobCalificacion "Muestra la calificación del servicio pagado con"
+        mobSolicitudes -> mobPagos "Navega a la pantalla de pago por su ruta en"
+        mobNavegacion -> mobCalificacion "Pone la calificación en el detalle de la solicitud (secciones que arma app/router, SCRUM-714)"
+        mobNavegacion -> mobPagos "Pone el pago en el detalle de la solicitud y conecta Mis pagos con el equipo (app/composicion, SCRUM-714)"
+        mobPagos -> mobEquipo "Nombra a los técnicos de cada pago con el puerto miembrosEquipoProvider de core/equipo, que implementa"
         mobCalificacion -> mobHttp "POST /v1/service-requests/{id}/rating con"
         mobCuenta -> mobHistorial "Abre el historial del técnico en"
         mobCuenta -> mobPagos "Abre Mis pagos en"

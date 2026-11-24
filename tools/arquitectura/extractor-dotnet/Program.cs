@@ -94,7 +94,12 @@ void Extraer(string dll, string capa)
 
         if (!td.BaseType.IsNil) Usa(nombres.DeHandle(td.BaseType));
         foreach (var ih in td.GetInterfaceImplementations())
-            Usa(nombres.DeHandle(md.GetInterfaceImplementation(ih).Interface));
+        {
+            var interfaz = nombres.DeHandle(md.GetInterfaceImplementation(ih).Interface).ToList();
+            Usa(interfaz);
+            // Las interfaces propias que implementa el tipo raíz, para el diagrama del caso de uso (SCRUM-715).
+            if (!td.IsNested && interfaz.Count > 0 && EsPropio(interfaz[0])) info.Implementa.Add(interfaz[0]);
+        }
         foreach (var fh in td.GetFields())
             Usa(Partes(md.GetFieldDefinition(fh).DecodeSignature(nombres, null)));
 
@@ -104,6 +109,9 @@ void Extraer(string dll, string capa)
             var sig = m.DecodeSignature(nombres, null);
             Usa(Partes(sig.ReturnType));
             foreach (var p in sig.ParameterTypes) Usa(Partes(p));
+            // Dependencias inyectadas: los parámetros del constructor de instancia del tipo raíz (SCRUM-715).
+            if (!td.IsNested && md.GetString(m.Name) == ".ctor" && info.Inyecta.Count == 0)
+                info.Inyecta.AddRange(sig.ParameterTypes.Select(x => Partes(x).FirstOrDefault() ?? "").Where(x => x.Length > 0));
             if (m.RelativeVirtualAddress == 0) continue;
             var body = pe.GetMethodBody(m.RelativeVirtualAddress);
             if (!body.LocalSignature.IsNil)
@@ -160,6 +168,8 @@ sealed class TipoInfo(string id, string paquete, string capa, string clase)
     public string Capa { get; } = capa;
     public string Clase { get; } = clase;
     public string? Archivo { get; private set; }
+    public SortedSet<string> Implementa { get; } = new(StringComparer.Ordinal);
+    public List<string> Inyecta { get; } = [];
     public int Lineas => _min == int.MaxValue ? 0 : _max - _min + 1;
     int _min = int.MaxValue, _max;
 

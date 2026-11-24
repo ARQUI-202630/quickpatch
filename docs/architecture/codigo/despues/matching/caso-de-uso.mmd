@@ -1,0 +1,47 @@
+classDiagram
+    direction LR
+    namespace Application {
+        class ServiceRequestCreatedHandler
+        class TenantTransaction {
+            <<interface>>
+        }
+        class ProcessedEventStore {
+            <<interface>>
+        }
+        class MatchingStarter {
+            <<interface>>
+        }
+        class MatchingEngine
+        class MatchingPorts
+    }
+    namespace Domain {
+        class EventEnvelope
+        class ServiceRequestCreated
+        class MatchingEvents
+        class Matching
+    }
+    namespace Infrastructure {
+        class ServiceRequestCreatedListener
+        class JdbcTenantTransaction
+        class JdbcProcessedEventStore
+        class JdbcOutbox
+        class MdcCorrelationContext
+        class JdbcMatchingStores
+    }
+    ServiceRequestCreatedListener --> ServiceRequestCreatedHandler : invoca
+    ServiceRequestCreatedHandler --> TenantTransaction : usa
+    JdbcTenantTransaction ..|> TenantTransaction : implementa
+    ServiceRequestCreatedHandler --> ProcessedEventStore : usa
+    JdbcProcessedEventStore ..|> ProcessedEventStore : implementa
+    ServiceRequestCreatedHandler --> MatchingStarter : usa
+    MatchingEngine ..|> MatchingStarter : implementa
+    MatchingEngine --> MatchingPorts : usa
+    JdbcOutbox ..|> MatchingPorts : implementa
+    MdcCorrelationContext ..|> MatchingPorts : implementa
+    JdbcMatchingStores ..|> MatchingPorts : implementa
+    ServiceRequestCreatedHandler ..> EventEnvelope : crea o usa
+    ServiceRequestCreatedHandler ..> ServiceRequestCreated : crea o usa
+    MatchingEngine ..> EventEnvelope : crea o usa
+    MatchingEngine ..> MatchingEvents : crea o usa
+    MatchingEngine ..> ServiceRequestCreated : crea o usa
+    MatchingEngine ..> Matching : crea o usa

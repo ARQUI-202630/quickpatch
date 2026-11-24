@@ -1,0 +1,39 @@
+classDiagram
+    direction LR
+    namespace Application {
+        class ServiceRequestRatedHandler
+        class ITenantUnitOfWork {
+            <<interface>>
+        }
+        class IReputationRepository {
+            <<interface>>
+        }
+        class IProcessedEventRepository {
+            <<interface>>
+        }
+        class IOutbox {
+            <<interface>>
+        }
+    }
+    namespace Domain {
+        class AppliedRating
+        class TechnicianReputation
+    }
+    namespace Infrastructure {
+        class ServiceRequestRatedConsumer
+        class TenantUnitOfWork
+        class ReputationRepository
+        class ProcessedEventRepository
+        class EfOutbox
+    }
+    ServiceRequestRatedConsumer --> ServiceRequestRatedHandler : invoca
+    ServiceRequestRatedHandler --> ITenantUnitOfWork : usa
+    TenantUnitOfWork ..|> ITenantUnitOfWork : implementa
+    ServiceRequestRatedHandler --> IReputationRepository : usa
+    ReputationRepository ..|> IReputationRepository : implementa
+    ServiceRequestRatedHandler --> IProcessedEventRepository : usa
+    ProcessedEventRepository ..|> IProcessedEventRepository : implementa
+    ServiceRequestRatedHandler --> IOutbox : usa
+    EfOutbox ..|> IOutbox : implementa
+    ServiceRequestRatedHandler ..> AppliedRating : crea o usa
+    ServiceRequestRatedHandler ..> TechnicianReputation : crea o usa

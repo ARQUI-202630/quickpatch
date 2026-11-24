@@ -48,7 +48,7 @@ C4 describe el software con un vocabulario fijo: *persona*, *sistema de software
 - **Diagramas principales**, de mayor a menor alcance: System Context, Container, Component y Code.
 - **Diagramas complementarios**: System Landscape (el panorama de varios sistemas), Dynamic (cómo colaboran los elementos en un flujo) y Deployment (dónde se ejecutan los contenedores).
 
-**Fuente única.** Todos los diagramas C4 salen de un solo modelo en Structurizr DSL, `diagrams/c4/quickpatch.dsl`. Cada diagrama es una vista de ese modelo, así que un elemento se describe una sola vez y aparece igual en todos los niveles. El nivel de código se escribe en PlantUML (`diagrams/c4/*.puml`), porque Structurizr no lo dibuja. Las imágenes se exportan a `diagrams/c4/<clave>.png`, donde la clave es el nombre de la vista en el DSL. Para cambiar un diagrama se edita el DSL o el `.puml` y se vuelve a exportar; la imagen nunca se edita a mano.
+**Fuente única.** Todos los diagramas C4 salen de un solo modelo en Structurizr DSL, `diagrams/c4/quickpatch.dsl`. Cada diagrama es una vista de ese modelo, así que un elemento se describe una sola vez y aparece igual en todos los niveles. Structurizr no dibuja el nivel de código: sale del código compilado con `tools/arquitectura/generar.py` (sección 7) y se publica en Mermaid, salvo los dos mecanismos de 7.1 y 7.2, trazados en PlantUML (`diagrams/c4/*.puml`). Las imágenes se exportan a `diagrams/c4/<clave>.png`, donde la clave es el nombre de la vista en el DSL. Para cambiar un diagrama se edita el DSL o el `.puml` y se vuelve a exportar; la imagen nunca se edita a mano.
 
 **Qué diagramas hay y por qué.** QUICKPATCH es **un solo sistema de software**, así que tiene un diagrama de contexto y uno de contenedores, no uno por microservicio: cada microservicio es un contenedor. Lo que se repite son los diagramas de componentes (uno por contenedor con código propio), los dinámicos (uno por flujo) y los de despliegue (uno por ambiente):
 
@@ -58,7 +58,7 @@ C4 describe el software con un vocabulario fijo: *persona*, *sistema de software
 | System Context | 1 | Un sistema de software, un contexto. | 4 |
 | Container | 1 | Todos los contenedores del sistema en una sola vista. | 5 |
 | Component | 10 | Uno por contenedor con código propio: las 2 apps cliente y los 8 microservicios. El API Gateway, Kafka, PostgreSQL, Redis y Garage son productos configurados, sin componentes propios que diseñar. | 6 |
-| Code | 2 | Solo donde el diagrama de componentes no alcanza: Outbox e idempotencia, y aislamiento entre tenants. | 7 |
+| Code | 10 | Uno por microservicio con su caso de uso principal, generado desde el código (7.4, SCRUM-715), y dos mecanismos que cruzan servicios y que el diagrama de componentes no alcanza a mostrar: Outbox e idempotencia, y aislamiento entre tenants (7.1 y 7.2). | 7 |
 | Dynamic | 6 | Uno por flujo crítico, no por sistema: inicio de sesión, réplica de categorías, creación de solicitud con matching, pago, calificación y gestión de tenants. | 8 |
 | Deployment | 2 | Uno por ambiente: producción y QA (ADR-022). Desarrollo corre en el equipo de cada persona y no tiene topología propia que documentar. | 9 |
 
@@ -95,6 +95,7 @@ Hoy son planeados el receptor de webhooks del PSP y, dentro de Actors, el concep
 | `C4-04-Componentes-Communication` | Component | 18 |
 | `C4-07-Codigo-OutboxIdempotencia` | Code (PlantUML) | 19 |
 | `C4-07-Codigo-AislamientoTenant` | Code (PlantUML) | 20 |
+| `codigo/despues/<servicio>/caso-de-uso.md` (8, uno por microservicio) | Code (Mermaid, generado) | 7.4 |
 | `C4-05-Dinamico-CreacionAsignacion` | Dynamic | 21 |
 | `C4-05-Dinamico-SinTecnico` | Dynamic | 22 |
 | `C4-05-Dinamico-Cotizacion` | Dynamic | 22b |
@@ -338,6 +339,8 @@ La interoperabilidad entre stacks se mantiene mediante contratos REST/OpenAPI y 
 
 Un diagrama de componentes por contenedor con código propio. Primero la estructura común de los microservicios y las dos apps cliente; después cada microservicio, con su descomposición y su diagrama.
 
+**Capas en los diagramas (SCRUM-715).** Cada diagrama de componentes dibuja las capas como grupos: `Api`, `Application`, `Domain` e `Infrastructure` en los microservicios (10.3.1), y `app`, `features`, `core` y `shared` en las dos apps cliente. Una flecha que cruza grupos va siempre en la dirección que permite la matriz de 10.3.2, y las pruebas de arquitectura de cada repositorio la verifican.
+
 ## 6.1 Estructura común de un microservicio
 
 ![Capas internas de un microservicio](diagrams/sdd/04_capas_microservicio.png)
@@ -421,6 +424,7 @@ Estos diagramas abren los dos contenedores cliente de la Figura 3a. Cada compone
 
 Reglas comunes a las dos aplicaciones:
 
+- **Capas (SCRUM-713 y SCRUM-714):** cada app se organiza en `app/` (arranque, rutas y composición), `features/` (una carpeta por capacidad), `core/` (código sin pantallas que usan varias features) y `shared/` (componentes reutilizables). Una feature no importa otra, y `core/` y `shared/` no importan de `features/`. Lo verifican ESLint (`no-restricted-imports`) en el panel y `test/arquitectura/capas_test.dart` en la app, que además prohíbe que el `domain/` de una feature importe Flutter, HTTP, Riverpod o su `data/`. Cuando una feature necesita algo de otra, la app usa cuatro patrones: el vocabulario común va en `core/` (`core/solicitudes/estado_solicitud.dart`); `app/router` compone las secciones de otra feature (el detalle de la solicitud recibe las de pago y calificación); un puerto de `core/` lo conecta `app/composicion.dart` (`miembrosEquipoProvider`, que usa Mis pagos y llena Equipo); y la revisión de la solicitud (`revisionSolicitudProvider`) refresca lo que depende de ella sin que una feature invalide providers de otra.
 - **Tenant:** ninguna app envía `tenant_id` (RN-U3 del DD). En el login y el registro todavía no hay JWT, así que el tenant sale del canal por el que llega la petición (RN-U5); en las peticiones autenticadas sale del token que propaga el API Gateway (DD, sección 10.3).
 - **Errores:** un 401 cierra la sesión y lleva al login. Las apps no tienen pantalla de acceso denegado: en el panel, los guards envían al inicio del rol; un 403 de la API, como el resto de errores, se muestra en la pantalla que lo produjo, sin perder los datos ingresados.
 - **Contratos:** Mobile consume `identity.v1.yaml` (incluido el equipo del proveedor y la activación), `catalog.v1.yaml`, `service-request.v1.yaml` (creación, detalle y lista del técnico), `matching.v1.yaml` (localidades, disponibilidad y cobertura; las ofertas con SCRUM-80) y `asyncapi/realtime.v1.yaml`; Web consume `identity.v1.yaml` (inicio de sesión, `/v1/platform/tenants`, `/v1/admin/technicians` y `/v1/auth/password/setup`) y `catalog.v1.yaml` (nombres de especialidad). Mobile tiene además el registro de empresa contra `POST /v1/auth/register/company`, que todavía no está en `identity.v1.yaml`; por eso la opción está oculta (SCRUM-26).
@@ -846,11 +850,11 @@ Los reintentos del consumidor los aplica `DefaultErrorHandler` con espera fija d
 
 **Qué se publica**, en `docs/architecture/codigo/<fase>/<servicio>/`: el diagrama de paquetes agrupado por capa (`paquetes.puml` y `paquetes.mmd`, con los ciclos en naranja y las violaciones de 10.3.2 en rojo), las clases más conectadas (`clases-centrales.puml`) y las métricas (`README.md` y `metricas.json`): ciclos entre paquetes y entre tipos, fan-in y fan-out por clase, inestabilidad y cohesión relacional por paquete, clases de más de 250 líneas y violaciones de la matriz de 10.3.2.
 
-**Antes y después del refactor.** La línea base (`codigo/antes/`, SCRUM-682) se tomó sobre `develop` antes del primer PR de refactor. La medición «después» (`codigo/despues/`) se tomó el 12 de noviembre sobre `develop`, ya con el código transversal compartido de ADR-020 (SCRUM-657). Usa la misma herramienta y la misma configuración, y la comparación está en `codigo/README.md` (SCRUM-683):
+**Antes y después del refactor.** La línea base (`codigo/antes/`, SCRUM-682) se tomó sobre `develop` antes del primer PR de refactor. La medición «después» (`codigo/despues/`) se tomó el 12 de noviembre sobre `develop`, ya con el código transversal compartido de ADR-020 (SCRUM-657). Se volvió a tomar el 23 de noviembre, después de SCRUM-710 a SCRUM-712: en Identity el fan-out máximo pasa de 28 a 29 porque `CompanyEndpoints` usa `ChannelTenant` en lugar de su copia de la cabecera `X-Channel-Id`. Usa la misma herramienta y la misma configuración, y la comparación está en `codigo/README.md` (SCRUM-683):
 
 | Servicio | Violaciones | Ciclos entre paquetes | Tipos > 250 líneas | Fan-out máximo | Cambio principal |
 |---|---|---|---|---|---|
-| Identity | **11 → 0** | **1 → 0** | **2 → 0** | **80 → 28** | SCRUM-650 (quickpatch-identity#41): el API usa los puertos `IPasswordDecryptor` e `ITokenValidationKey` y las opciones que solo él usa están en `Api/Security`; endpoints por recurso; un repositorio, un puerto y un caso de uso por archivo; `UserRules` separado de `User`. El ciclo entre paquetes había desaparecido antes, con ADR-020 |
+| Identity | **11 → 0** | **1 → 0** | **2 → 0** | **80 → 29** | SCRUM-650 (quickpatch-identity#41): el API usa los puertos `IPasswordDecryptor` e `ITokenValidationKey` y las opciones que solo él usa están en `Api/Security`; endpoints por recurso; un repositorio, un puerto y un caso de uso por archivo; `UserRules` separado de `User`. El ciclo entre paquetes había desaparecido antes, con ADR-020 |
 | Actors | — → 0 | — → 0 | — → 0 | — → 11 | Sin línea base: antes era un esqueleto. Implementado en SCRUM-640 en cuatro capas, con 0 ciclos, 0 violaciones y cohesión relacional de 0,88 |
 | Catalog | 0 → 0 | 0 → 0 | 0 → 0 | 15 → 14 | Resolución del tenant fuera del endpoint; un archivo por caso de uso, puerto y adaptador; pruebas de arquitectura |
 | ServiceRequest | 0 → 0 | 0 → 0 | 2 → 1 | 31 → 21 | Endpoints por recurso y sin dependencias entre grupos; validación fuera del agregado |
@@ -864,6 +868,23 @@ En Matching, el fan-out máximo sube de 10 a 13 y la cohesión relacional promed
 En resumen: ningún servicio tiene ciclos entre paquetes después del cierre (había 3: Identity, Matching y Payments), y los cinco servicios refactorizados no tienen violaciones de 10.3.2. Desde el 19 de noviembre, con SCRUM-650 y SCRUM-656, los 8 servicios con código tienen 0 ciclos entre paquetes, 0 ciclos entre tipos, 0 violaciones de 10.3.2 y ninguna clase de más de 250 líneas, salvo una en ServiceRequest. Todos verifican las reglas con pruebas de arquitectura en su CI.
 
 Las reglas de 10.3.2 ya no dependen de esta medición: cada servicio refactorizado tiene pruebas de arquitectura en su CI (NetArchTest o ArchUnit), y una violación nueva rompe el PR.
+
+## 7.4 Clases del caso de uso principal de cada microservicio (SCRUM-715)
+
+El nivel 4 de C4 muestra las clases de un componente. Para cada microservicio se dibuja su caso de uso principal, desde la clase de entrada hasta los adaptadores, con un bloque por capa: el endpoint o el consumidor invoca el caso de uso; el caso de uso depende de los puertos de `Application/Abstractions`; los adaptadores de `Infrastructure` los implementan; y el dominio aporta las entidades y las reglas. Sale de la misma herramienta que 7.3: las dependencias inyectadas y las interfaces que implementa cada clase se leen del binario (.NET) o del fuente y el bytecode (Java), y los tipos del dominio, del IL. Se regenera con el mismo comando.
+
+| Servicio | Caso de uso | Diagrama |
+|---|---|---|
+| Identity | Inicio de sesión: `AuthEndpoints` → `LoginHandler` | [`caso-de-uso.md`](codigo/despues/identity/caso-de-uso.md) |
+| Actors | Proyección de técnicos: `TechnicianEventsConsumer` → `TechnicianEventsHandler` | [`caso-de-uso.md`](codigo/despues/actors/caso-de-uso.md) |
+| Catalog | Alta de una categoría: `CategoryEndpoints` → `CreateCategoryHandler` | [`caso-de-uso.md`](codigo/despues/catalog/caso-de-uso.md) |
+| ServiceRequest | Creación de la solicitud: `ServiceRequestEndpoints` → `CreateServiceRequestHandler` | [`caso-de-uso.md`](codigo/despues/service-request/caso-de-uso.md) |
+| Matching | Inicio del matching: `ServiceRequestCreatedListener` → `ServiceRequestCreatedHandler` | [`caso-de-uso.md`](codigo/despues/matching/caso-de-uso.md) |
+| Ranking | Reputación: `ServiceRequestRatedConsumer` → `ServiceRequestRatedHandler` | [`caso-de-uso.md`](codigo/despues/ranking/caso-de-uso.md) |
+| Payments | Pago: `PaymentEndpoints` → `PayHandler` | [`caso-de-uso.md`](codigo/despues/payments/caso-de-uso.md) |
+| Communication | Mensaje del chat: `ChatEndpoints` → `SendChatMessageHandler` | [`caso-de-uso.md`](codigo/despues/communication/caso-de-uso.md) |
+
+Los diagramas están en Mermaid, que GitHub dibuja dentro del Markdown, y no se editan a mano.
 
 # 8. Dynamic diagrams
 
@@ -1800,6 +1821,16 @@ infrastructure/   persistence/, messaging/, scheduling/, config/ (configuración
 | Ranking | Sí | — (implementado en SCRUM-498 con la convención: `Domain/Reputation`, `Application`, `Infrastructure/Persistence` y `Infrastructure/Messaging`) | — |
 | Actors | Sí | — (implementado en SCRUM-640 con la convención: `Domain/Technicians`, `Suppliers` y `Clients`, `Application/Technicians` y `Clients`, `Infrastructure/Persistence` y `Infrastructure/Messaging`) | — |
 
+**Revisión del 23 de noviembre de 2026 (SCRUM-709).** Una auditoría sobre `develop` de los 10 repositorios encontró brechas frente a las reglas de tamaño y responsabilidad de 10.3.2, que se cerraron sin cambiar contratos ni eventos:
+
+| Repositorio | Brecha | Cambio | Subtarea |
+|---|---|---|---|
+| Identity | 4 archivos con varios casos de uso; `Api/Http` resolvía el tenant del canal con opciones de `Api/Security`; el alta de la cuenta del técnico repetida en dos handlers | Un archivo por caso de uso; `Api/Security/ChannelTenant`; `Application/Technicians/TechnicianAccounts` | SCRUM-710 (quickpatch-identity#43) |
+| ServiceRequest | 4 archivos con varios casos de uso; 17 puertos en `Ports.cs`; 11 adaptadores en `Repositories.cs`; la cobertura de RN-SR9 repetida al crear y en la vista previa | Un caso de uso, un puerto y un adaptador por archivo; `ServiceLocationResolver` | SCRUM-711 (quickpatch-service-request#47) |
+| Los 8 servicios | Faltaban pruebas de los ciclos entre carpetas y de un caso de uso por archivo; en Payments, `using` muertos dibujaban un ciclo | `LayerRules` en los 7 servicios .NET y ciclos en las cuatro capas con ArchUnit en Matching | SCRUM-712 |
+| Panel web | La feature `recuperacion` importaba `activacion` | `core/enlaces.ts` y reglas de ESLint | SCRUM-713 (quickpatch-web#37) |
+| App móvil | 10 imports entre features, con un ciclo `solicitudes` ↔ `pagos` y `calificacion` | Los cuatro patrones de 6.2 y `test/arquitectura/capas_test.dart` | SCRUM-714 (quickpatch-mobile#62) |
+
 ### 10.3.2 Reglas de dependencia verificables (SCRUM-648)
 
 La convención de 10.3.1 ordena las carpetas, pero el profesor observó en el cierre que eso no basta: hay clases que conocen demasiadas clases y capas que se llaman de forma desordenada. Esta sección convierte la convención en **reglas que una prueba puede verificar**. Es el estándar que siguen los refactors del Sprint 6 (SCRUM-650 a SCRUM-656). No cambia la arquitectura: son las mismas cuatro capas de 6.1, con puertos en `Application` y adaptadores en `Infrastructure`, es decir, el estilo de puertos y adaptadores que ya usaban los servicios.
@@ -1855,6 +1886,8 @@ La convención de 10.3.1 ordena las carpetas, pero el profesor observó en el ci
 - un archivo `*Endpoints.cs` con más de un recurso se divide por recurso;
 - un archivo con handlers de varios casos de uso (`*Handlers.cs`) se divide en un handler por caso de uso.
 
+**Justificadas en la revisión de SCRUM-709.** Estas clases tienen más de 5 dependencias inyectadas y se mantienen así, porque cada dependencia es un puerto distinto que el caso de uso necesita y dividirlas solo movería la orquestación a otra clase: `LoginHandler` de Identity (9: unidad de trabajo, tres repositorios de agregados distintos, hasher, emisor del token, política de bloqueo, reloj y logger); `CreateTeamTechnicianHandler` (7) y `CreateServiceRequestHandler` (7), que ya delegan en `TechnicianAccounts` y `ServiceLocationResolver` lo que repetían otros handlers; y en Matching, `OfferService` y `ServiceRequestCancelledHandler` (7 cada uno, con la transacción y la correlación). La unidad de trabajo, el reloj, el logger y las opciones son transversales: aparecen en casi todos los casos de uso.
+
 **Java (Matching).** Se aplica la misma matriz con los paquetes de 10.3.1 y los mecanismos de Spring: `domain` no importa `org.springframework.*`; `application` solo importa `org.springframework.stereotype` y `transaction`, no `jdbc`, `kafka` ni `web`; los controladores de `api` no importan `infrastructure`; y cada `@Repository` JDBC implementa una interfaz de `application`. No se trasladan nombres de .NET: se sigue el estilo de Spring, con `@Service` en `application` y `@Component` o `@Repository` en `infrastructure`.
 
 **Cómo se verifica.**
@@ -1866,8 +1899,12 @@ La convención de 10.3.1 ordena las carpetas, pero el profesor observó en el ci
    - `Api.Endpoints` no depende de `Infrastructure`;
    - `Infrastructure` no depende de `Api`.
 
+   - ninguna capa tiene ciclos entre sus carpetas: `LayerRules.FolderCycles` arma el grafo desde el IL con NetArchTest, y en Matching, `slices().beFreeOfCycles()` cubre las cuatro capas (SCRUM-712);
+   - `Application` tiene un caso de uso por archivo (`LayerRules.FilesWithSeveralUseCases`).
+
    Corren en el CI del servicio: una violación rompe el PR. Cada refactor del Sprint 6 agrega estas pruebas a su servicio.
-3. **Análisis de dependencias desde el código** (SCRUM-680, sección 7). Mide los ciclos entre paquetes, el fan-in y el fan-out, y las violaciones de la matriz en los servicios con código, antes y después del refactor (SCRUM-649). Actors solo tiene medición «después», porque antes era un esqueleto.
+3. **Apps cliente (SCRUM-713 y SCRUM-714).** En el panel, ESLint (`no-restricted-imports` en `eslint.config.js`) impide que una feature importe otra y que `core/` o `shared/` importen de `features/`. En la app, `test/arquitectura/capas_test.dart` verifica esas reglas y que el `domain/` de una feature no importe Flutter, HTTP, Riverpod ni su `data/`.
+4. **Análisis de dependencias desde el código** (SCRUM-680, sección 7). Mide los ciclos entre paquetes, el fan-in y el fan-out, y las violaciones de la matriz en los servicios con código, antes y después del refactor (SCRUM-649). Actors solo tiene medición «después», porque antes era un esqueleto.
 
 ---
 

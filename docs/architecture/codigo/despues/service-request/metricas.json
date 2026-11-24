@@ -2,9 +2,9 @@
  "servicio": "ServiceRequest",
  "lenguaje": "csharp",
  "resumen": {
-  "tipos": 211,
+  "tipos": 212,
   "paquetes": 31,
-  "dependencias_entre_tipos": 601,
+  "dependencias_entre_tipos": 604,
   "dependencias_entre_paquetes": 109,
   "ciclos_entre_paquetes": 0,
   "paquetes_en_ciclos": 0,
@@ -20,7 +20,7 @@
   "Api->Application": 54,
   "Api->Domain": 31,
   "Api->Infrastructure": 1,
-  "Application->Domain": 71,
+  "Application->Domain": 72,
   "Infrastructure->Application": 73,
   "Infrastructure->Domain": 19
  },
@@ -38,15 +38,6 @@
    "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/ExecutionEndpoints.cs"
   },
   {
-   "tipo": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
-   "capa": "Application",
-   "clase": "class",
-   "lineas": 93,
-   "fan_out": 20,
-   "fan_in": 2,
-   "archivo": "src/QuickPatch.ServiceRequest.Application/ServiceRequests/CreateServiceRequest.cs"
-  },
-  {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.AdminServiceRequestEndpoints",
    "capa": "Api",
    "clase": "static",
@@ -54,6 +45,15 @@
    "fan_out": 19,
    "fan_in": 1,
    "archivo": "src/QuickPatch.ServiceRequest.Api/Endpoints/AdminServiceRequestEndpoints.cs"
+  },
+  {
+   "tipo": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
+   "capa": "Application",
+   "clase": "class",
+   "lineas": 90,
+   "fan_out": 18,
+   "fan_in": 2,
+   "archivo": "src/QuickPatch.ServiceRequest.Application/ServiceRequests/CreateServiceRequest.cs"
   },
   {
    "tipo": "QuickPatch.ServiceRequest.Api.Endpoints.QuoteEndpoints",
@@ -116,7 +116,7 @@
    "lineas": 48,
    "fan_out": 11,
    "fan_in": 2,
-   "archivo": "src/QuickPatch.ServiceRequest.Application/Quotes/QuoteHandlers.cs"
+   "archivo": "src/QuickPatch.ServiceRequest.Application/Quotes/IssueQuote.cs"
   }
  ],
  "mayor_fan_in": [
@@ -189,7 +189,7 @@
    "clase": "class",
    "lineas": 4,
    "fan_out": 0,
-   "fan_in": 13,
+   "fan_in": 14,
    "archivo": "src/QuickPatch.ServiceRequest.Domain/ServiceRequests/GeoPoint.cs"
   },
   {
@@ -418,11 +418,11 @@
   },
   {
    "paquete": "QuickPatch.ServiceRequest.Application.ServiceRequests",
-   "tipos": 27,
+   "tipos": 28,
    "fan_out": 6,
    "fan_in": 2,
    "inestabilidad": 0.75,
-   "cohesion_relacional": 1.04
+   "cohesion_relacional": 1.07
   },
   {
    "paquete": "QuickPatch.ServiceRequest.Application.Tenants",
@@ -687,7 +687,7 @@
   {
    "de": "QuickPatch.ServiceRequest.Application",
    "a": "QuickPatch.ServiceRequest.Application.ServiceRequests",
-   "n": 8
+   "n": 9
   },
   {
    "de": "QuickPatch.ServiceRequest.Application",
@@ -872,7 +872,7 @@
   {
    "de": "QuickPatch.ServiceRequest.Application.ServiceRequests",
    "a": "QuickPatch.ServiceRequest.Application.Abstractions",
-   "n": 36
+   "n": 35
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.ServiceRequests",
@@ -897,7 +897,7 @@
   {
    "de": "QuickPatch.ServiceRequest.Application.ServiceRequests",
    "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests",
-   "n": 22
+   "n": 23
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.Tenants",
@@ -1915,6 +1915,10 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceLocationResolver"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.DependencyInjection",
    "a": "QuickPatch.ServiceRequest.Application.Tenants.ApplyTenantStatusChangedHandler"
   },
   {
@@ -2527,14 +2531,6 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
-   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IGeocoder"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
-   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ILocalityCatalog"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
    "a": "QuickPatch.ServiceRequest.Application.Abstractions.IOutbox"
   },
   {
@@ -2579,7 +2575,7 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
-   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.CoverageArea"
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceLocationResolver"
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.CreateServiceRequestHandler",
@@ -2791,19 +2787,11 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
-   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IGeocoder"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
-   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ILocalityCatalog"
-  },
-  {
-   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
    "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationResult"
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
-   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.CoverageArea"
+   "a": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceLocationResolver"
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationHandler",
@@ -2819,6 +2807,30 @@
   },
   {
    "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.PreviewLocationResult",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.Locality"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceLocationResolver",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.GeocodedAddress"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceLocationResolver",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.IGeocoder"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceLocationResolver",
+   "a": "QuickPatch.ServiceRequest.Application.Abstractions.ILocalityCatalog"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceLocationResolver",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.CoverageArea"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceLocationResolver",
+   "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.GeoPoint"
+  },
+  {
+   "de": "QuickPatch.ServiceRequest.Application.ServiceRequests.ServiceLocationResolver",
    "a": "QuickPatch.ServiceRequest.Domain.ServiceRequests.Locality"
   },
   {
@@ -3506,5 +3518,5 @@
    "a": "QuickPatch.ServiceRequest.Application.Abstractions.StoredEvidence"
   }
  ],
- "commit": "45c0653"
+ "commit": "04391e4"
 }
