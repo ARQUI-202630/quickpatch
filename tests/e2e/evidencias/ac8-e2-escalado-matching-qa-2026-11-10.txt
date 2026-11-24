@@ -1,0 +1,34 @@
+AC8-E2: escalado independiente de un microservicio en QA (SCRUM-666), 10 de noviembre de 2026
+=============================================================================================
+
+Meta (matriz-escenarios-calidad-52.md): el escalado no requiere cambios de código ni downtime en los demás
+microservicios. Cómo se verifica: `kubectl scale` de Matching a 2 réplicas durante k6, sin cambios de código y sin
+errores en los demás servicios.
+
+Ejecución
+- Medición de Sebastián Sánchez (DevOps) el 10-nov entre las 23:21 y las 23:28 (hora de Bogotá), registrada en el
+  comentario 10345 de SCRUM-666.
+- Matching pasó de 1 a 2 réplicas con `kubectl scale` mientras corría la carga de k6 del workflow «Pruebas de sistema».
+- Corrida de GitHub Actions: https://github.com/ARQUI-202630/quickpatch/actions/runs/42957062365
+  (workflow_dispatch, 2026-11-11 04:06 UTC; los 4 jobs en verde: humo del flujo crítico, E2E, seguridad y carga).
+- Versión del código: la misma antes y después; el escalado no tocó imágenes ni configuración de los servicios.
+
+Resultados de k6 (tomados del registro del job «Carga (k6)» de esa corrida)
+
+| Prueba | Peticiones | Fallidas | p95 | Checks |
+|---|---|---|---|---|
+| Carga 50 VU (3 min) | 8.253 | 4 (0,04 %) | 104,86 ms | 99,97 % (11.001 de 11.004) |
+| Estrés 150 VU (4 min 30 s) | 35.562 | 12 (0,03 %) | 970,23 ms | 99,96 % (35.559 de 35.570) |
+
+- 0 respuestas 5xx reportadas por DevOps en la corrida de 150 VU. Los umbrales de k6 (`http_req_failed`) quedaron
+  en verde en las dos pruebas.
+- Los demás servicios siguieron respondiendo durante el escalado: las peticiones a Catalog y la creación de
+  solicitudes (ServiceRequest) no tuvieron cortes.
+
+Límites
+- No se registró en qué momento quedó lista la segunda réplica ni cómo se repartió el trabajo entre las dos.
+- Es una sola corrida y un solo servicio (Matching).
+- Los datos que dejó k6 en QA (20.522 solicitudes) se limpiaron después, con respaldo.
+
+Estado: Cumple (sin cambios de código y sin cortes en los demás servicios durante el escalado), con los límites de arriba.
+Ratificado por QA el 20 de noviembre de 2026.
