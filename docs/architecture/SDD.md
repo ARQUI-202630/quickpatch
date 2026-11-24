@@ -886,6 +886,23 @@ El nivel 4 de C4 muestra las clases de un componente. Para cada microservicio se
 
 Los diagramas están en Mermaid, que GitHub dibuja dentro del Markdown, y no se editan a mano.
 
+## 7.5 Acoplamiento y cohesión entre los microservicios (SCRUM-709)
+
+7.3 mide cada servicio por dentro; `python tools/arquitectura/servicios.py` mide el sistema y publica [`codigo/servicios/README.md`](codigo/servicios/README.md). Contrasta el catálogo de topics de `quickpatch-kafka` con lo que el código de cada servicio publica y consume, busca las llamadas HTTP y las referencias de código entre repositorios, y toma la base de cada servicio y su cohesión interna.
+
+Resultado del 23 de noviembre de 2026, sobre `develop`:
+
+| Criterio | Resultado |
+|---|---|
+| Ningún servicio usa el código de otro | Cumple: solo comparten `quickpatch-shared-dotnet`, que es código transversal (ADR-020) |
+| Una base por servicio | Cumple (ADR-014) |
+| Un solo productor por evento, dueño de ese dato | Cumple: 20 topics (ADR-006) |
+| El catálogo de eventos coincide con el código | Cumple. Matching figura como consumidor previsto de `catalog.category-changed` y todavía no lo consume (DD 9, SAD 4.2.2) |
+| Llamadas síncronas mínimas y sin ciclos | Cumple: una sola, ServiceRequest → Identity (`GET /internal/v1/users`, ADR-025), que si falla devuelve los nombres vacíos y no detiene el flujo |
+| Cada servicio cohesivo por dentro | Cumple: 0 ciclos entre paquetes, 0 violaciones de capas y cohesión relacional de 0,75 a 0,89 |
+
+Los servicios más estables, de los que dependen más y que dependen de menos, son Identity (I = 0,17) y Catalog (I = 0); los más dependientes son Communication y Actors (I = 1), que solo consumen eventos y no publican ninguno. Esa es la dirección esperada: los servicios que proyectan o notifican dependen de los que son dueños del dato, y no al revés.
+
 # 8. Dynamic diagrams
 
 Los diagramas dinámicos de C4 muestran cómo colaboran los contenedores en un flujo, con cada paso numerado. Esta sección los acompaña con lo que el comportamiento en ejecución exige precisar: procesos, flujos síncronos y asíncronos, productores y consumidores de Kafka, concurrencia, reintentos, idempotencia y manejo de fallos. Es la base técnica de las pruebas de integración, resiliencia y rendimiento.
