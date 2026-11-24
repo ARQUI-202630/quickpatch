@@ -53,14 +53,15 @@
         url: "http://{{ metricas }}/quicktunnel"
         return_content: true
       register: tunel
-      until: tunel.status == 200 and (tunel.json.hostname | default('')) != ''
+      # cloudflared responde con Content-Type text/plain, así que Ansible no llena tunel.json: se lee el cuerpo.
+      until: tunel.status == 200 and ((tunel.content | from_json).hostname | default('')) != ''
       retries: 20
       delay: 3
       when: estado == 'present'
 
     - name: La URL responde con el panel
       ansible.builtin.uri:
-        url: "https://{{ tunel.json.hostname }}/"
+        url: "https://{{ (tunel.content | from_json).hostname }}/"
         return_content: true
       register: panel
       until: panel.status == 200
@@ -70,5 +71,5 @@
 
     - name: Dirección pública
       ansible.builtin.debug:
-        msg: "Panel de producción en https://{{ tunel.json.hostname }}"
+        msg: "Panel de producción en https://{{ (tunel.content | from_json).hostname }}"
       when: estado == 'present'

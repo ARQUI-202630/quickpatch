@@ -1,6 +1,6 @@
 # ADR-029 — Acceso público al panel de producción por un Cloudflare Quick Tunnel
 
-- **Estado:** Aceptado; el playbook `deploy-tunel-publico.yml` está listo y falta aplicarlo en VM1 desde la VPN. Resuelve, para el panel y su API, la opción (b) de la «Consecuencia de R9 sin resolver» del SAD (sección 1.2.2)
+- **Estado:** Aceptado; aplicado en VM1 el 24 de noviembre de 2026. Resuelve, para el panel y su API, la opción (b) de la «Consecuencia de R9 sin resolver» del SAD (sección 1.2.2)
 - **Fecha:** 24 de noviembre de 2026
 - **Decisión:** un contenedor `cloudflared` en VM1 abre un Quick Tunnel de Cloudflare hacia la entrada TLS de VM1, siempre con el nombre de producción (`quickpatch.internal`). Desde Internet, el panel de producción y su `/api/` quedan en una URL `https://<aleatorio>.trycloudflare.com`
 - **Atributos priorizados:** usabilidad de la demostración (el profesor y los usuarios de prueba entran desde fuera de la red del laboratorio, sin VPN ni archivo `hosts`) y AC4 Security en el tramo público (Cloudflare presenta un certificado de una autoridad pública)
@@ -47,4 +47,9 @@ VM1  cloudflared ─HTTPS, Host quickpatch.internal→ entrada Nginx 10.43.100.1
 
 ## Evidencia
 
-Pendiente: salida del playbook con la URL y la comprobación HTTP 200 del panel, tomada desde fuera de la VPN.
+**24 de noviembre de 2026, 23:36 UTC.** El playbook levantó el túnel en VM1 y Cloudflare asignó `exercises-martha-fewer-prime.trycloudflare.com`. Desde la URL pública:
+
+- `GET /` responde HTTP 200 con el panel 0.7.1 (`<title>QUICKPATCH — Panel administrativo`).
+- `POST /api/v1/auth/login` con cuerpo vacío responde HTTP 400 de Identity, así que la API de producción se alcanza por el mismo origen.
+
+En esa primera corrida, el paso que lee la URL falló aunque el túnel estaba arriba: `/quicktunnel` responde con `text/plain` y Ansible no llenaba `json`. El playbook ahora lee el cuerpo.
