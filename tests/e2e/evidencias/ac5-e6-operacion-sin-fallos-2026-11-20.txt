@@ -1,0 +1,50 @@
+AC5-E6: operación sin fallos del flujo crítico (SCRUM-665), 20 de noviembre de 2026
+=================================================================================
+
+Meta (matriz-escenarios-calidad-52.md): menos del 1 % de respuestas 5xx (logs del gateway en Loki) y 0 fallos en las
+ejecuciones de la prueba E2E. DevOps aceptó 3 corridas manuales seguidas en verde de pruebas-sistema.yml (sin k6) en
+lugar de corridas programadas, porque el workflow no tiene horario.
+
+1. Respuestas 5xx (Loki, Nginx de entrada en VM1: {job="docker", vm="vm1"})
+| Ventana | Peticiones | 5xx | % 5xx |
+|---|---|---|---|
+| Última hora | 4.863 | 4 | 0,08 % |
+| Últimas 24 h | 5.777 | 5 | 0,09 % |
+| Desde el 13-nov (primer log disponible) | 6.265 | 5 | 0,08 % |
+- Las 5 respuestas 5xx son 502 en POST /api/v1/service-requests/{id}/payment, una por cada corrida del 20-nov.
+  No son un defecto: es el caso «La pasarela no responde → 502 pasarela-sin-respuesta» de
+  tests/e2e/scrum-117-pago.postman_collection.json, que paga con el token tok_sim_error_ para que la pasarela
+  simulada (ADR-009) no responda y la prueba espera ese 502 (AC9-E5). Cada corrida lo ejecuta una vez.
+  Errores 5xx inesperados: 0.
+- Límite: el Nginx de VM1 atiende QA y producción con el mismo log, así que la cifra mezcla los dos ambientes. Los
+  gateways de VM2 y VM3 no envían sus logs a Loki.
+
+2. Corridas de pruebas-sistema.yml (sin k6), 20-nov
+| Corrida | Run | Resultado | Motivo del fallo |
+|---|---|---|---|
+| 1 | 44819781232 | Pasó | — |
+| 2 | 44822001979 | Falló (1 de 523) | El aviso «solicitud-creada» no llegó a tiempo al buzón del cliente |
+| 3 | 44822911334 | Pasó | — |
+| 4 | 44825780519 | Pasó | — |
+| 5 | 44827890939 | Falló (1) | 429 en REC-006: la regla RN-U7 permite 3 pedidos de recuperación por correo por hora, y la colección usa siempre el mismo correo |
+
+Estado al 20-nov: la parte de 5xx cumplía (0,08 %, meta < 1 %), pero la parte E2E no tenía 3 corridas seguidas en
+verde. Quedó en Parcial hasta repetir las corridas con al menos 1 hora entre ellas.
+
+3. Corridas de pruebas-sistema.yml (sin k6), 22-nov, con 65 minutos entre una y otra
+Lanzadas a mano sobre develop (9360a4b) con carga=false. La espera de 65 minutos evita el límite de RN-U7.
+| Corrida | Run | Inicio (hora de Bogotá) | Fin | Resultado |
+|---|---|---|---|---|
+| 1 | 45045654441 | 11:46 | 12:00 | Pasó |
+| 2 | 45051767823 | 12:51 | 13:06 | Pasó |
+| 3 | 45057903310 | 13:56 | 14:11 | Pasó |
+- En cada corrida pasaron los trabajos de humo, seguridad (OWASP ZAP y PCI-DSS) y E2E; el de carga (k6) se omitió.
+- Humo del flujo crítico: 29 aserciones, 0 fallidas. Newman: 28 colecciones, 1.786 aserciones, 0 fallidas.
+  Los números son iguales en las 3 corridas.
+- Playwright todavía no tiene pruebas (el workflow lo avisa), así que la parte E2E son las colecciones de Newman.
+- El aviso «solicitud-creada» que llegó tarde el 20-nov no se repitió.
+- Cada corrida provoca a propósito un 502 de pago (sección 1); no se volvió a medir el porcentaje de 5xx en Loki.
+
+Estado: Cumple. 5xx: 0,08 % (meta < 1 %), 0 inesperados. E2E: 3 corridas seguidas en verde, 0 fallos.
+Límites: corridas manuales y no programadas (el workflow no tiene horario); el porcentaje de 5xx es del 20-nov y el
+log de Loki mezcla QA y producción.
