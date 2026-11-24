@@ -180,8 +180,11 @@ jobs:
 
           pan = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
           cvv = re.compile(r"(?i)\b(cvv2?|cvc2?|security[_ ]?code)\b\W{0,3}\d{3,4}\b")
+          # Los UUID (correlationId, trace, request) tienen grupos de dígitos separados por guiones: sin quitarlos, dan
+          # falsos positivos (13 dígitos con Luhn válido). Un número de tarjeta no aparece en formato UUID.
+          UUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
           hallazgos = 0
-          for l in lineas:
+          for l in (UUID.sub("", x) for x in lineas):
               for m in pan.finditer(l):
                   n = re.sub(r"[ -]", "", m.group())
                   if es_tarjeta(n):
