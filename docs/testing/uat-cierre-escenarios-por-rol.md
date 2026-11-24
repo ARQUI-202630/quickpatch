@@ -1,8 +1,8 @@
 # Escenarios de la UAT de cierre por rol (SCRUM-659)
 
 **Código del documento:** `SPEC-UAT-CIERRE-2026-11-12`
-**Versión:** 1.2, aprobada con cambios por la Product Owner
-**Fecha:** 21 de noviembre de 2026 (versión 1.1: 19 de noviembre de 2026; versión 1.0: 12 de noviembre de 2026)
+**Versión:** 1.3 (registro de ejecución en curso); escenarios de la 1.2, aprobada con cambios por la Product Owner
+**Fecha:** 24 de noviembre de 2026 (versión 1.2: 21 de noviembre de 2026; versión 1.1: 19 de noviembre de 2026; versión 1.0: 12 de noviembre de 2026)
 **Responsable:** Katherine Bravo (`ka.bravo@javeriana.edu.co`), QA Lead
 **Trazabilidad Jira:** historia SCRUM-658 (UAT de cierre con todos los roles). Subtareas: SCRUM-659 (este documento), SCRUM-660 (ejecución del flujo crítico), SCRUM-661 (ejecución de los roles corporativos y administrativos) y SCRUM-662 (revisión y firma de la PO).
 **Ambiente:** QA (`https://qa.quickpatch.internal`, y `https://beta.qa.quickpatch.internal` para el tenant Beta): app móvil con el APK `-qa` vigente y panel web. Nunca producción (ADR-015).
@@ -136,42 +136,44 @@ Con estos resultados se actualizan los 4 escenarios en la matriz de 52 (SCRUM-66
 
 Lo llena quien ejecuta (SCRUM-660 y SCRUM-661). Una fila por escenario.
 
+Avance al 24 de noviembre de 2026: 21 de 34 escenarios con resultado (16 PASS y 5 FAIL), 2 con un paso pendiente (UAT-TEC-04 y UAT-TEC-05) y 11 sin ejecutar, entre ellos las 4 mediciones con personas. El flujo crítico (UAT-CLI-02 → UAT-TEC-02 → UAT-CLI-04 → UAT-TEC-03 → UAT-CLI-05 → UAT-CLI-06) se completó de punta a punta en QA. El mismo registro está en la hoja «UAT cierre» del Informe UAT oficial. Las cuentas de la sesión son `uat.*.20261123@quickpatch.test`, con claves de prueba que no se guardan.
+
 | ID | Fecha y hora | Ejecutó | Resultado real | PASS / FAIL | Evidencia | Defecto |
 |---|---|---|---|---|---|---|
-| UAT-CLI-01 | | | | | | |
-| UAT-CLI-02 | | | | | | |
-| UAT-CLI-03 | | | | | | |
-| UAT-CLI-04 | | | | | | |
-| UAT-CLI-05 | | | | | | |
-| UAT-CLI-06 | | | | | | |
-| UAT-CLI-07 | | | | | | |
-| UAT-TEC-01 | | | | | | |
-| UAT-TEC-02 | | | | | | |
-| UAT-TEC-03 | | | | | | |
-| UAT-TEC-04 | | | | | | |
-| UAT-TEC-05 | | | | | | |
-| UAT-TEC-06 | | | | | | |
-| UAT-EMP-01 | | | | | | |
-| UAT-EMP-02 | | | | | | |
-| UAT-EMP-03 | | | | | | |
-| UAT-PRO-01 | | | | | | |
-| UAT-PRO-02 | | | | | | |
-| UAT-PRO-03 | | | | | | |
-| UAT-ADT-01 | | | | | | |
-| UAT-ADT-02 | | | | | | |
-| UAT-ADT-03 | | | | | | |
-| UAT-ADT-04 | | | | | | |
-| UAT-ADT-05 | | | | | | |
-| UAT-ADP-01 | | | | | | |
-| UAT-ADP-02 | | | | | | |
-| UAT-X-01 | | | | | | |
-| UAT-X-02 | | | | | | |
-| UAT-X-03 | | | | | | |
-| UAT-X-04 | | | | | | |
-| UAT-M-01 | | | | | | |
-| UAT-M-02 | | | | | | |
-| UAT-M-03 | | | | | | |
-| UAT-M-04 | | | | | | |
+| UAT-CLI-01 | 23/11/2026 14:28 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Cuenta creada y sesión iniciada. Contraseña de 4 caracteres rechazada («Usa al menos 8 caracteres»); correo repetido rechazado («Ya hay una cuenta con este correo»). El perfil guarda el teléfono; correo y rol bloqueados. Tras 5 intentos fallidos: «Tu cuenta está bloqueada temporalmente», también con la clave correcta; a los 16 min vuelve a entrar. La descarga desde la landing no se probó (el APK se instaló desde el release `v0.6.0-qa`) | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-CLI-02 | 23/11/2026 14:55 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Creadas con GPS en Bogotá y con dirección escrita en Bogotá (3 pasos más la confirmación «¿Es aquí?»). Descripción vacía rechazada. GPS en Medellín rechazado («Esa ubicación queda fuera de Bogotá»). La dirección escrita «El Poblado, Medellín, Antioquia» la ubica en Bogotá (Localidad Suba) y no la rechaza | FAIL | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | DEF-S6-02 (propuesto) |
+| UAT-CLI-03 |  |  | Pendiente: los 6 estados se vieron con su texto durante el flujo crítico, pero falta confirmar con un segundo dispositivo que la pantalla cambia sola |  |  |  |
+| UAT-CLI-04 | 23/11/2026 19:07 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Cotización de $230.000 rechazada con motivo; el técnico envió la 2 de 3 ($200.000) y el cliente la aceptó con confirmación. El mensaje del cliente le llegó al técnico. Con el servicio completado el chat dice «puedes leer los mensajes, pero ya no escribir» | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-CLI-05 | 23/11/2026 19:21 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Tarjeta 0002 rechazada («no tiene fondos suficientes») y la solicitud siguió en Completada. Con la 4242 el pago se aprobó y pasó a «Pagada». El comprobante tiene fecha, total, pagador y «Tarjeta (token de la pasarela)», sin el número; no separa mano de obra y materiales (la PO decide si basta el total) | FAIL | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | DEF-S6-04 (propuesto) |
+| UAT-CLI-06 | 23/11/2026 19:23 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Calificó 5 de 5 con comentario; después la app solo muestra «Tu calificación» y no deja calificar otra vez | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-CLI-07 | 23/11/2026 19:28 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | La solicitud en espera se canceló con confirmación y motivo; la solicitud pagada no muestra la opción de cancelar | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-TEC-01 | 23/11/2026 14:37 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Registro con documento y especialidad Pintura; queda «Tu cuenta está en verificación» y sin servicios | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-TEC-02 | 23/11/2026 19:06 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | La oferta llegó apenas el técnico se puso disponible en Chapinero y la aceptó en menos de 1 min. El detalle muestra categoría, dirección y teléfono. Envió la cotización (mano de obra $150.000 y materiales $80.000) | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-TEC-03 | 23/11/2026 19:17 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Sin foto, «Marcar como completado» queda desactivado. Con una foto de la cámara y la confirmación queda «Servicio completado» y el cliente puede pagar | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-TEC-04 | 23/11/2026 21:17 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | La oferta no se respondió: a los 3 min desapareció y no volvió al mismo técnico. No había otro técnico candidato, así que falta ver que pase al siguiente |  | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | Pendiente: segundo técnico |
+| UAT-TEC-05 | 23/11/2026 21:12 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Con el técnico en No disponible la solicitud quedó «En espera» y no se canceló; al volver a Disponible le llegó la oferta. Falta probar una solicitud en una localidad que no es suya |  | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | Pendiente: otra localidad |
+| UAT-TEC-06 | 23/11/2026 19:25 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | El historial muestra el servicio con estado «Pagada» y fecha; «Mis pagos» muestra $200.000 recibido. El historial no muestra la calificación | FAIL | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | Observación (propuesta) |
+| UAT-EMP-01 | 23/11/2026 14:45 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Empresa registrada con razón social, NIT y contacto. Ni la app ni el panel del Admin del tenant permiten agregar un segundo usuario autorizado (RF-06) | FAIL | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | DEF-S6-03 (propuesto) |
+| UAT-EMP-02 | 23/11/2026 14:48 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Solicitud de cerrajería creada a nombre de la empresa con la sede «Sede Norte» | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-EMP-03 | 24/11/2026 17:15 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | No se puede ejecutar: necesita el segundo usuario autorizado que UAT-EMP-01 no permite crear | FAIL | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | Bloqueado por DEF-S6-03 |
+| UAT-PRO-01 | 23/11/2026 14:42 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Registro de proveedor; queda «Tu cuenta está en verificación» | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-PRO-02 | 23/11/2026 21:06 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | El proveedor agregó a «Tecnico Equipo UAT»; queda en su equipo con verificación pendiente y la invitación sirvió para activar la cuenta. Con el mismo documento sale «Ya hay una cuenta con este documento» | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-PRO-03 | 24/11/2026 16:39 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | El técnico del equipo hizo el servicio y el cliente lo pagó; en «Mis pagos» del proveedor sale $90.000, Recibido, Tecnico Equipo UAT | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-ADT-01 | 23/11/2026 19:00 | Katherine Bravo (panel web) | Aprobados el técnico, el proveedor y el técnico del equipo; el panel pide confirmación («¿Aprobar a…?») y el técnico aprobado recibió la oferta. Rechazado «Tecnico UAT Rechazo» con motivo. Sin motivo no deja: «Escribe un motivo de 5 a 500 caracteres» | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-ADT-02 | 24/11/2026 16:00 | Katherine Bravo (panel web) | Las solicitudes se ven por estado y el filtro por Pagado y Cancelado funciona. Observación: hay cientos de solicitudes de las pruebas automáticas en QA | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-ADT-03 |  |  | Pendiente |  |  |  |
+| UAT-ADT-04 | 24/11/2026 16:14 | Katherine Bravo (panel web) | El filtro «Reputación baja» muestra los técnicos con 2,0 y 5 calificaciones, con la etiqueta, y siguen Aprobados | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-ADT-05 | 24/11/2026 16:25 | Katherine Bravo (panel web) y QA en la app | El usuario pidió la recuperación en la app, el Admin del tenant generó el enlace, con él definió la contraseña nueva y entró a la app. La segunda vez el enlace dice «Este enlace ya no sirve». El vencimiento a la hora lo cubre REC-015 | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-ADP-01 |  |  | Pendiente: falta la cuenta de Admin de plataforma |  |  |  |
+| UAT-ADP-02 |  |  | Pendiente: falta la cuenta de Admin de plataforma |  |  |  |
+| UAT-X-01 |  |  | Pendiente: faltan cuentas del tenant Beta |  |  |  |
+| UAT-X-02 |  |  | Pendiente |  |  |  |
+| UAT-X-03 | 24/11/2026 16:45 | QA, emulador Android (API 36) con el APK `v0.6.0-qa` | Con el botón atrás en el formulario sale «¿Salir sin guardar?» y el texto sigue ahí; desde el detalle vuelve al listado | PASS | tests/e2e/evidencias/uat-cierre-2026-11-23/resumen-ejecucion.txt | — |
+| UAT-X-04 |  |  | Pendiente: las 3 corridas en verde del 22-nov ya están (AC5-E6); falta la búsqueda en Loki de una petición de la sesión |  |  |  |
+| UAT-M-01 |  |  | Pendiente: 5 personas externas (Parte B) |  |  |  |
+| UAT-M-02 |  |  | Pendiente: 5 personas externas (Parte B) |  |  |  |
+| UAT-M-03 |  |  | Pendiente: 5 personas externas (Parte B) |  |  |  |
+| UAT-M-04 |  |  | Pendiente: 5 personas externas (Parte B) |  |  |  |
 
 ## 6. Cobertura de requisitos
 
@@ -232,3 +234,4 @@ La PO revisa el registro de la sección 5 y decide por escenario. El acta firmad
 | 1.0 | 12/11/2026 | Primera versión: 34 escenarios para los 6 roles (PR #298, #304) |
 | 1.1 | 19/11/2026 | Se separa la aprobación de los escenarios (7.1) del acta (7.2) y se agrega qué decide la PO. SRS actualizado a la 5.12. Datos de demostración de SCRUM-632 en la sección 3. Se agregan casos del SRS que faltaban: correo repetido y bloqueo tras 5 intentos (UAT-CLI-01), solicitud con GPS (UAT-CLI-02), chat de solo lectura al completar (UAT-CLI-04), pago rechazado y reintento (UAT-CLI-05), solicitud en espera sin técnico (UAT-TEC-05), enlace de recuperación de 1 hora entregado sin correo (UAT-ADT-05) y cierre de sesión antes de desactivar el tenant (UAT-ADP-02). Se corrige la referencia a la sección 4.8 en UAT-CLI-03 y UAT-CLI-06. Siguen siendo 34 escenarios |
 | 1.2 | 21/11/2026 | Ajustes pedidos por la PO al aprobar con cambios (sección 7.1): UAT-CLI-01 dice que el bloqueo dura 15 minutos; UAT-CLI-02 pide anotar si el rechazo de la dirección fuera de Bogotá es inmediato o tarda unos 3 s; UAT-ADT-05 remite el vencimiento de 1 hora a REC-015; UAT-ADP-02 agrega la nota de RF-21 y P9 sobre las sesiones ya abiertas. Se registra la decisión de la PO. Siguen siendo 34 escenarios |
+| 1.3 | 24/11/2026 | Registro de ejecución (sección 5) con los resultados del 23 y 24 de noviembre en QA: 21 de 34 escenarios con resultado, 16 PASS y 5 FAIL. Los escenarios no cambian |
