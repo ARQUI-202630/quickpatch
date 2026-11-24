@@ -779,9 +779,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
                     deploymentNode "k3s (un nodo)" "" "k3s + Traefik" {
                         traefikQa = infrastructureNode "Traefik" "Ingress del clúster en NodePort 30080." "Traefik"
                         identityQa = containerInstance identity
-                        actorsQa = containerInstance actors {
-                            tags "Planeado"
-                        }
+                        actorsQa = containerInstance actors
                         catalogQa = containerInstance catalog
                         serviceRequestQa = containerInstance serviceRequest
                         matchingQa = containerInstance matching
@@ -1138,7 +1136,7 @@ workspace "QUICKPATCH" "Plataforma multi-tenant de servicios técnicos para hoga
             autoLayout lr 250 150
         }
 
-        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 19 de noviembre de 2026: los 7 servicios desplegados en el k3s de VM2, con VM5 y VM7 y la misma VM1 (ADR-022); gateway en el Nginx de VM2 (ADR-028). El panel (release/0.7.0) se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos. Punteado: Actors, implementado (SCRUM-640) y pendiente de su primer despliegue." {
+        deployment quickpatch qa "C4-06-Despliegue-QA" "QA al 23 de noviembre de 2026: los 8 servicios desplegados en el k3s de VM2, con VM5 y VM7 y la misma VM1 (ADR-022); gateway en el Nginx de VM2 (ADR-028). Actors (release/0.2.0) desde el 23-nov. El panel (release/0.7.1) se ejecuta en el navegador del administrador; el Nginx solo entrega sus archivos." {
             include *
             exclude "mobQa -> gatewayQa" "webQa -> gatewayQa"
             exclude "* -> kafkaQa" "* -> redisQa" "* -> garageQa"

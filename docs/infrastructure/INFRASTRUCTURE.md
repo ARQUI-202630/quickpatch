@@ -348,7 +348,7 @@ Foto de lo que corre hoy, tomada con comandos de solo lectura (SCRUM-553 y SCRUM
 
 | | Producción (VM3, VM4, VM6) | QA (VM2, VM5, VM7) |
 |---|---|---|
-| Microservicios en k3s | 7 Deployment, todos en servicio: identity 0.8.1, catalog 0.4.1, service-request 0.11.2, matching 0.6.1, payments 0.3.0, communication 0.3.3 y ranking 0.1.0 | 7, todos en servicio, por delante de producción: identity 0.10.4, catalog 0.4.4, service-request 0.12.3, matching 0.6.2, ranking 0.1.3, payments 0.3.3 y communication 0.3.6 (al 19 de noviembre; [inventario](inventario-versiones-por-ambiente.md)) |
+| Microservicios en k3s | 7 Deployment, todos en servicio: identity 0.8.1, catalog 0.4.1, service-request 0.11.2, matching 0.6.1, payments 0.3.0, communication 0.3.3 y ranking 0.1.0 | 8, por delante de producción: identity 0.10.5, actors 0.2.0 (faltan sus roles de base), catalog 0.4.4, service-request 0.12.4, matching 0.6.2, ranking 0.1.3, payments 0.3.4 y communication 0.3.6 (al 23 de noviembre; [inventario](inventario-versiones-por-ambiente.md)) |
 | Pods | 7 de 7 en `1/1 Running`, 0 reinicios (service-request, sin reiniciar desde la promoción de la 0.11.2 el 4 de noviembre) | 7 de 7 en `1/1 Running`, 0 reinicios |
 | `Secret` y `ConfigMap` | Los de los 7 servicios; los 14 `Secret` del almacén de k3s están cifrados en reposo desde el 4 de noviembre (sección 10.5) | Los de los 7 servicios; cifrados desde el 30 de octubre |
 | Ingress | Catalog, Communication, Identity, Matching y ServiceRequest, más las `IngressRoute` de `payments` y `communication-chat`; Ranking no expone REST | Los mismos |
@@ -357,8 +357,8 @@ Foto de lo que corre hoy, tomada con comandos de solo lectura (SCRUM-553 y SCRUM
 | Kafka | 20 topics (los mismos que QA; el 4 de noviembre se crearon `service-request.rated`, `ranking.technician-reputation-changed` y `tenant.status-changed`) y 6 grupos de consumidores, todos estables y con lag 0 | 20 topics y 28 pares grupo-topic con lag 0 |
 | Garage | En servicio (VM6), con el bucket `service-request-evidencias` | En servicio (VM7) |
 | Catálogo | 6 categorías base sembradas el 4 de noviembre (Plomería, Eléctrico, Cerrajería, Electrodomésticos, Aire acondicionado y Pintura); la réplica de ServiceRequest las muestra | 6 categorías base |
-| Panel Angular | Build real de `release/0.5.5`, promovido la noche del 4 de noviembre (job «Panel en produccion») | Build real de `release/0.7.0` (11 de noviembre) |
-| App móvil | APK de `release/0.5.4`, publicado el 4 de noviembre (job «Publicar el APK de producción») | APK `v0.6.0-qa` (10 de noviembre) |
+| Panel Angular | Build real de `release/0.5.5`, promovido la noche del 4 de noviembre (job «Panel en produccion») | Build real de `release/0.7.1` (23 de noviembre) |
+| App móvil | APK de `release/0.5.4`, publicado el 4 de noviembre (job «Publicar el APK de producción») | APK `v0.6.1-qa` (23 de noviembre) |
 | Gateway | Nginx propio en VM3 (ADR-028) | Nginx propio en VM2 (ADR-028) |
 
 **Cómo se promovió (4 de noviembre de 2026).** Orden: identity, catalog, service-request, matching, payments, communication y ranking, de uno en uno. Para cada servicio: PR de `release/*` a `main` con el CI en verde y el mismo commit que corre en QA; **manifiestos de `main` aplicados con `primer-despliegue-servicios.yml` antes de aprobar el despliegue** (el pipeline solo cambia la imagen: un manifiesto con variables nuevas que el clúster no tiene deja el pod sin arrancar y el pipeline hace `rollout undo`); aprobación del ambiente `produccion`; `aplicar-roles-db.yml` después de la migración, porque los `GRANT` necesitan las tablas que crea el init container; y comprobación de pods, rutas del contrato y grupos de Kafka. La compuerta automática de QA (RNF-08) bloqueó el primer despliegue de identity porque el humo de los frontends era anterior a la llegada de la versión a QA, y se repitió. En un primer despliegue, el Deployment que esperó mucho con la imagen `:pendiente` arrastra `ProgressDeadlineExceeded` y el job puede fallar aunque el pod llegue a `Ready` (pasó con ranking): se reintenta de inmediato.
@@ -446,7 +446,7 @@ Estado al 8 de octubre de 2026:
 | ServiceRequest | Sí | Desplegado | Desplegado |
 | Matching | Sí (con Secret propio: `app-password` y `migrator-password`) | Desplegado | Desplegado |
 | Payments, Communication y Ranking | Sí | Desplegado | Desplegado |
-| Actors | Sí desde el 19 de noviembre (`deploy/k8s/actors.yaml` y `db/roles.sql` con `actors_app`, SCRUM-640) | Pendiente del primer despliegue | No desplegado |
+| Actors | Sí desde el 19 de noviembre (`deploy/k8s/actors.yaml` y `db/roles.sql` con `actors_app`, SCRUM-640) | Desplegado el 23 de noviembre (`release/0.2.0`, Deployment `actors`); falta `aplicar-roles-db.yml` y el reinicio | No desplegado |
 
 Orden para llevar un servicio nuevo a un ambiente:
 
@@ -502,7 +502,7 @@ VM3 tiene 4 vCPU y 11 GiB de RAM fijos (sección 3.1), compartidos entre el cont
 | Identity, Catalog, ServiceRequest y Payments (ASP.NET Core, c/u) | 100 m / 500 m | 160 MiB / 384 MiB; el init container de migraciones pide 64 MiB y llega a 256 MiB, solo mientras migra | Burstable |
 | Communication (ASP.NET Core) | 50 m / 500 m | 128 MiB / 512 MiB (el manifiesto de `develop`; en QA corre con 192 MiB de request); el init container de migraciones, 64 MiB / 256 MiB | Burstable |
 | Ranking (ASP.NET Core) | 50 m / 500 m | 128 MiB / 320 MiB; el init container de migraciones, 64 MiB / 256 MiB | Burstable |
-| Actors (ASP.NET Core) | 50 m / 500 m | 128 MiB / 320 MiB; el init container de migraciones, 64 MiB / 256 MiB (manifiesto del 19 de noviembre, aún sin desplegar) | Burstable |
+| Actors (ASP.NET Core) | 50 m / 500 m | 128 MiB / 320 MiB; el init container de migraciones, 64 MiB / 256 MiB (manifiesto del 19 de noviembre, desplegado en QA el 23 de noviembre) | Burstable |
 
 Los límites históricos calculados para NestJS no se reutilizan para ASP.NET Core. Los manifiestos de Identity, Catalog, ServiceRequest y Payments fijan un límite de 384 MiB para el contenedor de la aplicación, el de Communication 512 MiB y el de Matching 1 GiB, con una réplica por servicio. Antes de la revisión del 26 de octubre de 2026 este documento decía 256 MiB para los servicios .NET (con una suma de 6,0 GiB); los manifiestos ya tenían 384 MiB. Con los límites reales, la suma en VM3 es 3,0 + 1,0 + 4 × 0,375 + 0,5 = 6,0 GiB para los 6 servicios que existen, y **6,5 GiB con Actors y Ranking en 256 MiB, o 6,75 GiB si adoptan 384 MiB** como los demás: queda en el umbral de 6,5 GiB o por encima. Es una cuenta de límites, el peor caso; el uso medido es mucho menor (más abajo).
 
@@ -1118,7 +1118,7 @@ El proyecto, dadas sus restricciones académicas (R3, R5), opera con **costo rea
 | Probes con valores iniciales, sin `startupProbe` ni ajuste con arranques medidos | Falta de datos medidos | Sección 5.8 |
 | La excepción escrita al RNF-08 del despliegue del 8 de octubre (la prueba de 150 usuarios no pasaba por las conexiones de PostgreSQL) se levantó el 27 de octubre, se renovó el 4 de noviembre para el MVP de 7 servicios y **se levantó otra vez la noche del 4 de noviembre**: el estrés de 150 usuarios pasó en QA con las versiones que corren en producción (run 41940280403, SCRUM-526). Hoy no hay ninguna excepción vigente. La carga no se mide en producción | Hallazgo del 8 de octubre; levantada el 27 de octubre; renovada y levantada el 4 de noviembre | Secciones 5.7 y 6.2 |
 | La rama `main` no tiene protección; la aprobación del ambiente `produccion` es la única compuerta | Decisión pendiente del equipo | Sección 6.2 |
-| Actors tiene código, manifiesto y `roles.sql` (SCRUM-640) pero no está desplegado en ningún ambiente | Primer despliegue pendiente de DevOps | Sección 5.3 |
+| Actors está en QA desde el 23 de noviembre (`release/0.2.0`), pero faltan sus roles de base y no está en producción | DevOps: `aplicar-roles-db.yml` para Actors, reinicio del Deployment y, después de la UAT, la promoción | Sección 5.3 |
 | Certificados TLS autofirmados, sin CA reconocida | R9 | Secciones 10.1 y 11 |
 | Sin cifrado en reposo (discos, PostgreSQL, Garage y respaldos; los `Secret` de k3s están cifrados en QA desde el 30 de octubre y en producción desde el 4 de noviembre) y tráfico interno sin TLS (PostgreSQL, Kafka, Garage y Redis) | Decisión pendiente del equipo | Sección 10.5 |
 | SSH con contraseña, la misma en las 7 VMs | Decisión del equipo | Sección 10.4 |
@@ -1278,3 +1278,4 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.16 | 10 nov 2026 | Auditoría contra lo desplegado (SCRUM-694): versiones de QA y producción verificadas con `kubectl` el 10 de noviembre (producción con service-request 0.11.2; QA con identity 0.9.0, service-request 0.12.0, panel 0.6.0 y APK `v0.6.0-qa`), la tabla de la sección 5.3 deja de decir que Payments, Communication y Ranking no están desplegados, y la lista de lo que falta de la sección 4.3 se pone al día. |
 | 4.17 | 11 nov 2026 | Gateway y panel por ambiente (sección 3): el Nginx entrega los archivos del panel y el navegador del administrador los ejecuta, como la vista de despliegue de SCRUM-674 (SCRUM-675). |
 | 4.18 | 19 nov 2026 | Segunda auditoría contra Ansible, los workflows y lo publicado (SCRUM-694). En 4.3: versiones de QA al 19 de noviembre, el panel 0.5.5 y el APK 0.5.4 sí promovidos a producción el 4 de noviembre (producción sirve un build de Angular distinto del de QA, no la página provisional), Actors con código y sin desplegar y enlace al [inventario por ambiente](inventario-versiones-por-ambiente.md) (SCRUM-671, SCRUM-672). En 5.2: seis playbooks que faltaban (`habilitar-tenant-beta`, `verificar-rls`, `diagnostico-carga`, `limpiar-carga-qa`, `limpiar-qa-uat` y `limpiar-humo-produccion`). En 5.3, 5.6 y la tabla de limitaciones: Actors con manifiesto, `roles.sql` y recursos. En 6.2: los jobs de `humo-frontends.yml` y del APK. |
+| 4.19 | 23 nov 2026 | Actors en QA (`release/0.2.0`; faltan sus roles de base). Releases de QA del refactor de capas (SCRUM-709): identity 0.10.5, service-request 0.12.4, payments 0.3.4, panel 0.7.1 y APK `v0.6.1-qa` (`inventario-versiones-por-ambiente.md`). |

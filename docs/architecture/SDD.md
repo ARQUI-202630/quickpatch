@@ -73,7 +73,7 @@ Los diagramas que no son de C4 (capas, modelo de dominio, secuencias UML, estruc
 | Externo | Sistema de terceros fuera de QUICKPATCH | Fondo gris |
 | Mock | Implementado como simulación del sistema real | Fondo naranja y borde de puntos |
 
-Hoy son planeados el receptor de webhooks del PSP y, dentro de Actors, el concepto de aliados (Ally). Actors Service tiene código desde SCRUM-640 (directorio por eventos, sección 6.5); su despliegue en QA está pendiente. La pasarela de pagos certificada es externa y planeada, porque el proveedor está por definir. El único mock es `SimulatedPaymentProvider`, la pasarela simulada de Payments (ADR-009 modificado). El estado sale de la matriz modelado contra real (`matriz-modelado-vs-real.md`, SCRUM-697).
+Hoy son planeados el receptor de webhooks del PSP y, dentro de Actors, el concepto de aliados (Ally). Actors Service tiene código desde SCRUM-640 (directorio por eventos, sección 6.5); está desplegado en QA desde el 23 de noviembre (`release/0.2.0`) y todavía no en producción. La pasarela de pagos certificada es externa y planeada, porque el proveedor está por definir. El único mock es `SimulatedPaymentProvider`, la pasarela simulada de Payments (ADR-009 modificado). El estado sale de la matriz modelado contra real (`matriz-modelado-vs-real.md`, SCRUM-697).
 
 **Inventario de vistas.**
 
