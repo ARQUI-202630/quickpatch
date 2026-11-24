@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title ServiceRequest — paquetes (despues, 45c0653)
+title ServiceRequest — paquetes (despues, 04391e4)
 skinparam packageStyle rectangle
 skinparam shadowing false
 left to right direction
@@ -21,7 +21,7 @@ package "Application" {
   component "Application.Quotes\n12 tipos" as QuickPatch_ServiceRequest_Application_Quotes
   component "Application.Ratings\n3 tipos" as QuickPatch_ServiceRequest_Application_Ratings
   component "Application.References\n2 tipos" as QuickPatch_ServiceRequest_Application_References
-  component "Application.ServiceRequests\n27 tipos" as QuickPatch_ServiceRequest_Application_ServiceRequests
+  component "Application.ServiceRequests\n28 tipos" as QuickPatch_ServiceRequest_Application_ServiceRequests
   component "Application.Tenants\n2 tipos" as QuickPatch_ServiceRequest_Application_Tenants
 }
 package "Domain" {
@@ -69,7 +69,7 @@ QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_
 QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_Quotes #607D8B : 5
 QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_Ratings #607D8B : 1
 QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_References #607D8B : 2
-QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_ServiceRequests #607D8B : 8
+QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_ServiceRequests #607D8B : 9
 QuickPatch_ServiceRequest_Application --> QuickPatch_ServiceRequest_Application_Tenants #607D8B : 1
 QuickPatch_ServiceRequest_Application_Abstractions --> QuickPatch_ServiceRequest_Domain_Categories #607D8B : 1
 QuickPatch_ServiceRequest_Application_Abstractions --> QuickPatch_ServiceRequest_Domain_Evidence #607D8B : 1
@@ -106,12 +106,12 @@ QuickPatch_ServiceRequest_Application_Ratings --> QuickPatch_ServiceRequest_Doma
 QuickPatch_ServiceRequest_Application_References --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 3
 QuickPatch_ServiceRequest_Application_References --> QuickPatch_ServiceRequest_Domain_Categories #607D8B : 1
 QuickPatch_ServiceRequest_Application_References --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 1
-QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 36
+QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 35
 QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Application_Events #607D8B : 5
 QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Domain_Common #607D8B : 1
 QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Domain_Quotes #607D8B : 1
 QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Domain_Ratings #607D8B : 4
-QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 22
+QuickPatch_ServiceRequest_Application_ServiceRequests --> QuickPatch_ServiceRequest_Domain_ServiceRequests #607D8B : 23
 QuickPatch_ServiceRequest_Application_Tenants --> QuickPatch_ServiceRequest_Application_Abstractions #607D8B : 3
 QuickPatch_ServiceRequest_Application_Tenants --> QuickPatch_ServiceRequest_Application_Events #607D8B : 2
 QuickPatch_ServiceRequest_Application_Tenants --> QuickPatch_ServiceRequest_Domain_Tenants #607D8B : 1

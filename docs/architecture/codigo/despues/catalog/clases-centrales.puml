@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title Catalog — clases más conectadas (despues, 6345700)
+title Catalog — clases más conectadas (despues, 9c574e0)
 hide empty members
 skinparam shadowing false
 class "Api.Endpoints.CategoryEndpoints" as QuickPatch_Catalog_Api_Endpoints_CategoryEndpoints <<Api>> {

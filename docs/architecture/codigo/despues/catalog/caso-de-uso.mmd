@@ -1,0 +1,33 @@
+classDiagram
+    direction LR
+    namespace Api {
+        class CategoryEndpoints
+    }
+    namespace Application {
+        class CreateCategoryHandler
+        class ITenantUnitOfWork {
+            <<interface>>
+        }
+        class ICategoryRepository {
+            <<interface>>
+        }
+        class IOutbox {
+            <<interface>>
+        }
+    }
+    namespace Domain {
+        class Category
+    }
+    namespace Infrastructure {
+        class TenantUnitOfWork
+        class CategoryRepository
+        class EfOutbox
+    }
+    CategoryEndpoints --> CreateCategoryHandler : invoca
+    CreateCategoryHandler --> ITenantUnitOfWork : usa
+    TenantUnitOfWork ..|> ITenantUnitOfWork : implementa
+    CreateCategoryHandler --> ICategoryRepository : usa
+    CategoryRepository ..|> ICategoryRepository : implementa
+    CreateCategoryHandler --> IOutbox : usa
+    EfOutbox ..|> IOutbox : implementa
+    CreateCategoryHandler ..> Category : crea o usa

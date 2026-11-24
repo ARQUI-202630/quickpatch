@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title Identity — paquetes (despues, 21fa2e6)
+title Identity — paquetes (despues, 6631e7f)
 skinparam packageStyle rectangle
 skinparam shadowing false
 left to right direction
@@ -9,7 +9,7 @@ package "Api" {
   component "Api.Bootstrap\n5 tipos" as QuickPatch_Identity_Api_Bootstrap
   component "Api.Endpoints\n31 tipos" as QuickPatch_Identity_Api_Endpoints
   component "Api.Http\n3 tipos" as QuickPatch_Identity_Api_Http
-  component "Api.Security\n8 tipos" as QuickPatch_Identity_Api_Security
+  component "Api.Security\n9 tipos" as QuickPatch_Identity_Api_Security
 }
 package "Application" {
   component "Application\n1 tipos" as QuickPatch_Identity_Application
@@ -18,7 +18,7 @@ package "Application" {
   component "Application.Companies\n12 tipos" as QuickPatch_Identity_Application_Companies
   component "Application.Events\n9 tipos" as QuickPatch_Identity_Application_Events
   component "Application.Platform\n7 tipos" as QuickPatch_Identity_Application_Platform
-  component "Application.Technicians\n20 tipos" as QuickPatch_Identity_Application_Technicians
+  component "Application.Technicians\n22 tipos" as QuickPatch_Identity_Application_Technicians
   component "Application.Users\n5 tipos" as QuickPatch_Identity_Application_Users
 }
 package "Domain" {
@@ -46,7 +46,7 @@ QuickPatch_Identity_Api_Bootstrap --> QuickPatch_Identity_Api_Security #607D8B :
 QuickPatch_Identity_Api_Bootstrap --> QuickPatch_Identity_Application_Auth #607D8B : 12
 QuickPatch_Identity_Api_Bootstrap --> QuickPatch_Identity_Domain_Common #607D8B : 1
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Api_Http #607D8B : 6
-QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Api_Security #607D8B : 21
+QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Api_Security #607D8B : 24
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Application_Abstractions #607D8B : 5
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Application_Auth #607D8B : 19
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Application_Companies #607D8B : 11
@@ -58,12 +58,11 @@ QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Domain_Companies #607D
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Domain_Technicians #607D8B : 3
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Domain_Tenants #607D8B : 2
 QuickPatch_Identity_Api_Endpoints --> QuickPatch_Identity_Domain_Users #607D8B : 4
-QuickPatch_Identity_Api_Http --> QuickPatch_Identity_Api_Security #607D8B : 1
 QuickPatch_Identity_Api_Security --> QuickPatch_Identity_Application_Abstractions #607D8B : 2
 QuickPatch_Identity_Application --> QuickPatch_Identity_Application_Auth #607D8B : 8
 QuickPatch_Identity_Application --> QuickPatch_Identity_Application_Companies #607D8B : 5
 QuickPatch_Identity_Application --> QuickPatch_Identity_Application_Platform #607D8B : 3
-QuickPatch_Identity_Application --> QuickPatch_Identity_Application_Technicians #607D8B : 7
+QuickPatch_Identity_Application --> QuickPatch_Identity_Application_Technicians #607D8B : 8
 QuickPatch_Identity_Application --> QuickPatch_Identity_Application_Users #607D8B : 3
 QuickPatch_Identity_Application --> QuickPatch_Identity_Domain_Users #607D8B : 1
 QuickPatch_Identity_Application_Abstractions --> QuickPatch_Identity_Domain_Audit #607D8B : 1
@@ -71,9 +70,8 @@ QuickPatch_Identity_Application_Abstractions --> QuickPatch_Identity_Domain_Comp
 QuickPatch_Identity_Application_Abstractions --> QuickPatch_Identity_Domain_Technicians #607D8B : 1
 QuickPatch_Identity_Application_Abstractions --> QuickPatch_Identity_Domain_Tenants #607D8B : 2
 QuickPatch_Identity_Application_Abstractions --> QuickPatch_Identity_Domain_Users #607D8B : 4
-QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Application_Abstractions #607D8B : 40
-QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Application_Events #607D8B : 1
-QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Application_Technicians #607D8B : 3
+QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Application_Abstractions #607D8B : 37
+QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Application_Technicians #607D8B : 5
 QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Domain_Audit #607D8B : 1
 QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Domain_Common #607D8B : 1
 QuickPatch_Identity_Application_Auth --> QuickPatch_Identity_Domain_Technicians #607D8B : 4
@@ -93,13 +91,13 @@ QuickPatch_Identity_Application_Platform --> QuickPatch_Identity_Application_Eve
 QuickPatch_Identity_Application_Platform --> QuickPatch_Identity_Domain_Audit #607D8B : 2
 QuickPatch_Identity_Application_Platform --> QuickPatch_Identity_Domain_Common #607D8B : 1
 QuickPatch_Identity_Application_Platform --> QuickPatch_Identity_Domain_Tenants #607D8B : 5
-QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Application_Abstractions #607D8B : 28
+QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Application_Abstractions #607D8B : 29
 QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Application_Events #607D8B : 4
 QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Audit #607D8B : 1
 QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Common #607D8B : 2
-QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Technicians #607D8B : 7
+QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Technicians #607D8B : 8
 QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Tenants #607D8B : 2
-QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Users #607D8B : 9
+QuickPatch_Identity_Application_Technicians --> QuickPatch_Identity_Domain_Users #607D8B : 10
 QuickPatch_Identity_Application_Users --> QuickPatch_Identity_Application_Abstractions #607D8B : 8
 QuickPatch_Identity_Application_Users --> QuickPatch_Identity_Domain_Common #607D8B : 1
 QuickPatch_Identity_Application_Users --> QuickPatch_Identity_Domain_Technicians #607D8B : 3

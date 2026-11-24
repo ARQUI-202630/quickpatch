@@ -1,12 +1,12 @@
 # ServiceRequest — despues
 
-Código de `origin/develop` en `45c0653`, generado el 2026-11-19 con `tools/arquitectura/generar.py`.
+Código de `origin/develop` en `04391e4`, generado el 2026-11-23 con `tools/arquitectura/generar.py`.
 
 | Métrica | Valor |
 |---|---|
-| Tipos (sin migraciones) | 211 |
+| Tipos (sin migraciones) | 212 |
 | Paquetes | 31 |
-| Dependencias entre tipos | 601 |
+| Dependencias entre tipos | 604 |
 | Dependencias entre paquetes | 109 |
 | Ciclos entre paquetes | 0 |
 | Paquetes dentro de ciclos | 0 |
@@ -25,7 +25,7 @@ Código de `origin/develop` en `45c0653`, generado el 2026-11-19 con `tools/arqu
 | Api → Application | 54 |
 | Api → Domain | 31 |
 | Api → Infrastructure | 1 |
-| Application → Domain | 71 |
+| Application → Domain | 72 |
 | Infrastructure → Application | 73 |
 | Infrastructure → Domain | 19 |
 
@@ -34,8 +34,8 @@ Código de `origin/develop` en `45c0653`, generado el 2026-11-19 con `tools/arqu
 | Tipo | Capa | Líneas | Sale | Entra |
 |---|---|---|---|---|
 | `Api.Endpoints.ExecutionEndpoints` | Api | 188 | 21 | 1 |
-| `Application.ServiceRequests.CreateServiceRequestHandler` | Application | 93 | 20 | 2 |
 | `Api.Endpoints.AdminServiceRequestEndpoints` | Api | 97 | 19 | 1 |
+| `Application.ServiceRequests.CreateServiceRequestHandler` | Application | 90 | 18 | 2 |
 | `Api.Endpoints.QuoteEndpoints` | Api | 109 | 17 | 1 |
 | `Api.Endpoints.ServiceRequestEndpoints` | Api | 114 | 14 | 1 |
 | `Application.Events.ServiceRequestEvents` | Application | 43 | 14 | 8 |
@@ -55,7 +55,7 @@ Código de `origin/develop` en `45c0653`, generado el 2026-11-19 con `tools/arqu
 | `Infrastructure.Persistence.ServiceRequestDbContext` | Infrastructure | 15 | 9 |
 | `Domain.Common.DomainValidationException` | Domain | 14 | 0 |
 | `Domain.Quotes.Quote` | Domain | 14 | 1 |
-| `Domain.ServiceRequests.GeoPoint` | Domain | 13 | 0 |
+| `Domain.ServiceRequests.GeoPoint` | Domain | 14 | 0 |
 | `Application.Abstractions.IOutbox` | Application | 12 | 1 |
 | `Application.Events.EventEnvelope` | Application | 10 | 0 |
 
@@ -100,7 +100,7 @@ Ninguna.
 | `Application.Quotes` | 12 | 4 | 4 | 0.5 | 0.92 |
 | `Application.Ratings` | 3 | 2 | 4 | 0.67 | 1.0 |
 | `Application.References` | 2 | 2 | 3 | 0.6 | 0.5 |
-| `Application.ServiceRequests` | 27 | 2 | 6 | 0.75 | 1.04 |
+| `Application.ServiceRequests` | 28 | 2 | 6 | 0.75 | 1.07 |
 | `Application.Tenants` | 2 | 2 | 3 | 0.6 | 1.0 |
 | `Domain.Categories` | 1 | 5 | 0 | 0.0 | 1.0 |
 | `Domain.Common` | 1 | 6 | 0 | 0.0 | 1.0 |
@@ -120,7 +120,7 @@ Ninguna.
 
 ## Diagrama de paquetes
 
-Fuente: [`paquetes.puml`](paquetes.puml) (PlantUML) y [`paquetes.mmd`](paquetes.mmd). Clases más conectadas: [`clases-centrales.puml`](clases-centrales.puml).
+Fuente: [`paquetes.puml`](paquetes.puml) (PlantUML) y [`paquetes.mmd`](paquetes.mmd). Clases más conectadas: [`clases-centrales.puml`](clases-centrales.puml). Clases del caso de uso principal (C4 · Code): [`caso-de-uso.md`](caso-de-uso.md).
 
 ```mermaid
 flowchart LR
@@ -141,7 +141,7 @@ flowchart LR
     QuickPatch_ServiceRequest_Application_Quotes["Application.Quotes (12)"]
     QuickPatch_ServiceRequest_Application_Ratings["Application.Ratings (3)"]
     QuickPatch_ServiceRequest_Application_References["Application.References (2)"]
-    QuickPatch_ServiceRequest_Application_ServiceRequests["Application.ServiceRequests (27)"]
+    QuickPatch_ServiceRequest_Application_ServiceRequests["Application.ServiceRequests (28)"]
     QuickPatch_ServiceRequest_Application_Tenants["Application.Tenants (2)"]
   end
   subgraph Domain
@@ -189,7 +189,7 @@ flowchart LR
   QuickPatch_ServiceRequest_Application -->|5| QuickPatch_ServiceRequest_Application_Quotes
   QuickPatch_ServiceRequest_Application -->|1| QuickPatch_ServiceRequest_Application_Ratings
   QuickPatch_ServiceRequest_Application -->|2| QuickPatch_ServiceRequest_Application_References
-  QuickPatch_ServiceRequest_Application -->|8| QuickPatch_ServiceRequest_Application_ServiceRequests
+  QuickPatch_ServiceRequest_Application -->|9| QuickPatch_ServiceRequest_Application_ServiceRequests
   QuickPatch_ServiceRequest_Application -->|1| QuickPatch_ServiceRequest_Application_Tenants
   QuickPatch_ServiceRequest_Application_Abstractions -->|1| QuickPatch_ServiceRequest_Domain_Categories
   QuickPatch_ServiceRequest_Application_Abstractions -->|1| QuickPatch_ServiceRequest_Domain_Evidence
@@ -226,12 +226,12 @@ flowchart LR
   QuickPatch_ServiceRequest_Application_References -->|3| QuickPatch_ServiceRequest_Application_Abstractions
   QuickPatch_ServiceRequest_Application_References -->|1| QuickPatch_ServiceRequest_Domain_Categories
   QuickPatch_ServiceRequest_Application_References -->|1| QuickPatch_ServiceRequest_Domain_ServiceRequests
-  QuickPatch_ServiceRequest_Application_ServiceRequests -->|36| QuickPatch_ServiceRequest_Application_Abstractions
+  QuickPatch_ServiceRequest_Application_ServiceRequests -->|35| QuickPatch_ServiceRequest_Application_Abstractions
   QuickPatch_ServiceRequest_Application_ServiceRequests -->|5| QuickPatch_ServiceRequest_Application_Events
   QuickPatch_ServiceRequest_Application_ServiceRequests -->|1| QuickPatch_ServiceRequest_Domain_Common
   QuickPatch_ServiceRequest_Application_ServiceRequests -->|1| QuickPatch_ServiceRequest_Domain_Quotes
   QuickPatch_ServiceRequest_Application_ServiceRequests -->|4| QuickPatch_ServiceRequest_Domain_Ratings
-  QuickPatch_ServiceRequest_Application_ServiceRequests -->|22| QuickPatch_ServiceRequest_Domain_ServiceRequests
+  QuickPatch_ServiceRequest_Application_ServiceRequests -->|23| QuickPatch_ServiceRequest_Domain_ServiceRequests
   QuickPatch_ServiceRequest_Application_Tenants -->|3| QuickPatch_ServiceRequest_Application_Abstractions
   QuickPatch_ServiceRequest_Application_Tenants -->|2| QuickPatch_ServiceRequest_Application_Events
   QuickPatch_ServiceRequest_Application_Tenants -->|1| QuickPatch_ServiceRequest_Domain_Tenants

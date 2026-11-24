@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title Communication — clases más conectadas (despues, ccd314d)
+title Communication — clases más conectadas (despues, 92f11ed)
 hide empty members
 skinparam shadowing false
 class "Application.Chat.SendChatMessageHandler" as QuickPatch_Communication_Application_Chat_SendChatMessageHandler <<Application>> {

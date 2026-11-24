@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title Actors — paquetes (despues, 5c85eb6)
+title Actors — paquetes (despues, 2759bd6)
 skinparam packageStyle rectangle
 skinparam shadowing false
 left to right direction
