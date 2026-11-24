@@ -1,0 +1,217 @@
+scrum-68-cuenta-corporativa contra QA, 2026-11-24
+Colección: tests/e2e/scrum-68-cuenta-corporativa.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-11-24T03:31:36.213Z. Duración: 23 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-68 Cuenta corporativa de punta a punta
+
+□ 1. Registro de la empresa
+└ Registro de la empresa con su primer usuario
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [201 Created, 729B, 1164ms]
+  √  201 con el contrato CompanyRegistered
+
+└ El mismo NIT en el tenant → 409 nit-registrado
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [409 Conflict, 464B, 43ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo nit-registrado
+
+└ El mismo correo → 409 correo-registrado
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [409 Conflict, 466B, 40ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo correo-registrado
+
+└ Datos inválidos → 400 por campo con prefijo
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [400 Bad Request, 949B, 31ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo validacion
+  √  errores de la empresa y del usuario
+
+└ Login de la empresa
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.33kB, 969ms]
+  √  200 como empresa_contacto de la empresa
+  ┌
+  │ `Using "atob" is deprecated. Use "require('atob')" ins
+  │ tead.`
+  └
+  √  el token trae company_id
+
+└ El perfil trae companyId
+  GET https://qa.quickpatch.internal/api/v1/users/me [200 OK, 466B, 38ms]
+  √  200
+  √  companyId de la empresa
+
+└ La empresa del token
+  GET https://qa.quickpatch.internal/api/v1/companies/me [200 OK, 463B, 57ms]
+  √  200
+  √  contrato Company con el NIT registrado
+
+□ 2. Otro usuario de la empresa con su invitación
+└ Agregar un usuario a la empresa
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users [201 Created, 686B, 1026ms]
+  √  201 con la invitación y la misma empresa
+
+└ Correo repetido → 409
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users [409 Conflict, 466B, 935ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo correo-registrado
+
+└ Datos inválidos → 400
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users [400 Bad Request, 592B, 34ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo validacion
+
+└ Sin usar la invitación no puede entrar → 401
+  POST https://qa.quickpatch.internal/api/v1/auth/login [401 Unauthorized, 478B, 915ms]
+  √  401
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo credenciales-invalidas
+
+└ Lista: el nuevo aparece sin contraseña definida
+  GET https://qa.quickpatch.internal/api/v1/companies/me/users [200 OK, 696B, 79ms]
+  √  200
+  √  dos usuarios; el nuevo pendiente
+
+└ El usuario define su contraseña con la invitación
+  POST https://qa.quickpatch.internal/api/v1/auth/password/setup [204 No Content, 159B, 1005ms]
+  √  204
+
+└ La invitación no sirve dos veces → 400 enlace-invalido
+  POST https://qa.quickpatch.internal/api/v1/auth/password/setup [400 Bad Request, 474B, 917ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo enlace-invalido
+
+└ Login de el segundo usuario
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.33kB, 917ms]
+  √  200 como empresa_contacto de la empresa
+  ┌
+  │ `Using "atob" is deprecated. Use "require('atob')" ins
+  │ tead.`
+  └
+  √  el token trae company_id
+
+└ El segundo usuario ve a los dos, ya activos
+  GET https://qa.quickpatch.internal/api/v1/companies/me/users [200 OK, 695B, 44ms]
+  √  200
+  √  dos usuarios con la contraseña definida
+
+└ Nadie recibe invitación para el primer usuario → 409 (nadie toma su cuenta)
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users/01a20b9b-f54d-7fe5-8279-19041672d2fb/invitation [409 Conflict, 476B, 56ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo contrasena-definida
+
+└ Ni para quien ya usó la suya → 409
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users/01a20b9c-0402-7e97-ae51-2de72521649e/invitation [409 Conflict, 476B, 50ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo contrasena-definida
+
+└ Agregar un tercero
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users [201 Created, 685B, 857ms]
+  √  201
+
+└ Enlace nuevo para el tercero, que aún no lo usa
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users/01a20b9c-1e90-7b5e-901d-a718f1005a75/invitation [201 Created, 432B, 43ms]
+  √  201
+  √  contrato Invitation
+
+□ 3. Aislamiento y roles
+└ Otra empresa del mismo tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [201 Created, 713B, 969ms]
+  √  201 con el contrato CompanyRegistered
+
+└ Login de la otra empresa
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.33kB, 1916ms]
+  √  200 como empresa_contacto de la empresa
+  ┌
+  │ `Using "atob" is deprecated. Use "require('atob')" ins
+  │ tead.`
+  └
+  √  el token trae company_id
+
+└ La otra empresa solo ve a su usuario
+  GET https://qa.quickpatch.internal/api/v1/companies/me/users [200 OK, 477B, 43ms]
+  √  200
+  √  un usuario
+
+└ No renueva la invitación de un usuario ajeno → 404
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users/01a20b9c-1e90-7b5e-901d-a718f1005a75/invitation [404 Not Found, 464B, 42ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo no-encontrado
+
+└ Registro de un cliente hogar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 423B, 987ms]
+  √  201
+
+└ Login del cliente hogar
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 969ms]
+  √  200
+  √  sin companyId
+  ┌
+  │ `Using "atob" is deprecated. Use "require('atob')" ins
+  │ tead.`
+  └
+  √  el token no trae company_id
+
+└ El cliente hogar no tiene empresa → 403
+  GET https://qa.quickpatch.internal/api/v1/companies/me [403 Forbidden, 443B, 83ms]
+  √  403
+
+└ Sin token → 401
+  GET https://qa.quickpatch.internal/api/v1/companies/me/users [401 Unauthorized, 476B, 34ms]
+  √  401
+
+└ El mismo NIT en el tenant Beta es otra cuenta (DEP-13)
+  POST https://qa.quickpatch.internal/api/v1/auth/register/company [201 Created, 720B, 1705ms]
+  √  201 con el contrato CompanyRegistered
+  √  otra empresa
+
+└ Login de la empresa de Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.33kB, 933ms]
+  √  200 como empresa_contacto de la empresa
+  ┌
+  │ `Using "atob" is deprecated. Use "require('atob')" ins
+  │ tead.`
+  └
+  √  el token trae company_id
+
+└ La empresa de Beta no ve los usuarios de Alfa
+  GET https://qa.quickpatch.internal/api/v1/companies/me/users [200 OK, 477B, 42ms]
+  √  200
+  √  solo su usuario
+
+└ Ni renueva la invitación de un usuario de Alfa → 404 (RLS)
+  POST https://qa.quickpatch.internal/api/v1/companies/me/users/01a20b9c-1e90-7b5e-901d-a718f1005a75/invitation [404 Not Found, 464B, 33ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  32 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  32 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  32 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  68 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 19.6s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 13.81kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 530ms [min: 31ms, max: 1916ms, s.d.: 553ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:63748) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)

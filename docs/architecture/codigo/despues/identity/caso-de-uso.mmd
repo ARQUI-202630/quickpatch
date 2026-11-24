@@ -1,0 +1,57 @@
+classDiagram
+    direction LR
+    namespace Api {
+        class AuthEndpoints
+    }
+    namespace Application {
+        class LoginHandler
+        class ITenantUnitOfWork {
+            <<interface>>
+        }
+        class ITenantRepository {
+            <<interface>>
+        }
+        class IUserRepository {
+            <<interface>>
+        }
+        class ITechnicianProfileRepository {
+            <<interface>>
+        }
+        class IPasswordHasher {
+            <<interface>>
+        }
+        class ITokenIssuer {
+            <<interface>>
+        }
+    }
+    namespace Domain {
+        class LockoutPolicy
+        class TechnicianProfile
+        class Tenant
+        class User
+    }
+    namespace Infrastructure {
+        class TenantUnitOfWork
+        class TenantRepository
+        class UserRepository
+        class TechnicianProfileRepository
+        class BCryptPasswordHasher
+        class RsaTokenIssuer
+    }
+    AuthEndpoints --> LoginHandler : invoca
+    LoginHandler --> ITenantUnitOfWork : usa
+    TenantUnitOfWork ..|> ITenantUnitOfWork : implementa
+    LoginHandler --> ITenantRepository : usa
+    TenantRepository ..|> ITenantRepository : implementa
+    LoginHandler --> IUserRepository : usa
+    UserRepository ..|> IUserRepository : implementa
+    LoginHandler --> ITechnicianProfileRepository : usa
+    TechnicianProfileRepository ..|> ITechnicianProfileRepository : implementa
+    LoginHandler --> IPasswordHasher : usa
+    BCryptPasswordHasher ..|> IPasswordHasher : implementa
+    LoginHandler --> ITokenIssuer : usa
+    RsaTokenIssuer ..|> ITokenIssuer : implementa
+    LoginHandler --> LockoutPolicy : usa
+    LoginHandler ..> TechnicianProfile : crea o usa
+    LoginHandler ..> Tenant : crea o usa
+    LoginHandler ..> User : crea o usa

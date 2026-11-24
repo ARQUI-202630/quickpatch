@@ -1,0 +1,37 @@
+classDiagram
+    direction LR
+    namespace Api {
+        class ChatEndpoints
+    }
+    namespace Application {
+        class SendChatMessageHandler
+        class IChatStore {
+            <<interface>>
+        }
+        class IRealtimeConnections {
+            <<interface>>
+        }
+    }
+    namespace Domain {
+        class ChatMessage
+        class ChatParticipants
+        class ChatMessageFrame
+        class ChatMessageNotice
+        class Delivery
+        class UserRecipient
+    }
+    namespace Infrastructure {
+        class ChatStore
+        class UnavailableChatStore
+    }
+    ChatEndpoints --> SendChatMessageHandler : invoca
+    SendChatMessageHandler --> IChatStore : usa
+    ChatStore ..|> IChatStore : implementa
+    UnavailableChatStore ..|> IChatStore : implementa
+    SendChatMessageHandler --> IRealtimeConnections : usa
+    SendChatMessageHandler ..> ChatMessage : crea o usa
+    SendChatMessageHandler ..> ChatParticipants : crea o usa
+    SendChatMessageHandler ..> ChatMessageFrame : crea o usa
+    SendChatMessageHandler ..> ChatMessageNotice : crea o usa
+    SendChatMessageHandler ..> Delivery : crea o usa
+    SendChatMessageHandler ..> UserRecipient : crea o usa

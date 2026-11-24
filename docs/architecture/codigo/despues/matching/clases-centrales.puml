@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title Matching — clases más conectadas (despues, 8e6450c)
+title Matching — clases más conectadas (despues, 2816723)
 hide empty members
 skinparam shadowing false
 class "infrastructure.messaging.KafkaConfig" as co_quickpatch_matching_infrastructure_messaging_KafkaConfig <<Infrastructure>> {

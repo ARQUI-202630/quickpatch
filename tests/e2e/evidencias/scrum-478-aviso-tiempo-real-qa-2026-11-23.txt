@@ -1,0 +1,11 @@
+scrum-478-aviso-tiempo-real contra QA, 2026-11-23
+Script: tests/e2e/scrum-478-aviso-tiempo-real.mjs (Node, certificado de QA verificado con NODE_EXTRA_CA_CERTS). Codigo de salida: 0.
+
+OK    Registro del cliente  (HTTP 201)
+OK    Login del cliente  (HTTP 200)
+OK    Solicitud creada  (HTTP 201, buscando_tecnico)
+OK    Canal /v1/realtime autenticado  (auth.accepted)
+OK    El cliente cancela  (HTTP 200)
+OK    Llega service-request.status-changed con cancelado  (1030 ms después de cancelar)
+
+6/6 OK. Cliente de prueba: aviso478.mwu50a6r@quickpatch.test; solicitud 01a20b9b-2579-7158-9679-023257a58f1f.

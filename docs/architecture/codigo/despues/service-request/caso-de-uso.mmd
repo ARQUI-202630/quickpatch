@@ -1,0 +1,67 @@
+classDiagram
+    direction LR
+    namespace Api {
+        class ServiceRequestEndpoints
+    }
+    namespace Application {
+        class CreateServiceRequestHandler
+        class ITenantUnitOfWork {
+            <<interface>>
+        }
+        class IServiceRequestRepository {
+            <<interface>>
+        }
+        class ICategoryReplicaRepository {
+            <<interface>>
+        }
+        class ITenantStatusReplicaRepository {
+            <<interface>>
+        }
+        class IOutbox {
+            <<interface>>
+        }
+        class ServiceLocationResolver
+        class IGeocoder {
+            <<interface>>
+        }
+        class ILocalityCatalog {
+            <<interface>>
+        }
+    }
+    namespace Domain {
+        class CoverageArea
+        class GeoPoint
+        class Locality
+        class ServiceRequest
+    }
+    namespace Infrastructure {
+        class TenantUnitOfWork
+        class ServiceRequestRepository
+        class CategoryReplicaRepository
+        class TenantStatusReplicaRepository
+        class EfOutbox
+        class NominatimGeocoder
+        class LocalityCatalog
+    }
+    ServiceRequestEndpoints --> CreateServiceRequestHandler : invoca
+    CreateServiceRequestHandler --> ITenantUnitOfWork : usa
+    TenantUnitOfWork ..|> ITenantUnitOfWork : implementa
+    CreateServiceRequestHandler --> IServiceRequestRepository : usa
+    ServiceRequestRepository ..|> IServiceRequestRepository : implementa
+    CreateServiceRequestHandler --> ICategoryReplicaRepository : usa
+    CategoryReplicaRepository ..|> ICategoryReplicaRepository : implementa
+    CreateServiceRequestHandler --> ITenantStatusReplicaRepository : usa
+    TenantStatusReplicaRepository ..|> ITenantStatusReplicaRepository : implementa
+    CreateServiceRequestHandler --> IOutbox : usa
+    EfOutbox ..|> IOutbox : implementa
+    CreateServiceRequestHandler --> ServiceLocationResolver : usa
+    ServiceLocationResolver --> IGeocoder : usa
+    NominatimGeocoder ..|> IGeocoder : implementa
+    ServiceLocationResolver --> ILocalityCatalog : usa
+    LocalityCatalog ..|> ILocalityCatalog : implementa
+    ServiceLocationResolver --> CoverageArea : usa
+    CreateServiceRequestHandler ..> GeoPoint : crea o usa
+    CreateServiceRequestHandler ..> Locality : crea o usa
+    CreateServiceRequestHandler ..> ServiceRequest : crea o usa
+    ServiceLocationResolver ..> GeoPoint : crea o usa
+    ServiceLocationResolver ..> Locality : crea o usa

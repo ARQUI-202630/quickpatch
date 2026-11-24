@@ -1,0 +1,255 @@
+scrum-96-evidencia contra QA, 2026-11-24
+Colección: tests/e2e/scrum-96-evidencia.postman_collection.json (newman 6, reporter cli). Ambiente: https://qa.quickpatch.internal.
+Inicio: 2026-11-24T03:34:12.780Z. Duración: 26 s. Código de salida: 0.
+Cuentas de prueba nuevas con clave aleatoria; las claves y los tokens no se guardan en esta evidencia.
+
+newman
+
+QUICKPATCH — SCRUM-96 Iniciar, evidencia y completar de punta a punta
+
+□ 0. Preparación: categoría propia, técnico aprobado y clientes
+└ Login del administrador del tenant
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 1046ms]
+  √  200 con rol admin_tenant
+
+└ Categoría solo para esta corrida (solo el técnico de la prueba la atiende)
+  POST https://qa.quickpatch.internal/api/v1/catalog/admin/categories [201 Created, 437B, 41ms]
+  √  201
+
+└ Registro del técnico con esa especialidad
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 889ms]
+  √  201
+
+└ El administrador aprueba al técnico
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a20b9e-5db2-7e7d-8852-f166dd990b3b/approve [200 OK, 321B, 39ms]
+  √  200
+
+└ Login del técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 909ms]
+  √  200 con rol tecnico
+
+└ El técnico cubre toda Bogotá (espera a que Matching lo conozca)
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/coverage [200 OK, 1.08kB, 66ms]
+  √  200
+
+└ El técnico queda disponible
+  PUT https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 40ms]
+  √  200
+
+└ Registro de otro técnico, sin aprobar
+  POST https://qa.quickpatch.internal/api/v1/auth/register/technician [201 Created, 441B, 930ms]
+  √  201
+
+└ Login del otro técnico
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 886ms]
+  √  200 con rol tecnico
+
+└ Registro del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 426B, 919ms]
+  √  201
+
+└ Login del cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 948ms]
+  √  200 con rol cliente
+
+└ Registro del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 432B, 1007ms]
+  √  201
+
+└ Login del otro cliente
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.21kB, 838ms]
+  √  200 con rol cliente
+
+└ Registro del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/register/client [201 Created, 439B, 1208ms]
+  √  201
+
+└ Login del cliente del tenant Beta
+  POST https://qa.quickpatch.internal/api/v1/auth/login [200 OK, 1.22kB, 909ms]
+  √  200 con rol cliente
+
+□ 1. Hasta la cotización aceptada
+└ Crear la solicitud 1 (espera la réplica de la categoría)
+  POST https://qa.quickpatch.internal/api/v1/service-requests [201 Created, 847B, 44ms]
+  √  201
+
+└ El técnico ve la oferta de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 419B, 43ms]
+
+Attempting to set next request to 2cdfc533-3287-4e37-b911-c43b94e5fbb9
+
+└ El técnico ve la oferta de la solicitud 1
+  GET https://qa.quickpatch.internal/api/v1/matching/offers?status=pendiente [200 OK, 817B, 34ms]
+  √  la oferta está pendiente para el técnico
+
+└ El técnico acepta la oferta de la solicitud 1
+  POST https://qa.quickpatch.internal/api/v1/matching/offers/a7614413-8c63-4fde-856c-90c53fe09fd1/accept [200 OK, 447B, 39ms]
+  √  200
+
+└ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60 [200 OK, 772B, 37ms]
+
+Attempting to set next request to cc42774c-d75f-4059-b1b1-5011333159b8
+
+└ La solicitud 1 queda asignada (matching.technician-assigned)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60 [200 OK, 900B, 45ms]
+  √  asignado al técnico de la prueba
+
+└ El técnico cotiza
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/quotes [201 Created, 648B, 43ms]
+  √  201 con el contrato Quote
+
+└ El cliente acepta
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/quotes/01a20b9e-99da-7a91-9bf4-2cc146e58804/accept [200 OK, 366B, 47ms]
+  √  200 con el contrato QuoteDecision
+
+□ 2. Iniciar
+└ Subir una foto antes de iniciar → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/evidence [409 Conflict, 567B, 42ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ Completar antes de iniciar → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/complete [409 Conflict, 567B, 36ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ El cliente no inicia → 403
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/start [403 Forbidden, 443B, 30ms]
+  √  403
+  √  Problem Details (RFC 9457) con correlationId
+
+└ Otro técnico no inicia → 404
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/start [404 Not Found, 457B, 40ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ El técnico asignado inicia
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/start [200 OK, 342B, 38ms]
+  √  200 con el contrato StartedServiceRequest
+
+└ Iniciar otra vez → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/start [409 Conflict, 565B, 32ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ El cliente ya no puede cancelar → 409 (RN-SR7)
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/cancel [409 Conflict, 521B, 37ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+□ 3. Evidencia en Garage
+└ Completar sin fotos → 422 evidencia-requerida
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/complete [422 Unprocessable Entity, 485B, 48ms]
+  √  422
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo evidencia-requerida
+
+└ Un archivo que no es imagen → 400 en file
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/evidence [400 Bad Request, 525B, 35ms]
+  √  400
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo validacion
+  √  error en file
+
+└ Otro técnico no sube → 404
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/evidence [404 Not Found, 457B, 35ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ El técnico asignado sube la foto
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/evidence [201 Created, 445B, 60ms]
+  √  201 con el contrato Evidence, sin la clave del objeto
+
+└ El cliente lista las fotos
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/evidence [200 OK, 331B, 64ms]
+  √  200
+  √  una foto, solo id y fecha
+
+└ El cliente descarga la foto desde Garage
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/evidence/01a20b9e-9f8b-780e-96f0-dd172895f05e/file [200 OK, 312B, 72ms]
+  √  200
+  √  image/png con los mismos bytes
+  √  caché privada
+
+└ El administrador del tenant ve las fotos
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/evidence [200 OK, 331B, 49ms]
+  √  200
+  √  una foto
+
+└ Otro cliente no ve las fotos → 404
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/evidence [404 Not Found, 457B, 39ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+└ El cliente de otro tenant no descarga la foto → 404 (RLS)
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/evidence/01a20b9e-9f8b-780e-96f0-dd172895f05e/file [404 Not Found, 457B, 33ms]
+  √  404
+  √  Problem Details (RFC 9457) con correlationId
+
+□ 4. Completar
+└ El técnico completa
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/complete [200 OK, 343B, 40ms]
+  √  200 con el contrato CompletedServiceRequest
+
+└ El detalle trae el inicio y el fin
+  GET https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60 [200 OK, 961B, 43ms]
+  √  completado
+  √  startedAt y completedAt
+
+└ Subir después de completar → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/evidence [409 Conflict, 558B, 35ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ Completar otra vez → 409
+  POST https://qa.quickpatch.internal/api/v1/service-requests/01a20b9e-8766-7e35-a363-cff5a32dfa60/complete [409 Conflict, 558B, 36ms]
+  √  409
+  √  Problem Details (RFC 9457) con correlationId
+  √  tipo transicion-invalida
+
+└ El técnico vuelve a disponible (Matching consumió service-request.completed)
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 435B, 33ms]
+
+Attempting to set next request to e771c615-5426-4e7a-9838-3b57808813f1
+
+└ El técnico vuelve a disponible (Matching consumió service-request.completed)
+  GET https://qa.quickpatch.internal/api/v1/technicians/me/availability [200 OK, 438B, 36ms]
+  √  técnico disponible
+
+□ Limpieza
+└ Suspender al técnico de la prueba
+  POST https://qa.quickpatch.internal/api/v1/admin/technicians/01a20b9e-5db2-7e7d-8852-f166dd990b3b/suspend [200 OK, 348B, 35ms]
+  √  200
+
+└ Desactivar la categoría de la prueba
+  PATCH https://qa.quickpatch.internal/api/v1/catalog/admin/categories/01a20b9e-5d2c-790f-8e0a-dc773f7f6f44 [200 OK, 433B, 38ms]
+  √  200
+
+┌─────────────────────────┬─────────────────────┬────────────────────┐
+│                         │            executed │             failed │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              iterations │                   1 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│                requests │                  47 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│            test-scripts │                  47 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│      prerequest-scripts │                  47 │                  0 │
+├─────────────────────────┼─────────────────────┼────────────────────┤
+│              assertions │                  71 │                  0 │
+├─────────────────────────┴─────────────────────┴────────────────────┤
+│ total run duration: 21.9s                                          │
+├────────────────────────────────────────────────────────────────────┤
+│ total data received: 16.32kB (approx)                              │
+├────────────────────────────────────────────────────────────────────┤
+│ average response time: 255ms [min: 30ms, max: 1208ms, s.d.: 388ms] │
+└────────────────────────────────────────────────────────────────────┘
+(node:16176) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:16176) [DEP0044] DeprecationWarning: The `util.isArray` API is deprecated. Please use `Array.isArray()` instead.

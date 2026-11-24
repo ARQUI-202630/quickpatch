@@ -1,22 +1,22 @@
 # Identity — despues
 
-Código de `origin/develop` en `21fa2e6`, generado el 2026-11-19 con `tools/arquitectura/generar.py`.
+Código de `origin/develop` en `6631e7f`, generado el 2026-11-23 con `tools/arquitectura/generar.py`.
 
 | Métrica | Valor |
 |---|---|
-| Tipos (sin migraciones) | 192 |
+| Tipos (sin migraciones) | 195 |
 | Paquetes | 24 |
-| Dependencias entre tipos | 629 |
-| Dependencias entre paquetes | 91 |
+| Dependencias entre tipos | 637 |
+| Dependencias entre paquetes | 89 |
 | Ciclos entre paquetes | 0 |
 | Paquetes dentro de ciclos | 0 |
 | Ciclos entre tipos | 0 |
 | Tipos en el mayor ciclo | 0 |
 | Violaciones de SDD 10.3.2 | 0 |
 | Tipos de más de 250 líneas | 0 |
-| Fan-out máximo (sin raíces de composición) | 28 |
-| Fan-out promedio | 3.28 |
-| Cohesión relacional promedio (H) | 0.78 |
+| Fan-out máximo (sin raíces de composición) | 29 |
+| Fan-out promedio | 3.27 |
+| Cohesión relacional promedio (H) | 0.79 |
 
 ## Dependencias entre capas
 
@@ -25,7 +25,7 @@ Código de `origin/develop` en `21fa2e6`, generado el 2026-11-19 con `tools/arqu
 | Api → Application | 82 |
 | Api → Domain | 19 |
 | Api → Infrastructure | 1 |
-| Application → Domain | 102 |
+| Application → Domain | 104 |
 | Infrastructure → Application | 51 |
 | Infrastructure → Domain | 20 |
 
@@ -33,31 +33,31 @@ Código de `origin/develop` en `21fa2e6`, generado el 2026-11-19 con `tools/arqu
 
 | Tipo | Capa | Líneas | Sale | Entra |
 |---|---|---|---|---|
-| `Api.Endpoints.CompanyEndpoints` | Api | 189 | 28 | 1 |
-| `Api.Endpoints.PasswordEndpoints` | Api | 165 | 24 | 1 |
-| `Api.Endpoints.AuthEndpoints` | Api | 138 | 20 | 1 |
+| `Api.Endpoints.CompanyEndpoints` | Api | 189 | 29 | 1 |
+| `Api.Endpoints.PasswordEndpoints` | Api | 165 | 25 | 1 |
+| `Api.Endpoints.AuthEndpoints` | Api | 138 | 21 | 1 |
 | `Api.Endpoints.ProviderTeamEndpoints` | Api | 108 | 16 | 1 |
-| `Application.Technicians.CreateTeamTechnicianHandler` | Application | 71 | 16 | 2 |
+| `Application.Technicians.CreateTeamTechnicianHandler` | Application | 66 | 15 | 2 |
 | `Api.Endpoints.PlatformEndpoints` | Api | 74 | 14 | 1 |
 | `Api.Endpoints.AdminTechnicianEndpoints` | Api | 72 | 13 | 1 |
 | `Application.Auth.ConfirmPasswordRecoveryHandler` | Application | 57 | 13 | 2 |
-| `Application.Auth.RegisterTechnicianHandler` | Application | 60 | 13 | 3 |
 | `Application.Companies.CreateCompanyUserHandler` | Application | 54 | 13 | 2 |
+| `Api.Bootstrap.DevelopmentUsersSeed` | Api | 56 | 12 | 1 |
 
 ## Clases más usadas (fan-in)
 
 | Tipo | Capa | Entra | Sale |
 |---|---|---|---|
-| `Domain.Users.User` | Domain | 41 | 3 |
+| `Domain.Users.User` | Domain | 42 | 3 |
 | `Application.Abstractions.ITenantUnitOfWork` | Application | 25 | 0 |
 | `Domain.Tenants.Tenant` | Domain | 23 | 1 |
+| `Domain.Technicians.TechnicianProfile` | Domain | 22 | 1 |
 | `Application.Abstractions.IUserRepository` | Application | 21 | 1 |
-| `Domain.Technicians.TechnicianProfile` | Domain | 21 | 1 |
 | `Domain.Common.DomainValidationException` | Domain | 20 | 0 |
 | `Infrastructure.Persistence.IdentityDbContext` | Infrastructure | 13 | 8 |
-| `Application.Abstractions.ITechnicianProfileRepository` | Application | 12 | 3 |
 | `Application.Abstractions.ITenantRepository` | Application | 12 | 1 |
 | `Application.Abstractions.IPasswordHasher` | Application | 11 | 0 |
+| `Application.Abstractions.ITechnicianProfileRepository` | Application | 11 | 3 |
 
 ## Clases más grandes
 
@@ -89,15 +89,15 @@ Ninguna.
 | `(global)` | 1 | 0 | 6 | 1.0 | 1.0 |
 | `Api.Bootstrap` | 5 | 1 | 3 | 0.75 | 1.0 |
 | `Api.Endpoints` | 31 | 1 | 13 | 0.93 | 1.39 |
-| `Api.Http` | 3 | 2 | 1 | 0.33 | 0.33 |
-| `Api.Security` | 8 | 4 | 1 | 0.2 | 0.5 |
+| `Api.Http` | 3 | 2 | 0 | 0.0 | 0.33 |
+| `Api.Security` | 9 | 3 | 1 | 0.25 | 0.56 |
 | `Application` | 1 | 1 | 6 | 0.86 | 1.0 |
 | `Application.Abstractions` | 30 | 12 | 5 | 0.29 | 0.37 |
-| `Application.Auth` | 22 | 3 | 8 | 0.73 | 0.68 |
+| `Application.Auth` | 22 | 3 | 7 | 0.7 | 0.68 |
 | `Application.Companies` | 12 | 2 | 6 | 0.75 | 0.92 |
-| `Application.Events` | 9 | 4 | 3 | 0.43 | 0.78 |
+| `Application.Events` | 9 | 3 | 3 | 0.5 | 0.78 |
 | `Application.Platform` | 7 | 2 | 5 | 0.71 | 0.71 |
-| `Application.Technicians` | 20 | 5 | 7 | 0.58 | 0.9 |
+| `Application.Technicians` | 22 | 5 | 7 | 0.58 | 0.95 |
 | `Application.Users` | 5 | 2 | 4 | 0.67 | 0.8 |
 | `Domain.Audit` | 1 | 5 | 0 | 0.0 | 1.0 |
 | `Domain.Common` | 1 | 11 | 0 | 0.0 | 1.0 |
@@ -113,7 +113,7 @@ Ninguna.
 
 ## Diagrama de paquetes
 
-Fuente: [`paquetes.puml`](paquetes.puml) (PlantUML) y [`paquetes.mmd`](paquetes.mmd). Clases más conectadas: [`clases-centrales.puml`](clases-centrales.puml).
+Fuente: [`paquetes.puml`](paquetes.puml) (PlantUML) y [`paquetes.mmd`](paquetes.mmd). Clases más conectadas: [`clases-centrales.puml`](clases-centrales.puml). Clases del caso de uso principal (C4 · Code): [`caso-de-uso.md`](caso-de-uso.md).
 
 ```mermaid
 flowchart LR
@@ -122,7 +122,7 @@ flowchart LR
     QuickPatch_Identity_Api_Bootstrap["Api.Bootstrap (5)"]
     QuickPatch_Identity_Api_Endpoints["Api.Endpoints (31)"]
     QuickPatch_Identity_Api_Http["Api.Http (3)"]
-    QuickPatch_Identity_Api_Security["Api.Security (8)"]
+    QuickPatch_Identity_Api_Security["Api.Security (9)"]
   end
   subgraph Application
     QuickPatch_Identity_Application["Application (1)"]
@@ -131,7 +131,7 @@ flowchart LR
     QuickPatch_Identity_Application_Companies["Application.Companies (12)"]
     QuickPatch_Identity_Application_Events["Application.Events (9)"]
     QuickPatch_Identity_Application_Platform["Application.Platform (7)"]
-    QuickPatch_Identity_Application_Technicians["Application.Technicians (20)"]
+    QuickPatch_Identity_Application_Technicians["Application.Technicians (22)"]
     QuickPatch_Identity_Application_Users["Application.Users (5)"]
   end
   subgraph Domain
@@ -159,7 +159,7 @@ flowchart LR
   QuickPatch_Identity_Api_Bootstrap -->|12| QuickPatch_Identity_Application_Auth
   QuickPatch_Identity_Api_Bootstrap -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Api_Endpoints -->|6| QuickPatch_Identity_Api_Http
-  QuickPatch_Identity_Api_Endpoints -->|21| QuickPatch_Identity_Api_Security
+  QuickPatch_Identity_Api_Endpoints -->|24| QuickPatch_Identity_Api_Security
   QuickPatch_Identity_Api_Endpoints -->|5| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Api_Endpoints -->|19| QuickPatch_Identity_Application_Auth
   QuickPatch_Identity_Api_Endpoints -->|11| QuickPatch_Identity_Application_Companies
@@ -171,12 +171,11 @@ flowchart LR
   QuickPatch_Identity_Api_Endpoints -->|3| QuickPatch_Identity_Domain_Technicians
   QuickPatch_Identity_Api_Endpoints -->|2| QuickPatch_Identity_Domain_Tenants
   QuickPatch_Identity_Api_Endpoints -->|4| QuickPatch_Identity_Domain_Users
-  QuickPatch_Identity_Api_Http -->|1| QuickPatch_Identity_Api_Security
   QuickPatch_Identity_Api_Security -->|2| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Application -->|8| QuickPatch_Identity_Application_Auth
   QuickPatch_Identity_Application -->|5| QuickPatch_Identity_Application_Companies
   QuickPatch_Identity_Application -->|3| QuickPatch_Identity_Application_Platform
-  QuickPatch_Identity_Application -->|7| QuickPatch_Identity_Application_Technicians
+  QuickPatch_Identity_Application -->|8| QuickPatch_Identity_Application_Technicians
   QuickPatch_Identity_Application -->|3| QuickPatch_Identity_Application_Users
   QuickPatch_Identity_Application -->|1| QuickPatch_Identity_Domain_Users
   QuickPatch_Identity_Application_Abstractions -->|1| QuickPatch_Identity_Domain_Audit
@@ -184,9 +183,8 @@ flowchart LR
   QuickPatch_Identity_Application_Abstractions -->|1| QuickPatch_Identity_Domain_Technicians
   QuickPatch_Identity_Application_Abstractions -->|2| QuickPatch_Identity_Domain_Tenants
   QuickPatch_Identity_Application_Abstractions -->|4| QuickPatch_Identity_Domain_Users
-  QuickPatch_Identity_Application_Auth -->|40| QuickPatch_Identity_Application_Abstractions
-  QuickPatch_Identity_Application_Auth -->|1| QuickPatch_Identity_Application_Events
-  QuickPatch_Identity_Application_Auth -->|3| QuickPatch_Identity_Application_Technicians
+  QuickPatch_Identity_Application_Auth -->|37| QuickPatch_Identity_Application_Abstractions
+  QuickPatch_Identity_Application_Auth -->|5| QuickPatch_Identity_Application_Technicians
   QuickPatch_Identity_Application_Auth -->|1| QuickPatch_Identity_Domain_Audit
   QuickPatch_Identity_Application_Auth -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Application_Auth -->|4| QuickPatch_Identity_Domain_Technicians
@@ -206,13 +204,13 @@ flowchart LR
   QuickPatch_Identity_Application_Platform -->|2| QuickPatch_Identity_Domain_Audit
   QuickPatch_Identity_Application_Platform -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Application_Platform -->|5| QuickPatch_Identity_Domain_Tenants
-  QuickPatch_Identity_Application_Technicians -->|28| QuickPatch_Identity_Application_Abstractions
+  QuickPatch_Identity_Application_Technicians -->|29| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Application_Technicians -->|4| QuickPatch_Identity_Application_Events
   QuickPatch_Identity_Application_Technicians -->|1| QuickPatch_Identity_Domain_Audit
   QuickPatch_Identity_Application_Technicians -->|2| QuickPatch_Identity_Domain_Common
-  QuickPatch_Identity_Application_Technicians -->|7| QuickPatch_Identity_Domain_Technicians
+  QuickPatch_Identity_Application_Technicians -->|8| QuickPatch_Identity_Domain_Technicians
   QuickPatch_Identity_Application_Technicians -->|2| QuickPatch_Identity_Domain_Tenants
-  QuickPatch_Identity_Application_Technicians -->|9| QuickPatch_Identity_Domain_Users
+  QuickPatch_Identity_Application_Technicians -->|10| QuickPatch_Identity_Domain_Users
   QuickPatch_Identity_Application_Users -->|8| QuickPatch_Identity_Application_Abstractions
   QuickPatch_Identity_Application_Users -->|1| QuickPatch_Identity_Domain_Common
   QuickPatch_Identity_Application_Users -->|3| QuickPatch_Identity_Domain_Technicians

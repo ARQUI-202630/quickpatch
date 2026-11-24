@@ -1,6 +1,6 @@
 @startuml
 !pragma layout smetana
-title Ranking — clases más conectadas (despues, 1679652)
+title Ranking — clases más conectadas (despues, 9e4b500)
 hide empty members
 skinparam shadowing false
 class "Application.Reputation.ServiceRequestRatedHandler" as QuickPatch_Ranking_Application_Reputation_ServiceRequestRatedHandler <<Application>> {

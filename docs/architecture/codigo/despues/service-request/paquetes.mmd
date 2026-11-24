@@ -16,7 +16,7 @@ flowchart LR
     QuickPatch_ServiceRequest_Application_Quotes["Application.Quotes (12)"]
     QuickPatch_ServiceRequest_Application_Ratings["Application.Ratings (3)"]
     QuickPatch_ServiceRequest_Application_References["Application.References (2)"]
-    QuickPatch_ServiceRequest_Application_ServiceRequests["Application.ServiceRequests (27)"]
+    QuickPatch_ServiceRequest_Application_ServiceRequests["Application.ServiceRequests (28)"]
     QuickPatch_ServiceRequest_Application_Tenants["Application.Tenants (2)"]
   end
   subgraph Domain
@@ -64,7 +64,7 @@ flowchart LR
   QuickPatch_ServiceRequest_Application -->|5| QuickPatch_ServiceRequest_Application_Quotes
   QuickPatch_ServiceRequest_Application -->|1| QuickPatch_ServiceRequest_Application_Ratings
   QuickPatch_ServiceRequest_Application -->|2| QuickPatch_ServiceRequest_Application_References
-  QuickPatch_ServiceRequest_Application -->|8| QuickPatch_ServiceRequest_Application_ServiceRequests
+  QuickPatch_ServiceRequest_Application -->|9| QuickPatch_ServiceRequest_Application_ServiceRequests
   QuickPatch_ServiceRequest_Application -->|1| QuickPatch_ServiceRequest_Application_Tenants
   QuickPatch_ServiceRequest_Application_Abstractions -->|1| QuickPatch_ServiceRequest_Domain_Categories
   QuickPatch_ServiceRequest_Application_Abstractions -->|1| QuickPatch_ServiceRequest_Domain_Evidence
@@ -101,12 +101,12 @@ flowchart LR
   QuickPatch_ServiceRequest_Application_References -->|3| QuickPatch_ServiceRequest_Application_Abstractions
   QuickPatch_ServiceRequest_Application_References -->|1| QuickPatch_ServiceRequest_Domain_Categories
   QuickPatch_ServiceRequest_Application_References -->|1| QuickPatch_ServiceRequest_Domain_ServiceRequests
-  QuickPatch_ServiceRequest_Application_ServiceRequests -->|36| QuickPatch_ServiceRequest_Application_Abstractions
+  QuickPatch_ServiceRequest_Application_ServiceRequests -->|35| QuickPatch_ServiceRequest_Application_Abstractions
   QuickPatch_ServiceRequest_Application_ServiceRequests -->|5| QuickPatch_ServiceRequest_Application_Events
   QuickPatch_ServiceRequest_Application_ServiceRequests -->|1| QuickPatch_ServiceRequest_Domain_Common
   QuickPatch_ServiceRequest_Application_ServiceRequests -->|1| QuickPatch_ServiceRequest_Domain_Quotes
   QuickPatch_ServiceRequest_Application_ServiceRequests -->|4| QuickPatch_ServiceRequest_Domain_Ratings
-  QuickPatch_ServiceRequest_Application_ServiceRequests -->|22| QuickPatch_ServiceRequest_Domain_ServiceRequests
+  QuickPatch_ServiceRequest_Application_ServiceRequests -->|23| QuickPatch_ServiceRequest_Domain_ServiceRequests
   QuickPatch_ServiceRequest_Application_Tenants -->|3| QuickPatch_ServiceRequest_Application_Abstractions
   QuickPatch_ServiceRequest_Application_Tenants -->|2| QuickPatch_ServiceRequest_Application_Events
   QuickPatch_ServiceRequest_Application_Tenants -->|1| QuickPatch_ServiceRequest_Domain_Tenants

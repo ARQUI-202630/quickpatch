@@ -1,0 +1,17 @@
+scrum-627-enlace-vencido contra QA, 2026-11-23
+Script: tests/e2e/scrum-627-enlace-vencido.mjs (Node, certificado de QA verificado con NODE_EXTRA_CA_CERTS). Codigo de salida: 0.
+
+2026-11-24T03:30:49.193Z OK    Login del administrador del tenant  (HTTP 200)
+2026-11-24T03:30:50.284Z OK    Registro del cliente  (HTTP 201)
+2026-11-24T03:30:50.615Z OK    El cliente pide recuperar la contraseña  (HTTP 202)
+2026-11-24T03:30:50.885Z OK    El administrador ve la solicitud
+2026-11-24T03:30:51.012Z OK    El administrador genera el enlace  (HTTP 201, vence 2026-11-24T04:30:50.9670857+00:00)
+Esperando 61 minutos a que el enlace venza...
+2026-11-24T04:32:22.020Z OK    REC-015: el enlace vencido responde 400 enlace-invalido  (HTTP 400, https://quickpatch.internal/problems/enlace-invalido)
+2026-11-24T04:32:23.023Z OK    REC-015: la clave anterior sigue entrando  (HTTP 200)
+2026-11-24T04:32:24.025Z OK    Login otra vez del administrador  (HTTP 200)
+2026-11-24T04:32:24.067Z OK    REC-015: la solicitud sigue pendiente y admite un enlace nuevo  (HTTP 201)
+2026-11-24T04:32:25.001Z OK    REC-015: el enlace nuevo sí sirve  (HTTP 204)
+2026-11-24T04:32:25.938Z OK    REC-015: entra con la clave nueva  (HTTP 200)
+
+11/11 OK.

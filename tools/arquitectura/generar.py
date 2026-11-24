@@ -46,6 +46,19 @@ PROHIBIDAS = {("Domain", "Application"), ("Domain", "Infrastructure"), ("Domain"
               ("Application", "Infrastructure"), ("Application", "Api"),
               ("Infrastructure", "Api"), ("Api", "Infrastructure")}
 # Raíces de composición: el único punto del API que puede conocer Infrastructure.
+# Caso de uso principal de cada servicio para su diagrama de clases (C4 · Code, SCRUM-715): clase de entrada, caso de
+# uso y por qué. El resto del servicio repite el patrón y está en su diagrama de componentes (C4-04).
+CASOS = {
+    "identity": ("AuthEndpoints", "LoginHandler", "inicio de sesión (RF-03, RN-U4, ADR-018)"),
+    "actors": ("TechnicianEventsConsumer", "TechnicianEventsHandler", "proyección de technician.registered y .verification-changed (SCRUM-640)"),
+    "catalog": ("CategoryEndpoints", "CreateCategoryHandler", "alta de una categoría (ADR-007, ADR-025)"),
+    "service-request": ("ServiceRequestEndpoints", "CreateServiceRequestHandler", "creación de la solicitud (RF-07, RN-SR1, RN-SR9, RN-T1)"),
+    "matching": ("ServiceRequestCreatedListener", "ServiceRequestCreatedHandler", "inicio del matching al crearse la solicitud (RN-M1 a RN-M10, RN-EV1)"),
+    "ranking": ("ServiceRequestRatedConsumer", "ServiceRequestRatedHandler", "reputación del técnico desde la calificación (ADR-027)"),
+    "payments": ("PaymentEndpoints", "PayHandler", "pago con la pasarela simulada (RF-22, ADR-009 modificado)"),
+    "communication": ("ChatEndpoints", "SendChatMessageHandler", "envío de un mensaje del chat (RF-37, ADR-026)"),
+}
+
 RAICES_COMPOSICION = {"Program", "co.quickpatch.matching.MatchingApplication"}
 # Tecnologías prohibidas por capa.
 TECNOLOGIA = {
@@ -97,7 +110,8 @@ def extraer_dotnet(fuente: Path, nombre: str, trabajo: Path, extractor: Path) ->
     sh(["dotnet", str(extractor), str(binario), nombre, str(salida)])
     d = json.loads(salida.read_text(encoding="utf-8"))
     tipos = [{"id": t["Id"], "paquete": t["Paquete"], "capa": t["Capa"], "clase": t["Clase"],
-              "lineas": t["Lineas"], "archivo": t.get("Archivo")} for t in d["tipos"]]
+              "lineas": t["Lineas"], "archivo": t.get("Archivo"),
+              "implementa": t.get("Implementa", []), "inyecta": t.get("Inyecta", [])} for t in d["tipos"]]
     for t in tipos:
         if t["archivo"]:
             t["archivo"] = relativo(t["archivo"], fuente)
@@ -154,7 +168,21 @@ def extraer_java(fuente: Path) -> dict:
             clase = "abstract"
         lineas = sum(1 for l in texto_fuente.splitlines() if l.strip())
         lista.append({"id": t, "paquete": t.rsplit(".", 1)[0], "capa": capa, "clase": clase,
-                      "lineas": lineas, "archivo": str(archivo).replace("\\", "/")})
+                      "lineas": lineas, "archivo": str(archivo).replace("\\", "/"), "fuente": texto_fuente})
+    # Interfaces que implementa y parámetros del constructor, leídos del fuente y resueltos por nombre simple.
+    # Los puertos anidados (MatchingPorts.RequestStore) se cuentan en su tipo raíz, igual que en jdeps.
+    por_simple = {x["id"].rsplit(".", 1)[-1]: x["id"] for x in lista}
+    resolver = lambda n: por_simple.get(n.strip().split("<")[0].split(".")[0].strip())
+    for x in lista:
+        simple = x["id"].rsplit(".", 1)[-1]
+        fuente_x = x.pop("fuente")
+        mi = re.search(rf"\b(?:class|record)\s+{re.escape(simple)}\b[^{{]*?\bimplements\s+([^{{]+)\{{", fuente_x, re.S)
+        x["implementa"] = sorted({r for r in (resolver(n) for n in (mi.group(1).split(",") if mi else [])) if r})
+        mc = re.search(rf"public\s+{re.escape(simple)}\s*\(([^)]*)\)", fuente_x, re.S)
+        x["inyecta"] = []
+        for par in (mc.group(1).split(",") if mc and mc.group(1).strip() else []):
+            tipo_par = re.sub(r"@\w+(\([^)]*\))?\s*", "", par).strip().rsplit(" ", 1)[0].strip()
+            x["inyecta"].append(resolver(tipo_par) or tipo_par.split("<")[0].split(".")[-1])
     return {"tipos": lista,
             "dependencias": [{"de": a, "a": b} for a, b in sorted(deps)],
             "externas": [{"de": a, "ns": b} for a, b in sorted(externas)]}
@@ -351,6 +379,86 @@ def diagramas(m: dict, ns: str, destino: Path, fase: str, sha: str) -> None:
     (destino / "clases-centrales.puml").write_text("\n".join(c) + "\n", encoding="utf-8")
 
 
+def caso_de_uso(servicio: str, datos: dict, ns: str, destino: Path, fase: str, sha: str) -> None:
+    """Diagrama de clases del caso de uso principal (C4 · Code): entrada -> caso de uso -> puertos <- adaptadores."""
+    if servicio not in CASOS:
+        return
+    entrada_s, caso_s, motivo = CASOS[servicio]
+    tipos = {t["id"]: t for t in datos["tipos"] if ".Migrations" not in t["paquete"]}
+    sale = defaultdict(set)
+    for d in datos["dependencias"]:
+        if d["de"] in tipos and d["a"] in tipos:
+            sale[d["de"]].add(d["a"])
+    por_simple = defaultdict(list)
+    for i in tipos:
+        por_simple[i.rsplit(".", 1)[-1]].append(i)
+    entrada, caso = por_simple[entrada_s][0], por_simple[caso_s][0]
+
+    nodos, rel, externas = [entrada, caso], [(entrada, caso, "-->", "invoca")], set()
+    pendientes, vistos = [caso], set()
+    while pendientes:
+        actual = pendientes.pop(0)
+        if actual in vistos:
+            continue
+        vistos.add(actual)
+        for dep in tipos[actual].get("inyecta", []):
+            if dep not in tipos:
+                externas.add(dep.rsplit(".", 1)[-1])
+                continue
+            nodos.append(dep)
+            rel.append((actual, dep, "-->", "usa"))
+            # Un puerto es lo que alguien implementa; en Java, también la clase que agrupa interfaces anidadas (MatchingPorts).
+            impls = [i for i, x in tipos.items() if dep in x.get("implementa", []) and x["capa"] in ("Infrastructure", "Application")]
+            if impls or tipos[dep]["clase"] in ("interface", "abstract"):
+                for impl in impls:
+                    nodos.append(impl)
+                    rel.append((impl, dep, "..|>", "implementa"))
+                    if tipos[impl]["capa"] == "Application":
+                        pendientes.append(impl)
+            elif tipos[dep]["capa"] == "Application" and not dep.endswith("Handler"):
+                pendientes.append(dep)
+    # Tipos del dominio que usan el caso de uso y sus colaboradores de Application (del IL o del bytecode).
+    for origen in [v for v in vistos if tipos[v]["capa"] == "Application"]:
+        for dom in sorted(d for d in sale[origen] if tipos[d]["capa"] == "Domain" and tipos[d]["clase"] not in ("interface", "static")):
+            nodos.append(dom)
+            rel.append((origen, dom, "..>", "crea o usa"))
+    nodos = list(dict.fromkeys(nodos))
+
+    l = ["classDiagram", "    direction LR"]
+    for capa in CAPAS:
+        miembros = [n for n in nodos if tipos[n]["capa"] == capa]
+        if not miembros:
+            continue
+        l.append(f"    namespace {capa} {{")
+        for n in miembros:
+            est = {"interface": "<<interface>>", "abstract": "<<abstract>>", "enum": "<<enumeration>>"}.get(tipos[n]["clase"])
+            nombre = alias(corto(n, ns).rsplit(".", 1)[-1])
+            l += [f"        class {nombre} {{", f"            {est}", "        }"] if est else [f"        class {nombre}"]
+        l.append("    }")
+    vistas = set()
+    for a, b, flecha, etiqueta in rel:
+        if (a, b) not in vistas:
+            vistas.add((a, b))
+            l.append(f"    {alias(corto(a, ns).rsplit('.', 1)[-1])} {flecha} {alias(corto(b, ns).rsplit('.', 1)[-1])} : {etiqueta}")
+    mmd = "\n".join(l) + "\n"
+    (destino / "caso-de-uso.mmd").write_text(mmd, encoding="utf-8")
+
+    tabla = [f"| `{corto(n, ns)}` | {tipos[n]['capa']} | `{tipos[n].get('archivo') or ''}` |" for n in nodos]
+    md = [f"# {datos.get('nombre', servicio)} — código del caso de uso principal ({fase})", "",
+          f"Nivel 4 del modelo C4 ([c4model.com/diagrams](https://c4model.com/diagrams)): las clases del caso de uso principal, **{motivo}**, "
+          "desde su clase de entrada hasta los adaptadores, con un bloque por capa (SDD 10.3.1 y 10.3.2). El resto del servicio repite el patrón "
+          "y está en su diagrama de componentes (C4-04) y en [`paquetes.mmd`](paquetes.mmd).", "",
+          f"Generado desde el código compilado de `origin/develop` (`{sha}`) el {date.today().isoformat()} con `tools/arquitectura/generar.py` "
+          "(SCRUM-715). No se edita a mano.", "",
+          "```mermaid", mmd.rstrip(), "```", "",
+          "**Cómo leerlo.** `-->` es una dependencia inyectada por el constructor; `..|>`, una clase que implementa un puerto "
+          "(un adaptador de Infrastructure o un colaborador de Application); `..>`, un tipo del dominio que el caso de uso o sus colaboradores usan, "
+          "según el IL (.NET) o el bytecode (Java). No se dibujan las dependencias transversales: "
+          + (", ".join(f"`{e}`" for e in sorted(externas)) or "ninguna") + ".", "",
+          "| Clase | Capa | Archivo |", "|---|---|---|", *tabla, ""]
+    (destino / "caso-de-uso.md").write_text("\n".join(md), encoding="utf-8")
+
+
 def resumen_md(m: dict, ns: str, sha: str, fase: str) -> str:
     r = m["resumen"]
     l = [f"# {m['servicio']} — {fase}", "",
@@ -381,7 +489,8 @@ def resumen_md(m: dict, ns: str, sha: str, fase: str) -> str:
         l.append("Ninguna.")
     l += ["", "## Paquetes", "", "| Paquete | Tipos | Fan-in | Fan-out | Inestabilidad | Cohesión H |", "|---|---|---|---|---|---|"]
     l += [f"| `{corto(p['paquete'], ns) or p['paquete']}` | {p['tipos']} | {p['fan_in']} | {p['fan_out']} | {p['inestabilidad']} | {p['cohesion_relacional']} |" for p in m["paquetes"]]
-    l += ["", "## Diagrama de paquetes", "", "Fuente: [`paquetes.puml`](paquetes.puml) (PlantUML) y [`paquetes.mmd`](paquetes.mmd). Clases más conectadas: [`clases-centrales.puml`](clases-centrales.puml).", "",
+    l += ["", "## Diagrama de paquetes", "", "Fuente: [`paquetes.puml`](paquetes.puml) (PlantUML) y [`paquetes.mmd`](paquetes.mmd). Clases más conectadas: [`clases-centrales.puml`](clases-centrales.puml). "
+          "Clases del caso de uso principal (C4 · Code): [`caso-de-uso.md`](caso-de-uso.md).", "",
           "```mermaid", (Path(DESTINO_ACTUAL) / "paquetes.mmd").read_text(encoding="utf-8").rstrip(), "```", ""]
     return "\n".join(l)
 
@@ -425,6 +534,8 @@ def main() -> None:
         DESTINO_ACTUAL = str(destino)
         (destino / "metricas.json").write_text(json.dumps(m, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
         diagramas(m, ns, destino, a.fase, sha)
+        datos["nombre"] = nombre
+        caso_de_uso(s, datos, ns, destino, a.fase, sha)
         (destino / "README.md").write_text(resumen_md(m, ns, sha, a.fase), encoding="utf-8")
         filas.append((s, nombre, sha, m["resumen"]))
         print(f"{nombre}: {m['resumen']}")
