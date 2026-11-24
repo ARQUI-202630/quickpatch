@@ -140,14 +140,30 @@ jobs:
           python3 - <<'PY'
           import json, os, re, sys, time, urllib.parse, urllib.request
 
+          # Una consulta de 24 h con 5000 líneas agotaba el timeout de Loki (sus respuestas grandes fallaban en el querier).
+          # Se pagina de 500 en 500 hacia atrás, cubriendo las 24 h completas, sin tope de líneas.
           fin = int(time.time() * 1e9)
           inicio = fin - 24 * 3600 * 10**9
-          params = urllib.parse.urlencode({
-              "query": '{vm="vm2"}', "start": inicio, "end": fin, "limit": 5000, "direction": "backward",
-          })
-          with urllib.request.urlopen(f"{os.environ['LOKI']}/loki/api/v1/query_range?{params}", timeout=60) as r:
-              datos = json.load(r)["data"]["result"]
-          lineas = [l for s in datos for _, l in s["values"]]
+          LIMITE = 500
+          lineas = []
+          cursor = fin
+          while cursor > inicio:
+              params = urllib.parse.urlencode({
+                  "query": '{vm="vm2"}', "start": inicio, "end": cursor, "limit": LIMITE, "direction": "backward",
+              })
+              with urllib.request.urlopen(f"{os.environ['LOKI']}/loki/api/v1/query_range?{params}", timeout=60) as r:
+                  datos = json.load(r)["data"]["result"]
+              entradas = [(int(ts), l) for s in datos for ts, l in s["values"]]
+              if not entradas:
+                  break
+              lineas.extend(l for _, l in entradas)
+              if len(entradas) < LIMITE:
+                  break
+              oldest = min(ts for ts, _ in entradas)
+              if oldest >= cursor:
+                  print("::error::La paginación de Loki no avanza.")
+                  sys.exit(1)
+              cursor = oldest
 
           def luhn(n):
               d = [int(c) for c in n][::-1]
