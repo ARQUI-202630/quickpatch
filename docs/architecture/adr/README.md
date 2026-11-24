@@ -29,6 +29,7 @@ Cada decisión de arquitectura tiene su propio archivo en esta carpeta, con cont
 | [ADR-026](ADR-026-chat-de-la-solicitud.md) | Chat de la solicitud en Communication, sobre el canal en tiempo real; historial y envío como excepción de ADR-025 | AC4, AC6 | Aceptado (SCRUM-473, SCRUM-480) |
 | [ADR-027](ADR-027-calificacion-y-reputacion.md) | Calificación en ServiceRequest y reputación del técnico en Ranking, por eventos e idempotente | AC5, AC1 | Aceptado (SCRUM-542, SCRUM-85) |
 | [ADR-028](ADR-028-gateway-por-ambiente.md) | Gateway Nginx propio en cada ambiente (VM3 y VM2), con VM1 como entrada TLS compartida | AC7, AC5 | Aceptado; implementado en QA y producción (SCRUM-573) |
+| [ADR-029](ADR-029-tunel-publico-produccion.md) | Panel de producción en Internet por un Cloudflare Quick Tunnel desde VM1 | AC4, AC5 | Aceptado; falta aplicarlo en VM1 |
 
 **Números sin asignar.** ADR-001 y ADR-010 nunca se usaron. ADR-008 aparecía en versiones anteriores del SAD como referencia a una decisión que no existía y se retiró en la versión 2.0. No se reutilizan, para no confundir referencias históricas.
 
