@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Tipo de documento** | Manual operativo de infraestructura |
-| **Versión** | 4.18 |
+| **Versión** | 4.19 |
 | **Curso** | Arquitectura de Software |
 | **Proyecto** | QUICKPATCH |
 
@@ -236,6 +236,7 @@ Las 7 VMs corren `node_exporter` y Promtail (unos 40 MiB entre los dos).
 | AWS CLI (respaldo de PostgreSQL) | `amazon/aws-cli:2.37.9` | VM4 |
 | Prometheus, Loki y Grafana | `v2.55.1`, `3.3.2` y `11.4.0` | VM1 |
 | Nginx | `nginx:1.27-alpine` | VM1, VM2 y VM3 |
+| cloudflared | `cloudflare/cloudflared:2026.10.7` | VM1, solo si el túnel público está encendido (ADR-029) |
 | `node_exporter` y Promtail | `v1.8.2` y `3.3.2` | Las 7 VMs |
 | Runner de GitHub (`vm1-despliegue`) | 2.337.0 | VM1 |
 
@@ -1033,6 +1034,17 @@ Solo se aplicó la 2, y solo en QA: las demás cambian componentes en producció
 
 Las 7 VMs del proyecto viven en el rango privado `10.43.x.x` del laboratorio de virtualización de la Javeriana (sección 3), no enrutable desde Internet. No hay NAT, port-forwarding ni un gateway público administrado por el equipo que exponga VM1 hacia afuera de la red del laboratorio — eso está fuera del control del equipo y del alcance de este proyecto académico. Esta es la restricción R9 del SAD (red privada del laboratorio, sin dominio público). En consecuencia, **el proyecto no usa un dominio público real ni un proveedor de DNS público** (Cloudflare, Route 53, GoDaddy, etc.).
 
+### 11.1.1 Excepción: panel de producción por un túnel de Cloudflare (ADR-029)
+
+Para que el panel de producción se vea desde Internet, VM1 puede correr un Cloudflare Quick Tunnel (`playbooks/deploy-tunel-publico.yml`). El túnel no abre puertos ni usa dominio propio: `cloudflared` abre una conexión de salida hacia Cloudflare (TCP 7844, `--protocol=http2`) y Cloudflare publica una URL `https://<aleatorio>.trycloudflare.com` con su propio certificado. Las peticiones llegan a la entrada Nginx de VM1 (`10.43.100.168:443`) siempre con `Host` `quickpatch.internal`, así que solo se alcanza producción (panel y `/api/`), nunca QA ni Grafana.
+
+```bash
+./ap playbooks/deploy-tunel-publico.yml -k -K -e confirmar_publico=si   # levanta el túnel e imprime la URL
+./ap playbooks/deploy-tunel-publico.yml -k -K -e estado=absent          # lo apaga
+```
+
+La URL cambia cada vez que el contenedor se reinicia; para leer la nueva se vuelve a correr el playbook. Si se necesita una dirección fija, hay que usar un túnel con nombre, que pide una cuenta de Cloudflare y un dominio (sección 11.4).
+
 ### 11.2 Nombres lógicos y resolución interna
 
 Para no escribir IPs en todos lados, el sistema usa tres nombres lógicos. Los tres apuntan a VM1, y el Nginx de VM1 elige el destino según el nombre pedido (SAD, ADR-015 y ADR-028):
@@ -1278,4 +1290,5 @@ Los servicios no se despliegan con Ansible sino con el pipeline (sección 6):
 | 4.16 | 10 nov 2026 | Auditoría contra lo desplegado (SCRUM-694): versiones de QA y producción verificadas con `kubectl` el 10 de noviembre (producción con service-request 0.11.2; QA con identity 0.9.0, service-request 0.12.0, panel 0.6.0 y APK `v0.6.0-qa`), la tabla de la sección 5.3 deja de decir que Payments, Communication y Ranking no están desplegados, y la lista de lo que falta de la sección 4.3 se pone al día. |
 | 4.17 | 11 nov 2026 | Gateway y panel por ambiente (sección 3): el Nginx entrega los archivos del panel y el navegador del administrador los ejecuta, como la vista de despliegue de SCRUM-674 (SCRUM-675). |
 | 4.18 | 19 nov 2026 | Segunda auditoría contra Ansible, los workflows y lo publicado (SCRUM-694). En 4.3: versiones de QA al 19 de noviembre, el panel 0.5.5 y el APK 0.5.4 sí promovidos a producción el 4 de noviembre (producción sirve un build de Angular distinto del de QA, no la página provisional), Actors con código y sin desplegar y enlace al [inventario por ambiente](inventario-versiones-por-ambiente.md) (SCRUM-671, SCRUM-672). En 5.2: seis playbooks que faltaban (`habilitar-tenant-beta`, `verificar-rls`, `diagnostico-carga`, `limpiar-carga-qa`, `limpiar-qa-uat` y `limpiar-humo-produccion`). En 5.3, 5.6 y la tabla de limitaciones: Actors con manifiesto, `roles.sql` y recursos. En 6.2: los jobs de `humo-frontends.yml` y del APK. |
+| 4.19 | 24 nov 2026 | Sección 11.1.1: panel de producción en Internet por un Cloudflare Quick Tunnel desde VM1 (ADR-029, `deploy-tunel-publico.yml`) y la imagen `cloudflare/cloudflared:2026.10.7`. |
 | 4.19 | 23 nov 2026 | Actors en QA (`release/0.2.0`; faltan sus roles de base). Releases de QA del refactor de capas (SCRUM-709): identity 0.10.5, service-request 0.12.4, payments 0.3.4, panel 0.7.1 y APK `v0.6.1-qa` (`inventario-versiones-por-ambiente.md`). |

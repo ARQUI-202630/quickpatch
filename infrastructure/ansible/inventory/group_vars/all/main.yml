@@ -72,6 +72,7 @@ images:
   node_exporter: prom/node-exporter:v1.8.2
   promtail: grafana/promtail:3.3.2
   nginx: nginx:1.27-alpine
+  cloudflared: cloudflare/cloudflared:2026.10.7   # túnel público de producción (ADR-029)
   nominatim: mediagis/nominatim:5.3.2-2026-06-23T09-03   # PostgreSQL 16 propio dentro del contenedor (ADR-024)
 k3s_version: v1.31.4+k3s1
 

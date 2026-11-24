@@ -1,0 +1,74 @@
+# Acceso público al panel de producción por un Cloudflare Quick Tunnel (ADR-029).
+# cloudflared corre en VM1 y abre solo conexiones de salida hacia Cloudflare: no se abre ningún puerto ni hace falta NAT,
+# cuenta ni dominio. Cloudflare entrega una URL https://<aleatorio>.trycloudflare.com con certificado válido y la reenvía
+# a la entrada TLS de VM1 con el nombre de producción, así que el panel y /api/ salen por el mismo origen, como en la red
+# del laboratorio. Las entradas de QA y Grafana no se alcanzan: el túnel siempre pide el nombre de producción.
+#
+#   ./ap playbooks/deploy-tunel-publico.yml -k -K -e confirmar_publico=si   # levanta el túnel e imprime la URL
+#   ./ap playbooks/deploy-tunel-publico.yml -k -K -e estado=absent          # lo apaga
+#
+# La URL cambia cada vez que el contenedor se reinicia (reinicio de VM1 o de Docker): volver a correr el playbook para
+# leerla. Es un túnel de demostración, sin SLA de Cloudflare.
+- name: Túnel público al panel de producción (VM1)
+  hosts: gateway
+  become: true
+  vars:
+    dir: "{{ stack_dir }}/tunel-publico"
+    estado: present
+    metricas: "127.0.0.1:20241"   # solo local: de aquí se lee la URL asignada (/quicktunnel)
+  tasks:
+    - name: Exponer producción a Internet se pide de forma explícita
+      ansible.builtin.assert:
+        that: estado == 'absent' or (confirmar_publico | default('')) == 'si'
+        fail_msg: "El túnel publica el panel y la API de producción en Internet. Repetir con -e confirmar_publico=si."
+
+    - name: Carpeta
+      ansible.builtin.file: { path: "{{ dir }}", state: directory, mode: "0755" }
+
+    - name: Compose del túnel
+      ansible.builtin.copy:
+        dest: "{{ dir }}/compose.yml"
+        mode: "0644"
+        content: |
+          services:
+            cloudflared:
+              image: {{ images.cloudflared }}
+              network_mode: host   # la entrada escucha en {{ ansible_host }}:443, no en localhost
+              restart: unless-stopped
+              command:
+                - tunnel
+                - --no-autoupdate
+                - --protocol=http2              # TCP 7844: pasa donde el firewall del laboratorio corta QUIC (UDP)
+                - --metrics={{ metricas }}
+                - --url=https://{{ ansible_host }}:443
+                - --http-host-header={{ gateway_hosts.produccion }}
+                - --origin-server-name={{ gateway_hosts.produccion }}
+                - --no-tls-verify               # el certificado de VM1 es autofirmado; el tramo público lo cifra Cloudflare
+
+    - name: Levantar o apagar el túnel
+      community.docker.docker_compose_v2: { project_src: "{{ dir }}", state: "{{ estado }}" }
+
+    - name: URL pública asignada por Cloudflare
+      ansible.builtin.uri:
+        url: "http://{{ metricas }}/quicktunnel"
+        return_content: true
+      register: tunel
+      until: tunel.status == 200 and (tunel.json.hostname | default('')) != ''
+      retries: 20
+      delay: 3
+      when: estado == 'present'
+
+    - name: La URL responde con el panel
+      ansible.builtin.uri:
+        url: "https://{{ tunel.json.hostname }}/"
+        return_content: true
+      register: panel
+      until: panel.status == 200
+      retries: 10
+      delay: 5
+      when: estado == 'present'
+
+    - name: Dirección pública
+      ansible.builtin.debug:
+        msg: "Panel de producción en https://{{ tunel.json.hostname }}"
+      when: estado == 'present'
